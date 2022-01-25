@@ -7,8 +7,27 @@ __pycache__
 # Pycharm
 .idea
 
+# misc msvs files
+*.u2d
+*.suo
+*.vcxproj.user
+*VC.db*
+.vs/
+prms5.2.0_windows/msvs/x64/Debug/
+prms5.2.0_windows/msvs/x64/Release/
+
+# prms obj, mod, and library files
+*.o
+*.obj
+*.mod
+*.lib
+*.a
+
 # prms binaries
 prms5.2.0_linux/bin
+prms5.2.0_windows/bin
 
 # prms output files
 output/
+*.wbal
+wbal.msgs

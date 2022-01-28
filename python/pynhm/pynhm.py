@@ -13,7 +13,7 @@ class AtmosphericForcings():
         self.precip_current = self.precip[itime_step]
         self.pot_et_current = self.pot_et[itime_step]
         self.pot_et_consumed = 0
-        self.current_date= current_date
+        self.current_date = current_date
 
     def consume_pot_et(self, requested_et):
         et = requested_et
@@ -39,7 +39,7 @@ class StorageUnit():
         self.recipients = []
         self.output_data = []
         self.output_column_names = []
-        self.advance()
+        self.advance(0)
         return
 
     def register_recipient(self, recipient, process_name):
@@ -47,7 +47,7 @@ class StorageUnit():
         self.recipients.append(recipient_info)
         return
 
-    def advance(self):
+    def advance(self, itime_step):
         self.residual_old = self.residual_new
         self.inflow_volumes = {}
         self.outflow_volumes = {}
@@ -99,8 +99,8 @@ class Canopy(StorageUnit):
                                     "intcp_stor_new", "intcp_stor_old"]
         return
 
-    def advance(self):
-        super().advance()
+    def advance(self, itime_step):
+        super().advance(itime_step)
         self.intcp_stor_old = self.intcp_stor_new
         return
 
@@ -162,7 +162,8 @@ class Canopy(StorageUnit):
 class SurfaceRunoff(StorageUnit):
     def __init__(self, id, area, forcing, verbose, hru_percent_imperv,
                  imperv_stor_start, imperv_stor_max,
-                 carea_min, carea_max, soil_rechr_max_frac, smidx_coef, smidx_exp):
+                 carea_min, carea_max, soil_rechr_max_frac, smidx_coef, smidx_exp,
+                 soil_moisture0_in=None):
         self.hru_percent_imperv = hru_percent_imperv
         self.imperv_stor_max = imperv_stor_max
         self.imperv_stor_new = imperv_stor_start
@@ -172,18 +173,24 @@ class SurfaceRunoff(StorageUnit):
         self.soil_rech_max_frac = soil_rechr_max_frac,
         self.smidx_coef = smidx_coef
         self.smidx_exp = smidx_exp
+        self.soil_moisture0_in = soil_moisture0_in
+        self.soil_moisture0 = 0.
         super().__init__("sro", id, area, forcing, verbose)
         self.output_column_names = ["date", "net_precipitation", "impervious_runoff", "impervious_ds",
                                     "impervious_et", "pervious_runoff", "infiltration", "residual",
                                     "impervious_stor_new", "impervious_stor_old"]
         return
 
-    def advance(self):
-        super().advance()
+    def advance(self, itime_step):
+        super().advance(itime_step)
         self.imperv_stor_old = self.imperv_stor_new
+        if self.soil_moisture0_in is None:
+            self.soil_moisture0 = 1.  # todo: this needs to come from the soil zone
+        else:
+            self.soil_moisture0 = self.soil_moisture0_in[itime_step]
         return
 
-    def calculate(self, time_length):
+    def calculate(self, time_length, smidx_in=None):
 
         # Retrieve forcings
         net_precip = self.inflow_volumes["net_precipitation"]
@@ -220,7 +227,7 @@ class SurfaceRunoff(StorageUnit):
         used_storage *= impervious_area
 
         # calculate pervious runoff
-        smidx = 1. # todo: this needs to come from the soil zone
+        smidx = self.soil_moisture0 + 0.5 * net_precip_length
         ca_fraction = self.smidx_coef * 10 ** (self.smidx_exp * smidx)
         if ca_fraction > self.carea_max:
             ca_fraction = self.carea_max

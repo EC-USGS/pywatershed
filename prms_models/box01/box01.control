@@ -330,7 +330,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-17
+18
 4
 tmaxf
 tminf
@@ -338,6 +338,7 @@ hru_ppt
 hru_rain
 hru_snow
 soil_moist_tot
+soil_moist_ante
 canopy_covden
 intcp_stor
 net_rain

@@ -10,11 +10,13 @@ __pycache__
 # misc msvs files
 *.u2d
 *.suo
-*.vcxproj.user
+*.user
 *VC.db*
 .vs/
 prms5.2.0_windows/msvs/x64/Debug/
 prms5.2.0_windows/msvs/x64/Release/
+prms5.3.0/msvs/x64/Debug/
+prms5.3.0/msvs/x64/Release/
 
 # prms obj, mod, and library files
 *.o
@@ -23,9 +25,14 @@ prms5.2.0_windows/msvs/x64/Release/
 *.lib
 *.a
 
+# meson build information
+prms5.3.0/builddir/
+
+
 # prms binaries
 prms5.2.0_linux/bin
 prms5.2.0_windows/bin
+prms5.3.0/bin
 
 # prms output files
 output/

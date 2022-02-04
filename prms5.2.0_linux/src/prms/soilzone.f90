@@ -175,6 +175,12 @@
      &     'Total soil-zone water storage (soil_moist + ssres_stor)', &
      &     'inches', Soil_moist_tot)/=0 ) CALL read_error(3, 'soil_moist_tot')
 
+     ! jdh add
+     ALLOCATE ( Soil_moist_ante(Nhru) )
+     IF ( declvar(MODNAME, 'soil_moist_ante', 'nhru', Nhru, 'real', &
+    &     'Previous total soil-zone water storage (soil_moist + ssres_stor)', &
+    &     'inches', Soil_moist_ante)/=0 ) CALL read_error(3, 'soil_moist_ante')
+
       IF ( declvar(MODNAME, 'basin_cpr_stor_frac', 'one', 1, 'double', &
      &     'Basin area-weighted average fraction of capillary reservoir storage of the maximum storage', &
      &     'decimal fraction', Basin_cpr_stor_frac)/=0 ) CALL read_error(3, 'basin_cpr_stor_frac')
@@ -510,7 +516,9 @@
 ! Allocate arrays for local and variables from other modules
       ALLOCATE ( Gvr2pfr(Nhru), Swale_limit(Nhru) )
       ALLOCATE ( Pfr_dunnian_flow(Nhru), Grav_dunnian_flow(Nhru) )
-      IF ( Print_debug==DEBUG_WB ) ALLOCATE( Soil_moist_ante(Nhru), Ssres_stor_ante(Nhru) )
+      ! IF ( Print_debug==DEBUG_WB ) ALLOCATE( Soil_moist_ante(Nhru), Ssres_stor_ante(Nhru) )
+      ! jdh modification to get out previous soil moisture
+      IF ( Print_debug==DEBUG_WB ) ALLOCATE( Ssres_stor_ante(Nhru) )
 
       IF ( Print_debug==7 ) CALL PRMS_open_module_file(DBGUNT, 'soilzone.dbg')
 
@@ -913,8 +921,11 @@
         ENDIF
       ENDIF
 
+      ! jdh modification to get out previous soil moisture
+      Soil_moist_ante = Soil_moist
+
       IF ( Print_debug==DEBUG_WB ) THEN
-        Soil_moist_ante = Soil_moist
+        ! Soil_moist_ante = Soil_moist
         Ssres_stor_ante = Ssres_stor
         Last_soil_moist = Basin_soil_moist
         Last_ssstor = Basin_ssstor

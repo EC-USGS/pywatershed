@@ -1,0 +1,17 @@
+[build-system]
+# Minimum requirements for the build system to execute
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 79
+target_version = ["py37"]
+
+[tool.flynt]
+line-length = 79
+verbose = true
+
+[tool.isort]
+profile = "black"
+src_paths = ["pynhm", "python"]
+line_length = 79

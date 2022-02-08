@@ -1,8 +1,8 @@
 from .atmosphericForcings import AtmosphericForcings
 from .prms5util import (
+    PrmsParameters,
     load_prms_input,
     load_prms_output,
-    load_prms_parameters,
     load_prms_statscsv,
     load_wbl_output,
 )

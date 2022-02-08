@@ -8,7 +8,7 @@ class AtmosphericForcings:
     def advance(self, itime_step, current_date):
         self.precip_current = self.precip[itime_step]
         self.pot_et_current = self.pot_et[itime_step]
-        self.pot_et_consumed = 0
+        self.pot_et_consumed = 0.0
         self.current_date = current_date
 
     def consume_pot_et(self, requested_et):

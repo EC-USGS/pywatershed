@@ -1,6 +1,8 @@
 """
 
 """
+
+
 class driver:
     def __init__(
         self,
@@ -11,6 +13,7 @@ class driver:
         storage_units,
         verbose=False,
     ):
+        print("Initializing simulation...")
         self.current_time = current_time
         self.end_time = end_time
         self.delta_time = delta_time

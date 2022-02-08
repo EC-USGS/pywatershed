@@ -10,6 +10,7 @@ class StorageUnit:
         self.inflow_volumes = None
         self.outflow_volumes = None
         self.recipients = []
+        self.depencencies = []
         self.output_data = []
         self.output_column_names = []
         self.advance(0)
@@ -19,6 +20,10 @@ class StorageUnit:
         recipient_info = (recipient, process_name)
         self.recipients.append(recipient_info)
         return
+
+    def register_dependency(self, dependency, process_name):
+        dependency_info = (dependency, process_name)
+        self.depencencies.append(dependency_info)
 
     def advance(self, itime_step):
         self.residual_old = self.residual_new

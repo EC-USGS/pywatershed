@@ -1,18 +1,70 @@
 import datetime
 import functools
 import os
+from io import StringIO
 
 import numpy as np
 import pandas as pd
 
+inch_to_meter = 0.0254
+acre_to_meter_squared = 4046.8564224
 
-def load_prms_input(input_data_path, datanames, filenames):
+conversions = {
+    # forcings
+    "precipitation": inch_to_meter,
+    "temp_min": 1.0,
+    "temp_max": 1.0,
+    # stats
+    "basin_potet": inch_to_meter,
+    # wbal files
+    "soilzone_last_sm": inch_to_meter,
+    # parameters
+    "intcp_stor_max": inch_to_meter,
+    # output
+    "net_ppt": inch_to_meter,
+    "soil_moist_ante": inch_to_meter,
+    "hru_sroffi": inch_to_meter,
+    "hru_sroffp": inch_to_meter,
+}
+
+
+def unit_conversion(data, verbose=False):
+    if isinstance(data, (dict,)):
+        if verbose:
+            print("dictionary conversion...")
+        keys = list(data.keys())
+    elif isinstance(data, (pd.DataFrame,)):
+        if verbose:
+            print("dataframe conversion...")
+        keys = data.columns.to_list()
+    elif isinstance(data, (np.ndarray,)):
+        if verbose:
+            print("numpy array conversion...")
+        try:
+            keys = list(data.dtype.names)
+        except:
+            keys = []
+    else:
+        keys = []
+
+    for key in keys:
+        if key in conversions.keys():
+            if verbose:
+                print(f"converting {key}...using {conversions[key]} multipler")
+            data[key] *= conversions[key]
+
+    return data
+
+
+def load_prms_input(
+    input_data_path, datanames, filenames, convert=True, verbose=False
+):
     # load prms input
     templist = []
     for dataname, cbhname in zip(datanames, filenames):
         fpath = os.path.join(input_data_path, cbhname)
         print(f"Loading {fpath}")
-        filelist = []
+        filelist = f"date,{dataname}\n"
         with open(fpath) as f:
             for i, line in enumerate(f):
                 if i > 2:
@@ -21,25 +73,72 @@ def load_prms_input(input_data_path, datanames, filenames):
                     mo = int(ll[1])
                     da = int(ll[2])
                     data = float(ll[-1])
-                    dt = datetime.datetime(yr, mo, da)
-                    filelist.append([dt, data])
-        df = pd.DataFrame(filelist, columns=["date", dataname])
-        templist.append(df)
-    input_df = functools.reduce(
-        lambda left, right: pd.merge(left, right, on="date"), templist
-    )
-    input_df.set_index("date")
-    return input_df
+                    # dt = datetime.datetime(yr, mo, da)
+                    filelist += f"{da:02d}/{mo:02d}/{yr:04d}, {data}\n"
+        tdf = pd.read_csv(
+            StringIO(filelist),
+            parse_dates=["date"],
+            index_col=["date"],
+            dtype=float,
+            float_precision="high",
+        )
+        templist.append(tdf)
+
+    # concatenate individual dataframes
+    df = pd.concat([v for v in templist], axis=1)
+
+    # unit conversion
+    if convert:
+        unit_conversion(df, verbose=verbose)
+
+    return df
 
 
-def load_prms_parameters(pfn):
+class PrmsParameters:
+    """PRMS parameter class
+
+    parameter_file: str
+        path to PRMS parameter file
+    """
+
+    def __init__(self, parameter_file):
+        (
+            self._dimensions,
+            self._parameter_data,
+            self._parameter_dimensions,
+            self._parameter_types,
+        ) = _load_prms_parameters(parameter_file)
+
+    @property
+    def get_dimensions(self):
+        return self._dimensions
+
+    @property
+    def get_parameter_data(self):
+        return self._parameter_data
+
+    @property
+    def get_parameter_dimensions(self):
+        return self._parameter_dimensions
+
+    @property
+    def get_parameter_types(self):
+        return self._parameter_types
+
+
+def _load_prms_parameters(parameter_file):
+    """Read a PRMS parameter file
+
+    :param parameter_file:
+    :return:
+    """
     line_num = 0
     vals = {}
     dims = {}
     param_dims = {}
     param_type = {}
 
-    with open(pfn) as f:
+    with open(parameter_file) as f:
         reading_dims = False
         for line in f:
             try:
@@ -68,11 +167,11 @@ def load_prms_parameters(pfn):
                     else:
                         dims[dim_name] = int(size)
             except:
-                print("**** read parameters exception line = ", line)
-                print(
-                    "**** read parameters exception line_num = ", str(line_num)
+                msg = (
+                    f"read parameters exception line = {line}\n"
+                    + f"read parameters exception line_num = {str(line_num)}\n"
                 )
-                print("**** Unexpected error:", sys.exc_info()[0])
+                raise ValueError(msg)
 
         #        read params
         for line in f:
@@ -132,7 +231,12 @@ def load_prms_parameters(pfn):
                         vs.shape = (dims[pd[1]], dims[pd[0]])
 
                     if param_name in vals.keys():
-                        print("parameter ", param_name, " is already in ", pfn)
+                        print(
+                            "parameter ",
+                            param_name,
+                            " is already in ",
+                            parameter_file,
+                        )
                     else:
                         vals[param_name] = vs
 
@@ -144,37 +248,57 @@ def load_prms_parameters(pfn):
     return dims, vals, param_dims, param_type
 
 
-def load_prms_output(output_data_path, csvfiles):
+def load_prms_output(output_data_path, csvfiles, convert=True, verbose=False):
     templist = []
     for csvname in csvfiles:
         fpath = os.path.join(output_data_path, csvname)
-        df = pd.read_csv(fpath)
+        tdf = pd.read_csv(
+            fpath,
+            parse_dates=["Date"],
+            index_col=["Date"],
+            dtype=float,
+            float_precision="high",
+        )
         colname = os.path.splitext(csvname)[0]
-        df.columns = ["date", colname]
-        templist.append(df)
-    output_df = functools.reduce(
-        lambda left, right: pd.merge(left, right, on="date"), templist
-    )
-    output_df["date"] = pd.to_datetime(output_df["date"])
-    return output_df
+        tdf.columns = [colname]
+        tdf.index.names = ["date"]
+        templist.append(tdf)
+
+    # concatenate individual dataframes
+    df = pd.concat([v for v in templist], axis=1)
+
+    # unit conversion
+    if convert:
+        unit_conversion(df, verbose=verbose)
+
+    return df
 
 
-def load_prms_statscsv(fname):
+def load_prms_statscsv(fname, convert=True, verbose=False):
     # read stats.csv
     with open(fname) as f:
         line = f.readline()
         colnames = line.strip().split(",")
         line = f.readline()
         units = line.strip().split(",")
-    prms_stats_df = pd.read_csv(fname, skiprows=2, header=None)
-    prms_stats_df.columns = colnames
-    prms_stats_df.rename(columns={"Date": "date"}, inplace=True)
-    prms_stats_df.set_index("date")
-    prms_stats_df["date"] = pd.to_datetime(prms_stats_df["date"])
-    return prms_stats_df
+    df = pd.read_csv(
+        fname,
+        skiprows=[1],
+        parse_dates=["Date"],
+        index_col=["Date"],
+        dtype=float,
+        float_precision="high",
+    )
+    df.index.names = ["date"]
+
+    # unit conversion
+    if convert:
+        unit_conversion(df, verbose=verbose)
+
+    return df
 
 
-def load_wbl_output(output_data_path):
+def load_wbl_output(output_data_path, convert=True, verbose=False):
     wbl_outflows = {
         "soilzone.wbal": (
             "perv ET",
@@ -222,13 +346,23 @@ def load_wbl_output(output_data_path):
         key = os.path.basename(fpth)
         wbal_type = key.replace(".wbal", "")
         df = pd.read_fwf(fpth, parse_dates=["Date"], index_col=["Date"])
+
+        # change sign of outflows
         for col in wbl_outflows[key]:
             df[col] *= -1.0
+
+        # rename columns
         column_dict = {}
         for column in df.columns:
             column_out = "_".join(column.lower().split())
             column_dict[column] = f"{wbal_type}_{column_out}"
         df.rename(columns=column_dict, inplace=True)
+
+        # unit conversion
+        if convert:
+            unit_conversion(df, verbose=verbose)
+
+        # add dataframe to the dataframe dictionary
         df_dict[key] = df
 
     return pd.concat([v for k, v in df_dict.items()], axis=1)

@@ -1,0 +1,2364 @@
+PRMS
+============
+
+Description of variables required in the application.
+
+Parameter file: ./input/mercdXYZ.param
+Data file     : ./input/mercd.data
+
+mercedes with updated climate stations and solrad_elev
+
+
+Start time        : 00:00:00  10/01/1993
+End time          : 00:00:00  09/30/1995
+Current time      : 00:00:00  00/00/0000
+Current time step :        0
+
+Name: ai
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Maximum snowpack for each HRU
+Units: inches
+
+Name: albedo
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Snow surface albedo or the fraction of radiation reflected from the snowpack surface for each HRU
+Units: decimal fraction
+
+Name: basin_actet
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average actual ET
+Units: inches
+
+Name: basin_actet_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average actual ET
+Units: inches
+
+Name: basin_actet_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average actual ET
+Units: inches
+
+Name: basin_actet_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average actual ET
+Units: inches
+
+Name: basin_cap_infil_tot
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average infiltration with cascading flow into capillary reservoirs
+Units: inches
+
+Name: basin_cap_up_max
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average maximum cascade flow that flows to capillary reservoirs
+Units: inches
+
+Name: basin_capwaterin
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average infiltration, cascading interflow and Dunnian flow added to capillary reservoir storage
+Units: inches
+
+Name: basin_cfs
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Streamflow leaving the basin through the stream network
+Units: cfs
+
+Name: basin_cfs_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly total streamflow to stream network
+Units: cfs
+
+Name: basin_cfs_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average streamflow
+Units: inches
+
+Name: basin_cfs_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly total streamflow to stream network
+Units: cfs
+
+Name: basin_changeover
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Basin area-weighted average water released from a change over of canopy cover type
+Units: inches
+
+Name: basin_cms
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Streamflow leaving the basin through the stream network
+Units: cms
+
+Name: basin_contrib_fraction
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average contributing area of the pervious area of each HRU
+Units: decimal fraction
+
+Name: basin_cpr_stor_frac
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average fraction of capillary reservoir storage of the maximum storage
+Units: decimal fraction
+
+Name: basin_dunnian
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average Dunnian surface runoff that flows to the stream network
+Units: inches
+
+Name: basin_dunnian_gvr
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average excess flow to preferential-flow reservoirs from gravity reservoirs
+Units: inches
+
+Name: basin_dunnian_pfr
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average excess infiltration to preferential-flow reservoirs from variable infil
+Units: inches
+
+Name: basin_gvr2pfr
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average excess flow to preferential-flow reservoir storage from gravity reservoirs
+Units: inches
+
+Name: basin_gvr_stor_frac
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average fraction of gravity reservoir storage of the maximum storage
+Units: decimal fraction
+
+Name: basin_gwflow
+Module: gwflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average of groundwater flow to the stream network
+Units: inches
+
+Name: basin_gwflow_cfs
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average of groundwater flow to the stream network
+Units: cfs
+
+Name: basin_gwflow_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average groundwater discharge
+Units: inches
+
+Name: basin_gwflow_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average groundwater discharge
+Units: inches
+
+Name: basin_gwflow_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average groundwater discharge
+Units: inches
+
+Name: basin_gwin
+Module: gwflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average of inflow to GWRs
+Units: inches
+
+Name: basin_gwsink
+Module: gwflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average of GWR outflow to the groundwater sink
+Units: inches
+
+Name: basin_gwstor
+Module: gwflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average of storage in GWRs
+Units: inches
+
+Name: basin_gwstor_minarea_wb
+Module: gwflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage added to each GWR when storage is less than gwstor_min
+Units: inches
+
+Name: basin_horad
+Module: ddsolrad
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Potential shortwave radiation for the basin centroid
+Units: Langleys
+
+Name: basin_hortonian
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average Hortonian runoff
+Units: inches
+
+Name: basin_imperv_evap
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average evaporation from impervious area
+Units: inches
+
+Name: basin_imperv_stor
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage on impervious area
+Units: inches
+
+Name: basin_infil
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average infiltration to the capillary reservoirs
+Units: inches
+
+Name: basin_intcp_evap
+Module: intcp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted evaporation from the canopy
+Units: inches
+
+Name: basin_intcp_evap_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average interception evaporation
+Units: inches
+
+Name: basin_intcp_evap_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average canopy evaporation
+Units: inches
+
+Name: basin_intcp_evap_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average canopy evaporation
+Units: inches
+
+Name: basin_intcp_stor
+Module: intcp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average interception storage
+Units: inches
+
+Name: basin_interflow_max
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average maximum interflow that flows from gravity reservoirs
+Units: inches
+
+Name: basin_lake_stor
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin volume-weighted average storage for all lakes using broad-crested weir or gate opening routing
+Units: inches
+
+Name: basin_lakeevap
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average lake evaporation
+Units: inches
+
+Name: basin_lakeprecip
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average precipitation on lake HRUs
+Units: inches
+
+Name: basin_max_temp_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average maximum air temperature
+Units: temp_units
+
+Name: basin_max_temp_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average maximum temperature
+Units: temp_units
+
+Name: basin_max_temp_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average maximum temperature
+Units: temp_units
+
+Name: basin_min_temp_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average minimum air temperature
+Units: temp_units
+
+Name: basin_min_temp_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average minimum temperature
+Units: temp_units
+
+Name: basin_min_temp_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average minimum temperature
+Units: temp_units
+
+Name: basin_net_ppt
+Module: intcp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average net precipitation
+Units: inches
+
+Name: basin_net_ppt_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly area-weighted average net precipitation
+Units: inches
+
+Name: basin_net_ppt_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average net precipitation
+Units: inches
+
+Name: basin_net_rain
+Module: intcp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average rain net precipitation
+Units: inches
+
+Name: basin_net_snow
+Module: intcp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average snow net precipitation
+Units: inches
+
+Name: basin_obs_ppt
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average measured precipitation
+Units: inches
+
+Name: basin_orad
+Module: ddsolrad
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average solar radiation on a horizontal surface
+Units: Langleys
+
+Name: basin_perv_et
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average ET from capillary reservoirs
+Units: inches
+
+Name: basin_pfr_stor_frac
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average fraction of preferential-flow reservoir storage of the maximum storage
+Units: decimal fraction
+
+Name: basin_pk_precip
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average precipitation added to snowpack
+Units: inches
+
+Name: basin_potet
+Module: potet_jh
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average potential ET
+Units: inches
+
+Name: basin_potet_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average potential ET
+Units: inches
+
+Name: basin_potet_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average potential ET
+Units: inches
+
+Name: basin_potet_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average potential ET
+Units: temp_units
+
+Name: basin_potsw
+Module: ddsolrad
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average shortwave radiation
+Units: Langleys
+
+Name: basin_ppt
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average precipitation
+Units: inches
+
+Name: basin_ppt_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average precipitation
+Units: inches
+
+Name: basin_ppt_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average precipitation
+Units: inches
+
+Name: basin_ppt_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average precipitation
+Units: inches
+
+Name: basin_pref_flow_infil
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average infiltration to preferential-flow reservoir storage
+Units: inches
+
+Name: basin_pref_stor
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage in preferential-flow reservoirs
+Units: inches
+
+Name: basin_prefflow
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average interflow from preferential-flow reservoirs to the stream network
+Units: inches
+
+Name: basin_pweqv
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average snowpack water equivalent (not including glacier)
+Units: inches
+
+Name: basin_rain
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average rainfall
+Units: inches
+
+Name: basin_recharge
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average recharge to GWRs
+Units: inches
+
+Name: basin_runoff_ratio
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average discharge/precipitation ratio
+Units: decimal fraction
+
+Name: basin_runoff_ratio_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly area-weighted average discharge/precipitation ratio
+Units: decimal fraction
+
+Name: basin_slowflow
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average interflow from gravity reservoirs to the stream network
+Units: inches
+
+Name: basin_slstor
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage of gravity reservoirs
+Units: inches
+
+Name: basin_sm2gvr
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average excess flow from capillary reservoirs to gravity reservoir storage
+Units: inches
+
+Name: basin_sm2gvr_maxin
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average maximum excess flow from capillary reservoirs that flows to gravity reservoirs
+Units: inches
+
+Name: basin_snow
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average snowfall for basin
+Units: inches
+
+Name: basin_snowcov
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average snow-covered area
+Units: decimal fraction
+
+Name: basin_snowdepth
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average snow depth
+Units: inches
+
+Name: basin_snowevap
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average evaporation and sublimation from snowpack (not including glacier)
+Units: inches
+
+Name: basin_snowmelt
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average snowmelt (not on including snow on glacier)
+Units: inches
+
+Name: basin_snowmelt_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average snowmelt
+Units: inches
+
+Name: basin_snowmelt_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average snowmelt
+Units: inches
+
+Name: basin_snowmelt_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average snowmelt
+Units: inches
+
+Name: basin_soil_lower_stor_frac
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average fraction of soil lower zone storage of the maximum storage
+Units: decimal fraction
+
+Name: basin_soil_moist
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average capillary reservoir storage
+Units: inches
+
+Name: basin_soil_moist_tot
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average total soil-zone water storage
+Units: inches
+
+Name: basin_soil_rechr
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage for recharge zone; upper portion of capillary reservoir where both evaporation and transpiration occurs
+Units: inches
+
+Name: basin_soil_rechr_stor_frac
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average fraction of soil recharge zone storage of the maximum storage
+Units: decimal fraction
+
+Name: basin_soil_to_gw
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin average excess flow to capillary reservoirs that drains to GWRs
+Units: inches
+
+Name: basin_sroff
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average surface runoff to the stream network
+Units: inches
+
+Name: basin_sroff_cfs
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average surface runoff to the stream network
+Units: cfs
+
+Name: basin_sroff_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average surface runoff
+Units: inches
+
+Name: basin_sroff_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average overland flow
+Units: inches
+
+Name: basin_sroff_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average overland runoff
+Units: inches
+
+Name: basin_sroffi
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average surface runoff from impervious areas
+Units: inches
+
+Name: basin_sroffp
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average surface runoff from pervious areas
+Units: inches
+
+Name: basin_ssflow
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average interflow from gravity and preferential-flow reservoirs to the stream network
+Units: inches
+
+Name: basin_ssflow_cfs
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Interflow leaving the basin through the stream network
+Units: cfs
+
+Name: basin_ssflow_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average interflow
+Units: inches
+
+Name: basin_ssflow_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average interflow
+Units: inches
+
+Name: basin_ssflow_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average interflow
+Units: inches
+
+Name: basin_ssin
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average inflow to gravity and preferential-flow reservoir storage
+Units: inches
+
+Name: basin_ssstor
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin weighted average gravity and preferential-flow reservoir storage
+Units: inches
+
+Name: basin_stflow_in
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average lateral flow entering the stream network
+Units: inches
+
+Name: basin_stflow_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly basin area-weighted average simulated streamflow
+Units: inches
+
+Name: basin_stflow_out
+Module: strmflow
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average streamflow leaving through the stream network
+Units: inches
+
+Name: basin_stflow_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average streamflow
+Units: inches
+
+Name: basin_stflow_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly basin area-weighted average streamflow
+Units: inches
+
+Name: basin_storage
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage in all water storage reservoirs
+Units: inches
+
+Name: basin_storvol
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage volume in all water storage reservoirs
+Units: acre-inches
+
+Name: basin_surface_storage
+Module: prms_summary
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage in all surface water storage reservoirs
+Units: inches
+
+Name: basin_swale_et
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average ET from swale HRUs
+Units: inches
+
+Name: basin_swrad
+Module: ddsolrad
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average shortwave radiation
+Units: Langleys
+
+Name: basin_sz2gw
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average drainage from gravity reservoirs to GWRs
+Units: inches
+
+Name: basin_sz_stor_frac
+Module: soilzone
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average fraction of soil zone storage of the maximum storage
+Units: decimal fraction
+
+Name: basin_tcal
+Module: snowcomp
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average net snowpack energy balance
+Units: Langleys
+
+Name: basin_temp
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average air temperature
+Units: temp_units
+
+Name: basin_tmax
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average maximum air temperature
+Units: temp_units
+
+Name: basin_tmin
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average minimum air temperature
+Units: temp_units
+
+Name: basin_total_storage
+Module: prms_summary
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage in all water storage reservoirs
+Units: inches
+
+Name: basin_transp_on
+Module: transp_tindex
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: long
+Desc: Flag indicating whether transpiration is occurring anywhere in the basin (0=no; 1=yes)
+Units: none
+
+Name: canopy_covden
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Canopy cover density for each HRU
+Units: decimal fraction
+
+Name: cap_infil_tot
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Infiltration and cascading interflow and Dunnian flow added to capillary reservoir storage for each HRU
+Units: inches
+
+Name: cap_waterin
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Infiltration and any cascading interflow and Dunnian surface runoff added to capillary reservoir storage for each HRU
+Units: inches
+
+Name: contrib_fraction
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Contributing area of each HRU pervious area
+Units: decimal fraction
+
+Name: dunnian_flow
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Dunnian surface runoff that flows to the stream network for each HRU
+Units: inches
+
+Name: frac_swe
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Fraction of maximum snow-water equivalent (snarea_thresh) on each HRU
+Units: decimal fraction
+
+Name: freeh2o
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage of free liquid water in the snowpack on each HRU
+Units: inches
+
+Name: gw_in_soil
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: double
+Desc: Drainage from capillary reservoir excess water for each GWR
+Units: acre-inches
+
+Name: gw_in_ssr
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: double
+Desc: Drainage from gravity reservoir excess water for each GWR
+Units: acre-inches
+
+Name: gwres_flow
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: float
+Desc: Groundwater discharge from each GWR to the stream network
+Units: inches
+
+Name: gwres_in
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: double
+Desc: Total inflow to each GWR from associated capillary and gravity reservoirs
+Units: acre-inches
+
+Name: gwres_sink
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: float
+Desc: Outflow from GWRs to the groundwater sink; water is considered underflow or flow to deep aquifers and does not flow to the stream network
+Units: inches
+
+Name: gwres_stor
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: double
+Desc: Storage in each GWR
+Units: inches
+
+Name: gwstor_minarea_wb
+Module: gwflow
+Ndimen: 1
+Dimensions: ngw - 90
+Size: 90
+Type: double
+Desc: Storage added to each GWR when storage is less than gwstor_min
+Units: inches
+
+Name: hortonian_flow
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Hortonian surface runoff reaching stream network for each HRU
+Units: inches
+
+Name: hru_actet
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Actual ET for each HRU
+Units: inches
+
+Name: hru_et_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Yearly area-weighted average actual ET for each HRU
+Units: inches
+
+Name: hru_frac_perv
+Module: basin
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Fraction of HRU that is pervious
+Units: decimal fraction
+
+Name: hru_imperv
+Module: basin
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Area of HRU that is impervious
+Units: acres
+
+Name: hru_impervevap
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: HRU area-weighted average evaporation from impervious area for each HRU
+Units: inches
+
+Name: hru_impervstor
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: HRU area-weighted average storage on impervious area for each HRU
+Units: inches
+
+Name: hru_intcpevap
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: HRU area-weighted average evaporation from the canopy for each HRU
+Units: inches
+
+Name: hru_intcpstor
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: HRU area-weighted average Interception storage in the canopy for each HRU
+Units: inches
+
+Name: hru_lateral_flow
+Module: gwflow
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Lateral flow to stream network from each HRU
+Units: inches
+
+Name: hru_perv
+Module: basin
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Area of HRU that is pervious
+Units: acres
+
+Name: hru_ppt
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Precipitation distributed to each HRU
+Units: inches
+
+Name: hru_rain
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Rain distributed to each HRU
+Units: inches
+
+Name: hru_snow
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Snow distributed to each HRU
+Units: inches
+
+Name: hru_sroffi
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: HRU area-weighted average surface runoff from impervious areas for each HRU
+Units: inches
+
+Name: hru_sroffp
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: HRU area-weighted average surface runoff from pervious areas for each HRU
+Units: inches
+
+Name: hru_storage
+Module: gwflow
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Storage for each HRU
+Units: inches
+
+Name: hru_streamflow_out
+Module: gwflow
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Total flow to stream network from each HRU
+Units: cfs
+
+Name: iasw
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag indicating that snow covered area is interpolated between previous location on curve and maximum (1), or is on the defined curve (0)
+Units: none
+
+Name: imperv_evap
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Evaporation from impervious area for each HRU
+Units: inches
+
+Name: imperv_stor
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage on impervious area for each HRU
+Units: inches
+
+Name: infil
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Infiltration to the capillary reservoirs for each HRU
+Units: inches
+
+Name: int_alb
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag to indicate (1: accumulation season curve; 2: use of the melt season curve)
+Units: none
+
+Name: intcp_changeover
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Water released from a change over of canopy cover type for each HRU
+Units: inches
+
+Name: intcp_evap
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Evaporation from the canopy for each HRU
+Units: inches
+
+Name: intcp_form
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Form (0=rain; 1=snow) of interception for each HRU
+Units: none
+
+Name: intcp_on
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag indicating interception storage for each HRU (0=no; 1=yes)
+Units: none
+
+Name: intcp_stor
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Interception storage in canopy for cover density for each HRU
+Units: inches
+
+Name: is_rain_day
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: long
+Desc: Flag to indicate if it is raining anywhere in the basin
+Units: none
+
+Name: iso
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag to indicate if time is before (1) or after (2) the day to force melt season (melt_force)
+Units: none
+
+Name: last_basin_stor
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Basin area-weighted average storage in all water storage reservoirs from previous time step
+Units: inches
+
+Name: lso
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Counter for tracking the number of days the snowpack is at or above 0 degrees Celsius
+Units: number of iterations
+
+Name: lst
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag indicating whether there was new snow that was insufficient to reset the albedo curve (1) (albset_snm or albset_sna), otherwise (0)
+Units: none
+
+Name: mso
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag to indicate if time is before (1) or after (2) the first potential day for melt season (melt_look)
+Units: none
+
+Name: net_ppt
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Precipitation (rain and/or snow) that falls through the canopy for each HRU
+Units: inches
+
+Name: net_rain
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Rain that falls through canopy for each HRU
+Units: inches
+
+Name: net_snow
+Module: intcp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Snow that falls through canopy for each HRU
+Units: inches
+
+Name: newsnow
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag to indicate if new snow fell on each HRU (0=no; 1=yes)
+Units: none
+
+Name: obs_runoff_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly measured streamflow at basin outlet
+Units: cfs
+
+Name: obs_runoff_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation measured streamflow at basin outlet
+Units: cfs
+
+Name: obs_runoff_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly measured streamflow at basin outlet
+Units: cfs
+
+Name: obsq_inches
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Measured streamflow at specified outlet station
+Units: inches
+
+Name: obsq_inches_mo
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Monthly measured streamflow at specified outlet station
+Units: inches
+
+Name: obsq_inches_tot
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Total simulation basin area-weighted average measured streamflow at specified outlet station
+Units: inches
+
+Name: obsq_inches_yr
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Yearly measured streamflow at specified outlet station
+Units: inches
+
+Name: orad
+Module: ddsolrad
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: float
+Desc: Measured or computed solar radiation on a horizontal surface
+Units: Langleys
+
+Name: orad_hru
+Module: ddsolrad
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Solar radiation on a horizontal surface for each HRU
+Units: Langleys
+
+Name: perv_actet
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Actual ET from the capillary reservoir of each HRU
+Units: inches
+
+Name: pk_def
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Heat deficit, amount of heat necessary to make the snowpack isothermal at 0 degrees Celsius
+Units: Langleys
+
+Name: pk_den
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Density of the snowpack on each HRU
+Units: gm/cm3
+
+Name: pk_depth
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Depth of snowpack on each HRU
+Units: inches
+
+Name: pk_ice
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage of frozen water in the snowpack on each HRU
+Units: inches
+
+Name: pk_precip
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Precipitation added to snowpack for each HRU
+Units: inches
+
+Name: pk_temp
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Temperature of the snowpack on each HRU
+Units: degrees Celsius
+
+Name: pksv
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Snowpack water equivalent when there is new snow and in melt phase; used to interpolate between depletion curve and 100 percent on each HRU
+Units: inches
+
+Name: pkwater_ante
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Antecedent snowpack water equivalent on each HRU
+Units: inches
+
+Name: pkwater_equiv
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Snowpack water equivalent on each HRU
+Units: inches
+
+Name: potet
+Module: potet_jh
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Potential ET for each HRU
+Units: inches
+
+Name: potet_lower
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Potential ET in the lower zone of the capillary reservoir for each HRU
+Units: inches
+
+Name: potet_rechr
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Potential ET in the recharge zone of the capillary reservoir for each HRU
+Units: inches
+
+Name: pptmix
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag to indicate if precipitation is a mixture of rain and snow for each HRU (0=no; 1=yes)
+Units: none
+
+Name: pptmix_nopack
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag indicating that a mixed precipitation event has occurred with no snowpack present on an HRU (1), otherwise (0)
+Units: none
+
+Name: precip
+Module: obs
+Ndimen: 1
+Dimensions: nrain - 26
+Size: 26
+Type: float
+Desc: Precipitation at each measurement station
+Units: precip_units
+
+Name: pref_flow
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Interflow from the preferential-flow reservoir that flows to the stream network for each HRU
+Units: inches
+
+Name: pref_flow_in
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Infiltration and flow from gravity reservoir to the preferential-flow reservoir
+Units: inches
+
+Name: pref_flow_infil
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Infiltration to the preferential-flow reservoir storage for each HRU
+Units: inches
+
+Name: pref_flow_max
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Maximum storage of the preferential-flow reservoir for each HRU
+Units: inches
+
+Name: pref_flow_stor
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage in preferential-flow reservoir for each HRU
+Units: inches
+
+Name: pref_flow_thrsh
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Soil storage threshold defining storage between field capacity and maximum soil saturation minus preferential-flow storage
+Units: inches
+
+Name: prmx
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Fraction of rain in a mixed precipitation event for each HRU
+Units: decimal fraction
+
+Name: pss
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Previous snowpack water equivalent plus new snow
+Units: inches
+
+Name: pst
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: While a snowpack exists, pst tracks the maximum snow water equivalent of that snowpack
+Units: inches
+
+Name: rain_day
+Module: obs
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: long
+Desc: Flag to set the form of any precipitation to rain (0=determine form; 1=rain)
+Units: none
+
+Name: recharge
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Recharge to the associated GWR as sum of soil_to_gw and ssr_to_gw for each HRU
+Units: inches
+
+Name: runoff
+Module: obs
+Ndimen: 1
+Dimensions: nobs - 1
+Size: 1
+Type: float
+Desc: Streamflow at each measurement station
+Units: runoff_units
+
+Name: salb
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Days since last new snow to reset albedo for each HRU
+Units: days
+
+Name: scrv
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: double
+Desc: Snowpack water equivalent plus a portion of new snow on each HRU
+Units: inches
+
+Name: slow_flow
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Interflow from gravity reservoir storage that flows to the stream network for each HRU
+Units: inches
+
+Name: slow_stor
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage of gravity reservoir for each HRU
+Units: inches
+
+Name: slst
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Days since last new snow for each HRU
+Units: days
+
+Name: snow_evap
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Evaporation and sublimation from snowpack on each HRU
+Units: inches
+
+Name: snow_free
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Fraction of snow-free surface for each HRU
+Units: decimal fraction
+
+Name: snowcov_area
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Snow-covered area on each HRU prior to melt and sublimation unless snowpack depleted
+Units: decimal fraction
+
+Name: snowcov_areasv
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Snow cover fraction when there is new snow and in melt phase; used to interpolate between depletion curve and 100 percent on each HRU
+Units: decimal fraction
+
+Name: snowmelt
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Snowmelt from snowpack on each HRU (not including snow on glacier)
+Units: inches
+
+Name: snsv
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Tracks the cumulative amount of new snow until there is enough to reset the albedo curve (albset_snm or albset_sna)
+Units: inches
+
+Name: soil_lower
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage in the lower zone of the capillary reservoir that is only available for transpiration for each HRU
+Units: inches
+
+Name: soil_lower_ratio
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Water content ratio in the lower zone of the capillary reservoir for each HRU
+Units: decimal fraction
+
+Name: soil_moist
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage of capillary reservoir for each HRU
+Units: inches
+
+Name: soil_moist_tot
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Total soil-zone water storage (soil_moist + ssres_stor)
+Units: inches
+
+Name: soil_rechr
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Storage for recharge zone (upper portion) of the capillary reservoir that is available for both evaporation and transpiration
+Units: inches
+
+Name: soil_saturated
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag set if infiltration saturates capillary reservoir (0=no, 1=yes)
+Units: none
+
+Name: soil_to_gw
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Portion of excess flow to the capillary reservoir that drains to the associated GWR for each HRU
+Units: inches
+
+Name: soil_to_ssr
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Portion of excess flow to the capillary reservoir that flows to the gravity reservoir for each HRU
+Units: inches
+
+Name: solrad_tmax
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: float
+Desc: Basin daily maximum temperature for use with solar radiation calculations
+Units: temp_units
+
+Name: solrad_tmin
+Module: xyz_dist
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: float
+Desc: Basin daily minimum temperature for use with solar radiation calculations
+Units: temp_units
+
+Name: sroff
+Module: srunoff_smidx
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Surface runoff to the stream network for each HRU
+Units: inches
+
+Name: ssr_to_gw
+Module: soilzone
+Ndimen: 1
+Dimensions: nssr - 90
+Size: 90
+Type: float
+Desc: Drainage from the gravity-reservoir to the associated GWR for each HRU
+Units: inches
+
+Name: ssres_flow
+Module: soilzone
+Ndimen: 1
+Dimensions: nssr - 90
+Size: 90
+Type: float
+Desc: Interflow from gravity and preferential-flow reservoirs to the stream network for each HRU
+Units: inches
+
+Name: ssres_in
+Module: soilzone
+Ndimen: 1
+Dimensions: nssr - 90
+Size: 90
+Type: float
+Desc: Inflow to the gravity and preferential-flow reservoirs for each HRU
+Units: inches
+
+Name: ssres_stor
+Module: soilzone
+Ndimen: 1
+Dimensions: nssr - 90
+Size: 90
+Type: float
+Desc: Storage in the gravity and preferential-flow reservoirs for each HRU
+Units: inches
+
+Name: streamflow_cfs
+Module: obs
+Ndimen: 1
+Dimensions: nobs - 1
+Size: 1
+Type: double
+Desc: Streamflow at each measurement station
+Units: cfs
+
+Name: streamflow_cms
+Module: obs
+Ndimen: 1
+Dimensions: nobs - 1
+Size: 1
+Type: double
+Desc: Streamflow at each measurement station
+Units: cms
+
+Name: swale_actet
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Evaporation from the gravity and preferential-flow reservoirs that exceeds sat_threshold
+Units: inches
+
+Name: swrad
+Module: ddsolrad
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Shortwave radiation distributed to each HRU
+Units: Langleys
+
+Name: tavgc
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Average air temperature distributed to each HRU
+Units: degrees Celsius
+
+Name: tavgf
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Average air temperature distributed to each HRU
+Units: degrees Fahrenheit
+
+Name: tcal
+Module: snowcomp
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Net snowpack energy balance on each HRU
+Units: Langleys
+
+Name: tmax
+Module: obs
+Ndimen: 1
+Dimensions: ntemp - 26
+Size: 26
+Type: float
+Desc: Maximum air temperature at each measurement station
+Units: temp_units
+
+Name: tmax_rain_sta
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nrain - 26
+Size: 26
+Type: float
+Desc: Maximum temperature distributed to the precipitation measurement stations
+Units: degrees Fahrenheit
+
+Name: tmaxc
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Maximum air temperature distributed to each HRU
+Units: degrees Celsius
+
+Name: tmaxf
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Maximum air temperature distributed to each HRU
+Units: degrees Fahrenheit
+
+Name: tmin
+Module: obs
+Ndimen: 1
+Dimensions: ntemp - 26
+Size: 26
+Type: float
+Desc: Minimum air temperature at each measurement station
+Units: temp_units
+
+Name: tmin_rain_sta
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nrain - 26
+Size: 26
+Type: float
+Desc: Minimum temperature distributed to the precipitation measurement stations
+Units: degrees Fahrenheit
+
+Name: tminc
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Minimum air temperature distributed to each HRU
+Units: degrees Celsius
+
+Name: tminf
+Module: xyz_dist
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Minimum air temperature distributed to each HRU
+Units: degrees Fahrenheit
+
+Name: transp_on
+Module: transp_tindex
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: long
+Desc: Flag indicating whether transpiration is occurring (0=no; 1=yes)
+Units: none
+
+Name: unused_potet
+Module: soilzone
+Ndimen: 1
+Dimensions: nhru - 90
+Size: 90
+Type: float
+Desc: Unsatisfied potential evapotranspiration
+Units: inches
+
+Name: watbal_sum
+Module: basin_sum
+Ndimen: 1
+Dimensions: one - 1
+Size: 1
+Type: double
+Desc: Water balance aggregate
+Units: inches

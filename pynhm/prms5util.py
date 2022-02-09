@@ -21,10 +21,11 @@ conversions = {
     # parameters
     "intcp_stor_max": inch_to_meter,
     # output
-    "net_ppt": inch_to_meter,
-    "soil_moist_ante": inch_to_meter,
-    "hru_sroffi": inch_to_meter,
-    "hru_sroffp": inch_to_meter,
+    "hru_ppt": inch_to_meter,
+    # "net_ppt": inch_to_meter,
+    # "soil_moist_ante": inch_to_meter,
+    # "hru_sroffi": inch_to_meter,
+    # "hru_sroffp": inch_to_meter,
 }
 
 
@@ -72,9 +73,11 @@ def load_prms_input(
                     yr = int(ll[0])
                     mo = int(ll[1])
                     da = int(ll[2])
-                    data = float(ll[-1])
+                    min = int(ll[3])
+                    sec = int(ll[4])
+                    data = ll[5:]
                     # dt = datetime.datetime(yr, mo, da)
-                    filelist += f"{da:02d}/{mo:02d}/{yr:04d}, {data}\n"
+                    filelist += f"{da:02d}/{mo:02d}/{yr:04d},{','.join(data)}\n"
         tdf = pd.read_csv(
             StringIO(filelist),
             parse_dates=["date"],

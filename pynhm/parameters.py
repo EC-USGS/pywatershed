@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class PrmsParameters:
     """PRMS parameter class
 

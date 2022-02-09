@@ -33,8 +33,6 @@ class PrmsParameters:
         return self._parameter_types
 
 
-
-
 def _load_prms_parameters(parameter_file):
     """Read a PRMS parameter file
 
@@ -155,4 +153,3 @@ def _load_prms_parameters(parameter_file):
                 )
 
     return dims, vals, param_dims, param_type
-    

@@ -56,44 +56,6 @@ def unit_conversion(data, verbose=False):
     return data
 
 
-def load_prms_input(
-    input_data_path, datanames, filenames, convert=True, verbose=False
-):
-    # load prms input
-    templist = []
-    for dataname, cbhname in zip(datanames, filenames):
-        fpath = os.path.join(input_data_path, cbhname)
-        print(f"Loading {fpath}")
-        filelist = f"date,{dataname}\n"
-        with open(fpath) as f:
-            for i, line in enumerate(f):
-                if i > 2:
-                    ll = line.strip().split()
-                    yr = int(ll[0])
-                    mo = int(ll[1])
-                    da = int(ll[2])
-                    data = float(ll[-1])
-                    # dt = datetime.datetime(yr, mo, da)
-                    filelist += f"{da:02d}/{mo:02d}/{yr:04d}, {data}\n"
-        tdf = pd.read_csv(
-            StringIO(filelist),
-            parse_dates=["date"],
-            index_col=["date"],
-            dtype=float,
-            float_precision="high",
-        )
-        templist.append(tdf)
-
-    # concatenate individual dataframes
-    df = pd.concat([v for v in templist], axis=1)
-
-    # unit conversion
-    if convert:
-        unit_conversion(df, verbose=verbose)
-
-    return df
-
-
 class PrmsParameters:
     """PRMS parameter class
 

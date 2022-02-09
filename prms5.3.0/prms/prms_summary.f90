@@ -241,14 +241,14 @@
      &            'cfs,cfs,cfs,cfs,cfs', &
      &            (Cfs_strings(i), i = 1, Npoigages)
 
-          WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages+NVARS, '(",",F0.4) )'
+          WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages+NVARS, '(",",G0) )'  ! jdh was '(",",F0.4) )'
 !        WRITE ( Fmt2, '(A,I0,A)' )  '( A,', 2*Npoigages+NVARS, '(",",SPES10.3) )'
         ELSE
           WRITE ( Fmt, '(A,I0,A)' ) '( ', Npoigages+1, 'A )'
           WRITE ( Iunit, Fmt ) 'Date', &
      &            (Streamflow_pairs(i)(:Gageid_len(i)+20), i = 1, Npoigages)
           WRITE ( Iunit, Fmt ) 'year month day', (Cfs_strings(i), i = 1, Npoigages)
-          WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages, '(1X,F0.4) )'
+          WRITE ( Fmt2, '(A,I0,A)' )  '( A,', Npoigages, '(1X,F0.4) )' 
         ENDIF
 
       ELSEIF ( Process_flag==CLEAN ) THEN

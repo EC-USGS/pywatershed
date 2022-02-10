@@ -14,3 +14,4 @@ from .prms5util_cbh import CbhInput
 from .prmsCanopy import prmsCanopy
 from .prmsSurfaceRunoff import prmsSurfaceRunoff
 from .pynhm import driver
+from .utils import timer

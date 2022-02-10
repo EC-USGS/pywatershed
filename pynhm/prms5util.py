@@ -77,7 +77,9 @@ def load_prms_input(
                     sec = int(ll[4])
                     data = ll[5:]
                     # dt = datetime.datetime(yr, mo, da)
-                    filelist += f"{da:02d}/{mo:02d}/{yr:04d},{','.join(data)}\n"
+                    filelist += (
+                        f"{da:02d}/{mo:02d}/{yr:04d},{','.join(data)}\n"
+                    )
         tdf = pd.read_csv(
             StringIO(filelist),
             parse_dates=["date"],
@@ -95,8 +97,6 @@ def load_prms_input(
         unit_conversion(df, verbose=verbose)
 
     return df
-
-
 
 
 def load_prms_output(output_data_path, csvfiles, convert=True, verbose=False):

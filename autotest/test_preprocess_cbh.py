@@ -1,5 +1,5 @@
 import os
-import pathlib as pl  # rm pathlib?
+import pathlib as pl
 import sys
 
 import pytest
@@ -8,16 +8,42 @@ cwd = os.getcwd()
 if cwd.endswith("autotest"):
     sys.path.append("..")
     rel_path = ".."
-elif cwd.endswith("prmsNHMpy"):
+elif cwd.endswith("pynhm"):
     sys.path.append(".")
     rel_path = "."
-from preprocess import cbh_to_df
-from pynhm import timer
+
+from preprocess.cbh import CBH, _cbh_file_to_df
+from pynhm.utils import timer
+
+
+# -------------------------------------------------------
+# Instantiate from a string vs dict vs other(list)
+case_dict = {
+    0: 'foo',
+    1: {'a': 'a'},
+    2: ['a', 'b'], }
+
+
+@pytest.mark.parametrize("case", list(case_dict.keys()))
+def test_atm_init_files(case):
+    try:
+        _ = CBH(case_dict[case])
+        assert True
+    except ValueError:
+        if case in [2]:
+            assert True
+        else:
+            assert False
+    return
+
+
+# -------------------------------------------------------
+# Test the input parser
 
 
 @timer
-def cbh_to_df_timed(*args):
-    return cbh_to_df(*args)
+def cbh_file_to_df_timed(*args):
+    return _cbh_file_to_df(*args)
 
 
 def mk_path(*args):
@@ -130,9 +156,9 @@ for domain, file_dict in cbh_dict.items():
 
 @pytest.mark.parametrize("domain, var", cbh_case_list)
 def test_preprocess_cbh(domain, var):
-    assert pl.Path(file).exists(), file  # rm pathlib?
     the_file = cbh_dict[domain][var]
-    df = cbh_to_df_timed(the_file)
+    assert pl.Path(the_file).exists(), the_file  # rm pathlib?
+    df = cbh_file_to_df_timed(the_file)
     # print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
     assert repr(df.iloc[-1, :]) == cbh_ans_dict[domain][var]
     return

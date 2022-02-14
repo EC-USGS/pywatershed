@@ -12,7 +12,7 @@ elif cwd.endswith("pynhm"):
     sys.path.append(".")
     rel_path = pl.Path(".")
 
-from preprocess.cbh import CBH, _cbh_file_to_df
+from pynhm.preprocess.cbh import CBH
 from pynhm.utils import timer
 
 # establish some input data
@@ -72,7 +72,8 @@ def test_cbh_init_files(case):
 
 @timer
 def cbh_file_to_df_timed(*args):
-    return _cbh_file_to_df(*args)
+    cbh = CBH(*args)
+    return cbh.df
 
 
 # Check the repr of the final row

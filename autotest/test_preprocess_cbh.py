@@ -7,27 +7,56 @@ import pytest
 cwd = os.getcwd()
 if cwd.endswith("autotest"):
     sys.path.append("..")
-    rel_path = ".."
+    rel_path = pl.Path("..")
 elif cwd.endswith("pynhm"):
     sys.path.append(".")
-    rel_path = "."
+    rel_path = pl.Path(".")
 
 from preprocess.cbh import CBH, _cbh_file_to_df
 from pynhm.utils import timer
 
+# establish some input data
+
+
+# helper
+def mk_path(arg):
+    return base_path / arg
+
+
+base_path = rel_path / ("../prmsNHMpy/test_models")
+
+cbh_input_dict = {
+    'merced': {
+        'all': mk_path("merced/input/mercd.data"), },
+    'acf': {
+        'orad': mk_path("acf/input/ACF_current_Orad.data"),
+        'prcp': mk_path("acf/input/ACF_current_Prcp.data"),
+        'ptet': mk_path("acf/input/ACF_current_Ptet.data"),
+        # 'tmax': mk_path("acf/input/ACF_current_Tmax.data"),
+        # 'tmin': mk_path("acf/input/ACF_current_Tmin.data"),
+    },
+    'acfb_water_use': {
+        'orad': mk_path("acfb_water_use/input/Orad_1950-99.prms"),
+        'prcp': mk_path("acfb_water_use/input/Prcp_1950-99.prms"),
+        'ptet': mk_path("acfb_water_use/input/Ptet_1950-99.prms"),
+        'tmax': mk_path("acfb_water_use/input/Tmax_1950-99.prms"),
+        'tmin': mk_path("acfb_water_use/input/Tmin_1950-99.prms"), }, }
+
 
 # -------------------------------------------------------
-# Instantiate from a string vs dict vs other(list)
-case_dict = {
-    0: 'foo',
-    1: {'a': 'a'},
-    2: ['a', 'b'], }
+# Test Instantiation from a string vs dict vs other(list)
+case_dict_init = {
+    0: cbh_input_dict['merced']['all'],
+    1: {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
+        if key in ['prcp', 'tmax', 'tmin']},
+    2: ['a', 'b'],
+}
 
 
-@pytest.mark.parametrize("case", list(case_dict.keys()))
-def test_atm_init_files(case):
+@pytest.mark.parametrize("case", list(case_dict_init.keys()))
+def test_cbh_init_files(case):
     try:
-        _ = CBH(case_dict[case])
+        _ = CBH(case_dict_init[case])
         assert True
     except ValueError:
         if case in [2]:
@@ -46,29 +75,8 @@ def cbh_file_to_df_timed(*args):
     return _cbh_file_to_df(*args)
 
 
-def mk_path(*args):
-    return os.path.join(base_path, *args)
-
-
-# establish some input data
-base_path = os.path.join(rel_path, "..", "prmsNHMpy", "test_models")
-cbh_dict = {
-    'merced': {
-        'all': mk_path("merced", "input", "mercd.data"), },
-    'acf': {
-        'orad': mk_path("acf", "input", "ACF_current_Orad.data"),
-        'prcp': mk_path("acf", "input", "ACF_current_Prcp.data"),
-        'ptet': mk_path("acf", "input", "ACF_current_Ptet.data"),
-        'tmax': mk_path("acf", "input", "ACF_current_Tmax.data"),
-        'tmin': mk_path("acf", "input", "ACF_current_Tmin.data"), },
-    'acfb_water_use': {
-        'orad': mk_path("acfb_water_use", "input", "Orad_1950-99.prms"),
-        'prcp': mk_path("acfb_water_use", "input", "Prcp_1950-99.prms"),
-        'ptet': mk_path("acfb_water_use", "input", "Ptet_1950-99.prms"),
-        'tmax': mk_path("acfb_water_use", "input", "Tmax_1950-99.prms"),
-        'tmin': mk_path("acfb_water_use", "input", "Tmin_1950-99.prms"), }, }
-
-cbh_ans_dict = {
+# Check the repr of the final row
+cbh_file_to_df_ans_dict = {
     'merced': {
         'all': (
             'tmax00       75.0\ntmax01       61.0\ntmax02     -999.0\ntmax03       69.0\n'
@@ -91,16 +99,18 @@ cbh_ans_dict = {
             'ptet004    0.04\n           ... \nptet253    0.04\nptet254    0.04\n'
             'ptet255    0.04\nptet256    0.04\nptet257    0.04\n'
             'Name: 1990-09-30 00:00:00, Length: 258, dtype: float64'),
-        'tmax': (
-            'tmax000    74.92\ntmax001    75.17\ntmax002    76.99\ntmax003    76.16\n'
-            'tmax004    76.35\n           ...  \ntmax253    77.33\ntmax254    80.32\n'
-            'tmax255    79.07\ntmax256    77.28\ntmax257    80.16\n'
-            'Name: 2000-09-30 00:00:00, Length: 258, dtype: float64'),
-        'tmin': (
-            'tmin000    52.12\ntmin001    52.48\ntmin002    55.40\ntmin003    54.53\n'
-            'tmin004    54.86\n           ...  \ntmin253    67.18\ntmin254    68.12\n'
-            'tmin255    67.78\ntmin256    67.15\ntmin257    62.98\n'
-            'Name: 2000-09-30 00:00:00, Length: 258, dtype: float64'), },
+        # tmax and tmin are both wrong they have an extra, unidentified column
+        # 'tmax': (
+        #     'tmax000    74.92\ntmax001    75.17\ntmax002    76.99\ntmax003    76.16\n'
+        #     'tmax004    76.35\n           ...  \ntmax253    77.33\ntmax254    80.32\n'
+        #     'tmax255    79.07\ntmax256    77.28\ntmax257    80.16\n'
+        #     'Name: 2000-09-30 00:00:00, Length: 258, dtype: float64'),
+        # 'tmin': (
+        #     'tmin000    52.12\ntmin001    52.48\ntmin002    55.40\ntmin003    54.53\n'
+        #     'tmin004    54.86\n           ...  \ntmin253    67.18\ntmin254    68.12\n'
+        #     'tmin255    67.78\ntmin256    67.15\ntmin257    62.98\n'
+        #     'Name: 2000-09-30 00:00:00, Length: 258, dtype: float64'),
+    },
     'acfb_water_use': {
         'orad': (
             'orad00    358.36\norad01    437.09\norad02    224.55\norad03    280.73\n'
@@ -148,24 +158,59 @@ cbh_ans_dict = {
             'tmin24    31.73\ntmin25    31.74\ntmin26    35.21\n'
             'Name: 1999-12-31 00:00:00, dtype: float64')}, }
 
-cbh_case_list = []
-for domain, file_dict in cbh_dict.items():
+case_list_file_to_df = []
+for domain, file_dict in cbh_input_dict.items():
     for var, file in file_dict.items():
-        cbh_case_list += [(domain, var)]
+        case_list_file_to_df += [(domain, var)]
 
 
-@pytest.mark.parametrize("domain, var", cbh_case_list)
-def test_preprocess_cbh(domain, var):
-    the_file = cbh_dict[domain][var]
+@pytest.mark.parametrize("domain, var", case_list_file_to_df)
+def test_cbh_file_to_df(domain, var):
+    the_file = cbh_input_dict[domain][var]
     assert pl.Path(the_file).exists(), the_file  # rm pathlib?
     df = cbh_file_to_df_timed(the_file)
     # print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
-    assert repr(df.iloc[-1, :]) == cbh_ans_dict[domain][var]
+    assert repr(df.iloc[-1, :]) == cbh_file_to_df_ans_dict[domain][var]
     return
 
 
-if __name__ == "__main__":
+# -------------------------------------------------------
+# Test concatenation of individual files
+case_dict_df_concat = {
+    'merced': cbh_input_dict['merced']['all'],
+    'acfb_water_use': {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
+                       if key in ['prcp', 'tmax', 'tmin']}, }
 
-    for idx, case in cbh_case_list:
-        domain, var = case
-        test_preprocess_cbh(domain, var)
+cbh_df_concat_ans_dict = {
+    'merced': cbh_file_to_df_ans_dict['merced']['all'],
+    'acfb_water_use': (
+        'precip00     0.00\nprecip01     0.00\nprecip02     0.00\nprecip03     0.00\n'
+        'precip04     0.01\n            ...  \ntmin22      32.14\ntmin23      34.52\n'
+        'tmin24      31.73\ntmin25      31.74\ntmin26      35.21\n'
+        'Name: 1999-12-31 00:00:00, Length: 81, dtype: float64'), }
+
+
+@pytest.mark.parametrize("case", list(case_dict_df_concat.keys()))
+def test_cbh_concat(case):
+    print(case)
+    result = CBH(case_dict_df_concat[case])
+    repr(result.df.iloc[-1]) == cbh_df_concat_ans_dict[case]
+    return
+
+
+# -------------------------------------------------------
+# # JLM move
+# # Test netcdf write
+# case_dict_netcdf = {
+#     # 0: cbh_input_dict['merced']['all'],
+#     1: {key: val for key, val in cbh_input_dict['acf'].items()
+#         if key in ['prcp', 'tmax', 'tmin']},
+# }
+
+
+# @pytest.mark.parametrize("case", list(case_dict.keys()))
+# def test_cbh_to_netcdf(case):
+#     cbh = CBH(case_dict[case])
+#     file = 'dummy.nc'
+#     cbh.to_netcdf(file)
+#     return

@@ -4,12 +4,9 @@ import pathlib as pl
 from pynhm import PrmsParameters
 from typing import Union
 
+# Compound types
 file_type = Union[str, pl.PosixPath]
-
-created_line = 'Created '
-written_line = 'Written '
-hash_line = '##############'
-hash_line_official = '########################################'
+fileish = Union[str, pl.PosixPath, dict]
 
 cbh_std_name_from_dict = {
     'prcp': ['precip', 'prcp'],
@@ -22,8 +19,13 @@ cbh_std_name_from_dict = {
 
 required_vars = ['precp', 'tmax', 'tmin']
 
+created_line = 'Created '
+written_line = 'Written '
+hash_line = '##############'
+hash_line_official = '########################################'
 
-def get_std_name(name: str) -> str:
+
+def _get_std_name(name: str) -> str:
     for key, val in cbh_std_name_from_dict.items():
         if name in val:
             return key
@@ -31,7 +33,7 @@ def get_std_name(name: str) -> str:
     raise ValueError(msg)
 
 
-def cbh_file_to_df(the_file:file_type) -> pd.DataFrame:
+def _cbh_file_to_df(the_file:file_type) -> pd.DataFrame:
     # This is attempting to handle as many input formats for these kinds of files
     # as we can find. It may not be comprehensive. See tests for what is currently
     # handled
@@ -56,9 +58,9 @@ def cbh_file_to_df(the_file:file_type) -> pd.DataFrame:
         key, count = meta_lines[posn].split(' ')
         count = int(count)
         zs = math.ceil(math.log(count, 10))
-        std_name = get_std_name(key)
+        std_name = _get_std_name(key)
         col_names += [f"{std_name}{str(ii).zfill(zs)}" for ii in range(count)]
-        # col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]        
+        # col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
         var_count_dict[key] = count
 
     # Can we get the hru info? is that standarized at all?
@@ -98,24 +100,51 @@ def cbh_file_to_df(the_file:file_type) -> pd.DataFrame:
     data = data.drop(columns=set(date_cols))
     data = data.set_index('date')
 
-    # Convert to a multi-index? For getting to a dict of np arrays
-    # This might go elsewhere
-    def col_name_split(string):
-        char_list = list(string)
-        wh_digit = [ii for ii in range(len(char_list)) if char_list[ii].isdigit()]
-        return string[:wh_digit[0]], string[wh_digit[0]:]
-    col_name_tuples = [col_name_split(kk) for kk,vv in data.iteritems()]
-    # data.columns = pd.MultiIndex.from_tuples(col_name_tuples)
-
     return data
 
 
-def cbh_files_to_df(file_dict):
-    dfs = [cbh_file_to_df(val) for val in file_dict.values()]
+def _cbh_files_to_df(file_dict: dict) -> pd.DataFrame:
+    dfs = [_cbh_file_to_df(val) for val in file_dict.values()]
     return pd.concat(dfs, axis=1)
 
 
-def cbh_adjust(df, params: PrmsParameters):
+def cbh_files_to_df(files: fileish):
+    if isinstance(files, (str, pl.PosixPath)):
+        df = _cbh_file_to_df(files)
+    elif isinstance(files, (dict)):
+        df = _cbh_files_to_df(files)
+    else:
+        raise ValueError(f'"files" argument of type {type(files)} not accepted.')
+    return df
+
+
+def _col_name_split(string:str) -> tuple:
+    char_list = list(string)
+    wh_digit = [ii for ii in range(len(char_list)) if char_list[ii].isdigit()]
+    return string[:wh_digit[0]], string[wh_digit[0]:]
+
+
+def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
+    # Convert to a multi-index? For getting to a dict of np arrays
+    # This might go elsewhere
+    col_name_tuples = [_col_name_split(kk) for kk,vv in df.iteritems()]
+    df.columns = pd.MultiIndex.from_tuples(col_name_tuples)
+    var_names = df.columns.unique(level=0)
+    np_dict = {}
+    np_dict['datetime'] = df.index.to_numpy(copy=True)
+    for vv in var_names:
+        np_dict[vv] = df[vv].to_numpy(copy=True)
+    return np_dict
+
+
+def cbh_files_to_np_dict(files):
+    np_dict = cbh_df_to_np_dict(cbh_files_to_df(files))
+    return np_dict
+
+
+def cbh_adjust(
+        cbh_dict:dict,
+        params: PrmsParameters) -> dict:
     # adjust temp
     param_data = params._parameter_data
     nhru = params._dimensions['nhru']

@@ -2,13 +2,13 @@ import pathlib as pl
 from typing import Union
 # import xarray as xr
 
-from .utils import cbh_file_to_df, cbh_files_to_df, cbh_adjust
+from .cbh_utils import cbh_files_to_np_dict, cbh_adjust
 from pynhm import PrmsParameters
 
 fileish = Union[str, pl.PosixPath, dict]
 
 # JLM: Should also take a file describing the HRUs
-
+# CBH dosent have a precisesly defined sate, so use a dictonary for state.
 
 class CBH:
     def __init__(
@@ -25,9 +25,9 @@ class CBH:
         self.adjust_flag = adjust
         self.output_file = output_file
         self.verbosity = verbosity
-        self.df = None
+        self.state = None
 
-        self.to_df()
+        self.set_state()
         self.check()
 
         if self.convert_units_flag:
@@ -42,13 +42,9 @@ class CBH:
 
         return None
 
-    def to_df(self):
-        if isinstance(self.files, (str, pl.PosixPath)):
-            self.df = cbh_file_to_df(self.files)
-        elif isinstance(self.files, (dict)):
-            self.df = cbh_files_to_df(self.files)
-        else:
-            raise ValueError(f'"files" argument of type {type(self.files)} not accepted.')
+    def set_state(self):
+        self.state = cbh_files_to_np_dict(self.files)
+        return
 
     def convert_units(self):
         pass

@@ -15,6 +15,8 @@ elif cwd.endswith("pynhm"):
 from pynhm.preprocess.cbh import CBH
 from pynhm.utils import timer
 from pynhm import PrmsParameters
+from pynhm.preprocess.cbh_utils import (
+    cbh_files_to_df, cbh_files_to_np_dict)
 
 # establish some input data
 
@@ -73,17 +75,17 @@ def test_cbh_init_files(case):
 
 
 # -------------------------------------------------------
-# Test the input parser
+# Test the file to df parser
 
 
 @timer
-def cbh_file_to_df_timed(*args):
-    cbh = CBH(*args)
-    return cbh.df
+def cbh_files_to_df_timed(*args):
+    df = cbh_files_to_df(*args)
+    return df
 
 
 # Check the repr of the final row
-cbh_file_to_df_ans_dict = {
+cbh_files_to_df_ans_dict = {
     'merced': {
         'all': (
             'tmax00      75.0\ntmax01      61.0\ntmax02    -999.0\ntmax03      69.0\n'
@@ -172,12 +174,12 @@ for domain, file_dict in cbh_input_dict.items():
 
 
 @pytest.mark.parametrize("domain, var", case_list_file_to_df)
-def test_cbh_file_to_df(domain, var):
+def test_cbh_files_to_df(domain, var):
     the_file = cbh_input_dict[domain][var]
     assert pl.Path(the_file).exists(), the_file  # rm pathlib?
-    df = cbh_file_to_df_timed(the_file)
+    df = cbh_files_to_df_timed(the_file)
     # print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
-    assert repr(df.iloc[-1, :]) == cbh_file_to_df_ans_dict[domain][var]
+    assert repr(df.iloc[-1, :]) == cbh_files_to_df_ans_dict[domain][var]
     return
 
 
@@ -189,29 +191,44 @@ case_dict_df_concat = {
                        if key in ['prcp', 'tmax', 'tmin']}, }
 
 cbh_df_concat_ans_dict = {
-    'merced': cbh_file_to_df_ans_dict['merced']['all'],
+    'merced': cbh_files_to_df_ans_dict['merced']['all'],
     'acfb_water_use': (
-        'precip00     0.00\nprecip01     0.00\nprecip02     0.00\nprecip03     0.00\n'
-        'precip04     0.01\n            ...  \ntmin22      32.14\ntmin23      34.52\n'
-        'tmin24      31.73\ntmin25      31.74\ntmin26      35.21\n'
+        'prcp00     0.00\nprcp01     0.00\nprcp02     0.00\nprcp03     0.00\n'
+        'prcp04     0.01\n          ...  \ntmin22    32.14\ntmin23    34.52\n'
+        'tmin24    31.73\ntmin25    31.74\ntmin26    35.21\n'
         'Name: 1999-12-31 00:00:00, Length: 81, dtype: float64'), }
 
 
 @pytest.mark.parametrize("case", list(case_dict_df_concat.keys()))
 def test_cbh_concat(case):
     print(case)
-    result = CBH(case_dict_df_concat[case])
-    repr(result.df.iloc[-1]) == cbh_df_concat_ans_dict[case]
+    df = cbh_files_to_df(case_dict_df_concat[case])
+    assert repr(df.iloc[-1]) == cbh_df_concat_ans_dict[case]
     return
+
+
+# -------------------------------------------------------
+# Test conversion to numpy dict
+case_dict_adj = {
+    'acfb_water_use': {
+        key: val for key, val in cbh_input_dict['acfb_water_use'].items()
+        if key in ['prcp', 'tmax', 'tmin']}, }
+
+
+# @pytest.mark.parametrize("case", list(case_dict_adj.keys()))
+# def test_cbh_adj(case):
+#     cbh = CBH(case_dict_adj[case])
+#     foo = cbh_files_to_np_dict(cbh.df)
+#     asdf
+#     return
 
 
 # -------------------------------------------------------
 # Test forcing adjustment
 case_dict_adj = {
-    # 0: cbh_input_dict['merced']['all'],
-    'acfb_water_use': {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
-        if key in ['prcp', 'tmax', 'tmin']},
-}
+    'acfb_water_use': {
+        key: val for key, val in cbh_input_dict['acfb_water_use'].items()
+        if key in ['prcp', 'tmax', 'tmin']}, }
 
 
 # @pytest.mark.parametrize("case", list(case_dict_adj.keys()))

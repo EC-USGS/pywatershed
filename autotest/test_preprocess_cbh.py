@@ -86,9 +86,9 @@ def cbh_file_to_df_timed(*args):
 cbh_file_to_df_ans_dict = {
     'merced': {
         'all': (
-            'tmax00       75.0\ntmax01       61.0\ntmax02     -999.0\ntmax03       69.0\n'
-            'tmax04     -999.0\n            ...  \nprecip22   -999.0\nprecip23   -999.0\n'
-            'precip24   -999.0\nprecip25   -999.0\nrunoff0      95.0\n'
+            'tmax00      75.0\ntmax01      61.0\ntmax02    -999.0\ntmax03      69.0\n'
+            'tmax04    -999.0\n           ...  \nprcp22    -999.0\nprcp23    -999.0\n'
+            'prcp24    -999.0\nprcp25    -999.0\nrunoff0     95.0\n'
             'Name: 1995-09-30 00:00:00, Length: 79, dtype: float64'), },
     'acf': {
         'orad': (
@@ -129,13 +129,13 @@ cbh_file_to_df_ans_dict = {
             'orad24    323.41\norad25    210.54\norad26    250.98\n'
             'Name: 1999-12-31 00:00:00, dtype: float64'),
         'prcp': (
-            'precip00    0.00\nprecip01    0.00\nprecip02    0.00\nprecip03    0.00\n'
-            'precip04    0.01\nprecip05    0.00\nprecip06    0.01\nprecip07    0.00\n'
-            'precip08    0.00\nprecip09    0.00\nprecip10    0.01\nprecip11    0.00\n'
-            'precip12    0.00\nprecip13    0.00\nprecip14    0.00\nprecip15    0.00\n'
-            'precip16    0.00\nprecip17    0.00\nprecip18    0.00\nprecip19    0.00\n'
-            'precip20    0.00\nprecip21    0.00\nprecip22    0.00\nprecip23    0.00\n'
-            'precip24    0.00\nprecip25    0.00\nprecip26    0.00\n'
+            'prcp00    0.00\nprcp01    0.00\nprcp02    0.00\nprcp03    0.00\n'
+            'prcp04    0.01\nprcp05    0.00\nprcp06    0.01\nprcp07    0.00\n'
+            'prcp08    0.00\nprcp09    0.00\nprcp10    0.01\nprcp11    0.00\n'
+            'prcp12    0.00\nprcp13    0.00\nprcp14    0.00\nprcp15    0.00\n'
+            'prcp16    0.00\nprcp17    0.00\nprcp18    0.00\nprcp19    0.00\n'
+            'prcp20    0.00\nprcp21    0.00\nprcp22    0.00\nprcp23    0.00\n'
+            'prcp24    0.00\nprcp25    0.00\nprcp26    0.00\n'
             'Name: 1999-12-31 00:00:00, dtype: float64'),
         'ptet': (
             'ptet00    0.06\nptet01    0.07\nptet02    0.03\nptet03    0.05\n'
@@ -214,13 +214,12 @@ case_dict_adj = {
 }
 
 
-@pytest.mark.parametrize("case", list(case_dict_adj.keys()))
-def test_cbh_adj(case):
-    params = PrmsParameters(param_file_dict[case])
-    cbh = CBH(case_dict_adj[case])
-    cbh.adjust(params)
-    return
-
+# @pytest.mark.parametrize("case", list(case_dict_adj.keys()))
+# def test_cbh_adj(case):
+#     params = PrmsParameters(param_file_dict[case])
+#     cbh = CBH(case_dict_adj[case])
+#     cbh.adjust(params)
+#     return
 
 
 # -------------------------------------------------------

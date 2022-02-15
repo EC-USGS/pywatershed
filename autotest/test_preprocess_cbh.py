@@ -14,6 +14,7 @@ elif cwd.endswith("pynhm"):
 
 from pynhm.preprocess.cbh import CBH
 from pynhm.utils import timer
+from pynhm import PrmsParameters
 
 # establish some input data
 
@@ -41,6 +42,11 @@ cbh_input_dict = {
         'ptet': mk_path("acfb_water_use/input/Ptet_1950-99.prms"),
         'tmax': mk_path("acfb_water_use/input/Tmax_1950-99.prms"),
         'tmin': mk_path("acfb_water_use/input/Tmin_1950-99.prms"), }, }
+
+param_file_dict = {
+    'merced': mk_path("merced/input/mercdIDE.param"),
+    'acf': mk_path("acf/input/acf.params"),
+    'acfb_water_use': mk_path("acfb_water_use/input/params"), }
 
 
 # -------------------------------------------------------
@@ -197,6 +203,24 @@ def test_cbh_concat(case):
     result = CBH(case_dict_df_concat[case])
     repr(result.df.iloc[-1]) == cbh_df_concat_ans_dict[case]
     return
+
+
+# -------------------------------------------------------
+# Test forcing adjustment
+case_dict_adj = {
+    # 0: cbh_input_dict['merced']['all'],
+    'acfb_water_use': {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
+        if key in ['prcp', 'tmax', 'tmin']},
+}
+
+
+@pytest.mark.parametrize("case", list(case_dict_adj.keys()))
+def test_cbh_adj(case):
+    params = PrmsParameters(param_file_dict[case])
+    cbh = CBH(case_dict_adj[case])
+    cbh.adjust(params)
+    return
+
 
 
 # -------------------------------------------------------

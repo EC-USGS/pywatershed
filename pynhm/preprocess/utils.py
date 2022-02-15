@@ -1,5 +1,6 @@
 import math
 import pandas as pd
+from pynhm import PrmsParameters
 
 created_line = 'Created '
 written_line = 'Written '
@@ -7,22 +8,11 @@ hash_line = '##############'
 hash_line_official = '########################################'
 
 
-def convert_units_cbh():
-    pass
-
-
-def adjust_cbh():
-    pass
-
-
-def check_cbh():
-    pass
-
-
 def cbh_file_to_df(the_file):
-    # This is trying to handle as many input formats for these kinds of files
+    # This is attempting to handle as many input formats for these kinds of files
     # as we can find. It may not be comprehensive. See tests for what is currently
     # handled
+    # Handle netcdf?
     meta_lines = []
     with open(the_file, 'r') as file_open:
         wh_hash_line = -1
@@ -87,3 +77,19 @@ def cbh_file_to_df(the_file):
 def cbh_files_to_df(file_dict):
     dfs = [cbh_file_to_df(val) for val in file_dict.values()]
     return pd.concat(dfs, axis=1)
+
+
+def cbh_adjust(df, params: PrmsParameters):
+    # adjust temp
+    # adjust precip
+    pass
+
+
+def cbh_convert_units():
+    pass
+
+
+def cbh_check():
+    pass
+
+

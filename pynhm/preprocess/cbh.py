@@ -2,36 +2,42 @@ import pathlib as pl
 from typing import Union
 # import xarray as xr
 
-from .utils import cbh_file_to_df, cbh_files_to_df
+from .utils import cbh_file_to_df, cbh_files_to_df, cbh_adjust
+from pynhm import PrmsParameters
 
 fileish = Union[str, pl.PosixPath, dict]
+
+# JLM: Should also take a file describing the HRUs
 
 
 class CBH:
     def __init__(
             self,
             files: fileish,
+            params: PrmsParameters = False,
             convert_units: bool = False,
             adjust: bool = False,
             output_file: fileish = None,
             verbosity: bool = 0) -> None:
 
         self.files = files
-        self.convert_units = convert_units
-        self.adjust = adjust
+        self.convert_units_flag = convert_units
+        self.adjust_flag = adjust
         self.output_file = output_file
         self.verbosity = verbosity
         self.df = None
 
         self.to_df()
+        self.check()
 
-        if convert_units:
+        if self.convert_units_flag:
             self.convert_units()
 
-        if adjust:
-            self.adjust()
+        if self.adjust_flag:
+            self.adjust(params)
+            self.check()
 
-        if output_file is not None:
+        if self.output_file is not None:
             self.write(output_file)
 
         return None
@@ -44,13 +50,13 @@ class CBH:
         else:
             raise ValueError(f'"files" argument of type {type(self.files)} not accepted.')
 
-    def convert_units_cbh(self):
+    def convert_units(self):
         pass
 
-    def adjust_cbh(self):
-        pass
+    def adjust(self, parameters):
+        self.df = cbh_adjust(self.df, parameters)
 
-    def check_cbh(self):
+    def check(self):
         pass
 
     def to_netcdf(self, nc_file):

@@ -26,6 +26,12 @@ def mk_path(arg):
     return base_path / arg
 
 
+@timer
+def cbh_files_to_df_timed(*args):
+    df = cbh_files_to_df(*args)
+    return df
+
+
 base_path = rel_path / ("../prmsNHMpy/test_models")
 
 cbh_input_dict = {
@@ -54,11 +60,10 @@ param_file_dict = {
 # -------------------------------------------------------
 # Test Instantiation from a string vs dict vs other(list)
 case_dict_init = {
-    0: cbh_input_dict['merced']['all'],
-    1: {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
+    'merced': cbh_input_dict['merced']['all'],
+    'acfb_water_use': {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
         if key in ['prcp', 'tmax', 'tmin']},
-    2: ['a', 'b'],
-}
+    'invalid': ['a', 'b'], }
 
 
 @pytest.mark.parametrize("case", list(case_dict_init.keys()))
@@ -67,7 +72,7 @@ def test_cbh_init_files(case):
         _ = CBH(case_dict_init[case])
         assert True
     except ValueError:
-        if case in [2]:
+        if case in ['invalid']:
             assert True
         else:
             assert False
@@ -76,14 +81,6 @@ def test_cbh_init_files(case):
 
 # -------------------------------------------------------
 # Test the file to df parser
-
-
-@timer
-def cbh_files_to_df_timed(*args):
-    df = cbh_files_to_df(*args)
-    return df
-
-
 # Check the repr of the final row
 cbh_files_to_df_ans_dict = {
     'merced': {

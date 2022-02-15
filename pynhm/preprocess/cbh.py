@@ -1,44 +1,52 @@
+from copy import deepcopy
 import pathlib as pl
 from typing import Union
-# import xarray as xr
 
-from .cbh_utils import cbh_files_to_np_dict, cbh_adjust
+from .cbh_utils import cbh_files_to_np_dict, cbh_adjust, cbh_check
 from pynhm import PrmsParameters
 
 fileish = Union[str, pl.PosixPath, dict]
 
-# JLM: Should also take a file describing the HRUs
-# CBH dosent have a precisesly defined sate, so use a dictonary for state.
+# Notes:
+# * Could/Should also take a file describing the HRUs by ID (to go in that dim in the netcdf)
+# * CBH dosent have a precisesly defined state, so use a dictonary for state.
+# * I've relegated the code to cbh_utils becase there is potential reuse by the
+#   AtmForcings object in model.
+
 
 class CBH:
     def __init__(
             self,
             files: fileish,
-            params: PrmsParameters = False,
-            convert_units: bool = False,
-            adjust: bool = False,
+            adjust: PrmsParameters = None,
+            units: dict = None,
+            new_units: dict = None,
+            output_vars: list = None,
             output_file: fileish = None,
             verbosity: bool = 0) -> None:
 
         self.files = files
-        self.convert_units_flag = convert_units
-        self.adjust_flag = adjust
+        self.params = adjust
+        self.units = units
+        self.new_units = new_units
+        self.state = None
+        self.state_orig = None
+        self.output_vars = output_vars
         self.output_file = output_file
         self.verbosity = verbosity
-        self.state = None
 
         self.set_state()
-        self.check()
+        # self.check()
 
-        if self.convert_units_flag:
+        if not self.new_units is None:
             self.convert_units()
 
-        if self.adjust_flag:
+        if not self.params is None:
             self.adjust(params)
-            self.check()
+            # self.check()
 
         if self.output_file is not None:
-            self.write(output_file)
+            self.to_netcdf()
 
         return None
 
@@ -50,10 +58,18 @@ class CBH:
         pass
 
     def adjust(self, parameters):
-        self.df = cbh_adjust(self.df, parameters)
+        if not self.state_orig is None:
+            print('State was previously adjusted, no further adjustments applied.')
+            return
+        self.state_orig = copy.deepcopy(self.state)  # JLM: check that deepcopy is required.
+        self.state = cbh_adjust(self.state_orig, parameters)
+        return
 
     def check(self):
-        pass
+        _ = cbh_check(self.state)
+        if not self.state_orig is None:
+            _ = cbh_check(self.state_orig)
+        return
 
     def to_netcdf(self, nc_file):
         pass

@@ -8,17 +8,12 @@ from .prms5util import unit_conversion
 
 # JLM: "front load" option vs "load as you go"
 
+
 class AtmosphericForcings:
     def __init__(
             self,
-            #precip, tmax, tmin, pot_et,  # This will always be init'd from a file
-            input_data_dir,
-            forcings_file=None,
-            precip_file=None,
-            temp_min_file=None,
-            temp_max_file=None,
-            convert=True,
-            verbose=False):
+            forcings_file,
+            verbose=0):
 
         if forcings_file is None:
             forcing_df = _read_cbh_individual_new(
@@ -26,7 +21,7 @@ class AtmosphericForcings:
                 precip_file=precip_file,
                 temp_min_file=temp_min_file,
                 temp_max_file=temp_max_file,
-                convert=convert, verbose=verbose)
+                verbose=verbose)
         else:
             raise NotImplementedError
 
@@ -90,104 +85,8 @@ class AtmForcingsNHM(AtmosphericForcings):
 
         return tmin_hru, tmax_hru
 
-
-@timer
-def _read_cbh_individual(
-        input_data_dir,
-        precip_file,
-        temp_min_file,
-        temp_max_file,
-        convert=True, verbose=False):
-
-    col_file_dict = {
-        'precipitation': precip_file,
-        'temp_min': temp_min_file,
-        'temp_max': temp_max_file}
-
-    templist = []
-    for colname, filename in col_file_dict.items():
-        fpath = os.path.join(input_data_dir, filename)
-        print(f"Loading {fpath}")
-        filelist = f"date,{colname}\n"
-        with open(fpath) as f:
-            for i, line in enumerate(f):
-                if i > 2:
-                    ll = line.strip().split()
-                    yr = int(ll[0])
-                    mo = int(ll[1])
-                    da = int(ll[2])
-                    data = float(ll[-1])
-                    # Note: A fast-path exists for iso8601-formatted dates.
-                    # filelist += f"{da:02d}-{mo:02d}-{yr:04d}, {data}\n"
-                    filelist += f"{yr:04d}-{mo:02d}-{da:02d}, {data}\n"
-        tdf = pd.read_csv(
-            StringIO(filelist),
-            parse_dates=["date"],
-            index_col=["date"],
-            dtype=float,
-            float_precision="high",
-        )
-        templist.append(tdf)
-
-    df = pd.concat([v for v in templist], axis=1)
-
-    if convert:
-        unit_conversion(df, verbose=verbose)
-
-    return df
-
-
-@timer
-def _read_cbh_individual_new(
-        input_data_dir,
-        precip_file,
-        temp_min_file,
-        temp_max_file,
-        convert=True,
-        verbose=False):
-
-    col_file_dict = {
-        'precipitation': precip_file,
-        'temp_min': temp_min_file,
-        'temp_max': temp_max_file}
-
-    df_list = []
-    for colname, filename in col_file_dict.items():
-        fpath = os.path.join(input_data_dir, filename)
-        print(f"Loading {fpath}")
-
-        # JLM: These files appear inconsistent across prcp vs others and also
-        # markstroms code didnt handle this extra column in the temp files
-        if colname == 'precipitation':
-            cols = ["Y", "m", "d", "H", "M", "S", colname]
-        else:
-            cols = ["Y", "m", "d", "H", "M", "S", '-', colname]
-
-        dtype_dict = dict()
-        for cc in cols:
-            type = 'str'
-            if cc == colname:
-                type = 'float64'
-            dtype_dict[cc] = type
-
-        data = pd.read_csv(
-            fpath, names=cols, skiprows=3, delim_whitespace=True, dtype=dtype_dict)
-        data['date'] = pd.to_datetime(
-            data.Y + '-'
-            + data.m.str.zfill(2) + '-'
-            + data.d.str.zfill(2))
-        data = data.drop(columns=set(cols).difference(set([colname])))
-        data = data.set_index('date')
-        df_list += [data]
-
-    df = pd.concat(df_list, axis=1)
-
-    if convert:
-        unit_conversion(df, verbose=verbose)
-
-    return df
-
-
+    
+# https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_potet_jh.f90
 # is this part of the full class?
 # # potet_jh run code:
 # INCH2CM = 2.54

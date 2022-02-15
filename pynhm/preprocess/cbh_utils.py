@@ -1,4 +1,5 @@
 import math
+import numpy as np
 import pandas as pd
 import pathlib as pl
 from pynhm import PrmsParameters
@@ -18,6 +19,38 @@ cbh_std_name_from_dict = {
 }
 
 required_vars = ['precp', 'tmax', 'tmin']
+
+cbh_metadata = {
+    'time': {
+        'long_name':'time',
+        'standard_name':'time',
+        'calendar':'standard',                       # Depends, revisit
+        'units':'days since 1979-01-01 00:00:00',},  # Depends, may not be correct
+    'hruid': {
+        'long_name':'Hydrologic Response Unit ID (HRU)',
+        'cf_role':'timeseries_id',},
+    'tmax': {
+        '_FillValue':9.96921e36,
+        'long_name':'Maximum daily air temperature',
+        'units':'degree_fahrenheit',
+        'standard_name':'maximum_daily_air_temperature',},
+    'tmin': {
+        '_FillValue':9.96921e36,
+        'long_name':'Minimum daily air temperature',
+        'units':'degree_fahrenheit',
+        'standard_name':'minimum_daily_air_temperature',},
+    'prcp': {
+        '_FillValue':9.96921e36,
+        'long_name':'daily total precipitation',
+        'units':'in',
+        'standard_name':'daily_total_precipitation',},
+    'rhavg': {
+        '_FillValue':9.96921e36,
+        'long_name':'Daily mean relative humidity',
+        'units':'percent',
+        'standard_name':'rhavg',}}
+
+cbh_units = {key:val['units'] for key, val in cbh_metadata.items() if 'units' in list(val.keys())}
 
 created_line = 'Created '
 written_line = 'Written '
@@ -97,6 +130,7 @@ def _cbh_file_to_df(the_file:file_type) -> pd.DataFrame:
         data.Y + '-'
         + data.m.str.zfill(2) + '-'
         + data.d.str.zfill(2))
+    # JLM TODO: Set datetime resolution to hours? or mins. Could do days but might look forward a bit.
     data = data.drop(columns=set(date_cols))
     data = data.set_index('date')
 
@@ -184,17 +218,23 @@ def cbh_convert_units():
     pass
 
 
-def cbh_check():
-
-    # Markstroms code
-    # tiff = tmax - tmin
-    # print("there are", np.sum(np.array(tiff)) < 0, "negative values")
-    # print("there are", np.sum(np.array(tiff)) == 0, "equal values")
-
-    # Parkers comments
-    #    tmax is never less than tmin
-    #    prcp is never negative
-    #    any missing data/missing date is filled with (?? avg of bracketing dates??)
+def cbh_check(cbh_dict, verbose=1):
 
 
-    pass
+    def all_good(key):
+        return np.array([(cbh_dict[key][:,cc] >= 0).all() for cc in range(26)])
+    var_good = {key: all_good(key) for key in ['prcp', 'tmax', 'tmin']}
+    any_full = any(np.logical_and.reduce(tuple(var_good.values())))
+
+    # Could do column-wise checks
+    # JLM: for temperature, what is the relative requirement >= or >? Markstrom checks equals, Parker says >
+    assert (cbh_dict['tmax'] >= cbh_dict['tmin']).all()
+    
+    assert (cbh_dict['prcp'] >= 0.0).all()  # JLM magic number
+    assert (cbh_dict['tmax'] >= 0.0).all()  # JLM magic number, use units for checking minimums?
+    
+    assert (~np.isnat(cbh_dict['datetime'])).all()
+    if verbose >= 1:
+        print('cbh state check successful')
+
+    return

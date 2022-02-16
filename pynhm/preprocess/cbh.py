@@ -30,7 +30,6 @@ class CBH:
         self.units = units
         self.new_units = new_units
         self.state = None
-        self.state_orig = None
         self.output_vars = output_vars
         self.output_file = output_file
         self.verbosity = verbosity
@@ -58,17 +57,11 @@ class CBH:
         pass
 
     def adjust(self, parameters):
-        if not self.state_orig is None:
-            print('State was previously adjusted, no further adjustments applied.')
-            return
-        self.state_orig = copy.deepcopy(self.state)  # JLM: check that deepcopy is required.
-        self.state = cbh_adjust(self.state_orig, parameters)
+        _ = cbh_adjust(self.state, parameters)
         return
 
     def check(self):
-        _ = cbh_check(self.state)
-        if not self.state_orig is None:
-            _ = cbh_check(self.state_orig)
+        _ = cbh_check(self.state, verbosity=self.verbosity)
         return
 
     def to_netcdf(self, nc_file):

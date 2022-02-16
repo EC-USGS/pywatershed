@@ -5,6 +5,9 @@ import pathlib as pl
 from pynhm import PrmsParameters
 from typing import Union
 
+zero = np.zeros((1))[0]
+one = np.ones((1))[0]
+
 # Compound types
 file_type = Union[str, pl.PosixPath]
 fileish = Union[str, pl.PosixPath, dict]
@@ -167,7 +170,7 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
     df.columns = pd.MultiIndex.from_tuples(col_name_tuples)
     var_names = df.columns.unique(level=0)
     np_dict = {}
-    np_dict['datetime'] = df.index.to_numpy(copy=True)
+    np_dict['datetime'] = df.index.to_numpy(copy=True).astype('datetime64[D]')
     for vv in var_names:
         np_dict[vv] = df[vv].to_numpy(copy=True)
     return np_dict
@@ -181,55 +184,141 @@ def cbh_files_to_np_dict(files):
 def cbh_adjust(
         cbh_dict:dict,
         params: PrmsParameters) -> dict:
-    # adjust temp
+
     param_data = params._parameter_data
     nhru = params._dimensions['nhru']
 
-    tmax_allsnow = param_data["tmax_allsnow"]
-    snow_cbh_adj = param_data["snow_cbh_adj"]
-    rain_cbh_adj = param_data["rain_cbh_adj"]
-    tmax_cbh_adj = param_data["tmax_cbh_adj"]
-    tmin_cbh_adj = param_data["tmin_cbh_adj"]
-    tmax_allrain_offset = param_data["tmax_allrain_offset"]
-    tmax_allrain = tmax_allsnow + tmax_allrain_offset
-    adjmix_rain = param_data["adjmix_rain"]
+    # I dislike using pd for something that seems like it should exist in np
+    month_ind_12 = pd.to_datetime(cbh_dict['datetime']).month - 1  # (time)
+    month_ind_1 = np.zeros(cbh_dict['datetime'].shape, dtype=int) # (time)
 
-    # Have to handle this data having lens 1 or 12
+    # adjust temp ---------------------------------
+    tmax_param = param_data["tmax_cbh_adj"]  # (12 or 1, space)
+    tmin_param = param_data["tmin_cbh_adj"]
 
-    # markstrom code for adjusted temperatures: >>>
-    # tmax_hru = np.zeros(len(dates))
-    # tmin_hru = np.zeros(len(dates))
+    # i suppose thse could have different shapes.
+    # throw an error if that happens
+    if tmax_param.shape != tmin_param.shape:
+        msg = "Not implemented: tmin/tmax cbh adj parameters with different shapes"
+        raise NotImplementedError(msg)
 
-    ii = 0
-    for date in dates:
-        jday = day_of_year(date)
-        imon = date.month - 1
-        tmax_hru[ii] = tmax[ii] + tmax_cbh_adj[imon]
-        tmin_hru[ii] = tmin[ii] + tmin_cbh_adj[imon]
-        ii += 1
-    # << markstrom code
+    if tmax_param.shape[0] == 12:
+        month_ind = month_ind_12
+    elif tmax_param.shape[0] == 1:
+        month_ind = month_ind_1
+    else:
+        msg = "Unexpected month dimension for cbh temperature adjustment params"
+        raise ValueError(msg)
 
-    asdf
+    cbh_dict['tmax_adj'] = np.zeros(cbh_dict['tmax'].shape, dtype=cbh_dict['tmax'].dtype)  # (time, space)
+    cbh_dict['tmin_adj'] = np.zeros(cbh_dict['tmin'].shape, dtype=cbh_dict['tmin'].dtype)
+    cbh_dict['tmax_adj'] = cbh_dict['tmax'] + tmax_param[month_ind]
+    cbh_dict['tmin_adj'] = cbh_dict['tmin'] + tmin_param[month_ind]
 
-    # adjust precip
+    # To check the resulting shape used above
+    # tmax_time_params = tmax_param[month_ind]
+    # for tt in range(len(month_ind)):
+    #     assert (tmax_time_params[tt,:] == tmax_param[month_ind[tt]]).all()
 
-    pass
+    # adjust precip/snowfall ---------------------------------
+
+    tmax_allsnow_param = param_data["tmax_allsnow"]
+    tmax_allrain_offset_param = param_data["tmax_allrain_offset"]
+    snow_cbh_adj_param = param_data["snow_cbh_adj"]
+    rain_cbh_adj_param = param_data["rain_cbh_adj"]
+    adjmix_rain_param = param_data["adjmix_rain"]
+
+    # i suppose thse could have different shapes.
+    # throw an error if that happens
+    shape_list = np.array(
+        [tmax_allsnow_param.shape[0], tmax_allrain_offset_param.shape[0],
+         snow_cbh_adj_param.shape[0], rain_cbh_adj_param.shape[0],
+         adjmix_rain_param.shape[0]])
+    if not (shape_list == 12).all():
+        msg = "Not implemented: tmin/tmax cbh adj parameters with different shapes"
+        raise NotImplementedError(msg)
+
+    tmax_allrain_param = tmax_allsnow_param + tmax_allrain_offset_param
+
+    if tmax_allsnow_param.shape[0] == 12:
+        month_ind = month_ind_12
+    elif tmax_allsnow_param.shape[0] == 1:
+        month_ind = month_ind_1
+    else:
+        msg = "Unexpected month dimension for cbh precip adjustment params"
+        raise ValueError(msg)
+
+    cbh_dict['prcp_adj'] = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)  # (time, space)
+    cbh_dict['rainfall_adj'] = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
+    cbh_dict['snowfall_adj'] = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
+    prmx = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
+
+    # Calculate the mix everywhere, then set the precip/rain/snow amounts from the conditions.
+    tdiff = cbh_dict['tmax_adj'] - cbh_dict['tmin_adj']
+    prmx = ((cbh_dict['tmax_adj'] - tmax_allsnow_param[month_ind]) / tdiff) * adjmix_rain_param[month_ind]
+    del tdiff
+
+    wh_all_snow = np.where(cbh_dict['tmax_adj'] <= tmax_allsnow_param[month_ind])
+    wh_all_rain = np.where(np.logical_or(
+        cbh_dict['tmin_adj'] > tmax_allsnow_param[month_ind],
+        cbh_dict['tmax_adj'] >= tmax_allrain_param[month_ind]))
+    # check these are exclusive?
+    prmx[wh_all_snow] = zero
+    prmx[wh_all_rain] = one
+
+    # Mixed case (to be over written in the all snow/rain fall cases)
+    cbh_dict['precip_adj'] = cbh_dict['prcp'] * snow_cbh_adj_param[month_ind]
+    cbh_dict['rainfall_adj'] = prmx * cbh_dict['precip_adj']
+    cbh_dict['snowfall_adj'] = cbh_dict['precip_adj'] - cbh_dict['rainfall_adj']
+    del prmx
+
+    # All precip is snow case
+    # The condition to be used later:
+    all_snow_prcp = cbh_dict['prcp'] * snow_cbh_adj_param[month_ind]
+    cbh_dict['precip_adj'][wh_all_snow] = all_snow_prcp[wh_all_snow]
+    cbh_dict['rainfall_adj'][wh_all_snow] = zero
+    cbh_dict['snowfall_adj'][wh_all_snow] = all_snow_prcp[wh_all_snow]
+    del all_snow_prcp
+
+    # All precip is rain case
+    # The condition to be used later:
+    all_rain_prcp = cbh_dict['prcp'] * rain_cbh_adj_param[month_ind]
+    cbh_dict['precip_adj'][wh_all_rain] = all_rain_prcp[wh_all_rain]
+    cbh_dict['rainfall_adj'][wh_all_rain] = all_rain_prcp[wh_all_rain]
+    cbh_dict['snowfall_adj'][wh_all_rain] = zero
+    del all_rain_prcp
+
+    return None
 
 
 def cbh_convert_units():
     pass
 
 
-def cbh_check(cbh_dict, verbose=1):
-    msg = "tmax !> tmin: strictly greater maybe too stringent"
-    assert (cbh_dict['tmax'] > cbh_dict['tmin']).all(), msg
-
-    assert (cbh_dict['prcp'] >= 0.0).all()  # JLM magic number
-    # assert (cbh_dict['tmax'] >= 0.0).all()  # JLM magic number, use units for checking minimums?
+def cbh_check(cbh_dict, verbosity=0):
 
     assert (~np.isnat(cbh_dict['datetime'])).all()
 
-    if verbose >= 1:
+    for adj in ['', '_adj']:
+
+        # assume one variable represents if there are any adjustments
+        if f'tmax{adj}' not in cbh_dict.keys():
+            continue
+
+        tmaxvar = f'tmax{adj}'
+        tminvar = f'tmin{adj}'
+        if not (cbh_dict[tmaxvar] > cbh_dict[tminvar]).all():
+            msg = f"{tmaxvar} !> {tminvar}: strictly greater maybe too stringent"
+            raise ValueError(msg)
+
+        # assert (cbh_dict['tmax'] >= zero).all()  # use units for checking max/minimums?
+
+        prcpvar = f'prcp{adj}'
+        if not (cbh_dict[prcpvar] >= zero).all():
+            msg = f'{prcpvar} contains negative values'
+            raise ValueError(msg)
+
+    if verbosity >= 1:
         print('cbh state check successful')
 
     return

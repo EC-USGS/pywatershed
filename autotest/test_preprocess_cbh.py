@@ -69,7 +69,7 @@ def test_cbh_init_files(case):
 # -------------------------------------------------------
 # Test the file to df parser on a *single file*
 # Check the repr of the final row
-ans_dict_cbh_files_to_df = {
+ans_dict_files_to_df = {
     'drb_2yr': {
         'prcp': (
             'prcp000    0.0\nprcp001    0.0\nprcp002    0.0\nprcp003    0.0\nprcp004    0.0'
@@ -105,7 +105,7 @@ def test_cbh_files_to_df(domain, var):
     assert pl.Path(the_file).exists(), the_file  # rm pathlib?
     df = cbh_files_to_df_timed(the_file)
     #print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
-    assert repr(df.iloc[-1, :]) == ans_dict_cbh_files_to_df[domain][var]
+    assert repr(df.iloc[-1, :]) == ans_dict_files_to_df[domain][var]
     return
 
 
@@ -113,7 +113,7 @@ def test_cbh_files_to_df(domain, var):
 # Test concatenation of individual files
 case_list_df_concat = ['drb_2yr']
 
-ans_dict_cbh_df_concat = {
+ans_dict_df_concat = {
     'drb_2yr': (
         'prcp000    0.00\nprcp001    0.00\nprcp002    0.00\nprcp003    0.00\nprcp004    0.00'
         '\n           ... \ntmin760    1.47\ntmin761    1.49\ntmin762    2.91\ntmin763    4.56\n'
@@ -124,7 +124,7 @@ ans_dict_cbh_df_concat = {
 def test_cbh_concat(case):
     df = cbh_files_to_df(cbh_input_dict[case])
     # print(repr(f"'{case}': ('{repr(df.iloc[-1, :])}'),"))
-    assert repr(df.iloc[-1, :]) == ans_dict_cbh_df_concat[case]
+    assert repr(df.iloc[-1, :]) == ans_dict_df_concat[case]
     return
 
 
@@ -135,10 +135,9 @@ case_list_np_dict = ['drb_2yr']
 ans_dict_np_dict = {
     "drb_2yr": {
         "datetime": (
-            "array([\'1979-01-01T00:00:00.000000000\', \'1979-01-02T00:00:00.000000000\',\n"
-            "       \'1979-01-03T00:00:00.000000000\', ...,\n       \'1980-12-29T00:00:00.000000000\'"
-            ", \'1980-12-30T00:00:00.000000000\',\n       \'1980-12-31T00:00:00.000000000\'], "
-            "dtype=\'datetime64[ns]\')"),
+            "array([\'1979-01-01\', \'1979-01-02\', \'1979-01-03\', ..., \'1980-12-29\',\n"
+            "       \'1980-12-30\', \'1980-12-31\'], "
+            "dtype=\'datetime64[D]\')"),
         "prcp": (
             "array([[0.48, 0.48, 0.48, ..., 0.88, 0.79, 0.97],\n       [1.01, 1.01, 1.01, ..., 1.15, 1.04, 1.45],\n"
             "       [0.  , 0.  , 0.  , ..., 0.06, 0.05, 0.09],\n       ...,\n       [0.12, 0.05, 0.09, ..., 0.  , 0.  , 0.  ],\n"
@@ -171,20 +170,67 @@ def test_cbh_np_dict(case):
 
 # -------------------------------------------------------
 # Test forcing adjustment
-# could reuse some of these
-case_dict_adj = {
-    'drb_2yr': cbh_input_dict['drb_2yr'], }
+case_list_adj = ['drb_2yr']
 
-# @pytest.mark.parametrize("case", list(case_dict_adj.keys()))
-# def test_cbh_adj(case):
-#     params = PrmsParameters(param_file_dict[case])
-#     cbh = CBH(case_dict_adj[case])
-#     cbh.adjust(params)
-#     return
+ans_dict_adj = {
+    'drb_2yr': {
+        "tmax_adj": (
+            "array([[57.41188 , 56.47271 , 57.6613  , ..., 51.909633, 51.564279,\n        50.29    ],\n"
+            "       [55.51188 , 55.03271 , 56.2213  , ..., 50.719633, 50.604279,\n        49.2     ],\n"
+            "       [42.75188 , 42.61271 , 43.7913  , ..., 27.439633, 29.764279,\n        28.96    ],\n"
+            "       ...,\n       [48.26188 , 48.01271 , 49.2013  , ..., 42.619633, 42.764279,\n        41.15    ],\n"
+            "       [46.63188 , 46.21271 , 47.4013  , ..., 35.819633, 36.964279,\n        34.42    ],\n"
+            "       [42.13188 , 41.89271 , 43.3313  , ..., 20.329633, 21.694279,\n        19.13    ]])"),
+        "tmin_adj": (
+            "array([[46.12091 , 45.76805 , 44.46652 , ..., 38.069587, 37.981065,\n        36.876292],\n"
+            "       [37.76091 , 37.48805 , 36.06652 , ..., 24.349587, 26.971065,\n        26.026292],\n"
+            "       [16.56091 , 16.60805 , 15.18652 , ...,  0.609587,  3.231065,\n         1.756292],\n"
+            "       ...,\n       [36.89091 , 36.821522, 35.46652 , ..., 25.789587, 27.381065,\n        25.586652],\n"
+            "       [27.08091 , 26.921522, 25.56652 , ..., -1.140413,  2.251065,\n         0.206652],\n"
+            "       [28.47091 , 28.001522, 26.91652 , ...,  0.769587,  3.871065,\n         2.676652]])"),
+        "prcp_adj": (
+            "array([[0., 0., 0., ..., 0., 0., 0.],\n       [0., 0., 0., ..., 0., 0., 0.],\n"
+            "       [0., 0., 0., ..., 0., 0., 0.],\n       ...,\n       [0., 0., 0., ..., 0., 0., 0.],\n"
+            "       [0., 0., 0., ..., 0., 0., 0.],\n       [0., 0., 0., ..., 0., 0., 0.]])"),
+        "rainfall_adj": (
+            "array([[0.3139296 , 0.2478048 , 0.248112  , ..., 0.48323264, 0.57291748,\n        0.49815223],\n"
+            "       [0.6605602 , 0.5214226 , 0.522069  , ..., 0.6314972 , 0.75422048,\n        0.74466055],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       ...,\n       [0.0784824 , 0.025813  , 0.046521  , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ]])"),
+        "snowfall_adj": (
+            "array([[0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.03856368, 0.025     ,\n        0.04753728],\n"
+            "       ...,\n       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ]])"),
+        "precip_adj": (
+            "array([[0.3139296 , 0.2478048 , 0.248112  , ..., 0.48323264, 0.57291748,\n        0.49815223],\n"
+            "       [0.6605602 , 0.5214226 , 0.522069  , ..., 0.6314972 , 0.75422048,\n        0.74466055],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.03856368, 0.025     ,\n        0.04753728],\n"
+            "       ...,\n       [0.0784824 , 0.025813  , 0.046521  , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ],\n"
+            "       [0.        , 0.        , 0.        , ..., 0.        , 0.        ,\n        0.        ]])"), }, }
+
+
+@pytest.mark.parametrize("case", case_list_adj)
+def test_cbh_adj(case):
+    params = PrmsParameters(param_file_dict[case])
+    cbh = CBH(cbh_input_dict[case])
+    _ = cbh.adjust(params)
+    with np.printoptions(threshold=2):
+        for key, val in cbh.state.items():
+            if not '_adj' in key:
+                continue
+            # Could just use the final row or col
+            # print(repr(f'"{key}": ("{repr(val)}"),'))
+            assert repr(val) == ans_dict_adj[case][key]
+    return
 
 
 # -------------------------------------------------------
-# # JLM move
 # # Test netcdf write
 # case_dict_netcdf = {
 #     # 0: cbh_input_dict['merced']['all'],

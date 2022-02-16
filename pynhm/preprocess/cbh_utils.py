@@ -185,6 +185,7 @@ def cbh_adjust(
         cbh_dict:dict,
         params: PrmsParameters) -> dict:
 
+    # Param object has no defined interface at this time.
     param_data = params._parameter_data
     nhru = params._dimensions['nhru']
 
@@ -193,6 +194,8 @@ def cbh_adjust(
     month_ind_1 = np.zeros(cbh_dict['datetime'].shape, dtype=int) # (time)
 
     # adjust temp ---------------------------------
+    # Temperature bias corrections are calibrated by PRMS/HNM
+    # https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/physics/sm_temperature_hru.f90#L91
     tmax_param = param_data["tmax_cbh_adj"]  # (12 or 1, space)
     tmin_param = param_data["tmin_cbh_adj"]
 
@@ -221,7 +224,9 @@ def cbh_adjust(
     #     assert (tmax_time_params[tt,:] == tmax_param[month_ind[tt]]).all()
 
     # adjust precip/snowfall ---------------------------------
-
+    # Snow/rain partitioning of total precip is (adjusted) temperature dependent in addition
+    # to being dependent on the following parameters (not sure if all are calibrated).
+    # https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/physics/sm_precipitation.f90#L227
     tmax_allsnow_param = param_data["tmax_allsnow"]
     tmax_allrain_offset_param = param_data["tmax_allrain_offset"]
     snow_cbh_adj_param = param_data["snow_cbh_adj"]

@@ -9,13 +9,15 @@ from typing import Union
 file_type = Union[str, pl.PosixPath]
 fileish = Union[str, pl.PosixPath, dict]
 
+# Absorb some slop in the naming conventions
 cbh_std_name_from_dict = {
     'prcp': ['precip', 'prcp'],
+    'rhavg': ['rhavg'],
     'tmax': ['tmax'],
     'tmin': ['tmin'],
-    'orad': ['orad'],
-    'ptet': ['ptet'],
-    'runoff': ['runoff']
+    #'orad': ['orad'],  # these are in some cbh for now only take NHM inputs above
+    #'ptet': ['ptet'],
+    #'runoff': ['runoff']
 }
 
 required_vars = ['precp', 'tmax', 'tmin']
@@ -219,21 +221,14 @@ def cbh_convert_units():
 
 
 def cbh_check(cbh_dict, verbose=1):
+    msg = "tmax !> tmin: strictly greater maybe too stringent"
+    assert (cbh_dict['tmax'] > cbh_dict['tmin']).all(), msg
 
-
-    def all_good(key):
-        return np.array([(cbh_dict[key][:,cc] >= 0).all() for cc in range(26)])
-    var_good = {key: all_good(key) for key in ['prcp', 'tmax', 'tmin']}
-    any_full = any(np.logical_and.reduce(tuple(var_good.values())))
-
-    # Could do column-wise checks
-    # JLM: for temperature, what is the relative requirement >= or >? Markstrom checks equals, Parker says >
-    assert (cbh_dict['tmax'] >= cbh_dict['tmin']).all()
-    
     assert (cbh_dict['prcp'] >= 0.0).all()  # JLM magic number
-    assert (cbh_dict['tmax'] >= 0.0).all()  # JLM magic number, use units for checking minimums?
-    
+    # assert (cbh_dict['tmax'] >= 0.0).all()  # JLM magic number, use units for checking minimums?
+
     assert (~np.isnat(cbh_dict['datetime'])).all()
+
     if verbose >= 1:
         print('cbh state check successful')
 

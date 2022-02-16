@@ -1,3 +1,4 @@
+import numpy as np
 import os
 import pathlib as pl
 import sys
@@ -32,37 +33,23 @@ def cbh_files_to_df_timed(*args):
     return df
 
 
-base_path = rel_path / ("../prmsNHMpy/test_models")
+base_path = rel_path / ("test_data")
 
 cbh_input_dict = {
-    'merced': {
-        'all': mk_path("merced/input/mercd.data"), },
-    'acf': {
-        'orad': mk_path("acf/input/ACF_current_Orad.data"),
-        'prcp': mk_path("acf/input/ACF_current_Prcp.data"),
-        'ptet': mk_path("acf/input/ACF_current_Ptet.data"),
-        # 'tmax': mk_path("acf/input/ACF_current_Tmax.data"),
-        # 'tmin': mk_path("acf/input/ACF_current_Tmin.data"),
-    },
-    'acfb_water_use': {
-        'orad': mk_path("acfb_water_use/input/Orad_1950-99.prms"),
-        'prcp': mk_path("acfb_water_use/input/Prcp_1950-99.prms"),
-        'ptet': mk_path("acfb_water_use/input/Ptet_1950-99.prms"),
-        'tmax': mk_path("acfb_water_use/input/Tmax_1950-99.prms"),
-        'tmin': mk_path("acfb_water_use/input/Tmin_1950-99.prms"), }, }
+    'drb_2yr': {
+        'prcp': mk_path("drb_2yr/prcp.cbh"),
+        'rhavg': mk_path("drb_2yr/rhavg.cbh"),
+        'tmax': mk_path("drb_2yr/tmax.cbh"),
+        'tmin': mk_path("drb_2yr/tmin.cbh"),},}
 
 param_file_dict = {
-    'merced': mk_path("merced/input/mercdIDE.param"),
-    'acf': mk_path("acf/input/acf.params"),
-    'acfb_water_use': mk_path("acfb_water_use/input/params"), }
+    'drb_2yr': mk_path("drb_2yr/myparam.param"), }
 
 
 # -------------------------------------------------------
 # Test Instantiation from a string vs dict vs other(list)
 case_dict_init = {
-    'merced': cbh_input_dict['merced']['all'],
-    'acfb_water_use': {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
-        if key in ['prcp', 'tmax', 'tmin']},
+    'drb_2yr': cbh_input_dict['drb_2yr'],
     'invalid': ['a', 'b'], }
 
 
@@ -80,94 +67,36 @@ def test_cbh_init_files(case):
 
 
 # -------------------------------------------------------
-# Test the file to df parser
+# Test the file to df parser on a *single file*
 # Check the repr of the final row
-cbh_files_to_df_ans_dict = {
-    'merced': {
-        'all': (
-            'tmax00      75.0\ntmax01      61.0\ntmax02    -999.0\ntmax03      69.0\n'
-            'tmax04    -999.0\n           ...  \nprcp22    -999.0\nprcp23    -999.0\n'
-            'prcp24    -999.0\nprcp25    -999.0\nrunoff0     95.0\n'
-            'Name: 1995-09-30 00:00:00, Length: 79, dtype: float64'), },
-    'acf': {
-        'orad': (
-            'orad000    161.06\norad001    180.02\norad002    138.34\norad003    145.76\n'
-            'orad004    152.46\n            ...  \norad253    152.13\norad254    151.77\n'
-            'orad255    152.22\norad256    152.01\norad257    151.88\n'
-            'Name: 1990-09-30 00:00:00, Length: 258, dtype: float64'),
+ans_dict_cbh_files_to_df = {
+    'drb_2yr': {
         'prcp': (
-            'prcp000    0.00\nprcp001    0.01\nprcp002    0.01\nprcp003    0.00\n'
-            'prcp004    0.00\n           ... \nprcp253    0.43\nprcp254    0.41\n'
-            'prcp255    0.22\nprcp256    0.30\nprcp257    0.42\n'
-            'Name: 1990-09-30 00:00:00, Length: 258, dtype: float64'),
-        'ptet': (
-            'ptet000    0.04\nptet001    0.04\nptet002    0.03\nptet003    0.04\n'
-            'ptet004    0.04\n           ... \nptet253    0.04\nptet254    0.04\n'
-            'ptet255    0.04\nptet256    0.04\nptet257    0.04\n'
-            'Name: 1990-09-30 00:00:00, Length: 258, dtype: float64'),
-        # tmax and tmin are both wrong they have an extra, unidentified column
-        # 'tmax': (
-        #     'tmax000    74.92\ntmax001    75.17\ntmax002    76.99\ntmax003    76.16\n'
-        #     'tmax004    76.35\n           ...  \ntmax253    77.33\ntmax254    80.32\n'
-        #     'tmax255    79.07\ntmax256    77.28\ntmax257    80.16\n'
-        #     'Name: 2000-09-30 00:00:00, Length: 258, dtype: float64'),
-        # 'tmin': (
-        #     'tmin000    52.12\ntmin001    52.48\ntmin002    55.40\ntmin003    54.53\n'
-        #     'tmin004    54.86\n           ...  \ntmin253    67.18\ntmin254    68.12\n'
-        #     'tmin255    67.78\ntmin256    67.15\ntmin257    62.98\n'
-        #     'Name: 2000-09-30 00:00:00, Length: 258, dtype: float64'),
-    },
-    'acfb_water_use': {
-        'orad': (
-            'orad00    358.36\norad01    437.09\norad02    224.55\norad03    280.73\n'
-            'orad04    120.42\norad05    346.94\norad06    137.04\norad07    303.29\n'
-            'orad08    284.72\norad09    314.25\norad10    120.26\norad11    288.21\n'
-            'orad12    269.50\norad13    211.57\norad14    255.46\norad15    233.39\n'
-            'orad16    262.19\norad17    292.65\norad18    309.17\norad19    292.32\n'
-            'orad20    310.13\norad21    275.37\norad22    254.89\norad23    308.33\n'
-            'orad24    323.41\norad25    210.54\norad26    250.98\n'
-            'Name: 1999-12-31 00:00:00, dtype: float64'),
-        'prcp': (
-            'prcp00    0.00\nprcp01    0.00\nprcp02    0.00\nprcp03    0.00\n'
-            'prcp04    0.01\nprcp05    0.00\nprcp06    0.01\nprcp07    0.00\n'
-            'prcp08    0.00\nprcp09    0.00\nprcp10    0.01\nprcp11    0.00\n'
-            'prcp12    0.00\nprcp13    0.00\nprcp14    0.00\nprcp15    0.00\n'
-            'prcp16    0.00\nprcp17    0.00\nprcp18    0.00\nprcp19    0.00\n'
-            'prcp20    0.00\nprcp21    0.00\nprcp22    0.00\nprcp23    0.00\n'
-            'prcp24    0.00\nprcp25    0.00\nprcp26    0.00\n'
-            'Name: 1999-12-31 00:00:00, dtype: float64'),
-        'ptet': (
-            'ptet00    0.06\nptet01    0.07\nptet02    0.03\nptet03    0.05\n'
-            'ptet04    0.02\nptet05    0.05\nptet06    0.02\nptet07    0.05\n'
-            'ptet08    0.05\nptet09    0.05\nptet10    0.02\nptet11    0.04\n'
-            'ptet12    0.05\nptet13    0.03\nptet14    0.04\nptet15    0.04\n'
-            'ptet16    0.04\nptet17    0.05\nptet18    0.05\nptet19    0.05\n'
-            'ptet20    0.05\nptet21    0.05\nptet22    0.04\nptet23    0.06\n'
-            'ptet24    0.06\nptet25    0.03\nptet26    0.05\n'
-            'Name: 1999-12-31 00:00:00, dtype: float64'),
+            'prcp000    0.0\nprcp001    0.0\nprcp002    0.0\nprcp003    0.0\nprcp004    0.0'
+            '\n          ... \nprcp760    0.0\nprcp761    0.0\nprcp762    0.0\nprcp763    0.0'
+            '\nprcp764    0.0\n'
+            'Name: 1980-12-31 00:00:00, Length: 765, dtype: float64'),
+        'rhavg': (
+            'rhavg000    49.11\nrhavg001    48.35\nrhavg002    48.75\nrhavg003    50.05\n'
+            'rhavg004    48.90\n            ...  \nrhavg760    52.08\nrhavg761    54.73\n'
+            'rhavg762    53.93\nrhavg763    56.40\nrhavg764    50.92\n'
+            'Name: 1980-12-31 00:00:00, Length: 765, dtype: float64'),
         'tmax': (
-            'tmax00    62.04\ntmax01    60.72\ntmax02    60.02\ntmax03    62.83\n'
-            'tmax04    54.69\ntmax05    58.70\ntmax06    53.39\ntmax07    60.80\n'
-            'tmax08    60.61\ntmax09    58.51\ntmax10    55.11\ntmax11    57.19\n'
-            'tmax12    61.05\ntmax13    59.13\ntmax14    57.07\ntmax15    59.85\n'
-            'tmax16    59.59\ntmax17    58.19\ntmax18    59.41\ntmax19    59.86\n'
-            'tmax20    60.00\ntmax21    59.36\ntmax22    60.32\ntmax23    62.14\n'
-            'tmax24    59.59\ntmax25    59.60\ntmax26    62.80\n'
-            'Name: 1999-12-31 00:00:00, dtype: float64'),
+            'tmax000    40.95\ntmax001    40.55\ntmax002    40.93\ntmax003    38.87\n'
+            'tmax004    39.57\n           ...  \ntmax760    18.15\ntmax761    18.92\n'
+            'tmax762    19.65\ntmax763    19.93\ntmax764    16.13\n'
+            'Name: 1980-12-31 00:00:00, Length: 765, dtype: float64'),
         'tmin': (
-            'tmin00    31.23\ntmin01    28.21\ntmin02    27.56\ntmin03    31.97\n'
-            'tmin04    23.81\ntmin05    27.95\ntmin06    23.30\ntmin07    31.78\n'
-            'tmin08    32.42\ntmin09    30.23\ntmin10    25.87\ntmin11    29.08\n'
-            'tmin12    32.69\ntmin13    32.16\ntmin14    29.84\ntmin15    33.47\n'
-            'tmin16    32.25\ntmin17    31.85\ntmin18    32.61\ntmin19    33.10\n'
-            'tmin20    31.99\ntmin21    31.92\ntmin22    32.14\ntmin23    34.52\n'
-            'tmin24    31.73\ntmin25    31.74\ntmin26    35.21\n'
-            'Name: 1999-12-31 00:00:00, dtype: float64')}, }
+            'tmin000    26.88\ntmin001    26.51\ntmin002    26.78\ntmin003    25.53\n'
+            'tmin004    25.59\n           ...  \ntmin760     1.47\ntmin761     1.49\n'
+            'tmin762     2.91\ntmin763     4.56\ntmin764     1.79\n'
+            'Name: 1980-12-31 00:00:00, Length: 765, dtype: float64'), }, }
 
-case_list_file_to_df = []
-for domain, file_dict in cbh_input_dict.items():
-    for var, file in file_dict.items():
-        case_list_file_to_df += [(domain, var)]
+case_list_file_to_df = [
+    ('drb_2yr', 'prcp'),
+    ('drb_2yr', 'rhavg'),
+    ('drb_2yr', 'tmax'),
+    ('drb_2yr', 'tmin'), ]
 
 
 @pytest.mark.parametrize("domain, var", case_list_file_to_df)
@@ -175,58 +104,76 @@ def test_cbh_files_to_df(domain, var):
     the_file = cbh_input_dict[domain][var]
     assert pl.Path(the_file).exists(), the_file  # rm pathlib?
     df = cbh_files_to_df_timed(the_file)
-    # print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
-    assert repr(df.iloc[-1, :]) == cbh_files_to_df_ans_dict[domain][var]
+    #print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
+    assert repr(df.iloc[-1, :]) == ans_dict_cbh_files_to_df[domain][var]
     return
 
 
 # -------------------------------------------------------
 # Test concatenation of individual files
-case_dict_df_concat = {
-    'merced': cbh_input_dict['merced']['all'],
-    'acfb_water_use': {key: val for key, val in cbh_input_dict['acfb_water_use'].items()
-                       if key in ['prcp', 'tmax', 'tmin']}, }
+case_list_df_concat = ['drb_2yr']
 
-cbh_df_concat_ans_dict = {
-    'merced': cbh_files_to_df_ans_dict['merced']['all'],
-    'acfb_water_use': (
-        'prcp00     0.00\nprcp01     0.00\nprcp02     0.00\nprcp03     0.00\n'
-        'prcp04     0.01\n          ...  \ntmin22    32.14\ntmin23    34.52\n'
-        'tmin24    31.73\ntmin25    31.74\ntmin26    35.21\n'
-        'Name: 1999-12-31 00:00:00, Length: 81, dtype: float64'), }
+ans_dict_cbh_df_concat = {
+    'drb_2yr': (
+        'prcp000    0.00\nprcp001    0.00\nprcp002    0.00\nprcp003    0.00\nprcp004    0.00'
+        '\n           ... \ntmin760    1.47\ntmin761    1.49\ntmin762    2.91\ntmin763    4.56\n'
+        'tmin764    1.79\n'
+        'Name: 1980-12-31 00:00:00, Length: 3060, dtype: float64'), }
 
-
-@pytest.mark.parametrize("case", list(case_dict_df_concat.keys()))
+@pytest.mark.parametrize("case", case_list_df_concat)
 def test_cbh_concat(case):
-    print(case)
-    df = cbh_files_to_df(case_dict_df_concat[case])
-    assert repr(df.iloc[-1]) == cbh_df_concat_ans_dict[case]
+    df = cbh_files_to_df(cbh_input_dict[case])
+    # print(repr(f"'{case}': ('{repr(df.iloc[-1, :])}'),"))
+    assert repr(df.iloc[-1, :]) == ans_dict_cbh_df_concat[case]
     return
 
 
 # -------------------------------------------------------
 # Test conversion to numpy dict
-case_dict_adj = {
-    'acfb_water_use': {
-        key: val for key, val in cbh_input_dict['acfb_water_use'].items()
-        if key in ['prcp', 'tmax', 'tmin']}, }
+case_list_np_dict = ['drb_2yr']
 
+ans_dict_np_dict = {
+    "drb_2yr": {
+        "datetime": (
+            "array([\'1979-01-01T00:00:00.000000000\', \'1979-01-02T00:00:00.000000000\',\n"
+            "       \'1979-01-03T00:00:00.000000000\', ...,\n       \'1980-12-29T00:00:00.000000000\'"
+            ", \'1980-12-30T00:00:00.000000000\',\n       \'1980-12-31T00:00:00.000000000\'], "
+            "dtype=\'datetime64[ns]\')"),
+        "prcp": (
+            "array([[0.48, 0.48, 0.48, ..., 0.88, 0.79, 0.97],\n       [1.01, 1.01, 1.01, ..., 1.15, 1.04, 1.45],\n"
+            "       [0.  , 0.  , 0.  , ..., 0.06, 0.05, 0.09],\n       ...,\n       [0.12, 0.05, 0.09, ..., 0.  , 0.  , 0.  ],\n"
+            "       [0.  , 0.  , 0.  , ..., 0.  , 0.  , 0.  ],\n       [0.  , 0.  , 0.  , ..., 0.  , 0.  , 0.  ]])"),
+        "rhavg": (
+            "array([[82.46, 82.6 , 83.03, ..., 66.93, 68.67, 64.31],\n       [81.99, 82.35, 82.43, ..., 68.38, 69.92, 66.48],\n"
+            "       [68.49, 70.05, 68.94, ..., 61.18, 62.23, 58.88],\n       ...,\n"
+            "       [76.27, 71.1 , 75.26, ..., 66.49, 69.15, 63.22],\n       [65.54, 64.7 , 65.11, ..., 63.96, 66.34, 61.66],\n"
+            "       [49.11, 48.35, 48.75, ..., 53.93, 56.4 , 50.92]])"),
+        "tmax": (
+            "array([[56.23, 55.13, 55.26, ..., 51.23, 49.8 , 47.29],\n       [54.33, 53.69, 53.82, ..., 50.04, 48.84, 46.2 ],\n"
+            "       [41.57, 41.27, 41.39, ..., 26.76, 28.  , 25.96],\n       ...,\n"
+            "       [47.08, 46.67, 46.8 , ..., 41.94, 41.  , 38.15],\n       [45.45, 44.87, 45.  , ..., 35.14, 35.2 , 31.42],\n"
+            "       [40.95, 40.55, 40.93, ..., 19.65, 19.93, 16.13]])"),
+        "tmin": (
+            "array([[44.53, 44.33, 44.33, ..., 40.21, 38.67, 36.  ],\n       [36.17, 36.05, 35.93, ..., 26.49, 27.66, 25.15],\n"
+            "       [14.97, 15.17, 15.05, ...,  2.75,  3.92,  0.88],\n       ...,\n"
+            "       [35.3 , 35.33, 35.33, ..., 27.93, 28.07, 24.7 ],\n       [25.49, 25.43, 25.43, ...,  1.  ,  2.94, -0.68],\n"
+            "       [26.88, 26.51, 26.78, ...,  2.91,  4.56,  1.79]])"), }, }
 
-# @pytest.mark.parametrize("case", list(case_dict_adj.keys()))
-# def test_cbh_adj(case):
-#     cbh = CBH(case_dict_adj[case])
-#     foo = cbh_files_to_np_dict(cbh.df)
-#     asdf
-#     return
+@pytest.mark.parametrize("case", case_list_np_dict)
+def test_cbh_np_dict(case):
+    cbh = CBH(cbh_input_dict[case])
+    with np.printoptions(threshold=8):
+        for key, val in cbh.state.items():
+            # print(repr(f'"{key}": ("{repr(val)}"),'))
+            assert repr(val) == ans_dict_np_dict[case][key]
+    return
 
 
 # -------------------------------------------------------
 # Test forcing adjustment
+# could reuse some of these
 case_dict_adj = {
-    'acfb_water_use': {
-        key: val for key, val in cbh_input_dict['acfb_water_use'].items()
-        if key in ['prcp', 'tmax', 'tmin']}, }
-
+    'drb_2yr': cbh_input_dict['drb_2yr'], }
 
 # @pytest.mark.parametrize("case", list(case_dict_adj.keys()))
 # def test_cbh_adj(case):

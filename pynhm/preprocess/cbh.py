@@ -36,14 +36,14 @@ class CBH:
         self.verbosity = verbosity
 
         self.set_state()
-        # self.check()
+        self.check()
 
         if not self.new_units is None:
             self.convert_units()
 
         if not self.params is None:
             self.adjust(params)
-            # self.check()
+            self.check()
 
         if self.output_file is not None:
             self.to_netcdf()

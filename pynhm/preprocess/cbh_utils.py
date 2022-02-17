@@ -176,15 +176,12 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
     return np_dict
 
 
-def cbh_files_to_np_dict(files):
+def cbh_files_to_np_dict(files: fileish) -> dict:
     np_dict = cbh_df_to_np_dict(cbh_files_to_df(files))
     return np_dict
 
 
-def cbh_adjust(
-        cbh_dict:dict,
-        params: PrmsParameters) -> dict:
-
+def cbh_adjust(cbh_dict:dict, params: PrmsParameters) -> dict:
     # Param object has no defined interface at this time.
     param_data = params._parameter_data
     nhru = params._dimensions['nhru']
@@ -256,42 +253,94 @@ def cbh_adjust(
     cbh_dict['prcp_adj'] = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)  # (time, space)
     cbh_dict['rainfall_adj'] = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
     cbh_dict['snowfall_adj'] = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
-    prmx = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
 
-    # Calculate the mix everywhere, then set the precip/rain/snow amounts from the conditions.
-    tdiff = cbh_dict['tmax_adj'] - cbh_dict['tmin_adj']
-    prmx = ((cbh_dict['tmax_adj'] - tmax_allsnow_param[month_ind]) / tdiff) * adjmix_rain_param[month_ind]
-    del tdiff
+    if True:
+        # JLM: in my test vectorization was 45x faster for drb_2yr: 3.728s:.083s for loop:vectorized
+        print('Vectorizing precip adjustment')
+        prmx = np.zeros(cbh_dict['prcp'].shape, dtype=cbh_dict['prcp'].dtype)
 
-    wh_all_snow = np.where(cbh_dict['tmax_adj'] <= tmax_allsnow_param[month_ind])
-    wh_all_rain = np.where(np.logical_or(
-        cbh_dict['tmin_adj'] > tmax_allsnow_param[month_ind],
-        cbh_dict['tmax_adj'] >= tmax_allrain_param[month_ind]))
-    # check these are exclusive?
-    prmx[wh_all_snow] = zero
-    prmx[wh_all_rain] = one
+        # Calculate the mix everywhere, then set the precip/rain/snow amounts from the conditions.
+        tdiff = cbh_dict['tmax_adj'] - cbh_dict['tmin_adj']
+        prmx = ((cbh_dict['tmax_adj'] - tmax_allsnow_param[month_ind]) / tdiff) * adjmix_rain_param[month_ind]
+        del tdiff
 
-    # Mixed case (to be over written in the all snow/rain fall cases)
-    cbh_dict['precip_adj'] = cbh_dict['prcp'] * snow_cbh_adj_param[month_ind]
-    cbh_dict['rainfall_adj'] = prmx * cbh_dict['precip_adj']
-    cbh_dict['snowfall_adj'] = cbh_dict['precip_adj'] - cbh_dict['rainfall_adj']
-    del prmx
+        wh_all_snow = np.where(cbh_dict['tmax_adj'] <= tmax_allsnow_param[month_ind])
+        wh_all_rain = np.where(
+            np.logical_or(
+                cbh_dict['tmin_adj'] > tmax_allsnow_param[month_ind],
+                cbh_dict['tmax_adj'] >= tmax_allrain_param[month_ind]))
+        # This order MATTERS per the logic in PRMS: if(all_snow),elif(all_rain),else(mixed)
+        prmx[wh_all_rain] = one
+        prmx[wh_all_snow] = zero
 
-    # All precip is snow case
-    # The condition to be used later:
-    all_snow_prcp = cbh_dict['prcp'] * snow_cbh_adj_param[month_ind]
-    cbh_dict['precip_adj'][wh_all_snow] = all_snow_prcp[wh_all_snow]
-    cbh_dict['rainfall_adj'][wh_all_snow] = zero
-    cbh_dict['snowfall_adj'][wh_all_snow] = all_snow_prcp[wh_all_snow]
-    del all_snow_prcp
+        # Recalculate these
+        wh_all_snow = np.where(prmx <= zero)
+        wh_all_rain = np.where(prmx >= one)
+        wh_mixed = np.where(np.logical_and(prmx < one, prmx > zero))
 
-    # All precip is rain case
-    # The condition to be used later:
-    all_rain_prcp = cbh_dict['prcp'] * rain_cbh_adj_param[month_ind]
-    cbh_dict['precip_adj'][wh_all_rain] = all_rain_prcp[wh_all_rain]
-    cbh_dict['rainfall_adj'][wh_all_rain] = all_rain_prcp[wh_all_rain]
-    cbh_dict['snowfall_adj'][wh_all_rain] = zero
-    del all_rain_prcp
+        # Mixed case (to be over written in the all snow/rain fall cases)
+        wh_prmx_mixed = np.where(np.logical_and(prmx < one, prmx > zero))
+        cbh_dict['prcp_adj'] = (cbh_dict['prcp'] * snow_cbh_adj_param[month_ind])
+        cbh_dict['rainfall_adj'] = (prmx * cbh_dict['prcp_adj'])
+        cbh_dict['snowfall_adj'] = (cbh_dict['prcp_adj'] - cbh_dict['rainfall_adj'])
+        del prmx
+
+        # All precip is snow case
+        # The condition to be used later:
+        all_snow_prcp = cbh_dict['prcp'] * snow_cbh_adj_param[month_ind]
+        cbh_dict['prcp_adj'][wh_all_snow] = all_snow_prcp[wh_all_snow]
+        cbh_dict['rainfall_adj'][wh_all_snow] = zero
+        cbh_dict['snowfall_adj'][wh_all_snow] = all_snow_prcp[wh_all_snow]
+        del all_snow_prcp
+
+        # All precip is rain case
+        # The condition to be used later:
+        all_rain_prcp = cbh_dict['prcp'] * rain_cbh_adj_param[month_ind]
+        cbh_dict['prcp_adj'][wh_all_rain] = all_rain_prcp[wh_all_rain]
+        cbh_dict['rainfall_adj'][wh_all_rain] = all_rain_prcp[wh_all_rain]
+        cbh_dict['snowfall_adj'][wh_all_rain] = zero
+        del all_rain_prcp
+
+
+    else:
+
+        print('Looping precip adjustment')
+        n_days, n_hrus = cbh_dict['prcp'].shape
+
+        for dd in range(n_days):
+            for hh in range(n_hrus):
+                date = pd.Timestamp(cbh_dict['datetime'][dd])
+                jday = date.strftime('%j')
+                imon = date.month - 1
+
+                if cbh_dict['tmax_adj'][dd, hh] <= tmax_allsnow_param[imon, hh]:
+                    # all snow
+                    cbh_dict['prcp_adj'][dd, hh] = cbh_dict['prcp'][dd, hh] * snow_cbh_adj_param[imon, hh]
+                    cbh_dict['snowfall_adj'][dd, hh] = cbh_dict['prcp_adj'][dd, hh]
+                    prmx = 0.0
+
+                elif (cbh_dict['tmin_adj'][dd, hh] > tmax_allsnow_param[imon, hh]) or (cbh_dict['tmax_adj'][dd, hh] >= tmax_allrain_param[imon, hh]):
+                    # all rain
+                    cbh_dict['prcp_adj'][dd, hh] = cbh_dict['prcp'][dd, hh] * rain_cbh_adj_param[imon, hh]
+                    cbh_dict['rainfall_adj'][dd, hh] = cbh_dict['prcp_adj'][dd, hh]
+                    prmx = 1.0
+
+                else:
+                    # mixed
+                    # tdiff = cbh_dict['tmax_adj'][dd, hh] - cbh_dict['tmin_adj'][dd, hh]
+                    prmx = (
+                        (cbh_dict['tmax_adj'][dd, hh] - tmax_allsnow_param[imon, hh])
+                         / (cbh_dict['tmax_adj'][dd, hh] - cbh_dict['tmin_adj'][dd, hh])) * adjmix_rain_param[imon, hh]
+
+                    if prmx < 1.0:
+                        # less than all rain
+                        cbh_dict['prcp_adj'][dd, hh] = cbh_dict['prcp'][dd, hh] * snow_cbh_adj_param[imon, hh]
+                        cbh_dict['rainfall_adj'][dd, hh] = prmx * cbh_dict['prcp_adj'][dd, hh]
+                        cbh_dict['snowfall_adj'][dd, hh] = cbh_dict['prcp_adj'][dd, hh] - cbh_dict['rainfall_adj'][dd, hh]
+                    else:
+                        # all rain
+                        cbh_dict['prcp_adj'][dd, hh] = cbh_dict['prcp'][dd, hh] * rain_cbh_adj_param[imon, hh]
+                        cbh_dict['rainfall_adj'][dd, hh] = cbh_dict['prcp_adj'][dd, hh]
 
     return None
 
@@ -300,7 +349,7 @@ def cbh_convert_units():
     pass
 
 
-def cbh_check(cbh_dict, verbosity=0):
+def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
 
     assert (~np.isnat(cbh_dict['datetime'])).all()
 

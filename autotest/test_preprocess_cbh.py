@@ -15,6 +15,7 @@ elif cwd.endswith("pynhm"):
 
 from pynhm.preprocess.cbh import CBH
 from pynhm.utils import timer
+from pynhm.prms5util import load_prms_statscsv
 from pynhm import PrmsParameters
 from pynhm.preprocess.cbh_utils import (
     cbh_files_to_df, cbh_files_to_np_dict)
@@ -45,6 +46,13 @@ cbh_input_dict = {
 param_file_dict = {
     'drb_2yr': mk_path("drb_2yr/myparam.param"), }
 
+prms_output_dict = {
+    'drb_2yr': {
+        'prcp_adj': mk_path("drb_2yr/output/nhru_hru_ppt.csv"),
+        'rainfall_adj': mk_path("drb_2yr/output/nhru_hru_rain.csv"),
+        'snowfall_adj': mk_path("drb_2yr/output/nhru_hru_snow.csv"),
+        'tmax_adj': mk_path("drb_2yr/output/nhru_tmaxf.csv"),
+        'tmin_adj': mk_path("drb_2yr/output/nhru_tminf.csv"), }, }
 
 # -------------------------------------------------------
 # Test Instantiation from a string vs dict vs other(list)
@@ -227,6 +235,37 @@ def test_cbh_adj(case):
             # Could just use the final row or col
             # print(repr(f'"{key}": ("{repr(val)}"),'))
             assert repr(val) == ans_dict_adj[case][key]
+    return
+
+
+# -------------------------------------------------------
+# Test forcing adj, compare to prms output
+case_list_adj_prms_output = ['drb_2yr']
+
+
+@pytest.mark.parametrize("case", case_list_adj_prms_output)
+def test_cbh_adj_prms_output(case):
+    params = PrmsParameters(param_file_dict[case])
+    cbh = CBH(cbh_input_dict[case])
+    @timer
+    def adj_timed(params):
+        return cbh.adjust(params)
+    _ = adj_timed(params)
+
+    for var, var_file in prms_output_dict[case].items():
+        prms_output = load_prms_statscsv(var_file)
+        p_dates = prms_output.index.values
+        p_array = prms_output.to_numpy()
+        wh_dates = np.where(np.isin(cbh.state['datetime'], p_dates))
+        print(var)
+        result = np.isclose(
+            p_array,
+            cbh.state[var][wh_dates,:],
+            rtol=1e-121, atol=1e-04  # Only the atol matters here, if atol < 1e-4 fails
+        )
+        print(result.sum()/np.prod(result.shape))
+        print(result.all())
+
     return
 
 

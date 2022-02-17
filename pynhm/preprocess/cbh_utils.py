@@ -25,6 +25,7 @@ cbh_std_name_from_dict = {
 
 required_vars = ['precp', 'tmax', 'tmin']
 
+# JLM: is this stuff in parker's XML?
 cbh_metadata = {
     'time': {
         'long_name':'time',
@@ -35,7 +36,7 @@ cbh_metadata = {
         'long_name':'Hydrologic Response Unit ID (HRU)',
         'cf_role':'timeseries_id',},
     'tmax': {
-        '_FillValue':9.96921e36,
+        '_FillValue':9.96921e36,  # magic number
         'long_name':'Maximum daily air temperature',
         'units':'degree_fahrenheit',
         'standard_name':'maximum_daily_air_temperature',},

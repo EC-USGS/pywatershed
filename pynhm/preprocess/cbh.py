@@ -35,6 +35,7 @@ class CBH:
         self.verbosity = verbosity
 
         self.set_state()
+        # option to convert state to pd or xr for plotting capabilities (prior to nc write)?
         self.check()
 
         if not self.new_units is None:

@@ -13,54 +13,37 @@ elif cwd.endswith("prmsNHMpy"):
 
 from pynhm import PrmsParameters
 
-base_path = os.path.join(rel_path, "test_models")
-parameter_files = (
-    os.path.join(base_path, "merced", "input", "mercdIDE.param"),
-    os.path.join(base_path, "merced", "input", "mercdXYZ.param"),
-    os.path.join(base_path, "acf", "input", "acf.params"),
-)
-parameter_keys = [
-    os.path.basename(fpth.replace(".param", "").replace(".params", ""))
-    for fpth in parameter_files
-]
+base_path = os.path.join(rel_path, "test_data")
 
-test_dimensions = {
-    parameter_keys[0]: {
-        "nhru": 90,
-        "ngw": 90,
-        "nssr": 90,
-        "ndays": 366,
-        "nrain": 26,
-        "ntemp": 26,
-    },
-    parameter_keys[1]: {
-        "nhru": 90,
-        "ngw": 90,
-        "nssr": 90,
-        "ndays": 366,
-        "nrain": 26,
-        "ntemp": 26,
-    },
-}
+parameter_file_dict = {
+    'drb_2yr': os.path.join(base_path, "drb_2yr", "myparam.param"),}
+
+ans_dict = {
+    'drb_2yr': {
+        "nhru": 765,
+        "ngw": 765,
+        "nssr": 765, }, }
 
 
-@pytest.mark.parametrize(
-    "parameter_key, parameter_file", zip(parameter_keys, parameter_files)
-)
-def test_parameter_read(parameter_key, parameter_file):
+@pytest.mark.parametrize("domain_key", parameter_file_dict.keys())
+def test_parameter_read(domain_key):
+    parameter_file = parameter_file_dict[domain_key]
     print(f"parsing...'{parameter_file}'")
+    ans_dict_domain = ans_dict[domain_key]
 
     p_parameters = PrmsParameters(parameter_file)
     dimensions = p_parameters.get_dimensions
     param_data = p_parameters.get_parameter_data
-
-    if param_data in tuple(test_dimensions.keys()):
-        test_dimension = test_dimensions[parameter_key]
-        for key in test_dimensions[parameter_key].keys():
-            assert dimensions[key] == test_dimension[key], (
-                f"{parameter_key}: parsed value '{dimensions[key]}' "
-                + f"does not equal '{test_dimension[key]}'"
-            )
+    
+    # check dimensions
+    for param_key in dimensions.keys():
+        if param_key in ans_dict_domain.keys():
+            msg = (
+                f"{param_key}: parsed value '{dimensions[param_key]}' "
+                + f"does not equal '{ans_dict_domain[param_key]}'")
+            # print(f'"{param_key}": {dimensions[param_key]},')
+            assert dimensions[param_key] == ans_dict_domain[param_key], msg
+            
     print(f"success parsing...'{parameter_file}'")
 
     return

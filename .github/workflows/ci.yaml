@@ -76,15 +76,12 @@ jobs:
         run: |
           python -m pip install --no-deps -e .
 
-      - name: Test applications
-        working-directory: autotest
-        run: |
-          pytest -v
-
       - name: Import pynhm
         run: |
           python -c "import pynhm"
+
       - name: Run tests
+        working-directory: autotest
         run: python -m pytest -n 4
           --cov-report=xml
           --junitxml=pytest.xml

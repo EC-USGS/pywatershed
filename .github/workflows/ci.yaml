@@ -54,7 +54,6 @@ jobs:
       #    python -c "import pynhm"
 
       - name: Run tests
-        working-directory: autotest
         run: python3 -m pytest -n 4
           --cov=pynhm
           --cov-report=xml

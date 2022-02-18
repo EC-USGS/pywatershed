@@ -7,10 +7,10 @@ on:
     branches:
       - "*"
 
-env:
+#env:
   #WINDOWS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/irc_nas/18417/w_HPCKit_p_2022.1.0.93_offline.exe
   #LINUX_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/irc_nas/18438/l_HPCKit_p_2022.1.1.97_offline.sh
-  MACOS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/irc_nas/18341/m_HPCKit_p_2022.1.0.86_offline.dmg
+#  MACOS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/irc_nas/18341/m_HPCKit_p_2022.1.0.86_offline.dmg
 
 jobs:
   test:
@@ -35,42 +35,15 @@ jobs:
 
       - name: Set environment variables
         run: |
-          if [[ ${{ matrix.os }} == windows* ]] ;
-          then
-            echo "CONDA_ENV_FILE=ci/requirements/environment-windows.yml" >> $GITHUB_ENV
-          else
-            echo "CONDA_ENV_FILE=ci/requirements/environment.yml" >> $GITHUB_ENV
-          fi
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
 
-      - name: Cache conda
-        uses: actions/cache@v2
-        with:
-          path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-py${{ matrix.python-version }}-${{
-            hashFiles('ci/requirements/**.yml') }}
-
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          channels: conda-forge
-          channel-priority: strict
-          mamba-version: "*"
-          activate-environment: pynhm-tests
-          auto-update-conda: false
-          python-version: ${{ matrix.python-version }}
-          use-only-tar-bz2: true
-
-      - name: Install conda dependencies
+      - name: Install dependencies
         run: |
-          mamba env update -f $CONDA_ENV_FILE
-
-      #- name: Print python package versions
-      #  run: |
-      #    .github/common/python-version.sh
+          pip install -r ci/requirements/environment.txt
       - name: Version info
         run: |
-          conda info -a
-          conda list
+          pip -V
+          pip list
 
       - name: Install this package
         run: |
@@ -98,8 +71,8 @@ jobs:
         uses: codecov/codecov-action@v2.1.0
         with:
           file: ./coverage.xml
-          flags: unittests
+          # flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
-          name: codecov-umbrella
+          # name: codecov-umbrella
           fail_ci_if_error: false
           version: "v0.1.15"          

@@ -83,7 +83,7 @@ jobs:
 
       - name: Import pynhm
         run: |
-          python -c "import pynhm
+          python -c "import pynhm"
       - name: Run tests
         run: python -m pytest -n 4
           --cov-report=xml

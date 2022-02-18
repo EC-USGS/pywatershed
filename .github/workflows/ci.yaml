@@ -15,13 +15,13 @@ env:
 jobs:
   test:
     name: ${{ matrix.os}} py${{ matrix.python-version }}
-    
+
     runs-on: ${{ matrix.os }}
-    
+
     defaults:
       run:
         shell: bash -l {0}
-        
+
     strategy:
       fail-fast: false
       matrix:
@@ -78,7 +78,7 @@ jobs:
           env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-umbrella
           fail_ci_if_error: false
-          
+
       - name: "Upload coverage to Codecov"
         uses: codecov/codecov-action@v2
         with:

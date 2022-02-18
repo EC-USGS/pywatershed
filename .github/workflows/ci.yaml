@@ -33,18 +33,44 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.3.4
 
-      - name: Setup Python 3.8
-        uses: actions/setup-python@v2.2.2
+      - name: Set environment variables
+        run: |
+          if [[ ${{ matrix.os }} == windows* ]] ;
+          then
+            echo "CONDA_ENV_FILE=ci/requirements/environment-windows.yml" >> $GITHUB_ENV
+          else
+            echo "CONDA_ENV_FILE=ci/requirements/environment.yml" >> $GITHUB_ENV
+          fi
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+
+      - name: Cache conda
+        uses: actions/cache@v2
         with:
-          python-version: 3.8
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-conda-py${{ matrix.python-version }}-${{
+            hashFiles('ci/requirements/**.yml') }}
 
-      - name: Install python packages
-        run: |
-          .github/common/install-python-std.sh
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          channels: conda-forge
+          channel-priority: strict
+          mamba-version: "*"
+          activate-environment: pynhm-tests
+          auto-update-conda: false
+          python-version: ${{ matrix.python-version }}
+          use-only-tar-bz2: true
 
-      - name: Print python package versions
+      - name: Install conda dependencies
         run: |
-          .github/common/python-version.sh
+          mamba env update -f $CONDA_ENV_FILE
+
+      #- name: Print python package versions
+      #  run: |
+      #    .github/common/python-version.sh
+      - name: Version info
+        run: |
+          conda info -a
+          conda list
 
       - name: Install this package
         run: |
@@ -55,9 +81,9 @@ jobs:
         run: |
           pytest -v
 
-      - name: Import xarray
+      - name: Import pynhm
         run: |
-          python -c "import xarray"
+          python -c "import pynhm
       - name: Run tests
         run: python -m pytest -n 4
           --cov-report=xml

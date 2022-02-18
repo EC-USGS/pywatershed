@@ -47,7 +47,7 @@ jobs:
 
       - name: Install this package
         run: |
-          python -m pip install --no-deps -e .
+          python3 -m pip install --no-deps -e .
 
       #- name: Import pynhm
       #  run: |
@@ -55,7 +55,7 @@ jobs:
 
       - name: Run tests
         working-directory: autotest
-        run: python -m pytest -n 4
+        run: python3 -m pytest -n 4
           --cov=pynhm
           --cov-report=xml
           --junitxml=pytest.xml

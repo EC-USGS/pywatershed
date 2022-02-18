@@ -1,6 +1,5 @@
 numpy	
 pandas	
-pathlib	
 pip
 pytest
 pytest-cov

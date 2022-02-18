@@ -38,9 +38,8 @@ jobs:
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
 
       - name: Install dependencies
-        working-directory: ci
         run: |
-          pip install -r requirements/environment.txt
+          pip install -r ./ci/requirements/environment.txt
       - name: Version info
         run: |
           pip -V

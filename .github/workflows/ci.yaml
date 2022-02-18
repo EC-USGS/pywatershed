@@ -39,11 +39,11 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r ./ci/requirements/environment.txt
+          pip3 install -r ./ci/requirements/environment.txt
       - name: Version info
         run: |
-          pip -V
-          pip list
+          pip3 -V
+          pip3 list
 
       - name: Install this package
         run: |

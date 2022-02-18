@@ -49,9 +49,9 @@ jobs:
         run: |
           python -m pip install --no-deps -e .
 
-      - name: Import pynhm
-        run: |
-          python -c "import pynhm"
+      #- name: Import pynhm
+      #  run: |
+      #    python -c "import pynhm"
 
       - name: Run tests
         working-directory: autotest

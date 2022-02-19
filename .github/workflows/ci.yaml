@@ -44,22 +44,22 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip3 install -r ./ci/requirements/environment.txt
+          python -m pip install -r ./ci/requirements/environment.txt
       - name: Version info
         run: |
-          pip3 -V
-          pip3 list
+          pip -V
+          pip list
 
       - name: Install this package
         run: |
-          python3 -m pip install --no-deps -e .
+          python -m pip install --no-deps -e .
 
       - name: Import pynhm
         run: |
           python -c "import pynhm"
 
       - name: Run tests
-        run: python3 -m pytest -n 4
+        run: python -m pytest -n 4
           --cov=pynhm
           --cov-report=xml
           --junitxml=pytest.xml

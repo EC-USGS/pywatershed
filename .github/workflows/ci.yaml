@@ -15,7 +15,7 @@ jobs:
 
     defaults:
       run:
-        shell: bash -l {0}
+        shell: bash {0}
 
     strategy:
       fail-fast: false

@@ -13,6 +13,60 @@ on:
 #  MACOS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/irc_nas/18341/m_HPCKit_p_2022.1.0.86_offline.dmg
 
 jobs:
+  pynhm_lint:
+    name: linting
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    # check out repo
+    - name: Checkout flopy repo
+      uses: actions/checkout@v2.3.4
+
+    - name: Set environment variables
+      run: |
+        echo "PYTHON_VERSION=3.9" >> $GITHUB_ENV
+
+    - name: Install dependencies
+      run: |
+        pip3 install -r ./ci/requirements/environment.txt
+
+    - name: Version info
+      run: |
+        pip3 -V
+        pip3 list
+
+    - name: Run isort
+      run: |
+        echo "if isort check fails update isort using"
+        echo "  pip install isort --upgrade"
+        echo "and run"
+        echo "  isort ./flopy"
+        echo "and then commit the changes."
+        isort --check --diff ./flopy
+
+    - name: Run black
+      run: |
+        echo "if black check fails update black using"
+        echo "  pip install black --upgrade"
+        echo "and run"
+        echo "  black ./flopy"
+        echo "and then commit the changes."
+        black --check --diff ./flopy
+
+    - name: Run flake8
+      run: |
+        flake8 --count --show-source --exit-zero ./flopy
+
+    - name: Run pylint
+      run: |
+        pylint --jobs=2 --errors-only --exit-zero ./flopy
+
+
   test:
     name: ${{ matrix.os}} py${{ matrix.python-version }}
 
@@ -26,7 +80,7 @@ jobs:
       fail-fast: false
       matrix:
         #os: ["ubuntu-latest", "macos-latest", "windows-latest"]
-        os: ["macos-latest"]
+        os: ["ubuntu-latest", "macos-latest"]
         python-version: ["3.8"]  # , "3.9", "3.10"]
 
     steps:
@@ -40,6 +94,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip3 install -r ./ci/requirements/environment.txt
+
       - name: Version info
         run: |
           pip3 -V
@@ -75,4 +130,4 @@ jobs:
           env_vars: RUNNER_OS,PYTHON_VERSION
           # name: codecov-umbrella
           fail_ci_if_error: false
-          version: "v0.1.15"          
+          version: "v0.1.15"

@@ -1,24 +1,30 @@
 """
 
 """
+import datetime
+
+from .atmosphericForcings import AtmosphericForcings
+from .Forcings import Forcings
 
 
 class driver:
     def __init__(
         self,
-        current_time,
-        end_time,
-        delta_time,
-        forcings,
-        storage_units,
-        verbose=False,
+        current_time: datetime,
+        end_time: datetime,
+        delta_time: datetime.timedelta,
+        storage_units: list,
+        climate_forcings: AtmosphericForcings = None,
+        external_forcings: Forcings = None,
+        verbose: int = False,
     ):
         print("Initializing simulation...")
         self.current_time = current_time
         self.end_time = end_time
         self.delta_time = delta_time
-        self.forcings = forcings
+        self.climate_forcings = climate_forcings
         self.storage_units = storage_units
+        self.external_forcings = external_forcings
         self.verbose = verbose
 
         self.time_length = float(delta_time.days)
@@ -42,7 +48,10 @@ class driver:
 
     def update(self):
         """Run a time step"""
-        self.forcings.advance(self.itime_step, self.current_time)
+        if self.climate_forcings is not None:
+            self.climate_forcings.advance(self.itime_step, self.current_time)
+        if self.external_forcings is not None:
+            self.external_forcings.advance(self.itime_step, self.current_time)
 
         for storage_unit in self.storage_units:
             storage_unit.advance(self.itime_step)

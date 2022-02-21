@@ -1,9 +1,10 @@
-from copy import deepcopy
 import pathlib as pl
+from copy import deepcopy
 from typing import Union
 
-from .cbh_utils import cbh_files_to_np_dict, cbh_adjust, cbh_check
 from pynhm import PrmsParameters
+
+from .cbh_utils import cbh_adjust, cbh_check, cbh_files_to_np_dict
 
 fileish = Union[str, pl.PosixPath, dict]
 
@@ -16,14 +17,15 @@ fileish = Union[str, pl.PosixPath, dict]
 
 class CBH:
     def __init__(
-            self,
-            files: fileish,
-            adjust: PrmsParameters = None,
-            units: dict = None,
-            new_units: dict = None,
-            output_vars: list = None,
-            output_file: fileish = None,
-            verbosity: bool = 0) -> None:
+        self,
+        files: fileish,
+        adjust: PrmsParameters = None,
+        units: dict = None,
+        new_units: dict = None,
+        output_vars: list = None,
+        output_file: fileish = None,
+        verbosity: bool = 0,
+    ) -> None:
 
         self.files = files
         self.params = adjust
@@ -55,17 +57,17 @@ class CBH:
         self.state = cbh_files_to_np_dict(self.files)
         return
 
-    #@property
+    # @property
     # def get_df
-    #@property
+    # @property
     # def get_variable_names
-    #@property
+    # @property
     # def get_variable
-    #@property
+    # @property
     # def n_rhus
-    #@property
+    # @property
     # def n_time
-    
+
     def convert_units(self):
         pass
 

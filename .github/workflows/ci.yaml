@@ -108,7 +108,7 @@ jobs:
 
       - name: Install this package
         run: |
-          pip install .
+          pip install --no-deps -e .
 
       #- name: Import pynhm
       #  run: |

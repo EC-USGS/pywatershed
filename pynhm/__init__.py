@@ -1,3 +1,5 @@
+from version import __author__, __author_email__, __version__
+
 from .atmosphericForcings import AtmForcingsNHM, AtmosphericForcings
 from .parameters import PrmsParameters
 from .preprocess.csv_utils import CsvFile

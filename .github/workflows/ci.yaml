@@ -94,19 +94,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
+      - name: Install dependencies and this package
         run: |
           pip3 install wheel
           pip3 install -r ./ci/requirements/environment.txt
+          pip3 install --no-deps -e .
 
       - name: Version info
         run: |
           pip3 -V
           pip3 list
-
-      - name: Install this package
-        run: |
-          pip3 install --no-deps -e .
 
       #- name: Import pynhm
       #  run: |

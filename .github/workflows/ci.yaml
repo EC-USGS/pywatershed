@@ -35,16 +35,15 @@ jobs:
 
       - name: Upgrade pip and install wheel
         run: |
-          python -m pip install --upgrade pip
-          pip install wheel
+          pip3 install wheel
 
       - name: Base installation
         run: |
-          pip install . --use-feature=in-tree-build
+          pip3 install .
 
       - name: Print pyhmn version
         run: |
-          python -c "import pynhm; print(pynhm.__version__)"
+          python3 -c "import pynhm; print(pynhm.__version__)"
 
 
   pynhm_lint:
@@ -132,7 +131,7 @@ jobs:
         run: |
           pip3 install wheel
           pip3 install -r ./ci/requirements/environment.txt
-          pip3 install . --use-feature=in-tree-build
+          pip3 install .
 
       - name: Version info
         run: |

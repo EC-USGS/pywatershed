@@ -25,11 +25,11 @@ jobs:
     steps:
 
       # check out repo
-      - name: Checkout flopy repo
-        uses: actions/checkout@v2.3.4
+      - name: Checkout repo
+        uses: actions/checkout@v2.4.0
 
       - name: Setup Python
-        uses: actions/setup-python@v2.3.2
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.9
 
@@ -59,10 +59,10 @@ jobs:
     steps:
       # check out repo
       - name: Checkout repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
 
       - name: Setup Python
-        uses: actions/setup-python@v2.3.2
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: 3.9
 
@@ -121,10 +121,10 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v2.4.0
 
       - name: Setup Python
-        uses: actions/setup-python@v2.3.2
+        uses: actions/setup-python@v2.2.2
         with:
           python-version: ${{ matrix.python-version }}
 

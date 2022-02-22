@@ -116,12 +116,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.4.0
 
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+
       - name: Setup Python
         uses: actions/setup-python@v2.2.2
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-        
+
 
       - name: Install dependencies and this package
         run: |
@@ -133,7 +137,6 @@ jobs:
         run: |
           pip -V
           pip list
-
 
       - name: Run tests
         working-directory: autotest

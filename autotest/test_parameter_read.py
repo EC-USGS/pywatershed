@@ -11,7 +11,7 @@ elif cwd.endswith("prmsNHMpy"):
     sys.path.append(".")
     rel_path = "."
 
-from pynhm import PrmsParameters
+from pynhm.utils import PrmsParameters
 
 base_path = os.path.join(rel_path, "test_data")
 

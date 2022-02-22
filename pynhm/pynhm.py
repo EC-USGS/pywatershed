@@ -3,8 +3,8 @@
 """
 import datetime
 
-from .atmosphericForcings import AtmosphericForcings
-from .Forcings import Forcings
+from .forcings.atmosphericForcings import AtmosphericForcings
+from .forcings.Forcings import Forcings
 
 
 class driver:

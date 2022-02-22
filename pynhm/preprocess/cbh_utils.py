@@ -2,10 +2,16 @@ import math
 import pathlib as pl
 from typing import Union
 
-import numpy as np
-import pandas as pd
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
+try:
+    import pandas as pd
+except ModuleNotFoundError:
+    pd = None
 
-from pynhm import PrmsParameters
+from ..utils.parameters import PrmsParameters
 
 zero = np.zeros((1))[0]
 one = np.ones((1))[0]

@@ -13,11 +13,10 @@ elif cwd.endswith("pynhm"):
     sys.path.append(".")
     rel_path = pl.Path(".")
 
-from pynhm import PrmsParameters
 from pynhm.preprocess.cbh import CBH
-from pynhm.preprocess.cbh_utils import cbh_files_to_df, cbh_files_to_np_dict
-from pynhm.prms5util import load_prms_statscsv
-from pynhm.utils import timer
+from pynhm.preprocess.cbh_utils import cbh_files_to_df
+from pynhm.utils import PrmsParameters, timer
+from pynhm.utils.prms5util import load_prms_statscsv
 
 # establish some input data
 

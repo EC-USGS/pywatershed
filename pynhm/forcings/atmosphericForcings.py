@@ -1,12 +1,7 @@
-import os
-from functools import reduce
-from io import StringIO
-
-import numpy as np
-import pandas as pd
-
-from .prms5util import unit_conversion
-from .utils import timer
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
 
 # JLM: "front load" option vs "load as you go"
 

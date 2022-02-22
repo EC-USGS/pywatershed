@@ -13,7 +13,7 @@ elif cwd.endswith("prmsNHMpy"):
     sys.path.append(".")
     rel_path = "."
 
-from pynhm import CsvFile
+from pynhm.preprocess import CsvFile
 
 test_dirs = (
     pl.Path(f"{rel_path}/test_data/box_01/output"),

@@ -2,8 +2,7 @@ import pathlib as pl
 from copy import deepcopy
 from typing import Union
 
-from pynhm import PrmsParameters
-
+from ..utils import PrmsParameters
 from .cbh_utils import cbh_adjust, cbh_check, cbh_files_to_np_dict
 
 fileish = Union[str, pl.PosixPath, dict]

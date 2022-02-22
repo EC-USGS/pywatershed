@@ -1,13 +1,18 @@
 import datetime
 
-import pandas as pd
+try:
+    import pandas as pd
+    from pandas import DataFrame
+except ModuleNotFoundError:
+    pd = None
+    DataFrame = None
 
 
 class Forcings:
     def __init__(
         self,
         name: str = None,
-        data: pd.DataFrame = None,
+        data: DataFrame = None,
         verbose: int = 0,
     ):
         self.verbose = verbose
@@ -23,7 +28,7 @@ class Forcings:
     def add_forcing(
         self,
         name: str,
-        data: pd.DataFrame,
+        data: DataFrame,
     ):
         if name in self.forcings.keys():
             raise KeyError(f"'{name}' key already exists in Forcings object")

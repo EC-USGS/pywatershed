@@ -35,15 +35,15 @@ jobs:
 
       - name: Upgrade pip and install wheel
         run: |
-          pip3 install wheel
+          pip install wheel
 
       - name: Base installation
         run: |
-          pip3 install .
+          pip install .
 
       - name: Print pyhmn version
         run: |
-          python3 -c "import pynhm; print(pynhm.__version__)"
+          python -c "import pynhm; print(pynhm.__version__)"
 
 
   pynhm_lint:
@@ -67,13 +67,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip3 install wheel
-          pip3 install -r ./ci/requirements/environment.txt
+          pip install wheel
+          pip install -r ./ci/requirements/environment.txt
 
       - name: Version info
         run: |
-          pip3 -V
-          pip3 list
+          pip -V
+          pip list
 
       - name: Run isort
         run: |
@@ -82,7 +82,7 @@ jobs:
           echo "and run"
           echo "  isort ./pynhm"
           echo "and then commit the changes."
-          python3 -m isort --check --diff ./pynhm
+          isort --check --diff ./pynhm
 
       - name: Run black
         run: |
@@ -91,15 +91,15 @@ jobs:
           echo "and run"
           echo "  black ./pynhm"
           echo "and then commit the changes."
-          python3 -m black --check --diff ./pynhm
+          black --check --diff ./pynhm
 
       - name: Run flake8
         run: |
-          python3 -m flake8 --count --show-source --exit-zero ./pynhm
+          flake8 --count --show-source --exit-zero ./pynhm
 
       - name: Run pylint
         run: |
-          python3 -m pylint --jobs=2 --errors-only --exit-zero ./pynhm
+          pylint --jobs=2 --errors-only --exit-zero ./pynhm
 
 
   test:
@@ -129,14 +129,14 @@ jobs:
 
       - name: Install dependencies and this package
         run: |
-          pip3 install wheel
-          pip3 install -r ./ci/requirements/environment.txt
-          pip3 install .
+          pip install wheel
+          pip install -r ./ci/requirements/environment.txt
+          pip install .
 
       - name: Version info
         run: |
-          pip3 -V
-          pip3 list
+          pip -V
+          pip list
 
       #- name: Import pynhm
       #  run: |
@@ -144,7 +144,7 @@ jobs:
 
       - name: Run tests
         working-directory: autotest
-        run: python3 -m pytest
+        run: pytest
           -v
           -n=auto
           --cov=pynhm
@@ -156,12 +156,12 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
-          path: pytest.xml
+          path: ./autotest/pytest.xml
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v2.1.0
         with:
-          file: ./coverage.xml
+          file: ./autotest/coverage.xml
           # flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           # name: codecov-umbrella

@@ -9,7 +9,7 @@ cwd = os.getcwd()
 if cwd.endswith("autotest"):
     sys.path.append("..")
     rel_path = pl.Path("..")
-elif cwd.endswith("pynhm"):
+elif cwd.endswith("prmsNHMpy"):
     sys.path.append(".")
     rel_path = pl.Path(".")
 

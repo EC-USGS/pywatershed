@@ -3,16 +3,11 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
-  # - netcdf4
-  # - numba
   - numpy
   - pandas
-  # - pint
   - pip
   - pytest
   - pytest-cov
   - pytest-env
   - pytest-xdist
-  # - zarr
-  # - pip:
-      # - numbagg
+  

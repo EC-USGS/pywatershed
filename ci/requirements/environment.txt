@@ -1,5 +1,9 @@
-numpy	
-pandas	
+black
+isort
+flake8
+pylint
+numpy
+pandas
 pip
 pytest
 pytest-cov

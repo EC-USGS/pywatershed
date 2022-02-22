@@ -1,4 +1,4 @@
-from .storageUnit import StorageUnit
+from ..base.storageUnit import StorageUnit
 
 
 class prmsSurfaceRunoff(StorageUnit):

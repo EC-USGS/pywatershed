@@ -1,7 +1,13 @@
 import os
 
-import numpy as np
-import pandas as pd
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
+try:
+    import pandas as pd
+except ModuleNotFoundError:
+    pd = None
 
 inch_to_meter = 0.0254
 acre_to_meter_squared = 4046.8564224

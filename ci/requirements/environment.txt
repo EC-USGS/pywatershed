@@ -9,4 +9,4 @@ pytest
 pytest-cov
 pytest-env
 pytest-xdist
-yaml
+pyyaml

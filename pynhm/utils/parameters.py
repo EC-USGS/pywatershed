@@ -1,4 +1,7 @@
-import numpy as np
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
 
 
 class PrmsParameters:

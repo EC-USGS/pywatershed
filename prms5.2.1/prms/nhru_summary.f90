@@ -22,7 +22,7 @@
 ! Paramters
       INTEGER, SAVE, ALLOCATABLE :: Nhm_id(:)
 ! Control Parameters
-      INTEGER, SAVE :: NhruOutVars, NhruOut_freq, NhruOut_format, NhruOutNcol, outputSelectDatesON_OFF 
+      INTEGER, SAVE :: NhruOutVars, NhruOut_freq, NhruOut_format, NhruOutNcol, outputSelectDatesON_OFF
       CHARACTER(LEN=36), SAVE, ALLOCATABLE :: NhruOutVar_names(:)
       CHARACTER(LEN=MAXFILE_LENGTH), SAVE :: NhruOutBaseFileName, selectDatesFileName
       END MODULE PRMS_NHRU_SUMMARY
@@ -288,7 +288,7 @@
  9002 FORMAT ('("Date"',I0,'('', ''I0))')
  9003 FORMAT ('(I4,', I0,'('','',ES10.3))')
  9004 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',I0))')
- 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.4))')
+ 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',G0))')  !jdh modified F0.4 to G9
  9006 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.3))')
  9007 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.2))')
  9008 FORMAT ('(I4,', I0,'('','',F0.4))')

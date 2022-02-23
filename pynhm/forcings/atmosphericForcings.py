@@ -1,19 +1,13 @@
-from io import StringIO
-from functools import reduce
-import numpy as np
-import os
-import pandas as pd
-from .utils import timer
-from .prms5util import unit_conversion
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
 
 # JLM: "front load" option vs "load as you go"
 
 
 class AtmosphericForcings:
-    def __init__(
-            self,
-            forcings_file,
-            verbose=0):
+    def __init__(self, forcings_file, verbose=0):
 
         if forcings_file is None:
             forcing_df = _read_cbh_individual_new(
@@ -21,7 +15,8 @@ class AtmosphericForcings:
                 precip_file=precip_file,
                 temp_min_file=temp_min_file,
                 temp_max_file=temp_max_file,
-                verbose=verbose)
+                verbose=verbose,
+            )
         else:
             raise NotImplementedError
 
@@ -37,8 +32,10 @@ class AtmosphericForcings:
         self.current_date = None
 
     def adjust(self):
-        msg = ("Base AtmosphericForcings class does"
-               "not provide forcing adjustment")
+        msg = (
+            "Base AtmosphericForcings class does"
+            "not provide forcing adjustment"
+        )
         raise NotImplementedError(msg)
 
     def advance(self, itime_step, current_date):
@@ -85,7 +82,7 @@ class AtmForcingsNHM(AtmosphericForcings):
 
         return tmin_hru, tmax_hru
 
-    
+
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_potet_jh.f90
 # is this part of the full class?
 # # potet_jh run code:

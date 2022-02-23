@@ -2,8 +2,8 @@ import numpy as np
 import pathlib as pl
 from pynhm.preprocess.cbh import CBH
 from pynhm.utils import timer
-from pynhm.prms5util import load_prms_statscsv
-from pynhm import PrmsParameters
+from pynhm.utils.prms5util import load_prms_statscsv
+from pynhm.utils import PrmsParameters
 from pynhm.preprocess.cbh_utils import cbh_files_to_df
 import pytest
 
@@ -21,21 +21,20 @@ def cbh_files_to_df_timed(*args):
 # -------------------------------------------------------
 # Test Invalid Instantiation
 case_dict_init = {'invalid': ['a', 'b'], }
-
-
 @pytest.mark.parametrize("case", list(case_dict_init.keys()))
 def test_cbh_init_files_invalid(case):
     try:
         _ = CBH(case_dict_init[case])
         assert False  # This case is supposed to fail
     except ValueError:
-        if case in ['invalid']:
+        if case in ["invalid"]:
             assert True
         else:
             assert False
     return
 
 
+# Valid instantiation
 @pytest.mark.parametrize("case", var_cases)
 def test_cbh_init_files_valid(domain, case):
     _ = CBH(domain['dir'] / domain['cbh_inputs'][case])
@@ -86,7 +85,7 @@ def test_cbh_adj(domain):
     _ = cbh.adjust(params)
     with np.printoptions(threshold=2):
         for key, val in cbh.state.items():
-            if not '_adj' in key:
+            if not "_adj" in key:
                 continue
             # Could just use the final row or col
             # print(repr(f'"{key}": ("{repr(val)}"),'))
@@ -97,7 +96,7 @@ def test_cbh_adj(domain):
 
 # -------------------------------------------------------
 # Test forcing adj, compare to prms output
-case_list_adj_prms_output = ['drb_2yr']
+case_list_adj_prms_output = ["drb_2yr"]
 
 
 def test_cbh_adj_prms_output(domain):
@@ -107,18 +106,20 @@ def test_cbh_adj_prms_output(domain):
     @timer
     def adj_timed(params):
         return cbh.adjust(params)
+
     _ = adj_timed(params)
 
     for var, var_file in domain['prms_outputs'].items():
         prms_output = load_prms_statscsv(domain['dir'] / var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()
-        wh_dates = np.where(np.isin(cbh.state['datetime'], p_dates))
+        wh_dates = np.where(np.isin(cbh.state["datetime"], p_dates))
         # print(var)
         result = np.isclose(
             p_array,
-            cbh.state[var][wh_dates,:],
-            rtol=1e-121, atol=1e-04  # Only the atol matters here, if atol < 1e-4 fails
+            cbh.state[var][wh_dates, :],
+            rtol=1e-121,
+            atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
         )
         # print(result.sum()/np.prod(result.shape))
         assert result.all()

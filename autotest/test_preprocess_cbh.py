@@ -7,8 +7,6 @@ from pynhm.utils import PrmsParameters
 from pynhm.preprocess.cbh_utils import cbh_files_to_df
 import pytest
 
-# import yaml
-
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 

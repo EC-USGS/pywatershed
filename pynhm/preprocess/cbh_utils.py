@@ -22,46 +22,56 @@ fileish = Union[str, pl.Path, dict]
 
 # Absorb some slop in the naming conventions
 cbh_std_name_from_dict = {
-    'prcp': ['precip', 'prcp'],
-    'rhavg': ['rhavg'],
-    'tmax': ['tmax'],
-    'tmin': ['tmin'], }
+    "prcp": ["precip", "prcp"],
+    "rhavg": ["rhavg"],
+    "tmax": ["tmax"],
+    "tmin": ["tmin"],
+}
 
 required_vars = ["precp", "tmax", "tmin"]
 
 cbh_metadata = {
-    'time': {
-        'long_name': 'time',
-        'standard_name': 'time',
-        'calendar': 'standard',                       # Depends, revisit
-        'units': 'days since 1979-01-01 00:00:00', },  # Depends, may not be correct
-    'hruid': {
-        'long_name': 'Hydrologic Response Unit ID (HRU)',
-        'cf_role': 'timeseries_id', },
-    'tmax': {
-        '_FillValue': 9.96921e36,
-        'long_name': 'Maximum daily air temperature',
-        'units': 'degree_fahrenheit',
-        'standard_name': 'maximum_daily_air_temperature', },
-    'tmin': {
-        '_FillValue': 9.96921e36,
-        'long_name': 'Minimum daily air temperature',
-        'units': 'degree_fahrenheit',
-        'standard_name': 'minimum_daily_air_temperature', },
-    'prcp': {
-        '_FillValue': 9.96921e36,
-        'long_name': 'daily total precipitation',
-        'units': 'in',
-        'standard_name': 'daily_total_precipitation', },
-    'rhavg': {
-        '_FillValue': 9.96921e36,
-        'long_name': 'Daily mean relative humidity',
-        'units': 'percent',
-        'standard_name': 'rhavg', }}
+    "time": {
+        "long_name": "time",
+        "standard_name": "time",
+        "calendar": "standard",  # Depends, revisit
+        "units": "days since 1979-01-01 00:00:00",
+    },  # Depends, may not be correct
+    "hruid": {
+        "long_name": "Hydrologic Response Unit ID (HRU)",
+        "cf_role": "timeseries_id",
+    },
+    "tmax": {
+        "_FillValue": 9.96921e36,
+        "long_name": "Maximum daily air temperature",
+        "units": "degree_fahrenheit",
+        "standard_name": "maximum_daily_air_temperature",
+    },
+    "tmin": {
+        "_FillValue": 9.96921e36,
+        "long_name": "Minimum daily air temperature",
+        "units": "degree_fahrenheit",
+        "standard_name": "minimum_daily_air_temperature",
+    },
+    "prcp": {
+        "_FillValue": 9.96921e36,
+        "long_name": "daily total precipitation",
+        "units": "in",
+        "standard_name": "daily_total_precipitation",
+    },
+    "rhavg": {
+        "_FillValue": 9.96921e36,
+        "long_name": "Daily mean relative humidity",
+        "units": "percent",
+        "standard_name": "rhavg",
+    },
+}
 
 cbh_units = {
-    key: val['units'] for key, val in cbh_metadata.items()
-    if 'units' in list(val.keys())}
+    key: val["units"]
+    for key, val in cbh_metadata.items()
+    if "units" in list(val.keys())
+}
 
 created_line = "Created "
 written_line = "Written "
@@ -352,8 +362,8 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
         if f"tmax{adj}" not in cbh_dict.keys():
             continue
 
-        tmaxvar = f'tmax{adj}'
-        tminvar = f'tmin{adj}'
+        tmaxvar = f"tmax{adj}"
+        tminvar = f"tmin{adj}"
         if (tminvar in cbh_dict.keys()) and (tmaxvar in cbh_dict.keys()):
             if not (cbh_dict[tmaxvar] > cbh_dict[tminvar]).all():
                 msg = f"{tmaxvar} !> {tminvar}: strictly greater maybe too stringent"
@@ -361,10 +371,10 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
 
         # assert (cbh_dict['tmax'] >= zero).all()  # use units for checking max/minimums?
 
-        prcpvar = f'prcp{adj}'
-        if (prcpvar in cbh_dict.keys()):
+        prcpvar = f"prcp{adj}"
+        if prcpvar in cbh_dict.keys():
             if not (cbh_dict[prcpvar] >= zero).all():
-                msg = f'{prcpvar} contains negative values'
+                msg = f"{prcpvar} contains negative values"
                 raise ValueError(msg)
 
     if verbosity >= 1:

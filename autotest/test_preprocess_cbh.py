@@ -9,7 +9,7 @@ import pytest
 
 # import yaml
 
-var_cases = ['prcp', 'rhavg', 'tmax', 'tmin']
+var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 
 @timer
@@ -20,7 +20,11 @@ def cbh_files_to_df_timed(*args):
 
 # -------------------------------------------------------
 # Test Invalid Instantiation
-case_dict_init = {'invalid': ['a', 'b'], }
+case_dict_init = {
+    "invalid": ["a", "b"],
+}
+
+
 @pytest.mark.parametrize("case", list(case_dict_init.keys()))
 def test_cbh_init_files_invalid(case):
     try:
@@ -37,7 +41,7 @@ def test_cbh_init_files_invalid(case):
 # Valid instantiation
 @pytest.mark.parametrize("case", var_cases)
 def test_cbh_init_files_valid(domain, case):
-    _ = CBH(domain['dir'] / domain['cbh_inputs'][case])
+    _ = CBH(domain["dir"] / domain["cbh_inputs"][case])
     return
 
 
@@ -45,22 +49,26 @@ def test_cbh_init_files_valid(domain, case):
 # Test the file to df parser on a *single file*
 @pytest.mark.parametrize("var", var_cases)
 def test_cbh_files_to_df(domain, var):
-    the_file = domain['dir'] / domain['cbh_inputs'][var]
+    the_file = domain["dir"] / domain["cbh_inputs"][var]
     assert pl.Path(the_file).exists(), the_file  # rm pathlib?
     df = cbh_files_to_df_timed(the_file)
     # print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
-    assert (repr(df.iloc[-1, :])
-            == domain['test_ans']['preprocess_cbh']['files_to_df'][var])
+    assert (
+        repr(df.iloc[-1, :])
+        == domain["test_ans"]["preprocess_cbh"]["files_to_df"][var]
+    )
     return
 
 
 # -------------------------------------------------------
 # Test concatenation of individual files
 def test_cbh_concat(domain):
-    df = cbh_files_to_df(domain['input_files_dict'])
+    df = cbh_files_to_df(domain["input_files_dict"])
     # print(repr(f"'{case}': ('{repr(df.iloc[-1, :])}'),"))
-    assert (repr(df.iloc[-1, :])
-            == domain['test_ans']['preprocess_cbh']['df_concat'])
+    assert (
+        repr(df.iloc[-1, :])
+        == domain["test_ans"]["preprocess_cbh"]["df_concat"]
+    )
     return
 
 
@@ -68,20 +76,22 @@ def test_cbh_concat(domain):
 # Test conversion to numpy dict
 def test_cbh_np_dict(domain):
     # Could hide the above in the domain on read
-    cbh = CBH(domain['input_files_dict'])
+    cbh = CBH(domain["input_files_dict"])
     with np.printoptions(threshold=8):
         for key, val in cbh.state.items():
             # print(repr(f'"{key}": ("{repr(val)}"),'))
-            assert (repr(val)
-                    == domain['test_ans']['preprocess_cbh']['np_dict'][key])
+            assert (
+                repr(val)
+                == domain["test_ans"]["preprocess_cbh"]["np_dict"][key]
+            )
     return
 
 
 # -------------------------------------------------------
 # Test forcing adjustment
 def test_cbh_adj(domain):
-    params = PrmsParameters(domain['dir'] / domain['param_file'])
-    cbh = CBH(domain['input_files_dict'])  #JLM also test passing on init?
+    params = PrmsParameters(domain["dir"] / domain["param_file"])
+    cbh = CBH(domain["input_files_dict"])  # JLM also test passing on init?
     _ = cbh.adjust(params)
     with np.printoptions(threshold=2):
         for key, val in cbh.state.items():
@@ -89,8 +99,9 @@ def test_cbh_adj(domain):
                 continue
             # Could just use the final row or col
             # print(repr(f'"{key}": ("{repr(val)}"),'))
-            assert (repr(val)
-                    == domain['test_ans']['preprocess_cbh']['adj'][key])
+            assert (
+                repr(val) == domain["test_ans"]["preprocess_cbh"]["adj"][key]
+            )
     return
 
 
@@ -100,8 +111,8 @@ case_list_adj_prms_output = ["drb_2yr"]
 
 
 def test_cbh_adj_prms_output(domain):
-    params = PrmsParameters(domain['dir'] / domain['param_file'])
-    cbh = CBH(domain['input_files_dict'])
+    params = PrmsParameters(domain["dir"] / domain["param_file"])
+    cbh = CBH(domain["input_files_dict"])
 
     @timer
     def adj_timed(params):
@@ -109,8 +120,8 @@ def test_cbh_adj_prms_output(domain):
 
     _ = adj_timed(params)
 
-    for var, var_file in domain['prms_outputs'].items():
-        prms_output = load_prms_statscsv(domain['dir'] / var_file)
+    for var, var_file in domain["prms_outputs"].items():
+        prms_output = load_prms_statscsv(domain["dir"] / var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()
         wh_dates = np.where(np.isin(cbh.state["datetime"], p_dates))

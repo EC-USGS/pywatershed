@@ -37,4 +37,4 @@ def pytest_generate_tests(metafunc):
                 # append to the list of all domains
                 domain_list += [domain_dict]
 
-        metafunc.parametrize("domain", domain_list)
+        metafunc.parametrize("domain", domain_list, ids=[dd_file.stem])

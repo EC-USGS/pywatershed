@@ -6,8 +6,10 @@ from .cbh_utils import (
     cbh_adjust,
     cbh_check,
     cbh_to_netcdf,
+    cbh_n_hru,
+    cbh_n_time,
 )
-from pynhm import PrmsParameters
+from pynhm.utils import PrmsParameters
 
 fileish = Union[str, pl.PosixPath, dict]
 
@@ -67,10 +69,14 @@ class CBH:
     # def get_variable_names
     # @property
     # def get_variable
-    # @property
-    # def n_rhus
-    # @property
-    # def n_time
+
+    @property
+    def n_rhu(self):
+        return cbh_n_hru(self.state)
+
+    @property
+    def n_time(self):
+        return cbh_n_time(self.state)
 
     def convert_units(self):
         pass

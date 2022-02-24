@@ -1,10 +1,11 @@
-from datetime import datetime
 import math
+import pathlib as pl
+from datetime import datetime
+from typing import Union
+
 import netCDF4 as nc4
 import numpy as np
 import pandas as pd
-import pathlib as pl
-from typing import Union
 
 try:
     import numpy as np

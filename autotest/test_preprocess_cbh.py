@@ -1,12 +1,13 @@
-import numpy as np
 import pathlib as pl
-from pynhm.preprocess.cbh import CBH
-from pynhm.utils import timer
-from pynhm.utils.prms5util import load_prms_statscsv
-from pynhm.utils import PrmsParameters
-from pynhm.preprocess.cbh_utils import cbh_files_to_df
+
+import numpy as np
 import pytest
 import xarray as xr
+
+from pynhm.preprocess.cbh import CBH
+from pynhm.preprocess.cbh_utils import cbh_files_to_df
+from pynhm.utils import PrmsParameters, timer
+from pynhm.utils.prms5util import load_prms_statscsv
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 

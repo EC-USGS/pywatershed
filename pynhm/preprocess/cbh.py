@@ -1,15 +1,17 @@
 import pathlib as pl
 from copy import deepcopy
 from typing import Union
+
+from pynhm.utils import PrmsParameters
+
 from .cbh_utils import (
-    cbh_files_to_np_dict,
     cbh_adjust,
     cbh_check,
-    cbh_to_netcdf,
+    cbh_files_to_np_dict,
     cbh_n_hru,
     cbh_n_time,
+    cbh_to_netcdf,
 )
-from pynhm.utils import PrmsParameters
 
 fileish = Union[str, pl.PosixPath, dict]
 

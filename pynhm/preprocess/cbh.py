@@ -1,8 +1,12 @@
-from copy import deepcopy
 import pathlib as pl
 from typing import Union
 
-from .cbh_utils import cbh_files_to_np_dict, cbh_adjust, cbh_check
+from .cbh_utils import (
+    cbh_files_to_np_dict,
+    cbh_adjust,
+    cbh_check,
+    cbh_to_netcdf,
+)
 from pynhm import PrmsParameters
 
 fileish = Union[str, pl.PosixPath, dict]
@@ -16,14 +20,15 @@ fileish = Union[str, pl.PosixPath, dict]
 
 class CBH:
     def __init__(
-            self,
-            files: fileish,
-            adjust: PrmsParameters = None,
-            units: dict = None,
-            new_units: dict = None,
-            output_vars: list = None,
-            output_file: fileish = None,
-            verbosity: bool = 0) -> None:
+        self,
+        files: fileish,
+        adjust: PrmsParameters = None,
+        units: dict = None,
+        new_units: dict = None,
+        output_vars: list = None,
+        output_file: fileish = None,
+        verbosity: bool = 0,
+    ) -> None:
 
         self.files = files
         self.params = adjust
@@ -56,17 +61,17 @@ class CBH:
         self.state = cbh_files_to_np_dict(self.files)
         return
 
-    #@property
+    # @property
     # def get_df
-    #@property
+    # @property
     # def get_variable_names
-    #@property
+    # @property
     # def get_variable
-    #@property
+    # @property
     # def n_rhus
-    #@property
+    # @property
     # def n_time
-    
+
     def convert_units(self):
         pass
 
@@ -78,5 +83,8 @@ class CBH:
         _ = cbh_check(self.state, verbosity=self.verbosity)
         return
 
-    def to_netcdf(self, nc_file):
+    def to_netcdf(
+        self, nc_file, clobber: bool = True, output_vars: list = None
+    ):
+        _ = cbh_to_netcdf(self.state, nc_file)
         pass

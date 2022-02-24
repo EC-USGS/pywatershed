@@ -9,8 +9,8 @@ zero = np.zeros((1))[0]
 one = np.ones((1))[0]
 
 # Compound types
-file_type = Union[str, pl.PosixPath]
-fileish = Union[str, pl.PosixPath, dict]
+file_type = Union[str, pl.Path]
+fileish = Union[str, pl.Path, dict]
 
 # Absorb some slop in the naming conventions
 cbh_std_name_from_dict = {
@@ -149,7 +149,7 @@ def _cbh_files_to_df(file_dict: dict) -> pd.DataFrame:
 
 
 def cbh_files_to_df(files: fileish) -> pd.DataFrame:
-    if isinstance(files, (str, pl.PosixPath)):
+    if isinstance(files, (str, pl.Path)):
         df = _cbh_file_to_df(files)
     elif isinstance(files, (dict)):
         df = _cbh_files_to_df(files)

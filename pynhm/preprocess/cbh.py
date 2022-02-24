@@ -50,10 +50,23 @@ class CBH:
 
         return None
 
+    # Is this private?
+    # other setters
     def set_state(self):
         self.state = cbh_files_to_np_dict(self.files)
         return
 
+    #@property
+    # def get_df
+    #@property
+    # def get_variable_names
+    #@property
+    # def get_variable
+    #@property
+    # def n_rhus
+    #@property
+    # def n_time
+    
     def convert_units(self):
         pass
 

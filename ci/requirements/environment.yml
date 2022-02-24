@@ -1,0 +1,13 @@
+name: pynhm-tests
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - numpy
+  - pandas
+  - pip
+  - pytest
+  - pytest-cov
+  - pytest-env
+  - pytest-xdist
+  

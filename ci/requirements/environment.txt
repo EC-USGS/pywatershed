@@ -1,0 +1,7 @@
+numpy	
+pandas	
+pip
+pytest
+pytest-cov
+pytest-env
+pytest-xdist

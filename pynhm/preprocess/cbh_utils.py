@@ -3,8 +3,18 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 import pathlib as pl
-from pynhm import PrmsParameters
 from typing import Union
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    np = None
+try:
+    import pandas as pd
+except ModuleNotFoundError:
+    pd = None
+
+from ..utils.parameters import PrmsParameters
 
 zero = np.zeros((1))[0]
 one = np.ones((1))[0]
@@ -358,7 +368,7 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
 
         tmaxvar = f"tmax{adj}"
         tminvar = f"tmin{adj}"
-        if not (cbh_dict[tmaxvar] > cbh_dict[tminvar]).all():
+        if not (cbh_dict[tmaxvar] >= cbh_dict[tminvar]).all():
             msg = (
                 f"{tmaxvar} !> {tminvar}: strictly greater maybe too stringent"
             )
@@ -367,13 +377,13 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
         # assert (cbh_dict['tmax'] >= zero).all()  # use units for checking max/minimums?
 
         prcpvar = f"prcp{adj}"
-        if not (cbh_dict[prcpvar] >= zero).all():
-            msg = f"{prcpvar} contains negative values"
-            raise ValueError(msg)
+        if prcpvar in cbh_dict.keys():
+            if not (cbh_dict[prcpvar] >= zero).all():
+                msg = f"{prcpvar} contains negative values"
+                raise ValueError(msg)
 
     if verbosity >= 1:
         print("cbh state check successful")
-
     return
 
 
@@ -435,5 +445,4 @@ def cbh_to_netcdf(
         ds.variables[cvar][:, :] = data[self.__nhm_hrus].values
 
     ds.close()
-
     return

@@ -1,3 +1,6 @@
+# python
+build/
+*.egg-info/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -13,29 +16,32 @@ __pycache__
 *.user
 *VC.db*
 .vs/
-prms5.2.0_windows/msvs/x64/Debug/
-prms5.2.0_windows/msvs/x64/Release/
-prms5.3.0/msvs/x64/Debug/
-prms5.3.0/msvs/x64/Release/
+prms_src/prms5.2.0_windows/msvs/x64/Debug/
+prms_src/prms5.2.0_windows/msvs/x64/Release/
+prms_src/prms5.3.0/msvs/x64/Debug/
+prms_src/prms5.3.0/msvs/x64/Release/
 
 # prms obj, mod, and library files
 *.o
 *.obj
 *.mod
+*.smod
 *.lib
 *.a
 
 # meson build information
-prms5.3.0/builddir/
+prms_src/prms5.3.0/builddir/
 
 
 # prms binaries
-prms5.2.0_linux/bin
-prms5.2.0_windows/bin
-prms5.3.0/bin
+prms_src/prms5.2.0_linux/bin
+prms_src/prms5.2.0_windows/bin
+prms_src/prms5.2.1/bin
+prms_src/prms5.3.0/bin
 
 # prms output files
 output/
+*.out
 *.wbal
 wbal.msgs
 
@@ -50,3 +56,5 @@ test_models/ucb_daily_ag_frac
 test_models/yampa
 
 
+# emacs
+*~

@@ -1,6 +1,6 @@
 import pathlib as pl
+from copy import deepcopy
 from typing import Union
-
 from .cbh_utils import (
     cbh_files_to_np_dict,
     cbh_adjust,

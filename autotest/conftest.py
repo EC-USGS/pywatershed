@@ -33,15 +33,24 @@ def pytest_generate_tests(metafunc):
                 # Construct/derive some convenience quantities
                 domain_dict["file"] = dd_file
                 domain_dict["dir"] = dd_file.parent
-                # Transform all paths using the rel path here to spare the tester
-                domain_dict["param_file"] = (
-                    domain_dict["dir"] / domain_dict["param_file"]
+                # Transform all relative paths in the yaml (relative to the yaml file)
+                # using the rel path to the file - spare the tester from doing this.
+                domain_dict["param_file"] = pathlib.Path(
+                    domain_dict["param_file"]
                 )
+                if not domain_dict["param_file"].is_absolute():
+                    domain_dict["param_file"] = (
+                        domain_dict["dir"] / domain_dict["param_file"]
+                    )
                 for fd_key in ["prms_outputs", "cbh_inputs"]:
-                    file_dict = domain_dict[fd_key]
+                    domain_dict[fd_key] = {
+                        key: pathlib.Path(val)
+                        for key, val in domain_dict[fd_key].items()
+                    }
                     domain_dict[fd_key] = {
                         key: domain_dict["dir"] / val
-                        for key, val in file_dict.items()
+                        for key, val in domain_dict[fd_key].items()
+                        if not pathlib.Path(val).is_absolute()
                     }
                 # Construct a dictonary that gets used in CBH
                 domain_dict["input_files_dict"] = {

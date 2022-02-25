@@ -33,8 +33,6 @@ def assert_or_print(results, answers, test_name=None):
     assert not print_ans
     return
 
-=======
->>>>>>> jmccreight/forcings
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
@@ -163,8 +161,7 @@ def test_cbh_adj_prms_output(domain):
 def test_cbh_to_netcdf(domain, tmp_path):
     cbh = CBH(domain["input_files_dict"])
     tmp_file = tmp_path / "test_cbh_to_netcdf.nc"
-    # print(tmp_file)
-    cbh.to_netcdf(tmp_file)
+    _ = cbh.to_netcdf(tmp_file)
     ds = xr.open_dataset(tmp_file)
     # compare the calculated means in memory and after reading the data from disk
     for vv in ds.variables:
@@ -184,4 +181,6 @@ def test_cbh_to_netcdf(domain, tmp_path):
                 ds[vv].mean().values.tolist(),
                 cbh.state[vv].mean(),
             )
+
+    ds.close()
     return

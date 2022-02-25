@@ -11,3 +11,8 @@ dependencies:
   - pytest-env
   - pytest-xdist
   - pyyaml
+  - pip:
+    - black
+    - isort
+    - flake8
+    - pylint

@@ -1,11 +1,37 @@
-import numpy as np
 import pathlib as pl
-from pynhm.preprocess.cbh import CBH
-from pynhm.utils import timer
-from pynhm.utils.prms5util import load_prms_statscsv
-from pynhm.utils import PrmsParameters
-from pynhm.preprocess.cbh_utils import cbh_files_to_df
+
+import numpy as np
 import pytest
+
+from pynhm.preprocess.cbh import CBH
+from pynhm.preprocess.cbh_utils import cbh_files_to_df
+from pynhm.utils import PrmsParameters, timer
+from pynhm.utils.prms5util import load_prms_statscsv
+
+print_ans = False
+
+if print_ans:
+    print("\n  preprocess_cbh:")
+
+
+# Move this to a common util eventually
+def assert_or_print(results, answers, test_name=None):
+    n_space = 4
+    if print_ans and (test_name is not None):
+        sp = "".join(n_space * [" "])
+        n_space = n_space + 2
+        print(f"\n{sp}{test_name}:")
+
+    for key in results.keys():
+        if print_ans:
+            sp = "".join(n_space * [" "])
+            print(f"\n{sp}{key}: {results[key]}")
+        else:
+            assert np.isclose(results[key], answers[key])
+    # always fail if printing answers
+    assert not print_ans
+    return
+
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
@@ -36,37 +62,35 @@ def test_cbh_init_files_invalid(case):
     return
 
 
-# Valid instantiation
-@pytest.mark.parametrize("case", var_cases)
-def test_cbh_init_files_valid(domain, case):
-    _ = CBH(domain["dir"] / domain["cbh_inputs"][case])
-    return
+# Valid instantiation, only one variable is really necessary
+# JLM: This is supplanted below, could remove this test.
+# @pytest.mark.parametrize("case", var_cases[0])
+# def test_cbh_init_files_valid(domain, case):
+#    _ = CBH(domain["cbh_inputs"][case])
+#    return
 
 
 # -------------------------------------------------------
 # Test the file to df parser on a *single file*
-@pytest.mark.parametrize("var", var_cases)
+# One case is likely sufficient
+@pytest.mark.parametrize("var", [var_cases[0]])
 def test_cbh_files_to_df(domain, var):
-    the_file = domain["dir"] / domain["cbh_inputs"][var]
-    assert pl.Path(the_file).exists(), the_file  # rm pathlib?
+    the_file = domain["cbh_inputs"][var]
+    assert pl.Path(the_file).exists(), the_file
     df = cbh_files_to_df_timed(the_file)
-    # print(repr(f"'{var}': ('{repr(df.iloc[-1, :])}'),"))
-    assert (
-        repr(df.iloc[-1, :])
-        == domain["test_ans"]["preprocess_cbh"]["files_to_df"][var]
-    )
+    results = {var: df.mean().mean()}
+    answers = domain["test_ans"]["preprocess_cbh"]["files_to_df"]
+    assert_or_print(results, answers, "files_to_df")
     return
 
 
 # -------------------------------------------------------
 # Test concatenation of individual files
-def test_cbh_concat(domain):
+def test_cbh_df_concat(domain):
     df = cbh_files_to_df(domain["input_files_dict"])
-    # print(repr(f"'{case}': ('{repr(df.iloc[-1, :])}'),"))
-    assert (
-        repr(df.iloc[-1, :])
-        == domain["test_ans"]["preprocess_cbh"]["df_concat"]
-    )
+    results = {"df_concat": df.mean().mean()}
+    answers = domain["test_ans"]["preprocess_cbh"]
+    assert_or_print(results, answers)
     return
 
 
@@ -75,31 +99,26 @@ def test_cbh_concat(domain):
 def test_cbh_np_dict(domain):
     # Could hide the above in the domain on read
     cbh = CBH(domain["input_files_dict"])
-    with np.printoptions(threshold=8):
-        for key, val in cbh.state.items():
-            # print(repr(f'"{key}": ("{repr(val)}"),'))
-            assert (
-                repr(val)
-                == domain["test_ans"]["preprocess_cbh"]["np_dict"][key]
-            )
+    results = {
+        key: val.mean() for key, val in cbh.state.items() if key != "datetime"
+    }
+    results["datetime"] = cbh.state["datetime"].astype(int).mean()
+    answers = domain["test_ans"]["preprocess_cbh"]["np_dict"]
+    assert_or_print(results, answers, "np_dict")
     return
 
 
 # -------------------------------------------------------
 # Test forcing adjustment
 def test_cbh_adj(domain):
-    params = PrmsParameters(domain["dir"] / domain["param_file"])
+    params = PrmsParameters(domain["param_file"])
     cbh = CBH(domain["input_files_dict"])  # JLM also test passing on init?
     _ = cbh.adjust(params)
-    with np.printoptions(threshold=2):
-        for key, val in cbh.state.items():
-            if not "_adj" in key:
-                continue
-            # Could just use the final row or col
-            # print(repr(f'"{key}": ("{repr(val)}"),'))
-            assert (
-                repr(val) == domain["test_ans"]["preprocess_cbh"]["adj"][key]
-            )
+    results = {
+        key: val.mean() for key, val in cbh.state.items() if "_adj" in key
+    }
+    answers = domain["test_ans"]["preprocess_cbh"]["adj"]
+    assert_or_print(results, answers, "adj")
     return
 
 
@@ -109,7 +128,7 @@ case_list_adj_prms_output = ["drb_2yr"]
 
 
 def test_cbh_adj_prms_output(domain):
-    params = PrmsParameters(domain["dir"] / domain["param_file"])
+    params = PrmsParameters(domain["param_file"])
     cbh = CBH(domain["input_files_dict"])
 
     @timer
@@ -119,7 +138,7 @@ def test_cbh_adj_prms_output(domain):
     _ = adj_timed(params)
 
     for var, var_file in domain["prms_outputs"].items():
-        prms_output = load_prms_statscsv(domain["dir"] / var_file)
+        prms_output = load_prms_statscsv(var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()
         wh_dates = np.where(np.isin(cbh.state["datetime"], p_dates))

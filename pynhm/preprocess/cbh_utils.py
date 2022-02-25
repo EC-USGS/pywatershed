@@ -365,7 +365,7 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
         tmaxvar = f"tmax{adj}"
         tminvar = f"tmin{adj}"
         if (tminvar in cbh_dict.keys()) and (tmaxvar in cbh_dict.keys()):
-            if not (cbh_dict[tmaxvar] > cbh_dict[tminvar]).all():
+            if not (cbh_dict[tmaxvar] >= cbh_dict[tminvar]).all():
                 msg = f"{tmaxvar} !> {tminvar}: strictly greater maybe too stringent"
                 raise ValueError(msg)
 

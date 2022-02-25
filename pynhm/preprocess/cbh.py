@@ -2,8 +2,16 @@ import pathlib as pl
 from copy import deepcopy
 from typing import Union
 
-from ..utils import PrmsParameters
-from .cbh_utils import cbh_adjust, cbh_check, cbh_files_to_np_dict
+from pynhm.utils import PrmsParameters
+
+from .cbh_utils import (
+    cbh_adjust,
+    cbh_check,
+    cbh_files_to_np_dict,
+    cbh_n_hru,
+    cbh_n_time,
+    cbh_to_netcdf,
+)
 
 fileish = Union[str, pl.PosixPath, dict]
 
@@ -36,6 +44,7 @@ class CBH:
         self.verbosity = verbosity
 
         self.set_state()
+        # option to convert state to pd or xr for plotting capabilities (prior to nc write)?
         self.check()
 
         if not self.new_units is None:
@@ -62,10 +71,14 @@ class CBH:
     # def get_variable_names
     # @property
     # def get_variable
-    # @property
-    # def n_rhus
-    # @property
-    # def n_time
+
+    @property
+    def n_rhu(self):
+        return cbh_n_hru(self.state)
+
+    @property
+    def n_time(self):
+        return cbh_n_time(self.state)
 
     def convert_units(self):
         pass
@@ -78,5 +91,8 @@ class CBH:
         _ = cbh_check(self.state, verbosity=self.verbosity)
         return
 
-    def to_netcdf(self, nc_file):
+    def to_netcdf(
+        self, nc_file, clobber: bool = True, output_vars: list = None
+    ):
+        _ = cbh_to_netcdf(self.state, nc_file)
         pass

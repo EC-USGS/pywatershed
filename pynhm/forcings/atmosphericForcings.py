@@ -9,6 +9,9 @@ except ModuleNotFoundError:
 class AtmosphericForcings:
     def __init__(self, forcings_file, verbose=0):
 
+        # netcdf open
+        # Set state from the netcdf file
+        # get the adjusted states? depends on how these are written out
         if forcings_file is None:
             forcing_df = _read_cbh_individual_new(
                 input_data_dir=input_data_dir,
@@ -20,11 +23,12 @@ class AtmosphericForcings:
         else:
             raise NotImplementedError
 
-        self.datetime = forcing_df.precipitation.reset_index().date.values
-        self.precipitation = forcing_df.precipitation.values
-        self.temp_max = forcing_df.temp_max.values
-        self.temp_min = forcing_df.temp_min.values
-        del forcing_df
+        # self.datetime =
+        # self.prcp =
+        # self.rainfall =
+        # self.snowfall =
+        # self.tmax =
+        # self.tmin =
 
         #
         # self.pot_et = pot_et

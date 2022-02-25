@@ -2,6 +2,7 @@ import pathlib as pl
 
 import numpy as np
 import pytest
+import xarray as xr
 
 from pynhm.preprocess.cbh import CBH
 from pynhm.preprocess.cbh_utils import cbh_files_to_df
@@ -32,6 +33,8 @@ def assert_or_print(results, answers, test_name=None):
     assert not print_ans
     return
 
+=======
+>>>>>>> jmccreight/forcings
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
@@ -157,16 +160,28 @@ def test_cbh_adj_prms_output(domain):
 
 # -------------------------------------------------------
 # # Test netcdf write
-# case_dict_netcdf = {
-#     # 0: cbh_input_dict['merced']['all'],
-#     1: {key: val for key, val in cbh_input_dict['acf'].items()
-#         if key in ['prcp', 'tmax', 'tmin']},
-# }
-
-
-# @pytest.mark.parametrize("case", list(case_dict.keys()))
-# def test_cbh_to_netcdf(case):
-#     cbh = CBH(case_dict[case])
-#     file = 'dummy.nc'
-#     cbh.to_netcdf(file)
-#     return
+def test_cbh_to_netcdf(domain, tmp_path):
+    cbh = CBH(domain["input_files_dict"])
+    tmp_file = tmp_path / "test_cbh_to_netcdf.nc"
+    # print(tmp_file)
+    cbh.to_netcdf(tmp_file)
+    ds = xr.open_dataset(tmp_file)
+    # compare the calculated means in memory and after reading the data from disk
+    for vv in ds.variables:
+        if vv == "hruid":
+            # for now this is just an index
+            assert ds[vv].mean().values.tolist() == ((len(ds[vv]) - 1) / 2)
+        elif vv == "datetime":
+            assert np.isclose(
+                ds[vv].mean().values.tolist(),
+                cbh.state["datetime"]
+                .astype("datetime64[ns]")
+                .astype(int)
+                .mean(),
+            )
+        else:
+            assert np.isclose(
+                ds[vv].mean().values.tolist(),
+                cbh.state[vv].mean(),
+            )
+    return

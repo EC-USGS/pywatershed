@@ -17,6 +17,10 @@ if print_ans:
 
 # Move this to a common util eventually
 def assert_or_print(results, answers, test_name=None):
+    if test_name is None:
+        test_name = ""
+    else:
+        test_name = f"{test_name}:"
     n_space = 4
     if print_ans and (test_name is not None):
         sp = "".join(n_space * [" "])
@@ -28,7 +32,8 @@ def assert_or_print(results, answers, test_name=None):
             sp = "".join(n_space * [" "])
             print(f"\n{sp}{key}: {results[key]}")
         else:
-            assert np.isclose(results[key], answers[key])
+            msg = f"{test_name}{key}"
+            assert np.isclose(results[key], answers[key]), msg
     # always fail if printing answers
     assert not print_ans
     return
@@ -63,18 +68,14 @@ def test_cbh_init_files_invalid(case):
     return
 
 
-# Valid instantiation, only one variable is really necessary
-# JLM: This is supplanted below, could remove this test.
-# @pytest.mark.parametrize("case", var_cases[0])
-# def test_cbh_init_files_valid(domain, case):
-#    _ = CBH(domain["cbh_inputs"][case])
-#    return
+# Valid instantiation happens in other tests.
 
 
 # -------------------------------------------------------
 # Test the file to df parser on a *single file*
 # One case is likely sufficient
 @pytest.mark.parametrize("var", [var_cases[0]])
+@timer
 def test_cbh_files_to_df(domain, var):
     the_file = domain["cbh_inputs"][var]
     assert pl.Path(the_file).exists(), the_file
@@ -87,6 +88,7 @@ def test_cbh_files_to_df(domain, var):
 
 # -------------------------------------------------------
 # Test concatenation of individual files
+@timer
 def test_cbh_df_concat(domain):
     df = cbh_files_to_df(domain["input_files_dict"])
     results = {"df_concat": df.mean().mean()}

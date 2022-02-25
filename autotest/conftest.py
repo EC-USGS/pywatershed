@@ -44,13 +44,12 @@ def pytest_generate_tests(metafunc):
                     )
                 for fd_key in ["prms_outputs", "cbh_inputs"]:
                     domain_dict[fd_key] = {
-                        key: pathlib.Path(val)
+                        key: (
+                            pathlib.Path(val)
+                            if pathlib.Path(val).is_absolute()
+                            else domain_dict["dir"] / val
+                        )
                         for key, val in domain_dict[fd_key].items()
-                    }
-                    domain_dict[fd_key] = {
-                        key: domain_dict["dir"] / val
-                        for key, val in domain_dict[fd_key].items()
-                        if not pathlib.Path(val).is_absolute()
                     }
                 # Construct a dictonary that gets used in CBH
                 domain_dict["input_files_dict"] = {

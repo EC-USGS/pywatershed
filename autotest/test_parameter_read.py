@@ -36,10 +36,3 @@ def test_parameter_read(domain):
     print(f"success parsing...'{parameter_file}'")
 
     return
-
-
-if __name__ == "__main__":
-
-    # !JLM deprecate?
-    for parameter_key, parameter_file in zip(parameter_keys, parameter_files):
-        test_parameter_read(parameter_key, parameter_file)

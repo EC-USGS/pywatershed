@@ -1,19 +1,19 @@
 domain_name: drb_2yr
 
 cbh_inputs:
-      prcp: "prcp.cbh"
-      rhavg: "rhavg.cbh"
-      tmax: "tmax.cbh"
-      tmin: "tmin.cbh"
+      prcp: prcp.cbh
+      rhavg: rhavg.cbh
+      tmax: tmax.cbh
+      tmin: tmin.cbh
 
-param_file: "myparam.param"
+param_file: myparam.param
 
 prms_outputs:
-  prcp_adj: "output/nhru_hru_ppt.csv"
-  rainfall_adj: "output/nhru_hru_rain.csv"
-  snowfall_adj: "output/nhru_hru_snow.csv"
-  tmax_adj: "output/nhru_tmaxf.csv"
-  tmin_adj: "output/nhru_tminf.csv"
+  prcp_adj: output/nhru_hru_ppt.csv
+  rainfall_adj: output/nhru_hru_rain.csv
+  snowfall_adj: output/nhru_hru_snow.csv
+  tmax_adj: output/nhru_tmaxf.csv
+  tmin_adj: output/nhru_tminf.csv
 
 test_ans:
 

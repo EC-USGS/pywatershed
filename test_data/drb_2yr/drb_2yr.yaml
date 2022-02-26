@@ -17,6 +17,11 @@ prms_outputs:
 
 test_ans:
 
+  parameter_read:
+    nhru: 765
+    ngw: 765
+    nssr: 765
+
   preprocess_cbh:
     files_to_df:
       prcp: 0.12495362248866715

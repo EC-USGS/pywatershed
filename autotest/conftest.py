@@ -10,16 +10,16 @@ def pytest_addoption(parser):
         action="append",
         default=[],
         help=(
-            "YAML file(s) for indiv domain tests "
-            "(can pass multiples of this argument)"
+            "YAML file(s) for indiv domain tests. You can pass multiples of "
+            "this argument. Default value (not shown here) is "
+            "--domain_yaml=../test_data/drb_2yr/drb_2yr.yaml."
         ),
     )
 
     parser.addoption(
         "--print_ans",
         required=False,
-        action="store",
-        type=bool,
+        action="store_true",
         default=False,
         help=("Print results and assert False for all domain tests"),
     )

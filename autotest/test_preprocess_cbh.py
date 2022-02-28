@@ -8,35 +8,7 @@ from pynhm.preprocess.cbh import CBH
 from pynhm.preprocess.cbh_utils import cbh_files_to_df
 from pynhm.utils import PrmsParameters, timer
 from pynhm.utils.prms5util import load_prms_statscsv
-
-print_ans = False
-
-if print_ans:
-    print("\n  preprocess_cbh:")
-
-
-# Move this to a common util eventually
-def assert_or_print(results, answers, test_name=None):
-    if test_name is None:
-        test_name = ""
-    else:
-        test_name = f"{test_name}:"
-    n_space = 4
-    if print_ans and (test_name is not None):
-        sp = "".join(n_space * [" "])
-        n_space = n_space + 2
-        print(f"\n{sp}{test_name}:")
-
-    for key in results.keys():
-        if print_ans:
-            sp = "".join(n_space * [" "])
-            print(f"\n{sp}{key}: {results[key]}")
-        else:
-            msg = f"{test_name}{key}"
-            assert np.isclose(results[key], answers[key]), msg
-    # always fail if printing answers
-    assert not print_ans
-    return
+from utils import assert_or_print
 
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
@@ -82,7 +54,9 @@ def test_cbh_files_to_df(domain, var):
     df = cbh_files_to_df_timed(the_file)
     results = {var: df.mean().mean()}
     answers = domain["test_ans"]["preprocess_cbh"]["files_to_df"]
-    assert_or_print(results, answers, "files_to_df")
+    assert_or_print(
+        results, answers, "files_to_df", print_ans=domain["print_ans"]
+    )
     return
 
 
@@ -93,7 +67,7 @@ def test_cbh_df_concat(domain):
     df = cbh_files_to_df(domain["input_files_dict"])
     results = {"df_concat": df.mean().mean()}
     answers = domain["test_ans"]["preprocess_cbh"]
-    assert_or_print(results, answers)
+    assert_or_print(results, answers, print_ans=domain["print_ans"])
     return
 
 
@@ -107,7 +81,7 @@ def test_cbh_np_dict(domain):
     }
     results["datetime"] = cbh.state["datetime"].astype(int).mean()
     answers = domain["test_ans"]["preprocess_cbh"]["np_dict"]
-    assert_or_print(results, answers, "np_dict")
+    assert_or_print(results, answers, "np_dict", print_ans=domain["print_ans"])
     return
 
 
@@ -121,7 +95,7 @@ def test_cbh_adj(domain):
         key: val.mean() for key, val in cbh.state.items() if "_adj" in key
     }
     answers = domain["test_ans"]["preprocess_cbh"]["adj"]
-    assert_or_print(results, answers, "adj")
+    assert_or_print(results, answers, "adj", print_ans=domain["print_ans"])
     return
 
 

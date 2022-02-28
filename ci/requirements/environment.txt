@@ -2,6 +2,7 @@ black
 isort
 flake8
 pylint
+netCDF4
 numpy
 pandas
 pip
@@ -9,3 +10,5 @@ pytest
 pytest-cov
 pytest-env
 pytest-xdist
+pyyaml
+xarray

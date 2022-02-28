@@ -3,6 +3,7 @@ channels:
   - conda-forge
   - nodefaults
 dependencies:
+  - netCDF4
   - numpy
   - pandas
   - pip
@@ -10,4 +11,10 @@ dependencies:
   - pytest-cov
   - pytest-env
   - pytest-xdist
-  
+  - pyyaml
+  - xarray
+  - pip:
+    - black
+    - isort
+    - flake8
+    - pylint

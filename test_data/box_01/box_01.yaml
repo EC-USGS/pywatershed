@@ -1,0 +1,8 @@
+domain_name: box_01
+
+cbh_inputs:
+  prcp: prcp.cbh
+  tmax: tmax.cbh
+  tmin: tmin.cbh
+  
+param_file: box_01.params

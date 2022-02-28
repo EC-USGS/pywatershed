@@ -1,6 +1,11 @@
 import math
 import pathlib as pl
+from datetime import datetime
 from typing import Union
+
+import netCDF4 as nc4
+import numpy as np
+import pandas as pd
 
 try:
     import numpy as np
@@ -20,49 +25,48 @@ one = np.ones((1))[0]
 file_type = Union[str, pl.Path]
 fileish = Union[str, pl.Path, dict]
 
-# Absorb some slop in the naming conventions
-cbh_std_name_from_dict = {
-    "prcp": ["precip", "prcp"],
-    "rhavg": ["rhavg"],
-    "tmax": ["tmax"],
-    "tmin": ["tmin"],
-    #'orad': ['orad'],  # these are in some cbh for now only take NHM inputs above
-    #'ptet': ['ptet'],
-    #'runoff': ['runoff']
-}
 
-required_vars = ["precp", "tmax", "tmin"]
-
+# JLM: is this stuff in parker's XML?
+# https://github.com/paknorton/pyPRMS/blob/f41a7911af0b34c575005ed5d133c36111ccccf3/pyPRMS/xml/variables.xml
+# in dimensions... sort of, not exactly, there are sort of variations...
+# JLM: specify fill values? or adopt global fill values somewhere. this probably depends on what the model uses
+# the netcdf output is currently taking what the defaults are for netCDF4
 cbh_metadata = {
-    "time": {
+    "datetime": {
+        "type": "f4",
         "long_name": "time",
         "standard_name": "time",
         "calendar": "standard",  # Depends, revisit
-        "units": "days since 1979-01-01 00:00:00",
-    },  # Depends, may not be correct
+        "units": "days since 1979-01-01 00:00:00",  # Depends, may not be correct
+    },
     "hruid": {
+        "type": "i4",
         "long_name": "Hydrologic Response Unit ID (HRU)",
         "cf_role": "timeseries_id",
     },
     "tmax": {
-        "_FillValue": 9.96921e36,
+        "type": "f4",
+        "_FillValue": 9.96921e36,  # magic number
         "long_name": "Maximum daily air temperature",
         "units": "degree_fahrenheit",
         "standard_name": "maximum_daily_air_temperature",
     },
     "tmin": {
+        "type": "f4",
         "_FillValue": 9.96921e36,
         "long_name": "Minimum daily air temperature",
         "units": "degree_fahrenheit",
         "standard_name": "minimum_daily_air_temperature",
     },
     "prcp": {
+        "type": "f4",
         "_FillValue": 9.96921e36,
         "long_name": "daily total precipitation",
         "units": "in",
         "standard_name": "daily_total_precipitation",
     },
     "rhavg": {
+        "type": "f4",
         "_FillValue": 9.96921e36,
         "long_name": "Daily mean relative humidity",
         "units": "percent",
@@ -80,14 +84,6 @@ created_line = "Created "
 written_line = "Written "
 hash_line = "##############"
 hash_line_official = "########################################"
-
-
-def _get_std_name(name: str) -> str:
-    for key, val in cbh_std_name_from_dict.items():
-        if name in val:
-            return key
-    msg = f"The variable name '{name}' can not be mapped to a standard name."
-    raise ValueError(msg)
 
 
 def _cbh_file_to_df(the_file: file_type) -> pd.DataFrame:
@@ -116,8 +112,7 @@ def _cbh_file_to_df(the_file: file_type) -> pd.DataFrame:
         key, count = meta_lines[posn].split(" ")
         count = int(count)
         zs = math.ceil(math.log(count, 10))
-        std_name = _get_std_name(key)
-        col_names += [f"{std_name}{str(ii).zfill(zs)}" for ii in range(count)]
+        col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
         # col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
         var_count_dict[key] = count
 
@@ -195,10 +190,21 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
     df.columns = pd.MultiIndex.from_tuples(col_name_tuples)
     var_names = df.columns.unique(level=0)
     np_dict = {}
-    np_dict["datetime"] = df.index.to_numpy(copy=True).astype("datetime64[D]")
+    np_dict["datetime"] = df.index.to_numpy(copy=True).astype("datetime64[s]")
     for vv in var_names:
         np_dict[vv] = df[vv].to_numpy(copy=True)
     return np_dict
+
+
+def cbh_n_hru(np_dict: dict) -> int:
+    shapes = [var.shape for key, var in np_dict.items() if key != "datetime"]
+    for ss in shapes:
+        assert shapes[0] == ss
+    return shapes[0][1]
+
+
+def cbh_n_time(np_dict: dict) -> int:
+    return np_dict["datetime"].shape[0]
 
 
 def cbh_files_to_np_dict(files: fileish) -> dict:
@@ -367,20 +373,84 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
 
         tmaxvar = f"tmax{adj}"
         tminvar = f"tmin{adj}"
-        if not (cbh_dict[tmaxvar] > cbh_dict[tminvar]).all():
-            msg = (
-                f"{tmaxvar} !> {tminvar}: strictly greater maybe too stringent"
-            )
-            raise ValueError(msg)
+        if (tminvar in cbh_dict.keys()) and (tmaxvar in cbh_dict.keys()):
+            if not (cbh_dict[tmaxvar] >= cbh_dict[tminvar]).all():
+                msg = f"{tmaxvar} !> {tminvar}: strictly greater maybe too stringent"
+                raise ValueError(msg)
 
         # assert (cbh_dict['tmax'] >= zero).all()  # use units for checking max/minimums?
 
         prcpvar = f"prcp{adj}"
-        if not (cbh_dict[prcpvar] >= zero).all():
-            msg = f"{prcpvar} contains negative values"
-            raise ValueError(msg)
+        if prcpvar in cbh_dict.keys():
+            if not (cbh_dict[prcpvar] >= zero).all():
+                msg = f"{prcpvar} contains negative values"
+                raise ValueError(msg)
 
     if verbosity >= 1:
         print("cbh state check successful")
+    return
 
+
+def cbh_to_netcdf(
+    np_dict: dict,
+    filename: fileish,
+    clobber: bool = True,
+    output_vars: list = None,
+    zlib: bool = True,
+    complevel: int = 4,
+) -> None:
+
+    ds = nc4.Dataset(filename, "w", clobber=clobber)
+    ds.setncattr("Description", "Climate by HRU")
+    # ds.setncattr('Bandit_version', __version__)
+    # ds.setncattr('NHM_version', nhmparamdb_revision)
+
+    # Dimensions
+    ds.createDimension("time", None)  # None gives an unlimited dim
+    n_hru = cbh_n_hru(np_dict)
+    ds.createDimension("hru", n_hru)
+
+    time = ds.createVariable(
+        "datetime", cbh_metadata["datetime"]["type"], ("time")
+    )
+    for att, val in cbh_metadata["datetime"].items():
+        time.setncattr(att, val)
+    time[:] = nc4.date2num(
+        np_dict["datetime"].astype(datetime),
+        units=cbh_metadata["datetime"]["units"],
+        calendar=cbh_metadata["datetime"]["calendar"],
+    )
+
+    hruid = ds.createVariable("hruid", cbh_metadata["hruid"]["type"], ("hru"))
+    for att, val in cbh_metadata["hruid"].items():
+        hruid.setncattr(att, val)
+
+    # Write the HRU ids
+    hruid[:] = np.arange(
+        n_hru, dtype=int
+    )  # JLM I dont have these yet... just use index
+
+    # Variables
+    var_list = set(np_dict.keys()).difference({"datetime"})
+    if output_vars is not None:
+        var_list = [var for var in var_list if var in output_vars]
+
+    for vv in var_list:
+        vvtype = cbh_metadata[vv]["type"]
+        var = ds.createVariable(
+            vv,
+            vvtype,
+            ("time", "hru"),
+            fill_value=nc4.default_fillvals[vvtype],  # JLM: sus
+            zlib=zlib,
+            complevel=complevel,
+        )
+        for att, val in cbh_metadata[vv].items():
+            if att in ["_FillValue"]:
+                continue
+            var.setncattr(att, val)
+        ds.variables[vv][:, :] = np_dict[vv]
+
+    ds.close()
+    print(f"Wrote netcdf file: {filename}")
     return

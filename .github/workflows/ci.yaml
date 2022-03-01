@@ -163,3 +163,10 @@ jobs:
           # name: codecov-umbrella
           fail_ci_if_error: false
           version: "v0.1.15"
+
+      - name: Upload coverate to Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: ./autotest/coverage.xml
+          

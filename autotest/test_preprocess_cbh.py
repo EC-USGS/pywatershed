@@ -146,10 +146,10 @@ def test_cbh_to_netcdf(domain, tmp_path):
             assert ds[vv].mean().values.tolist() == ((len(ds[vv]) - 1) / 2)
         elif vv == "datetime":
             assert np.isclose(
-                ds[vv].mean().values.tolist(),
+                ds[vv].astype(float).values.mean(),
                 cbh.state["datetime"]
-                .astype("datetime64[ns]")
-                .astype(int)
+                 .astype("datetime64[ns]")
+                .astype(float)
                 .mean(),
             )
         else:

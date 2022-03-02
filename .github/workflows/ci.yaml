@@ -164,9 +164,10 @@ jobs:
           fail_ci_if_error: false
           version: "v0.1.15"
 
-      - name: Upload coverate to Coveralls
-        uses: coverallsapp/github-action@master
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v1.1.2
         with:
+          # github-token: ${{ github.token }}        
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: ./autotest/coverage.xml
+          path-to-lcov: "./autotest/coverage.xml"
           

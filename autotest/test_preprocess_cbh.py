@@ -10,7 +10,6 @@ from pynhm.utils import PrmsParameters, timer
 from pynhm.utils.prms5util import load_prms_statscsv
 from utils import assert_or_print
 
-
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 
@@ -148,7 +147,7 @@ def test_cbh_to_netcdf(domain, tmp_path):
             assert np.isclose(
                 ds[vv].astype(float).values.mean(),
                 cbh.state["datetime"]
-                 .astype("datetime64[ns]")
+                .astype("datetime64[ns]")
                 .astype(float)
                 .mean(),
             )

@@ -1,9 +1,5 @@
-try:
-    import numpy as np
-except ModuleNotFoundError:
-    np = None
-
 # JLM: "front load" option vs "load as you go"
+import numpy as np
 
 
 class AtmosphericForcings:

@@ -1,9 +1,6 @@
 import pathlib as pl
 
-try:
-    import pandas as pd
-except ModuleNotFoundError:
-    pd = None
+import pandas as pd
 
 
 class CsvFile:

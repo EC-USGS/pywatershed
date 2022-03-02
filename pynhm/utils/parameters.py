@@ -121,7 +121,7 @@ def _load_prms_parameters(parameter_file):
                         for jj in range(num_vals):
                             line = f.readline().rstrip()
                             line_num += 1
-                            vs[jj] = float(line)
+                            vs[jj] = float(line.split()[0])
 
                     elif tp == 1:
                         vs = np.zeros(num_vals, dtype=int)

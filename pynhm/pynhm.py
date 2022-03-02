@@ -4,7 +4,7 @@
 import datetime
 
 from .forcings.atmosphericForcings import AtmosphericForcings
-from .forcings.Forcings import Forcings
+from .base.boundaryForcings import BoundaryForcings
 
 
 class driver:
@@ -15,7 +15,7 @@ class driver:
         delta_time: datetime.timedelta,
         storage_units: list,
         climate_forcings: AtmosphericForcings = None,
-        external_forcings: Forcings = None,
+        external_forcings: BoundaryForcings = None,
         verbose: int = False,
     ):
         print("Initializing simulation...")

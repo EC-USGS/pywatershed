@@ -8,7 +8,7 @@ except ModuleNotFoundError:
     DataFrame = None
 
 
-class Forcings:
+class BoundaryForcings:
     def __init__(
         self,
         name: str = None,

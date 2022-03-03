@@ -1,18 +1,10 @@
 import numpy as np
-
-# JLM this seems treating the symptom
-try:
-    import pandas as pd
-    from pandas import DataFrame
-except ModuleNotFoundError:
-    pd = None
-    DataFrame = None
-
+import pandas as pd
 
 # JLM: where do we keep the metadata attributes?
 
 # This is a base AtmBoundaryLayer class
-# It has no state.
+# It has no state, only time.
 # How do we define the start time?
 # Are the forcings valid over the interval [current_time, current_time + time_step]?
 
@@ -35,9 +27,11 @@ class AtmBoundaryLayer:
         # method for initing this... need time to get it
         self._current_time_index = 0
 
+        self.datetime = None
+
         return
 
-    def _has_state(self, state_name, fail=True):
+    def _has_state(self, state_name, fail=True) -> bool:
         if hasattr(self, state_name):
             return True
         else:
@@ -47,24 +41,45 @@ class AtmBoundaryLayer:
             else:
                 return False
 
-    # do we really want set_state public??
+    # JLM: do want set_state public? or part of init?
     def set_state(self, state_name: str, value: np.array) -> None:
         if self._has_state(state_name):
             setattr(self, state_name, value)
         return None
 
-    # give a time argument for getting the state at some/current time?
     def get_state(self, state_name: str) -> np.array:
         if self._has_state(state_name):
             return getattr(self, state_name)
 
+    # JLM: Getattr is nice but i assume it is copying.
     def get_current_state(self, state_name: str) -> np.array:
         if self._has_state(state_name):
-            return getattr(self, state_name)[self.current_time_index, :]
+            return getattr(self, state_name).take(
+                indices=self.current_time_index, axis=0
+            )
+
+    # JLM all this stuff might go in a time or datetime subdir and be common to
+    # all objects that need time?
+    @property
+    def current_time_index(self) -> np.datetime64:
+        if self.datetime is None:
+            return None
+        else:
+            ind = np.where(self.datetime == self._current_time)[0]
+            if len(ind) == 0:
+                msg = (
+                    f"Current/new datetime is not in the time data: "
+                    f"{self._current_time}"
+                )
+                raise ValueError(msg)
+            return ind
 
     @property
     def current_time(self) -> np.datetime64:
-        return self.time[self.current_time_index]
+        if self.datetime is None:
+            return None
+        else:
+            return self.datetime[self.current_time_index]
 
     @property
     def time_step(self) -> np.timedelta64:
@@ -73,13 +88,11 @@ class AtmBoundaryLayer:
     # JLM check that time and the time dimensions on the states match on set or inits
     # JLM ensure the spatial dimension matches.
 
-    def advance(
-        self,
-        itime_step: int,
-        current_date: np.datetime64,
-    ):
-        self.itime_step = itime_step
-        self.current_date = current_date
-        dt = pd.to_datetime(current_date)
-        for key, df in self.forcings.items():
-            self.current[key] = df.iloc[df.index.get_loc(dt, method="nearest")]
+    def advance(self) -> None:
+        self._current_time += self._time_step
+        # this ensures sanity
+        _ = self.current_time
+        return
+
+    def calculate(self) -> None:
+        pass

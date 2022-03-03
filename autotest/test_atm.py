@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 from pynhm.atmosphere.AtmBoundaryLayer import AtmBoundaryLayer
+from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 
 test_time = np.arange(
     datetime(2000, 1, 1), datetime(2000, 7, 1), timedelta(days=1)
@@ -21,10 +22,13 @@ atm_init_test_dict = {
 test_time_steps = [atm_init_test_dict["time_step"], np.timedelta64(1, "h")]
 
 
-# Parameterize options to init?
-@pytest.fixture
-def atm_init():
-    atm = AtmBoundaryLayer(**atm_init_test_dict)
+# Test that Atm and NHM have the same functionality as Atm
+@pytest.fixture(params=["Atm", "NHM"])
+def atm_init(request):
+    if request.param == "Atm":
+        atm = AtmBoundaryLayer(**atm_init_test_dict)
+    else:
+        atm = NHMBoundaryLayer(**atm_init_test_dict)
     return atm
 
 
@@ -70,15 +74,14 @@ class TestAtmBoundaryLayer:
     @pytest.mark.parametrize(
         "time_step", test_time_steps, ids=["valid", "invalid"]
     )
-    def test_advance(self, time_step):
-        init_dict = deepcopy(atm_init_test_dict)
-        init_dict["time_step"] = time_step
-        atm = AtmBoundaryLayer(**init_dict)
-        atm.set_state("datetime", test_time)
+    def test_advance(self, atm_init, time_step):
+        # the easy way is to hack private data
+        atm_init._time_step = time_step
+        atm_init.set_state("datetime", test_time)
         try:
-            atm.advance()
-            assert atm.current_time == (
-                init_dict["start_time"] + atm.time_step
+            atm_init.advance()
+            assert atm_init.current_time == (
+                atm_init_test_dict["start_time"] + time_step
             )
             if time_step == test_time_steps[1]:
                 assert False

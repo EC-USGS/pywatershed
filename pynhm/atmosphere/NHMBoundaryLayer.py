@@ -5,7 +5,9 @@ from .AtmBoundaryLayer import AtmBoundaryLayer
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
     def __init__(self, *args, **kwargs):
-        super().__init__(nc_file, **kwargs)
+        super().__init__(*args, **kwargs)
+
+        # super().__init__(nc_file, **kwargs)
 
         # self.datetime =
         # self.prcp =

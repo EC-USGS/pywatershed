@@ -51,7 +51,7 @@ class CBH:
             self.convert_units()
 
         if not self.params is None:
-            self.adjust(params)
+            self.adjust(self.params)
             self.check()
 
         if self.output_file is not None:

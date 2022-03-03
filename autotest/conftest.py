@@ -48,6 +48,7 @@ def pytest_generate_tests(metafunc):
 
             # Runtime test options here
             domain_dict["print_ans"] = print_ans
+
             # Construct/derive some convenience quantities
             domain_dict["file"] = dd_file
             domain_dict["dir"] = dd_file.parent

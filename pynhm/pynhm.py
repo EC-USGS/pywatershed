@@ -3,8 +3,9 @@
 """
 import datetime
 
-from .forcings.atmosphericForcings import AtmosphericForcings
-from .forcings.Forcings import Forcings
+from .atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+
+# from .forcings.Forcings import Forcings
 
 
 class driver:
@@ -14,17 +15,17 @@ class driver:
         end_time: datetime,
         delta_time: datetime.timedelta,
         storage_units: list,
-        climate_forcings: AtmosphericForcings = None,
-        external_forcings: Forcings = None,
+        boundary_layer: NHMBoundaryLayer = None,
+        # external_forcings: Forcings = None,
         verbose: int = False,
     ):
         print("Initializing simulation...")
         self.current_time = current_time
         self.end_time = end_time
         self.delta_time = delta_time
-        self.climate_forcings = climate_forcings
+        self.boundary_layer = boundary_layer
         self.storage_units = storage_units
-        self.external_forcings = external_forcings
+        # self.external_forcings = external_forcings
         self.verbose = verbose
 
         self.time_length = float(delta_time.days)
@@ -50,8 +51,8 @@ class driver:
         """Run a time step"""
         if self.climate_forcings is not None:
             self.climate_forcings.advance(self.itime_step, self.current_time)
-        if self.external_forcings is not None:
-            self.external_forcings.advance(self.itime_step, self.current_time)
+        # if self.external_forcings is not None:
+        #    self.external_forcings.advance(self.itime_step, self.current_time)
 
         for storage_unit in self.storage_units:
             storage_unit.advance(self.itime_step)

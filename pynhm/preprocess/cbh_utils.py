@@ -415,20 +415,21 @@ def cbh_to_netcdf(
     zlib: bool = True,
     complevel: int = 4,
     global_atts: dict = {},
+    chunk_sizes={"time": 30, "hru": 0},
 ) -> None:
+    # Default time chunk is for a read pattern of ~monthly at a time.
 
     ds = nc4.Dataset(filename, "w", clobber=clobber)
     ds.setncattr("Description", "Climate by HRU")
     for key, val in global_atts.items():
         ds.setncattr(key, val)
 
-    # JLM: Chunking: there should be time chunking for sure
-
     # Dimensions
-    ds.createDimension("time", None)  # None gives an unlimited dim
-    n_hru = cbh_n_hru(np_dict)
-    ds.createDimension("hru", n_hru)
+    # None for the len argument gives an unlimited dim
+    ds.createDimension("time", None)  # cbh_n_time(np_dict))
+    ds.createDimension("hru", cbh_n_hru(np_dict))
 
+    # Dim Variables
     time = ds.createVariable(
         "datetime", cbh_metadata["datetime"]["type"], ("time")
     )
@@ -464,6 +465,7 @@ def cbh_to_netcdf(
             fill_value=nc4.default_fillvals[vvtype],  # JLM: sus
             zlib=zlib,
             complevel=complevel,
+            chunksizes=tuple(chunk_sizes.values()),
         )
         for att, val in cbh_metadata[vv].items():
             if att in ["_FillValue"]:

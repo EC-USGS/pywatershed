@@ -1,8 +1,10 @@
 import os
 import sys
+
 import pytest
-from utils import assert_or_print
+
 from pynhm.utils import PrmsParameters
+from utils import assert_or_print
 
 
 def test_parameter_read(domain):

@@ -10,7 +10,6 @@ from pynhm.utils import PrmsParameters, timer
 from pynhm.utils.prms5util import load_prms_statscsv
 from utils import assert_or_print
 
-
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 

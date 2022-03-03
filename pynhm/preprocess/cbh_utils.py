@@ -7,15 +7,6 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 
-try:
-    import numpy as np
-except ModuleNotFoundError:
-    np = None
-try:
-    import pandas as pd
-except ModuleNotFoundError:
-    pd = None
-
 from ..utils.parameters import PrmsParameters
 
 zero = np.zeros((1))[0]

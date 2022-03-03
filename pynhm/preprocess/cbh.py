@@ -26,7 +26,8 @@ class CBH:
     def __init__(
         self,
         files: fileish,
-        adjust: PrmsParameters = None,
+        parameters: PrmsParameters = None,
+        adjust: bool = False,
         units: dict = None,
         new_units: dict = None,
         output_vars: list = None,
@@ -35,7 +36,8 @@ class CBH:
     ) -> None:
 
         self.files = files
-        self.params = adjust
+        self.params = parameters
+        self.adjust = adjust
         self.units = units
         self.new_units = new_units
         self.state = None
@@ -45,14 +47,12 @@ class CBH:
 
         self.set_state()
         # option to convert state to pd or xr for plotting capabilities (prior to nc write)?
-        self.check()
 
-        if not self.new_units is None:
+        if self.new_units is not None:
             self.convert_units()
 
-        if not self.params is None:
-            self.adjust(self.params)
-            self.check()
+        if (self.adjust) and (self.params is not None):
+            self._adjust()
 
         if self.output_file is not None:
             self.to_netcdf()
@@ -62,7 +62,8 @@ class CBH:
     # Is this private?
     # other setters
     def set_state(self):
-        self.state = cbh_files_to_np_dict(self.files)
+        self.state = cbh_files_to_np_dict(self.files, self.params)
+        self.check()
         return
 
     # @property
@@ -83,16 +84,15 @@ class CBH:
     def convert_units(self):
         pass
 
-    def adjust(self, parameters):
-        _ = cbh_adjust(self.state, parameters)
+    def _adjust(self):
+        _ = cbh_adjust(self.state, self.params)
+        # self.check()  # JLM: put back, but this is also wrong in the prms/nhm outputs
         return
 
     def check(self):
         _ = cbh_check(self.state, verbosity=self.verbosity)
         return
 
-    def to_netcdf(
-        self, nc_file, clobber: bool = True, output_vars: list = None
-    ):
-        _ = cbh_to_netcdf(self.state, nc_file)
+    def to_netcdf(self, *args, **kwargs):
+        _ = cbh_to_netcdf(self.state, *args, **kwargs)
         pass

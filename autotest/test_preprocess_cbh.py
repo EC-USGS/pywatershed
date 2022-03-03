@@ -19,6 +19,15 @@ def params(domain):
     return PrmsParameters(domain["param_file"])
 
 
+# It appears difficult/ugly to reuse the above
+@pytest.fixture(params=["no_params", "params"])
+def params_and_none(request, domain):
+    if request.param == "params":
+        return PrmsParameters(domain["param_file"])
+    else:
+        return None
+
+
 @timer
 def cbh_files_to_df_timed(*args):
     df = cbh_files_to_df(*args)
@@ -71,7 +80,7 @@ def test_cbh_files_to_df(domain, var, params):
 def test_cbh_df_concat(domain):
     df = cbh_files_to_df(domain["input_files_dict"])
     results = {"df_concat": df.mean().mean()}
-    answers = domain["test_ans"]["preprocess_cbh"]
+    answers = {"df_concat": domain["test_ans"]["preprocess_cbh"]["df_concat"]}
     assert_or_print(results, answers, print_ans=domain["print_ans"])
     return
 
@@ -80,7 +89,7 @@ def test_cbh_df_concat(domain):
 # Test conversion to numpy dict
 def test_cbh_np_dict(domain, params):
     # Could hide the above in the domain on read
-    cbh = CBH(domain["input_files_dict"])  # , adjust=params)
+    cbh = CBH(domain["input_files_dict"], parameters=params)
     dont_average = ["datetime", "hru_ind", "nhm_id"]
     results = {
         key: val.mean()
@@ -95,44 +104,47 @@ def test_cbh_np_dict(domain, params):
 
 # -------------------------------------------------------
 # Test forcing adjustment
-def test_cbh_adj(domain, params):
-    cbh = CBH(domain["input_files_dict"])  # JLM also test passing on init?
-    _ = cbh.adjust(params)
-    results = {
-        key: val.mean() for key, val in cbh.state.items() if "_adj" in key
-    }
-    answers = domain["test_ans"]["preprocess_cbh"]["adj"]
-    assert_or_print(results, answers, "adj", print_ans=domain["print_ans"])
+def test_cbh_adj(domain, params_and_none):
+    cbh = CBH(
+        domain["input_files_dict"], parameters=params_and_none, adjust=True
+    )
+    if params_and_none is not None:
+        results = {
+            key: val.mean() for key, val in cbh.state.items() if "_adj" in key
+        }
+        answers = domain["test_ans"]["preprocess_cbh"]["adj"]["params"]
+        assert_or_print(
+            results, answers, "adj:params", print_ans=domain["print_ans"]
+        )
+    else:
+        results = {
+            key: val.mean()
+            for key, val in cbh.state.items()
+            if key in var_cases
+        }
+        answers = domain["test_ans"]["preprocess_cbh"]["adj"]["no_params"]
+        assert_or_print(
+            results, answers, "adj:params", print_ans=domain["print_ans"]
+        )
+
     return
 
 
 # -------------------------------------------------------
 # Test forcing adj, compare to prms output
-case_list_adj_prms_output = ["drb_2yr"]
-
-
 def test_cbh_adj_prms_output(domain, params):
-    cbh = CBH(domain["input_files_dict"])
-
-    @timer
-    def adj_timed(params):
-        return cbh.adjust(params)
-
-    _ = adj_timed(params)
-
+    cbh = CBH(domain["input_files_dict"], params, adjust=True)
     for var, var_file in domain["prms_outputs"].items():
         prms_output = load_prms_statscsv(var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()
         wh_dates = np.where(np.isin(cbh.state["datetime"], p_dates))
-        # print(var)
         result = np.isclose(
             p_array,
             cbh.state[var][wh_dates, :],
             rtol=1e-121,
             atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
         )
-        # print(result.sum()/np.prod(result.shape))
         assert result.all()
 
     return
@@ -140,17 +152,21 @@ def test_cbh_adj_prms_output(domain, params):
 
 # -------------------------------------------------------
 # # Test netcdf write
-def test_cbh_to_netcdf(domain, tmp_path):
-    cbh = CBH(domain["input_files_dict"])
+# @pytest.mark.parametrize("use_params", [False, True])
+def test_cbh_to_netcdf(domain, tmp_path, params, params_and_none):
+    cbh = CBH(domain["input_files_dict"], params_and_none)
     tmp_file = tmp_path / "test_cbh_to_netcdf.nc"
     print(tmp_file)
-    _ = cbh.to_netcdf(tmp_file)
+    global_atts = {"domain_name": domain["domain_name"]}
+    _ = cbh.to_netcdf(tmp_file, global_atts=global_atts)
     ds = xr.open_dataset(tmp_file)
     # compare the calculated means in memory and after reading the data from disk
     for vv in ds.variables:
-        if vv == "hruid":
-            # for now this is just an index
-            assert ds[vv].mean().values.tolist() == ((len(ds[vv]) - 1) / 2)
+        if vv in ["hru_ind", "nhm_id"]:
+            assert np.isclose(
+                ds[vv].astype(float).values.mean(),
+                cbh.state[vv].astype(float).mean(),
+            )
         elif vv == "datetime":
             assert np.isclose(
                 ds[vv].astype(float).values.mean(),

@@ -1,38 +1,51 @@
 import warnings
+from copy import deepcopy
 
 import netCDF4 as nc4
 import numpy as np
 
-# JLM: "front load" option vs "load as you go"
-# JLM: metadata
+from ..preprocess.cbh_utils import cbh_adjust
+from ..utils.parameters import PrmsParameters
 from .AtmBoundaryLayer import AtmBoundaryLayer
+
+# JLM: where is metadata
 
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
-    def __init__(self, nc_file, *args, **kwargs):
+    def __init__(self, nc_file, *args, nc_read_vars=None, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.name = "NHMBoundaryLayer"
         self._nc_file = nc_file
+        self._nc_read_vars = nc_read_vars
 
         # Dimensions and dimension variables
         self.datetime = None
-        self.hru_id = None
-        self.hru_id_is_nhm = None
+        self.spatial_id = None
+        self.spatial_id_is_nhm = None
         # property hrus or space & nspace, time &ntime
 
         # The states
-        self.state_vars_in_file = [
+        self.variables = [
             "prcp",
+            "rhavg",
             "rainfall",
             "snowfall",
             "tmax",
             "tmin",
         ]
+        self._potential_variables = deepcopy(self.variables)
+        self._self_file_vars = {}
+        self._n_states_adj = 0
         self.prcp = None
+        self.rhavg = None
         self.rainfall = None
         self.snowfall = None
         self.tmax = None
         self.tmin = None
+
+        self._allow_param_adjust = None
+        self._state_adjusted_here = False
 
         # To be calculated (diagnostic?)
         self.pot_et = None
@@ -44,11 +57,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.ds_var_chunking = None
         self._open_nc_file()
         self._read_nc_file()
+        # self._close_nc_file()
         return
 
-    # Set state from the netcdf file
-    # get the adjusted states? depends on how these are written out
-
+    # move this down? create helper functions? it is too long to be near top.
     def _open_nc_file(self):
         self.dataset = nc4.Dataset(self._nc_file, "r")
         self.ds_var_list = list(self.dataset.variables.keys())
@@ -68,32 +80,122 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             .astype("datetime64[s]")
             # JLM: the global time type as in cbh_utils, define somewhere
         )
-        hru_id_name = "nhm_id" if "nhm_id" in self.ds_var_list else "hru_ind"
-        self.hru_id = self.dataset.variables[hru_id_name][:]
+        spatial_id_name = (
+            "nhm_id" if "nhm_id" in self.ds_var_list else "hru_ind"
+        )
+        self.spatial_id = self.dataset.variables[spatial_id_name][:]
+
+        if self._nc_read_vars is None:
+
+            # If specific variables are not specified for reading,
+            # then set the list of variables in the file to use.
+            # Assumption is: use adjusted variables over unadjusted ones
+            # The logic below just sets this perference for adjusted
+            # variables over unadjusted vars which are warned about when
+            # used as backup
+            n_states_adj = 0
+            for self_var in self.variables:
+                adj_var = f"{self_var}_adj"
+                if adj_var in self.ds_var_list:
+                    self._self_file_vars[self_var] = adj_var
+                    n_states_adj += 1
+                elif self_var in self.ds_var_list:
+                    self._self_file_vars[self_var] = self_var
+                    msg = (
+                        f"Adjusted variable '{adj_var}' not found in dataset, "
+                        f"using apparently unadjusted variable instead: "
+                        f"'{self_var}'"
+                    )
+                    warnings.warn(msg)
+                else:
+                    msg = (
+                        f"Neither variable '{self_var}' nor {adj_var}"
+                        f"found in the file: '{self._nc_file}'"
+                    )
+                    raise ValueError(msg)
+
+        else:
+
+            # Find the specified/requested variables to read from file.
+            n_states_adj = 0
+            for self_var in self.variables:
+                adj_var = f"{self_var}_adj"
+                if adj_var in self._nc_read_vars:
+                    self._self_file_vars[self_var] = adj_var
+                    n_states_adj += 1
+                elif self_var in self._nc_read_vars:
+                    self._self_file_vars[self_var] = self_var
+                else:
+                    continue
+
+            # Post-mortem on what requested varaibles were not found:
+            for read_var in self._nc_read_vars:
+                if read_var not in list(self._self_file_vars.values()):
+                    msg = (
+                        f"Requested variable '{read_var}' not found in file "
+                        f"'{self._nc_file}'"
+                    )
+                    raise ValueError(msg)
+
+            # finally reduce the state vars to what we have
+            for state_var in deepcopy(self.variables):
+                if state_var not in self._self_file_vars.keys():
+                    del self.__dict__[state_var]
+                    _ = self.variables.remove(state_var)
+
+        # If it looks like we read adjusted parameters, try to block double
+        # adjustments on parameter_adjust
+        if n_states_adj > 0:
+            self._allow_param_adjust = False
+        else:
+            self._allow_param_adjust = True
+
         return
 
-    def _read_nc_file(self):
-        for self_var in self.state_vars_in_file:
-            file_var = f"{self_var}_adj"
-            msg = None
-            if file_var not in self.ds_var_list:
-                msg = (
-                    f"Adjusted variable '{file_var}' not found in dataset, "
-                    f"using apparently unadjusted variable instead: '{self_var}'"
-                )
-                file_var = self_var
-            # JLM: Later use chunking here
+    def _read_nc_file(self) -> None:
+        # JLM: "front load" option vs "load as you go"
+        for self_var, file_var in self._self_file_vars.items():
+            # JLM: Later use chunking here to get data
             _ = setattr(self, self_var, self.dataset.variables[file_var][:])
-            if msg is not None:
-                warnings.warn(msg)
         return
 
-    # def param_adjust(self):
-    #     msg = (
-    #         "Base AtmosphericForcings class does"
-    #         "not provide forcing adjustment"
-    #     )
-    #     raise NotImplementedError(msg)
+    def _close_nc_file(self) -> None:
+        self.dataset.close()
+        return
+
+    def param_adjust(self, parameters: PrmsParameters) -> None:
+        if not self._allow_param_adjust:
+            msg = (
+                "Parameter adjustments not permitted when any state "
+                " variables are already adjusted. \n {self._self_file_vars}"
+            )
+            raise ValueError(msg)
+
+        # construct a dict of references
+        var_dict_adj = {key: self[key] for key in self.variables}
+        var_dict_adj["datetime"] = self.datetime
+        self._parameters_for_adj = parameters
+        # This modified var_dict_adj, which is sus
+        _ = cbh_adjust(var_dict_adj, self._parameters_for_adj)
+        self._state_adjusted_here = True
+        self._allow_param_adjust = False
+
+        map_adj_dict = {
+            "datetime": "datetime",
+            "prcp": "prcp_adj",
+            "tmax": "tmax_adj",
+            "tmin": "tmin_adj",
+            "rainfall": "rainfall_adj",
+            "snowfall": "snowfall_adj",
+        }
+
+        for self_var, adj_var in map_adj_dict.items():
+            self[self_var] = var_dict_adj[adj_var]
+
+            self.variables += [self_var]
+            self.variables = list(set(self.variables))
+
+        return
 
     # def advance(self, itime_step, current_date):
     #     self.precip_current = self.precip[itime_step]

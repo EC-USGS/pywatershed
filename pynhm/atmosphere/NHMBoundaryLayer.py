@@ -1,6 +1,7 @@
+import warnings
+
 import netCDF4 as nc4
 import numpy as np
-import warnings
 
 # JLM: "front load" option vs "load as you go"
 # JLM: metadata

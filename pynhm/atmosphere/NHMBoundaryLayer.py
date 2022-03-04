@@ -1,30 +1,91 @@
+import netCDF4 as nc4
+import numpy as np
+import warnings
+
 # JLM: "front load" option vs "load as you go"
 # JLM: metadata
 from .AtmBoundaryLayer import AtmBoundaryLayer
 
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, nc_file, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # super().__init__(nc_file, **kwargs)
+        self._nc_file = nc_file
 
-        # self.datetime =
-        # self.prcp =
-        # self.rainfall =
-        # self.snowfall =
-        # self.tmax =
-        # self.tmin =
+        # Dimensions and dimension variables
+        self.datetime = None
+        self.hru_id = None
+        self.hru_id_is_nhm = None
+        # property hrus or space & nspace, time &ntime
 
-        #
-        # self.pot_et = pot_et
+        # The states
+        self.state_vars_in_file = [
+            "prcp",
+            "rainfall",
+            "snowfall",
+            "tmax",
+            "tmin",
+        ]
+        self.prcp = None
+        self.rainfall = None
+        self.snowfall = None
+        self.tmax = None
+        self.tmin = None
+
+        # To be calculated (diagnostic?)
+        self.pot_et = None
         self.pot_et_consumed = None
-        self.current_date = None
 
-    # def _read_nc_file in cbh_utils,
-    # netcdf open
+        # netcdf handling. consolidate these?
+        self.dataset = None
+        self.ds_var_list = None
+        self.ds_var_chunking = None
+        self._open_nc_file()
+        self._read_nc_file()
+        return
+
     # Set state from the netcdf file
     # get the adjusted states? depends on how these are written out
+
+    def _open_nc_file(self):
+        self.dataset = nc4.Dataset(self._nc_file, "r")
+        self.ds_var_list = list(self.dataset.variables.keys())
+        self.ds_var_chunking = {
+            vv: self.dataset.variables[vv].chunking()
+            for vv in self.ds_var_list
+        }
+        # Set dimension variables which are not chunked
+        self.datetime = (
+            nc4.num2date(
+                self.dataset.variables["datetime"][:],
+                units=self.dataset.variables["datetime"].units,
+                calendar=self.dataset.variables["datetime"].calendar,
+                only_use_cftime_datetimes=False,
+            )
+            .filled()
+            .astype("datetime64[s]")
+            # JLM: the global time type as in cbh_utils, define somewhere
+        )
+        hru_id_name = "nhm_id" if "nhm_id" in self.ds_var_list else "hru_ind"
+        self.hru_id = self.dataset.variables[hru_id_name][:]
+        return
+
+    def _read_nc_file(self):
+        for self_var in self.state_vars_in_file:
+            file_var = f"{self_var}_adj"
+            msg = None
+            if file_var not in self.ds_var_list:
+                msg = (
+                    f"Adjusted variable '{file_var}' not found in dataset, "
+                    f"using apparently unadjusted variable instead: '{self_var}'"
+                )
+                file_var = self_var
+            # JLM: Later use chunking here
+            _ = setattr(self, self_var, self.dataset.variables[file_var][:])
+            if msg is not None:
+                warnings.warn(msg)
+        return
 
     # def param_adjust(self):
     #     msg = (

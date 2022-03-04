@@ -154,7 +154,7 @@ def test_cbh_adj_prms_output(domain, params):
 # # Test netcdf write
 # @pytest.mark.parametrize("use_params", [False, True])
 def test_cbh_to_netcdf(domain, tmp_path, params_and_none):
-    cbh = CBH(domain["input_files_dict"], params_and_none)
+    cbh = CBH(domain["input_files_dict"], params_and_none, adjust=True)
     tmp_file = tmp_path / "test_cbh_to_netcdf.nc"
     print(tmp_file)
     global_atts = {"domain_name": domain["domain_name"]}

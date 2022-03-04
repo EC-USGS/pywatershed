@@ -47,11 +47,11 @@ class AtmBoundaryLayer:
             setattr(self, state_name, value)
         return None
 
+    # JLM: state or FLUX? hmm. differentiate? change nomenclature?
     def get_state(self, state_name: str) -> np.array:
         if self._has_state(state_name):
             return getattr(self, state_name)
 
-    # JLM: Getattr is nice but i assume it is copying.
     def get_current_state(self, state_name: str) -> np.array:
         if self._has_state(state_name):
             return getattr(self, state_name).take(

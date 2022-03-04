@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from ..utils.parameters import PrmsParameters
+from .cbh_metadata import cbh_metadata
 
 zero = np.zeros((1))[0]
 one = np.ones((1))[0]
@@ -16,59 +17,6 @@ one = np.ones((1))[0]
 file_type = Union[str, pl.Path]
 fileish = Union[str, pl.Path, dict]
 
-
-# JLM: is this stuff in parker's XML?
-# https://github.com/paknorton/pyPRMS/blob/f41a7911af0b34c575005ed5d133c36111ccccf3/pyPRMS/xml/variables.xml
-# in dimensions... sort of, not exactly, there are sort of variations...
-# JLM: specify fill values? or adopt global fill values somewhere. this probably depends on what the model uses
-# the netcdf output is currently taking what the defaults are for netCDF4
-cbh_metadata = {
-    "datetime": {
-        "type": "f4",
-        "long_name": "time",
-        "standard_name": "time",
-        "calendar": "standard",  # Depends, revisit
-        "units": "days since 1979-01-01 00:00:00",  # Depends, may not be correct
-    },
-    "hru_ind": {
-        "type": "i4",
-        "long_name": "Hydrologic Response Unit (HRU) index",
-        "cf_role": "timeseries_id",
-    },
-    "nhm_id": {
-        "type": "i4",
-        "long_name": "NHM Hydrologic Response Unit (HRU) ID",
-        "cf_role": "timeseries_id",
-    },
-    "tmax": {
-        "type": "f4",
-        "_FillValue": 9.96921e36,  # magic number
-        "long_name": "Maximum daily air temperature",
-        "units": "degree_fahrenheit",
-        "standard_name": "maximum_daily_air_temperature",
-    },
-    "tmin": {
-        "type": "f4",
-        "_FillValue": 9.96921e36,
-        "long_name": "Minimum daily air temperature",
-        "units": "degree_fahrenheit",
-        "standard_name": "minimum_daily_air_temperature",
-    },
-    "prcp": {
-        "type": "f4",
-        "_FillValue": 9.96921e36,
-        "long_name": "daily total precipitation",
-        "units": "in",
-        "standard_name": "daily_total_precipitation",
-    },
-    "rhavg": {
-        "type": "f4",
-        "_FillValue": 9.96921e36,
-        "long_name": "Daily mean relative humidity",
-        "units": "percent",
-        "standard_name": "rhavg",
-    },
-}
 
 cbh_units = {
     key: val["units"]

@@ -34,7 +34,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "tmax",
             "tmin",
         ]
-        self.variables = []deepcopy(self.variables)
+        self.variables = []
         self._self_file_vars = {}
         self._n_states_adj = 0
         self.prcp = None
@@ -94,7 +94,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             # variables over unadjusted vars which are warned about when
             # used as backup
             n_states_adj = 0
-            for self_var in self.variables:
+            for self_var in self._potential_variables:
                 adj_var = f"{self_var}_adj"
                 if adj_var in self.ds_var_list:
                     self._self_file_vars[self_var] = adj_var
@@ -118,7 +118,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
             # Find the specified/requested variables to read from file.
             n_states_adj = 0
-            for self_var in self.variables:
+            for self_var in self._potential_variables:
                 adj_var = f"{self_var}_adj"
                 if adj_var in self._nc_read_vars:
                     self._self_file_vars[self_var] = adj_var
@@ -156,7 +156,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # JLM: "front load" option vs "load as you go"
         for self_var, file_var in self._self_file_vars.items():
             # JLM: Later use chunking here to get data
-            _ = setattr(self, self_var, self.dataset.variables[file_var][:])
+            _ = self[self_var] = self.dataset.variables[file_var][:]
         return
 
     def _close_nc_file(self) -> None:

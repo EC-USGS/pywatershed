@@ -26,7 +26,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # property hrus or space & nspace, time &ntime
 
         # The states
-        self.variables = [
+        self._potential_variables = [
             "prcp",
             "rhavg",
             "rainfall",
@@ -34,7 +34,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "tmax",
             "tmin",
         ]
-        self._potential_variables = deepcopy(self.variables)
+        self.variables = []deepcopy(self.variables)
         self._self_file_vars = {}
         self._n_states_adj = 0
         self.prcp = None

@@ -25,8 +25,8 @@ class AtmBoundaryLayer:
         verbose: int = 0,
     ):
         self.name = "AtmBoundaryLayer"
-        self.variables = []
         self.coords = ["datetime", "spatial_id"]
+        self.variables = []
         self._potential_variables = deepcopy(self.variables)
         self.start_time = start_time
         self._current_time = start_time

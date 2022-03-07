@@ -70,6 +70,7 @@ class AtmBoundaryLayer:
             )
         if self._has_potential_state(state_name):
             setattr(self, state_name, value)
+            self.variables = list(set(self.variables + [state_name]))
         return None
 
     def _get_state(self, state_name: str) -> np.ndarray:

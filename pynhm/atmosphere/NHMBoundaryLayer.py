@@ -191,8 +191,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         for self_var, adj_var in map_adj_dict.items():
             self[self_var] = var_dict_adj[adj_var]
-
-            self.variables += [self_var]
             self.variables = list(set(self.variables))
 
         return

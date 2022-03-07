@@ -46,51 +46,58 @@ class AtmBoundaryLayer:
     # The set/get methods seem like they could be inherited from
     # a base state class.
     def _has_potential_state(self, state_name, fail=True) -> bool:
-        if state_name in self._potential_variables + self.coords:
+        if state_name in self._potential_variables:
             return True
-        else:
-            msg = f"{self.name} does not have potential state '{state_name}'"
-            raise KeyError(msg)
+        return False
 
     def _has_state(self, state_name, fail=True) -> bool:
         if state_name in self.variables + self.coords:
             return True
-        else:
-            msg = f"{self.name} does not have state '{state_name}'"
-            raise KeyError(msg)
+        return False
 
-    def _set_state(self, state_name: str, value: np.ndarray) -> None:
-        if not isinstance(state_name, str):
-            raise KeyError(
-                f"Key to set must be a string not {type(state_name)}"
-            )
+    def _has_coord(self, coord_name, fail=True) -> bool:
+        if coord_name in self.coords:
+            return True
+        return False
+
+    def __setitem__(self, name: str, value: np.ndarray) -> None:
         if not isinstance(value, np.ndarray):
             raise ValueError(
                 f"Value to set must be an np.ndarray not {type(value)}"
             )
-        if self._has_potential_state(state_name):
-            setattr(self, state_name, value)
-            self.variables = list(set(self.variables + [state_name]))
-        return None
-
-    def _get_state(self, state_name: str) -> np.ndarray:
-        if not self._has_state(state_name):
-            msg = f"'{state_name}' not in state variables"
+        if self._has_potential_state(name):
+            setattr(self, name, value)
+            self.variables = list(set(self.variables + [name]))
+        elif self._has_coord(name):
+            setattr(self, name, value)
+        else:
+            msg = (
+                f"{self.name} does not have potential state or coordinate "
+                f"'{name}'"
+            )
             raise KeyError(msg)
-        return getattr(self, state_name)
-
-    def __setitem__(self, key: str, value: np.ndarray) -> None:
-        self._set_state(key, value)
         return None
 
-    def __getitem__(self, key: str) -> np.ndarray:
-        return self._get_state(key)
+    def __getitem__(self, name: str) -> np.ndarray:
+        if self._has_state(name) or self._has_coord(name):
+            return getattr(self, name)
+        else:
+            msg = f"'{name}' not in state or coordinate variables"
+            raise KeyError(msg)
 
     def get_current_state(self, state_name: str) -> np.ndarray:
-        if self._has_state(state_name):
-            return getattr(self, state_name).take(
-                indices=self.current_time_index, axis=0
-            )
+        return self[state_name].take(indices=self.current_time_index, axis=0)
+
+    def __delitem__(self, name: str):
+        if self._has_state(name):
+            return getattr(self, name)
+        elif self._has_coord(name):
+            msg = f"Can not delete coordinate '{name}'"
+            raise KeyError(msg)
+        else:
+            msg = f"'{name}' not in state or coordinate variables"
+            raise KeyError(msg)
+        return None
 
     # Time tracking could also be handled by state base class.
     # JLM all this stuff might go in a time or datetime subdir and be common to

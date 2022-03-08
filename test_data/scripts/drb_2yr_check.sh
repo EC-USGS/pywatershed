@@ -4,8 +4,8 @@
 source_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb
 target_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr
 run_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr_check
-repo_dir=/Users/jamesmcc/usgs/prmsNHMpy
-prms=/Users/jamesmcc/usgs/prmsNHMpy/prms5.2.1/bin/prms
+repo_dir=/Users/jamesmcc/usgs/pynhm
+prms=/Users/jamesmcc/usgs/pynhm/prms_src/prms5.2.1/bin/prms
 
 # ---------------------------------
 
@@ -28,7 +28,7 @@ do
     cp $source_dir/$ii .
 done
 cp $control_file .
-./prms control.test -set param_file ./myparam.param
+./prms control.test -set param_file ./myparam.param || exit 2
 
 
 # The Subset
@@ -39,7 +39,7 @@ do
     cp $target_dir/$ii .
 done
 cp $control_file .
-./prms control.test -set param_file ./myparam.param
+./prms control.test -set param_file ./myparam.param || exit 3
 
 # Checks
 diff_files () {
@@ -72,7 +72,7 @@ do
     result=$?
     if [[ $result -ne 0 ]]
     then
-	exit 1
+	exit 11
     fi
 done
 
@@ -87,14 +87,17 @@ controlled_files=(
     output/nhru_tminf.csv \
     output/nhru_hru_ppt.csv \
     output/nhru_hru_rain.csv \
-    output/nhru_hru_snow.csv )
+    output/nhru_hru_snow.csv \
+    output/soltab_debug )
 
 echo "You can optionally copy the version controlled files "
 echo "to the repo using the following commands: "
+echo
 for ff in "${controlled_files[@]}"
 do
     echo "cp $target_run_dir/$ff $repo_dir/test_data/drb_2yr/$ff"
 done
+echo
 
 
 exit 0

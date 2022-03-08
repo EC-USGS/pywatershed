@@ -8,7 +8,9 @@ import xarray as xr
 
 from pynhm.atmosphere.AtmBoundaryLayer import AtmBoundaryLayer
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+
 from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.prms5util import load_prms_statscsv
 
 test_time = np.arange(
     datetime(1979, 1, 1), datetime(1979, 7, 1), timedelta(days=1)
@@ -215,7 +217,7 @@ class TestNHMBoundaryLayer:
                 assert False
         return
 
-    # def test_nc_read_vars
+    # JLM: def test_nc_read_vars
 
     def test_state_adj(self, domain, atm_nhm_init):
         atm_adj_dict = deepcopy(atm_init_test_dict)
@@ -225,7 +227,7 @@ class TestNHMBoundaryLayer:
         atm_to_adj.param_adjust(params)
 
         for vv in atm_to_adj.variables:
-            # we loose rhavg in the adjustments... it's a bit of a mystery
+            # JLM: we loose rhavg in the adjustments... it's a bit of a mystery
             # if that should also be adjusted. checking on that w parker
             if vv in atm_nhm_init.variables:
                 assert np.isclose(
@@ -233,5 +235,26 @@ class TestNHMBoundaryLayer:
                     atm_nhm_init[vv],
                     atol=1e-06,
                 ).all()
+
+        return
+
+    def test_solar_radiation(self, domain, atm_nhm_init):
+        params = PrmsParameters(domain["param_file"])
+        # assert output matches output on file.
+        prms_output_file = domain["prms_outputs"]["swrad"]
+        prms_output = load_prms_statscsv(prms_output_file)
+        swrad_ans_dates = prms_output.index.values
+        swrad_ans_array = prms_output.to_numpy()
+        wh_dates = np.where(np.isin(atm_nhm_init["datetime"], swrad_ans_dates))
+
+        swrad = atm_nhm_init.calculate_sw_rad_degree_day(params)
+
+        result = np.isclose(
+            swrad_ans_array,
+            swrad[wh_dates, :],
+            rtol=1e-121,
+            atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
+        )
+        assert result.all()
 
         return

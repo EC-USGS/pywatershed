@@ -2,11 +2,14 @@ import warnings
 from copy import deepcopy
 
 import netCDF4 as nc4
+
+# from numba import jit
 import numpy as np
 
 from ..preprocess.cbh_utils import cbh_adjust
 from ..utils.parameters import PrmsParameters
 from .AtmBoundaryLayer import AtmBoundaryLayer
+from .NHMSolarGeometry import NHMSolarGeometry
 
 # JLM: where is metadata
 
@@ -26,6 +29,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # property hrus or space & nspace, time &ntime
 
         # The states
+        # JLM: these names are historical, I dont love them
         self._potential_variables = [
             "prcp",
             "rhavg",
@@ -33,9 +37,11 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "snowfall",
             "tmax",
             "tmin",
+            "swrad",
         ]
         self.variables = []
         self._self_file_vars = {}
+        self._optional_read_vars = ["swrad", "rhavg"]
         self._n_states_adj = 0
         self.prcp = None
         self.rhavg = None
@@ -112,7 +118,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
                         f"Neither variable '{self_var}' nor {adj_var}"
                         f"found in the file: '{self._nc_file}'"
                     )
-                    raise ValueError(msg)
+                    if self_var in self._optional_read_vars:
+                        warnings.warn(msg)
+                    else:
+                        raise ValueError(msg)
 
         else:
 
@@ -194,6 +203,105 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             self.variables = list(set(self.variables))
 
         return
+
+    # JLM: make this available for preprocess with cbh
+    def calculate_sw_rad_degree_day(
+        self,
+        parameters: PrmsParameters,
+    ) -> None:
+
+        solar_geom = NHMSolarGeometry(parameters)
+        asdf
+        self["swrad"] = self.ddsolrad_run(
+            self["datetime"],
+            self["tmax"],  # adj?
+            self["prcp"],
+            solar_geom.soltab_potsw,
+        )
+        return
+
+    # @jit
+    @staticmethod
+    def ddsolrad_run(
+        dates: np.ndarray,  # [n_time]
+        tmax_hru: np.ndarray,  # [n_time, n_hru]
+        hru_ppt: np.ndarray,  # [n_time, n_hru]
+        soltab_potsw: np.ndarray,  # [n_time, n_hru] ??
+        radadj_intcp,  # param
+        radadj_slope,  # param
+        tmax_index,  # param
+        dday_slope,  # param
+        dday_intcp,  # param
+        radmax,  # param
+        hru_slope,  # param
+        ppt_rad_adj,  # param
+        radj_sppt,  # param
+        radj_wppt,  # param
+        tmax_allrain,  # params
+        hemisphere,  # make internal based on hru lat?
+    ) -> np.ndarray:  # [n_time, n_hru]
+
+        # PRMS6 disagrees with Markstrom's code
+        # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation_degday.f90
+
+        swrad = np.zeros(len(dates))
+
+        ihru = 0
+        hru_cossl = math.cos(math.atan(hru_slope[ihru]))
+
+        ii = 0
+        for date in dates:
+            jday = day_of_year(date)
+            imon = date.month - 1
+
+            # ! set degree day and radiation adjustment limited by radmax
+            dday = (
+                dday_slope[imon, ihru] * tmax_hru[ii]
+                + dday_intcp[imon, ihru]
+                + 1.0
+            )
+            if dday < 1.0:
+                dday = 1.0
+
+            if dday < 26.0:
+                kp = int(dday)
+                ddayi = float(kp)
+                kp1 = kp + 1
+                radadj = solf[kp - 1] + (
+                    (solf[kp1 - 1] - solf[kp - 1]) * (dday - ddayi)
+                )
+                if radadj > radmax[imon, ihru]:
+                    radadj = radmax[imon, ihru]
+            else:
+                radadj = radmax[imon, ihru]
+
+            #           ! Set precipitation adjument factor based on temperature
+            #           ! and amount of precipitation
+
+            pptadj = 1.0
+            if hru_ppt[ii] > ppt_rad_adj[imon, ihru]:
+                if tmax_hru[ii] < tmax_index[imon, ihru]:
+                    pptadj = radj_sppt[ihru]
+                    if tmax_hru[ii] >= tmax_allrain[imon]:
+                        if not is_summer(jday, hemisphere):
+                            pptadj = radj_wppt[ihru]
+                    else:
+                        pptadj = radj_wppt[ihru]
+                else:
+                    pptadj = radadj_intcp[imon, ihru] + radadj_slope[
+                        imon, ihru
+                    ] * (tmax_hru[ii] - tmax_index[imon, ihru])
+                    if pptadj > 1.0:
+                        pptadj = 1.0
+
+            radadj = radadj * pptadj
+            if radadj < 0.2:
+                radadj = 0.2
+
+            swrad[ii] = soltab_potsw[jday - 1] * radadj / hru_cossl
+            ii += 1
+
+        return swrad
 
     # def advance(self, itime_step, current_date):
     #     self.precip_current = self.precip[itime_step]

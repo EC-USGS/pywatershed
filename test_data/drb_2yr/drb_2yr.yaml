@@ -14,6 +14,7 @@ prms_outputs:
   snowfall_adj: output/nhru_hru_snow.csv
   tmax_adj: output/nhru_tmaxf.csv
   tmin_adj: output/nhru_tminf.csv
+  swrad: output/nhru_swrad.csv
 
 cbh_nc: cbh.nc
 

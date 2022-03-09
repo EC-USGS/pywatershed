@@ -1,7 +1,6 @@
 import pathlib
 
 import yaml
-from yaml import Loader
 
 
 def pytest_addoption(parser):

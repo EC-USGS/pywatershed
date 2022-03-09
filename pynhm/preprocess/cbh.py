@@ -1,5 +1,4 @@
 import pathlib as pl
-from copy import deepcopy
 from typing import Union
 
 from pynhm.utils import PrmsParameters
@@ -16,7 +15,6 @@ from .cbh_utils import (
 fileish = Union[str, pl.PosixPath, dict]
 
 # Notes:
-# * Could/Should also take a file describing the HRUs by ID (to go in that dim in the netcdf)
 # * CBH dosent have a precisesly defined state, so use a dictonary for state.
 # * I've relegated the code to cbh_utils becase there is potential reuse by the
 #   AtmForcings object in model.

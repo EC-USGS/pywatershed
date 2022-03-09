@@ -15,11 +15,13 @@ from ..utils.parameters import PrmsParameters
 # Lots of constants for this model
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/c_solar_radiation.f90
 
+# These could be in a constants module
 zero = np.zeros(1)[0]
 one = np.ones(1)[0]
 pi = math.pi
 
 
+# This could be a util
 def epsilon(array: np.ndarray):
     return np.finfo(array.dtype).eps
 
@@ -84,6 +86,7 @@ class NHMSolarGeometry:
         # self._potential_variables = []
         self.parameters = parameters
         self._compute_solar_geometry(parameters)
+        # dimensions
 
         return None
 
@@ -174,8 +177,6 @@ class NHMSolarGeometry:
         if len(wh_d1_lt_zero[0]) > 0:
             x2[wh_d1_lt_zero] = x2[wh_d1_lt_zero] + pi
 
-        # -----------------------------------------------------------------------------
-
         # The hour angle from the local meridian (local solar noon) to the
         # sunrise (negative) or sunset (positive)
         # t6: is the hour angle of sunrise on the equivalent slope
@@ -183,10 +184,6 @@ class NHMSolarGeometry:
         tt = compute_t(x1, solar_declination)
         t6 = (-1 * tt) - x2
         t7 = tt - x2
-
-        tt_og = np.copy(tt)
-        t6_og = np.copy(t6)
-        t7_og = np.copy(t7)
 
         # Hours of sunrise and sunset on a horizontal surface at lat
         # t0: is the hour angle of sunrise on a hroizontal surface at the HRU

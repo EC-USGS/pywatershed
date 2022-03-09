@@ -194,7 +194,10 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
     # i suppose thse could have different shapes.
     # throw an error if that happens
     if tmax_param.shape != tmin_param.shape:
-        msg = "Not implemented: tmin/tmax cbh adj parameters with different shapes"
+        msg = (
+            "Not implemented: tmin/tmax cbh adj parameters "
+            "with different shapes"
+        )
         raise NotImplementedError(msg)
 
     if tmax_param.shape[0] == 12:

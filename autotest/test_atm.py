@@ -30,6 +30,34 @@ atm_init_test_dict = {
 test_time_steps = [atm_init_test_dict["time_step"], np.timedelta64(1, "h")]
 
 
+class TestNHMSolarGeometry:
+    def test_init(self, domain):
+        params = PrmsParameters(domain["param_file"])
+        solar_geom = NHMSolarGeometry(params)
+        potential_sw_rad_ans, sun_hrs_ans = load_soltab_debug(
+            domain["prms_outputs"]["soltab"]
+        )
+
+        # check the shapes
+        assert potential_sw_rad_ans.shape == solar_geom.potential_sw_rad.shape
+        assert sun_hrs_ans.shape == solar_geom.sun_hrs.shape
+
+        # check the values
+        assert np.isclose(
+            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=1e-04
+        ).all()
+        assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=1e-03).all()
+
+        # debug/examine
+        # ans = potential_sw_rad_ans[:, 0]
+        # res = solar_geom.potential_sw_rad[:, 0]
+
+        # ans = sun_hrs_ans[:, 0]
+        # res = solar_geom.sun_hrs[:, 0]
+
+        return
+
+
 @pytest.fixture
 def atm_init(scope="function"):
     atm = AtmBoundaryLayer(**atm_init_test_dict)
@@ -258,31 +286,3 @@ class TestNHMBoundaryLayer:
     #     assert result.all()
 
     #     return
-
-
-class TestNHMSolarGeometry:
-    def test_init(self, domain):
-        params = PrmsParameters(domain["param_file"])
-        solar_geom = NHMSolarGeometry(params)
-        potential_sw_rad_ans, sun_hrs_ans = load_soltab_debug(
-            domain["prms_outputs"]["soltab"]
-        )
-
-        # check the shapes
-        assert potential_sw_rad_ans.shape == solar_geom.potential_sw_rad.shape
-        assert sun_hrs_ans.shape == solar_geom.sun_hrs.shape
-
-        # check the values
-        assert np.isclose(
-            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=1e-04
-        ).all()
-        assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=1e-03).all()
-
-        # debug/examine
-        # ans = potential_sw_rad_ans[:, 0]
-        # res = solar_geom.potential_sw_rad[:, 0]
-
-        # ans = sun_hrs_ans[:, 0]
-        # res = solar_geom.sun_hrs[:, 0]
-
-        return

@@ -2,6 +2,7 @@ import pathlib as pl
 
 import numpy as np
 import pytest
+import warnings
 import xarray as xr
 
 from pynhm.preprocess.cbh import CBH
@@ -135,6 +136,15 @@ def test_cbh_adj(domain, params_and_none):
 def test_cbh_adj_prms_output(domain, params):
     cbh = CBH(domain["input_files_dict"], params, adjust=True)
     for var, var_file in domain["prms_outputs"].items():
+        if var in ["soltab"]:
+            continue
+        if var in ["swrad"]:
+            msg = (
+                f"Skipping {var} as it is not currently preprocessed, "
+                f"this skip should be removed when it is"
+            )
+            warnings.warn(msg)
+            continue
         prms_output = load_prms_statscsv(var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()

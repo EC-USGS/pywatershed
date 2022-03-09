@@ -15,6 +15,7 @@ prms_outputs:
   tmax_adj: output/nhru_tmaxf.csv
   tmin_adj: output/nhru_tminf.csv
   swrad: output/nhru_swrad.csv
+  soltab: output/soltab_debug
 
 cbh_nc: cbh.nc
 

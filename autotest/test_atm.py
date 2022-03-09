@@ -8,9 +8,9 @@ import xarray as xr
 
 from pynhm.atmosphere.AtmBoundaryLayer import AtmBoundaryLayer
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-
+from pynhm.atmosphere.NHMSolarGeometry import NHMSolarGeometry
 from pynhm.utils.parameters import PrmsParameters
-from pynhm.utils.prms5util import load_prms_statscsv
+from pynhm.utils.prms5util import load_prms_statscsv, load_soltab_debug
 
 test_time = np.arange(
     datetime(1979, 1, 1), datetime(1979, 7, 1), timedelta(days=1)
@@ -238,23 +238,51 @@ class TestNHMBoundaryLayer:
 
         return
 
-    def test_solar_radiation(self, domain, atm_nhm_init):
+    # def test_solar_rad_deg_day(self, domain, atm_nhm_init):
+    #     params = PrmsParameters(domain["param_file"])
+    #     # assert output matches output on file.
+    #     prms_output_file = domain["prms_outputs"]["swrad"]
+    #     prms_output = load_prms_statscsv(prms_output_file)
+    #     swrad_ans_dates = prms_output.index.values
+    #     swrad_ans_array = prms_output.to_numpy()
+    #     wh_dates = np.where(np.isin(atm_nhm_init["datetime"], swrad_ans_dates))
+
+    #     swrad = atm_nhm_init.calculate_sw_rad_degree_day(params)
+
+    #     result = np.isclose(
+    #         swrad_ans_array,
+    #         swrad[wh_dates, :],
+    #         rtol=1e-121,
+    #         atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
+    #     )
+    #     assert result.all()
+
+    #     return
+
+
+class TestNHMSolarGeometry:
+    def test_init(self, domain):
         params = PrmsParameters(domain["param_file"])
-        # assert output matches output on file.
-        prms_output_file = domain["prms_outputs"]["swrad"]
-        prms_output = load_prms_statscsv(prms_output_file)
-        swrad_ans_dates = prms_output.index.values
-        swrad_ans_array = prms_output.to_numpy()
-        wh_dates = np.where(np.isin(atm_nhm_init["datetime"], swrad_ans_dates))
-
-        swrad = atm_nhm_init.calculate_sw_rad_degree_day(params)
-
-        result = np.isclose(
-            swrad_ans_array,
-            swrad[wh_dates, :],
-            rtol=1e-121,
-            atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
+        solar_geom = NHMSolarGeometry(params)
+        potential_sw_rad_ans, sun_hrs_ans = load_soltab_debug(
+            domain["prms_outputs"]["soltab"]
         )
-        assert result.all()
+
+        # check the shapes
+        assert potential_sw_rad_ans.shape == solar_geom.potential_sw_rad.shape
+        assert sun_hrs_ans.shape == solar_geom.sun_hrs.shape
+
+        # check the values
+        assert np.isclose(
+            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=1e-04
+        ).all()
+        assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=1e-03).all()
+
+        # debug/examine
+        # ans = potential_sw_rad_ans[:, 0]
+        # res = solar_geom.potential_sw_rad[:, 0]
+
+        # ans = sun_hrs_ans[:, 0]
+        # res = solar_geom.sun_hrs[:, 0]
 
         return

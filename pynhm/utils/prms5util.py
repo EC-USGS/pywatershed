@@ -1,7 +1,10 @@
 import os
+import pathlib as pl
 
 import numpy as np
 import pandas as pd
+
+from typing import Tuple
 
 inch_to_meter = 0.0254
 acre_to_meter_squared = 4046.8564224
@@ -215,3 +218,69 @@ def load_wbl_output(output_data_path, convert=True, verbose=False):
         df_dict[key] = df
 
     return pd.concat([v for k, v in df_dict.items()], axis=1)
+
+
+def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
+    """Load the PRMS soltab_debug output file.
+
+    With `print_debug` set to 5 in the control file, PRMS 5.2.1 prings the
+    `soltab_debug` file in the run directory. This function parses it.
+
+    Args:
+        file_path: a pathlib.Path object representing the file
+
+    Returns:
+        Tuple of length 2 of np.ndarrays of shape [366, n_hru], the first
+        for potential solar radiation and the second the total number of
+        hours of sun.
+    """
+    # the data are 8 characters wide, 13 per line
+    # for 28 full lines and a final line of 2 (366 total)
+    width = 8
+    slices = [slice(ii * width, (ii + 1) * width) for ii in range(13)]
+    not_data = ["", "\n"]
+
+    with file_path.open("r") as file_open:
+        lines = file_open.readlines()
+        data_list = []
+        for ll in lines:
+            if ll.startswith(" HRU:"):
+                hru_ind = int((ll.strip().replace(" ", "").split(":"))[1]) - 1
+                data_list += [{}]
+            elif ll.startswith(" ***Soltab_sunhrs***"):
+                key = "sunhrs"
+                data_list[hru_ind][key] = []
+                accum_count = 0
+            elif ll.startswith(" ***Soltab_potsw***"):
+                key = "potsw"
+                data_list[hru_ind][key] = []
+                accum_count = 0
+            else:
+                # There are two lines at the end of the file that are
+                # not like the others. accum_count will skip those
+                accum_count += 1
+                if accum_count > 29:
+                    continue
+                str_vals = [ll[slice] for slice in slices]
+                data_list[hru_ind][key] += [
+                    float(str) for str in str_vals if str not in not_data
+                ]
+
+    n_hru = len(data_list)
+
+    # check number of hrus (not known apriori)
+    # assert n_hru == 765  # drb
+
+    # check lengths of each
+    for v0 in data_list:
+        for k1, v1 in v0.items():
+            assert len(v1) == 366
+
+    potential_sw_rad = np.zeros((366, n_hru))
+    sun_hrs = np.zeros((366, n_hru))
+
+    for hh in range(n_hru):
+        potential_sw_rad[:, hh] = np.array(data_list[hh]["potsw"])
+        sun_hrs[:, hh] = np.array(data_list[hh]["sunhrs"])
+
+    return potential_sw_rad, sun_hrs

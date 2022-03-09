@@ -1,8 +1,8 @@
 import pathlib as pl
+import warnings
 
 import numpy as np
 import pytest
-import warnings
 import xarray as xr
 
 from pynhm.preprocess.cbh import CBH

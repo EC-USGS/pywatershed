@@ -1,10 +1,9 @@
 import os
 import pathlib as pl
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
-
-from typing import Tuple
 
 inch_to_meter = 0.0254
 acre_to_meter_squared = 4046.8564224

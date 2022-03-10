@@ -71,6 +71,7 @@ def pytest_generate_tests(metafunc):
                 }
 
             # Construct a dictonary that gets used in CBH
+            # JLM: move to a helper function in test_preprocess_cbh.py?
             domain_dict["input_files_dict"] = {
                 key: val for key, val in domain_dict["cbh_inputs"].items()
             }

@@ -14,6 +14,10 @@ prms_outputs:
   snowfall_adj: output/nhru_hru_snow.csv
   tmax_adj: output/nhru_tmaxf.csv
   tmin_adj: output/nhru_tminf.csv
+  swrad: output/nhru_swrad.csv
+  soltab: output/soltab_debug
+
+cbh_nc: cbh.nc
 
 test_ans:
 
@@ -33,8 +37,14 @@ test_ans:
       tmin: 40.00686281662687
       datetime: 315532800.0
     adj:
-      tmax_adj: 60.23277026262529
-      tmin_adj: 40.172674077447844
-      prcp_adj: 0.11153453813649487
-      rainfall_adj: 0.10384083852321487
-      snowfall_adj: 0.0076936996132800275
+      no_params:
+        prcp: 0.12495362248866718
+        rhavg: 62.738591579267386
+        tmax: 60.26121597238987
+        tmin: 40.00686281662687
+      params:
+        tmax_adj: 60.23277026262529
+        tmin_adj: 40.172674077447844
+        prcp_adj: 0.11153453813649487
+        rainfall_adj: 0.10384083852321487
+        snowfall_adj: 0.0076936996132800275

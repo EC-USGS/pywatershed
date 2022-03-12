@@ -53,6 +53,11 @@ or the CONUS NHM, etc). The files are paths and are to be specified as either
   * absolute paths: use absolute paths (for some machine and potentially user)
 The examples listed above demonstrate use of both relative and absolute paths.
 
+Domain inputs are generally created by scripts run in `test_data/scripts`. The
+`drb_2yr` case shows the relationship between the prms binary, the input files,
+and the output files. These scripts help maintain sanity when generating new
+files for domain tests.
+
 
 ### Answers for domain tests
 Tests have objectively correct answers. The answer key is stored in the yaml in

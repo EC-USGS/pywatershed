@@ -1,0 +1,5 @@
+ipython
+sphinx
+sphinx-book-theme
+sphinx-autosummary-accessors
+sphinx-copybutton

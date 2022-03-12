@@ -1,7 +1,6 @@
 import pathlib
 
 import yaml
-from yaml import Loader
 
 
 def pytest_addoption(parser):
@@ -49,16 +48,18 @@ def pytest_generate_tests(metafunc):
 
             # Runtime test options here
             domain_dict["print_ans"] = print_ans
+
             # Construct/derive some convenience quantities
             domain_dict["file"] = dd_file
             domain_dict["dir"] = dd_file.parent
+
             # Transform all relative paths in the yaml (relative to the yaml file)
             # using the rel path to the file - spare the tester from doing this.
-            domain_dict["param_file"] = pathlib.Path(domain_dict["param_file"])
-            if not domain_dict["param_file"].is_absolute():
-                domain_dict["param_file"] = (
-                    domain_dict["dir"] / domain_dict["param_file"]
-                )
+            for ff in ["param_file", "cbh_nc"]:
+                domain_dict[ff] = pathlib.Path(domain_dict[ff])
+                if not domain_dict[ff].is_absolute():
+                    domain_dict[ff] = domain_dict["dir"] / domain_dict[ff]
+
             for fd_key in ["prms_outputs", "cbh_inputs"]:
                 domain_dict[fd_key] = {
                     key: (
@@ -68,10 +69,13 @@ def pytest_generate_tests(metafunc):
                     )
                     for key, val in domain_dict[fd_key].items()
                 }
+
             # Construct a dictonary that gets used in CBH
+            # JLM: move to a helper function in test_preprocess_cbh.py?
             domain_dict["input_files_dict"] = {
                 key: val for key, val in domain_dict["cbh_inputs"].items()
             }
+
             # append to the list of all domains
             domain_list += [domain_dict]
 

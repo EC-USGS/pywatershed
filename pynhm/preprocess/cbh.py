@@ -21,6 +21,8 @@ fileish = Union[str, pl.PosixPath, dict]
 
 
 class CBH:
+    """Climate by HRU: NHM forcing data."""
+
     def __init__(
         self,
         files: fileish,

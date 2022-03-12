@@ -20,7 +20,7 @@ formats: all
 python:
   version: 3.8
   install:
-    - requirements: .ci/requirements/doc.txt
-    - requirements: .ci/requirements/environment.txt
+    - requirements: ci/requirements/doc.txt
+    - requirements: ci/requirements/environment.txt
     - method: pip
       path: .

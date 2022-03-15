@@ -36,10 +36,6 @@ class Time(DataAccess):
         self.verbosity = verbosity
 
         if (datetime) is not None:
-            if len(datetime) < 2:
-                msg = "Time's datetime data must be at least 2 times"
-                raise ValueError(msg)
-
             # JLM check that it's an np.ndarray of type np.datetime64
             self["datetime"] = datetime
 
@@ -83,6 +79,24 @@ class Time(DataAccess):
 
         # self.attrs
         # self.global_attrs
+
+    def __setitem__(self, name: str, value: np.ndarray) -> None:
+        super().__setitem__(name, value)
+        if name == "datetime":
+            _ = self.n_time
+        return
+
+    @property
+    def n_time(self):
+        """Get the length of the time dimension."""
+        if self.datetime is None:
+            return 2
+        else:
+            len_datetime = len(self.datetime)
+            if len_datetime < 2:
+                msg = "Time's datetime data must be at least 2 times"
+                raise ValueError(msg)
+            return len_datetime
 
     @property
     def current_time(self):

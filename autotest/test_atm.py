@@ -173,6 +173,7 @@ state_dict = {
 }
 
 
+# JLM: Should try to set a state with time length less than 2.
 @pytest.fixture(scope="function")
 def atm_nhm_init_dict():
     atm = NHMBoundaryLayer(state_dict, **atm_init_test_dict)

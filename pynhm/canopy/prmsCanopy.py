@@ -1,17 +1,26 @@
 from ..base.storageUnit import StorageUnit
 
+from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from pynhm.utils.parameters import PrmsParameters
 
-class prmsCanopy(StorageUnit):
+
+class PRMSCanopy(StorageUnit):
     def __init__(
         self,
-        id,
-        area,
-        forcing,
-        verbose,
-        intcp_stor_start,
-        intcp_stor_max,
-        covden,
+        params: PrmsParameters,
+        atm: NHMBoundaryLayer,
     ):
+
+        asdf
+
+        # id,  # params
+        # area,  # params
+        # forcing,
+        # verbose,  # integer
+        # intcp_stor_start,  # restart / params
+        # intcp_stor_max,  # params
+        # covden,  # params
+
         volume_start = intcp_stor_start * covden
         self.intcp_stor_max = intcp_stor_max
         self.intcp_stor_new = intcp_stor_start

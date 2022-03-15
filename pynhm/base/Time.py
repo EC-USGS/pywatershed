@@ -37,29 +37,21 @@ class Time(DataAccess):
 
         if (datetime) is not None:
             # JLM check that it's an np.ndarray of type np.datetime64
-            self["datetime"] = datetime
-
             if start_time is None:
-                self._start_time = self["datetime"][0]
+                self._start_time = datetime[0]
             else:
                 self._start_time = start_time
 
             if time_step is None:
-                self._time_step = self["datetime"][1] - self["datetime"][0]
+                self._time_step = datetime[1] - datetime[0]
             else:
                 self._time_step = time_step
 
             # Check that all the time deltas in datetime match.
-            assert (np.diff(self.datetime) == self.time_step).all()
+            assert (np.diff(datetime) == self.time_step).all()
 
-            wh_start = np.where(self.datetime == self._start_time)[0]
-            if len(wh_start) == 0:
-                msg = (
-                    f"start_time '{start_time}' is not in "
-                    "supplied datetime array."
-                )
-                raise ValueError(msg)
-            self._current_time_index = wh_start.tolist()[0]
+            # set this after setting self._start_time and self._time_step
+            self["datetime"] = datetime
 
         else:
 
@@ -83,6 +75,14 @@ class Time(DataAccess):
     def __setitem__(self, name: str, value: np.ndarray) -> None:
         super().__setitem__(name, value)
         if name == "datetime":
+            wh_start = np.where(self.datetime == self._start_time)[0]
+            if len(wh_start) == 0:
+                msg = (
+                    f"start_time '{self._start_time}' is not in "
+                    "supplied datetime array."
+                )
+                raise ValueError(msg)
+            self._current_time_index = wh_start.tolist()[0]
             _ = self.n_time
         return
 
@@ -125,11 +125,16 @@ class Time(DataAccess):
 
     def advance(self):
         """Advance time."""
-        self._previous_time = self._current_time
-        self._current_time += self.time_step
         if self.datetime is not None:
+            if self._current_time_index + 1 == self.n_time:
+                msg = f"End of timeseries reached, can not advance {self.name}"
+                raise ValueError(msg)
             self._previous_time_index = self._current_time_index
             self._current_time_index += 1
+
         if self._previous_time_index is None:
             self._previous_time_index = 0
+
+        self._previous_time = self._current_time
+        self._current_time += self.time_step
         return

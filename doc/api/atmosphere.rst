@@ -5,6 +5,8 @@
 Atmosphere
 ##########
 
+Models for the atmospheric interactions and forcings.
+
 .. autosummary::
    :toctree: generated/
 

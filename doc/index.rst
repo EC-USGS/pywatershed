@@ -14,8 +14,8 @@ pynhm: The USGS National Hydrologic Model in python
 
     API Reference <api.rst>
     Preprocess <api/preprocess>
-    Atmosphere <api/atmosphere>    
-
+    Atmosphere <api/atmosphere>
+    Base <api/base>
 
 .. toctree::
    :hidden:

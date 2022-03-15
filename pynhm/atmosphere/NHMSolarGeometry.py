@@ -57,7 +57,7 @@ solar_declination = (
 # Solar constant cal/cm2/min (r0 could also be 1.95 (Drummond, et al 1968))
 r0 = 2 * one
 # Solar constant for 60 minutes
-r1 = (60.0 * r0) / (obliquity**2)
+r1 = (60.0 * r0) / (obliquity ** 2)
 
 
 # Dimensions

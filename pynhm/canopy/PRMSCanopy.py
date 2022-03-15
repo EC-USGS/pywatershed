@@ -1,7 +1,7 @@
-from ..base.storageUnit import StorageUnit
-
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.utils.parameters import PrmsParameters
+
+from ..base.storageUnit import StorageUnit
 
 
 class PRMSCanopy(StorageUnit):

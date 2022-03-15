@@ -25,18 +25,20 @@ class AtmBoundaryLayer(Time):
         time_step: np.timedelta64 = None,  # could we infer timestep?
         datetime: np.ndarray = None,
         height_m: int = None,
-        verbose: int = 0,
+        verbosity: int = 0,
     ):
-        super().__init__(start_time=start_time, time_step=time_step)
+        super().__init__(
+            start_time=start_time, time_step=time_step, verbosity=verbosity
+        )
         self.name = "AtmBoundaryLayer"
         self._coords += ["spatial_id"]
         self.height_m = height_m
-        self.verbose = verbose
 
         self.spatial_id = None
 
         return
 
+    # JLM this should go in Time as time is dataaccess
     def get_current_state(self, state_name: str) -> np.ndarray:
         if self[state_name] is not None:
             return self[state_name].take(

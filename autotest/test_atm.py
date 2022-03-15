@@ -19,7 +19,7 @@ test_time = np.arange(
 atm_init_test_dict = {
     "start_time": np.datetime64("1979-01-03T00:00:00.00"),
     "time_step": np.timedelta64(1, "D"),
-    "verbose": 3,
+    "verbosity": 3,
     "height_m": 5,
 }
 
@@ -61,12 +61,6 @@ def atm_init(request):
     init_dict = deepcopy(atm_init_test_dict)
     init_dict["datetime"] = request.param
     atm = AtmBoundaryLayer(**init_dict)
-    return atm
-
-
-@pytest.fixture
-def atm_nhm_init(domain, scope="function"):
-    atm = NHMBoundaryLayer(domain["cbh_nc"], **atm_init_test_dict)
     return atm
 
 
@@ -131,7 +125,73 @@ class TestAtmBoundaryLayer:
         return
 
 
+@pytest.fixture(scope="function")
+def atm_nhm_init(domain):
+    atm = NHMBoundaryLayer(domain["cbh_nc"], **atm_init_test_dict)
+    return atm
+
+
+state_dict = {
+    "datetime": np.array(
+        [
+            datetime(1979, 1, 1, 0, 0),
+            datetime(1979, 1, 2, 0, 0),
+        ]
+    ),
+    "spatial_id": np.array([5307, 5308]),
+    "tmin": np.array(
+        [
+            [46.1209, 45.76805],
+            [37.7609, 37.4881],
+        ]
+    ),
+    "rhavg": np.array(
+        [
+            [82.45999908447266, 82.5999984741211],
+            [81.98999786376953, 82.3499984741211],
+        ]
+    ),
+    "tmax": np.array(
+        [
+            [57.41188049316406, 56.47270965576172],
+            [55.511878967285156, 55.032711029052734],
+        ]
+    ),
+    "snowfall": np.array([[0.0, 0.0], [0.0, 0.0]]),
+    "prcp": np.array(
+        [
+            [0.31392958760261536, 0.24780480563640594],
+            [0.6605601906776428, 0.5214226245880127],
+        ]
+    ),
+    "rainfall": np.array(
+        [
+            [0.31392958760261536, 0.24780480563640594],
+            [0.6605601906776428, 0.5214226245880127],
+        ]
+    ),
+}
+
+
+@pytest.fixture(scope="function")
+def atm_nhm_init_dict():
+    atm = NHMBoundaryLayer(state_dict, **atm_init_test_dict)
+    return atm
+
+
 class TestNHMBoundaryLayer:
+    def test_init_dict(self, atm_nhm_init_dict):
+        # Check all the init arguments
+        for key, val in atm_init_test_dict.items():
+            key_check = key
+            if key not in list(atm_nhm_init_dict.__dict__.keys()):
+                key_check = f"_{key}"
+            assert getattr(atm_nhm_init_dict, key_check) == val
+        # Check state - this tests get_state.
+        for vv in atm_nhm_init_dict.variables:
+            assert (atm_nhm_init_dict[vv] == state_dict[vv]).all()
+        return
+
     def test_init(self, domain, atm_nhm_init):
         init_test_dict = deepcopy(atm_init_test_dict)
         init_test_dict["nc_file"] = domain["cbh_nc"]

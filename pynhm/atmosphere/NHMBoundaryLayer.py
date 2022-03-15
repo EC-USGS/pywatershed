@@ -1,6 +1,6 @@
+import pathlib as pl
 import warnings
 from copy import deepcopy
-import pathlib as pl
 from typing import Union
 
 import netCDF4 as nc4
@@ -12,7 +12,6 @@ from ..preprocess.cbh_utils import cbh_adjust
 from ..utils.parameters import PrmsParameters
 from .AtmBoundaryLayer import AtmBoundaryLayer
 from .NHMSolarGeometry import NHMSolarGeometry
-
 
 dict_or_file_type = Union[dict, str, pl.Path]
 
@@ -30,7 +29,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         super().__init__(*args, **kwargs)
 
         self.name = "NHMBoundaryLayer"
-        self._nc_read_vars = nc_read_vars
 
         # Dimensions and dimension variables
         self.spatial_id = None
@@ -48,10 +46,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "swrad",
         ]
 
-        self._self_file_vars = {}
-        self._optional_read_vars = ["swrad", "rhavg"]
         self._n_states_adj = 0
-
         self._allow_param_adjust = None
         self._state_adjusted_here = False
 
@@ -59,20 +54,28 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.pot_et = None
         self.pot_et_consumed = None
 
-        # netcdf handling. consolidate these?
-        self.dataset = None
-        self.ds_var_list = None
-        self.ds_var_chunking = None
+        # These are set in super(), delete them now to be able to set
+        del self.datetime
+        del self.spatial_id
 
         if isinstance(dict_or_nc_file, dict):
             self._nc_file = None
             for key, val in dict_or_nc_file.items():
                 self[key] = val
         else:
+            self._self_file_vars = {}
+            self._nc_read_vars = nc_read_vars
+            self._optional_read_vars = ["swrad", "rhavg"]
             self._nc_file = dict_or_nc_file
             self._open_nc_file()
             self._read_nc_file()
             # self._close_nc_file()
+
+            # netcdf handling. consolidate these?
+            self.dataset = None
+            self.ds_var_list = None
+            self.ds_var_chunking = None
+
         return
 
     # move this down? create helper functions? it is too long to be near top.
@@ -84,7 +87,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             for vv in self.ds_var_list
         }
         # Set dimension variables which are not chunked
-        self.datetime = (
+        self["datetime"] = (
             nc4.num2date(
                 self.dataset.variables["datetime"][:],
                 units=self.dataset.variables["datetime"].units,
@@ -192,7 +195,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         # construct a dict of references
         var_dict_adj = {key: self[key] for key in self.variables}
-        var_dict_adj["datetime"] = self.datetime
+        var_dict_adj["datetime"] = self["datetime"]
         self._parameters_for_adj = parameters
         # This modified var_dict_adj, which is sus
         _ = cbh_adjust(var_dict_adj, self._parameters_for_adj)
@@ -200,7 +203,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self._allow_param_adjust = False
 
         map_adj_dict = {
-            "datetime": "datetime",
             "prcp": "prcp_adj",
             "tmax": "tmax_adj",
             "tmin": "tmin_adj",
@@ -209,11 +211,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         }
 
         for self_var, adj_var in map_adj_dict.items():
-            if self_var == "datetime":
-                self.datetime = var_dict_adj[adj_var]
-            else:
-                self[self_var] = var_dict_adj[adj_var]
-            # self.variables = list(set(self.variables))
+            self[self_var] = var_dict_adj[adj_var]
 
         return
 

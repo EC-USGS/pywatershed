@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta
 import numpy as np
 import pytest
+
 from pynhm.base.DataAccess import DataAccess
+from pynhm.base.Time import Time
 
 
 class TestDataAccess:
@@ -71,6 +74,77 @@ class TestDataAccess:
             da.variables = ["foo"]
             assert False
         except AttributeError:
+            assert True
+
+        return
+
+
+time_data = np.arange(
+    datetime(1979, 1, 1), datetime(1979, 1, 5), timedelta(days=1)
+).astype(np.datetime64)
+
+start_times = [time_data[0], time_data[3], np.datetime64(datetime(1980, 1, 1))]
+time_step = np.timedelta64(24, "h")
+
+
+class TestTime:
+    @pytest.mark.parametrize(
+        "start_time", start_times, ids=["valid0", "valid1", "invalid"]
+    )
+    def test_init_markov(self, start_time):
+        time = Time(start_time=start_time, time_step=time_step)
+        assert time.current_time == start_time
+        assert time.current_time_index == 1
+        assert time.previous_time is None
+        assert time.previous_time_index is None
+        assert time.time_step == time_step
+
+        time.advance()
+        assert time.current_time_index == 1
+        assert time.current_time == start_time + time_step
+        assert time.previous_time == start_time
+        assert time.previous_time_index == 0
+        assert time.time_step == time_step
+
+        # fail re-setting datetime
+        try:
+            time["datetime"] = np.array(np.datetime64(start_time))
+            assert False
+        except KeyError:
+            assert True
+
+        return
+
+    @pytest.mark.parametrize(
+        "start_time", start_times, ids=["valid0", "valid1", "invalid"]
+    )
+    def test_init_timeseries(self, start_time):
+        try:
+            time = Time(time_data, start_time, time_step)
+            # make sure we have the right case, as in the except
+            wh_start = np.where(time_data == start_time)[0]
+            assert len(wh_start) > 0
+            assert time.current_time_index == wh_start
+            assert time.current_time == start_time
+            assert time.previous_time is None
+            assert time.previous_time_index is None
+            assert time.time_step == time_step
+        except ValueError:
+            assert len(np.where(time_data == start_time)[0]) == 0
+            return
+
+        time.advance()
+        assert time.current_time_index == wh_start + 1
+        assert time.current_time == start_time + time_step
+        assert time.previous_time == start_time
+        assert time.previous_time_index == wh_start
+        assert time.time_step == time_step
+
+        # fail re-setting datetime
+        try:
+            time["datetime"] += np.timedelta64(24, "h")
+            assert False
+        except KeyError:
             assert True
 
         return

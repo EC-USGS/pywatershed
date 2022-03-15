@@ -2,9 +2,7 @@ import numpy as np
 
 
 class DataAccess:
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         self.name = "DataAccess"
         self._coords = []
         self._variables = []
@@ -43,6 +41,10 @@ class DataAccess:
             setattr(self, name, value)
             self._variables = list(set(self._variables + [name]))
         elif self._has_coord(name):
+            # only set coord if it is None.
+            if hasattr(self, name):
+                msg = f"Coordinate variable can not be re-set: '{name}'"
+                raise KeyError(msg)
             setattr(self, name, value)
         else:
             msg = (
@@ -58,9 +60,6 @@ class DataAccess:
         else:
             msg = f"'{name}' not in state or coordinate variables"
             raise KeyError(msg)
-
-    def get_current_state(self, state_name: str) -> np.ndarray:
-        return self[state_name].take(indices=self.current_time_index, axis=0)
 
     def __delitem__(self, name: str):
         if self._has_state(name):

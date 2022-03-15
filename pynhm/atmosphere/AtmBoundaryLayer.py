@@ -4,7 +4,6 @@ import numpy as np
 
 from pynhm.base.Time import Time
 
-
 # This is a base AtmBoundaryLayer class
 # It has no state, only time.
 

@@ -28,18 +28,23 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Upgrade pip and install wheel
+      - name: Upgrade pip and install build and twine
         run: |
-          pip install wheel
+          python -m pip install --upgrade pip
+          pip install wheel build twine
 
       - name: Base installation
         run: |
-          pip install .
+          pip --verbose install .
 
       - name: Print pyhmn version
         run: |
           python -c "import pynhm; print(pynhm.__version__)"
 
+      - name: Build pynhm, check dist outputs
+        run: |
+          python -m build
+          twine check --strict dist/*
 
   pynhm_lint:
     name: linting

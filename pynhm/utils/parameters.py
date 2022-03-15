@@ -1,5 +1,12 @@
 import numpy as np
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes."""
+
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 
 class PrmsParameters:
     """PRMS parameter class
@@ -16,6 +23,28 @@ class PrmsParameters:
             self._parameter_types,
         ) = _load_prms_parameters(parameter_file)
 
+        self._dimension_keys = list(self._dimensions.keys())
+        self._parameter_keys = list(self._parameter_data.keys())
+
+        parameters = self._parameter_data.copy()
+        for key, value in self._dimensions.items():
+            parameters[key] = value
+        self.parameters = dotdict(parameters)
+        print(self.parameters)
+
+    def __getattr__(self, item):
+        if isinstance(item, dict):
+            
+    def __getitem__(self, name: str):
+        if isinstance()
+        return self._parameter_data.get(name, None)
+
+    def __setattr__(self, key, value):(self, name: str) -> dict:
+        return self._parameter_data.get(name, None)
+
+    def __delitem__(self, name: str):
+        self._parameter_data.pop(name, None)
+
     @property
     def get_dimensions(self):
         return self._dimensions
@@ -31,6 +60,28 @@ class PrmsParameters:
     @property
     def get_parameter_types(self):
         return self._parameter_types
+
+    def get_parameters(self, keys):
+        """
+        Get a subset of keys in the parameter dictionary
+
+        Parameters
+        ----------
+        keys : str list or tuple
+            parameters to extract from the full parameter dictionary
+
+        Returns
+        -------
+        subset : dict
+            Subset of full parameter dictionary with the passed parameter
+            keys. Passed keys that do not exist in the full parameter
+            dictionary are set to None
+
+        """
+        if isinstance(keys, str):
+            keys = [keys]
+
+        return {key: self._parameter_data.get(key, None) for key in keys}
 
 
 def _load_prms_parameters(parameter_file):

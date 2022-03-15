@@ -55,7 +55,7 @@ class TestNHMSolarGeometry:
 
 
 @pytest.fixture(
-    scope="function", params=[None, test_time], ids=["markov", "datetime"]
+    scope="function", params=[None, test_time], ids=["markov", "timeseries"]
 )
 def atm_init(request):
     init_dict = deepcopy(atm_init_test_dict)

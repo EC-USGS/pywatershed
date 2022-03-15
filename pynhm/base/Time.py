@@ -1,24 +1,40 @@
+"""The base time class.
+
+Currently, all objects with a time dimension inherit from this. (Consider
+composition instead).
+"""
+
 import numpy as np
 
-from .DataAccess import DataAccess
+from .StateAccess import StateAccess
 
 
-class Time(DataAccess):
-    """The time object base class.
+class Time(StateAccess):
+    """The time base class.
 
-    Objects can access and manage time the same way.
+    To manage and access time the same way across the model.
+
+    You may initialize with or with out datetime coordinate.
+
+    * datetime supplied: The Time object behaves like "timeseries" where it
+      keeps track of time relative to the datetime data.
+
+    * datetime NOT supplied: The Time object behaves like a Markov Model in
+      the sense that only the current and previous times are kept.
 
     Dimension:
         'time'
-    Coordinate data variable:
-        'datetime', a one-dimensional
-        np.ndarray of type np.datetime64
+    Coordinate data variable (optional):
+        'datetime': a one-dimensional np.ndarray of type np.datetime64
         The length of the datetime data is the number of times
         to maintain in state. (This could be changed in the future
         with an optional argument).
 
-    Attributes:
-        verbosity: The verbosity level [0-10].
+    Parameters:
+        start_time: np.dattime64 scalar for the first current time.
+        time_step: nptimedelta64 for the distance between times.
+        datetime: optional np.ndarray of type np.datetime64 to mark
+            all discrete times available for this object.
     """
 
     def __init__(

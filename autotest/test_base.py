@@ -3,14 +3,14 @@ from datetime import datetime, timedelta
 import numpy as np
 import pytest
 
-from pynhm.base.DataAccess import DataAccess
+from pynhm.base.StateAccess import StateAccess
 from pynhm.base.Time import Time
 
 
-class TestDataAccess:
+class TestStateAccess:
     def test_init(self):
-        da = DataAccess()
-        assert da.name == "DataAccess"
+        da = StateAccess()
+        assert da.name == "StateAccess"
         assert len(da.coords) == 0
         assert len(da.variables) == 0
         assert len(da._potential_variables) == 0
@@ -20,7 +20,7 @@ class TestDataAccess:
         "data", [np.arange(4), list(range(4))], ids=["valid", "invalid"]
     )
     def test_coord(self, data):
-        da = DataAccess()
+        da = StateAccess()
         da._coords = ["foo"]  # strictly verboten!
         try:
             da["foo"] = data
@@ -57,7 +57,7 @@ class TestDataAccess:
         "data", [np.arange(4), list(range(4))], ids=["valid", "invalid"]
     )
     def test_variable(self, data):
-        da = DataAccess()
+        da = StateAccess()
         da._potential_variables = ["foo"]  # strictly verboten!
         try:
             da["foo"] = data

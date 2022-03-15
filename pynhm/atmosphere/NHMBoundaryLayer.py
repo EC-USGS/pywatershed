@@ -1,5 +1,7 @@
+import pathlib as pl
 import warnings
 from copy import deepcopy
+from typing import Union
 
 import netCDF4 as nc4
 
@@ -11,24 +13,28 @@ from ..utils.parameters import PrmsParameters
 from .AtmBoundaryLayer import AtmBoundaryLayer
 from .NHMSolarGeometry import NHMSolarGeometry
 
+dict_or_file_type = Union[dict, str, pl.Path]
+
 # JLM: where is metadata
 
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
-    def __init__(self, nc_file, *args, nc_read_vars=None, **kwargs):
+    def __init__(
+        self,
+        dict_or_nc_file: dict_or_file_type,
+        *args,
+        nc_read_vars: list = None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         self.name = "NHMBoundaryLayer"
-        self._nc_file = nc_file
-        self._nc_read_vars = nc_read_vars
 
         # Dimensions and dimension variables
-        self.datetime = None
         self.spatial_id = None
         self.spatial_id_is_nhm = None
         # property hrus or space & nspace, time &ntime
 
-        # The states
         # JLM: these names are historical, I dont love them
         self._potential_variables = [
             "prcp",
@@ -39,17 +45,8 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "tmin",
             "swrad",
         ]
-        self.variables = []
-        self._self_file_vars = {}
-        self._optional_read_vars = ["swrad", "rhavg"]
-        self._n_states_adj = 0
-        self.prcp = None
-        self.rhavg = None
-        self.rainfall = None
-        self.snowfall = None
-        self.tmax = None
-        self.tmin = None
 
+        self._n_states_adj = 0
         self._allow_param_adjust = None
         self._state_adjusted_here = False
 
@@ -57,13 +54,28 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.pot_et = None
         self.pot_et_consumed = None
 
-        # netcdf handling. consolidate these?
-        self.dataset = None
-        self.ds_var_list = None
-        self.ds_var_chunking = None
-        self._open_nc_file()
-        self._read_nc_file()
-        # self._close_nc_file()
+        # These are set in super(), delete them now to be able to set
+        del self.datetime
+        del self.spatial_id
+
+        if isinstance(dict_or_nc_file, dict):
+            self._nc_file = None
+            for key, val in dict_or_nc_file.items():
+                self[key] = val
+        else:
+            self._self_file_vars = {}
+            self._nc_read_vars = nc_read_vars
+            self._optional_read_vars = ["swrad", "rhavg"]
+            self._nc_file = dict_or_nc_file
+            self._open_nc_file()
+            self._read_nc_file()
+            # self._close_nc_file()
+
+            # netcdf handling. consolidate these?
+            self.dataset = None
+            self.ds_var_list = None
+            self.ds_var_chunking = None
+
         return
 
     # move this down? create helper functions? it is too long to be near top.
@@ -75,7 +87,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             for vv in self.ds_var_list
         }
         # Set dimension variables which are not chunked
-        self.datetime = (
+        self["datetime"] = (
             nc4.num2date(
                 self.dataset.variables["datetime"][:],
                 units=self.dataset.variables["datetime"].units,
@@ -165,7 +177,8 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # JLM: "front load" option vs "load as you go"
         for self_var, file_var in self._self_file_vars.items():
             # JLM: Later use chunking here to get data
-            _ = self[self_var] = self.dataset.variables[file_var][:]
+            # JLM: have to update datetime in that case?
+            self[self_var] = self.dataset.variables[file_var][:]
         return
 
     def _close_nc_file(self) -> None:
@@ -182,7 +195,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         # construct a dict of references
         var_dict_adj = {key: self[key] for key in self.variables}
-        var_dict_adj["datetime"] = self.datetime
+        var_dict_adj["datetime"] = self["datetime"]
         self._parameters_for_adj = parameters
         # This modified var_dict_adj, which is sus
         _ = cbh_adjust(var_dict_adj, self._parameters_for_adj)
@@ -190,7 +203,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self._allow_param_adjust = False
 
         map_adj_dict = {
-            "datetime": "datetime",
             "prcp": "prcp_adj",
             "tmax": "tmax_adj",
             "tmin": "tmin_adj",
@@ -200,7 +212,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         for self_var, adj_var in map_adj_dict.items():
             self[self_var] = var_dict_adj[adj_var]
-            self.variables = list(set(self.variables))
 
         return
 

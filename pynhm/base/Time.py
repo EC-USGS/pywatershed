@@ -23,9 +23,9 @@ class Time(DataAccess):
 
     def __init__(
         self,
-        datetime: np.ndarray = None,
         start_time: np.datetime64 = None,
         time_step: np.timedelta64 = None,
+        datetime: np.ndarray = None,
         verbosity: int = 0,
     ):
         "Initialize time with data and parameters."

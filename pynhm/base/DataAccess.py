@@ -67,7 +67,7 @@ class DataAccess:
                 _ = self._variables.remove(name)
                 return getattr(self, name)
             else:
-                raise KeyError("Can not delete coordinate '{name}'")
+                raise KeyError(f"Can not delete coordinate '{name}'")
         elif self._has_coord(name):
             msg = f"Can not delete coordinate '{name}'"
             raise KeyError(msg)

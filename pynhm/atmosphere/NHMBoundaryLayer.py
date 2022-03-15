@@ -23,7 +23,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self._nc_read_vars = nc_read_vars
 
         # Dimensions and dimension variables
-        self.datetime = None
         self.spatial_id = None
         self.spatial_id_is_nhm = None
         # property hrus or space & nspace, time &ntime
@@ -39,7 +38,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "tmin",
             "swrad",
         ]
-        self.variables = []
+        self._variables = []
         self._self_file_vars = {}
         self._optional_read_vars = ["swrad", "rhavg"]
         self._n_states_adj = 0
@@ -165,7 +164,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # JLM: "front load" option vs "load as you go"
         for self_var, file_var in self._self_file_vars.items():
             # JLM: Later use chunking here to get data
-            _ = self[self_var] = self.dataset.variables[file_var][:]
+            # if self_var == "datetime":
+            #    self.datetime = self.dataset.variables[file_var][:]
+            # else:
+            self[self_var] = self.dataset.variables[file_var][:]
         return
 
     def _close_nc_file(self) -> None:
@@ -199,8 +201,11 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         }
 
         for self_var, adj_var in map_adj_dict.items():
-            self[self_var] = var_dict_adj[adj_var]
-            self.variables = list(set(self.variables))
+            if self_var == "datetime":
+                self.datetime = var_dict_adj[adj_var]
+            else:
+                self[self_var] = var_dict_adj[adj_var]
+            # self.variables = list(set(self.variables))
 
         return
 

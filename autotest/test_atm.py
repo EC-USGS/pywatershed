@@ -13,15 +13,11 @@ from pynhm.utils.parameters import PrmsParameters
 from pynhm.utils.prms5util import load_prms_statscsv, load_soltab_debug
 
 test_time = np.arange(
-    datetime(1979, 1, 1), datetime(1979, 7, 1), timedelta(days=1)
-).astype(np.datetime64)
-
-test_time_match_start = np.arange(
-    datetime(1979, 1, 10), datetime(1979, 7, 1), timedelta(days=1)
+    datetime(1979, 1, 1), datetime(1979, 1, 7), timedelta(days=1)
 ).astype(np.datetime64)
 
 atm_init_test_dict = {
-    "start_time": np.datetime64("1979-01-10T00:00:00.00"),
+    "start_time": np.datetime64("1979-01-03T00:00:00.00"),
     "time_step": np.timedelta64(1, "D"),
     "verbose": 3,
     "height_m": 5,
@@ -58,9 +54,13 @@ class TestNHMSolarGeometry:
         return
 
 
-@pytest.fixture
-def atm_init(scope="function"):
-    atm = AtmBoundaryLayer(**atm_init_test_dict)
+@pytest.fixture(
+    scope="function", params=[None, test_time], ids=["markov", "datetime"]
+)
+def atm_init(request):
+    init_dict = deepcopy(atm_init_test_dict)
+    init_dict["datetime"] = request.param
+    atm = AtmBoundaryLayer(**init_dict)
     return atm
 
 
@@ -70,6 +70,7 @@ def atm_nhm_init(domain, scope="function"):
     return atm
 
 
+# There really is no state, just testing datetime here
 class TestAtmBoundaryLayer:
     def test_init(self, atm_init):
         for key, val in atm_init_test_dict.items():
@@ -87,7 +88,10 @@ class TestAtmBoundaryLayer:
         # get and set state via __setitem__ and __getitem__
         # Could test other errors of set and get
         try:
-            atm_init[the_state] = test_time
+            if the_state == "datetime":
+                atm_init.datetime = test_time  # skip setitem
+            else:
+                atm_init[the_state] = test_time
             if the_state in ["foo"]:
                 assert False
         except KeyError:
@@ -108,67 +112,22 @@ class TestAtmBoundaryLayer:
 
         return
 
-    def test_time_step(self, atm_init):
-        assert atm_init.time_step == atm_init_test_dict["time_step"]
-        return
-
-    @pytest.mark.parametrize(
-        "time_step", test_time_steps, ids=["valid", "invalid"]
-    )
-    def test_advance(self, atm_init, time_step):
-        # the easy way is to hack private data
-        atm_init._time_step = time_step
-        atm_init["datetime"] = test_time
-        try:
-            atm_init.advance()
-            assert atm_init.current_time == (
-                atm_init_test_dict["start_time"] + time_step
-            )
-            if time_step == test_time_steps[1]:
-                assert False
-        except ValueError:
-            if time_step == test_time_steps[1]:
-                assert True
-            else:
-                assert False
-        return
-
-    def test_current_time_index(self, atm_init):
-        # Test start time index by construction that
-        # start_time is the 10th day in the test_time
-        atm_init["datetime"] = test_time
-        assert atm_init.current_time_index == np.array([9])
-        # Test current time index after advance
-        atm_init["datetime"] = test_time_match_start
-        n_adv = 5
-        for aa in range(n_adv):
-            atm_init.advance()
-        assert atm_init.current_time_index == np.array([n_adv])
-        return
-
-    def test_current_time(self, atm_init):
-        # Test start time index by construction that
-        # start_time is the 10th day in the test_time
-        atm_init["datetime"] = test_time
-        assert atm_init.current_time == atm_init_test_dict["start_time"]
-        # Test current time index after advance
-        atm_init["datetime"] = test_time_match_start
-        n_adv = 5
-        for aa in range(n_adv):
-            atm_init.advance()
-        assert atm_init.current_time == test_time_match_start[n_adv]
-        return
+    # Most time methods tested in Time, except current_state
 
     def test_current_state_roundtrip(self, atm_init):
         # Must be a round trip since there's no defined time/state
-        atm_init["datetime"] = test_time_match_start
         n_adv = 5
         for aa in range(n_adv):
             atm_init.advance()
-        assert (
-            atm_init.get_current_state("datetime")
-            == test_time_match_start[n_adv]
+
+        assert atm_init.current_time == atm_init._start_time + (
+            n_adv * atm_init.time_step
         )
+        if atm_init["datetime"] is None:
+            assert atm_init.current_time_index == 1
+        else:
+            assert atm_init.current_time_index == n_adv
+
         return
 
 

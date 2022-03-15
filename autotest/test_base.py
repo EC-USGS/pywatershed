@@ -120,7 +120,9 @@ class TestTime:
     )
     def test_init_timeseries(self, start_time):
         try:
-            time = Time(time_data, start_time, time_step)
+            time = Time(
+                start_time=start_time, time_step=time_step, datetime=time_data
+            )
             # make sure we have the right case, as in the except
             wh_start = np.where(time_data == start_time)[0]
             assert len(wh_start) > 0

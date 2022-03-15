@@ -20,7 +20,13 @@ dict_or_file_type = Union[dict, str, pl.Path]
 
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
-    def __init__(self, dict_or_nc_file, *args, nc_read_vars=None, **kwargs):
+    def __init__(
+        self,
+        dict_or_nc_file: dict_or_file_type,
+        *args,
+        nc_read_vars: list = None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
 
         self.name = "NHMBoundaryLayer"

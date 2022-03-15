@@ -32,7 +32,6 @@ class Time(DataAccess):
         super().__init__()
         self.name = "Time"
         self._coords = ["datetime"]
-        self._variables = []
         self._potential_variables = []
         self.verbosity = verbosity
 

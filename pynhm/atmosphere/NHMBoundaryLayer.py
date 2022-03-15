@@ -1,5 +1,7 @@
 import warnings
 from copy import deepcopy
+import pathlib as pl
+from typing import Union
 
 import netCDF4 as nc4
 
@@ -11,15 +13,17 @@ from ..utils.parameters import PrmsParameters
 from .AtmBoundaryLayer import AtmBoundaryLayer
 from .NHMSolarGeometry import NHMSolarGeometry
 
+
+dict_or_file_type = Union[dict, str, pl.Path]
+
 # JLM: where is metadata
 
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
-    def __init__(self, nc_file, *args, nc_read_vars=None, **kwargs):
+    def __init__(self, dict_or_nc_file, *args, nc_read_vars=None, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.name = "NHMBoundaryLayer"
-        self._nc_file = nc_file
         self._nc_read_vars = nc_read_vars
 
         # Dimensions and dimension variables
@@ -27,7 +31,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.spatial_id_is_nhm = None
         # property hrus or space & nspace, time &ntime
 
-        # The states
         # JLM: these names are historical, I dont love them
         self._potential_variables = [
             "prcp",
@@ -38,16 +41,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "tmin",
             "swrad",
         ]
-        self._variables = []
+
         self._self_file_vars = {}
         self._optional_read_vars = ["swrad", "rhavg"]
         self._n_states_adj = 0
-        self.prcp = None
-        self.rhavg = None
-        self.rainfall = None
-        self.snowfall = None
-        self.tmax = None
-        self.tmin = None
 
         self._allow_param_adjust = None
         self._state_adjusted_here = False
@@ -60,9 +57,16 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.dataset = None
         self.ds_var_list = None
         self.ds_var_chunking = None
-        self._open_nc_file()
-        self._read_nc_file()
-        # self._close_nc_file()
+
+        if isinstance(dict_or_nc_file, dict):
+            self._nc_file = None
+            for key, val in dict_or_nc_file.items():
+                self[key] = val
+        else:
+            self._nc_file = dict_or_nc_file
+            self._open_nc_file()
+            self._read_nc_file()
+            # self._close_nc_file()
         return
 
     # move this down? create helper functions? it is too long to be near top.
@@ -164,9 +168,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # JLM: "front load" option vs "load as you go"
         for self_var, file_var in self._self_file_vars.items():
             # JLM: Later use chunking here to get data
-            # if self_var == "datetime":
-            #    self.datetime = self.dataset.variables[file_var][:]
-            # else:
+            # JLM: have to update datetime in that case?
             self[self_var] = self.dataset.variables[file_var][:]
         return
 

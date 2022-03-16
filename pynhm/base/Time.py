@@ -6,6 +6,7 @@ composition instead).
 
 import numpy as np
 
+from ..utils.prms5_file_util import get_variable
 from .StateAccess import StateAccess
 
 
@@ -31,7 +32,8 @@ class Time(StateAccess):
         with an optional argument).
 
     Parameters:
-        start_time: np.dattime64 scalar for the first current time.
+        start_time: np.datetime64 scalar for the first current time.
+        end_time: np.datetime64 scalar for the first current time.
         time_step: nptimedelta64 for the distance between times.
         datetime: optional np.ndarray of type np.datetime64 to mark
             all discrete times available for this object.
@@ -138,6 +140,11 @@ class Time(StateAccess):
     def time_step(self):
         """Get the time step."""
         return self._time_step
+
+    @staticmethod
+    def load(control_file):
+
+        return
 
     def advance(self):
         """Advance time."""

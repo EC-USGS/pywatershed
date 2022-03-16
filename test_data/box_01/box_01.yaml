@@ -4,5 +4,13 @@ cbh_inputs:
   prcp: prcp.cbh
   tmax: tmax.cbh
   tmin: tmin.cbh
-  
+
+control_file: box_01.control
 param_file: box_01.params
+
+test_ans:
+
+  control_read:
+    start_time: 1980-10-01 00:00:00
+    end_time: 2019-12-31 00:00:00
+    initial_deltat: 24.0

@@ -55,7 +55,7 @@ def pytest_generate_tests(metafunc):
 
             # Transform all relative paths in the yaml (relative to the yaml file)
             # using the rel path to the file - spare the tester from doing this.
-            for ff in ["param_file", "cbh_nc"]:
+            for ff in ["param_file", "control_file", "cbh_nc"]:
                 domain_dict[ff] = pathlib.Path(domain_dict[ff])
                 if not domain_dict[ff].is_absolute():
                     domain_dict[ff] = domain_dict["dir"] / domain_dict[ff]

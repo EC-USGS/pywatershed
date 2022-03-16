@@ -1,65 +1,53 @@
+from collections.abc import Mapping
+
 import numpy as np
 
-class dotdict(dict):
-    """dot.notation access to dictionary attributes."""
 
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-
-class PrmsParameters:
-    """PRMS parameter class
-
-    parameter_file: str
-        path to PRMS parameter file
+class DotDict(dict):
+    """
+    Quick and dirty implementation of a dot-able dict, which allows access and
+    assignment via object properties rather than dict indexing.
+    source: https://stackoverflow.com/questions/13520421/recursive-dotdict
+    modified OrderdDict to standard dict
     """
 
-    def __init__(self, parameter_file):
-        (
-            self._dimensions,
-            self._parameter_data,
-            self._parameter_dimensions,
-            self._parameter_types,
-        ) = _load_prms_parameters(parameter_file)
+    def __init__(self, *args, **kwargs):
+        od = dict(*args, **kwargs)
+        for key, val in od.items():
+            if isinstance(val, Mapping):
+                value = DotDict(val)
+            else:
+                value = val
+            self[key] = value
 
-        self._dimension_keys = list(self._dimensions.keys())
-        self._parameter_keys = list(self._parameter_data.keys())
+    def __delattr__(self, name):
+        try:
+            del self[name]
+        except KeyError as ex:
+            raise AttributeError(f"No attribute called: {name}") from ex
 
-        parameters = self._parameter_data.copy()
-        for key, value in self._dimensions.items():
-            parameters[key] = value
-        self.parameters = dotdict(parameters)
-        print(self.parameters)
+    def __getattr__(self, k):
+        try:
+            return self[k]
+        except KeyError as ex:
+            raise AttributeError(f"No attribute called: {k}") from ex
 
-    def __getattr__(self, item):
-        if isinstance(item, dict):
-            
-    def __getitem__(self, name: str):
-        if isinstance()
-        return self._parameter_data.get(name, None)
+    __setattr__ = dict.__setitem__
 
-    def __setattr__(self, key, value):(self, name: str) -> dict:
-        return self._parameter_data.get(name, None)
 
-    def __delitem__(self, name: str):
-        self._parameter_data.pop(name, None)
+class PrmsParameters(dict):
+    """
+    PRMS parameter class
 
-    @property
-    def get_dimensions(self):
-        return self._dimensions
+    Parameters
+    ----------
+    dict : dict
+        parameters dictionary
 
-    @property
-    def get_parameter_data(self):
-        return self._parameter_data
+    """
 
-    @property
-    def get_parameter_dimensions(self):
-        return self._parameter_dimensions
-
-    @property
-    def get_parameter_types(self):
-        return self._parameter_types
+    def __init__(self, parameter_dict):
+        self.parameters = DotDict(parameter_dict)
 
     def get_parameters(self, keys):
         """
@@ -81,7 +69,41 @@ class PrmsParameters:
         if isinstance(keys, str):
             keys = [keys]
 
-        return {key: self._parameter_data.get(key, None) for key in keys}
+        return PrmsParameters(
+            {
+                key: self.parameters.get(key)
+                for key in keys
+                if key in self.parameters.keys()
+            }
+        )
+
+    @staticmethod
+    def load(parameter_file):
+        """
+        Load parameters from a PRMS parameter file
+
+        Parameters
+        ----------
+        parameter_file : str or pathlib.Path
+
+
+        Returns
+        -------
+        Parameters : PrmsParameters
+            PRMS parameter object
+
+
+        """
+        (
+            dimensions,
+            parameter_data,
+            parameter_dimensions,
+            parameter_types,
+        ) = _load_prms_parameters(parameter_file)
+        parameters = parameter_data.copy()
+        for key, value in dimensions.items():
+            parameters[key] = value
+        return PrmsParameters(parameters)
 
 
 def _load_prms_parameters(parameter_file):

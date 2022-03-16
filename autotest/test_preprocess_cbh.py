@@ -17,14 +17,14 @@ var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 # Reduce IO/loading for the domain parameters
 @pytest.fixture
 def params(domain):
-    return PrmsParameters(domain["param_file"])
+    return PrmsParameters.load(domain["param_file"])
 
 
 # It appears difficult/ugly to reuse the above
 @pytest.fixture(params=["no_params", "params"])
 def params_and_none(request, domain):
     if request.param == "params":
-        return PrmsParameters(domain["param_file"])
+        return PrmsParameters.load(domain["param_file"])
     else:
         return None
 

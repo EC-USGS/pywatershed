@@ -91,8 +91,8 @@ class NHMSolarGeometry:
         return None
 
     def _compute_solar_geometry(self, parameters: PrmsParameters):
-        params = parameters._parameter_data
-        n_hru = parameters._dimensions["nhru"]
+        params = parameters.parameters
+        n_hru = parameters.parameters.nhru
 
         self.hru_cossl = np.cos(np.arctan(params["hru_slope"]))
 

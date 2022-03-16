@@ -60,7 +60,7 @@ def _cbh_file_to_df(
             col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
         else:
             col_names = np.char.add(
-                np.array([key]), params._parameter_data["nhm_id"].astype(str)
+                np.array([key]), params.parameters.nhm_id.astype(str)
             ).tolist()
         var_count_dict[key] = count
 
@@ -178,8 +178,8 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
     # Param object has no defined interface at this time.
     if params is None:
         raise ValueError("Parameters have not been supplied for adjustment.")
-    param_data = params._parameter_data
-    nhru = params._dimensions["nhru"]
+    param_data = params.parameters
+    nhru = params.parameters.nhru
 
     # I dislike using pd for something that seems like it should exist in np
     month_ind_12 = pd.to_datetime(cbh_dict["datetime"]).month - 1  # (time)

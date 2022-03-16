@@ -222,11 +222,13 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
     ) -> None:
 
         solar_geom = NHMSolarGeometry(parameters)
+        # The parameters are in solar_geom for better or worse
         asdf
         self["swrad"] = self.ddsolrad_run(
             self["datetime"],
-            self["tmax"],  # adj?
+            self["tmax"],
             self["prcp"],
+            # self[""]
             solar_geom.soltab_potsw,
         )
         return

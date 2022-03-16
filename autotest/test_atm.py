@@ -317,23 +317,23 @@ class TestNHMBoundaryLayer:
 
         return
 
-    # def test_solar_rad_deg_day(self, domain, atm_nhm_init):
-    #     params = PrmsParameters(domain["param_file"])
-    #     # assert output matches output on file.
-    #     prms_output_file = domain["prms_outputs"]["swrad"]
-    #     prms_output = load_prms_statscsv(prms_output_file)
-    #     swrad_ans_dates = prms_output.index.values
-    #     swrad_ans_array = prms_output.to_numpy()
-    #     wh_dates = np.where(np.isin(atm_nhm_init["datetime"], swrad_ans_dates))
+    def test_solar_rad_deg_day(self, domain, atm_nhm_init):
+        params = PrmsParameters(domain["param_file"])
+        # assert output matches output on file.
+        prms_output_file = domain["prms_outputs"]["swrad"]
+        prms_output = load_prms_statscsv(prms_output_file)
+        swrad_ans_dates = prms_output.index.values
+        swrad_ans_array = prms_output.to_numpy()
+        wh_dates = np.where(np.isin(atm_nhm_init["datetime"], swrad_ans_dates))
 
-    #     swrad = atm_nhm_init.calculate_sw_rad_degree_day(params)
+        swrad = atm_nhm_init.calculate_sw_rad_degree_day(params)
 
-    #     result = np.isclose(
-    #         swrad_ans_array,
-    #         swrad[wh_dates, :],
-    #         rtol=1e-121,
-    #         atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
-    #     )
-    #     assert result.all()
+        result = np.isclose(
+            swrad_ans_array,
+            swrad[wh_dates, :],
+            rtol=1e-121,
+            atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
+        )
+        assert result.all()
 
-    #     return
+        return

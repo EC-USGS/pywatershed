@@ -1,9 +1,14 @@
 import numpy as np
 
 
-class DataAccess:
+class StateAccess:
+    """The base class for state and coordinate access.
+
+    To manage and access state and coordinates the same way across the model.
+    """
+
     def __init__(self):
-        self.name = "DataAccess"
+        self.name = "StateAccess"
         self._coords = []
         self._variables = []
         self._potential_variables = []
@@ -11,11 +16,18 @@ class DataAccess:
 
     @property
     def coords(self) -> list:
+        """A list of the coordinates of this state."""
         return self._coords
 
     @property
     def variables(self) -> list:
+        """A list of the variables of this state."""
         return self._variables
+
+    @property
+    def potential_variables(self) -> list:
+        """A list of the potential variables of this state."""
+        return self._potential_variables
 
     def _has_potential_state(self, state_name, fail=True) -> bool:
         if state_name in self._potential_variables:

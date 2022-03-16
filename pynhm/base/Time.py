@@ -1,24 +1,40 @@
+"""The base time class.
+
+Currently, all objects with a time dimension inherit from this. (Consider
+composition instead).
+"""
+
 import numpy as np
 
-from .DataAccess import DataAccess
+from .StateAccess import StateAccess
 
 
-class Time(DataAccess):
-    """The time object base class.
+class Time(StateAccess):
+    """The time base class.
 
-    Objects can access and manage time the same way.
+    To manage and access time the same way across the model.
+
+    You may initialize with or with out datetime coordinate.
+
+    * datetime supplied: The Time object behaves like "timeseries" where it
+      keeps track of time relative to the datetime data.
+
+    * datetime NOT supplied: The Time object behaves like a Markov Model in
+      the sense that only the current and previous times are kept.
 
     Dimension:
         'time'
-    Coordinate data variable:
-        'datetime', a one-dimensional
-        np.ndarray of type np.datetime64
+    Coordinate data variable (optional):
+        'datetime': a one-dimensional np.ndarray of type np.datetime64
         The length of the datetime data is the number of times
         to maintain in state. (This could be changed in the future
         with an optional argument).
 
-    Attributes:
-        verbosity: The verbosity level [0-10].
+    Parameters:
+        start_time: np.dattime64 scalar for the first current time.
+        time_step: nptimedelta64 for the distance between times.
+        datetime: optional np.ndarray of type np.datetime64 to mark
+            all discrete times available for this object.
     """
 
     def __init__(
@@ -37,29 +53,21 @@ class Time(DataAccess):
 
         if (datetime) is not None:
             # JLM check that it's an np.ndarray of type np.datetime64
-            self["datetime"] = datetime
-
             if start_time is None:
-                self._start_time = self["datetime"][0]
+                self._start_time = datetime[0]
             else:
                 self._start_time = start_time
 
             if time_step is None:
-                self._time_step = self["datetime"][1] - self["datetime"][0]
+                self._time_step = datetime[1] - datetime[0]
             else:
                 self._time_step = time_step
 
             # Check that all the time deltas in datetime match.
-            assert (np.diff(self.datetime) == self.time_step).all()
+            assert (np.diff(datetime) == self.time_step).all()
 
-            wh_start = np.where(self.datetime == self._start_time)[0]
-            if len(wh_start) == 0:
-                msg = (
-                    f"start_time '{start_time}' is not in "
-                    "supplied datetime array."
-                )
-                raise ValueError(msg)
-            self._current_time_index = wh_start.tolist()[0]
+            # set this after setting self._start_time and self._time_step
+            self["datetime"] = datetime
 
         else:
 
@@ -83,6 +91,14 @@ class Time(DataAccess):
     def __setitem__(self, name: str, value: np.ndarray) -> None:
         super().__setitem__(name, value)
         if name == "datetime":
+            wh_start = np.where(self.datetime == self._start_time)[0]
+            if len(wh_start) == 0:
+                msg = (
+                    f"start_time '{self._start_time}' is not in "
+                    "supplied datetime array."
+                )
+                raise ValueError(msg)
+            self._current_time_index = wh_start.tolist()[0]
             _ = self.n_time
         return
 
@@ -125,11 +141,16 @@ class Time(DataAccess):
 
     def advance(self):
         """Advance time."""
-        self._previous_time = self._current_time
-        self._current_time += self.time_step
         if self.datetime is not None:
+            if self._current_time_index + 1 == self.n_time:
+                msg = f"End of timeseries reached, can not advance {self.name}"
+                raise ValueError(msg)
             self._previous_time_index = self._current_time_index
             self._current_time_index += 1
+
         if self._previous_time_index is None:
             self._previous_time_index = 0
+
+        self._previous_time = self._current_time
+        self._current_time += self.time_step
         return

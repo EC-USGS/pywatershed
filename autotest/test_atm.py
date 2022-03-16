@@ -55,7 +55,7 @@ class TestNHMSolarGeometry:
 
 
 @pytest.fixture(
-    scope="function", params=[None, test_time], ids=["markov", "datetime"]
+    scope="function", params=[None, test_time], ids=["markov", "timeseries"]
 )
 def atm_init(request):
     init_dict = deepcopy(atm_init_test_dict)
@@ -134,8 +134,8 @@ def atm_nhm_init(domain):
 state_dict = {
     "datetime": np.array(
         [
-            datetime(1979, 1, 1, 0, 0),
-            datetime(1979, 1, 2, 0, 0),
+            datetime(1979, 1, 3, 0, 0),
+            datetime(1979, 1, 4, 0, 0),
         ]
     ),
     "spatial_id": np.array([5307, 5308]),
@@ -182,7 +182,37 @@ def atm_nhm_init_dict():
 
 class TestNHMBoundaryLayer:
     def test_init_dict(self, atm_nhm_init_dict):
+
+        # local atm init with an invalid start time
+        test_dict = deepcopy(atm_init_test_dict)
+        test_dict["start_time"] = np.datetime64(datetime(1979, 1, 12))
+        try:
+            atm = NHMBoundaryLayer(state_dict, **test_dict)
+            assert False
+        except ValueError:
+            pass
+
+        # local atm init with an invalid start time
+        test_dict = deepcopy(atm_init_test_dict)
+        current_time_ind = 1
+        test_dict["start_time"] = state_dict["datetime"][current_time_ind]
+        atm = NHMBoundaryLayer(state_dict, **test_dict)
+        assert atm.current_time_index == current_time_ind
+        assert atm.current_time == test_dict["start_time"]
+        try:
+            atm.advance()
+            assert False
+        except ValueError:
+            pass
+
         # Check all the init arguments
+        # back to atm_nhm_init_test_dict
+        current_time_ind = 0
+        assert atm_nhm_init_dict.current_time_index == current_time_ind
+        assert (
+            atm_nhm_init_dict.current_time == atm_init_test_dict["start_time"]
+        )
+
         for key, val in atm_init_test_dict.items():
             key_check = key
             if key not in list(atm_nhm_init_dict.__dict__.keys()):
@@ -191,6 +221,7 @@ class TestNHMBoundaryLayer:
         # Check state - this tests get_state.
         for vv in atm_nhm_init_dict.variables:
             assert (atm_nhm_init_dict[vv] == state_dict[vv]).all()
+
         return
 
     def test_init(self, domain, atm_nhm_init):

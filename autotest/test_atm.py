@@ -28,7 +28,7 @@ test_time_steps = [atm_init_test_dict["time_step"], np.timedelta64(1, "h")]
 
 class TestNHMSolarGeometry:
     def test_init(self, domain):
-        params = PrmsParameters(domain["param_file"])
+        params = PrmsParameters.load(domain["param_file"])
         solar_geom = NHMSolarGeometry(params)
         potential_sw_rad_ans, sun_hrs_ans = load_soltab_debug(
             domain["prms_outputs"]["soltab"]
@@ -302,7 +302,7 @@ class TestNHMBoundaryLayer:
         atm_adj_dict = deepcopy(atm_init_test_dict)
         atm_adj_dict["nc_read_vars"] = ["prcp", "tmax", "tmin"]
         atm_to_adj = NHMBoundaryLayer(atm_nhm_init._nc_file, **atm_adj_dict)
-        params = PrmsParameters(domain["param_file"])
+        params = PrmsParameters.load(domain["param_file"])
         atm_to_adj.param_adjust(params)
 
         for vv in atm_to_adj.variables:

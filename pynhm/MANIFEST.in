@@ -1,0 +1,4 @@
+global-exclude .DS_Store *.pyc *.pyo *.pyd *.swp *.bak *~ .* *.sh *.yml *.md *.toml
+exclude doc/*
+exclude autotest/*
+include pyproject.toml

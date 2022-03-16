@@ -1,36 +1,109 @@
+from collections.abc import Mapping
+
 import numpy as np
 
 
-class PrmsParameters:
-    """PRMS parameter class
-
-    parameter_file: str
-        path to PRMS parameter file
+class DotDict(dict):
+    """
+    Quick and dirty implementation of a dot-able dict, which allows access and
+    assignment via object properties rather than dict indexing.
+    source: https://stackoverflow.com/questions/13520421/recursive-dotdict
+    modified OrderdDict to standard dict
     """
 
-    def __init__(self, parameter_file):
+    def __init__(self, *args, **kwargs):
+        od = dict(*args, **kwargs)
+        for key, val in od.items():
+            if isinstance(val, Mapping):
+                value = DotDict(val)
+            else:
+                value = val
+            self[key] = value
+
+    def __delattr__(self, name):
+        try:
+            del self[name]
+        except KeyError as ex:
+            raise AttributeError(f"No attribute called: {name}") from ex
+
+    def __getattr__(self, k):
+        try:
+            return self[k]
+        except KeyError as ex:
+            raise AttributeError(f"No attribute called: {k}") from ex
+
+    __setattr__ = dict.__setitem__
+
+
+class PrmsParameters(dict):
+    """
+    PRMS parameter class
+
+    Parameters
+    ----------
+    dict : dict
+        parameters dictionary
+
+    """
+
+    def __init__(self, parameter_dict):
+        self.parameters = DotDict(parameter_dict)
+
+    def get_parameters(self, keys):
+        """
+        Get a subset of keys in the parameter dictionary
+
+        Parameters
+        ----------
+        keys : str list or tuple
+            parameters to extract from the full parameter dictionary
+
+        Returns
+        -------
+        subset : dict
+            Subset of full parameter dictionary with the passed parameter
+            keys. Passed keys that do not exist in the full parameter
+            dictionary are set to None
+
+        """
+        if isinstance(keys, str):
+            keys = [keys]
+
+        return PrmsParameters(
+            {
+                key: self.parameters.get(key)
+                for key in keys
+                if key in self.parameters.keys()
+            }
+        )
+
+    @staticmethod
+    def load(parameter_file):
+        """
+        Load parameters from a PRMS parameter file
+
+        Parameters
+        ----------
+        parameter_file : str or pathlib.Path
+
+
+        Returns
+        -------
+        Parameters : PrmsParameters
+            PRMS parameter object
+
+
+        """
         (
-            self._dimensions,
-            self._parameter_data,
-            self._parameter_dimensions,
-            self._parameter_types,
+            dimensions,
+            parameter_data,
+            parameter_dimensions,
+            parameter_types,
         ) = _load_prms_parameters(parameter_file)
-
-    @property
-    def get_dimensions(self):
-        return self._dimensions
-
-    @property
-    def get_parameter_data(self):
-        return self._parameter_data
-
-    @property
-    def get_parameter_dimensions(self):
-        return self._parameter_dimensions
-
-    @property
-    def get_parameter_types(self):
-        return self._parameter_types
+        parameters = parameter_data.copy()
+        for key, value in dimensions.items():
+            parameters[key] = value
+        return PrmsParameters(parameters)
 
 
 def _load_prms_parameters(parameter_file):

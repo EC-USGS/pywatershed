@@ -37,8 +37,8 @@ class Time(StateAccess):
         with an optional argument).
 
     Parameters:
-        start_time: np.datetime64 scalar for the first current time.
-        end_time: np.datetime64 scalar for the first current time.
+        start_time: np.datetime64 scalar for the simulation start time.
+        end_time: np.datetime64 scalar for the simulation end time.
         time_step: nptimedelta64 for the distance between times.
         datetime: optional np.ndarray of type np.datetime64 to mark
             all discrete times available for this object.

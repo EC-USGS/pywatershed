@@ -182,7 +182,6 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
     if params is None:
         raise ValueError("Parameters have not been supplied for adjustment.")
     param_data = params.parameters
-    nhru = params.parameters.nhru
 
     # I dislike using pd for something that seems like it should exist in np
     month_ind_12 = pd.to_datetime(cbh_dict["datetime"]).month - 1  # (time)

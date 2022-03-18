@@ -5,8 +5,8 @@ from typing import Tuple
 # from numba import jit
 import numpy as np
 
-from ..utils.parameters import PrmsParameters
 from ..base.StateAccess import StateAccess
+from ..utils.parameters import PrmsParameters
 
 # The solar geometry model for NHM/PRMS
 # Primary reference

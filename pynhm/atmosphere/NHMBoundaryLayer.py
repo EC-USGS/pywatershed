@@ -74,6 +74,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         nc_read_vars: list = None,
         **kwargs,
     ):
+        """The atmospheric boundary layer of the NHM model."""
         super().__init__(*args, **kwargs)
 
         self.name = "NHMBoundaryLayer"
@@ -243,6 +244,14 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         return
 
     def param_adjust(self, parameters: PrmsParameters) -> None:
+        """Adjust atmospheric variables using PRMS parameters.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         if not self._allow_param_adjust:
             msg = (
                 "Parameter adjustments not permitted when any state "
@@ -277,6 +286,13 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self,
         parameters: PrmsParameters,
     ) -> None:
+        """Calculate shortwave radiation using the degree day method.
+
+        Args:
+            None.
+        Returns:
+            None.
+        """
 
         solar_geom = NHMSolarGeometry(parameters)
         swrad_param_list = [
@@ -297,7 +313,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         ]
         params = parameters.get_parameters(swrad_param_list).parameters
 
-        self["swrad"] = self.ddsolrad_run(
+        self["swrad"] = self._ddsolrad_run(
             dates=self["datetime"],
             tmax_hru=self["tmax"],
             hru_ppt=self["prcp"],
@@ -309,7 +325,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
     # @jit
     @staticmethod
-    def ddsolrad_run(
+    def _ddsolrad_run(
         dates: np.ndarray,  # [n_time]
         tmax_hru: np.ndarray,  # [n_time, n_hru]
         hru_ppt: np.ndarray,  # [n_time, n_hru]
@@ -463,12 +479,18 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self,
         parameters: PrmsParameters,
     ) -> None:
+        """Calculate potential evapotranspiration following Jensen and Haise (1963).
 
-        # need self.parameters
+        Args:
+            None (parameters will be removed)
+
+        Returns:
+            None.
+        """
         pot_et_jh_params_list = ["jh_coef", "jh_coef_hru"]
         params = parameters.get_parameters(pot_et_jh_params_list).parameters
 
-        self["potet"] = self.potet_jh_run(
+        self["potet"] = self._potet_jh_run(
             dates=self["datetime"],
             tmax_hru=self["tmax"],
             tmin_hru=self["tmin"],
@@ -479,7 +501,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         return
 
     @staticmethod
-    def potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
+    def _potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
         n_time, n_hru = tmax_hru.shape
 
         # The vector

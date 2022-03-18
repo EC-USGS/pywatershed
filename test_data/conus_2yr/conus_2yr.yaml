@@ -6,6 +6,7 @@ cbh_inputs:
       tmax: /home/jmccreight/pynhm_data/conus_2yr/tmax.cbh
       tmin: /home/jmccreight/pynhm_data/conus_2yr/tmin.cbh
 
+control_file: /home/jmccreight/pynhm_data/conus_2yr/control.text
 param_file: /home/jmccreight/pynhm_data/conus_2yr/myparam.param
 
 prms_outputs:
@@ -16,7 +17,12 @@ prms_outputs:
   tmin_adj: /home/jmccreight/pynhm_data/conus_2yr/output/nhru_tminf.csv
 
 test_ans:
-  
+
+  control_read:
+    start_time: 1979-01-01T00:00:00
+    end_time: 1980-12-31T00:00:00
+    initial_deltat: 24
+
   preprocess_cbh:
     files_to_df:
       prcp: 0.09595891072952142

@@ -20,7 +20,10 @@ def assert_or_print(results, answers, test_name=None, print_ans=False):
             print(f"{sp}{key}: {results[key]}")
         else:
             msg = f"{test_name}{key}"
-            assert np.isclose(results[key], answers[key]), msg
+            if isinstance(results[key], (np.datetime64, np.timedelta64)):
+                assert results[key] == answers[key], msg
+            else:
+                assert np.isclose(results[key], answers[key]), msg
 
     # Always fail if printing answers
     assert not print_ans

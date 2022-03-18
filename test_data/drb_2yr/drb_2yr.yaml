@@ -6,6 +6,7 @@ cbh_inputs:
       tmax: tmax.cbh
       tmin: tmin.cbh
 
+control_file: control.test
 param_file: myparam.param
 
 prms_outputs:
@@ -20,6 +21,11 @@ prms_outputs:
 cbh_nc: cbh.nc
 
 test_ans:
+
+  control_read:
+    start_time: 1979-01-01T00:00:00
+    end_time: 1980-12-31T00:00:00
+    initial_deltat: 24
 
   parameter_read:
     nhru: 765

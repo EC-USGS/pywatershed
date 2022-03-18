@@ -1,38 +1,12 @@
-from collections.abc import Mapping
+import pathlib as pl
+from typing import Union
 
 import numpy as np
 
+from .dictionary_as_properties import DictionaryAsProperties
 
-class DotDict(dict):
-    """
-    Quick and dirty implementation of a dot-able dict, which allows access and
-    assignment via object properties rather than dict indexing.
-    source: https://stackoverflow.com/questions/13520421/recursive-dotdict
-    modified OrderdDict to standard dict
-    """
-
-    def __init__(self, *args, **kwargs):
-        od = dict(*args, **kwargs)
-        for key, val in od.items():
-            if isinstance(val, Mapping):
-                value = DotDict(val)
-            else:
-                value = val
-            self[key] = value
-
-    def __delattr__(self, name):
-        try:
-            del self[name]
-        except KeyError as ex:
-            raise AttributeError(f"No attribute called: {name}") from ex
-
-    def __getattr__(self, k):
-        try:
-            return self[k]
-        except KeyError as ex:
-            raise AttributeError(f"No attribute called: {k}") from ex
-
-    __setattr__ = dict.__setitem__
+fileish = Union[str, pl.PosixPath, dict]
+listish = Union[str, list, tuple]
 
 
 class PrmsParameters:
@@ -46,24 +20,19 @@ class PrmsParameters:
 
     """
 
-    def __init__(self, parameter_dict):
-        self.parameters = DotDict(parameter_dict)
+    def __init__(self, parameter_dict: dict) -> "PrmsParameters":
+        self.parameters = DictionaryAsProperties(parameter_dict)
 
-    def get_parameters(self, keys):
-        """
-        Get a subset of keys in the parameter dictionary
+    def get_parameters(self, keys: listish) -> "PrmsParameters":
+        """Get a subset of keys in the parameter dictionary
 
-        Parameters
-        ----------
-        keys : str list or tuple
-            parameters to extract from the full parameter dictionary
+        Args:
+            keys: keys to retrieve from the full PRMS parameter object
 
-        Returns
-        -------
-        subset : dict
-            Subset of full parameter dictionary with the passed parameter
-            keys. Passed keys that do not exist in the full parameter
-            dictionary are set to None
+        Returns:
+            PrmsParameters : subset of full parameter dictionary
+                Passed keys that do not exist in the full parameter
+                dictionary are skipped.
 
         """
         if isinstance(keys, str):
@@ -78,20 +47,14 @@ class PrmsParameters:
         )
 
     @staticmethod
-    def load(parameter_file):
-        """
-        Load parameters from a PRMS parameter file
+    def load(parameter_file: fileish) -> "PrmsParameters":
+        """Load parameters from a PRMS parameter file
 
-        Parameters
-        ----------
-        parameter_file : str or pathlib.Path
+        Args:
+            parameter_file: parameter file path
 
-
-        Returns
-        -------
-        Parameters : PrmsParameters
-            PRMS parameter object
-
+        Returns:
+            PrmsParameters: full PRMS parameter dictionary
 
         """
         (
@@ -106,7 +69,7 @@ class PrmsParameters:
         return PrmsParameters(parameters)
 
 
-def _load_prms_parameters(parameter_file):
+def _load_prms_parameters(parameter_file: fileish):
     """Read a PRMS parameter file
 
     :param parameter_file:

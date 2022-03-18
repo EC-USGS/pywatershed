@@ -6,6 +6,7 @@ from .base.Time import Time
 from .canopy.PRMSCanopy import PRMSCanopy
 from .preprocess.cbh import CBH
 from .pynhm import driver
+from .utils import ControlVariables, PrmsParameters
 from .version import __author__, __author_email__, __version__
 
 __all__ = [

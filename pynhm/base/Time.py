@@ -4,9 +4,15 @@ Currently, all objects with a time dimension inherit from this. (Consider
 composition instead).
 """
 
+import pathlib as pl
+from typing import Tuple, Union
+
 import numpy as np
 
+from ..utils import ControlVariables
 from .StateAccess import StateAccess
+
+fileish = Union[str, pl.PosixPath]
 
 
 class Time(StateAccess):
@@ -31,7 +37,8 @@ class Time(StateAccess):
         with an optional argument).
 
     Parameters:
-        start_time: np.dattime64 scalar for the first current time.
+        start_time: np.datetime64 scalar for the simulation start time.
+        end_time: np.datetime64 scalar for the simulation end time.
         time_step: nptimedelta64 for the distance between times.
         datetime: optional np.ndarray of type np.datetime64 to mark
             all discrete times available for this object.
@@ -40,6 +47,7 @@ class Time(StateAccess):
     def __init__(
         self,
         start_time: np.datetime64 = None,
+        end_time: np.datetime64 = None,
         time_step: np.timedelta64 = None,
         datetime: np.ndarray = None,
         verbosity: int = 0,
@@ -57,6 +65,10 @@ class Time(StateAccess):
                 self._start_time = datetime[0]
             else:
                 self._start_time = start_time
+            if end_time is None:
+                self._end_time = datetime[-1]
+            else:
+                self._end_time = end_time
 
             if time_step is None:
                 self._time_step = datetime[1] - datetime[0]
@@ -73,6 +85,7 @@ class Time(StateAccess):
 
             self.datetime = None
             self._start_time = start_time
+            self._end_time = end_time
             self._current_time_index = 1
             self._time_step = time_step
 
@@ -138,6 +151,39 @@ class Time(StateAccess):
     def time_step(self):
         """Get the time step."""
         return self._time_step
+
+    @property
+    def start_time(self):
+        """Get the simulation start time"""
+        return self._start_time
+
+    @property
+    def end_time(self):
+        """Get the simulation end time"""
+        return self._end_time
+
+    @staticmethod
+    def load(
+        control_file: fileish,
+        verbosity: int = 0,
+    ) -> "Time":
+        """Initialize Time object from a PRMS control file
+
+        Args:
+            control_file: PRMS control file
+            verbosity: output verbosity level
+
+        Returns:
+            Time: Time object initialized from a PRMS control file
+
+        """
+        control = ControlVariables.load(control_file)
+        return Time(
+            control.control.start_time,
+            control.control.end_time,
+            control.control.initial_deltat,
+            verbosity=verbosity,
+        )
 
     def advance(self):
         """Advance time."""

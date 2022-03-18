@@ -16,6 +16,7 @@ pynhm: The USGS National Hydrologic Model in python
     Preprocess <api/preprocess>
     Atmosphere <api/atmosphere>
     Base <api/base>
+    Utils <api/utils>
 
 .. toctree::
    :hidden:

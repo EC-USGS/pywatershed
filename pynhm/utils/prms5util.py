@@ -127,6 +127,7 @@ def load_prms_output(output_data_path, csvfiles, convert=True, verbose=False):
 
 def load_prms_statscsv(fname, convert=True, verbose=False):
     # read stats.csv
+    # JLM: for prms_summary.csv?
     with open(fname) as f:
         line = f.readline()
         colnames = line.strip().split(",")
@@ -135,6 +136,24 @@ def load_prms_statscsv(fname, convert=True, verbose=False):
     df = pd.read_csv(
         fname,
         skiprows=[1],
+        parse_dates=["Date"],
+        index_col=["Date"],
+        dtype=float,
+        float_precision="high",
+    )
+    df.index.names = ["date"]
+
+    # unit conversion
+    if convert:
+        unit_conversion(df, verbose=verbose)
+
+    return df
+
+
+def load_nhru_output_csv(fname, convert=True, verbose=False):
+    # read stats.csv
+    df = pd.read_csv(
+        fname,
         parse_dates=["Date"],
         index_col=["Date"],
         dtype=float,

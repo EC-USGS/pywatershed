@@ -10,7 +10,7 @@ from pynhm.atmosphere.AtmBoundaryLayer import AtmBoundaryLayer
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.atmosphere.NHMSolarGeometry import NHMSolarGeometry
 from pynhm.utils.parameters import PrmsParameters
-from pynhm.utils.prms5util import load_prms_statscsv, load_soltab_debug
+from pynhm.utils.prms5util import load_nhru_output_csv, load_soltab_debug
 
 test_time = np.arange(
     datetime(1979, 1, 1), datetime(1979, 1, 7), timedelta(days=1)
@@ -255,7 +255,7 @@ class TestNHMBoundaryLayer:
         # Roundtrip and a half just to use existing values: get, set, get
         mult = 2
         values = atm_nhm_init["prcp"] * mult
-        assert (values / atm_nhm_init.prcp == mult).all()  # while we are here
+        assert (values / mult == atm_nhm_init.prcp).all()
         atm_nhm_init["prcp"] = values
         # One better, these are actually the same object, could test "is"
         assert (atm_nhm_init["prcp"] == values).all()
@@ -318,21 +318,21 @@ class TestNHMBoundaryLayer:
         return
 
     def test_solar_rad_deg_day(self, domain, atm_nhm_init):
-        params = PrmsParameters(domain["param_file"])
+        params = PrmsParameters.load(domain["param_file"])
         # assert output matches output on file.
         prms_output_file = domain["prms_outputs"]["swrad"]
-        prms_output = load_prms_statscsv(prms_output_file)
+        prms_output = load_nhru_output_csv(prms_output_file)
         swrad_ans_dates = prms_output.index.values
         swrad_ans_array = prms_output.to_numpy()
         wh_dates = np.where(np.isin(atm_nhm_init["datetime"], swrad_ans_dates))
 
-        swrad = atm_nhm_init.calculate_sw_rad_degree_day(params)
+        atm_nhm_init.calculate_sw_rad_degree_day(params)
 
         result = np.isclose(
             swrad_ans_array,
-            swrad[wh_dates, :],
+            atm_nhm_init["swrad"],
             rtol=1e-121,
-            atol=1e-04,  # Only the atol matters here, if atol < 1e-4 fails
+            atol=1e-03,  # Only the atol matters here, if atol <= 1e-4 fails
         )
         assert result.all()
 

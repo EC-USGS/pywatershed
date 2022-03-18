@@ -35,7 +35,7 @@ class DotDict(dict):
     __setattr__ = dict.__setitem__
 
 
-class PrmsParameters(dict):
+class PrmsParameters:
     """
     PRMS parameter class
 

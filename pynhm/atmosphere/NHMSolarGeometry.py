@@ -65,13 +65,15 @@ r1 = (60.0 * r0) / (obliquity**2)
 # The time dimension is n_days_per_year (known apriori)
 # The spatial dimension n_hru (only known on init from parameters)
 
+# Helper functions in space time object?
+
 # may not use this if they cant be called with jit
 def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
     return np.tile(arr, (n_days_per_year, 1))
 
 
-def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
-    return np.transpose(np.tile(r1, (n_hru, 1)))
+# def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
+#    return np.transpose(np.tile(arr, (n_hru, 1)))
 
 
 # JLM metadata ?
@@ -92,20 +94,25 @@ class NHMSolarGeometry(StateAccess):
             "sun_hrs",
         ]
         self.parameters = parameters
-        asdf
         # JLM: This should be in the base class for handling space
-        if "nhm_id" in parameters._parameter_data.keys():
-            space
-        self._coords = ["julian_day"]
+        if "nhm_id" in self.parameters.parameters.keys():
+            space_coord_name = "nhm_id"
+            space_coord = np.array(parameters.parameters["nhm_id"])
+        else:
+            space_coord_name = "hru_ind"
+            space_coord = np.array(parameters.parameters["nhru"])
+        self._coords = ["julian_day", space_coord_name]
         self["julian_day"] = julian_days
+        self[space_coord_name] = space_coord
         self._compute_solar_geometry()
-        # dimensions
+
+        # Dimensions
 
         return None
 
-    def _compute_solar_geometry(self, parameters: PrmsParameters):
-        params = parameters.parameters
-        n_hru = parameters.parameters.nhru
+    def _compute_solar_geometry(self):
+        params = self.parameters.parameters
+        n_hru = params.nhru
 
         self["hru_cossl"] = np.cos(np.arctan(params["hru_slope"]))
 

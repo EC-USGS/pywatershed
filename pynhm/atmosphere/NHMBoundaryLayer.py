@@ -18,6 +18,8 @@ dict_or_file_type = Union[dict, str, pl.Path]
 zero = np.zeros(1)[0]
 one = np.ones(1)[0]
 
+inch_to_cm = 2.54
+
 # https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/physics/c_solar_radiation_degday.f90#L19
 # define this somehow
 solf = np.array(
@@ -90,6 +92,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "tmax",
             "tmin",
             "swrad",
+            "potet",
         ]
 
         self._n_states_adj = 0
@@ -112,7 +115,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         else:
             self._self_file_vars = {}
             self._nc_read_vars = nc_read_vars
-            self._optional_read_vars = ["swrad", "rhavg"]
+            self._optional_read_vars = ["rhavg", "swrad", "potet"]
             self._nc_file = dict_or_nc_file
             self._open_nc_file()
             self._read_nc_file()
@@ -276,7 +279,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
     ) -> None:
 
         solar_geom = NHMSolarGeometry(parameters)
-        # The parameters are in solar_geom for better or worse
         swrad_param_list = [
             "radadj_intcp",
             "radadj_slope",
@@ -455,6 +457,53 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         swrad = doy_to_daily(soltab_potsw) * radadj / hru_cossl
         return swrad
 
+    # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_potet_jh.f90
+
+    def calculate_potential_et_jh(
+        self,
+        parameters: PrmsParameters,
+    ) -> None:
+
+        # need self.parameters
+        pot_et_jh_params_list = ["jh_coef", "jh_coef_hru"]
+        params = parameters.get_parameters(pot_et_jh_params_list).parameters
+
+        self["potet"] = self.potet_jh_run(
+            dates=self["datetime"],
+            tmax_hru=self["tmax"],
+            tmin_hru=self["tmin"],
+            swrad=self["swrad"],
+            **params,
+        )
+
+        return
+
+    @staticmethod
+    def potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
+        n_time, n_hru = tmax_hru.shape
+
+        # The vector
+        month = (dates.astype("datetime64[M]").astype(int) % 12) + 1
+        month = tile_time_to_space(month, n_hru)
+        tavg_f = (tmax_hru + tmin_hru) / 2.0
+        tavg_c = (tavg_f - 32.0) * 5 / 9  # f_to_c
+        elh = (597.3 - (0.5653 * tavg_c)) * inch_to_cm
+
+        # JLM: move this out?
+        def monthly_to_daily(arr):
+            return arr[month[:, 0] - 1, :]
+
+        jh_coef_day = monthly_to_daily(jh_coef)
+        jh_coef_hru_day = tile_space_to_time(jh_coef_hru, n_time)
+
+        potet = jh_coef_day * (tavg_f - jh_coef_hru_day) * swrad / elh
+        cond_potet_lt_zero = potet < zero
+        wh_cond = np.where(cond_potet_lt_zero)
+        if len(wh_cond[0]):
+            potet[wh_cond] = zero
+
+        return potet
+
     # def advance(self, itime_step, current_date):
     #     self.precip_current = self.precip[itime_step]
     #     self.pot_et_current = self.pot_et[itime_step]
@@ -470,24 +519,3 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
     #         et = available_et
     #     self.pot_et_consumed += et
     #     return et
-
-    # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_potet_jh.f90
-    # is this part of the full class?
-    # # potet_jh run code:
-    # INCH2CM = 2.54
-
-    # def potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
-    #     potet = np.zeros(len(dates))
-
-    #     ihru = 0
-    #     ii = 0
-    #     for date in dates:
-    #         imon = date.month - 1
-    #         tavgf = (tmax_hru[ii] + tmin_hru[ii]) / 2.0
-    #         tavgc = (tavgf - 32.0) * 5 / 9
-    #         elh = (597.3 - (0.5653 * tavgc)) * INCH2CM
-    #         potet[ii] = jh_coef[imon, ihru] * (tavgf - jh_coef_hru[ihru]) * swrad[ii] / elh
-    #         if potet[ii] < 0.0:
-    #             potet[ii] = 0.0
-    #         ii += 1
-    #     return potet

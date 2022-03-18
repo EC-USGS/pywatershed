@@ -5,6 +5,7 @@ from typing import Tuple
 # from numba import jit
 import numpy as np
 
+from ..base.StateAccess import StateAccess
 from ..utils.parameters import PrmsParameters
 
 # The solar geometry model for NHM/PRMS
@@ -64,40 +65,59 @@ r1 = (60.0 * r0) / (obliquity**2)
 # The time dimension is n_days_per_year (known apriori)
 # The spatial dimension n_hru (only known on init from parameters)
 
+# Helper functions in space time object?
+
 # may not use this if they cant be called with jit
 def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
     return np.tile(arr, (n_days_per_year, 1))
 
 
-def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
-    return np.transpose(np.tile(r1, (n_hru, 1)))
+# def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
+#    return np.transpose(np.tile(arr, (n_hru, 1)))
 
 
 # JLM metadata ?
 
 
-class NHMSolarGeometry:
+class NHMSolarGeometry(StateAccess):
     def __init__(
         self,
         parameters: PrmsParameters,
     ):
         # JLM: Document. these names are bad, fix them when it's tested.
         # JLM: It would be nice to inherit state accessors here
-        # self._potential_variables = []
+        super().__init__()
+        self._potential_variables = [
+            "hru_cossl",
+            "potential_sw_rad_flat",
+            "potential_sw_rad",
+            "sun_hrs",
+        ]
         self.parameters = parameters
-        self._compute_solar_geometry(parameters)
-        # dimensions
+        # JLM: This should be in the base class for handling space
+        if "nhm_id" in self.parameters.parameters.keys():
+            space_coord_name = "nhm_id"
+            space_coord = np.array(parameters.parameters["nhm_id"])
+        else:
+            space_coord_name = "hru_ind"
+            space_coord = np.array(parameters.parameters["nhru"])
+        self._coords = ["julian_day", space_coord_name]
+        self["julian_day"] = julian_days
+        self[space_coord_name] = space_coord
+        self._compute_solar_geometry()
+
+        # Dimensions
 
         return None
 
-    def _compute_solar_geometry(self, parameters: PrmsParameters):
-        params = parameters.parameters
-        n_hru = parameters.parameters.nhru
+    def _compute_solar_geometry(self):
+        params = self.parameters.parameters
+        n_hru = params.nhru
 
-        self.hru_cossl = np.cos(np.arctan(params["hru_slope"]))
+        self["hru_cossl"] = np.cos(np.arctan(params["hru_slope"]))
 
         # The potential radiation on horizontal surfce
-        self.potential_sw_rad_flat, _ = self.compute_soltab(
+        self["potential_sw_rad_flat"], _ = self.compute_soltab(
             np.zeros(n_hru),
             np.zeros(n_hru),
             params["hru_lat"],
@@ -106,7 +126,7 @@ class NHMSolarGeometry:
         )
 
         # The potential radiaton given slope and aspect
-        self.potential_sw_rad, self.sun_hrs = self.compute_soltab(
+        self["potential_sw_rad"], self["sun_hrs"] = self.compute_soltab(
             params["hru_slope"],
             params["hru_aspect"],
             params["hru_lat"],

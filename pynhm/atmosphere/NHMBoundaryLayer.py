@@ -15,7 +15,53 @@ from .NHMSolarGeometry import NHMSolarGeometry
 
 dict_or_file_type = Union[dict, str, pl.Path]
 
+zero = np.zeros(1)[0]
+one = np.ones(1)[0]
+
+# https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/physics/c_solar_radiation_degday.f90#L19
+# define this somehow
+solf = np.array(
+    [
+        0.20,
+        0.35,
+        0.45,
+        0.51,
+        0.56,
+        0.59,
+        0.62,
+        0.64,
+        0.655,
+        0.67,
+        0.682,
+        0.69,
+        0.70,
+        0.71,
+        0.715,
+        0.72,
+        0.722,
+        0.724,
+        0.726,
+        0.728,
+        0.73,
+        0.734,
+        0.738,
+        0.742,
+        0.746,
+        0.75,
+    ]
+)
+
 # JLM: where is metadata
+
+
+# may not use this if they cant be called with jit
+# if it can, put it in a common utility.
+def tile_space_to_time(arr: np.ndarray, n_time) -> np.ndarray:
+    return np.tile(arr, (n_time, 1))
+
+
+def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
+    return np.transpose(np.tile(arr, (n_space, 1)))
 
 
 class NHMBoundaryLayer(AtmBoundaryLayer):
@@ -54,7 +100,8 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.pot_et = None
         self.pot_et_consumed = None
 
-        # These are set in super(), delete them now to be able to set
+        # These are set in super(), delete them now
+        # to be able to set
         del self.datetime
         del self.spatial_id
 
@@ -178,7 +225,14 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         for self_var, file_var in self._self_file_vars.items():
             # JLM: Later use chunking here to get data
             # JLM: have to update datetime in that case?
-            self[self_var] = self.dataset.variables[file_var][:]
+            data = self.dataset.variables[file_var][:]
+            if data.mask:
+                msg = (
+                    "NetCDF file contains missing values "
+                    "not currently handled"
+                )
+                raise ValueError(msg)
+            self[self_var] = data.data
         return
 
     def _close_nc_file(self) -> None:
@@ -222,13 +276,33 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
     ) -> None:
 
         solar_geom = NHMSolarGeometry(parameters)
-        asdf
+        # The parameters are in solar_geom for better or worse
+        swrad_param_list = [
+            "radadj_intcp",
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+        ]
+        params = parameters.get_parameters(swrad_param_list).parameters
+
         self["swrad"] = self.ddsolrad_run(
-            self["datetime"],
-            self["tmax"],  # adj?
-            self["prcp"],
-            solar_geom.soltab_potsw,
+            dates=self["datetime"],
+            tmax_hru=self["tmax"],
+            hru_ppt=self["prcp"],
+            soltab_potsw=solar_geom["potential_sw_rad"],
+            **params,
         )
+
         return
 
     # @jit
@@ -238,80 +312,147 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         tmax_hru: np.ndarray,  # [n_time, n_hru]
         hru_ppt: np.ndarray,  # [n_time, n_hru]
         soltab_potsw: np.ndarray,  # [n_time, n_hru] ??
-        radadj_intcp,  # param
-        radadj_slope,  # param
-        tmax_index,  # param
-        dday_slope,  # param
-        dday_intcp,  # param
-        radmax,  # param
-        hru_slope,  # param
-        ppt_rad_adj,  # param
-        radj_sppt,  # param
-        radj_wppt,  # param
-        tmax_allrain,  # params
-        hemisphere,  # make internal based on hru lat?
+        radadj_intcp,  # param [12, n_hru]
+        radadj_slope,  # "    "
+        tmax_index,
+        dday_slope,
+        dday_intcp,
+        radmax,
+        ppt_rad_adj,
+        tmax_allsnow,
+        tmax_allrain_offset,
+        hru_slope,  # pram [n_hru]
+        radj_sppt,
+        radj_wppt,
+        hru_lat,
+        hru_area,
     ) -> np.ndarray:  # [n_time, n_hru]
 
-        # PRMS6 disagrees with Markstrom's code
         # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation_degday.f90
+        n_time, n_hru = tmax_hru.shape
 
-        swrad = np.zeros(len(dates))
+        # Transforms of time
+        doy = (dates - dates.astype("datetime64[Y]")).astype(
+            "timedelta64[h]"
+        ).astype(int) / 24 + 1
+        doy = tile_time_to_space(doy, n_hru).astype(int)
+        month = (dates.astype("datetime64[M]").astype(int) % 12) + 1
+        month = tile_time_to_space(month, n_hru)
 
-        ihru = 0
-        hru_cossl = math.cos(math.atan(hru_slope[ihru]))
-
-        ii = 0
-        for date in dates:
-            jday = day_of_year(date)
-            imon = date.month - 1
-
-            # ! set degree day and radiation adjustment limited by radmax
-            dday = (
-                dday_slope[imon, ihru] * tmax_hru[ii]
-                + dday_intcp[imon, ihru]
-                + 1.0
+        # is_summer
+        # https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/misc/sm_prms_time.f90#L114
+        is_summer = (doy >= 79) & (doy <= 265)
+        northern_hemisphere = hru_lat > zero
+        if not any(northern_hemisphere):
+            northern_hemisphere = tile_space_to_time(
+                northern_hemisphere, n_time
             )
-            if dday < 1.0:
-                dday = 1.0
+            msg = "Implementation not checked"
+            raise NotImplementedError(msg)
+            is_summer = is_summer & northern_hemisphere
 
-            if dday < 26.0:
-                kp = int(dday)
-                ddayi = float(kp)
-                kp1 = kp + 1
-                radadj = solf[kp - 1] + (
-                    (solf[kp1 - 1] - solf[kp - 1]) * (dday - ddayi)
+        # JLM: could get this from solar_geom object or delete it there
+        hru_cossl = tile_space_to_time(np.cos(np.arctan(hru_slope)), n_time)
+
+        def monthly_to_daily(arr):
+            return arr[month[:, 0] - 1, :]
+
+        def doy_to_daily(arr):
+            return arr[doy[:, 0] - 1, :]
+
+        # This is the start of the loop over hru & time
+        # https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/physics/sm_solar_radiation_degday.f90#L103
+
+        # dday
+        dday_slope_day = monthly_to_daily(dday_slope)
+        dday_intcp_day = monthly_to_daily(dday_intcp)
+        dday = (dday_slope_day * tmax_hru) + dday_intcp_day + one
+        dday[np.where(dday < one)] = one
+        del dday_slope_day, dday_intcp_day
+
+        # radadj
+        radmax_day = monthly_to_daily(radmax)
+        radadj = monthly_to_daily(radmax)  # the else condition
+        wh_dday_lt_26 = np.where(dday < 26.0)
+        if len(wh_dday_lt_26[0]):
+            kp = dday.astype(int)  # dddayi = float(kp)
+            radadj[wh_dday_lt_26] = (
+                solf[kp - 1] + ((solf[kp] - solf[kp - 1]) * (dday - kp))
+            )[wh_dday_lt_26]
+            wh_radadj_gt_max = np.where(radadj > radmax_day)
+            if len(wh_radadj_gt_max[0]):
+                radadj[wh_radadj_gt_max] = radmax_day[wh_radadj_gt_max]
+            del kp, wh_radadj_gt_max
+        del radmax_day, wh_dday_lt_26
+
+        # pptadj
+        pptadj = np.ones((n_time, n_hru))
+        radadj_intcp_day = monthly_to_daily(radadj_intcp)
+        radadj_slope_day = monthly_to_daily(radadj_slope)
+        tmax_index_day = monthly_to_daily(tmax_index)
+
+        ppt_rad_adj_day = monthly_to_daily(ppt_rad_adj)
+
+        # * if
+        # This is the outer if. All of the following conditions work on this
+        cond_ppt_gt_rad_adj = hru_ppt > ppt_rad_adj_day
+        cond_if = cond_ppt_gt_rad_adj
+        wh_if = np.where(cond_if)
+        if len(wh_if[0]):
+
+            # * if.else
+            pptadj[wh_if] = (
+                radadj_intcp_day
+                + radadj_slope_day * (tmax_hru - tmax_index_day)
+            )[wh_if]
+
+            # * if.else.if
+            cond_ppt_adj_gt_one = pptadj > one
+            cond_if_else_if = cond_if & cond_ppt_adj_gt_one
+            wh_if_else_if = np.where(cond_if_else_if)
+            if len(wh_if_else_if[0]):
+                pptadj[wh_if_else_if] = one
+            del radadj_intcp_day, radadj_slope_day, tmax_index_day
+
+            # * if.if
+            tmax_index_day = monthly_to_daily(tmax_index)
+            cond_tmax_lt_index = tmax_hru < tmax_index_day
+            cond_if_if = cond_if & cond_tmax_lt_index
+            wh_if_if = np.where(cond_if_if)
+            if len(wh_if_if[0]):
+
+                # The logic equiv to but changed from the original
+                radj_sppt_day = tile_space_to_time(radj_sppt, n_time)
+                pptadj[wh_if_if] = radj_sppt_day[wh_if_if]
+
+                # if.if.else: negate the if.if.if
+                radj_wppt_day = tile_space_to_time(radj_wppt, n_time)
+                tmax_allrain_day = monthly_to_daily(
+                    tmax_allrain_offset + tmax_allsnow
                 )
-                if radadj > radmax[imon, ihru]:
-                    radadj = radmax[imon, ihru]
-            else:
-                radadj = radmax[imon, ihru]
+                cond_tmax_lt_allrain = tmax_hru < tmax_allrain_day
+                cond_if_if_else = cond_if_if & cond_tmax_lt_allrain
+                wh_if_if_else = np.where(cond_if_if_else)
+                if len(wh_if_if_else[0]):
+                    pptadj[wh_if_if_else] = radj_wppt_day[wh_if_if_else]
 
-            #           ! Set precipitation adjument factor based on temperature
-            #           ! and amount of precipitation
+                # if.if.if(.if): the cake is taken!
+                cond_tmax_gt_allrain_and_not_summer = (
+                    tmax_hru >= tmax_allrain_day
+                ) & (~is_summer)
+                cond_if_if_if = (
+                    cond_if_if & cond_tmax_gt_allrain_and_not_summer
+                )
+                wh_if_if_if = np.where(cond_if_if_if)
+                if len(wh_if_if_if[0]):
+                    pptadj[wh_if_if_if] = radj_wppt_day[wh_if_if_if]
 
-            pptadj = 1.0
-            if hru_ppt[ii] > ppt_rad_adj[imon, ihru]:
-                if tmax_hru[ii] < tmax_index[imon, ihru]:
-                    pptadj = radj_sppt[ihru]
-                    if tmax_hru[ii] >= tmax_allrain[imon]:
-                        if not is_summer(jday, hemisphere):
-                            pptadj = radj_wppt[ihru]
-                    else:
-                        pptadj = radj_wppt[ihru]
-                else:
-                    pptadj = radadj_intcp[imon, ihru] + radadj_slope[
-                        imon, ihru
-                    ] * (tmax_hru[ii] - tmax_index[imon, ihru])
-                    if pptadj > 1.0:
-                        pptadj = 1.0
+        radadj = radadj * pptadj
+        wh_radadj_lt_2_tenths = np.where(radadj < 0.2)
+        if len(wh_radadj_lt_2_tenths[0]):
+            radadj[wh_radadj_lt_2_tenths] = 0.2
 
-            radadj = radadj * pptadj
-            if radadj < 0.2:
-                radadj = 0.2
-
-            swrad[ii] = soltab_potsw[jday - 1] * radadj / hru_cossl
-            ii += 1
-
+        swrad = doy_to_daily(soltab_potsw) * radadj / hru_cossl
         return swrad
 
     # def advance(self, itime_step, current_date):

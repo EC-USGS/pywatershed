@@ -138,7 +138,7 @@ def test_cbh_adj_prms_output(domain, params):
     for var, var_file in domain["prms_outputs"].items():
         if var in ["soltab"]:
             continue
-        if var in ["swrad"]:
+        if var in ["swrad", "potet"]:
             msg = (
                 f"Skipping {var} as it is not currently preprocessed, "
                 f"this skip should be removed when it is"

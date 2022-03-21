@@ -4,12 +4,12 @@ from .StateAccess import StateAccess
 
 
 class StorageUnit(StateAccess):
-
     @staticmethod
     def get_required_parameters():
         raise Exception("This must be overridden")
 
-    def __init__(self,
+    def __init__(
+        self,
         storage_type,
         id: list,
         params: PrmsParameters,
@@ -33,9 +33,11 @@ class StorageUnit(StateAccess):
         for key in self.get_required_parameters():
             value = getattr(self, key)
             if value is None:
-                print(f"{storage_type} storage unit requires {key} but it was not found in parameters.")
+                print(
+                    f"{storage_type} storage unit requires {key} but it was not found in parameters."
+                )
 
-        #self.area = area
+        # self.area = area
         self.atm = atm
         self.verbose = verbose
         self.residual_old = None
@@ -46,7 +48,7 @@ class StorageUnit(StateAccess):
         self.depencencies = []
         self.output_data = []
         self.output_column_names = []
-        #self.advance(0)
+        # self.advance(0)
         return
 
     def register_recipient(self, recipient, process_name):

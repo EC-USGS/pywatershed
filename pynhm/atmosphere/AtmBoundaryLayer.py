@@ -29,7 +29,10 @@ class AtmBoundaryLayer(Time):
         verbosity: int = 0,
     ):
         super().__init__(
-            start_time=start_time, time_step=time_step, end_time=end_time, verbosity=verbosity
+            start_time=start_time,
+            time_step=time_step,
+            end_time=end_time,
+            verbosity=verbosity,
         )
         self.name = "AtmBoundaryLayer"
         self._coords += ["spatial_id"]

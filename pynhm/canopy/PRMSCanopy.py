@@ -7,8 +7,8 @@ from ..utils.parameters import PrmsParameters
 RAIN = 0
 SNOW = 1
 
-class PRMSCanopy(StorageUnit):
 
+class PRMSCanopy(StorageUnit):
     @staticmethod
     def get_required_parameters():
         return [
@@ -40,15 +40,17 @@ class PRMSCanopy(StorageUnit):
         # budget table?
         # inflows, outflows, dS, residual
 
-        #volume_start = 0.  # do we need to set this from input?   intcp_stor_start * covden
-        #self.intcp_stor_max = intcp_stor_max
-        #self.intcp_stor_new = intcp_stor_start
+        # volume_start = 0.  # do we need to set this from input?   intcp_stor_start * covden
+        # self.intcp_stor_max = intcp_stor_max
+        # self.intcp_stor_new = intcp_stor_start
 
         # todo: may need way to interception storage to something non-zero
-        self.intcp_stor_old = np.array(self.nhru * [0.])
-        self["intcp_stor"] = np.array(self.nhru * [0.])
+        self.intcp_stor_old = np.array(self.nhru * [0.0])
+        self["intcp_stor"] = np.array(self.nhru * [0.0])
         self.tranpiration_on = True  # prms variable Transp_on
-        self.covden = None # prms variable will be set to covden_sum or covden_win
+        self.covden = (
+            None  # prms variable will be set to covden_sum or covden_win
+        )
         self.interception_form = np.array(self.nhru * [RAIN], dtype=int)
 
         self.output_column_names = [
@@ -96,9 +98,9 @@ class PRMSCanopy(StorageUnit):
         net_snow = np.array(self.nhru * [0.0])
 
         # todo: add these as needed
-        #intcp_evap = np.array(self.nhru * [0.0])
-        #change_over = np.array(self.nhru * [0.0])
-        #extra_water = np.array(self.nhru * [0.0])
+        # intcp_evap = np.array(self.nhru * [0.0])
+        # change_over = np.array(self.nhru * [0.0])
+        # extra_water = np.array(self.nhru * [0.0])
 
         # todo: Lakes not handled; but not in NHM so probably okay
 
@@ -107,10 +109,14 @@ class PRMSCanopy(StorageUnit):
         # todo: Handle changeover water going from winter to summer
 
         # Interception from rain
-        self.update_net_precip(hru_rain, self.stor_max_rain, self.covden, intcp_stor, net_rain)
+        self.update_net_precip(
+            hru_rain, self.stor_max_rain, self.covden, intcp_stor, net_rain
+        )
 
         # todo: Interception from snow
-        self.update_net_precip(hru_snow, self.snow_intcp, self.covden, intcp_stor, net_snow)
+        self.update_net_precip(
+            hru_snow, self.snow_intcp, self.covden, intcp_stor, net_snow
+        )
 
         # todo: Handle irrigation water?  Depends on whether or not this is part of NHM
 
@@ -129,8 +135,8 @@ class PRMSCanopy(StorageUnit):
     def calculate_old(self, time_length):
 
         # Retrieve forcings
-        #precip = self.forcing.precip_current
-        #pot_et = self.forcing.pot_et_current
+        # precip = self.forcing.precip_current
+        # pot_et = self.forcing.pot_et_current
         precip = self.atm.get_current_state("prcp")
         potet = self.atm.get_current_state("potet")
 

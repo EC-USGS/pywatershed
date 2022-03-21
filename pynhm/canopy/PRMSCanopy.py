@@ -1,9 +1,8 @@
 import numpy as np
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from ..utils.parameters import PrmsParameters
 from ..base.storageUnit import StorageUnit
-
+from ..utils.parameters import PrmsParameters
 
 RAIN = 0
 SNOW = 1

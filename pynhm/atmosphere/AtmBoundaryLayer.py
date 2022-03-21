@@ -23,12 +23,16 @@ class AtmBoundaryLayer(Time):
         self,
         start_time: np.datetime64 = None,
         time_step: np.timedelta64 = None,  # could we infer timestep?
+        end_time: np.datetime64 = None,
         datetime: np.ndarray = None,
         height_m: int = None,
         verbosity: int = 0,
     ):
         super().__init__(
-            start_time=start_time, time_step=time_step, verbosity=verbosity
+            start_time=start_time,
+            time_step=time_step,
+            end_time=end_time,
+            verbosity=verbosity,
         )
         self.name = "AtmBoundaryLayer"
         self._coords += ["spatial_id"]

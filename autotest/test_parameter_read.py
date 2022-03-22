@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from pynhm.utils import PrmsParameters
@@ -7,6 +8,28 @@ from utils import assert_or_print
 @pytest.fixture
 def canopy_parameters():
     return tuple(("unknown", "srain_intcp", "wrain_intcp", "snow_intcp"))
+
+
+def test_parameter_init():
+    parameters = {
+        "nhru": 2,
+        "abc": np.zeros(2, dtype=float),
+        "nmonths": 12,
+        "nsegment": 10,
+        "xyz": np.arange(12 * 10, dtype=float).reshape(12, 10),
+    }
+    param_obj = PrmsParameters(parameters)
+
+    answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
+
+    results = {
+        key: val
+        for key, val in param_obj.parameters.items()
+        if key in answers.keys()
+    }
+    assert_or_print(results, answers)
+
+    print(f"success initializing PrmsParameters object")
 
 
 def test_parameter_read(domain):

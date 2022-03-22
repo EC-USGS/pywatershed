@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 
 from .dictionary_as_properties import DictionaryAsProperties
+from .prms5_file_util import PrmsFile
 
 fileish = Union[str, pl.PosixPath, dict]
 listish = Union[str, list, tuple]
@@ -15,13 +16,45 @@ class PrmsParameters:
 
     Parameters
     ----------
-    dict : dict
+    parameter_dict : dict
         parameters dictionary
+    parameter_dimensions_dict : dict
+        parameters dimensions dictionary
 
     """
 
-    def __init__(self, parameter_dict: dict) -> "PrmsParameters":
+    def __init__(
+        self,
+        parameter_dict: dict,
+        parameter_dimensions_dict: dict = None,
+    ) -> "PrmsParameters":
+
         self.parameters = DictionaryAsProperties(parameter_dict)
+
+        # build dimensions from data
+        if parameter_dimensions_dict is None:
+            dimensions = self.get_dimensions
+            parameter_dimensions_dict = {}
+            for key, value in parameter_dict.items():
+                if isinstance(value, int):
+                    parameter_dimensions_dict[key] = None
+                elif isinstance(value, np.ndarray):
+                    shape = value.shape
+                    temp_dims = []
+                    for isize in shape:
+                        found_dim = False
+                        for dim_key, dim_value in dimensions.items():
+                            if dim_value == isize:
+                                found_dim = True
+                                temp_dims.append(dim_key)
+                                break
+                        if not found_dim:
+                            temp_dims.append("unknown")
+                    parameter_dimensions_dict[key] = temp_dims
+
+        self.parameter_dimensions = DictionaryAsProperties(
+            parameter_dimensions_dict
+        )
 
     def get_parameters(self, keys: listish) -> "PrmsParameters":
         """Get a subset of keys in the parameter dictionary
@@ -43,8 +76,27 @@ class PrmsParameters:
                 key: self.parameters.get(key)
                 for key in keys
                 if key in self.parameters.keys()
-            }
+            },
+            {
+                key: self.parameter_dimensions.get(key)
+                for key in keys
+                if key in self.parameter_dimensions.keys()
+            },
         )
+
+    @property
+    def get_dimensions(self) -> dict:
+        """Get the dimensions from the parameters
+
+        Returns:
+            dimensions in the PRMS parameter dictionary
+
+        """
+        dimensions = {}
+        for key, value in self.parameters.items():
+            if isinstance(value, int):
+                dimensions[key] = value
+        return DictionaryAsProperties(dimensions)
 
     @staticmethod
     def load(parameter_file: fileish) -> "PrmsParameters":
@@ -57,16 +109,20 @@ class PrmsParameters:
             PrmsParameters: full PRMS parameter dictionary
 
         """
-        (
-            dimensions,
-            parameter_data,
-            parameter_dimensions,
-            parameter_types,
-        ) = _load_prms_parameters(parameter_file)
-        parameters = parameter_data.copy()
-        for key, value in dimensions.items():
-            parameters[key] = value
-        return PrmsParameters(parameters)
+        # (
+        #     dimensions,
+        #     parameter_data,
+        #     parameter_dimensions,
+        #     parameter_types,
+        # ) = _load_prms_parameters(parameter_file)
+        # parameters = parameter_data.copy()
+        # for key, value in dimensions.items():
+        #     parameters[key] = value
+        data = PrmsFile(parameter_file, "parameter").get_data()
+        return PrmsParameters(
+            data["parameter"]["parameters"],
+            data["parameter"]["parameter_dimensions"],
+        )
 
 
 def _load_prms_parameters(parameter_file: fileish):

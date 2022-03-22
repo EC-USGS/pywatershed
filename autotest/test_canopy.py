@@ -1,5 +1,5 @@
-
 import sys
+
 sys.path.append("..")
 import numpy as np
 from datetime import datetime, timedelta
@@ -58,8 +58,7 @@ forcings_dict = {
 }
 
 
-class TestPRMSCanopySimple():
-
+class TestPRMSCanopySimple:
     def test_init(self):
 
         nhru = 2
@@ -75,6 +74,7 @@ class TestPRMSCanopySimple():
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
             forcings_dict,
+            prms_params,
             start_time=np.datetime64("1979-01-03T00:00:00.00"),
             time_step=np.timedelta64(1, "D"),
             verbosity=3,
@@ -89,22 +89,18 @@ class TestPRMSCanopySimple():
         return
 
 
-class TestPRMSCanopyDomain():
-
+class TestPRMSCanopyDomain:
     def test_init(self, domain):
         prms_params = PrmsParameters.load(domain["param_file"])
 
+        # Set information from the control file
         control_file = domain["control_file"]
         control = ControlVariables.load(control_file)
-
-        # this doesn't work.  cannot pass in cbh files
-        #input_files_dict = domain["input_files_dict"]
-        #atm = NHMBoundaryLayer(input_files_dict)
         start_time = control.control.start_time
         end_time = control.control.end_time
         initial_deltat = control.control.initial_deltat
 
-        atm_init_test_dict = {
+        atm_information_dict = {
             "start_time": start_time,
             "end_time": end_time,
             "time_step": initial_deltat,
@@ -112,9 +108,11 @@ class TestPRMSCanopyDomain():
             "height_m": 5,
         }
         print(domain["cbh_nc"])
-        atm = NHMBoundaryLayer(domain["cbh_nc"], **atm_init_test_dict)
-        atm.calculate_sw_rad_degree_day(prms_params)
-        atm.calculate_potential_et_jh(prms_params)
+        atm = NHMBoundaryLayer.load_netcdf(
+            domain["cbh_nc"], prms_params, **atm_information_dict
+        )
+        atm.calculate_sw_rad_degree_day()
+        atm.calculate_potential_et_jh()
 
         self.cnp = PRMSCanopy(prms_params, atm)
         self.cnp.advance(itime_step=0)

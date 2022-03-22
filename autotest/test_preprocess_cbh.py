@@ -125,7 +125,7 @@ def test_cbh_adj(domain, params_and_none):
         }
         answers = domain["test_ans"]["preprocess_cbh"]["adj"]["no_params"]
         assert_or_print(
-            results, answers, "adj:params", print_ans=domain["print_ans"]
+            results, answers, "adj:no_params", print_ans=domain["print_ans"]
         )
 
     return

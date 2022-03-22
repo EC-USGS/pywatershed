@@ -125,12 +125,6 @@ class TestAtmBoundaryLayer:
         return
 
 
-@pytest.fixture(scope="function")
-def atm_nhm_init(domain):
-    atm = NHMBoundaryLayer(domain["cbh_nc"], **atm_init_test_dict)
-    return atm
-
-
 state_dict = {
     "datetime": np.array(
         [
@@ -173,21 +167,33 @@ state_dict = {
 }
 
 
+@pytest.fixture(scope="function")
+def params(domain):
+    return PrmsParameters.load(domain["param_file"])
+
+
+@pytest.fixture(scope="function")
+def atm_nhm_init_nc(domain, params):
+    atm = NHMBoundaryLayer.load_netcdf(
+        domain["cbh_nc"], params, **atm_init_test_dict
+    )
+    return atm
+
+
 # JLM: Should try to set a state with time length less than 2.
 @pytest.fixture(scope="function")
-def atm_nhm_init_dict():
-    atm = NHMBoundaryLayer(state_dict, **atm_init_test_dict)
+def atm_nhm_init_dict(domain, params):
+    atm = NHMBoundaryLayer(state_dict, params, **atm_init_test_dict)
     return atm
 
 
 class TestNHMBoundaryLayer:
-    def test_init_dict(self, atm_nhm_init_dict):
-
+    def test_init_dict(self, atm_nhm_init_dict, params):
         # local atm init with an invalid start time
         test_dict = deepcopy(atm_init_test_dict)
         test_dict["start_time"] = np.datetime64(datetime(1979, 1, 12))
         try:
-            atm = NHMBoundaryLayer(state_dict, **test_dict)
+            atm = NHMBoundaryLayer(state_dict, params, **test_dict)
             assert False
         except ValueError:
             pass
@@ -196,7 +202,7 @@ class TestNHMBoundaryLayer:
         test_dict = deepcopy(atm_init_test_dict)
         current_time_ind = 1
         test_dict["start_time"] = state_dict["datetime"][current_time_ind]
-        atm = NHMBoundaryLayer(state_dict, **test_dict)
+        atm = NHMBoundaryLayer(state_dict, params, **test_dict)
         assert atm.current_time_index == current_time_ind
         assert atm.current_time == test_dict["start_time"]
         try:
@@ -224,24 +230,25 @@ class TestNHMBoundaryLayer:
 
         return
 
-    def test_init(self, domain, atm_nhm_init):
+    def test_init_nc(self, domain, atm_nhm_init_nc, params):
         init_test_dict = deepcopy(atm_init_test_dict)
         init_test_dict["nc_file"] = domain["cbh_nc"]
         # Check all the init arguments
         for key, val in init_test_dict.items():
             key_check = key
-            if key not in list(atm_nhm_init.__dict__.keys()):
+            if key not in list(atm_nhm_init_nc.__dict__.keys()):
                 key_check = f"_{key}"
-            assert getattr(atm_nhm_init, key_check) == val
+            assert getattr(atm_nhm_init_nc, key_check) == val
         # Check state - this tests get_state.
         results = {
-            var: atm_nhm_init[var].mean() for var in atm_nhm_init.variables
+            var: atm_nhm_init_nc[var].mean()
+            for var in atm_nhm_init_nc.variables
         }
         ds = xr.open_dataset(domain["cbh_nc"])
         # preference for adjusted over raw fields in the code
         file_vars = [
             f"{var}_adj" if f"{var}_adj" in ds.variables else var
-            for var in atm_nhm_init.variables
+            for var in atm_nhm_init_nc.variables
         ]
         answers = {var: ds[var].mean().values.tolist() for var in file_vars}
         for key_res in results.keys():
@@ -251,23 +258,23 @@ class TestNHMBoundaryLayer:
             assert np.isclose(results[key_res], answers[key_ans])
         return
 
-    def test_state_roundtrip(self, atm_nhm_init):
+    def test_state_roundtrip(self, atm_nhm_init_nc):
         # Roundtrip and a half just to use existing values: get, set, get
         mult = 2
-        values = atm_nhm_init["prcp"] * mult
-        assert (values / mult == atm_nhm_init.prcp).all()
-        atm_nhm_init["prcp"] = values
+        values = atm_nhm_init_nc["prcp"] * mult
+        assert (values / mult == atm_nhm_init_nc.prcp).all()
+        atm_nhm_init_nc["prcp"] = values
         # One better, these are actually the same object, could test "is"
-        assert (atm_nhm_init["prcp"] == values).all()
+        assert (atm_nhm_init_nc["prcp"] == values).all()
         return
 
-    def test_current_state(self, atm_nhm_init):
+    def test_current_state(self, atm_nhm_init_nc):
         n_adv = 5
-        start_time_index = atm_nhm_init.current_time_index
-        answer = deepcopy(atm_nhm_init["prcp"])[start_time_index + n_adv, :]
+        start_time_index = atm_nhm_init_nc.current_time_index
+        answer = deepcopy(atm_nhm_init_nc["prcp"])[start_time_index + n_adv, :]
         for aa in range(n_adv):
-            atm_nhm_init.advance()
-        assert (atm_nhm_init.get_current_state("prcp") == answer).all()
+            atm_nhm_init_nc.advance()
+        assert (atm_nhm_init_nc.get_current_state("prcp") == answer).all()
         return
 
     @pytest.mark.parametrize(
@@ -275,11 +282,13 @@ class TestNHMBoundaryLayer:
         [["prcp", "tmax", "tmin"], ["foo"], ["tmin_adj"]],
         ids=["toadj", "invalid", "preadj"],
     )
-    def test_nc_read_vars(self, atm_nhm_init, read_vars):
+    def test_nc_read_vars(self, atm_nhm_init_nc, params, read_vars):
         atm_read_dict = deepcopy(atm_init_test_dict)
         atm_read_dict["nc_read_vars"] = read_vars
         try:
-            atm_read = NHMBoundaryLayer(atm_nhm_init._nc_file, **atm_read_dict)
+            atm_read = NHMBoundaryLayer.load_netcdf(
+                atm_nhm_init_nc._nc_file, params, **atm_read_dict
+            )
             if read_vars[0] in ["foo"]:
                 assert False
             else:
@@ -298,29 +307,31 @@ class TestNHMBoundaryLayer:
 
     # JLM: def test_nc_read_vars
 
-    def test_state_adj(self, domain, atm_nhm_init):
+    def test_state_adj(self, domain, atm_nhm_init_nc, params):
         atm_adj_dict = deepcopy(atm_init_test_dict)
         atm_adj_dict["nc_read_vars"] = ["prcp", "tmax", "tmin"]
-        atm_to_adj = NHMBoundaryLayer(atm_nhm_init._nc_file, **atm_adj_dict)
+        atm_to_adj = NHMBoundaryLayer.load_netcdf(
+            atm_nhm_init_nc._nc_file, params, **atm_adj_dict
+        )
         params = PrmsParameters.load(domain["param_file"])
-        atm_to_adj.param_adjust(params)
+        atm_to_adj.param_adjust()
 
         for vv in atm_to_adj.variables:
             # JLM: we loose rhavg in the adjustments... it's a bit of a mystery
             # if that should also be adjusted. checking on that w parker
-            if vv in atm_nhm_init.variables:
+            if vv in atm_nhm_init_nc.variables:
                 assert np.isclose(
                     atm_to_adj[vv],
-                    atm_nhm_init[vv],
+                    atm_nhm_init_nc[vv],
                     atol=1e-06,
                 ).all()
 
         return
 
-    def test_prms_output_swrad_potet(self, domain, atm_nhm_init):
+    def test_prms_output_swrad_potet(self, domain, atm_nhm_init_nc):
         params = PrmsParameters.load(domain["param_file"])
-        atm_nhm_init.calculate_sw_rad_degree_day(params)
-        atm_nhm_init.calculate_potential_et_jh(params)
+        atm_nhm_init_nc.calculate_sw_rad_degree_day()
+        atm_nhm_init_nc.calculate_potential_et_jh()
 
         var_tol = {"swrad": 1e-3, "potet": 1e-5}
 
@@ -331,7 +342,7 @@ class TestNHMBoundaryLayer:
             ans_array = prms_output.to_numpy()
             result = np.isclose(
                 ans_array,
-                atm_nhm_init[var],
+                atm_nhm_init_nc[var],
                 rtol=1e-121,
                 atol=tol,  # Only the atol matters here, if atol <= 1e-6 fails
             )

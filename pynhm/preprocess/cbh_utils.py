@@ -34,6 +34,9 @@ def _cbh_file_to_df(
     the_file: file_type, params: PrmsParameters = None
 ) -> pd.DataFrame:
     # Only take cbh files that contain single variables
+    # JLM: this can be substantially simplified as
+    # we are only reading NHM CBH files now.
+    # Revisit with hru1.yaml
 
     meta_lines = []
     with open(the_file, "r") as file_open:
@@ -52,17 +55,17 @@ def _cbh_file_to_df(
 
     col_names = []
     var_count_dict = {}
-    for posn in range(len(meta_lines)):
-        key, count = meta_lines[posn].split(" ")
-        count = int(count)
-        zs = math.ceil(math.log(count, 10))
-        if params is None:
-            col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
-        else:
-            col_names = np.char.add(
-                np.array([key]), params.parameters.nhm_id.astype(str)
-            ).tolist()
-        var_count_dict[key] = count
+    line = meta_lines[-1]
+    key, count = line.split(" ")
+    count = int(count)
+    zs = math.ceil(math.log(count, 10))
+    if (params is None) or ("nhm_id" not in params.parameters):
+        col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
+    else:
+        col_names = np.char.add(
+            np.array([key]), params.parameters.nhm_id.astype(str)
+        ).tolist()
+    var_count_dict[key] = count
 
     if len(var_count_dict) > 1:
         msg = f"cbh input files should contain only one variable each: {the_file}"
@@ -179,7 +182,6 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
     if params is None:
         raise ValueError("Parameters have not been supplied for adjustment.")
     param_data = params.parameters
-    nhru = params.parameters.nhru
 
     # I dislike using pd for something that seems like it should exist in np
     month_ind_12 = pd.to_datetime(cbh_dict["datetime"]).month - 1  # (time)

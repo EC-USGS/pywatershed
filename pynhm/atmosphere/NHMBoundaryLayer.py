@@ -1,6 +1,7 @@
 import pathlib as pl
 import warnings
 from copy import deepcopy
+from itertools import chain
 from typing import Union
 
 import netCDF4 as nc4
@@ -13,7 +14,7 @@ from ..utils.parameters import PrmsParameters
 from .AtmBoundaryLayer import AtmBoundaryLayer
 from .NHMSolarGeometry import NHMSolarGeometry
 
-dict_or_file_type = Union[dict, str, pl.Path]
+fileish = Union[str, pl.Path]
 
 zero = np.zeros(1)[0]
 one = np.ones(1)[0]
@@ -53,6 +54,43 @@ solf = np.array(
     ]
 )
 
+
+parameters_swrad = [
+    "radadj_intcp",
+    "radadj_slope",
+    "tmax_index",
+    "dday_slope",
+    "dday_intcp",
+    "radmax",
+    "ppt_rad_adj",
+    "tmax_allsnow",
+    "tmax_allrain_offset",
+    "hru_slope",
+    "radj_sppt",
+    "radj_wppt",
+    "hru_lat",
+    "hru_area",
+]
+
+# JLM: the swrad parameters should be available from that module.
+
+params_required = {
+    "swrad": parameters_swrad,
+    "solar_geom": ["nhru", "hru_aspect"] + parameters_swrad,
+    "pot_et_jh": ["jh_coef", "jh_coef_hru"],
+    "adj": [
+        "nhru",
+        "tmax_cbh_adj",
+        "tmin_cbh_adj",
+        "tmax_allsnow",
+        "tmax_allrain_offset",
+        "snow_cbh_adj",
+        "rain_cbh_adj",
+        "adjmix_rain",
+    ],
+}
+
+
 # JLM: where is metadata
 
 
@@ -69,11 +107,12 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
 class NHMBoundaryLayer(AtmBoundaryLayer):
     def __init__(
         self,
-        dict_or_nc_file: dict_or_file_type,
+        state_dict: dict,
+        parameters: PrmsParameters,
         *args,
-        nc_read_vars: list = None,
         **kwargs,
     ):
+        """The atmospheric boundary layer of the NHM model."""
         super().__init__(*args, **kwargs)
 
         self.name = "NHMBoundaryLayer"
@@ -95,6 +134,15 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             "potet",
         ]
 
+        self._parameter_list = list(
+            set(
+                chain.from_iterable(
+                    [val for key, val in params_required.items()]
+                )
+            )
+        )
+        self.parameters = parameters.get_parameters(self._parameter_list)
+
         self._n_states_adj = 0
         self._allow_param_adjust = None
         self._state_adjusted_here = False
@@ -108,25 +156,36 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         del self.datetime
         del self.spatial_id
 
-        if isinstance(dict_or_nc_file, dict):
-            self._nc_file = None
-            for key, val in dict_or_nc_file.items():
-                self[key] = val
-        else:
-            self._self_file_vars = {}
-            self._nc_read_vars = nc_read_vars
-            self._optional_read_vars = ["rhavg", "swrad", "potet"]
-            self._nc_file = dict_or_nc_file
-            self._open_nc_file()
-            self._read_nc_file()
-            # self._close_nc_file()
-
-            # netcdf handling. consolidate these?
-            self.dataset = None
-            self.ds_var_list = None
-            self.ds_var_chunking = None
+        for key, val in state_dict.items():
+            self[key] = val
 
         return
+
+    @classmethod
+    def load_netcdf(
+        cls,
+        nc_file: fileish,
+        parameters: PrmsParameters,
+        *args,
+        nc_read_vars: list = None,
+        **kwargs,
+    ) -> "NHMBoundaryLayer":
+        obj = cls({}, *args, parameters=parameters, **kwargs)
+
+        # netcdf handling. consolidate these?
+        obj.dataset = None
+        obj.ds_var_list = None
+        obj.ds_var_chunking = None
+
+        obj._self_file_vars = {}
+        obj._nc_read_vars = nc_read_vars
+        obj._optional_read_vars = ["rhavg", "swrad", "potet"]
+        obj._nc_file = nc_file
+        obj._open_nc_file()
+        obj._read_nc_file()
+        # obj._close_nc_file()
+
+        return obj
 
     # move this down? create helper functions? it is too long to be near top.
     def _open_nc_file(self):
@@ -242,7 +301,15 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self.dataset.close()
         return
 
-    def param_adjust(self, parameters: PrmsParameters) -> None:
+    def param_adjust(self) -> None:
+        """Adjust atmospheric variables using PRMS parameters.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         if not self._allow_param_adjust:
             msg = (
                 "Parameter adjustments not permitted when any state "
@@ -253,9 +320,9 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         # construct a dict of references
         var_dict_adj = {key: self[key] for key in self.variables}
         var_dict_adj["datetime"] = self["datetime"]
-        self._parameters_for_adj = parameters
         # This modified var_dict_adj, which is sus
-        _ = cbh_adjust(var_dict_adj, self._parameters_for_adj)
+        params = self.parameters.get_parameters(params_required["adj"])
+        _ = cbh_adjust(var_dict_adj, params)
         self._state_adjusted_here = True
         self._allow_param_adjust = False
 
@@ -273,31 +340,15 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         return
 
     # JLM: make this available for preprocess with cbh
-    def calculate_sw_rad_degree_day(
-        self,
-        parameters: PrmsParameters,
-    ) -> None:
+    def calculate_sw_rad_degree_day(self) -> None:
+        """Calculate shortwave radiation using the degree day method."""
 
-        solar_geom = NHMSolarGeometry(parameters)
-        swrad_param_list = [
-            "radadj_intcp",
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "hru_slope",
-            "radj_sppt",
-            "radj_wppt",
-            "hru_lat",
-            "hru_area",
-        ]
-        params = parameters.get_parameters(swrad_param_list).parameters
+        solar_geom = NHMSolarGeometry(self.parameters)
+        params = self.parameters.get_parameters(
+            params_required["swrad"]
+        ).parameters
 
-        self["swrad"] = self.ddsolrad_run(
+        self["swrad"] = self._ddsolrad_run(
             dates=self["datetime"],
             tmax_hru=self["tmax"],
             hru_ppt=self["prcp"],
@@ -309,7 +360,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
     # @jit
     @staticmethod
-    def ddsolrad_run(
+    def _ddsolrad_run(
         dates: np.ndarray,  # [n_time]
         tmax_hru: np.ndarray,  # [n_time, n_hru]
         hru_ppt: np.ndarray,  # [n_time, n_hru]
@@ -461,14 +512,13 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
     def calculate_potential_et_jh(
         self,
-        parameters: PrmsParameters,
     ) -> None:
+        """Calculate potential evapotranspiration following Jensen and Haise (1963)."""
+        params = self.parameters.get_parameters(
+            params_required["pot_et_jh"]
+        ).parameters
 
-        # need self.parameters
-        pot_et_jh_params_list = ["jh_coef", "jh_coef_hru"]
-        params = parameters.get_parameters(pot_et_jh_params_list).parameters
-
-        self["potet"] = self.potet_jh_run(
+        self["potet"] = self._potet_jh_run(
             dates=self["datetime"],
             tmax_hru=self["tmax"],
             tmin_hru=self["tmin"],
@@ -479,7 +529,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         return
 
     @staticmethod
-    def potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
+    def _potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
         n_time, n_hru = tmax_hru.shape
 
         # The vector

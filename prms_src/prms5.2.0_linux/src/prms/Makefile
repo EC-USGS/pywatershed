@@ -77,6 +77,9 @@ $(TARGET): $(OBJS)
 clean:
 	$(RM) *.o *.mod *~
 
+cleantarget:
+	$(RM) $(TARGET)
+
 #
 # Define all object files which make up the library
 #

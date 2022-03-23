@@ -1,9 +1,7 @@
 import os
 import pathlib as pl
-import sys
 
 import pandas as pd
-import pytest
 
 from pynhm.preprocess import CsvFile
 
@@ -18,10 +16,21 @@ def test_single_csv(domain):
     return
 
 
+def test_single_csv_to_netcdf(domain):
+    files = list(domain["prms_outputs"].values())[0]
+    csv = CsvFile(name=files)
+
+    csv_file = pl.Path(files.with_suffix(".nc"))
+    csv.to_netcdf(csv_file)
+
+    return
+
+
 def test_multiple_csv(domain):
     csv = CsvFile()
     for name, path in domain["prms_outputs"].items():
-        csv.add_path(path)
+        if path.suffix in (".csv",):
+            csv.add_path(path)
 
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)

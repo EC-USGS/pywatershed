@@ -1,12 +1,11 @@
-
-import numpy as np
 from datetime import datetime, timedelta
 
+import numpy as np
 
-from pynhm.utils import ControlVariables
-from pynhm.utils.parameters import PrmsParameters
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.canopy.PRMSCanopy import PRMSCanopy
+from pynhm.utils import ControlVariables
+from pynhm.utils.parameters import PrmsParameters
 
 forcings_dict = {
     "datetime": np.array(

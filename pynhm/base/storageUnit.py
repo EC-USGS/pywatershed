@@ -2,7 +2,7 @@ from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..utils.parameters import PrmsParameters
 
 
-class StorageUnit():
+class StorageUnit:
     @staticmethod
     def get_required_parameters():
         raise Exception("This must be overridden")

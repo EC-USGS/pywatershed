@@ -51,9 +51,14 @@ class PRMSCanopy(StorageUnit):
 
         self.output_column_names = ["date"]
         if "nhm_id" in params.parameters:
-            self.output_column_names += [f"nhru_hru_intcpstor_{nhmid}" for nhmid in params.parameters["nhm_id"]]
+            self.output_column_names += [
+                f"nhru_hru_intcpstor_{nhmid}"
+                for nhmid in params.parameters["nhm_id"]
+            ]
         else:
-            self.output_column_names += [f"intcpstor_{id}" for id in range(self.nhru)]
+            self.output_column_names += [
+                f"intcpstor_{id}" for id in range(self.nhru)
+            ]
         return
 
     def advance(self, itime_step):
@@ -118,11 +123,15 @@ class PRMSCanopy(StorageUnit):
         epan_coef = 1.0
 
         # if there precip, then shut off potet and sublimation
-        evrn = np.where(prcp > 0., 0., potet / epan_coef)
-        evsn = np.where(prcp > 0., 0., potet * self.potet_sublim)
+        evrn = np.where(prcp > 0.0, 0.0, potet / epan_coef)
+        evsn = np.where(prcp > 0.0, 0.0, potet * self.potet_sublim)
         intcp_stor_save = intcp_stor.copy()
-        depth = np.where(self.interception_form == SNOW, intcp_stor - evsn, intcp_stor - evrn)
-        intcp_stor = np.maximum(depth, 0.)
+        depth = np.where(
+            self.interception_form == SNOW,
+            intcp_stor - evsn,
+            intcp_stor - evrn,
+        )
+        intcp_stor = np.maximum(depth, 0.0)
         intcp_evap = intcp_stor_save - intcp_stor
 
         # accumulate into net_ppt

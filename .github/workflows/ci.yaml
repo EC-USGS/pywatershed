@@ -148,6 +148,7 @@ jobs:
         run: pytest
           -v
           -n=auto
+          --all_domains
           --cov=pynhm
           --cov-report=xml
           --junitxml=pytest.xml

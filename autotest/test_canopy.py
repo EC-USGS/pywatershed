@@ -1,11 +1,13 @@
-from datetime import datetime, timedelta
 
 import numpy as np
+import pandas as pd
+from datetime import datetime, timedelta
 
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from pynhm.canopy.PRMSCanopy import PRMSCanopy
+import pynhm.preprocess
 from pynhm.utils import ControlVariables
 from pynhm.utils.parameters import PrmsParameters
+from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from pynhm.canopy.PRMSCanopy import PRMSCanopy
 
 forcings_dict = {
     "datetime": np.array(
@@ -67,6 +69,8 @@ class TestPRMSCanopySimple:
             "srain_intcp": np.array(nhru * [1.0]),
             "wrain_intcp": np.array(nhru * [1.0]),
             "snow_intcp": np.array(nhru * [1.0]),
+            "epan_coef": np.array(nhru * [1.0]),
+            "potet_sublim": np.array(nhru * [1.0]),
         }
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
@@ -114,10 +118,49 @@ class TestPRMSCanopyDomain:
         self.cnp = PRMSCanopy(prms_params, atm)
         self.cnp.advance(itime_step=0)
 
-        while atm.current_time < atm.end_time:
-            print(f"Running canopy for time: {atm.current_time}")
+        for istep in range(atm.n_time):
+            if istep > 0:
+                atm.advance()
+            #print(f"Running canopy for step {istep} and day: {atm.current_time}")
             self.cnp.advance(0)
             self.cnp.calculate(1.0)
-            atm.advance()
+
+        # create data frame of prms interception storage (from nhru_hru_intcpstor.csv)
+        output_files = domain["prms_outputs"]
+        fname = output_files["intcpstor"]
+        print(f"loading {fname}")
+        intcpstor_prms = pynhm.preprocess.CsvFile(fname)
+        intcpstor_prms = intcpstor_prms.to_dataframe()
+
+        # create data frame of pynhm interception storage
+        intcpstor_pynhm = pd.DataFrame(self.cnp.output_data, columns=self.cnp.output_column_names)
+        intcpstor_pynhm.set_index("date", inplace=True)
+
+        print("intcp_stor  min  max")
+        a1 = intcpstor_prms.to_numpy()
+        a2 = intcpstor_pynhm.to_numpy()
+        print(f"prms  {a1.min()}    {a1.max()}")
+        print(f"pynhm  {a2.min()}    {a2.max()}")
+
+        makeplot = False
+        if makeplot:
+            import matplotlib.pyplot as plt
+            ax = plt.subplot(1, 1, 1)
+            xmin = 1e30
+            xmax = -1e30
+            for colname in intcpstor_prms.columns:
+                x1 = intcpstor_prms.loc[:, colname].values
+                x2 = intcpstor_pynhm.loc[:, colname].values
+                ax.scatter(x1, x2)
+                xmin = min(xmin, x1.min(), x2.min())
+                xmax = max(xmax, x1.max(), x2.max())
+            ax.set_title("Interception Storage")
+            ax.set_xlabel("PRMS Interception Storage, in inches")
+            ax.set_ylabel("pynhm Interception Storage, in inches")
+            ax.set_xlim(xmin, xmax)
+            ax.set_ylim(xmin, xmax)
+            pname = domain["domain_name"] + ".png"
+            print(f"Creating plot {pname}")
+            plt.savefig(pname, dpi=300)
 
         return

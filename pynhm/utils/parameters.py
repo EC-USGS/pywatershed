@@ -33,7 +33,7 @@ class PrmsParameters:
 
         # build dimensions from data
         if parameter_dimensions_dict is None:
-            dimensions = self.get_dimensions
+            dimensions = self.dimensions
             parameter_dimensions_dict = {}
             for key, value in parameter_dict.items():
                 if isinstance(value, int):
@@ -85,7 +85,7 @@ class PrmsParameters:
         )
 
     @property
-    def get_dimensions(self) -> dict:
+    def dimensions(self) -> dict:
         """Get the dimensions from the parameters
 
         Returns:

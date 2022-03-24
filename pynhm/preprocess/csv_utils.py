@@ -108,16 +108,18 @@ class CsvFile:
         clobber: bool = True,
         zlib: bool = True,
         complevel: int = 4,
-        chunk_sizes={"time": 30, "hruid": 0},
+        chunk_sizes: dict = {"time": 30, "hruid": 0},
     ) -> None:
         """Output the csv output data to a netcdf file
 
         Args:
-            name:
-            clobber:
-            zlib:
-            complevel:
-            chunk_sizes:
+            name: path for netcdf output file
+            clobber: boolean indicating if an existing netcdf file should
+                be overwritten
+            zlib: boolean indicating if the data should be compressed
+                (default is True)
+            complevel: compression level (default is 4)
+            chunk_sizes: dictionary defining chunk sizes for the data
 
         Returns:
             None

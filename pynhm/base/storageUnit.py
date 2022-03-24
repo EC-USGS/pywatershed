@@ -1,9 +1,8 @@
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..utils.parameters import PrmsParameters
-from .StateAccess import StateAccess
 
 
-class StorageUnit(StateAccess):
+class StorageUnit():
     @staticmethod
     def get_required_parameters():
         raise Exception("This must be overridden")
@@ -17,7 +16,6 @@ class StorageUnit(StateAccess):
         verbose: bool,
     ):
 
-        super().__init__()
         self.storage_type = storage_type
         self.id = id
 

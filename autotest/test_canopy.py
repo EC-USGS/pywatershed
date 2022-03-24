@@ -163,6 +163,4 @@ class TestPRMSCanopyDomain:
             print(f"Creating plot {pname}")
             plt.savefig(pname, dpi=300)
 
-        assert False
-
         return

@@ -40,7 +40,7 @@ prms_src/prms5.2.1/bin
 prms_src/prms5.3.0/bin
 
 # prms output files
-output/
+# output/
 *.out
 *.wbal
 wbal.msgs

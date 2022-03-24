@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-30
+34
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-30
+34
 4
 gwres_flow
 hru_actet
@@ -283,6 +283,10 @@ gwres_stor
 dprst_stor_hru
 hru_intcpstor
 infil
+transp_on
+net_rain
+net_snow
+intcp_evap
 ####
 nhruOutBaseFileName
 1

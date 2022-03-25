@@ -9,20 +9,6 @@ SNOW = 1
 
 
 class PRMSCanopy(StorageUnit):
-    @staticmethod
-    def get_required_parameters():
-        return [
-            "nhru",
-            "hru_area",
-            "covden_sum",
-            "covden_win",
-            "srain_intcp",
-            "wrain_intcp",
-            "snow_intcp",
-            "epan_coef",
-            "potet_sublim",
-        ]
-
     def __init__(
         self,
         params: PrmsParameters,
@@ -36,20 +22,17 @@ class PRMSCanopy(StorageUnit):
         # budget table?
         # inflows, outflows, dS, residual
 
-        # volume_start = 0.  # do we need to set this from input?   intcp_stor_start * covden
-        # self.intcp_stor_max = intcp_stor_max
-        # self.intcp_stor_new = intcp_stor_start
-
+        # define self variables that will be used for the calculation
         # todo: may need way to initialize interception storage to something non-zero
         self.intcp_stor_old = np.array(self.nhru * [0.0])
         self.intcp_stor = np.array(self.nhru * [0.0])
         self.tranpiration_on = True  # prms variable Transp_on
-        self.covden = (
-            None  # prms variable will be set to covden_sum or covden_win
-        )
+        self.covden = None  # will be set to covden_sum or covden_win
         self.interception_form = np.array(self.nhru * [RAIN], dtype=int)
 
+        # define information on the output data that will be created
         self.output_column_names = ["date"]
+        self.output_data = []
         if "nhm_id" in params.parameters:
             self.output_column_names += [
                 f"nhru_hru_intcpstor_{nhmid}"
@@ -61,8 +44,25 @@ class PRMSCanopy(StorageUnit):
             ]
         return
 
+    @staticmethod
+    def get_required_parameters() -> list:
+        """
+        Returt a list of the paramaters required for this process
+
+        """
+        return [
+            "nhru",
+            "hru_area",
+            "covden_sum",
+            "covden_win",
+            "srain_intcp",
+            "wrain_intcp",
+            "snow_intcp",
+            "epan_coef",
+            "potet_sublim",
+        ]
+
     def advance(self, itime_step):
-        super().advance(itime_step)
         self.intcp_stor_old = self.intcp_stor
 
         # set variables that depend on transpiration on/off setting
@@ -150,67 +150,4 @@ class PRMSCanopy(StorageUnit):
         idx = np.where(intcp_stor > stor_max)
         net_precip[idx] += (intcp_stor[idx] - stor_max[idx]) * covden[idx]
         intcp_stor[idx] = stor_max[idx]
-        return
-
-    def calculate_old(self, time_length):
-
-        # Retrieve forcings
-        # precip = self.forcing.precip_current
-        # pot_et = self.forcing.pot_et_current
-        precip = self.atm.get_current_state("prcp")
-        potet = self.atm.get_current_state("potet")
-
-        # Calculate canopy ET as the minimum of the canopy storage volume
-        # and the potential ET.  Then let the forcing module know that
-        intcp_stor = self.intcp_stor_old
-        requested_et = min(intcp_stor, pot_et)
-        canopy_et = self.forcing.consume_pot_et(requested_et)
-        intcp_stor -= canopy_et
-
-        # calculate change in storage in canopy and precipitation throughfall
-        available_storage = self.intcp_stor_max - intcp_stor
-        if precip > available_storage:
-            precipitation_throughfall = precip - available_storage
-            intcp_stor = self.intcp_stor_max
-        else:
-            precipitation_throughfall = 0.0
-            intcp_stor += precip
-        self.intcp_stor_new = intcp_stor
-        used_storage = self.intcp_stor_new - self.intcp_stor_old
-        used_storage *= self.area * self.covden
-
-        # net precipitation
-        net_precipitation = (
-            precip * (1 - self.covden)
-            + precipitation_throughfall * self.covden
-        )
-        net_precipitation *= self.area
-
-        # add and remove volumetric flow rates
-        self.add_water("precipitation", precip * self.area, time_length)
-        self.remove_water(
-            "aet", -canopy_et * self.area * self.covden, time_length
-        )
-        self.remove_water("intcp_ds", -used_storage, time_length)
-        self.remove_water("net_precipitation", -net_precipitation, time_length)
-
-        # Send net_precipitation to any registered recipients
-        for recipient_info in self.recipients:
-            recipient, process_name = recipient_info
-            if process_name == "net_precipitation":
-                recipient.add_water(
-                    "net_precipitation", net_precipitation, time_length
-                )
-
-        # Calculate residual and save results
-        super().calculate(time_length)
-        output = [self.forcing.current_date]
-        output.append(precip * self.area)
-        output.append(-canopy_et * self.area * self.covden)
-        output.append(-used_storage)
-        output.append(-net_precipitation)
-        output.append(self.residual_new)
-        output.append(self.intcp_stor_new)
-        output.append(self.intcp_stor_old)
-        self.output_data.append(output)
         return

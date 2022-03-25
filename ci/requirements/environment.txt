@@ -12,3 +12,4 @@ pytest-env
 pytest-xdist
 pyyaml
 xarray
+flopy

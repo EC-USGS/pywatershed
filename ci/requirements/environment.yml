@@ -13,6 +13,7 @@ dependencies:
   - pytest-xdist
   - pyyaml
   - xarray
+  - flopy
   - pip:
     - black
     - isort

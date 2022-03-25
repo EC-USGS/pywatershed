@@ -41,6 +41,8 @@ prms_src/prms5.3.0/bin
 *.out
 *.wbal
 wbal.msgs
+soltab_debug
+output/
 
 test_models/acfb_dyn_params
 test_models/acfb_dyn_water_use

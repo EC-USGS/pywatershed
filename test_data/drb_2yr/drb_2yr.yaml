@@ -15,10 +15,10 @@ prms_outputs:
   snowfall_adj: output/nhru_hru_snow.csv
   tmax_adj: output/nhru_tmaxf.csv
   tmin_adj: output/nhru_tminf.csv
-  soltab: output/soltab_debug
   swrad: output/nhru_swrad.csv
   potet: output/nhru_potet.csv
   intcpstor: output/nhru_hru_intcpstor.csv
+  soltab: soltab_debug
 
 cbh_nc: cbh.nc
 

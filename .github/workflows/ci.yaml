@@ -143,6 +143,13 @@ jobs:
           pip -V
           pip list
 
+      _ name: Run available domains with PRMS
+        working-directory: test_data/scripts
+        run: pytest
+          -v
+          -n=auto
+          run_domains.py
+
       - name: Run tests
         working-directory: autotest
         run: pytest

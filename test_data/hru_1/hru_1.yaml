@@ -18,7 +18,7 @@ prms_outputs:
   swrad: output/nhru_swrad.csv
   potet: output/nhru_potet.csv
   intcpstor: output/nhru_hru_intcpstor.csv
-  soltab: output/soltab_debug
+  soltab: soltab_debug
 
 cbh_nc: cbh.nc
 

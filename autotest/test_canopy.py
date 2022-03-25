@@ -148,21 +148,35 @@ class TestPRMSCanopyDomain:
         if makeplot:
             import matplotlib.pyplot as plt
 
-            ax = plt.subplot(1, 1, 1)
+            f = plt.figure()
+            ax = plt.subplot(1, 1, 1, aspect="equal")
             xmin = 1e30
             xmax = -1e30
             for colname in intcpstor_prms.columns:
                 x1 = intcpstor_prms.loc[:, colname].values
                 x2 = intcpstor_pynhm.loc[:, colname].values
-                ax.scatter(x1, x2)
+                ax.scatter(
+                    x1, x2, facecolors="none", edgecolors="k", linewidth=0.25
+                )
                 xmin = min(xmin, x1.min(), x2.min())
                 xmax = max(xmax, x1.max(), x2.max())
             ax.set_title("Interception Storage")
             ax.set_xlabel("PRMS Interception Storage, in inches")
-            ax.set_ylabel("pynhm Interception Storage, in inches")
+            ax.set_ylabel("PYNHM Interception Storage, in inches")
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(xmin, xmax)
-            pname = domain["domain_name"] + ".png"
+            pname = domain["domain_name"] + "_1-1.png"
+            print(f"Creating plot {pname}")
+            plt.savefig(pname, dpi=300)
+
+            f = plt.figure()
+            ax = plt.subplot(1, 1, 1)
+            pc = plt.imshow(a1 - a2, cmap="jet")
+            plt.colorbar(pc, shrink=0.5)
+            ax.set_title("Difference Between PRMS and PYNHM")
+            ax.set_xlabel("HRU number")
+            ax.set_ylabel("Time step")
+            pname = domain["domain_name"] + "_2d.png"
             print(f"Creating plot {pname}")
             plt.savefig(pname, dpi=300)
 

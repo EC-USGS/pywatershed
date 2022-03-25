@@ -24,6 +24,14 @@ def pytest_addoption(parser):
         help=("Print results and assert False for all domain tests"),
     )
 
+    parser.addoption(
+        "--all_domains",
+        required=False,
+        action="store_true",
+        default=False,
+        help=("Run all test domains"),
+    )
+
 
 def pytest_generate_tests(metafunc):
     if "domain" in metafunc.fixturenames:
@@ -34,9 +42,15 @@ def pytest_generate_tests(metafunc):
         # Not sure I love this, maybe have a domain_opts fixture later?
         print_ans = metafunc.config.getoption("print_ans")
 
-        domain_file_list = metafunc.config.getoption("domain_yaml")
-        if len(domain_file_list) == 0:
-            domain_file_list = ["../test_data/drb_2yr/drb_2yr.yaml"]
+        if metafunc.config.getoption("all_domains"):
+            domain_file_list = [
+                "../test_data/hru_1/hru_1.yaml",
+                "../test_data/drb_2yr/drb_2yr.yaml",
+            ]
+        else:
+            domain_file_list = metafunc.config.getoption("domain_yaml")
+            if len(domain_file_list) == 0:
+                domain_file_list = ["../test_data/drb_2yr/drb_2yr.yaml"]
 
         # open and read in the yaml and
         domain_ids = [pathlib.Path(ff).stem for ff in domain_file_list]
@@ -70,7 +84,7 @@ def pytest_generate_tests(metafunc):
                     for key, val in domain_dict[fd_key].items()
                 }
 
-            # Construct a dictonary that gets used in CBH
+            # Construct a dictionary that gets used in CBH
             # JLM: move to a helper function in test_preprocess_cbh.py?
             domain_dict["input_files_dict"] = {
                 key: val for key, val in domain_dict["cbh_inputs"].items()

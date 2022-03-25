@@ -7,8 +7,6 @@ import pandas as pd
 
 from pynhm.preprocess import CsvFile
 
-# JLM: Need to add/configure box01 domain yaml
-
 
 def compare_netcdf(csv, nc_name):
     ds = nc.Dataset(nc_name)

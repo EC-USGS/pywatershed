@@ -148,6 +148,7 @@ jobs:
         run: pytest
           -v
           -n=auto
+          --durations=0
           run_domains.py
 
       - name: Run tests
@@ -155,6 +156,7 @@ jobs:
         run: pytest
           -v
           -n=auto
+          --durations=0
           --all_domains
           --cov=pynhm
           --cov-report=xml

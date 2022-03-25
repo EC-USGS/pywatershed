@@ -17,7 +17,7 @@ verbose = true
 
 [tool.isort]
 profile = "black"
-src_paths = ["pynhm", "autotest"]
+src_paths = ["pynhm", "autotest", "test_data"]
 line_length = 79
 
 [tool.setuptools_scm]

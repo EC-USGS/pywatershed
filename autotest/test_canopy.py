@@ -1,13 +1,13 @@
-from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
+from datetime import datetime, timedelta
 
 import pynhm.preprocess
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from pynhm.canopy.PRMSCanopy import PRMSCanopy
 from pynhm.utils import ControlVariables
 from pynhm.utils.parameters import PrmsParameters
+from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from pynhm.canopy.PRMSCanopy import PRMSCanopy
 
 forcings_dict = {
     "datetime": np.array(
@@ -121,7 +121,7 @@ class TestPRMSCanopyDomain:
         for istep in range(atm.n_time):
             if istep > 0:
                 atm.advance()
-            # print(f"Running canopy for step {istep} and day: {atm.current_time}")
+            #print(f"Running canopy for step {istep} and day: {atm.current_time}")
             self.cnp.advance(0)
             self.cnp.calculate(1.0)
 
@@ -133,9 +133,7 @@ class TestPRMSCanopyDomain:
         intcpstor_prms = intcpstor_prms.to_dataframe()
 
         # create data frame of pynhm interception storage
-        intcpstor_pynhm = pd.DataFrame(
-            self.cnp.output_data, columns=self.cnp.output_column_names
-        )
+        intcpstor_pynhm = pd.DataFrame(self.cnp.output_data, columns=self.cnp.output_column_names)
         intcpstor_pynhm.set_index("date", inplace=True)
 
         print("intcp_stor  min  max")
@@ -147,23 +145,35 @@ class TestPRMSCanopyDomain:
         makeplot = False
         if makeplot:
             import matplotlib.pyplot as plt
-
-            ax = plt.subplot(1, 1, 1)
+            f = plt.figure()
+            ax = plt.subplot(1, 1, 1, aspect='equal')
             xmin = 1e30
             xmax = -1e30
             for colname in intcpstor_prms.columns:
                 x1 = intcpstor_prms.loc[:, colname].values
                 x2 = intcpstor_pynhm.loc[:, colname].values
-                ax.scatter(x1, x2)
+                ax.scatter(x1, x2, facecolors="none", edgecolors='k', linewidth=0.25)
                 xmin = min(xmin, x1.min(), x2.min())
                 xmax = max(xmax, x1.max(), x2.max())
             ax.set_title("Interception Storage")
             ax.set_xlabel("PRMS Interception Storage, in inches")
-            ax.set_ylabel("pynhm Interception Storage, in inches")
+            ax.set_ylabel("PYNHM Interception Storage, in inches")
             ax.set_xlim(xmin, xmax)
             ax.set_ylim(xmin, xmax)
-            pname = domain["domain_name"] + ".png"
+            pname = domain["domain_name"] + "_1-1.png"
             print(f"Creating plot {pname}")
             plt.savefig(pname, dpi=300)
+
+            f = plt.figure()
+            ax = plt.subplot(1, 1, 1)
+            pc = plt.imshow(a1 - a2, cmap="jet")
+            plt.colorbar(pc, shrink=0.5)
+            ax.set_title("Difference Between PRMS and PYNHM")
+            ax.set_xlabel("HRU number")
+            ax.set_ylabel("Time step")
+            pname = domain["domain_name"] + "_2d.png"
+            print(f"Creating plot {pname}")
+            plt.savefig(pname, dpi=300)
+
 
         return

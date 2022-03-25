@@ -1,13 +1,13 @@
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
 
 import pynhm.preprocess
-from pynhm.utils import ControlVariables
-from pynhm.utils.parameters import PrmsParameters
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.canopy.PRMSCanopy import PRMSCanopy
+from pynhm.utils import ControlVariables
+from pynhm.utils.parameters import PrmsParameters
 
 forcings_dict = {
     "datetime": np.array(
@@ -75,7 +75,7 @@ class TestPRMSCanopySimple:
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
             forcings_dict,
-            prms_params,
+            parameters=prms_params,
             start_time=np.datetime64("1979-01-03T00:00:00.00"),
             time_step=np.timedelta64(1, "D"),
             verbosity=3,
@@ -110,7 +110,7 @@ class TestPRMSCanopyDomain:
         }
         print(domain["cbh_nc"])
         atm = NHMBoundaryLayer.load_netcdf(
-            domain["cbh_nc"], prms_params, **atm_information_dict
+            domain["cbh_nc"], parameters=prms_params, **atm_information_dict
         )
         atm.calculate_sw_rad_degree_day()
         atm.calculate_potential_et_jh()
@@ -121,7 +121,7 @@ class TestPRMSCanopyDomain:
         for istep in range(atm.n_time):
             if istep > 0:
                 atm.advance()
-            #print(f"Running canopy for step {istep} and day: {atm.current_time}")
+            # print(f"Running canopy for step {istep} and day: {atm.current_time}")
             self.cnp.advance(0)
             self.cnp.calculate(1.0)
 
@@ -133,7 +133,9 @@ class TestPRMSCanopyDomain:
         intcpstor_prms = intcpstor_prms.to_dataframe()
 
         # create data frame of pynhm interception storage
-        intcpstor_pynhm = pd.DataFrame(self.cnp.output_data, columns=self.cnp.output_column_names)
+        intcpstor_pynhm = pd.DataFrame(
+            self.cnp.output_data, columns=self.cnp.output_column_names
+        )
         intcpstor_pynhm.set_index("date", inplace=True)
 
         print("intcp_stor  min  max")
@@ -145,6 +147,7 @@ class TestPRMSCanopyDomain:
         makeplot = False
         if makeplot:
             import matplotlib.pyplot as plt
+
             ax = plt.subplot(1, 1, 1)
             xmin = 1e30
             xmax = -1e30

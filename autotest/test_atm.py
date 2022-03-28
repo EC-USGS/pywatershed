@@ -40,7 +40,7 @@ class TestNHMSolarGeometry:
 
         # check the values
         assert np.isclose(
-            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=1e-04
+            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=1e-03
         ).all()
         assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=1e-03).all()
 

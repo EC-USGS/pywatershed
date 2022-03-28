@@ -46,6 +46,7 @@ def pytest_generate_tests(metafunc):
             domain_file_list = [
                 "../test_data/hru_1/hru_1.yaml",
                 "../test_data/drb_2yr/drb_2yr.yaml",
+                "../test_data/ucb_2yr/ucb_2yr.yaml",
             ]
         else:
             domain_file_list = metafunc.config.getoption("domain_yaml")

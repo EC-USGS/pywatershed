@@ -1,0 +1,59 @@
+domain_name: ucb_2yr
+
+cbh_inputs:
+      prcp: prcp.cbh
+      rhavg: rhavg.cbh
+      tmax: tmax.cbh
+      tmin: tmin.cbh
+
+control_file: control.test
+param_file: myparam.param
+
+prms_outputs:
+  prcp_adj: output/nhru_hru_ppt.csv
+  rainfall_adj: output/nhru_hru_rain.csv
+  snowfall_adj: output/nhru_hru_snow.csv
+  tmax_adj: output/nhru_tmaxf.csv
+  tmin_adj: output/nhru_tminf.csv
+  swrad: output/nhru_swrad.csv
+  potet: output/nhru_potet.csv
+  intcpstor: output/nhru_hru_intcpstor.csv
+  soltab: soltab_debug
+
+cbh_nc: cbh.nc
+
+test_ans:
+
+  control_read:
+    start_time: 1979-01-01T00:00:00
+    end_time: 1980-12-31T00:00:00
+    initial_deltat: 24
+
+  parameter_read:
+    nhru: 3851
+    ngw: 3851
+    nssr: 3851
+    nsegment: 1942
+
+  preprocess_cbh:
+    files_to_df:
+      prcp: 0.046485653521159784
+    df_concat: 34.05471072235577
+    np_dict:
+      prcp: 0.046485653521159805
+      rhavg: 50.87569199962628
+      tmax: 56.74147989347377
+      tmin: 28.555185342801856
+      datetime: 315532800.0
+    adj:
+      no_params:
+        prcp: 0.046485653521159805
+        rhavg: 50.87569199962628
+        tmax: 56.74147989347377
+        tmin: 28.555185342801856
+      params:
+        tmax_adj: 56.03483345601882
+        tmin_adj: 27.951023210246884
+        prcp_adj: 0.04152854285871349
+        rainfall_adj: 0.022255896906665296
+        snowfall_adj: 0.019272645952048188

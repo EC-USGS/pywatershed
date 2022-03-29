@@ -1,13 +1,12 @@
-
-import numpy as np
-import pandas as pd
 from datetime import datetime, timedelta
 
+import numpy as np
+
 import pynhm.preprocess
-from pynhm.utils import ControlVariables
-from pynhm.utils.parameters import PrmsParameters
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.canopy.PRMSCanopy import PRMSCanopy
+from pynhm.utils import ControlVariables
+from pynhm.utils.parameters import PrmsParameters
 
 forcings_dict = {
     "datetime": np.array(
@@ -71,6 +70,7 @@ class TestPRMSCanopySimple:
             "snow_intcp": np.array(nhru * [1.0]),
             "epan_coef": np.array(nhru * [1.0]),
             "potet_sublim": np.array(nhru * [1.0]),
+            "cov_type": np.array(nhru * [1]),
         }
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
@@ -83,7 +83,9 @@ class TestPRMSCanopySimple:
         )
 
         # todo: this is testing instantiation, but not physics
-        self.cnp = PRMSCanopy(prms_params, atm)
+        ntimes = atm.n_time
+        pkwater_equiv = np.zeros((ntimes, nhru))
+        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv)
         self.cnp.advance(itime_step=0)
         self.cnp.calculate(time_length=1.0)
 
@@ -108,72 +110,105 @@ class TestPRMSCanopyDomain:
             "verbosity": 3,
             "height_m": 5,
         }
-        print(domain["cbh_nc"])
         atm = NHMBoundaryLayer.load_netcdf(
             domain["cbh_nc"], prms_params, **atm_information_dict
         )
         atm.calculate_sw_rad_degree_day()
         atm.calculate_potential_et_jh()
 
-        self.cnp = PRMSCanopy(prms_params, atm)
+        # pkwater_equiv comes from snowpack; it is lagged by a time step
+        prms_output_files = domain["prms_outputs"]
+        fname = prms_output_files["pkwater_equiv"]
+        df = pynhm.preprocess.CsvFile(fname).to_dataframe()
+        pkwater_equiv = df.to_numpy()
+
+        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv)
         self.cnp.advance(itime_step=0)
 
         for istep in range(atm.n_time):
             if istep > 0:
                 atm.advance()
-            #print(f"Running canopy for step {istep} and day: {atm.current_time}")
             self.cnp.advance(0)
             self.cnp.calculate(1.0)
 
-        # create data frame of prms interception storage (from nhru_hru_intcpstor.csv)
-        output_files = domain["prms_outputs"]
-        fname = output_files["intcpstor"]
-        print(f"loading {fname}")
-        intcpstor_prms = pynhm.preprocess.CsvFile(fname)
-        intcpstor_prms = intcpstor_prms.to_dataframe()
+        # build a dictionary of the prms output dataframes for comparison
+        prms_output_files = domain["prms_outputs"]
+        comparison_variables = [
+            "rainfall_adj",
+            "snowfall_adj",
+            "potet",
+            "intcpstor",
+            "net_rain",
+            "net_snow",
+            "intcp_evap",
+        ]
+        prms_output_dataframes = {}
+        for cv in comparison_variables:
+            fname = prms_output_files[cv]
+            print(f"loading {fname}")
+            csvobj = pynhm.preprocess.CsvFile(fname)
+            df = csvobj.to_dataframe()
+            prms_output_dataframes[cv] = df
 
-        # create data frame of pynhm interception storage
-        intcpstor_pynhm = pd.DataFrame(self.cnp.output_data, columns=self.cnp.output_column_names)
-        intcpstor_pynhm.set_index("date", inplace=True)
+        # get a dictionary of dataframes for process model output
+        pynhm_output_dataframes = self.cnp.get_output_dataframes()
 
-        print("intcp_stor  min  max")
-        a1 = intcpstor_prms.to_numpy()
-        a2 = intcpstor_pynhm.to_numpy()
-        print(f"prms  {a1.min()}    {a1.max()}")
-        print(f"pynhm  {a2.min()}    {a2.max()}")
+        # compare prms and pynhm data
+        for cv in comparison_variables:
+            prms_data = prms_output_dataframes[cv]
+            pynhm_data = pynhm_output_dataframes[cv]
+
+            print(f"\n{50*'*'}")
+            print(f"{cv}  min  max")
+            a1 = prms_data.to_numpy()
+            a2 = pynhm_data.to_numpy()
+            diff = a1 - a2
+            print(f"prms   {a1.min()}    {a1.max()}")
+            print(f"pynhm  {a2.min()}    {a2.max()}")
+            print(f"diff   {diff.min()}  {diff.max()}")
 
         makeplot = False
         if makeplot:
             import matplotlib.pyplot as plt
-            f = plt.figure()
-            ax = plt.subplot(1, 1, 1, aspect='equal')
-            xmin = 1e30
-            xmax = -1e30
-            for colname in intcpstor_prms.columns:
-                x1 = intcpstor_prms.loc[:, colname].values
-                x2 = intcpstor_pynhm.loc[:, colname].values
-                ax.scatter(x1, x2, facecolors="none", edgecolors='k', linewidth=0.25)
+
+            for cv in comparison_variables:
+
+                var_prms = prms_output_dataframes[cv]
+                var_pynhm = pynhm_output_dataframes[cv]
+
+                fig = plt.figure()
+                ax = plt.subplot(1, 1, 1, aspect="equal")
+                xmin = 1e30
+                xmax = -1e30
+
+                x1 = var_prms.to_numpy()
+                x2 = var_pynhm.to_numpy()
+                ax.scatter(
+                    x1, x2, facecolors="none", edgecolors="k", linewidth=0.25
+                )
                 xmin = min(xmin, x1.min(), x2.min())
                 xmax = max(xmax, x1.max(), x2.max())
-            ax.set_title("Interception Storage")
-            ax.set_xlabel("PRMS Interception Storage, in inches")
-            ax.set_ylabel("PYNHM Interception Storage, in inches")
-            ax.set_xlim(xmin, xmax)
-            ax.set_ylim(xmin, xmax)
-            pname = domain["domain_name"] + "_1-1.png"
-            print(f"Creating plot {pname}")
-            plt.savefig(pname, dpi=300)
 
-            f = plt.figure()
-            ax = plt.subplot(1, 1, 1)
-            pc = plt.imshow(a1 - a2, cmap="jet")
-            plt.colorbar(pc, shrink=0.5)
-            ax.set_title("Difference Between PRMS and PYNHM")
-            ax.set_xlabel("HRU number")
-            ax.set_ylabel("Time step")
-            pname = domain["domain_name"] + "_2d.png"
-            print(f"Creating plot {pname}")
-            plt.savefig(pname, dpi=300)
+                ax.set_title(cv)
+                ax.set_xlabel(f"PRMS {cv}, in inches")
+                ax.set_ylabel(f"PYNHM {cv}, in inches")
+                ax.set_xlim(xmin, xmax)
+                ax.set_ylim(xmin, xmax)
+                pname = domain["domain_name"] + f"_{cv}_1-1.png"
+                print(f"Creating plot {pname}")
+                plt.savefig(pname, dpi=300)
+                plt.close(fig)
 
+                fig = plt.figure()
+                ax = plt.subplot(1, 1, 1)
+                pc = plt.imshow(x1 - x2, cmap="jet")
+                plt.colorbar(pc, shrink=0.5)
+                ax.set_title(f"{cv} Difference Between PRMS and PYNHM")
+                ax.set_xlabel("HRU number")
+                ax.set_ylabel("Time step")
+                pname = domain["domain_name"] + f"_{cv}_2d.png"
+                print(f"Creating plot {pname}")
+                plt.savefig(pname, dpi=300)
+                plt.close(fig)
 
         return

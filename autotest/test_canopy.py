@@ -163,9 +163,16 @@ class TestPRMSCanopyDomain:
             a1 = prms_data.to_numpy()
             a2 = pynhm_data.to_numpy()
             diff = a1 - a2
+            diffmin = diff.min()
+            diffmax = diff.max()
             print(f"prms   {a1.min()}    {a1.max()}")
             print(f"pynhm  {a2.min()}    {a2.max()}")
-            print(f"diff   {diff.min()}  {diff.max()}")
+            print(f"diff   {diffmin}  {diffmax}")
+
+            atol = 0.1
+            errmsg = f"Canopy variable {cv} does not match to within {atol}"
+            assert np.allclose(diffmin, 0., atol=atol), errmsg
+            assert np.allclose(diffmax, 0., atol=atol), errmsg
 
         makeplot = False
         if makeplot:

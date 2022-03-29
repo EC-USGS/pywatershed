@@ -51,6 +51,3 @@ class AtmBoundaryLayer(Time):
 
     # JLM check that time and the time dimensions on the states match on set or inits
     # JLM ensure the spatial dimension matches.
-
-    def calculate(self) -> None:
-        pass

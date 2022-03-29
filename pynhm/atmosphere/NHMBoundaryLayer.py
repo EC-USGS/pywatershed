@@ -428,10 +428,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         radadj = monthly_to_daily(radmax)  # the else condition
         wh_dday_lt_26 = np.where(dday < 26.0)
         if len(wh_dday_lt_26[0]):
-            kp = dday.astype(int)  # dddayi = float(kp)
-            radadj[wh_dday_lt_26] = (
-                solf[kp - 1] + ((solf[kp] - solf[kp - 1]) * (dday - kp))
-            )[wh_dday_lt_26]
+            kp = dday.astype(int)[wh_dday_lt_26]  # dddayi = float(kp)
+            radadj[wh_dday_lt_26] = solf[kp - 1] + (
+                (solf[kp] - solf[kp - 1]) * (dday[wh_dday_lt_26] - kp)
+            )
             wh_radadj_gt_max = np.where(radadj > radmax_day)
             if len(wh_radadj_gt_max[0]):
                 radadj[wh_radadj_gt_max] = radmax_day[wh_radadj_gt_max]

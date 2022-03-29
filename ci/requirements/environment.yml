@@ -15,7 +15,8 @@ dependencies:
   - xarray
   - flopy
   - pip:
-    - black
-    - isort
-    - flake8
-    - pylint
+      - click != 8.1.0
+      - black
+      - isort
+      - flake8
+      - pylint

@@ -51,6 +51,7 @@ extensions = [
 
 
 autosummary_generate = True
+autosummary_imported_members = True
 
 # Napoleon configurations
 napoleon_google_docstring = True
@@ -59,6 +60,15 @@ napoleon_use_param = False
 napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_preprocess_types = True
+
+autodoc_default_options = {
+    "members": True,
+    "imported-members": True,
+    "inherited-members": True,
+    #     "undoc-members": True,
+    #     "private-members": True,  #
+    #     "special-members": True,  # e.g. __special__
+}
 
 
 # Add any paths that contain templates here, relative to this directory.

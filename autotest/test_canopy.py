@@ -1,6 +1,6 @@
-from datetime import datetime, timedelta
-
+from datetime import datetime
 import numpy as np
+import pandas as pd
 
 import pynhm.preprocess
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
@@ -75,7 +75,7 @@ class TestPRMSCanopySimple:
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
             forcings_dict,
-            prms_params,
+            parameters=prms_params,
             start_time=np.datetime64("1979-01-03T00:00:00.00"),
             time_step=np.timedelta64(1, "D"),
             verbosity=3,
@@ -110,8 +110,22 @@ class TestPRMSCanopyDomain:
             "verbosity": 3,
             "height_m": 5,
         }
-        atm = NHMBoundaryLayer.load_netcdf(
-            domain["cbh_nc"], prms_params, **atm_information_dict
+        var_translate = {
+            "prcp_adj": "prcp",
+            "rainfall_adj": "rainfall",
+            "snowfall_adj": "snowfall",
+            "tmax_adj": "tmax",
+            "tmin_adj": "tmin",
+            "swrad": "swrad",
+            "potet": "potet",
+        }
+        var_file_dict = {
+            var_translate[var]: file
+            for var, file in domain["prms_outputs"].items()
+            if var in var_translate.keys()
+        }
+        atm = NHMBoundaryLayer.load_prms_output(
+            **var_file_dict, parameters=prms_params, **atm_information_dict
         )
         atm.calculate_sw_rad_degree_day()
         atm.calculate_potential_et_jh()

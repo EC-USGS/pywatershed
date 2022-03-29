@@ -187,7 +187,7 @@ def atm_nhm_init_prms_output(domain):
         for var, file in domain["prms_outputs"].items()
         if var in var_translate.keys()
     }
-    atm = NHMBoundaryLayer.from_prms_output(
+    atm = NHMBoundaryLayer.load_prms_output(
         **var_file_dict, **atm_init_test_dict
     )
     return atm

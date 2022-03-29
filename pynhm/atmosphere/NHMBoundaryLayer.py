@@ -166,7 +166,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         return
 
     @classmethod
-    def from_prms_output(
+    def load_prms_output(
         cls,
         prcp: fileish = None,
         rainfall: fileish = None,
@@ -177,6 +177,9 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         potet: fileish = None,
         **kwargs,
     ):
+        """Instantiate an NHM atmospheric boundary layer from NHM/PRMS
+        output csv files."""
+
         obj = cls({}, **kwargs)
 
         obj.prms_output_files = {
@@ -208,6 +211,9 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         nc_read_vars: list = None,
         **kwargs,
     ) -> "NHMBoundaryLayer":
+        """Instantiate an NHM atmospheric boundary layer from NHM/PRMS
+        preprocessed CBH netcdf files."""
+
         obj = cls({}, **kwargs)
 
         # netcdf handling. consolidate these?

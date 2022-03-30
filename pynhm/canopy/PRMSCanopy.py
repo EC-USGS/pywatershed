@@ -78,6 +78,7 @@ class PRMSCanopy(StorageUnit):
             "snow_intcp",
             "epan_coef",
             "potet_sublim",
+            "snow_intcp",
         ]
 
     def advance(self, itime_step):
@@ -161,6 +162,7 @@ class PRMSCanopy(StorageUnit):
                 stor_max_rain = self.srain_intcp[i]
             else:
                 stor_max_rain = self.wrain_intcp[i]
+            stor_max_snow = self.snow_intcp[i]
 
             # *****Determine the amount of interception from rain
             # IF ( Hru_type(i)/=LAKE .AND. Cov_type(i)/=BARESOIL ) THEN
@@ -196,7 +198,7 @@ class PRMSCanopy(StorageUnit):
                 if cov > 0.0:
                     if self.cov_type[i] > GRASSES:
                         intcpstor, netsnow = self.intercept(
-                            hru_snow[i], stor_max_rain, cov, intcpstor, netsnow
+                            hru_snow[i], stor_max_snow, cov, intcpstor, netsnow
                         )
                         if netsnow < NEARZERO:
                             netrain = netrain + netsnow

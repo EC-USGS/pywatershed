@@ -71,6 +71,7 @@ class TestPRMSCanopySimple:
             "epan_coef": np.array(nhru * [1.0]),
             "potet_sublim": np.array(nhru * [1.0]),
             "cov_type": np.array(nhru * [1]),
+            "snow_intcp": np.array(nhru * [1.0]),
         }
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
@@ -183,10 +184,10 @@ class TestPRMSCanopyDomain:
             print(f"pynhm  {a2.min()}    {a2.max()}")
             print(f"diff   {diffmin}  {diffmax}")
 
-            atol = 0.1
+            atol = 0.05
             errmsg = f"Canopy variable {cv} does not match to within {atol}"
-            assert np.allclose(diffmin, 0., atol=atol), errmsg
-            assert np.allclose(diffmax, 0., atol=atol), errmsg
+            assert np.allclose(diffmin, 0.0, atol=atol), errmsg
+            assert np.allclose(diffmax, 0.0, atol=atol), errmsg
 
         makeplot = False
         if makeplot:

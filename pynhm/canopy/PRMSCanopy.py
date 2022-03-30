@@ -78,7 +78,7 @@ class PRMSCanopy(StorageUnit):
             "snow_intcp",
             "epan_coef",
             "potet_sublim",
-            "snow_intcp"
+            "snow_intcp",
         ]
 
     def advance(self, itime_step):

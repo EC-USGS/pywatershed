@@ -44,17 +44,6 @@ wbal.msgs
 soltab_debug
 output/
 
-test_models/acfb_dyn_params
-test_models/acfb_dyn_water_use
-test_models/glacier_models
-test_models/sagehen
-test_models/sagehen_restart
-test_models/Tazlina
-test_models/ucb
-test_models/ucb_daily_ag_frac
-test_models/yampa
-
-
 # emacs
 *~
 

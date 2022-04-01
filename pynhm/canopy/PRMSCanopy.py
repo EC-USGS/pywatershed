@@ -13,6 +13,7 @@ SNOW = 1
 BARESOIL = 0
 GRASSES = 1
 
+OFF = 0
 ACTIVE = 1
 
 LAND = 1
@@ -25,21 +26,24 @@ class PRMSCanopy(StorageUnit):
         params: PrmsParameters,
         atm: NHMBoundaryLayer,
         pkwater_equiv_alltimes: np.ndarray,
+        transp_on_alltimes: np.ndarray,
     ):
 
         verbose = True
         super().__init__("cnp", id, params, atm, verbose)
 
-        # store pkwater_equiv, which is a snowpack calculated variable
+        # store dependencies
         self.pkwater_equiv_alltimes = pkwater_equiv_alltimes
+        self.transp_on_alltimes = transp_on_alltimes
 
         # define self variables
         # todo: may need way to initialize interception storage to something non-zero
         self.intcp_stor_old = np.array(self.nhru * [0.0])
         self.intcp_stor = np.array(self.nhru * [0.0])
-        self.tranpiration_on = True  # prms variable Transp_on
-        self.covden = None  # will be set to covden_sum or covden_win
+        # self.tranpiration_on = True  # prms variable Transp_on
+        # self.covden = None  # will be set to covden_sum or covden_win
         self.interception_form = np.array(self.nhru * [RAIN], dtype=int)
+        self.intcp_transp_on = np.array(self.nhru * [ACTIVE], dtype=int)
 
         # define information on the output data that will be accessible
         self.output_data_names = [
@@ -64,7 +68,7 @@ class PRMSCanopy(StorageUnit):
     @staticmethod
     def get_required_parameters() -> list:
         """
-        Returt a list of the paramaters required for this process
+        Return a list of the parameters required for this process
 
         """
         return [
@@ -86,12 +90,12 @@ class PRMSCanopy(StorageUnit):
 
         # set variables that depend on transpiration on/off setting
         # todo: this is currently hardwired to be on
-        if self.tranpiration_on:
-            self.covden = self.covden_sum
-            self.stor_max_rain = self.srain_intcp
-        else:
-            self.covden = self.covden_win
-            self.stor_max_rain = self.wrain_intcp
+        # if self.tranpiration_on:
+        #    self.covden = self.covden_sum
+        #    self.stor_max_rain = self.srain_intcp
+        # else:
+        #    self.covden = self.covden_win
+        #    self.stor_max_rain = self.wrain_intcp
 
         self.interception_form[:] = RAIN
         snowfall = self.atm.get_current_state("snowfall")
@@ -103,6 +107,12 @@ class PRMSCanopy(StorageUnit):
             self.pkwater_equiv = np.zeros(self.nhru)
         else:
             self.pkwater_equiv = self.pkwater_equiv_alltimes[itime_step - 1]
+
+        # Assume transp_on is active if not specified
+        if self.transp_on_alltimes is None:
+            self.transp_on = np.full(self.nhru, ACTIVE, dtype=int)
+        else:
+            self.transp_on = self.transp_on_alltimes[itime_step]
 
         assert self.pkwater_equiv.shape == (self.nhru,)
 
@@ -129,7 +139,7 @@ class PRMSCanopy(StorageUnit):
         intcp_form = np.array(self.nhru * [RAIN])
 
         hru_type = np.array(self.nhru * [LAND])
-        transp_on = np.array(self.nhru * [ACTIVE])
+        transp_on = self.transp_on
         intcp_evap = np.array(self.nhru * [0.0])
         hru_intcpstor = np.array(self.nhru * [0.0])
 
@@ -138,7 +148,13 @@ class PRMSCanopy(StorageUnit):
             netrain = hru_rain[i]
             netsnow = hru_snow[i]
 
-            cov = self.covden[i]
+            if transp_on[i] == ACTIVE:
+                cov = self.covden_sum[i]
+                stor_max_rain = self.srain_intcp[i]
+            else:
+                cov = self.covden_win[i]
+                stor_max_rain = self.wrain_intcp[i]
+
             intcp_form[i] = RAIN
             if hru_snow[i] > 0.0:
                 intcp_form[i] = SNOW
@@ -154,15 +170,31 @@ class PRMSCanopy(StorageUnit):
                     extra_water = self.intcp_stor[i]
                 intcpstor = 0.0
 
-            # todo: go from summer to winter cover density
+            # ***** go from summer to winter cover density
+            if transp_on[i] == OFF and self.intcp_transp_on[i] == ACTIVE:
+                self.intcp_transp_on[i] = OFF
+                if intcpstor > 0.0:
+                    diff = self.covden_sum[i] - cov
+                    changeover = intcpstor * diff
+                    if cov > 0.0:
+                        if changeover < 0.0:
+                            intcpstor = intcpstor * self.covden_sum[i] / cov
+                            changeover = 0.0
+                    else:
+                        intcpstor = 0.0
 
-            # todo: go from winter to summer cover density, excess = throughfall
-
-            if transp_on[i] == ACTIVE:
-                stor_max_rain = self.srain_intcp[i]
-            else:
-                stor_max_rain = self.wrain_intcp[i]
-            stor_max_snow = self.snow_intcp[i]
+            # ****** go from winter to summer cover density, excess = throughfall
+            elif transp_on[i] == ACTIVE and self.intcp_transp_on[i] == OFF:
+                self.intcp_transp_on[i] = ACTIVE
+                if intcpstor > 0.0:
+                    diff = self.covden_win[i] - cov
+                    changeover = intcpstor * diff
+                    if cov > 0.0:
+                        if changeover < 0.0:
+                            intcpstor = intcpstor * self.covden_win[i] / cov
+                            changeover = 0.0
+                    else:
+                        intcpstor = 0.0
 
             # *****Determine the amount of interception from rain
             # IF ( Hru_type(i)/=LAKE .AND. Cov_type(i)/=BARESOIL ) THEN
@@ -180,6 +212,8 @@ class PRMSCanopy(StorageUnit):
                                 netrain,
                             )
                         elif self.cov_type[i] == GRASSES:
+                            # if there is no snowpack and no snowfall, then apparently, grasses
+                            # can intercept rain.
                             # IF ( Pkwater_equiv(i)<DNEARZERO .AND. netsnow<NEARZERO ) THEN
                             if (
                                 self.pkwater_equiv[i] < DNEARZERO
@@ -198,7 +232,11 @@ class PRMSCanopy(StorageUnit):
                 if cov > 0.0:
                     if self.cov_type[i] > GRASSES:
                         intcpstor, netsnow = self.intercept(
-                            hru_snow[i], stor_max_snow, cov, intcpstor, netsnow
+                            hru_snow[i],
+                            self.snow_intcp[i],
+                            cov,
+                            intcpstor,
+                            netsnow,
                         )
                         if netsnow < NEARZERO:
                             netrain = netrain + netsnow

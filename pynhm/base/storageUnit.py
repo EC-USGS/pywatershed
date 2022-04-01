@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
@@ -77,3 +78,15 @@ class StorageUnit:
             df.set_index("date", inplace=True)
             output_data[key] = df
         return output_data
+
+    def output_to_csv(self, pth):
+        """
+        Save each output variable to separate csv file in specified path
+
+        """
+        output_data = self.get_output_dataframes()
+        for key in output_data:
+            df = output_data[key]
+            fname = os.path.join(pth, f"{key}.csv")
+            df.to_csv(fname)
+        return

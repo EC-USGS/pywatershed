@@ -1,8 +1,8 @@
 from datetime import datetime
+import pathlib
 import numpy as np
-import pandas as pd
 
-import pynhm.preprocess
+from pynhm.preprocess import CsvFile
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.canopy.PRMSCanopy import PRMSCanopy
 from pynhm.utils import ControlVariables
@@ -71,7 +71,6 @@ class TestPRMSCanopySimple:
             "epan_coef": np.array(nhru * [1.0]),
             "potet_sublim": np.array(nhru * [1.0]),
             "cov_type": np.array(nhru * [1]),
-            "snow_intcp": np.array(nhru * [1.0]),
         }
         prms_params = PrmsParameters(prms_params)
         atm = NHMBoundaryLayer(
@@ -86,7 +85,8 @@ class TestPRMSCanopySimple:
         # todo: this is testing instantiation, but not physics
         ntimes = atm.n_time
         pkwater_equiv = np.zeros((ntimes, nhru))
-        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv)
+        transp_on = np.zeros((ntimes, nhru))
+        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv, transp_on)
         self.cnp.advance(itime_step=0)
         self.cnp.calculate(time_length=1.0)
 
@@ -134,16 +134,22 @@ class TestPRMSCanopyDomain:
         # pkwater_equiv comes from snowpack; it is lagged by a time step
         prms_output_files = domain["prms_outputs"]
         fname = prms_output_files["pkwater_equiv"]
-        df = pynhm.preprocess.CsvFile(fname).to_dataframe()
+        df = CsvFile(fname).to_dataframe()
         pkwater_equiv = df.to_numpy()
 
-        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv)
+        transp_on = None
+        if "transp_on" in prms_output_files:
+            fname = prms_output_files["transp_on"]
+            df = CsvFile(fname).to_dataframe()
+            transp_on = df.to_numpy()
+
+        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv, transp_on)
         self.cnp.advance(itime_step=0)
 
         for istep in range(atm.n_time):
             if istep > 0:
                 atm.advance()
-            self.cnp.advance(0)
+            self.cnp.advance(istep)
             self.cnp.calculate(1.0)
 
         # build a dictionary of the prms output dataframes for comparison
@@ -161,7 +167,7 @@ class TestPRMSCanopyDomain:
         for cv in comparison_variables:
             fname = prms_output_files[cv]
             print(f"loading {fname}")
-            csvobj = pynhm.preprocess.CsvFile(fname)
+            csvobj = CsvFile(fname)
             df = csvobj.to_dataframe()
             prms_output_dataframes[cv] = df
 
@@ -184,53 +190,16 @@ class TestPRMSCanopyDomain:
             print(f"pynhm  {a2.min()}    {a2.max()}")
             print(f"diff   {diffmin}  {diffmax}")
 
-            atol = 0.05
+            atol = 1.e-5
             errmsg = f"Canopy variable {cv} does not match to within {atol}"
             assert np.allclose(diffmin, 0.0, atol=atol), errmsg
             assert np.allclose(diffmax, 0.0, atol=atol), errmsg
 
-        makeplot = False
-        if makeplot:
-            import matplotlib.pyplot as plt
-
-            for cv in comparison_variables:
-
-                var_prms = prms_output_dataframes[cv]
-                var_pynhm = pynhm_output_dataframes[cv]
-
-                fig = plt.figure()
-                ax = plt.subplot(1, 1, 1, aspect="equal")
-                xmin = 1e30
-                xmax = -1e30
-
-                x1 = var_prms.to_numpy()
-                x2 = var_pynhm.to_numpy()
-                ax.scatter(
-                    x1, x2, facecolors="none", edgecolors="k", linewidth=0.25
-                )
-                xmin = min(xmin, x1.min(), x2.min())
-                xmax = max(xmax, x1.max(), x2.max())
-
-                ax.set_title(cv)
-                ax.set_xlabel(f"PRMS {cv}, in inches")
-                ax.set_ylabel(f"PYNHM {cv}, in inches")
-                ax.set_xlim(xmin, xmax)
-                ax.set_ylim(xmin, xmax)
-                pname = domain["domain_name"] + f"_{cv}_1-1.png"
-                print(f"Creating plot {pname}")
-                plt.savefig(pname, dpi=300)
-                plt.close(fig)
-
-                fig = plt.figure()
-                ax = plt.subplot(1, 1, 1)
-                pc = plt.imshow(x1 - x2, cmap="jet")
-                plt.colorbar(pc, shrink=0.5)
-                ax.set_title(f"{cv} Difference Between PRMS and PYNHM")
-                ax.set_xlabel("HRU number")
-                ax.set_ylabel("Time step")
-                pname = domain["domain_name"] + f"_{cv}_2d.png"
-                print(f"Creating plot {pname}")
-                plt.savefig(pname, dpi=300)
-                plt.close(fig)
+        # save cnp output as dataframes in temp/domain_name
+        saveoutput = False
+        if saveoutput:
+            pth = pathlib.Path(".", "temp", domain["domain_name"])
+            pth.mkdir(parents=True, exist_ok=True)
+            self.cnp.output_to_csv(pth)
 
         return

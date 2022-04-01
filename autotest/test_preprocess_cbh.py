@@ -136,7 +136,15 @@ def test_cbh_adj(domain, params_and_none):
 def test_cbh_adj_prms_output(domain, params):
     cbh = CBH(domain["input_files_dict"], params, adjust=True)
     for var, var_file in domain["prms_outputs"].items():
-        if var in ["soltab", "intcpstor", "net_rain", "net_snow", "intcp_evap", "pkwater_equiv"]:
+        if var in [
+            "soltab",
+            "intcpstor",
+            "net_rain",
+            "net_snow",
+            "intcp_evap",
+            "pkwater_equiv",
+            "transp_on",
+        ]:
             continue
         if var in ["swrad", "potet"]:
             msg = (

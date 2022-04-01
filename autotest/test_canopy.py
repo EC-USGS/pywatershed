@@ -190,7 +190,7 @@ class TestPRMSCanopyDomain:
             print(f"pynhm  {a2.min()}    {a2.max()}")
             print(f"diff   {diffmin}  {diffmax}")
 
-            atol = 1.e-5
+            atol = 1.0e-5
             errmsg = f"Canopy variable {cv} does not match to within {atol}"
             assert np.allclose(diffmin, 0.0, atol=atol), errmsg
             assert np.allclose(diffmax, 0.0, atol=atol), errmsg

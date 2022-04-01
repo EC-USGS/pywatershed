@@ -40,8 +40,8 @@ class PRMSCanopy(StorageUnit):
         # todo: may need way to initialize interception storage to something non-zero
         self.intcp_stor_old = np.array(self.nhru * [0.0])
         self.intcp_stor = np.array(self.nhru * [0.0])
-        #self.tranpiration_on = True  # prms variable Transp_on
-        #self.covden = None  # will be set to covden_sum or covden_win
+        # self.tranpiration_on = True  # prms variable Transp_on
+        # self.covden = None  # will be set to covden_sum or covden_win
         self.interception_form = np.array(self.nhru * [RAIN], dtype=int)
         self.intcp_transp_on = np.array(self.nhru * [ACTIVE], dtype=int)
 
@@ -90,10 +90,10 @@ class PRMSCanopy(StorageUnit):
 
         # set variables that depend on transpiration on/off setting
         # todo: this is currently hardwired to be on
-        #if self.tranpiration_on:
+        # if self.tranpiration_on:
         #    self.covden = self.covden_sum
         #    self.stor_max_rain = self.srain_intcp
-        #else:
+        # else:
         #    self.covden = self.covden_win
         #    self.stor_max_rain = self.wrain_intcp
 
@@ -173,28 +173,28 @@ class PRMSCanopy(StorageUnit):
             # ***** go from summer to winter cover density
             if transp_on[i] == OFF and self.intcp_transp_on[i] == ACTIVE:
                 self.intcp_transp_on[i] = OFF
-                if intcpstor > 0.:
+                if intcpstor > 0.0:
                     diff = self.covden_sum[i] - cov
                     changeover = intcpstor * diff
-                    if cov > 0.:
-                        if changeover < 0.:
+                    if cov > 0.0:
+                        if changeover < 0.0:
                             intcpstor = intcpstor * self.covden_sum[i] / cov
-                            changeover = 0.
+                            changeover = 0.0
                     else:
-                        intcpstor = 0.
+                        intcpstor = 0.0
 
             # ****** go from winter to summer cover density, excess = throughfall
             elif transp_on[i] == ACTIVE and self.intcp_transp_on[i] == OFF:
                 self.intcp_transp_on[i] = ACTIVE
-                if intcpstor > 0.:
+                if intcpstor > 0.0:
                     diff = self.covden_win[i] - cov
                     changeover = intcpstor * diff
-                    if cov > 0.:
-                        if changeover < 0.:
+                    if cov > 0.0:
+                        if changeover < 0.0:
                             intcpstor = intcpstor * self.covden_win[i] / cov
-                            changeover = 0.
+                            changeover = 0.0
                     else:
-                        intcpstor = 0.
+                        intcpstor = 0.0
 
             # *****Determine the amount of interception from rain
             # IF ( Hru_type(i)/=LAKE .AND. Cov_type(i)/=BARESOIL ) THEN
@@ -232,7 +232,11 @@ class PRMSCanopy(StorageUnit):
                 if cov > 0.0:
                     if self.cov_type[i] > GRASSES:
                         intcpstor, netsnow = self.intercept(
-                            hru_snow[i], self.snow_intcp[i], cov, intcpstor, netsnow
+                            hru_snow[i],
+                            self.snow_intcp[i],
+                            cov,
+                            intcpstor,
+                            netsnow,
                         )
                         if netsnow < NEARZERO:
                             netrain = netrain + netsnow

@@ -25,53 +25,65 @@ test_dirs = sorted(
     [path for path in pl.Path(rootdir).iterdir() if path.is_dir()]
 )
 
-# This would change to handle other/additional schedulers
-domain_globs_schedule = {"*conus*": "slurm"}
-
-
-def is_scheduled(scheduler):
-    if scheduler == "slurm":
-        return os.getenv("SLURM_JOB_ID") is not None
-    # add more scheduler checks here
-
-
 simulations = {}
-for test_dir in test_dirs:
 
-    # If the test_dir is required to be scheduled, check if we are
-    # running in the scheduler
-    doms_sched = list(domain_globs_schedule.keys())
-    glob_match = list(fnmatch(str(test_dir), kk) for kk in doms_sched)
+
+# This would change to handle other/additional schedulers
+domain_globs_schedule = ["*conus*"]
+
+
+def scheduler_active():
+    slurm = os.getenv("SLURM_JOB_ID") is not None
+    pbs = os.getenv("PBS_JOBID") is not None
+    # add more scheduler checks
+    return slurm or pbs
+
+
+def enforce_scheduler(test_dir):
+    if scheduler_active():
+        return None
+    glob_match = list(
+        fnmatch(str(test_dir), gg) for gg in domain_globs_schedule
+    )
     if any(glob_match):
-        the_glob = doms_sched[glob_match.index(True)]
-        scheduler = domain_globs_schedule[the_glob]
-        if not is_scheduled(scheduler):
-            raise RuntimeError(
-                f"Domain '{test_dir}' must be scheduled using {scheduler}"
-            )
+        raise RuntimeError(
+            f"Domain '{test_dir}' must be scheduled (use -f to force)"
+        )
+    return None
 
-    for pth in test_dir.iterdir():
-        # checking for prcp.cbh ensure this is a self-contained run (all files in repo)
-        if (
-            (test_dir / "prcp.cbh").exists()
-            and pth.is_file()
-            and pth.name == "control.test"
-        ):
-            # add simulation
-            simulations[str(test_dir)] = pth.name
 
-            # create output directory if it doesn't exist
-            # JLM: should we force remove existing outputs?
-            output_dir = pl.Path(test_dir) / "output"
-            output_dir.mkdir(parents=True, exist_ok=True)
+def collect_simulations(force):
+    for test_dir in test_dirs:
 
-print("\nrun_domains.py found the following domains to run:\n")
-print(f"{list(simulations.keys())}")
+        # If the test_dir is required to be scheduled, check if we are
+        # running in the scheduler
+
+        for pth in test_dir.iterdir():
+            # checking for prcp.cbh ensure this is a self-contained run (all files in repo)
+            if (
+                (test_dir / "prcp.cbh").exists()
+                and pth.is_file()
+                and pth.name == "control.test"
+            ):
+
+                if not force:
+                    enforce_scheduler(test_dir)
+
+                # add simulation
+                simulations[str(test_dir)] = pth.name
+
+                # delete the existing output dir and re-create it
+                output_dir = pl.Path(test_dir) / "output"
+                if output_dir.exists():
+                    shutil.rmtree(output_dir)
+                output_dir.mkdir(parents=True)
+
+    print("\nrun_domains.py found the following domains to run:\n")
+    print(f"{list(simulations.keys())}")
 
 
 def test_exe_available():
     assert exe_pth.is_file(), f"'{exe_pth}'...does not exist"
-
     assert os.access(exe_pth, os.X_OK)
 
 
@@ -98,7 +110,29 @@ def test_prms_run(ws, control_file):
     print(f"run_domains.py: End of domain {ws}\n", flush=True)
 
 
+def parse_arguments():
+
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-f",
+        "--force",
+        required=False,
+        action="store_true",
+        default=False,
+        help=("Force run without scheduler present"),
+    )
+
+    args = parser.parse_args()
+    return args.force
+
+
 if __name__ == "__main__":
+
+    force = parse_arguments()
+    collect_simulations(force)
+
     test_exe_available()
 
     for key, value in simulations.items():

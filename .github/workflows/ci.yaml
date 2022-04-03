@@ -146,8 +146,6 @@ jobs:
       - name: Run available domains with PRMS
         working-directory: test_data/scripts
         run: pytest
-          -vv
-          -s
           -n=auto
           --durations=0
           test_run_domains.py

@@ -24,6 +24,8 @@ which gfortran
 conda activate --stack pynhm_tg
 conda list
 
-python run_domains.py
+# Could parallelize with -n=$SLURM_NTASKS but
+# I'd rather have readable output for now.
+pytest -s -vv test_run_domains.py
 
 exit $?

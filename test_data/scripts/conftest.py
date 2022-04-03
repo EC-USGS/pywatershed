@@ -23,9 +23,9 @@ def pytest_addoption(parser):
         action="append",
         default=[],
         help=(
-            "Domain(s) to run, you can pass multiples of "
-            "this argument. If not used, all domains in test_data "
-            "are run."
+            "Domain(s) to run (name of domain dir and NOT path to it). "
+            "You can pass multiples of this argument. If not used, "
+            "all self-contained domains in test_data/ will be run."
         ),
     )
 
@@ -103,6 +103,13 @@ def collect_simulations(domain_list: list, force: bool):
                 if output_dir.exists():
                     shutil.rmtree(output_dir)
                 output_dir.mkdir(parents=True)
+
+    if len(domain_list) and (len(simulations) < len(domain_list)):
+        requested = set(domain_list)
+        found = [pl.Path(dd).name for dd in simulations.keys()]
+        requested_not_found = requested.difference(found)
+        msg = f"The following requested domains were not found: {requested_not_found}"
+        pytest.exit(msg)
 
     print("\nrun_domains.py found the following domains to run:\n")
     print(f"{list(simulations.keys())}")

@@ -5,6 +5,8 @@ import pathlib as pl
 import shutil
 import sys
 
+from time import sleep
+
 import pytest
 
 
@@ -78,9 +80,6 @@ def collect_simulations(domain_list: list, force: bool):
     simulations = {}
     for test_dir in test_dirs:
 
-        # If the test_dir is required to be scheduled, check if we are
-        # running in the scheduler
-
         for pth in test_dir.iterdir():
             # checking for prcp.cbh ensure this is a self-contained run (all files in repo)
             if (
@@ -97,14 +96,6 @@ def collect_simulations(domain_list: list, force: bool):
 
                 # add simulation
                 simulations[str(test_dir)] = pth.name
-
-                # delete the existing output dir and re-create it
-                output_dir = pl.Path(test_dir) / "output"
-                if output_dir.exists():
-                    output_rm = pl.Path(test_dir) / "rm_output"
-                    output_dir.rename(output_rm)
-                    shutil.rmtree(output_rm)
-                output_dir.mkdir(parents=True)
 
     if len(domain_list) and (len(simulations) < len(domain_list)):
         requested = set(domain_list)

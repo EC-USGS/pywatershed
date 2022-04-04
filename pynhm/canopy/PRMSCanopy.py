@@ -481,9 +481,17 @@ class PRMSCanopy(StorageUnit):
                 intcp_stor[i] = stor_max[i]
         return
 
-def canopy_vectorized(intcpstor, hru_rain, hru_snow, transp_on,
-                      covden_sum, covden_win,
-                      srain_intcp, wrain_intcp):
+
+def canopy_vectorized(
+    intcpstor,
+    hru_rain,
+    hru_snow,
+    transp_on,
+    covden_sum,
+    covden_win,
+    srain_intcp,
+    wrain_intcp,
+):
     netrain = hru_rain
     netsnow = hru_snow
     if transp_on == ACTIVE:
@@ -493,10 +501,10 @@ def canopy_vectorized(intcpstor, hru_rain, hru_snow, transp_on,
         cov = covden_win
         stor_max_rain = wrain_intcp
     intcpform = RAIN
-    if hru_snow > 0.:
+    if hru_snow > 0.0:
         intcpform = SNOW
-    intcpevap = 0.
-    changeover = 0.
-    extra_water = 0.
+    intcpevap = 0.0
+    changeover = 0.0
+    extra_water = 0.0
 
     return intcpstor, netrain, netsnow

@@ -101,7 +101,9 @@ def collect_simulations(domain_list: list, force: bool):
                 # delete the existing output dir and re-create it
                 output_dir = pl.Path(test_dir) / "output"
                 if output_dir.exists():
-                    shutil.rmtree(output_dir)
+                    output_rm = pl.Path(test_dir) / "rm_output"
+                    output_dir.rename(output_rm)
+                    shutil.rmtree(output_rm)
                 output_dir.mkdir(parents=True)
 
     if len(domain_list) and (len(simulations) < len(domain_list)):

@@ -9,6 +9,8 @@ from time import sleep
 
 import pytest
 
+from pynhm import CsvFile
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -109,14 +111,30 @@ def collect_simulations(domain_list: list, force: bool):
     return simulations
 
 
+def collect_csv_files(domain_list: list, force: bool):
+    simulations = collect_simulations(domain_list, force)
+    csv_files = []
+    for key, value in simulations.items():
+        output_pth = pl.Path(key) / "output"
+        csv_files_dom = sorted(output_pth.glob("*.csv"))
+        csv_files += [ff for ff in csv_files_dom if ff.name != "stats.csv"]
+    return csv_files
+
+
 def pytest_generate_tests(metafunc):
-    if "simulation" in metafunc.fixturenames:
-        domain_list = metafunc.config.getoption("domain")
-        force = metafunc.config.getoption("force")
+    domain_list = metafunc.config.getoption("domain")
+    force = metafunc.config.getoption("force")
+
+    if "simulations" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)
         sim_list = [
             {"ws": key, "control_file": val}
             for key, val in simulations.items()
         ]
         ids = [pl.Path(ss).name for ss in simulations.keys()]
-        metafunc.parametrize("simulation", sim_list, ids=ids)
+        metafunc.parametrize("simulations", sim_list, ids=ids)
+
+    if "csv_files" in metafunc.fixturenames:
+        csv_files = collect_csv_files(domain_list, force)
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
+        metafunc.parametrize("csv_files", csv_files, ids=ids)

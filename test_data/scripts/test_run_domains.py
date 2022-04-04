@@ -16,9 +16,9 @@ def test_exe_available(exe):
     assert os.access(exe, os.X_OK)
 
 
-def test_prms_run(simulation, exe):
-    ws = simulation["ws"]
-    control_file = simulation["control_file"]
+def test_prms_run(simulations, exe):
+    ws = simulations["ws"]
+    control_file = simulations["control_file"]
     print(f"\n\n\n{'*' * 70}\n{'*' * 70}")
     print(
         f"run_domains.py: Running '{control_file}' in {ws}\n\n",

@@ -143,13 +143,16 @@ jobs:
           pip -V
           pip list
 
-      - name: Run available domains with PRMS
+      - name: Run available domains with PRMS and convert csv output to NetCDF
         working-directory: test_data/scripts
-        run: pytest
-          -v
-          -n=auto
-          --durations=0
-          run_domains.py
+        run: |
+          pytest -v -n=auto --durations=0 run_domains.py
+          pytest -v -n=auto --durations=0 nc_domains.py
+
+      - name: List all NetCDF files in test_data directory
+        working-directory: test_data
+        run: |
+          find . -name "*.nc"
 
       - name: Run tests
         working-directory: autotest

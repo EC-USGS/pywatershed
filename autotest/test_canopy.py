@@ -133,9 +133,11 @@ class TestPRMSCanopyDomain:
 
         # pkwater_equiv comes from snowpack; it is lagged by a time step
         prms_output_files = domain["prms_outputs"]
-        fname = prms_output_files["pkwater_equiv"]
-        df = CsvFile(fname).to_dataframe()
-        pkwater_equiv = df.to_numpy()
+        pkwater_equiv = None
+        if "pkwater_equiv" in prms_output_files:
+            fname = prms_output_files["pkwater_equiv"]
+            df = CsvFile(fname).to_dataframe()
+            pkwater_equiv = df.to_numpy()
 
         transp_on = None
         if "transp_on" in prms_output_files:

@@ -148,7 +148,7 @@ jobs:
         run: |
           pytest -vv -n=auto --durations=0 test_run_domains.py
           pytest -v -n=auto --durations=0 test_nc_domains.py
-          
+
       - name: List all NetCDF files in test_data directory
         working-directory: test_data
         run: |

@@ -51,9 +51,3 @@ for key, value in simulations.items():
 def test_csv_to_netcdf(file_path):
     nc_pth = str(pl.Path(file_path)).replace(".csv", ".nc")
     CsvFile(file_path).to_netcdf(nc_pth)
-
-
-if __name__ == "__main__":
-
-    for file_pth in csv_files:
-        test_csv_to_netcdf(file_pth)

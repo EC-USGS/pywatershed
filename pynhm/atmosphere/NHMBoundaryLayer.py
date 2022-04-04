@@ -11,6 +11,7 @@ import numpy as np
 
 from ..preprocess.cbh_utils import cbh_adjust
 from ..utils.parameters import PrmsParameters
+from ..utils.prms5util import load_nhru_output_csv
 from .AtmBoundaryLayer import AtmBoundaryLayer
 from .NHMSolarGeometry import NHMSolarGeometry
 
@@ -108,8 +109,8 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
     def __init__(
         self,
         state_dict: dict,
-        parameters: PrmsParameters,
         *args,
+        parameters: PrmsParameters = None,
         **kwargs,
     ):
         """The atmospheric boundary layer of the NHM model."""
@@ -141,7 +142,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
                 )
             )
         )
-        self.parameters = parameters.get_parameters(self._parameter_list)
+        if parameters is None:
+            self.parameters = parameters
+        else:
+            self.parameters = parameters.get_parameters(self._parameter_list)
 
         self._n_states_adj = 0
         self._allow_param_adjust = None
@@ -162,15 +166,55 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         return
 
     @classmethod
+    def load_prms_output(
+        cls,
+        prcp: fileish = None,
+        rainfall: fileish = None,
+        snowfall: fileish = None,
+        tmax: fileish = None,
+        tmin: fileish = None,
+        swrad: fileish = None,
+        potet: fileish = None,
+        **kwargs,
+    ):
+        """Instantiate an NHM atmospheric boundary layer from NHM/PRMS
+        output csv files."""
+
+        obj = cls({}, **kwargs)
+
+        obj.prms_output_files = {
+            "prcp": prcp,
+            "rainfall": rainfall,
+            "snowfall": snowfall,
+            "tmax": tmax,
+            "tmin": tmin,
+            "swrad": swrad,
+            "potet": potet,
+        }
+
+        for var, var_file in obj.prms_output_files.items():
+            if var_file is None:
+                continue
+            prms_output = load_nhru_output_csv(var_file)
+            obj[var] = prms_output.to_numpy()
+            if not hasattr(obj, "datetime"):
+                obj["datetime"] = prms_output.index.to_numpy()
+            else:
+                assert (obj["datetime"] == prms_output.index.to_numpy()).all()
+
+        return obj
+
+    @classmethod
     def load_netcdf(
         cls,
         nc_file: fileish,
-        parameters: PrmsParameters,
-        *args,
         nc_read_vars: list = None,
         **kwargs,
     ) -> "NHMBoundaryLayer":
-        obj = cls({}, *args, parameters=parameters, **kwargs)
+        """Instantiate an NHM atmospheric boundary layer from NHM/PRMS
+        preprocessed CBH netcdf files."""
+
+        obj = cls({}, **kwargs)
 
         # netcdf handling. consolidate these?
         obj.dataset = None
@@ -183,7 +227,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         obj._nc_file = nc_file
         obj._open_nc_file()
         obj._read_nc_file()
-        # obj._close_nc_file()
+        # obj._close_nc_file()  # JLM
 
         return obj
 

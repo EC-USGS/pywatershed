@@ -103,7 +103,7 @@ class PRMSCanopy(StorageUnit):
         self.interception_form[idx] = SNOW
 
         # pull out pkwater_equiv for this time (might need previous time because this is lagged)
-        if itime_step == 0:
+        if itime_step == 0 or self.pkwater_equiv_alltimes is None:
             self.pkwater_equiv = np.zeros(self.nhru)
         else:
             self.pkwater_equiv = self.pkwater_equiv_alltimes[itime_step - 1]
@@ -480,3 +480,31 @@ class PRMSCanopy(StorageUnit):
                 net_precip[i] += (intcp_stor[i] - stor_max[i]) * covden[i]
                 intcp_stor[i] = stor_max[i]
         return
+
+
+def canopy_vectorized(
+    intcpstor,
+    hru_rain,
+    hru_snow,
+    transp_on,
+    covden_sum,
+    covden_win,
+    srain_intcp,
+    wrain_intcp,
+):
+    netrain = hru_rain
+    netsnow = hru_snow
+    if transp_on == ACTIVE:
+        cov = covden_sum
+        stor_max_rain = srain_intcp
+    else:
+        cov = covden_win
+        stor_max_rain = wrain_intcp
+    intcpform = RAIN
+    if hru_snow > 0.0:
+        intcpform = SNOW
+    intcpevap = 0.0
+    changeover = 0.0
+    extra_water = 0.0
+
+    return intcpstor, netrain, netsnow

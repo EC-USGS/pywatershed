@@ -7,6 +7,8 @@ import pandas as pd
 
 from pynhm.preprocess import CsvFile
 
+max_csv_files = 4
+
 
 def compare_netcdf(csv, nc_name):
     ds = nc.Dataset(nc_name)
@@ -31,7 +33,7 @@ def compare_netcdf(csv, nc_name):
 
 
 def test_single_csv(domain):
-    csv = CsvFile(name=list(domain["prms_outputs"].values())[0])
+    csv = CsvFile(name=list(domain["prms_outputs"].values())[-1])
 
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
@@ -39,7 +41,7 @@ def test_single_csv(domain):
 
 
 def test_single_csv_to_netcdf(domain):
-    files = list(domain["prms_outputs"].values())[0]
+    files = list(domain["prms_outputs"].values())[-1]
     csv = CsvFile(name=files)
 
     nc_file = pl.Path(files.with_suffix(".nc"))
@@ -55,9 +57,13 @@ def test_single_csv_to_netcdf(domain):
 
 def test_multiple_csv(domain):
     csv = CsvFile()
+    imax = 0
     for name, path in domain["prms_outputs"].items():
         if path.suffix in (".csv",):
             csv.add_path(path)
+            if imax >= max_csv_files:
+                break
+            imax += 1
 
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
@@ -67,10 +73,14 @@ def test_multiple_csv(domain):
 def test_multiple_csv_to_netcdf(domain):
     csv = CsvFile()
     basedir = None
+    imax = 0
     for name, path in domain["prms_outputs"].items():
         if path.suffix in (".csv",):
             basedir = pl.Path(path.parent)
             csv.add_path(path)
+            if imax >= max_csv_files:
+                break
+            imax += 1
 
     nc_file = basedir / "multiple_variables.nc"
     csv.to_netcdf(nc_file)

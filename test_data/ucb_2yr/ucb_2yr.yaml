@@ -24,6 +24,9 @@ prms_outputs:
   soltab: soltab_debug
   pkwater_equiv: output/nhru_pkwater_equiv.csv
   transp_on: output/nhru_transp_on.csv
+  soil_to_gw: output/nhru_soil_to_gw.csv
+  ssr_to_gw: output/nhru_ssr_to_gw.csv
+  dprst_seep: output/nhru_dprst_seep_hru.csv
 
 cbh_nc: cbh.nc
 

@@ -30,24 +30,37 @@ class TestPRMSGroundwaterDomain:
             "verbosity": 3,
             "height_m": 5,
         }
-        print(domain["cbh_nc"])
-        atm = NHMBoundaryLayer.load_netcdf(
-            domain["cbh_nc"], prms_params, **atm_information_dict
+        var_translate = {
+            "prcp_adj": "prcp",
+            "rainfall_adj": "rainfall",
+            "snowfall_adj": "snowfall",
+            "tmax_adj": "tmax",
+            "tmin_adj": "tmin",
+            "swrad": "swrad",
+            "potet": "potet",
+        }
+        var_file_dict = {
+            var_translate[var]: file
+            for var, file in domain["prms_outputs"].items()
+            if var in var_translate.keys()
+        }
+        atm = NHMBoundaryLayer.load_prms_output(
+            **var_file_dict, parameters=prms_params, **atm_information_dict
         )
         atm.calculate_sw_rad_degree_day()
         atm.calculate_potential_et_jh()
 
         # load csv files into dataframes
         output_files = domain["prms_outputs"]
-        input_data = ("soil_to_gw", "ssr_to_gw", "dprst_seep")
-        input_recarrays = {}
-        for key in input_data:
-            fpth = output_files[key]
-            input_recarrays[key] = CsvFile(fpth).data
+        input_variables = {}
+        for key in PRMSGroundwater.get_input_variables():
+            output_pth = output_files[key]
+            nc_pth = output_pth.with_suffix(".nc")
+            input_variables[key] = nc_pth
 
         bcs = BoundaryConditions()
-        for key, recarr in input_recarrays.items():
-            bcs.add_boundary_recarray(key, recarr)
+        for key, nc_pth in input_variables.items():
+            bcs.add_boundary(nc_pth)
 
         gw = PRMSGroundwater(prms_params, atm)
 
@@ -59,7 +72,7 @@ class TestPRMSGroundwaterDomain:
             gw.advance(0)
 
             # set pointers to attributes in the groundwater component
-            bcs.advance(itime_step=istep)
+            bcs.advance()
             bcs.set_pointers(gw)
 
             gw.calculate(1.0)

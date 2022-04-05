@@ -19,39 +19,43 @@ class PRMSGroundwater(StorageUnit):
         self.gw_stor = self.gwstor_init.copy()
         self.gw_stor_old = self.gwstor_init.copy()
 
-        self.soil_to_gw = np.zeros(self.nhru, dtype=float)
-        self.ssr_to_gw = np.zeros(self.nhru, dtype=float)
-        self.dprst_seep = np.zeros(self.nhru, dtype=float)
-        self.gwres_in = np.zeros(self.nhru, dtype=float)
+        for name in PRMSGroundwater.get_input_variables():
+            setattr(self, name, np.zeros(self.nhru, dtype=float))
+
+        # self.soil_to_gw = np.zeros(self.nhru, dtype=float)
+        # self.ssr_to_gw = np.zeros(self.nhru, dtype=float)
+        # self.dprst_seep = np.zeros(self.nhru, dtype=float)
+        # self.gwres_in = np.zeros(self.nhru, dtype=float)
 
         # define information on the output data that will be created
-        output_variables = (
-            "gwres_flow",
-            "gwres_in",
-            "gwres_sink",
-            "gwres_stor",
-        )
+        # output_variables = (
+        #     "gwres_flow",
+        #     "gwres_in",
+        #     "gwres_sink",
+        #     "gwres_stor",
+        # )
         self.output_column_names = ["date"]
         self.output_data = []
-        for var in output_variables:
+        for name in PRMSGroundwater.get_output_variables():
+            setattr(self, name, np.zeros(self.nhru, dtype=float))
             if "nhm_id" in params.parameters:
                 self.output_column_names += [
-                    f"nhru_{var}_{nhmid}"
+                    f"nhru_{name}_{nhmid}"
                     for nhmid in params.parameters["nhm_id"]
                 ]
             else:
                 self.output_column_names += [
-                    f"{var}_{id}" for id in range(self.nhru)
+                    f"{name}_{id}" for id in range(self.nhru)
                 ]
         return
 
     @staticmethod
-    def get_required_parameters() -> list:
+    def get_required_parameters() -> tuple:
         """
-        Return a list of the parameters required for this process
+        Return a tuple of the parameters required for this process
 
         """
-        return [
+        return (
             "nhru",
             "ngw",
             "hru_area",
@@ -59,7 +63,29 @@ class PRMSGroundwater(StorageUnit):
             "gwsink_coef",
             "gwstor_init",
             "gwstor_min",
-        ]
+        )
+
+    @staticmethod
+    def get_input_variables() -> tuple:
+        """
+
+        Returns:
+
+        """
+        return (
+            "soil_to_gw",
+            "ssr_to_gw",
+            "dprst_seep",
+        )
+
+    @staticmethod
+    def get_output_variables() -> tuple:
+        return (
+            "gwres_flow",
+            "gwres_in",
+            "gwres_sink",
+            "gwres_stor",
+        )
 
     def advance(self, itime_step):
         self.gw_stor_old = self.gw_stor

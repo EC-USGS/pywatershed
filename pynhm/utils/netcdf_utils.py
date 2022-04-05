@@ -16,8 +16,10 @@ class NetCdfRead:
 
         self._nc_file = nc_file
         self._nc_read_vars = nc_read_vars
-        self._itime_step = 0
         self._open_nc_file()
+        self._itime_step = {}
+        for variable in self.variables:
+            self._itime_step[variable] = 0
 
     def __del__(self):
         if self.dataset.isopen():
@@ -37,7 +39,7 @@ class NetCdfRead:
             nc4.num2date(
                 self.dataset.variables["datetime"][:],
                 units=self.dataset.variables["datetime"].units,
-                calendar=self.dataset.variables["datetime"].calendar,
+                calendar="standard",
                 only_use_cftime_datetimes=False,
             )
             .filled()
@@ -46,19 +48,91 @@ class NetCdfRead:
         )
         self._ntimes = self._datetime.shape[0]
         spatial_id_name = (
-            "nhm_id" if "nhm_id" in self.ds_var_list else "hru_ind"
+            "nhm_id" if "nhm_id" in self.ds_var_list else "hru_id"
         )
-        self.spatial_id = self.dataset.variables[spatial_id_name][:]
+        self._spatial_id = self.dataset.variables[spatial_id_name][:]
+
+        self._variables = [
+            name
+            for name in self.ds_var_list
+            if name != "datetime" and name != spatial_id_name
+        ]
 
     @property
-    def ntimes(self):
+    def ntimes(
+        self,
+    ) -> int:
+        """Get number of times in the netcdf file
+
+        Returns:
+            ntimes: number of times in the NetCDF file
+
+        """
         return self._ntimes
+
+    @property
+    def date_times(
+        self,
+    ) -> np.ndarray:
+        """Get the datetimes in the NetCDF file
+
+        Returns:
+            data_times: numpy array of datetimes in the NetCDF file
+
+        """
+        return self._datetime
+
+    @property
+    def nhru(
+        self,
+    ) -> int:
+        """Get number of HRUs in the NetCDF file
+
+        Returns:
+            nhru: number of HRUs in the NetCDF file
+
+        """
+        return self._spatial_id.shape[0]
+
+    @property
+    def spatial_ids(
+        self,
+    ) -> np.ndarray:
+        """Get the spatial IDs in the NetCDF file
+
+        Returns:
+            arr: numpy array with the spatial IDs in the NetCDF file
+
+        """
+        return self._spatial_id
+
+    @property
+    def variables(self):
+        """Get a list of variable names
+
+        Returns:
+            variables: list of variable names, excluding the datetime and
+                nhru variables
+
+        """
+        return self._variables
 
     def get_data(
         self,
         variable: str,
         itime_step: int = None,
     ) -> np.ndarray:
+        """Get data for a variable
+
+        Args:
+            variable: variable name
+            itime_step: time step to return. If itime_step is None all of the
+              data for a variable is returned
+
+        Returns:
+            arr: numpy array with the data for a variable
+
+        """
         if variable not in self._nc_read_vars:
             raise ValueError(
                 f"'{variable}' not in list of available variables"
@@ -77,9 +151,19 @@ class NetCdfRead:
         self,
         variable: str,
     ) -> np.ndarray:
+        """Get the data for a variable for the next time step
+
+        Args:
+            variable: variable name
+
+        Returns:
+            arr: numpy array with the data for a variable for the current
+                time step
+
+        """
         arr = self.get_data(
             variable,
-            itime_step=self._itime_step,
+            itime_step=self._itime_step[variable],
         )
-        self._itime_step += 1
+        self._itime_step[variable] += 1
         return arr

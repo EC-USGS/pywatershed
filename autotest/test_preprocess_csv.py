@@ -41,10 +41,11 @@ def test_single_csv(domain):
 
 
 def test_single_csv_to_netcdf(domain):
-    files = list(domain["prms_outputs"].values())[-1]
-    csv = CsvFile(name=files)
+    path = list(domain["prms_outputs"].values())[-1]
+    csv = CsvFile(name=path)
 
-    nc_file = pl.Path(files.with_suffix(".nc"))
+    basedir = pl.Path(path.parent)
+    nc_file = basedir / "single_variable.nc"
     csv.to_netcdf(nc_file)
 
     compare_netcdf(csv, nc_file)

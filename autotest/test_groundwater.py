@@ -1,3 +1,4 @@
+import pathlib as pl
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -63,6 +64,8 @@ class TestPRMSGroundwaterDomain:
             bcs.add_boundary(nc_pth)
 
         gw = PRMSGroundwater(prms_params, atm)
+        nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
+        gw.output_netcdf(nc_pth)
 
         for istep in range(atm.n_time):
             if istep > 0:
@@ -76,6 +79,8 @@ class TestPRMSGroundwaterDomain:
             bcs.set_pointers(gw)
 
             gw.calculate(1.0)
+
+            gw.output()
 
         # # create data frame of prms interception storage (from nhru_hru_intcpstor.csv)
         # output_files = domain["prms_outputs"]

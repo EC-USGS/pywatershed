@@ -5,16 +5,18 @@ import netCDF4 as nc4
 import numpy as np
 
 fileish = Union[str, pl.Path]
+listish = Union[list, tuple]
+arrayish = Union[list, tuple, np.ndarray]
 
 
 class NetCdfRead:
     def __init__(
         self,
-        nc_file: fileish,
+        name: fileish,
         nc_read_vars: list = None,
     ) -> "NetCdfRead":
 
-        self._nc_file = nc_file
+        self._nc_file = name
         self._nc_read_vars = nc_read_vars
         self._open_nc_file()
         self._itime_step = {}
@@ -167,3 +169,99 @@ class NetCdfRead:
         )
         self._itime_step[variable] += 1
         return arr
+
+
+class NetCdfWrite:
+    """Output the csv output data to a netcdf file
+
+    Args:
+        name: path for netcdf output file
+        clobber: boolean indicating if an existing netcdf file should
+            be overwritten
+        zlib: boolean indicating if the data should be compressed
+            (default is True)
+        complevel: compression level (default is 4)
+        chunk_sizes: dictionary defining chunk sizes for the data
+    """
+
+    def __init__(
+        self,
+        name: fileish,
+        hru_ids: arrayish,
+        variables: listish,
+        time_units: str = "days since 1970-01-01 00:00:00",
+        clobber: bool = True,
+        zlib: bool = True,
+        complevel: int = 4,
+        chunk_sizes: dict = {"time": 30, "hruid": 0},
+    ) -> "NetCdfWrite":
+
+        self.dataset = nc4.Dataset(name, "w", clobber=clobber)
+        self.dataset.setncattr("Description", "PYNHM output data")
+
+        if isinstance(hru_ids, (list, tuple)):
+            nhrus = len(hru_ids)
+        elif isinstance(hru_ids, np.ndarray):
+            nhrus = hru_ids.shape[0]
+        self.nhrus = nhrus
+        self.hru_ids = hru_ids
+
+        # Dimensions
+        # None for the len argument gives an unlimited dim
+        self.dataset.createDimension("time", None)
+        self.dataset.createDimension("hru_id", self.nhrus)
+
+        # Dim Variables
+        self.time = self.dataset.createVariable("datetime", "f4", ("time",))
+        self.time.units = time_units
+
+        self.hruid = self.dataset.createVariable("hru_id", "i4", ("hru_id"))
+        self.hruid[:] = np.array(hru_ids, dtype=int)
+
+        self.variables = {}
+        for vv in variables:
+            variabletype = "f4"
+            self.variables[vv] = self.dataset.createVariable(
+                vv,
+                variabletype,
+                ("time", "hru_id"),
+                fill_value=nc4.default_fillvals[variabletype],
+                zlib=zlib,
+                complevel=complevel,
+                chunksizes=tuple(chunk_sizes.values()),
+            )
+
+    def __del__(self):
+        if self.dataset.isopen():
+            self.dataset.close()
+
+    def add_data(
+        self, name: str, itime_step: int, current: np.ndarray
+    ) -> None:
+        """Add data for a time step to a NetCDF variable
+
+        Args:
+            name:
+            itime_step:
+
+        Returns:
+
+        """
+        if name not in self.variables.keys():
+            raise KeyError(f"{name} not a valid variable name")
+        var = self.variables[name]
+        var[itime_step, :] = current[:]
+
+    def add_all_data(self, name: str, current: np.ndarray) -> None:
+        """Add data to a NetCDF variable
+
+        Args:
+            name:
+
+        Returns:
+
+        """
+        if name not in self.variables.keys():
+            raise KeyError(f"{name} not a valid variable name")
+        var = self.variables[name]
+        var[:, :] = current[:, :]

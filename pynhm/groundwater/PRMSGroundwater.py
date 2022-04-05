@@ -2,6 +2,7 @@ import numpy as np
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..base.storageUnit import StorageUnit
+from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 
 
@@ -13,7 +14,15 @@ class PRMSGroundwater(StorageUnit):
     ) -> "PRMSGroundwater":
 
         verbose = True
+        if "nhm_id" in params.parameters.keys():
+            id = params.parameters.nhm_id
+        else:
+            id = np.arange(1, params.nhru + 1)
         super().__init__("gwflow", id, params, atm, verbose)
+
+        self._output_netcdf = False
+        self._netcdf = None
+        self._itime_step = -1
 
         # define self variables that will be used for the calculation
         self.gw_stor = self.gwstor_init.copy()
@@ -22,18 +31,6 @@ class PRMSGroundwater(StorageUnit):
         for name in PRMSGroundwater.get_input_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
-        # self.soil_to_gw = np.zeros(self.nhru, dtype=float)
-        # self.ssr_to_gw = np.zeros(self.nhru, dtype=float)
-        # self.dprst_seep = np.zeros(self.nhru, dtype=float)
-        # self.gwres_in = np.zeros(self.nhru, dtype=float)
-
-        # define information on the output data that will be created
-        # output_variables = (
-        #     "gwres_flow",
-        #     "gwres_in",
-        #     "gwres_sink",
-        #     "gwres_stor",
-        # )
         self.output_column_names = ["date"]
         self.output_data = []
         for name in PRMSGroundwater.get_output_variables():
@@ -89,6 +86,7 @@ class PRMSGroundwater(StorageUnit):
 
     def advance(self, itime_step):
         self.gw_stor_old = self.gw_stor
+        self._itime_step += 1
 
         return
 
@@ -119,3 +117,18 @@ class PRMSGroundwater(StorageUnit):
         self.gw_flow = gwflow / gwarea
 
         return
+
+    def output_netcdf(self, name: str) -> None:
+        self._output_netcdf = True
+        self._netcdf = NetCdfWrite(
+            name,
+            self.id,
+            self.get_output_variables(),
+        )
+
+    def output(self) -> None:
+        if self._output_netcdf:
+            for variable in self.get_output_variables():
+                self._netcdf.add_data(
+                    variable, self._itime_step, getattr(self, variable)
+                )

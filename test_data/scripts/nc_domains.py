@@ -1,21 +1,8 @@
-import os
 import pathlib as pl
-import sys
 
 import pytest
 
 from pynhm import CsvFile
-
-exe_name = "prms"
-platform = sys.platform.lower()
-if platform == "win32":
-    exe_name += "_win.exe"
-elif platform == "darwin":
-    exe_name += "_mac"
-elif platform == "linux":
-    exe_name += "_linux"
-exe_pth = pl.Path(f"../../bin/{exe_name}")
-
 
 rootdir = ".."
 test_dirs = [path for path in pl.Path(rootdir).iterdir() if path.is_dir()]
@@ -51,9 +38,3 @@ for key, value in simulations.items():
 def test_csv_to_netcdf(file_path):
     nc_pth = str(pl.Path(file_path)).replace(".csv", ".nc")
     CsvFile(file_path).to_netcdf(nc_pth)
-
-
-if __name__ == "__main__":
-
-    for file_pth in csv_files:
-        test_csv_to_netcdf(file_pth)

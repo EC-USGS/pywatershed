@@ -18,7 +18,11 @@ prms_outputs:
   swrad: output/nhru_swrad.csv
   potet: output/nhru_potet.csv
   intcpstor: output/nhru_hru_intcpstor.csv
+  net_rain: output/nhru_net_rain.csv
+  net_snow: output/nhru_net_snow.csv
+  intcp_evap: output/nhru_intcp_evap.csv
   soltab: soltab_debug
+  pkwater_equiv: output/nhru_pkwater_equiv.csv
 
 cbh_nc: cbh.nc
 

@@ -5,7 +5,11 @@ import pathlib as pl
 import shutil
 import sys
 
+from time import sleep
+
 import pytest
+
+from pynhm import CsvFile
 
 
 def pytest_addoption(parser):
@@ -78,9 +82,6 @@ def collect_simulations(domain_list: list, force: bool):
     simulations = {}
     for test_dir in test_dirs:
 
-        # If the test_dir is required to be scheduled, check if we are
-        # running in the scheduler
-
         for pth in test_dir.iterdir():
             # checking for prcp.cbh ensure this is a self-contained run (all files in repo)
             if (
@@ -98,12 +99,6 @@ def collect_simulations(domain_list: list, force: bool):
                 # add simulation
                 simulations[str(test_dir)] = pth.name
 
-                # delete the existing output dir and re-create it
-                output_dir = pl.Path(test_dir) / "output"
-                if output_dir.exists():
-                    shutil.rmtree(output_dir)
-                output_dir.mkdir(parents=True)
-
     if len(domain_list) and (len(simulations) < len(domain_list)):
         requested = set(domain_list)
         found = [pl.Path(dd).name for dd in simulations.keys()]
@@ -116,14 +111,30 @@ def collect_simulations(domain_list: list, force: bool):
     return simulations
 
 
+def collect_csv_files(domain_list: list, force: bool):
+    simulations = collect_simulations(domain_list, force)
+    csv_files = []
+    for key, value in simulations.items():
+        output_pth = pl.Path(key) / "output"
+        csv_files_dom = sorted(output_pth.glob("*.csv"))
+        csv_files += [ff for ff in csv_files_dom if ff.name != "stats.csv"]
+    return csv_files
+
+
 def pytest_generate_tests(metafunc):
-    if "simulation" in metafunc.fixturenames:
-        domain_list = metafunc.config.getoption("domain")
-        force = metafunc.config.getoption("force")
+    domain_list = metafunc.config.getoption("domain")
+    force = metafunc.config.getoption("force")
+
+    if "simulations" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)
         sim_list = [
             {"ws": key, "control_file": val}
             for key, val in simulations.items()
         ]
         ids = [pl.Path(ss).name for ss in simulations.keys()]
-        metafunc.parametrize("simulation", sim_list, ids=ids)
+        metafunc.parametrize("simulations", sim_list, ids=ids)
+
+    if "csv_files" in metafunc.fixturenames:
+        csv_files = collect_csv_files(domain_list, force)
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
+        metafunc.parametrize("csv_files", csv_files, ids=ids)

@@ -159,7 +159,7 @@ class CsvFile:
 
         # Variables
         for vv in variables:
-            vvtype = "f8"
+            vvtype = "f4"
             var = ds.createVariable(
                 vv,
                 vvtype,
@@ -169,7 +169,7 @@ class CsvFile:
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
-            arr = np.zeros((ntimes, nhrus), dtype=float)
+            arr = np.zeros((ntimes, nhrus), dtype=np.float32)
             for idx, hru in enumerate(hru_ids):
                 key = f"{vv}_{hru}"
                 arr[:, idx] = self._data[key][:]
@@ -225,7 +225,7 @@ class CsvFile:
 
             # add additional column names to the dtype
             for name in column_names:
-                dtype.append((name, float))
+                dtype.append((name, np.float32))
 
             all_data.append(arr)
 

@@ -27,3 +27,7 @@ drwxr-sr-x 2 jmccreight impd 4.0K Mar 29 20:58 output
 -r-xr-xr-x 1 jmccreight impd 482M Mar 29 13:35 tmax.cbh
 -r-xr-xr-x 1 jmccreight impd 479M Mar 29 13:35 tmin.cbh
 ```
+
+This is motivated by: 
+	* not versioning large model input files
+	* using a symlink to run the large model IO on a faster disk.

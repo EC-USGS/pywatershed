@@ -1,3 +1,5 @@
+import pathlib as pl
+
 import numpy as np
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
@@ -19,10 +21,6 @@ class PRMSGroundwater(StorageUnit):
         else:
             id = np.arange(1, params.nhru + 1)
         super().__init__("gwflow", id, params, atm, verbose)
-
-        self._output_netcdf = False
-        self._netcdf = None
-        self._itime_step = -1
 
         # define self variables that will be used for the calculation
         self.gw_stor = self.gwstor_init.copy()
@@ -95,6 +93,7 @@ class PRMSGroundwater(StorageUnit):
         gwarea = self.hru_area
 
         # calculate volume terms
+        # gwstor_min_vol = self.gwstor_min * gwarea
         gwstor = self.gw_stor * gwarea
         soil_to_gw_vol = self.soil_to_gw * gwarea
         ssr_to_gw_vol = self.ssr_to_gw * gwarea
@@ -111,24 +110,18 @@ class PRMSGroundwater(StorageUnit):
 
         gwstor -= gwflow
 
+        gwsink = gwstor * self.gwsink_coef
+        idx = np.where(gwsink > gwstor)
+        gwsink[idx] = gwstor[idx]
+
+        gwstor -= gwsink
+
         # output variables
         self.gw_stor = gwstor / gwarea
-        self.gwres_in = gwres_in / gwarea
+        self.gwres_in = (
+            gwres_in  # for some stupid reason this is left in acre-inches
+        )
         self.gw_flow = gwflow / gwarea
+        self.gw_sink = gwsink / gwarea
 
         return
-
-    def output_netcdf(self, name: str) -> None:
-        self._output_netcdf = True
-        self._netcdf = NetCdfWrite(
-            name,
-            self.id,
-            self.get_output_variables(),
-        )
-
-    def output(self) -> None:
-        if self._output_netcdf:
-            for variable in self.get_output_variables():
-                self._netcdf.add_data(
-                    variable, self._itime_step, getattr(self, variable)
-                )

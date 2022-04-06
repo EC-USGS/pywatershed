@@ -28,6 +28,13 @@ class BoundaryConditions:
             self.current[variable] = ncf.advance(variable)
 
     def set_pointers(self, component: object) -> None:
-        for key in dir(component):
-            if not key.startswith("_") and key in self.variables.keys():
-                setattr(component, key, self.current[key])
+        # for key in dir(component):
+        #     if not key.startswith("_"):
+        #         for variable in self.variables.keys():
+        #             if key in variable:
+        #                 setattr(component, key, self.current[variable])
+        for key in component.get_input_variables():
+            for variable in self.variables.keys():
+                if key in variable:
+                    setattr(component, key, self.current[variable])
+                    break

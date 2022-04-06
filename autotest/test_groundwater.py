@@ -64,8 +64,10 @@ class TestPRMSGroundwaterDomain:
             bcs.add_boundary(nc_pth)
 
         gw = PRMSGroundwater(prms_params, atm)
-        nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
-        gw.output_netcdf(nc_pth)
+        # nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
+        # gw.initialize_netcdf(nc_pth, separate_files=False)
+        nc_parent = pl.Path("./temp") / domain["domain_name"]
+        gw.initialize_netcdf(nc_parent)
 
         for istep in range(atm.n_time):
             if istep > 0:
@@ -80,7 +82,7 @@ class TestPRMSGroundwaterDomain:
 
             gw.calculate(1.0)
 
-            gw.output()
+            gw.output_netcdf()
 
         # # create data frame of prms interception storage (from nhru_hru_intcpstor.csv)
         # output_files = domain["prms_outputs"]

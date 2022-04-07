@@ -86,11 +86,14 @@ time_data = np.arange(
 
 start_times = [time_data[0], time_data[3], np.datetime64(datetime(1980, 1, 1))]
 time_step = np.timedelta64(24, "h")
+time_ids = ("valid0", "valid1", "invalid")
 
 
 class TestTime:
     @pytest.mark.parametrize(
-        "start_time", start_times, ids=["valid0", "valid1", "invalid"]
+        "start_time",
+        start_times,
+        ids=time_ids,
     )
     def test_init_markov(self, start_time):
         time = Time(start_time=start_time, time_step=time_step)
@@ -117,7 +120,9 @@ class TestTime:
         return
 
     @pytest.mark.parametrize(
-        "start_time", start_times, ids=["valid0", "valid1", "invalid"]
+        "start_time",
+        start_times,
+        ids=time_ids,
     )
     def test_init_timeseries(self, start_time):
         try:

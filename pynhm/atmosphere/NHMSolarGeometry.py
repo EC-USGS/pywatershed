@@ -279,7 +279,7 @@ class NHMSolarGeometry(StateAccess):
             solt[wh_solt_lt_zero] = zero
             warnings.warn(
                 f"{len(wh_solt_lt_zero[0])}/{np.product(solt.shape)} "
-                f"loacations-times with negative "
+                f"locations-times with negative "
                 f"potential solar radiation."
             )
 

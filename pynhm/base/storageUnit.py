@@ -1,8 +1,10 @@
 import os
+import pathlib as pl
 
 import pandas as pd
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 
 
@@ -21,6 +23,12 @@ class StorageUnit:
         self.params = params
         self.atm = atm
         self.verbose = verbose
+
+        # netcdf output variables
+        self._output_netcdf = False
+        self._netcdf = None
+        self._separate_netcdf = True
+        self._itime_step = -1
 
         # Go through list of parameters for this process and assign them
         # to self with a value of None
@@ -91,3 +99,61 @@ class StorageUnit:
             fname = os.path.join(pth, f"{key}.csv")
             df.to_csv(fname)
         return
+
+    def initialize_netcdf(
+        self,
+        name: str,
+        separate_files: bool = True,
+    ) -> None:
+        """Initialize
+
+        Args:
+            name: base directory path or NetCDF file path if separate_files
+                is True
+            separate_files: boolean indicating if storage component output
+                variables should be written to a separate file for each
+                variable
+
+        Returns:
+            None
+
+        """
+        self._output_netcdf = True
+        if separate_files:
+            self._separate_netcdf = True
+            # make working directory
+            working_path = pl.Path(name)
+            working_path.mkdir(parents=True, exist_ok=True)
+            self._netcdf = {}
+            for variable in self.get_output_variables():
+                nc_path = pl.Path(working_path) / f"{variable}.nc"
+                self._netcdf[variable] = NetCdfWrite(
+                    nc_path,
+                    self.id,
+                    [variable],
+                )
+        else:
+            pl.Path(name).mkdir(parents=True, exist_ok=True)
+            self._netcdf = NetCdfWrite(
+                name,
+                self.id,
+                self.get_output_variables(),
+            )
+
+    def output_netcdf(self) -> None:
+        """Output variable data for a time step
+
+        Returns:
+            None
+
+        """
+        if self._output_netcdf:
+            for variable in self.get_output_variables():
+                if self._separate_netcdf:
+                    self._netcdf[variable].add_data(
+                        variable, self._itime_step, getattr(self, variable)
+                    )
+                else:
+                    self._netcdf.add_data(
+                        variable, self._itime_step, getattr(self, variable)
+                    )

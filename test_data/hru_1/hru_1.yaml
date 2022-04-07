@@ -10,6 +10,7 @@ control_file: control.test
 param_file: myparam.param
 
 prms_outputs:
+  soltab: soltab_debug
   prcp_adj: output/nhru_hru_ppt.csv
   rainfall_adj: output/nhru_hru_rain.csv
   snowfall_adj: output/nhru_hru_snow.csv
@@ -21,8 +22,10 @@ prms_outputs:
   net_rain: output/nhru_net_rain.csv
   net_snow: output/nhru_net_snow.csv
   intcp_evap: output/nhru_intcp_evap.csv
-  soltab: soltab_debug
   pkwater_equiv: output/nhru_pkwater_equiv.csv
+  soil_to_gw: output/nhru_soil_to_gw.csv
+  ssr_to_gw: output/nhru_ssr_to_gw.csv
+  dprst_seep: output/nhru_dprst_seep_hru.csv
 
 cbh_nc: cbh.nc
 

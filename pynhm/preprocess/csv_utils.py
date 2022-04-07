@@ -148,6 +148,7 @@ class CsvFile:
         time = ds.createVariable("datetime", "f4", ("time",))
         start_date = self._data["date"][0].strftime("%Y-%m-%d %H:%M:%S")
         time_units = f"days since {start_date}"
+        time.units = time_units
         time[:] = nc4.date2num(
             self._data["date"].astype(dt.datetime),
             units=time_units,

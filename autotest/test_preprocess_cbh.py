@@ -136,7 +136,9 @@ def test_cbh_adj(domain, params_and_none):
 def test_cbh_adj_prms_output(domain, params):
     cbh = CBH(domain["input_files_dict"], params, adjust=True)
     for var, var_file in domain["prms_outputs"].items():
-        if var in [
+        # todo: this needs to be fixed so that it does not need to be modified
+        #  anytime a new PRMS output variable is added
+        if var in (
             "soltab",
             "intcpstor",
             "net_rain",
@@ -144,9 +146,15 @@ def test_cbh_adj_prms_output(domain, params):
             "intcp_evap",
             "pkwater_equiv",
             "transp_on",
-        ]:
+            "soil_to_gw",
+            "ssr_to_gw",
+            "dprst_seep",
+        ):
             continue
-        if var in ["swrad", "potet"]:
+        if var in (
+            "swrad",
+            "potet",
+        ):
             msg = (
                 f"Skipping {var} as it is not currently preprocessed, "
                 f"this skip should be removed when it is"

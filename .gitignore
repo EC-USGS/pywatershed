@@ -63,6 +63,7 @@ autotest/pytest.xml
 autotest/coverage.xml
 autotest/codecov
 autotest/.coverage
+autotest/temp
 
 # sphinx
 generated/

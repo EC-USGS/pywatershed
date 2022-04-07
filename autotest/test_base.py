@@ -92,6 +92,7 @@ class TestTime:
     @pytest.mark.parametrize(
         "start_time", start_times, ids=["valid0", "valid1", "invalid"]
     )
+    @pytest.mark.xdist_group("time_group01")
     def test_init_markov(self, start_time):
         time = Time(start_time=start_time, time_step=time_step)
         assert time.current_time == start_time
@@ -119,6 +120,7 @@ class TestTime:
     @pytest.mark.parametrize(
         "start_time", start_times, ids=["valid0", "valid1", "invalid"]
     )
+    @pytest.mark.xdist_group("time_group01")
     def test_init_timeseries(self, start_time):
         try:
             time = Time(

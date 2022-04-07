@@ -159,7 +159,7 @@ jobs:
         run: pytest
           -v
           -n=auto
-          --dist-loadscope
+          --dist=loadscope
           --durations=0
           --all_domains
           --cov=pynhm

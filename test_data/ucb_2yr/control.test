@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-39
+38
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-39
+38
 4
 hru_actet
 hru_impervstor
@@ -279,7 +279,6 @@ soil_to_gw
 snowmelt
 sroff
 hru_outflow
-gwres_stor
 dprst_stor_hru
 dprst_seep_hru
 hru_intcpstor

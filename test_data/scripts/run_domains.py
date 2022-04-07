@@ -45,7 +45,7 @@ def test_exe_available():
 def test_prms_run(ws, control_file):
     print(f"running '{control_file}' in {ws}")
     success, buff = run_model(
-        exe_pth,
+        str(exe_pth),
         control_file,
         model_ws=ws,
         normal_msg="Normal completion of PRMS",

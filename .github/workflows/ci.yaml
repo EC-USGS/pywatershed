@@ -156,7 +156,8 @@ jobs:
 
       - name: Run tests
         working-directory: autotest
-        run: pytest
+        run: |
+          pytest
           -v
           -n=auto
           --dist=loadscope

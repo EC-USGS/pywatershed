@@ -10,6 +10,7 @@ from pynhm.boundary_conditions.boundaryConditions import BoundaryConditions
 from pynhm.groundwater.PRMSGroundwater import PRMSGroundwater
 from pynhm.preprocess.csv_utils import CsvFile
 from pynhm.utils import ControlVariables
+from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
@@ -69,20 +70,39 @@ class TestPRMSGroundwaterDomain:
         nc_parent = pl.Path("./temp") / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 
+        output_compare = {}
+        for key in PRMSGroundwater.get_output_variables():
+            output_pth = output_files[key]
+            base_nc_pth = output_pth.with_suffix(".nc")
+            compare_nc_pth = (
+                pl.Path("./temp") / domain["domain_name"] / f"{key}.nc"
+            )
+            output_compare[key] = (base_nc_pth, compare_nc_pth)
+
         for istep in range(atm.n_time):
             if istep > 0:
                 atm.advance()
 
             # print(f"Running canopy for step {istep} and day: {atm.current_time}")
-            gw.advance(0)
+            gw.advance()
 
             # set pointers to attributes in the groundwater component
             bcs.advance()
             bcs.set_pointers(gw)
 
-            gw.calculate(1.0)
+            gw.calculate(float(istep))
 
-            gw.output_netcdf()
+            gw.output()
+
+        gw.finalize()
+
+        assert_error = False
+        for key, (base, compare) in output_compare.items():
+            success, diff = NetCdfCompare(base, compare).compare()
+            if not success:
+                print(f"comparison for {key} failed: maximum error {diff}")
+                assert_error = True
+        assert not assert_error, "comparison failed"
 
         # # create data frame of prms interception storage (from nhru_hru_intcpstor.csv)
         # output_files = domain["prms_outputs"]

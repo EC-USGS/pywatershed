@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-38
+39
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-38
+39
 4
 hru_actet
 hru_impervstor
@@ -296,7 +296,7 @@ gwres_sink
 nhruOutBaseFileName
 1
 4
-./output/nhru_
+./output/
 ####
 nsegmentOutON_OFF
 1

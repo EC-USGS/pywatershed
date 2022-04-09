@@ -7,6 +7,7 @@ import numpy as np
 fileish = Union[str, pl.Path]
 listish = Union[list, tuple]
 arrayish = Union[list, tuple, np.ndarray]
+ATOL = np.finfo(np.float32).eps
 
 
 class NetCdfRead:
@@ -24,6 +25,9 @@ class NetCdfRead:
             self._itime_step[variable] = 0
 
     def __del__(self):
+        self.close()
+
+    def close(self):
         if self.dataset.isopen():
             self.dataset.close()
 
@@ -232,8 +236,16 @@ class NetCdfWrite:
             )
 
     def __del__(self):
+        self.close()
+
+    def close(self):
         if self.dataset.isopen():
             self.dataset.close()
+
+    def add_simulation_time(self, itime_step: int, simulation_time: float):
+        # var = self.variables["datetime"]
+        # var[itime_step] = simulation_time
+        self.time[itime_step] = simulation_time
 
     def add_data(
         self, name: str, itime_step: int, current: np.ndarray
@@ -265,3 +277,86 @@ class NetCdfWrite:
             raise KeyError(f"{name} not a valid variable name")
         var = self.variables[name]
         var[:, :] = current[:, :]
+
+
+class NetCdfCompare:
+    """Compare variables in two NetCDF files
+
+    Args:
+        base_pth: path to base NetCDF file
+        compare_pth: path to NetCDF file that will be compared to
+            the base NetCDF file
+        verbose: boolean determining if information should be written
+            to stdout
+    """
+
+    def __init__(
+        self,
+        base_pth: fileish,
+        compare_pth: fileish,
+        verbose: bool = False,
+    ) -> None:
+        self._base = NetCdfRead(base_pth)
+        self._compare = NetCdfRead(compare_pth)
+        self._verbose = verbose
+        if not self.__validate_comparison:
+            raise KeyError(
+                f"Variables in {compare_pth} do not exist in {base_pth}"
+            )
+
+    def __del__(self):
+        if self._base.dataset.isopen():
+            self._base.dataset.close()
+        if self._compare.dataset.isopen():
+            self._compare.dataset.close()
+
+    def compare(
+        self,
+        atol: float = ATOL,
+    ) -> (bool, dict):
+        """
+
+        Args:
+            atol: absolute tolerance to use in numpy allclose (default
+                is single precision machine precisions ~1e-7)
+
+        Returns:
+            success: boolean indicating if comparisons for all variables
+                in the NetCDF file passed
+            failures: dictionary with the maximum absolute difference for
+                each variable in the NetCDF file.
+
+        """
+        return self.__compare(atol=atol)
+
+    def __compare(
+        self,
+        atol: float = ATOL,
+    ):
+        success = True
+        failures = {}
+        for variable in self._compare.variables:
+            base_arr = self._base.get_data(variable)
+            compare_arr = self._compare.get_data(variable)
+            if not np.allclose(base_arr, compare_arr, atol=atol):
+                success = False
+                failures[variable] = np.max(np.abs(compare_arr - base_arr))
+        return success, failures
+
+    @property
+    def __validate_comparison(self) -> bool:
+        """Validate the variables in the comparison NetCDF file relative
+        to the base NetCDF file
+
+
+        Returns:
+            valid: boolean indicating if all variables in the comparison
+                NetCDF file are in the base NetCDF file
+
+        """
+        valid = False
+        for variable in self._compare.variables:
+            if variable in self._base.variables:
+                valid = True
+                break
+        return valid

@@ -23,6 +23,7 @@ class StorageUnit:
         self.params = params
         self.atm = atm
         self.verbose = verbose
+        self._simulation_time = 0.0
 
         # netcdf output variables
         self._output_netcdf = False
@@ -52,6 +53,37 @@ class StorageUnit:
                 )
 
         return
+
+    def calculate(self, simulation_time: float) -> None:
+        """Calculate storageUnit terms for a time step
+
+        Args:
+            simulation_time: current simulation time
+
+        Returns:
+            None
+
+        """
+        raise NotImplementedError("Override in child class.")
+
+    def output(self) -> None:
+        """Output
+
+        Returns:
+            None
+
+        """
+        if self._output_netcdf:
+            self.__output_netcdf()
+
+    def finalize(self) -> None:
+        """Finalize storageUnit
+
+        Returns:
+            None
+
+        """
+        self._finalize_netcdf()
 
     @staticmethod
     def get_required_parameters() -> list:
@@ -119,12 +151,12 @@ class StorageUnit:
 
         """
         self._output_netcdf = True
+        self._netcdf = {}
         if separate_files:
             self._separate_netcdf = True
             # make working directory
             working_path = pl.Path(name)
             working_path.mkdir(parents=True, exist_ok=True)
-            self._netcdf = {}
             for variable in self.get_output_variables():
                 nc_path = pl.Path(working_path) / f"{variable}.nc"
                 self._netcdf[variable] = NetCdfWrite(
@@ -133,14 +165,17 @@ class StorageUnit:
                     [variable],
                 )
         else:
+            initial_variable = self.get_output_variables()[0]
             pl.Path(name).mkdir(parents=True, exist_ok=True)
-            self._netcdf = NetCdfWrite(
+            self._netcdf[initial_variable] = NetCdfWrite(
                 name,
                 self.id,
                 self.get_output_variables(),
             )
+            for variable in self.get_output_variables()[1:]:
+                self._netcdf[variable] = self._netcdf[initial_variable]
 
-    def output_netcdf(self) -> None:
+    def __output_netcdf(self) -> None:
         """Output variable data for a time step
 
         Returns:
@@ -148,12 +183,21 @@ class StorageUnit:
 
         """
         if self._output_netcdf:
-            for variable in self.get_output_variables():
-                if self._separate_netcdf:
-                    self._netcdf[variable].add_data(
-                        variable, self._itime_step, getattr(self, variable)
+            for idx, variable in enumerate(self.get_output_variables()):
+                if idx == 0 or self._separate_netcdf:
+                    self._netcdf[variable].add_simulation_time(
+                        self._itime_step,
+                        self._simulation_time,
                     )
-                else:
-                    self._netcdf.add_data(
-                        variable, self._itime_step, getattr(self, variable)
-                    )
+                self._netcdf[variable].add_data(
+                    variable,
+                    self._itime_step,
+                    getattr(self, variable),
+                )
+
+    def _finalize_netcdf(self) -> None:
+        if self._output_netcdf:
+            for idx, variable in enumerate(self.get_output_variables()):
+                self._netcdf[variable].close()
+                if not self._separate_netcdf:
+                    break

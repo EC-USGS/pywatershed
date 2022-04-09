@@ -149,6 +149,10 @@ def test_cbh_adj_prms_output(domain, params):
             "soil_to_gw",
             "ssr_to_gw",
             "dprst_seep",
+            "gwres_flow",
+            "gwres_in",
+            "gwres_sink",
+            "gwres_stor",
         ):
             continue
         if var in (

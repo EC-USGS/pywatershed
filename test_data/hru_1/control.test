@@ -294,7 +294,7 @@ gwres_sink
 nhruOutBaseFileName
 1
 4
-./output/nhru_
+./output/
 ####
 nsegmentOutON_OFF
 1

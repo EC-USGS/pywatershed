@@ -8,7 +8,13 @@ from .groundwater.PRMSGroundwater import PRMSGroundwater
 from .preprocess.cbh import CBH
 from .preprocess.csv_utils import CsvFile
 from .pynhm import driver
-from .utils import ControlVariables, NetCdfRead, NetCdfWrite, PrmsParameters
+from .utils import (
+    ControlVariables,
+    NetCdfCompare,
+    NetCdfRead,
+    NetCdfWrite,
+    PrmsParameters,
+)
 from .version import __author__, __author_email__, __version__
 
 __all__ = [

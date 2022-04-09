@@ -1,14 +1,19 @@
-import pathlib as pl
-
 import numpy as np
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..base.storageUnit import StorageUnit
-from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 
 
 class PRMSGroundwater(StorageUnit):
+    """PRMS groundwater reservoir
+
+    Args:
+        params: parameter object
+        atm: atmosphere object
+
+    """
+
     def __init__(
         self,
         params: PrmsParameters,
@@ -23,9 +28,6 @@ class PRMSGroundwater(StorageUnit):
         super().__init__("gwflow", id, params, atm, verbose)
 
         # define self variables that will be used for the calculation
-        self.gw_stor = self.gwstor_init.copy()
-        self.gw_stor_old = self.gwstor_init.copy()
-
         for name in PRMSGroundwater.get_input_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
@@ -42,12 +44,19 @@ class PRMSGroundwater(StorageUnit):
                 self.output_column_names += [
                     f"{name}_{id}" for id in range(self.nhru)
                 ]
+
+        # initialize groundwater reservoir storage
+        self.gwres_stor = self.gwstor_init.copy()
+        self.gwres_stor_old = self.gwstor_init.copy()
+
         return
 
     @staticmethod
     def get_required_parameters() -> tuple:
-        """
-        Return a tuple of the parameters required for this process
+        """Get groundwater reservoir parameters
+
+        Returns:
+            parameters: input parameters
 
         """
         return (
@@ -62,9 +71,10 @@ class PRMSGroundwater(StorageUnit):
 
     @staticmethod
     def get_input_variables() -> tuple:
-        """
+        """Get groundwater reservoir input variables
 
         Returns:
+            variables: input variables
 
         """
         return (
@@ -75,6 +85,12 @@ class PRMSGroundwater(StorageUnit):
 
     @staticmethod
     def get_output_variables() -> tuple:
+        """Get groundwater reservoir output variables
+
+        Returns:
+            variables: output variables
+
+        """
         return (
             "gwres_flow",
             "gwres_in",
@@ -82,19 +98,39 @@ class PRMSGroundwater(StorageUnit):
             "gwres_stor",
         )
 
-    def advance(self, itime_step):
-        self.gw_stor_old = self.gw_stor
+    def advance(self) -> None:
+        """Advance the groundwater reservoir
+
+        Args:
+            itime_step:
+
+        Returns:
+            None
+
+        """
+        self.gwres_stor_old = self.gwres_stor
         self._itime_step += 1
 
         return
 
-    def calculate(self, time_length):
+    def calculate(self, simulation_time):
+        """Calculate groundwater reservoir terms for a time step
+
+        Args:
+            simulation_time: current simulation time
+
+        Returns:
+            None
+
+        """
+
+        self._simulation_time = simulation_time
 
         gwarea = self.hru_area
 
         # calculate volume terms
         # gwstor_min_vol = self.gwstor_min * gwarea
-        gwstor = self.gw_stor * gwarea
+        gwres_stor = self.gwres_stor * gwarea
         soil_to_gw_vol = self.soil_to_gw * gwarea
         ssr_to_gw_vol = self.ssr_to_gw * gwarea
         dprst_seep_vol = self.dprst_seep * gwarea
@@ -104,24 +140,24 @@ class PRMSGroundwater(StorageUnit):
 
         # todo: what about route order
 
-        gwstor += gwres_in
+        gwres_stor += gwres_in
 
-        gwflow = gwstor * self.gwflow_coef
+        gwres_flow = gwres_stor * self.gwflow_coef
 
-        gwstor -= gwflow
+        gwres_stor -= gwres_flow
 
-        gwsink = gwstor * self.gwsink_coef
-        idx = np.where(gwsink > gwstor)
-        gwsink[idx] = gwstor[idx]
+        gwres_sink = gwres_stor * self.gwsink_coef
+        idx = np.where(gwres_sink > gwres_stor)
+        gwres_sink[idx] = gwres_stor[idx]
 
-        gwstor -= gwsink
+        gwres_stor -= gwres_sink
 
         # output variables
-        self.gw_stor = gwstor / gwarea
+        self.gwres_stor = gwres_stor / gwarea
         self.gwres_in = (
             gwres_in  # for some stupid reason this is left in acre-inches
         )
-        self.gw_flow = gwflow / gwarea
-        self.gw_sink = gwsink / gwarea
+        self.gwres_flow = gwres_flow / gwarea
+        self.gwres_sink = gwres_sink / gwarea
 
         return

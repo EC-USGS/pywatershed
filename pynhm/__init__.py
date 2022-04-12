@@ -5,6 +5,7 @@ from .base.StateAccess import StateAccess
 from .base.Time import Time
 from .canopy.PRMSCanopy import PRMSCanopy
 from .groundwater.PRMSGroundwater import PRMSGroundwater
+from .groundwater.PRMSGroundwater_better import PRMSGroundwaterBetter
 from .preprocess.cbh import CBH
 from .preprocess.csv_utils import CsvFile
 from .pynhm import driver
@@ -15,6 +16,7 @@ from .utils import (
     NetCdfWrite,
     PrmsParameters,
 )
+from .variableClass import VariableFromNetcdf
 from .version import __author__, __author_email__, __version__
 
 __all__ = [
@@ -27,4 +29,5 @@ __all__ = [
     "runoff",
     "utils",
     "driver",
+    "variableClass",
 ]

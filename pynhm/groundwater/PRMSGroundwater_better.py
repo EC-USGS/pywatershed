@@ -5,7 +5,7 @@ import numpy as np
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..base.storageUnit import StorageUnit
 from ..utils.parameters import PrmsParameters
-from ..variableClass import variable_factory, Variable
+from ..variableClass import Variable, variable_factory
 
 variableish = Union[str, np.ndarray, Variable]
 
@@ -41,10 +41,12 @@ class PRMSGroundwaterBetter(StorageUnit):
             soil_to_gw, "soil_to_gw"
         )
         self._input_variables_dict["ssr_to_gw"] = variable_factory(
-            ssr_to_gw, "ssr_to_gw",
+            ssr_to_gw,
+            "ssr_to_gw",
         )
         self._input_variables_dict["dprst_seep_hru"] = variable_factory(
-            dprst_seep_hru, "dprst_seep_hru",
+            dprst_seep_hru,
+            "dprst_seep_hru",
         )
 
         # define self variables that will be used for the calculation

@@ -80,7 +80,7 @@ class PRMSGroundwater(StorageUnit):
         return (
             "soil_to_gw",
             "ssr_to_gw",
-            "dprst_seep",
+            "dprst_seep_hru",
         )
 
     @staticmethod
@@ -133,10 +133,10 @@ class PRMSGroundwater(StorageUnit):
         gwres_stor = self.gwres_stor * gwarea
         soil_to_gw_vol = self.soil_to_gw * gwarea
         ssr_to_gw_vol = self.ssr_to_gw * gwarea
-        dprst_seep_vol = self.dprst_seep * gwarea
+        dprst_seep_hru_vol = self.dprst_seep_hru * gwarea
 
         # initialize calculation variables
-        gwres_in = soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_vol
+        gwres_in = soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
 
         # todo: what about route order
 

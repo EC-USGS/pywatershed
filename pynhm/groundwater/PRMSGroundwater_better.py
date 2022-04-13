@@ -1,11 +1,16 @@
+from typing import Union
+
 import numpy as np
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..base.storageUnit import StorageUnit
 from ..utils.parameters import PrmsParameters
+from ..variableClass import Variable, variable_factory
+
+variableish = Union[str, np.ndarray, Variable]
 
 
-class PRMSGroundwater(StorageUnit):
+class PRMSGroundwaterBetter(StorageUnit):
     """PRMS groundwater reservoir
 
     Args:
@@ -18,32 +23,38 @@ class PRMSGroundwater(StorageUnit):
         self,
         params: PrmsParameters,
         atm: NHMBoundaryLayer,
-    ) -> "PRMSGroundwater":
+        soil_to_gw: variableish,
+        ssr_to_gw: variableish,
+        dprst_seep_hru: variableish,
+    ) -> "PRMSGroundwaterBetter":
 
         verbose = True
+        # todo: get this directly from parameters
         if "nhm_id" in params.parameters.keys():
             id = params.parameters.nhm_id
         else:
             id = np.arange(1, params.nhru + 1)
         super().__init__("gwflow", id, params, atm, verbose)
 
+        self._input_variables_dict = {}
+        self._input_variables_dict["soil_to_gw"] = variable_factory(
+            soil_to_gw, "soil_to_gw"
+        )
+        self._input_variables_dict["ssr_to_gw"] = variable_factory(
+            ssr_to_gw,
+            "ssr_to_gw",
+        )
+        self._input_variables_dict["dprst_seep_hru"] = variable_factory(
+            dprst_seep_hru,
+            "dprst_seep_hru",
+        )
+
         # define self variables that will be used for the calculation
-        for name in PRMSGroundwater.get_input_variables():
+        for name in PRMSGroundwaterBetter.get_input_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
-        self.output_column_names = ["date"]
-        self.output_data = []
-        for name in PRMSGroundwater.get_output_variables():
+        for name in PRMSGroundwaterBetter.get_output_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
-            if "nhm_id" in params.parameters:
-                self.output_column_names += [
-                    f"nhru_{name}_{nhmid}"
-                    for nhmid in params.parameters["nhm_id"]
-                ]
-            else:
-                self.output_column_names += [
-                    f"{name}_{id}" for id in range(self.nhru)
-                ]
 
         # initialize groundwater reservoir storage
         self.gwres_stor = self.gwstor_init.copy()
@@ -110,6 +121,11 @@ class PRMSGroundwater(StorageUnit):
         """
         self.gwres_stor_old = self.gwres_stor
         self._itime_step += 1
+
+        for key, value in self._input_variables_dict.items():
+            value.advance()
+            v = getattr(self, key)
+            v[:] = value.current
 
         return
 

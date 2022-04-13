@@ -26,7 +26,7 @@ prms_outputs:
   transp_on: output/transp_on.csv
   soil_to_gw: output/soil_to_gw.csv
   ssr_to_gw: output/ssr_to_gw.csv
-  dprst_seep: output/dprst_seep_hru.csv
+  dprst_seep_hru: output/dprst_seep_hru.csv
   gwres_flow: output/gwres_flow.csv
   gwres_in: output/gwres_in.csv
   gwres_sink: output/gwres_sink.csv

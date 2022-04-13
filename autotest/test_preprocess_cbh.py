@@ -148,7 +148,7 @@ def test_cbh_adj_prms_output(domain, params):
             "transp_on",
             "soil_to_gw",
             "ssr_to_gw",
-            "dprst_seep",
+            "dprst_seep_hru",
             "gwres_flow",
             "gwres_in",
             "gwres_sink",

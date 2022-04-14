@@ -98,6 +98,20 @@ class PrmsParameters:
                 dimensions[key] = value
         return DictionaryAsProperties(dimensions)
 
+    @property
+    def nhm_coordinate(self) -> np.ndarray:
+        """Get the nhm coordinate
+
+        Returns:
+            id: nhm coordinate for each hru
+
+        """
+        if "nhm_id" in self.parameters.keys():
+            id = self.parameters.nhm_id
+        else:
+            id = np.arange(1, self.nhru + 1)
+        return id
+
     @staticmethod
     def load(parameter_file: fileish) -> "PrmsParameters":
         """Load parameters from a PRMS parameter file

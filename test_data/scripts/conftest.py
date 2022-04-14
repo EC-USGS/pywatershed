@@ -1,10 +1,8 @@
-from fnmatch import fnmatch
-
 import os
 import pathlib as pl
 import shutil
 import sys
-
+from fnmatch import fnmatch
 from time import sleep
 
 import pytest

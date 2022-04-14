@@ -6,7 +6,7 @@ import pytest
 
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.control import Control
-from pynhm.canopy.PRMSCanopy import PRMSCanopy
+from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
 from pynhm.utils.parameters import PrmsParameters

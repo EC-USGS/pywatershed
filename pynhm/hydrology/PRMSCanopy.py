@@ -1,8 +1,10 @@
 from typing import Union
+
 import numpy as np
 
-from ..base.storageUnit import StorageUnit
-from ..utils.parameters import PrmsParameters
+from pynhm.base.storageUnit import StorageUnit
+from pynhm.utils.parameters import PrmsParameters
+
 from ..base.control import Control
 from ..variableClass import Variable, variable_factory
 

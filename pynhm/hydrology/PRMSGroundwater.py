@@ -2,9 +2,10 @@ from typing import Union
 
 import numpy as np
 
-from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from ..base.storageUnit import StorageUnit
-from ..utils.parameters import PrmsParameters
+from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from pynhm.base.storageUnit import StorageUnit
+from pynhm.utils.parameters import PrmsParameters
+
 from ..variableClass import Variable, variable_factory
 
 variableish = Union[str, np.ndarray, Variable]

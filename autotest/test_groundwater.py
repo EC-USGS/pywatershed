@@ -1,14 +1,7 @@
 import pathlib as pl
-from datetime import datetime, timedelta
 
-import numpy as np
-import pandas as pd
-
-import pynhm.preprocess
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from pynhm.boundary_conditions.boundaryConditions import BoundaryConditions
-from pynhm.groundwater.PRMSGroundwater import PRMSGroundwater
-from pynhm.preprocess.csv_utils import CsvFile
+from pynhm.hydrology.PRMSGroundwater import PRMSGroundawater
 from pynhm.utils import ControlVariables
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
@@ -55,23 +48,19 @@ class TestPRMSGroundwaterDomain:
         # load csv files into dataframes
         output_files = domain["prms_outputs"]
         input_variables = {}
-        for key in PRMSGroundwater.get_input_variables():
+        for key in PRMSGroundawater.get_input_variables():
             output_pth = output_files[key]
             nc_pth = output_pth.with_suffix(".nc")
             input_variables[key] = nc_pth
 
-        bcs = BoundaryConditions()
-        for key, nc_pth in input_variables.items():
-            bcs.add_boundary(nc_pth)
-
-        gw = PRMSGroundwater(prms_params, atm)
+        gw = PRMSGroundawater(prms_params, atm, **input_variables)
         # nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
         # gw.initialize_netcdf(nc_pth, separate_files=False)
         nc_parent = pl.Path("./temp") / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 
         output_compare = {}
-        for key in PRMSGroundwater.get_output_variables():
+        for key in PRMSGroundawater.get_output_variables():
             output_pth = output_files[key]
             base_nc_pth = output_pth.with_suffix(".nc")
             compare_nc_pth = (
@@ -86,9 +75,9 @@ class TestPRMSGroundwaterDomain:
             # print(f"Running canopy for step {istep} and day: {atm.current_time}")
             gw.advance()
 
-            # set pointers to attributes in the groundwater component
-            bcs.advance()
-            bcs.set_pointers(gw)
+            # # set pointers to attributes in the groundwater component
+            # bcs.advance()
+            # bcs.set_pointers(gw)
 
             gw.calculate(float(istep))
 

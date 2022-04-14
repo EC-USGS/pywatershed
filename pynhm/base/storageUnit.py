@@ -6,22 +6,24 @@ import pandas as pd
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
+from .accessor import Accessor
+from .control import Control
 
 
-class StorageUnit:
+class StorageUnit(Accessor):
     def __init__(
         self,
         storage_type,
         id: list,
+        control: Control,
         params: PrmsParameters,
-        atm: NHMBoundaryLayer,
         verbose: bool,
     ):
 
         self.storage_type = storage_type
         self.id = id
+        self.control = control
         self.params = params
-        self.atm = atm
         self.verbose = verbose
         self._simulation_time = 0.0
 

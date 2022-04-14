@@ -2,8 +2,10 @@ import pathlib
 from datetime import datetime
 
 import numpy as np
+import pytest
 
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from pynhm.base.control import Control
 from pynhm.canopy.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
@@ -57,8 +59,20 @@ forcings_dict = {
 }
 
 
+@pytest.fixture(scope="function")
+def control(domain):
+    return Control.load(domain["control_file"])
+
+
 class TestPRMSCanopySimple:
     def test_init(self):
+
+        time_dict = {
+            "start_time": np.datetime64("1979-01-03T00:00:00.00"),
+            "end_time": np.datetime64("1979-01-04T00:00:00.00"),
+            "time_step": np.timedelta64(1, "D"),
+        }
+        control = Control(**time_dict)
 
         nhru = 2
         prms_params = {
@@ -74,20 +88,16 @@ class TestPRMSCanopySimple:
             "cov_type": np.array(nhru * [1]),
         }
         prms_params = PrmsParameters(prms_params)
-        atm = NHMBoundaryLayer(
-            forcings_dict,
-            parameters=prms_params,
-            start_time=np.datetime64("1979-01-03T00:00:00.00"),
-            time_step=np.timedelta64(1, "D"),
-            verbosity=3,
-            height_m=5,
-        )
+
+        input_variables = {}
+        for key in PRMSCanopy.get_input_variables():
+            input_variables[key] = np.ones([nhru])
 
         # todo: this is testing instantiation, but not physics
-        ntimes = atm.n_time
-        pkwater_equiv = np.zeros((ntimes, nhru))
-        transp_on = np.zeros((ntimes, nhru))
-        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv, transp_on)
+        ntimes = control.n_times
+        self.cnp = PRMSCanopy(
+            control=control, params=prms_params, **input_variables
+        )
         self.cnp.advance(itime_step=0)
         self.cnp.calculate(time_length=1.0)
 
@@ -131,6 +141,13 @@ class TestPRMSCanopyDomain:
         )
         atm.calculate_sw_rad_degree_day()
         atm.calculate_potential_et_jh()
+
+        ## NEWNEWNEW
+        output_files = domain["prms_outputs"]
+        input_variables = {}
+        for key in PRMSCanopy.get_input_variables():
+            nc_pth = output_files[key].with_suffix(".nc")
+            input_variables[key] = nc_pth
 
         # pkwater_equiv comes from snowpack; it is lagged by a time step
         prms_output_files = domain["prms_outputs"]

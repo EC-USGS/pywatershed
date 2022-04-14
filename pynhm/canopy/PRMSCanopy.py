@@ -1,8 +1,12 @@
+from typing import Union
 import numpy as np
 
-from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..base.storageUnit import StorageUnit
 from ..utils.parameters import PrmsParameters
+from ..base.control import Control
+from ..variableClass import Variable, variable_factory
+
+variableish = Union[str, np.ndarray, Variable]
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -23,18 +27,29 @@ LAKE = 2
 class PRMSCanopy(StorageUnit):
     def __init__(
         self,
+        control: Control,
         params: PrmsParameters,
-        atm: NHMBoundaryLayer,
-        pkwater_equiv_alltimes: np.ndarray,
-        transp_on_alltimes: np.ndarray,
+        pkwater_equiv: variableish,
+        transp_on: variableish,
+        hru_ppt: variableish,
+        hru_rain: variableish,
+        hru_snow: variableish,
+        potet: variableish,
+        verbose: bool = False,
     ):
 
         verbose = True
-        super().__init__("cnp", id, params, atm, verbose)
+        super().__init__(
+            storage_type="canopy",
+            id=id,
+            control=control,
+            params=params,
+            verbose=verbose,
+        )
 
         # store dependencies
-        self.pkwater_equiv_alltimes = pkwater_equiv_alltimes
-        self.transp_on_alltimes = transp_on_alltimes
+        self.pkwater_equiv = pkwater_equiv
+        self.transp_on = transp_on
 
         # define self variables
         # todo: may need way to initialize interception storage to something non-zero
@@ -85,6 +100,22 @@ class PRMSCanopy(StorageUnit):
             "snow_intcp",
         ]
 
+    def get_input_variables() -> tuple:
+        """Get groundwater reservoir input variables
+
+        Returns:
+            variables: input variables
+
+        """
+        return [
+            "pkwater_equiv",
+            "transp_on",
+            "hru_ppt",
+            "hru_rain",
+            "hru_snow",
+            "potet",
+        ]
+
     def advance(self, itime_step):
         self.intcp_stor_old = self.intcp_stor
 
@@ -98,7 +129,7 @@ class PRMSCanopy(StorageUnit):
         #    self.stor_max_rain = self.wrain_intcp
 
         self.interception_form[:] = RAIN
-        snowfall = self.atm.get_current_state("snowfall")
+        snowfall = snowfall
         idx = np.where(snowfall > 0)
         self.interception_form[idx] = SNOW
 
@@ -128,10 +159,10 @@ class PRMSCanopy(StorageUnit):
     def calculate_procedural(self, time_length):
 
         # todo: verify that hru_ppt is prcp
-        hru_ppt = self.atm.get_current_state("prcp")
-        potet = self.atm.get_current_state("potet")
-        hru_rain = self.atm.get_current_state("rainfall")
-        hru_snow = self.atm.get_current_state("snowfall")
+        hru_ppt = prcp
+        potet = potet
+        hru_rain = rainfall
+        hru_snow = snowfall
 
         net_rain = np.array(self.nhru * [0.0])
         net_snow = np.array(self.nhru * [0.0])
@@ -295,34 +326,36 @@ class PRMSCanopy(StorageUnit):
             net_ppt[i] = netrain + netsnow
 
         self.output_data["intcpstor"].append(
-            [self.atm.current_time] + list(hru_intcpstor)
+            [self.control.current_time] + list(hru_intcpstor)
         )
         self.output_data["net_rain"].append(
-            [self.atm.current_time] + list(net_rain)
+            [self.control.current_time] + list(net_rain)
         )
         self.output_data["net_snow"].append(
-            [self.atm.current_time] + list(net_snow)
+            [self.control.current_time] + list(net_snow)
         )
         self.output_data["intcp_evap"].append(
-            [self.atm.current_time] + list(intcp_evap)
+            [self.control.current_time] + list(intcp_evap)
         )
         self.output_data["rainfall_adj"].append(
-            [self.atm.current_time] + list(hru_rain)
+            [self.control.current_time] + list(hru_rain)
         )
         self.output_data["snowfall_adj"].append(
-            [self.atm.current_time] + list(hru_snow)
+            [self.control.current_time] + list(hru_snow)
         )
-        self.output_data["potet"].append([self.atm.current_time] + list(potet))
+        self.output_data["potet"].append(
+            [self.control.current_time] + list(potet)
+        )
 
         return
 
     def calculate_vectorized(self, time_length):
 
-        # Retrieve atmospheric forcings
-        rainfall_adj = self.atm.get_current_state("rainfall")
-        snowfall_adj = self.atm.get_current_state("snowfall")
-        potet = self.atm.get_current_state("potet")
-        prcp = self.atm.get_current_state("prcp")
+        # Retrieve atmospheric forcings - rename?
+        rainfall_adj = rainfall
+        snowfall_adj = snowfall
+        potet = potet
+        prcp = prcp
 
         # initialize calculation variables
         net_rain = rainfall_adj.copy()
@@ -440,22 +473,22 @@ class PRMSCanopy(StorageUnit):
         hru_intcpstor = intcp_stor * self.covden
 
         self.output_data["intcpstor"].append(
-            [self.atm.current_time] + list(hru_intcpstor)
+            [self.control.current_time] + list(hru_intcpstor)
         )
         self.output_data["net_rain"].append(
-            [self.atm.current_time] + list(net_rain)
+            [self.control.current_time] + list(net_rain)
         )
         self.output_data["net_snow"].append(
-            [self.atm.current_time] + list(net_snow)
+            [self.control.current_time] + list(net_snow)
         )
         self.output_data["intcp_evap"].append(
-            [self.atm.current_time] + list(intcp_evap)
+            [self.control.current_time] + list(intcp_evap)
         )
         self.output_data["rainfall_adj"].append(
-            [self.atm.current_time] + list(rainfall_adj)
+            [self.control.current_time] + list(rainfall_adj)
         )
         self.output_data["snowfall_adj"].append(
-            [self.atm.current_time] + list(snowfall_adj)
+            [self.control.current_time] + list(snowfall_adj)
         )
 
         return

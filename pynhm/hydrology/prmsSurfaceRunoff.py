@@ -1,4 +1,4 @@
-from ..base.storageUnit import StorageUnit
+from pynhm.base.storageUnit import StorageUnit
 
 
 class prmsSurfaceRunoff(StorageUnit):

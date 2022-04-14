@@ -3,7 +3,7 @@ from typing import Union
 
 import numpy as np
 
-from .utils.netcdf_utils import NetCdfRead
+from pynhm.utils.netcdf_utils import NetCdfRead
 
 fileish = Union[str, pl.Path]
 

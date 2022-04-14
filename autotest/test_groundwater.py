@@ -1,15 +1,8 @@
 import pathlib as pl
-from datetime import datetime, timedelta
 
-import numpy as np
-import pandas as pd
-
-import pynhm.preprocess
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from pynhm.boundary_conditions.boundaryConditions import BoundaryConditions
-from pynhm.groundwater.PRMSGroundwater import PRMSGroundwater
-from pynhm.preprocess.csv_utils import CsvFile
-from pynhm.utils import ControlVariables
+from pynhm.base.control import Control
+from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
@@ -19,38 +12,7 @@ class TestPRMSGroundwaterDomain:
         prms_params = PrmsParameters.load(domain["param_file"])
 
         # Set information from the control file
-        control_file = domain["control_file"]
-        control = ControlVariables.load(control_file)
-        start_time = control.control.start_time
-        end_time = control.control.end_time
-        initial_deltat = control.control.initial_deltat
-
-        atm_information_dict = {
-            "start_time": start_time,
-            "end_time": end_time,
-            "time_step": initial_deltat,
-            "verbosity": 3,
-            "height_m": 5,
-        }
-        var_translate = {
-            "prcp_adj": "prcp",
-            "rainfall_adj": "rainfall",
-            "snowfall_adj": "snowfall",
-            "tmax_adj": "tmax",
-            "tmin_adj": "tmin",
-            "swrad": "swrad",
-            "potet": "potet",
-        }
-        var_file_dict = {
-            var_translate[var]: file
-            for var, file in domain["prms_outputs"].items()
-            if var in var_translate.keys()
-        }
-        atm = NHMBoundaryLayer.load_prms_output(
-            **var_file_dict, parameters=prms_params, **atm_information_dict
-        )
-        atm.calculate_sw_rad_degree_day()
-        atm.calculate_potential_et_jh()
+        control = Control.load(domain["control_file"])
 
         # load csv files into dataframes
         output_files = domain["prms_outputs"]
@@ -60,13 +22,7 @@ class TestPRMSGroundwaterDomain:
             nc_pth = output_pth.with_suffix(".nc")
             input_variables[key] = nc_pth
 
-        bcs = BoundaryConditions()
-        for key, nc_pth in input_variables.items():
-            bcs.add_boundary(nc_pth)
-
-        gw = PRMSGroundwater(prms_params, atm)
-        # nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
-        # gw.initialize_netcdf(nc_pth, separate_files=False)
+        gw = PRMSGroundwater(control, prms_params, **input_variables)
         nc_parent = pl.Path("./temp") / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 
@@ -79,16 +35,9 @@ class TestPRMSGroundwaterDomain:
             )
             output_compare[key] = (base_nc_pth, compare_nc_pth)
 
-        for istep in range(atm.n_time):
-            if istep > 0:
-                atm.advance()
+        for istep in range(control.n_times):
 
-            # print(f"Running canopy for step {istep} and day: {atm.current_time}")
             gw.advance()
-
-            # set pointers to attributes in the groundwater component
-            bcs.advance()
-            bcs.set_pointers(gw)
 
             gw.calculate(float(istep))
 

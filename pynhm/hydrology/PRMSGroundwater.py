@@ -2,15 +2,17 @@ from typing import Union
 
 import numpy as np
 
-from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from ..base.storageUnit import StorageUnit
-from ..utils.parameters import PrmsParameters
-from ..variableClass import Variable, variable_factory
+from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from pynhm.base.storageUnit import StorageUnit
+from pynhm.utils.parameters import PrmsParameters
+
+from ..base.control import Control
+from ..base.variableClass import Variable, variable_factory
 
 variableish = Union[str, np.ndarray, Variable]
 
 
-class PRMSGroundwaterBetter(StorageUnit):
+class PRMSGroundwater(StorageUnit):
     """PRMS groundwater reservoir
 
     Args:
@@ -21,20 +23,21 @@ class PRMSGroundwaterBetter(StorageUnit):
 
     def __init__(
         self,
+        control: Control,
         params: PrmsParameters,
-        atm: NHMBoundaryLayer,
         soil_to_gw: variableish,
         ssr_to_gw: variableish,
         dprst_seep_hru: variableish,
-    ) -> "PRMSGroundwaterBetter":
+    ) -> "PRMSGroundwater":
 
         verbose = True
-        # todo: get this directly from parameters
-        if "nhm_id" in params.parameters.keys():
-            id = params.parameters.nhm_id
-        else:
-            id = np.arange(1, params.nhru + 1)
-        super().__init__("gwflow", id, params, atm, verbose)
+        super().__init__(
+            "gwflow",
+            id=1,
+            control=control,
+            params=params,
+            verbose=verbose,
+        )
 
         self._input_variables_dict = {}
         self._input_variables_dict["soil_to_gw"] = variable_factory(
@@ -50,10 +53,10 @@ class PRMSGroundwaterBetter(StorageUnit):
         )
 
         # define self variables that will be used for the calculation
-        for name in PRMSGroundwaterBetter.get_input_variables():
+        for name in PRMSGroundwater.get_input_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
-        for name in PRMSGroundwaterBetter.get_output_variables():
+        for name in PRMSGroundwater.get_output_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
         # initialize groundwater reservoir storage

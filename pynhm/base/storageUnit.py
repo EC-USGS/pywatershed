@@ -138,7 +138,7 @@ class StorageUnit(Accessor):
                 nc_path = pl.Path(working_path) / f"{variable}.nc"
                 self._netcdf[variable] = NetCdfWrite(
                     nc_path,
-                    self.id,
+                    self.params.nhm_coordinate,
                     [variable],
                 )
         else:

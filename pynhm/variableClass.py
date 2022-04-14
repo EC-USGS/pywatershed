@@ -57,12 +57,28 @@ class VariableFromNetcdf(Variable):
             self._start_time = start_time
             self._itime_step = np.where(self._datetime == start_time)[0]
 
-        self._previous_value = None
         self._current_value = None
+        # JLM: current value is None on init?
 
     def advance(self):
-        self._previous_value = self._current_value
         self._current_value = self._dataset.advance(self._variable)
+        return None
+
+    @property
+    def current(self):
+        return self._current_value
+
+
+class VariableFromOnedarray(Variable):
+    def __init__(
+        self,
+        data: np.ndarray,
+    ) -> None:
+        super().__init__(variable)
+
+        self._current_value = data
+
+    def advance(self):
         return None
 
     @property

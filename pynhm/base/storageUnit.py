@@ -89,9 +89,7 @@ class StorageUnit(Accessor):
 
     @staticmethod
     def get_required_parameters() -> list:
-        return required_parameters
-
-    # raise Exception("This must be overridden")
+        raise Exception("This must be overridden")
 
     def initialize_output_data(self):
         self.output_column_names = ["date"]

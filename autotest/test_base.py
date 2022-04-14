@@ -3,170 +3,54 @@ from datetime import datetime, timedelta
 import numpy as np
 import pytest
 
-from pynhm.base.StateAccess import StateAccess
+from pynhm.base.accessor import Accessor
 from pynhm.base.Time import Time
+from pynhm.base.control import Control
+from pynhm.base.storageUnit import StorageUnit
+from pynhm.utils.parameters import PrmsParameters
 
 
-class TestStateAccess:
-    def test_init(self):
-        da = StateAccess()
-        assert da.name == "StateAccess"
-        assert len(da.coords) == 0
-        assert len(da.variables) == 0
-        assert len(da._potential_variables) == 0
-        return
-
-    @pytest.mark.parametrize(
-        "data", [np.arange(4), list(range(4))], ids=["valid", "invalid"]
-    )
-    def test_coord(self, data):
-        da = StateAccess()
-        da._coords = ["foo"]  # strictly verboten!
-        try:
-            da["foo"] = data
-            assert isinstance(data, np.ndarray)
-            assert np.isclose(da["foo"], data).all()
-            # can not delete a coord
-        except TypeError:
-            assert not isinstance(data, np.ndarray)
-            return
-
-        # can not set or delete coords directly
-        try:
-            da.coords = ["foo"]
-            assert False
-        except AttributeError:
-            assert True
-
-        try:
-            da.coords["foo"] = data
-            assert False
-        except TypeError:
-            assert True
-
-        # can not delete a coord
-        try:
-            del da["foo"]
-            assert False
-        except KeyError:
-            assert True
-
-        return
-
-    @pytest.mark.parametrize(
-        "data", [np.arange(4), list(range(4))], ids=["valid", "invalid"]
-    )
-    def test_variable(self, data):
-        da = StateAccess()
-        da._potential_variables = ["foo"]  # strictly verboten!
-        try:
-            da["foo"] = data
-            assert "foo" in da.variables
-            assert isinstance(data, np.ndarray)
-            assert np.isclose(da["foo"], data).all()
-            del da["foo"]
-            assert len(da.variables) == 0
-        except TypeError:
-            assert not isinstance(data, np.ndarray)
-            return
-
-        # can not set or delete coords directly
-        try:
-            da.variables = ["foo"]
-            assert False
-        except AttributeError:
-            assert True
-
+class TestAccessor:
+    def test_accessor(self):
+        da = Accessor()
+        assert isinstance(da, Accessor)
+        key, value = ("a", 0)
+        da[key] = value
+        assert da[key] is value
+        del da[key]
+        with pytest.raises(AttributeError):
+            da[key]
         return
 
 
-time_data_global = np.arange(
-    datetime(1979, 1, 1), datetime(1979, 1, 5), timedelta(days=1)
-).astype(np.datetime64)
+time_dict_g = {
+    "start_time": np.datetime64("1979-01-03T00:00:00.00"),
+    "end_time": np.datetime64("1979-01-04T00:00:00.00"),
+    "time_step": np.timedelta64(1, "D"),
+}
 
 
 @pytest.fixture(scope="function")
-def time_data():
-    return time_data_global
+def time_dict():
+    return time_dict_g
 
 
-start_times = [
-    time_data_global[0],
-    time_data_global[2],
-    np.datetime64(datetime(1980, 1, 1)),
-]
-time_step = np.timedelta64(24, "h")
-time_ids = ("valid0", "valid1", "invalid")
+class TestControl:
+    def test_control(self, time_dict):
+        control = Control(**time_dict)
+        assert control.start_time == time_dict_g["start_time"]
+        assert control.end_time == time_dict_g["end_time"]
+        assert control.time_step == time_dict_g["time_step"]
+        assert control.current_time == time_dict_g["start_time"]
+        assert control.previous_time is None
+        control.advance()
+        assert control.start_time == time_dict_g["start_time"]
+        assert control.end_time == time_dict_g["end_time"]
+        assert control.time_step == time_dict_g["time_step"]
+        assert control.current_time == time_dict_g["end_time"]
+        assert control.previous_time == time_dict_g["start_time"]
+        return None
 
-
-class TestTime:
-    @pytest.mark.parametrize(
-        "start_time",
-        start_times,
-        ids=time_ids,
-    )
-    def test_init_markov(self, start_time):
-        time = Time(start_time=start_time, time_step=time_step)
-        assert time.current_time == start_time
-        assert time.current_time_index == 1
-        assert time.previous_time is None
-        assert time.previous_time_index is None
-        assert time.time_step == time_step
-
-        time.advance()
-        assert time.current_time_index == 1
-        assert time.current_time == start_time + time_step
-        assert time.previous_time == start_time
-        assert time.previous_time_index == 0
-        assert time.time_step == time_step
-
-        # fail re-setting datetime
-        try:
-            time["datetime"] = np.array(np.datetime64(start_time))
-            assert False
-        except KeyError:
-            assert True
-
-        return
-
-    @pytest.mark.parametrize(
-        "start_time",
-        start_times,
-        ids=time_ids,
-    )
-    def test_init_timeseries(self, start_time, time_data):
-        try:
-            time = Time(
-                start_time=start_time,
-                time_step=time_step,
-                datetime=time_data,
-            )
-
-            # make sure we have the right case, as in the except
-            wh_start = np.where(time_data == start_time)[0]
-            assert len(wh_start) > 0
-            assert time.current_time_index == wh_start
-            assert time.current_time == start_time
-            assert time.previous_time is None
-            assert time.previous_time_index is None
-            assert time.time_step == time_step
-        except ValueError:
-            assert len(np.where(time_data == start_time)[0]) == 0
-            return
-
-        time.advance()
-        assert time.current_time_index == wh_start + 1
-        assert time.current_time == start_time + time_step
-        assert time.previous_time == start_time
-        assert time.previous_time_index == wh_start
-        assert time.time_step == time_step
-
-        # fail re-setting datetime
-        try:
-            time["datetime"] = time["datetime"] + np.timedelta64(24, "h")
-            # time["datetime"] += np.timedelta64(24, "h")
-            assert False
-        except KeyError:
-            assert True
-
-        return
+    def test_init_load(self, domain):
+        control = Control.load(domain["control_file"])
+        return None

@@ -40,53 +40,44 @@ class PRMSCanopy(StorageUnit):
 
         verbose = True
         super().__init__(
-            storage_type="canopy",
-            id=id,
             control=control,
             params=params,
             verbose=verbose,
         )
 
+        self.name = "PRMSCanopy"
+        self._current_time = self.control.current_time
+
         # store dependencies
-        self.pkwater_equiv = pkwater_equiv
-        self.transp_on = transp_on
+        self._input_variables_dict = {}
+        self._input_variables_dict["pkwater_equiv"] = variable_factory(
+            pkwater_equiv, "pkwater_equiv"
+        )
+        self._input_variables_dict["transp_on"] = variable_factory(
+            transp_on, "transp_on"
+        )
+        self._input_variables_dict["hru_ppt"] = variable_factory(
+            hru_ppt, "hru_ppt"
+        )
+        self._input_variables_dict["hru_rain"] = variable_factory(
+            hru_rain, "hru_rain"
+        )
+        self._input_variables_dict["hru_snow"] = variable_factory(
+            hru_snow, "hru_snow"
+        )
+        self._input_variables_dict["potet"] = variable_factory(potet, "potet")
 
-        # define self variables
-        # todo: may need way to initialize interception storage to something non-zero
-        self.intcp_stor_old = np.array(self.nhru * [0.0])
-        self.intcp_stor = np.array(self.nhru * [0.0])
-        # self.tranpiration_on = True  # prms variable Transp_on
-        # self.covden = None  # will be set to covden_sum or covden_win
-        self.interception_form = np.array(self.nhru * [RAIN], dtype=int)
-        self.intcp_transp_on = np.array(self.nhru * [ACTIVE], dtype=int)
-
-        # define information on the output data that will be accessible
-        self.output_data_names = [
-            "intcpstor",
-            "net_rain",
-            "net_snow",
-            "intcp_evap",
-            "rainfall_adj",
-            "snowfall_adj",
-            "potet",
-        ]
-        self.initialize_output_data()
-
-        # define information on inflows, outflows, and change in storage
-        # todo: fill these out and implement a residual calculator?
-        self.budget_inflows = [""]
-        self.budget_outflows = [""]
-        self.budget_change_in_storage = [""]
+        self.initialize_self_variables()
 
         return
 
     @staticmethod
-    def get_required_parameters() -> list:
+    def get_required_parameters() -> tuple:
         """
         Return a list of the parameters required for this process
 
         """
-        return [
+        return (
             "nhru",
             "hru_area",
             "cov_type",
@@ -98,25 +89,51 @@ class PRMSCanopy(StorageUnit):
             "epan_coef",
             "potet_sublim",
             "snow_intcp",
-        ]
+        )
 
+    @staticmethod
     def get_input_variables() -> tuple:
-        """Get groundwater reservoir input variables
+        """Get canopy reservoir input variables
 
         Returns:
             variables: input variables
 
         """
-        return [
+        return (
             "pkwater_equiv",
             "transp_on",
             "hru_ppt",
             "hru_rain",
             "hru_snow",
             "potet",
-        ]
+        )
 
-    def advance(self, itime_step):
+    @staticmethod
+    def get_self_variables() -> tuple:
+        """Get canopy self variables
+
+        Returns:
+            variables: self variables
+
+        """
+        return (
+            "intcp_stor",
+            "net_rain",
+            "net_snow",
+            "intcp_evap",
+            "rainfall_adj",
+            "snowfall_adj",
+            "potet",
+            "interception_form",
+            "intcp_transp_on",
+        )
+
+    def advance(self):
+
+        # if self._current_time >= self.control.current_time:
+        #    return None
+        # self._current_time = self.control.current_time
+
         self.intcp_stor_old = self.intcp_stor
 
         # set variables that depend on transpiration on/off setting
@@ -128,22 +145,14 @@ class PRMSCanopy(StorageUnit):
         #    self.covden = self.covden_win
         #    self.stor_max_rain = self.wrain_intcp
 
+        for key, value in self._input_variables_dict.items():
+            value.advance()
+            v = getattr(self, key)
+            v[:] = value.current
+
         self.interception_form[:] = RAIN
-        snowfall = snowfall
-        idx = np.where(snowfall > 0)
+        idx = np.where(self.hru_snow > 0)
         self.interception_form[idx] = SNOW
-
-        # pull out pkwater_equiv for this time (might need previous time because this is lagged)
-        if itime_step == 0 or self.pkwater_equiv_alltimes is None:
-            self.pkwater_equiv = np.zeros(self.nhru)
-        else:
-            self.pkwater_equiv = self.pkwater_equiv_alltimes[itime_step - 1]
-
-        # Assume transp_on is active if not specified
-        if self.transp_on_alltimes is None:
-            self.transp_on = np.full(self.nhru, ACTIVE, dtype=int)
-        else:
-            self.transp_on = self.transp_on_alltimes[itime_step]
 
         assert self.pkwater_equiv.shape == (self.nhru,)
 
@@ -159,10 +168,10 @@ class PRMSCanopy(StorageUnit):
     def calculate_procedural(self, time_length):
 
         # todo: verify that hru_ppt is prcp
-        hru_ppt = prcp
-        potet = potet
-        hru_rain = rainfall
-        hru_snow = snowfall
+        hru_ppt = self.hru_ppt
+        potet = self.potet
+        hru_rain = self.hru_rain
+        hru_snow = self.hru_snow
 
         net_rain = np.array(self.nhru * [0.0])
         net_snow = np.array(self.nhru * [0.0])
@@ -318,34 +327,12 @@ class PRMSCanopy(StorageUnit):
                     intcpevap = 0.0
                 intcpstor = intcpstor + last - intcpevap
 
-            intcp_evap[i] = intcpevap
+            self.intcp_evap[i] = intcpevap
             self.intcp_stor[i] = intcpstor
             hru_intcpstor[i] = intcpstor * cov
-            net_rain[i] = netrain
-            net_snow[i] = netsnow
+            self.net_rain[i] = netrain
+            self.net_snow[i] = netsnow
             net_ppt[i] = netrain + netsnow
-
-        self.output_data["intcpstor"].append(
-            [self.control.current_time] + list(hru_intcpstor)
-        )
-        self.output_data["net_rain"].append(
-            [self.control.current_time] + list(net_rain)
-        )
-        self.output_data["net_snow"].append(
-            [self.control.current_time] + list(net_snow)
-        )
-        self.output_data["intcp_evap"].append(
-            [self.control.current_time] + list(intcp_evap)
-        )
-        self.output_data["rainfall_adj"].append(
-            [self.control.current_time] + list(hru_rain)
-        )
-        self.output_data["snowfall_adj"].append(
-            [self.control.current_time] + list(hru_snow)
-        )
-        self.output_data["potet"].append(
-            [self.control.current_time] + list(potet)
-        )
 
         return
 
@@ -395,7 +382,7 @@ class PRMSCanopy(StorageUnit):
             self.stor_max_rain,
             self.covden,
             intcp_stor,
-            net_rain,
+            self.net_rain,
             idx,
         )
 
@@ -406,7 +393,7 @@ class PRMSCanopy(StorageUnit):
             self.stor_max_rain,
             self.covden,
             intcp_stor,
-            net_snow,
+            self.net_snow,
             idx,
         )
 
@@ -467,29 +454,10 @@ class PRMSCanopy(StorageUnit):
         # ENDIF
 
         # accumulate into net_ppt
-        net_ppt[:] = net_rain + net_snow
+        net_ppt[:] = self.net_rain + self.net_snow
 
         self.intcp_stor[:] = intcp_stor[:]
         hru_intcpstor = intcp_stor * self.covden
-
-        self.output_data["intcpstor"].append(
-            [self.control.current_time] + list(hru_intcpstor)
-        )
-        self.output_data["net_rain"].append(
-            [self.control.current_time] + list(net_rain)
-        )
-        self.output_data["net_snow"].append(
-            [self.control.current_time] + list(net_snow)
-        )
-        self.output_data["intcp_evap"].append(
-            [self.control.current_time] + list(intcp_evap)
-        )
-        self.output_data["rainfall_adj"].append(
-            [self.control.current_time] + list(rainfall_adj)
-        )
-        self.output_data["snowfall_adj"].append(
-            [self.control.current_time] + list(snowfall_adj)
-        )
 
         return
 

@@ -1,6 +1,6 @@
 import os
+import numpy as np
 import pathlib as pl
-
 import pandas as pd
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
@@ -13,15 +13,12 @@ from .control import Control
 class StorageUnit(Accessor):
     def __init__(
         self,
-        storage_type,
-        id: list,
         control: Control,
         params: PrmsParameters,
         verbose: bool,
     ):
 
-        self.storage_type = storage_type
-        self.id = id
+        self.name = "Storage Unit"
         self.control = control
         self.params = params
         self.verbose = verbose
@@ -91,36 +88,14 @@ class StorageUnit(Accessor):
     def get_required_parameters() -> list:
         raise Exception("This must be overridden")
 
-    def initialize_output_data(self):
-        self.output_column_names = ["date"]
-        if "nhm_id" in self.params.parameters:
-            self.output_column_names += [
-                f"nhru_hru_intcpstor_{nhmid}"
-                for nhmid in self.params.parameters["nhm_id"]
-            ]
-        else:
-            self.output_column_names += [
-                f"intcpstor_{id}" for id in range(self.nhru)
-            ]
-
-        # Initialize the output_data dictionary for each entry with an empty list
-        self.output_data = {}
-        for output_name in self.output_data_names:
-            self.output_data[output_name] = []
-        return
-
-    def get_output_dataframes(self):
-        """
-        Return a dictionary of data frames of output data from this process
-
-        """
-        output_data = {}
-        for key in self.output_data:
-            value = self.output_data[key]
-            df = pd.DataFrame(value, columns=self.output_column_names)
-            df.set_index("date", inplace=True)
-            output_data[key] = df
-        return output_data
+    def initialize_self_variables(self):
+        # todo: get the type from metadata
+        for name in self.get_required_parameters():
+            setattr(self, name, self.params.parameters[name])
+        for name in self.get_self_variables():
+            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
+        for name in self.get_input_variables():
+            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
 
     def output_to_csv(self, pth):
         """

@@ -20,6 +20,8 @@ def variable_factory(
                 variable=variable_name,
                 start_time=start_time,
             )
+    elif isinstance(var, np.ndarray) and len(var.shape) == 1:
+        return VariableFromOnedarray(var, variable=variable_name)
     else:
         raise TypeError("oops you screwed up")
 
@@ -73,10 +75,11 @@ class VariableFromOnedarray(Variable):
     def __init__(
         self,
         data: np.ndarray,
+        variable,
     ) -> None:
         super().__init__(variable)
-
         self._current_value = data
+        return
 
     def advance(self):
         return None

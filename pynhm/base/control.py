@@ -66,9 +66,9 @@ class Control(Accessor):
         """
         control = ControlVariables.load(control_file)
         return cls(
-            control.control.start_time,
-            control.control.end_time,
-            control.control.initial_deltat,
+            control.control["start_time"],
+            control.control["end_time"],
+            control.control["initial_deltat"],
             verbosity=verbosity,
         )
 

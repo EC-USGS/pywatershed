@@ -79,15 +79,15 @@ def test_parameter_access(domain, canopy_parameters):
     parameters = PrmsParameters.load(parameter_file)
 
     assert (
-        parameters.parameters.srain_intcp is not None
+        parameters.parameters["srain_intcp"] is not None
     ), "'srain_intcp' should not return None"
 
-    with pytest.raises(AttributeError):
-        v = parameters.parameters.unknown
+    with pytest.raises(KeyError):
+        v = parameters.parameters["unknown"]
 
-    del parameters.parameters.srain_intcp
-    with pytest.raises(AttributeError):
-        v = parameters.parameters.srain_intcp
+    del parameters.parameters["srain_intcp"]
+    with pytest.raises(KeyError):
+        v = parameters.parameters["srain_intcp"]
 
-    with pytest.raises(AttributeError):
-        del parameters.parameters.srain_intcp
+    with pytest.raises(KeyError):
+        del parameters.parameters["srain_intcp"]

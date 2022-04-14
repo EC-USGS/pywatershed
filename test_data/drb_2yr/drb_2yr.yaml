@@ -10,19 +10,26 @@ control_file: control.test
 param_file: myparam.param
 
 prms_outputs:
-  prcp_adj: output/nhru_hru_ppt.csv
-  rainfall_adj: output/nhru_hru_rain.csv
-  snowfall_adj: output/nhru_hru_snow.csv
-  tmax_adj: output/nhru_tmaxf.csv
-  tmin_adj: output/nhru_tminf.csv
-  swrad: output/nhru_swrad.csv
-  potet: output/nhru_potet.csv
-  intcpstor: output/nhru_hru_intcpstor.csv
-  net_rain: output/nhru_net_rain.csv
-  net_snow: output/nhru_net_snow.csv
-  intcp_evap: output/nhru_intcp_evap.csv
   soltab: soltab_debug
-  pkwater_equiv: output/nhru_pkwater_equiv.csv
+  prcp_adj: output/hru_ppt.csv
+  rainfall_adj: output/hru_rain.csv
+  snowfall_adj: output/hru_snow.csv
+  tmax_adj: output/tmaxf.csv
+  tmin_adj: output/tminf.csv
+  swrad: output/swrad.csv
+  potet: output/potet.csv
+  intcpstor: output/hru_intcpstor.csv
+  net_rain: output/net_rain.csv
+  net_snow: output/net_snow.csv
+  intcp_evap: output/intcp_evap.csv
+  pkwater_equiv: output/pkwater_equiv.csv
+  soil_to_gw: output/soil_to_gw.csv
+  ssr_to_gw: output/ssr_to_gw.csv
+  dprst_seep_hru: output/dprst_seep_hru.csv
+  gwres_flow: output/gwres_flow.csv
+  gwres_in: output/gwres_in.csv
+  gwres_sink: output/gwres_sink.csv
+  gwres_stor: output/gwres_stor.csv
 
 cbh_nc: cbh.nc
 

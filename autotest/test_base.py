@@ -80,17 +80,30 @@ class TestStateAccess:
         return
 
 
-time_data = np.arange(
+time_data_global = np.arange(
     datetime(1979, 1, 1), datetime(1979, 1, 5), timedelta(days=1)
 ).astype(np.datetime64)
 
-start_times = [time_data[0], time_data[3], np.datetime64(datetime(1980, 1, 1))]
+
+@pytest.fixture(scope="function")
+def time_data():
+    return time_data_global
+
+
+start_times = [
+    time_data_global[0],
+    time_data_global[2],
+    np.datetime64(datetime(1980, 1, 1)),
+]
 time_step = np.timedelta64(24, "h")
+time_ids = ("valid0", "valid1", "invalid")
 
 
 class TestTime:
     @pytest.mark.parametrize(
-        "start_time", start_times, ids=["valid0", "valid1", "invalid"]
+        "start_time",
+        start_times,
+        ids=time_ids,
     )
     def test_init_markov(self, start_time):
         time = Time(start_time=start_time, time_step=time_step)
@@ -117,13 +130,18 @@ class TestTime:
         return
 
     @pytest.mark.parametrize(
-        "start_time", start_times, ids=["valid0", "valid1", "invalid"]
+        "start_time",
+        start_times,
+        ids=time_ids,
     )
-    def test_init_timeseries(self, start_time):
+    def test_init_timeseries(self, start_time, time_data):
         try:
             time = Time(
-                start_time=start_time, time_step=time_step, datetime=time_data
+                start_time=start_time,
+                time_step=time_step,
+                datetime=time_data,
             )
+
             # make sure we have the right case, as in the except
             wh_start = np.where(time_data == start_time)[0]
             assert len(wh_start) > 0
@@ -145,7 +163,8 @@ class TestTime:
 
         # fail re-setting datetime
         try:
-            time["datetime"] += np.timedelta64(24, "h")
+            time["datetime"] = time["datetime"] + np.timedelta64(24, "h")
+            # time["datetime"] += np.timedelta64(24, "h")
             assert False
         except KeyError:
             assert True

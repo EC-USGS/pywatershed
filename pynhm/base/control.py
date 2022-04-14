@@ -38,7 +38,7 @@ class Control(Accessor):
         self._start_time = start_time
         self._end_time = end_time
         self._time_step = time_step
-        self._n_times = n_times
+        self._n_times = int(n_times) + 1
 
         self._current_time = self._start_time
         self._i_time = 0

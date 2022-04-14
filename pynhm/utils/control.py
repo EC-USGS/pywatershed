@@ -1,7 +1,6 @@
 import pathlib as pl
 from typing import Union
 
-from .dictionary_as_properties import DictionaryAsProperties
 from .prms5_file_util import PrmsFile
 
 fileish = Union[str, pl.PosixPath, dict]
@@ -16,7 +15,7 @@ class ControlVariables:
     """
 
     def __init__(self, control_dict: dict) -> "ControlVariables":
-        self.control = DictionaryAsProperties(control_dict["control"])
+        self.control = control_dict["control"]
 
     def get_variables(self, keys: listish) -> "ControlVariables":
         """Get a subset of keys in the control variable dictionary

@@ -63,7 +63,7 @@ def _cbh_file_to_df(
         col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
     else:
         col_names = np.char.add(
-            np.array([key]), params.parameters.nhm_id.astype(str)
+            np.array([key]), params.parameters["nhm_id"].astype(str)
         ).tolist()
     var_count_dict[key] = count
 

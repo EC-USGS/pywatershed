@@ -6,7 +6,7 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
 from ..base.control import Control
-from ..variableClass import Variable, variable_factory
+from ..base.variableClass import Variable, variable_factory
 
 variableish = Union[str, np.ndarray, Variable]
 

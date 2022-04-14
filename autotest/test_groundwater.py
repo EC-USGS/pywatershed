@@ -1,7 +1,7 @@
 import pathlib as pl
 
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from pynhm.hydrology.PRMSGroundwater import PRMSGroundawater
+from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils import ControlVariables
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
@@ -48,19 +48,19 @@ class TestPRMSGroundwaterDomain:
         # load csv files into dataframes
         output_files = domain["prms_outputs"]
         input_variables = {}
-        for key in PRMSGroundawater.get_input_variables():
+        for key in PRMSGroundwater.get_input_variables():
             output_pth = output_files[key]
             nc_pth = output_pth.with_suffix(".nc")
             input_variables[key] = nc_pth
 
-        gw = PRMSGroundawater(prms_params, atm, **input_variables)
+        gw = PRMSGroundwater(prms_params, atm, **input_variables)
         # nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
         # gw.initialize_netcdf(nc_pth, separate_files=False)
         nc_parent = pl.Path("./temp") / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 
         output_compare = {}
-        for key in PRMSGroundawater.get_output_variables():
+        for key in PRMSGroundwater.get_output_variables():
             output_pth = output_files[key]
             base_nc_pth = output_pth.with_suffix(".nc")
             compare_nc_pth = (

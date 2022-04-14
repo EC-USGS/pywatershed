@@ -6,12 +6,12 @@ from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..variableClass import Variable, variable_factory
+from ..base.variableClass import Variable, variable_factory
 
 variableish = Union[str, np.ndarray, Variable]
 
 
-class PRMSGroundwaterBetter(StorageUnit):
+class PRMSGroundwater(StorageUnit):
     """PRMS groundwater reservoir
 
     Args:
@@ -27,7 +27,7 @@ class PRMSGroundwaterBetter(StorageUnit):
         soil_to_gw: variableish,
         ssr_to_gw: variableish,
         dprst_seep_hru: variableish,
-    ) -> "PRMSGroundwaterBetter":
+    ) -> "PRMSGroundwater":
 
         verbose = True
         # todo: get this directly from parameters
@@ -51,10 +51,10 @@ class PRMSGroundwaterBetter(StorageUnit):
         )
 
         # define self variables that will be used for the calculation
-        for name in PRMSGroundwaterBetter.get_input_variables():
+        for name in PRMSGroundwater.get_input_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
-        for name in PRMSGroundwaterBetter.get_output_variables():
+        for name in PRMSGroundwater.get_output_variables():
             setattr(self, name, np.zeros(self.nhru, dtype=float))
 
         # initialize groundwater reservoir storage

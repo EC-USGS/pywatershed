@@ -1,14 +1,7 @@
 import pathlib as pl
-from datetime import datetime, timedelta
 
-import numpy as np
-import pandas as pd
-
-import pynhm.preprocess
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from pynhm.boundary_conditions.boundaryConditions import BoundaryConditions
-from pynhm.groundwater.PRMSGroundwater import PRMSGroundwater
-from pynhm.preprocess.csv_utils import CsvFile
+from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils import ControlVariables
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
@@ -60,11 +53,7 @@ class TestPRMSGroundwaterDomain:
             nc_pth = output_pth.with_suffix(".nc")
             input_variables[key] = nc_pth
 
-        bcs = BoundaryConditions()
-        for key, nc_pth in input_variables.items():
-            bcs.add_boundary(nc_pth)
-
-        gw = PRMSGroundwater(prms_params, atm)
+        gw = PRMSGroundwater(prms_params, atm, **input_variables)
         # nc_pth = pl.Path(nc_pth.parent) / "pynhm_gwflow.nc"
         # gw.initialize_netcdf(nc_pth, separate_files=False)
         nc_parent = pl.Path("./temp") / domain["domain_name"]
@@ -86,9 +75,9 @@ class TestPRMSGroundwaterDomain:
             # print(f"Running canopy for step {istep} and day: {atm.current_time}")
             gw.advance()
 
-            # set pointers to attributes in the groundwater component
-            bcs.advance()
-            bcs.set_pointers(gw)
+            # # set pointers to attributes in the groundwater component
+            # bcs.advance()
+            # bcs.set_pointers(gw)
 
             gw.calculate(float(istep))
 

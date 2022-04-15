@@ -8,7 +8,8 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 class TestPRMSGroundwaterDomain:
-    def test_init(self, domain):
+    def test_init(self, domain, tmp_path):
+        tmp_path = pl.Path(tmp_path)
         prms_params = PrmsParameters.load(domain["param_file"])
 
         # Set information from the control file
@@ -18,22 +19,23 @@ class TestPRMSGroundwaterDomain:
         output_files = domain["prms_outputs"]
         input_variables = {}
         for key in PRMSGroundwater.get_input_variables():
-            output_pth = output_files[key]
-            nc_pth = output_pth.with_suffix(".nc")
-            input_variables[key] = nc_pth
+            output_path = output_files[key]
+            nc_path = output_path.with_suffix(".nc")
+            input_variables[key] = nc_path
 
         gw = PRMSGroundwater(control, prms_params, **input_variables)
-        nc_parent = pl.Path("./temp") / domain["domain_name"]
+        nc_parent = tmp_path / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 
         output_compare = {}
-        for key in PRMSGroundwater.get_output_variables():
-            output_pth = output_files[key]
-            base_nc_pth = output_pth.with_suffix(".nc")
-            compare_nc_pth = (
-                pl.Path("./temp") / domain["domain_name"] / f"{key}.nc"
-            )
-            output_compare[key] = (base_nc_pth, compare_nc_pth)
+        for key in PRMSGroundwater.get_variables():
+            output_path = output_files[key]
+            base_nc_path = output_path.with_suffix(".nc")
+            compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
+            output_compare[key] = (base_nc_path, compare_nc_path)
+
+        print(f"base_nc_path: {base_nc_path}")
+        print(f"compare_nc_path: {compare_nc_path}")
 
         for istep in range(control.n_times):
 

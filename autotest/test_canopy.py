@@ -1,4 +1,4 @@
-import pathlib
+import pathlib as pl
 from datetime import datetime
 
 import numpy as np
@@ -10,6 +10,7 @@ from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
 from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.netcdf_utils import NetCdfCompare
 
 forcings_dict = {
     "datetime": np.array(
@@ -110,10 +111,11 @@ def params(domain):
 
 
 class TestPRMSCanopyDomain:
-    def test_init(self, domain, control, params):
+    def test_init(self, domain, control, params, tmp_path):
+        tmp_path = pl.Path(tmp_path)
 
         # get the answer data
-        output_files = domain["prms_outputs"]
+
         comparison_var_names = [
             # "rainfall_adj",
             # "snowfall_adj",
@@ -123,6 +125,8 @@ class TestPRMSCanopyDomain:
             "net_snow",
             "intcp_evap",
         ]
+        output_files = domain["prms_outputs"]
+
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_files[key].with_suffix(".nc")
@@ -136,15 +140,20 @@ class TestPRMSCanopyDomain:
 
         cnp = PRMSCanopy(control=control, params=params, **input_variables)
 
-        for istep in range(int(control.n_times)):
+        for istep in range(control.n_times):
+            # control.advance()
             cnp.advance()
             cnp.calculate(1.0)
+
+            # compare along the way
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():
                 assert np.isclose(ans[key].current, cnp[key], atol=1e-1).all()
 
-            control.advance()
+        cnp.finalize()
+
+        # is comparing along the way slower or faster than comparing netcdf?
 
         # prms_output_dataframes = {}
         # for cv in comparison_variables:

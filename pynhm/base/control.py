@@ -40,9 +40,10 @@ class Control(Accessor):
         self._time_step = time_step
         self._n_times = int(n_times) + 1
 
+        self._init_time = None  # get from control file if restart?
         self._current_time = self._start_time
-        self._i_time = 0
         self._previous_time = None
+        self._i_time = 0
 
         # self.metadata
         # This will have the time dimension name
@@ -111,7 +112,9 @@ class Control(Accessor):
         """Advance time."""
         if self._current_time == self._end_time:
             raise ValueError("End of time reached")
+
         self._previous_time = self._current_time
         self._current_time += self.time_step
         self._i_time += 1
+
         return None

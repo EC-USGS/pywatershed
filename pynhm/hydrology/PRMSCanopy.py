@@ -48,7 +48,7 @@ class PRMSCanopy(StorageUnit):
         )
 
         self.name = "PRMSCanopy"
-        self._current_time = self.control.current_time
+        # self._current_time = self.control.current_time
 
         # store dependencies
         self._input_variables_dict = {}
@@ -69,12 +69,16 @@ class PRMSCanopy(StorageUnit):
         )
         self._input_variables_dict["potet"] = variable_factory(potet, "potet")
 
-        self.initialize_self_variables()
+        # Where does the initial storage come from? Document here.
+        # apparently it's just zero?
+        # self.inctp_stor = self.intcp_stor_init.copy()
+        self.intcp_stor[:] = np.zeros([1])[0]
+        self.intcp_stor_old = None
 
         return
 
     @staticmethod
-    def get_required_parameters() -> tuple:
+    def get_parameters() -> tuple:
         """
         Return a list of the parameters required for this process
 
@@ -111,7 +115,7 @@ class PRMSCanopy(StorageUnit):
         )
 
     @staticmethod
-    def get_self_variables() -> tuple:
+    def get_variables() -> tuple:
         """Get canopy self variables
 
         Returns:
@@ -137,6 +141,7 @@ class PRMSCanopy(StorageUnit):
         # self._current_time = self.control.current_time
 
         self.intcp_stor_old = self.intcp_stor
+        self._itime_step += 1
 
         # set variables that depend on transpiration on/off setting
         # todo: this is currently hardwired to be on

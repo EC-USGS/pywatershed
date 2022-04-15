@@ -28,16 +28,16 @@ class PRMSGroundwater(StorageUnit):
         soil_to_gw: variableish,
         ssr_to_gw: variableish,
         dprst_seep_hru: variableish,
+        verbose: bool = False,
     ) -> "PRMSGroundwater":
 
-        verbose = True
         super().__init__(
-            "gwflow",
-            id=1,
             control=control,
             params=params,
             verbose=verbose,
         )
+
+        self.name = "PRMSGroundwater"
 
         self._input_variables_dict = {}
         self._input_variables_dict["soil_to_gw"] = variable_factory(
@@ -52,13 +52,6 @@ class PRMSGroundwater(StorageUnit):
             "dprst_seep_hru",
         )
 
-        # define self variables that will be used for the calculation
-        for name in PRMSGroundwater.get_input_variables():
-            setattr(self, name, np.zeros(self.nhru, dtype=float))
-
-        for name in PRMSGroundwater.get_output_variables():
-            setattr(self, name, np.zeros(self.nhru, dtype=float))
-
         # initialize groundwater reservoir storage
         self.gwres_stor = self.gwstor_init.copy()
         self.gwres_stor_old = self.gwstor_init.copy()
@@ -66,7 +59,7 @@ class PRMSGroundwater(StorageUnit):
         return
 
     @staticmethod
-    def get_required_parameters() -> tuple:
+    def get_parameters() -> tuple:
         """Get groundwater reservoir parameters
 
         Returns:
@@ -98,7 +91,7 @@ class PRMSGroundwater(StorageUnit):
         )
 
     @staticmethod
-    def get_output_variables() -> tuple:
+    def get_variables() -> tuple:
         """Get groundwater reservoir output variables
 
         Returns:
@@ -114,10 +107,6 @@ class PRMSGroundwater(StorageUnit):
 
     def advance(self) -> None:
         """Advance the groundwater reservoir
-
-        Args:
-            itime_step:
-
         Returns:
             None
 

@@ -9,8 +9,8 @@ from pynhm.base.variableClass import variable_factory
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
-from pynhm.utils.parameters import PrmsParameters
 from pynhm.utils.netcdf_utils import NetCdfCompare
+from pynhm.utils.parameters import PrmsParameters
 
 forcings_dict = {
     "datetime": np.array(

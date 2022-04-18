@@ -11,8 +11,11 @@ param_file: myparam.param
 
 prms_outputs:
   prcp_adj: output/hru_ppt.csv
+  hru_ppt: output/hru_ppt.csv
   rainfall_adj: output/hru_rain.csv
+  hru_rain: output/hru_rain.csv
   snowfall_adj: output/hru_snow.csv
+  hru_snow: output/hru_snow.csv
   tmax_adj: output/tmaxf.csv
   tmin_adj: output/tminf.csv
   swrad: output/swrad.csv

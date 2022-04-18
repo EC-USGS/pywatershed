@@ -1,6 +1,7 @@
 import os
 import pathlib as pl
 
+import numpy as np
 import pandas as pd
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
@@ -13,15 +14,12 @@ from .control import Control
 class StorageUnit(Accessor):
     def __init__(
         self,
-        storage_type,
-        id: list,
         control: Control,
         params: PrmsParameters,
         verbose: bool,
     ):
 
-        self.storage_type = storage_type
-        self.id = id
+        self.name = "Storage Unit"
         self.control = control
         self.params = params
         self.verbose = verbose
@@ -31,30 +29,11 @@ class StorageUnit(Accessor):
         self._output_netcdf = False
         self._netcdf = None
         self._separate_netcdf = True
-        self._itime_step = -1
+        self._itime_step = -1  # JLM CHECK
 
-        # Go through list of parameters for this process and assign them
-        # to self with a value of None
-        for param in self.get_required_parameters():
-            setattr(self, param, None)
+        self.initialize_self_variables()
 
-        # Go through the parameters for this process and see if self
-        # has a variable with that name.  If so, then assign the parameter
-        # value to the self variable.
-        for key in params.parameters:
-            if hasattr(self, key):
-                setattr(self, key, params.parameters[key])
-
-        # if any of the required parameters are still none,
-        # then we should terminate with an error
-        for key in self.get_required_parameters():
-            value = getattr(self, key)
-            if value is None:
-                print(
-                    f"{storage_type} storage unit requires {key} but it was not found in parameters."
-                )
-
-        return
+        return None
 
     def calculate(self, simulation_time: float) -> None:
         """Calculate storageUnit terms for a time step
@@ -88,39 +67,37 @@ class StorageUnit(Accessor):
         self._finalize_netcdf()
 
     @staticmethod
-    def get_required_parameters() -> list:
+    def get_parameters() -> list:
         raise Exception("This must be overridden")
 
-    def initialize_output_data(self):
-        self.output_column_names = ["date"]
-        if "nhm_id" in self.params.parameters:
-            self.output_column_names += [
-                f"nhru_hru_intcpstor_{nhmid}"
-                for nhmid in self.params.parameters["nhm_id"]
-            ]
-        else:
-            self.output_column_names += [
-                f"intcpstor_{id}" for id in range(self.nhru)
-            ]
+    @staticmethod
+    def get_input_variables() -> list:
+        raise Exception("This must be overridden")
 
-        # Initialize the output_data dictionary for each entry with an empty list
-        self.output_data = {}
-        for output_name in self.output_data_names:
-            self.output_data[output_name] = []
-        return
+    @staticmethod
+    def get_variables() -> list:
+        raise Exception("This must be overridden")
 
-    def get_output_dataframes(self):
-        """
-        Return a dictionary of data frames of output data from this process
+    @property
+    def parameters(self) -> list:
+        return self.get_parameters()
 
-        """
-        output_data = {}
-        for key in self.output_data:
-            value = self.output_data[key]
-            df = pd.DataFrame(value, columns=self.output_column_names)
-            df.set_index("date", inplace=True)
-            output_data[key] = df
-        return output_data
+    @property
+    def input_variables(self) -> list:
+        return self.get_input_variables()
+
+    @property
+    def variables(self) -> list:
+        return self.get_variables()
+
+    def initialize_self_variables(self):
+        # todo: get the type from metadata
+        for name in self.parameters:
+            setattr(self, name, self.params.parameters[name])
+        for name in self.variables:
+            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
+        for name in self.input_variables:
+            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
 
     def output_to_csv(self, pth):
         """
@@ -159,7 +136,7 @@ class StorageUnit(Accessor):
             # make working directory
             working_path = pl.Path(name)
             working_path.mkdir(parents=True, exist_ok=True)
-            for variable in self.get_output_variables():
+            for variable in self.variables:
                 nc_path = pl.Path(working_path) / f"{variable}.nc"
                 self._netcdf[variable] = NetCdfWrite(
                     nc_path,
@@ -167,14 +144,14 @@ class StorageUnit(Accessor):
                     [variable],
                 )
         else:
-            initial_variable = self.get_output_variables()[0]
+            initial_variable = self.variables[0]
             pl.Path(name).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
                 name,
                 self.id,
-                self.get_output_variables(),
+                self.variables,
             )
-            for variable in self.get_output_variables()[1:]:
+            for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
 
     def __output_netcdf(self) -> None:
@@ -185,7 +162,7 @@ class StorageUnit(Accessor):
 
         """
         if self._output_netcdf:
-            for idx, variable in enumerate(self.get_output_variables()):
+            for idx, variable in enumerate(self.variables):
                 if idx == 0 or self._separate_netcdf:
                     self._netcdf[variable].add_simulation_time(
                         self._itime_step,
@@ -199,7 +176,7 @@ class StorageUnit(Accessor):
 
     def _finalize_netcdf(self) -> None:
         if self._output_netcdf:
-            for idx, variable in enumerate(self.get_output_variables()):
+            for idx, variable in enumerate(self.variables):
                 self._netcdf[variable].close()
                 if not self._separate_netcdf:
                     break

@@ -1,14 +1,15 @@
-import pathlib
+import pathlib as pl
 from datetime import datetime
 
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.control import Control
+from pynhm.base.variableClass import variable_factory
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
+from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 forcings_dict = {
@@ -59,11 +60,6 @@ forcings_dict = {
 }
 
 
-@pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
 class TestPRMSCanopySimple:
     def test_init(self):
 
@@ -98,128 +94,104 @@ class TestPRMSCanopySimple:
         self.cnp = PRMSCanopy(
             control=control, params=prms_params, **input_variables
         )
-        self.cnp.advance(itime_step=0)
+        self.cnp.advance()
         self.cnp.calculate(time_length=1.0)
 
         return
 
 
+@pytest.fixture(scope="function")
+def control(domain):
+    return Control.load(domain["control_file"])
+
+
+@pytest.fixture(scope="function")
+def params(domain):
+    return PrmsParameters.load(domain["param_file"])
+
+
 class TestPRMSCanopyDomain:
-    def test_init(self, domain):
-        prms_params = PrmsParameters.load(domain["param_file"])
+    def test_init(self, domain, control, params, tmp_path):
+        tmp_path = pl.Path(tmp_path)
 
-        # Set information from the control file
-        control_file = domain["control_file"]
-        control = ControlVariables.load(control_file)
-        start_time = control.control.start_time
-        end_time = control.control.end_time
-        initial_deltat = control.control.initial_deltat
+        # get the answer data
 
-        atm_information_dict = {
-            "start_time": start_time,
-            "end_time": end_time,
-            "time_step": initial_deltat,
-            "verbosity": 3,
-            "height_m": 5,
-        }
-        var_translate = {
-            "prcp_adj": "prcp",
-            "rainfall_adj": "rainfall",
-            "snowfall_adj": "snowfall",
-            "tmax_adj": "tmax",
-            "tmin_adj": "tmin",
-            "swrad": "swrad",
-            "potet": "potet",
-        }
-        var_file_dict = {
-            var_translate[var]: file
-            for var, file in domain["prms_outputs"].items()
-            if var in var_translate.keys()
-        }
-        atm = NHMBoundaryLayer.load_prms_output(
-            **var_file_dict, parameters=prms_params, **atm_information_dict
-        )
-        atm.calculate_sw_rad_degree_day()
-        atm.calculate_potential_et_jh()
-
-        ## NEWNEWNEW
+        comparison_var_names = [
+            # "rainfall_adj",
+            # "snowfall_adj",
+            # "intcp_stor",  # not in the prms output currently
+            # "potet",
+            "net_rain",
+            "net_snow",
+            "intcp_evap",
+        ]
         output_files = domain["prms_outputs"]
+
+        ans = {}
+        for key in comparison_var_names:
+            nc_pth = output_files[key].with_suffix(".nc")
+            ans[key] = variable_factory(nc_pth, variable_name=key)
+
+        # setup the canopy
         input_variables = {}
         for key in PRMSCanopy.get_input_variables():
             nc_pth = output_files[key].with_suffix(".nc")
             input_variables[key] = nc_pth
 
-        # pkwater_equiv comes from snowpack; it is lagged by a time step
-        prms_output_files = domain["prms_outputs"]
-        pkwater_equiv = None
-        if "pkwater_equiv" in prms_output_files:
-            fname = prms_output_files["pkwater_equiv"]
-            df = CsvFile(fname).to_dataframe()
-            pkwater_equiv = df.to_numpy()
+        cnp = PRMSCanopy(control=control, params=params, **input_variables)
 
-        transp_on = None
-        if "transp_on" in prms_output_files:
-            fname = prms_output_files["transp_on"]
-            df = CsvFile(fname).to_dataframe()
-            transp_on = df.to_numpy()
+        for istep in range(control.n_times):
+            # control.advance()
+            cnp.advance()
+            cnp.calculate(1.0)
 
-        self.cnp = PRMSCanopy(prms_params, atm, pkwater_equiv, transp_on)
-        self.cnp.advance(itime_step=0)
+            # compare along the way
+            for key, val in ans.items():
+                val.advance()
+            for key in ans.keys():
+                assert np.isclose(ans[key].current, cnp[key], atol=1e-1).all()
 
-        for istep in range(atm.n_time):
-            if istep > 0:
-                atm.advance()
-            self.cnp.advance(istep)
-            self.cnp.calculate(1.0)
+        cnp.finalize()
 
-        # build a dictionary of the prms output dataframes for comparison
-        prms_output_files = domain["prms_outputs"]
-        comparison_variables = [
-            "rainfall_adj",
-            "snowfall_adj",
-            "potet",
-            "intcpstor",
-            "net_rain",
-            "net_snow",
-            "intcp_evap",
-        ]
-        prms_output_dataframes = {}
-        for cv in comparison_variables:
-            fname = prms_output_files[cv]
-            print(f"loading {fname}")
-            csvobj = CsvFile(fname)
-            df = csvobj.to_dataframe()
-            prms_output_dataframes[cv] = df
+        # is comparing along the way slower or faster than comparing netcdf?
 
-        # get a dictionary of dataframes for process model output
-        pynhm_output_dataframes = self.cnp.get_output_dataframes()
+        # prms_output_dataframes = {}
+        # for cv in comparison_variables:
+        #     fname = prms_output_files[cv]
+        #     print(f"loading {fname}")
+        #     csvobj = CsvFile(fname)
+        #     df = csvobj.to_dataframe()
+        #     prms_output_dataframes[cv] = df
 
-        # compare prms and pynhm data
-        for cv in comparison_variables:
-            prms_data = prms_output_dataframes[cv]
-            pynhm_data = pynhm_output_dataframes[cv]
+        # # get a dictionary of dataframes for process model output
+        # pynhm_output_dataframes = cnp.get_output_dataframes()
 
-            print(f"\n{50*'*'}")
-            print(f"{cv}  min  max")
-            a1 = prms_data.to_numpy()
-            a2 = pynhm_data.to_numpy()
-            diff = a1 - a2
-            diffmin = diff.min()
-            diffmax = diff.max()
-            print(f"prms   {a1.min()}    {a1.max()}")
-            print(f"pynhm  {a2.min()}    {a2.max()}")
-            print(f"diff   {diffmin}  {diffmax}")
+        # # compare prms and pynhm data
+        # for cv in comparison_variables:
+        #     prms_data = prms_output_dataframes[cv]
+        #     pynhm_data = pynhm_output_dataframes[cv]
 
-            atol = 1.0e-5
-            errmsg = f"Canopy variable {cv} does not match to within {atol}"
-            assert np.allclose(diffmin, 0.0, atol=atol), errmsg
-            assert np.allclose(diffmax, 0.0, atol=atol), errmsg
+        #     print(f"\n{50*'*'}")
+        #     print(f"{cv}  min  max")
+        #     a1 = prms_data.to_numpy()
+        #     a2 = pynhm_data.to_numpy()
+        #     diff = a1 - a2
+        #     diffmin = diff.min()
+        #     diffmax = diff.max()
+        #     print(f"prms   {a1.min()}    {a1.max()}")
+        #     print(f"pynhm  {a2.min()}    {a2.max()}")
+        #     print(f"diff   {diffmin}  {diffmax}")
 
-        # save cnp output as dataframes in temp/domain_name
-        saveoutput = False
-        if saveoutput:
-            pth = pathlib.Path(".", "temp", domain["domain_name"])
-            pth.mkdir(parents=True, exist_ok=True)
-            self.cnp.output_to_csv(pth)
+        #     atol = 1.0e-5
+        #     errmsg = f"Canopy variable {cv} does not match to within {atol}"
+        #     assert np.allclose(diffmin, 0.0, atol=atol), errmsg
+        #     assert np.allclose(diffmax, 0.0, atol=atol), errmsg
+
+        # # save cnp output as dataframes in temp/domain_name
+        # saveoutput = False
+        # if saveoutput:
+        #     pth = pathlib.Path(".", "temp", domain["domain_name"])
+        #     pth.mkdir(parents=True, exist_ok=True)
+        #     cnp.output_to_csv(pth)
 
         return

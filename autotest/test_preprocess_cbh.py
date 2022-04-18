@@ -138,33 +138,24 @@ def test_cbh_adj_prms_output(domain, params):
     for var, var_file in domain["prms_outputs"].items():
         # todo: this needs to be fixed so that it does not need to be modified
         #  anytime a new PRMS output variable is added
-        if var in (
-            "soltab",
-            "intcpstor",
-            "net_rain",
-            "net_snow",
-            "intcp_evap",
-            "pkwater_equiv",
-            "transp_on",
-            "soil_to_gw",
-            "ssr_to_gw",
-            "dprst_seep_hru",
-            "gwres_flow",
-            "gwres_in",
-            "gwres_sink",
-            "gwres_stor",
+        if not var in (
+            "prcp_adj",
+            "rainfall_adj",
+            "snowfall_adj",
+            "tmax_adj",
+            "tmin_adj",
         ):
             continue
-        if var in (
-            "swrad",
-            "potet",
-        ):
-            msg = (
-                f"Skipping {var} as it is not currently preprocessed, "
-                f"this skip should be removed when it is"
-            )
-            warnings.warn(msg)
-            continue
+        # if var in (
+        #     "swrad",
+        #     "potet",
+        # ):
+        #     msg = (
+        #         f"Skipping {var} as it is not currently preprocessed, "
+        #         f"this skip should be removed when it is"
+        #     )
+        #     warnings.warn(msg)
+        #     continue
         prms_output = load_prms_statscsv(var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()

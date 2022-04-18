@@ -1,0 +1,121 @@
+ncascade:
+  default: 0
+  desc: Number of HRU links for cascading flow
+  size: 0
+ncascdgw:
+  default: 0
+  desc: Number of GWR links for cascading flow
+  size: 0
+nconsumed:
+  default: 0
+  desc: Number of consumptive water-use destinations
+  size: 0
+ndays:
+  default: 366
+  desc: Maximum number of days in a year
+  size: 366
+ndepl:
+  default: 1
+  desc: Number of snow-depletion curves
+  size: 0
+ndeplval:
+  default: 11
+  desc: Number of values in all snow-depletion curves (set to ndepl*11)
+  size: 0
+nevap:
+  default: 0
+  desc: Number of pan-evaporation data sets
+  size: 0
+nexternal:
+  default: 0
+  desc: Number of external water-use sources or destinations
+  size: 0
+ngw:
+  default: 0
+  desc: Number of GWRs
+  size: 0
+ngwcell:
+  default: 0
+  desc: Number of spatial units in the target map for mapped results
+  size: 0
+nhru:
+  default: 0
+  desc: Number of HRUs
+  size: 0
+nhrucell:
+  default: 0
+  desc: Number of unique intersections between HRUs and spatial units of a target
+    map for mapped results
+  size: 0
+nhumid:
+  default: 0
+  desc: Number of relative humidity measurement stations
+  size: 0
+nlake:
+  default: 0
+  desc: Number of lakes
+  size: 0
+nlakeelev:
+  default: 0
+  desc: Maximum number of lake elevations for any rating table data set
+  size: 0
+nlapse:
+  default: 0
+  desc: Number of lapse rates in X, Y, and Z directions
+  size: 0
+nmonths:
+  default: 12
+  desc: Number of months in a year
+  size: 12
+nobs:
+  default: 0
+  desc: Number of streamflow-measurement stations
+  size: 0
+npoigages:
+  default: 0
+  desc: Number of POI gages
+  size: 0
+nrain:
+  default: 0
+  desc: Number of precipitation-measurement stations
+  size: 0
+nratetbl:
+  default: 0
+  desc: Number of rating-table data sets for lake elevations
+  size: 0
+nsegment:
+  default: 0
+  desc: Number of stream-channel segments
+  size: 0
+nsnow:
+  default: 0
+  desc: Number of snow-depth-measurement stations
+  size: 0
+nsol:
+  default: 0
+  desc: Number of solar-radiation measurement stations
+  size: 0
+nssr:
+  default: 0
+  desc: Number of subsurface reservoirs
+  size: 0
+nsub:
+  default: 0
+  desc: Number of internal subbasins
+  size: 0
+ntemp:
+  default: 0
+  desc: Number of air-temperature-measurement stations
+  size: 0
+nwateruse:
+  default: 0
+  desc: Number of water-use data sets
+  size: 0
+nwind:
+  default: 0
+  desc: Number of wind-speed measurement stations
+  size: 0
+one:
+  default: 1
+  desc: Dimension of scalar parameters and variables
+  size: 1

@@ -1,0 +1,1057 @@
+aniOutON_OFF:
+  default: 0
+  desc: Switch to specify whether or not Animation File(s) are generated (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+aniOutVar_names:
+  default: null
+  desc: List of variable names for which all values of the variable (that is, the
+    entire dimension size) for each time step are written Animation Dimension Files(s)
+  numvals: 1
+  type: 4
+ani_output_file:
+  default: animation.out
+  desc: Root pathname for Animation Files(s) to which a filename suffix based on dimension
+    name associated with selected variables is appended
+  numvals: 1
+  type: 4
+basinOutBaseFileName:
+  default: null
+  desc: String to define the prefix for each basin summary output file.
+  numvals: 1
+  type: 4
+basinOutON_OFF:
+  default: 0
+  desc: Switch to specify whether or not basin summary output files are generated
+    (0=no; 1=yes)
+  numvals: 1
+  related_variables:
+  - basinOutVars
+  - basinOut_freq
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+basinOutVar_names:
+  default: basin_summary_
+  desc: List of variable names for which output is written to basin summary Comma
+    Separated Values (CSV) output file(s). Each variable is written to files in the
+    order specified in basinOutVars with the prefix of each file equal to the value
+    of basinOutBaseFileName. The suffix of the files is based on the value of basinOut_freq
+    and will be .csv; _meanyearly.csv; _yearly.csv; _meanmonthly.csv; or _monthly.csv.
+    Variables must be of type real or double
+  numvals: 1
+  type: 4
+basinOutVars:
+  default: 0
+  desc: Number of variables to include in basin summary output file(s)
+  numvals: 1
+  related_variables:
+  - basinOutON_OFF
+  - basinOut_freq
+  type: 1
+  values_type: count
+basinOut_freq:
+  default: 1
+  desc: Output frequency and type (1=daily; 2=monthly; 3=both; 4=mean monthly; 5=mean
+    yearly; 6=yearly)
+  numvals: 1
+  related_variables:
+  - basinOutVars
+  - basinOutON_OFF
+  type: 1
+  values:
+    1: daily
+    2: monthly
+    3: daily,monthly
+    4: mean monthly
+    5: mean yearly
+    6: yearly
+  values_type: interval
+cascade_flag:
+  default: 0
+  desc: Flag to indicate if HRU cascades are computed (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+cascadegw_flag:
+  default: 0
+  desc: Flag to indicate if GWR cascades are computed (0=no; 1=yes; 2 = GWR cascades
+    are set equal to the HRU cascades and parameters gw_up_id, gw_strmseg_down_in,
+    gw_down_id, and gw_pct_up are not required)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+cbh_binary_flag:
+  default: 0
+  desc: Flag to specify whether to input CBH files in a binary format using the samer
+    order of values as the text file version (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+cbh_check_flag:
+  default: 0
+  desc: Flag to indicate if CBH values are validated each time step (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+covden_sum_dynamic:
+  default: dyn_covden_sum.param
+  desc: Pathname of the time series of pre-processed values for summer plant-cover
+    density used to set values of covden_sum for each HRU
+  force_default: 1
+  numvals: 1
+  type: 4
+covden_win_dynamic:
+  default: dyn_covden_win.param
+  desc: Pathname of the time series of pre-processed values for winter plant-cover
+    density used to set values of covden_win for each HRU
+  force_default: 1
+  numvals: 1
+  type: 4
+covtype_dynamic:
+  default: dyn_cov_type.param
+  desc: Pathname of the time series of pre-processed values used to set values of
+    cov_type for each HRU
+  force_default: 1
+  numvals: 1
+  type: 4
+csvON_OFF:
+  default: 0
+  desc: Switch to specify whether or not common-separated values (CSV) summary output
+    files are generated (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+csv_output_file:
+  default: null
+  desc: Pathname of CSV output file
+  numvals: 1
+  type: 4
+data_file:
+  default: sf_data
+  desc: Pathname(s) for measured input Data File(s), typically a single Data File
+    is specified
+  numvals: 1
+  type: 4
+dispGraphsBuffSize:
+  default: 50
+  desc: Number of time steps to wait before updating the runtime graph
+  numvals: 1
+  type: 1
+dispVar_element:
+  default: null
+  desc: List of identification numbers corresponding to variables specified in dispVar_names
+    list (1 to variable's dimension size)
+  numvals: 1
+  type: 4
+dispVar_names:
+  default: null
+  desc: List of variable names for which plots are output to the runtime graph
+  numvals: 1
+  type: 4
+dispVar_plot:
+  default: null
+  desc: List of variable names for which plots are output to the runtime graph
+  numvals: 1
+  type: 4
+dprst_depth_dynamic:
+  default: dyn_dprst_depth.param
+  desc: Pathname of the time series of pre-processed values used to set values of
+    dprst_depth_avg
+  force_default: 1
+  numvals: 1
+  type: 4
+dprst_flag:
+  default: 0
+  desc: Flag to indicate if depression-storage simulation is computed (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+dprst_frac_dynamic:
+  default: dyn_dprst_frac.param
+  desc: Pathname of the time series of pre-processed values used to set values of
+    dprst_frac
+  force_default: 1
+  numvals: 1
+  type: 4
+dprst_transferON_OFF:
+  default: 0
+  desc: Flag to indicate to use time series of surface-depression transfer flow rates
+    from the dprst_transfer_file (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'no'
+    1: 'yes'
+  values_type: flag
+dprst_transfer_file:
+  default: dprst.transfer
+  desc: Pathname of the time series of pre-processed flow rates for transfers from
+    surface-depression storage
+  numvals: 1
+  type: 4
+dyn_covden_flag:
+  default: 0
+  desc: Flag to indicate if a time series of plant-canopy density values are input
+    in a Dynamic Parameter File(s) (0=no; 1=file covden_sum_dynamic; 2=file covden_win_dynamic;
+    3=both)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: covden_sum
+    2: covden_win
+    3: covden_sum,covden_win
+  values_type: parameter
+dyn_covtype_flag:
+  default: 0
+  desc: Flag to indicate if a time series of plant-canopy type values are input in
+    Dynamic Parameter File covtype_dynamic (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: cov_type
+  values_type: parameter
+dyn_dprst_flag:
+  default: 0
+  desc: Flag to indicate if a time series of surface-depression values are input in
+    a Dynamic Parameter File(s) (0=no; 1=file dprst_frac_dynamic; 2=file dprst_depth_dynamic;
+    3=both)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: dprst_frac
+    2: dprst_depth
+    3: dprst_frac,dprst_depth
+  values_type: parameter
+dyn_fallfrost_flag:
+  default: 0
+  desc: Flag to indicate if a time series of transpiration start Julian day values
+    are input in a Dynamic Parameter File(s) (0=no; 1 =file fallfrost_dynamic)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: fall_frost
+  values_type: parameter
+dyn_imperv_flag:
+  default: 0
+  desc: Flag to indicate if a time series of impervious values are input in a Dynamic
+    Parameter File(s) (0=no; 1=file imperv_frac_dynamic; 2=file imperv_stor_dynamic;
+    3=both)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: hru_percent_imperv
+    2: imperv_stor_max
+    3: hru_percent_imperv,imperv_stor_max
+  values_type: parameter
+dyn_intcp_flag:
+  default: 0
+  desc: Flag to indicate if a time series of plant canopy interception values are
+    input in a Dynamic Parameter File(s) (0=no; 1=file wrain_intcp_dynamic; 2=file
+    srain_intcp_dynamic; 4=file snow_intcp_dynamic; additive combinations)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: wrain_intcp
+    2: srain_intcp
+    3: wrain_intcp,srain_intcp
+    4: snow_intcp
+    5: wrain_intcp,snow_intcp
+    6: srain_intcp,snow_intcp
+    7: wrain_intcp,srain_intcp,snow_intcp
+  values_type: parameter
+dyn_potet_flag:
+  default: 0
+  desc: Flag to indicate if a time series of potential ET coefficient values are input
+    in Dynamic Parameter File potetcoef_dynamic to update coefficients for the specified
+    month for the selected potential ET module specified by control parameter et_module
+    (0=no; 1=parameter jh_coef, pt_alpha, hs_krs, hamon_coef, epan_coef, potet_cbh_adj,
+    and pm_n_coef used in potet_jh, potet_pt, potet_hs, potet_hamon, potet_pan, climate_hru,
+    and potet_pm modules, respectively; 2=parameter jh_coef_hru, pm_d_coef used in
+    potet_jh and potet_pm modules, respectively)
+  numvals: 1
+  type: 1
+dyn_radtrncf_flag:
+  default: 0
+  desc: Flag to indicate if a time series of solar radiation values are input in  Dynamic
+    Parameter File radtrncf_dynamic (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: rad_trncf
+  values_type: parameter
+dyn_snareathresh_flag:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: snarea_thresh
+  values_type: parameter
+dyn_soil_flag:
+  default: 0
+  desc: Flag to indicate if a time series of soil-water capacity values are input
+    in a Dynamic Parameter File(s) (0=no; 1=file soilmoist_dynamic only, 2=file soilrechr_dynamic
+    only; 3=both)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: soil_moist
+    2: soil_rechr
+    3: soil_moist,soil_rechr
+  values_type: parameter
+dyn_springfrost_flag:
+  default: 0
+  desc: Flag to indicate if a time series of transpiration start Julian day values
+    are input in a Dynamic Parameter File(s) (0=no; 1=file springfrost_dynamic)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: spring_frost
+  values_type: parameter
+dyn_sro2dprst_imperv_flag:
+  default: 0
+  desc: Flag to indicate if a time series of fraction of surface runoff from the impervious
+    portion of an HRU are input in Dynamic Parameter File sro2dprst_imperv_dynamic
+    (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: sro_to_dprst_imperv
+  values_type: parameter
+dyn_sro2dprst_perv_flag:
+  default: 0
+  desc: Flag to indicate if a time series of fraction of surface runoff from the pervious
+    portion of an HRU are input in Dynamic Parameter File sro2dprst_perv_dyn (0=no;
+    1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: sro_to_dprst_perv
+  values_type: parameter
+dyn_transp_flag:
+  default: 0
+  desc: Flag to indicate if a time series of transpiration month values are input
+    in a Dynamic Parameter File(s) (0=no; 1=file transpbeg_dynamic; 2=file transpend_dynamic
+    only, 3=both)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: transp_beg
+    2: transp_end
+    3: transp_beg,transp_end
+  values_type: parameter
+dyn_transp_on_flag:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: transp_on
+  values_type: parameter
+end_time:
+  default: '1980-12-31'
+  desc: 'Simulation end date and time specified in order in the control item as: year,
+    month, day, hour, minute, second'
+  numvals: 1
+  type: 1
+et_module:
+  default: potet_jh
+  desc: Module name for potential evapotranspiration method (climate_hru, potet_jh,
+    potet_hamon, potet_hs, potet_pt, potet_pm, potet_pm_sta, or potet_pan)
+  numvals: 1
+  type: 4
+executable_desc:
+  default: MOWS
+  desc: Descriptive text to identify the PRMS executable
+  numvals: 1
+  type: 4
+executable_model:
+  default: prmsIV
+  desc: Pathname (full or relative) of the PRMS executable
+  numvals: 1
+  type: 4
+external_transferON_OFF:
+  default: 0
+  desc: Flag to indicate to use external transfer flow rates from the external_transfer_file
+    (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+external_transfer_file:
+  default: ext.transfer
+  desc: Pathname of the time series of pre-processed flow rates for transfers from
+    external sources
+  numvals: 1
+  type: 4
+fallfrost_dynamic:
+  default: dyn_fall_frost.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    fall_frost
+  force_default: 1
+  numvals: 1
+  type: 4
+gwr_swale_flag:
+  default: 0
+  desc: Flag to indicate if GWR swales are allowed (0=no; 1=groundwater flow goes
+    to groundwater sink; 3=groundwater flow goes to stream segment specified using
+    parameter hru_segment
+  numvals: 1
+  type: 1
+gwr_transferON_OFF:
+  default: 0
+  desc: Flag to indicate to use groundwater transfer flow rates from the gwr_transfer_file
+    (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+gwr_transfer_file:
+  default: gwr.transfer
+  desc: Pathname of the time series of pre-processed flow rates for transfers from
+    groundwater reservoir storage
+  numvals: 1
+  type: 4
+humidity_day:
+  default: humidity.day
+  desc: Pathname of the CBH file of pre-processed humidity input data for each HRU
+    to specify variable humidity_hru-percentage
+  numvals: 1
+  type: 4
+humidity_module:
+  default: null
+  desc: Module name for humidity distribution
+  numvals: 1
+  type: 4
+imperv_frac_dynamic:
+  default: dyn_hru_percent_imperv.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    hru_percent_imperv
+  force_default: 1
+  numvals: 1
+  type: 4
+imperv_stor_dynamic:
+  default: dyn_imperv_stor_max.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    imperv_stor_max
+  force_default: 1
+  numvals: 1
+  type: 4
+init_vars_from_file:
+  default: 0
+  desc: Flag to specify whether or not the Initial Conditions File is specified as
+    an input file (0=no; 1=yes; 2=yes and use parameter values in Parameter File instead
+    of values in Initial Conditions File)
+  numvals: 1
+  type: 1
+initial_deltat:
+  default: 24.0
+  desc: Initial time step for the simulation
+  numvals: 1
+  type: 2
+lake_transferON_OFF:
+  default: 0
+  desc: Flag to indicate to use lake HRU transfer flow rates from the lake_transfer_file
+    (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+lake_transfer_file:
+  default: lake.transfer
+  desc: Pathname of the time series of pre-processed flow rates for transfers from
+    lake HRUs
+  numvals: 1
+  type: 4
+mapOutON_OFF:
+  default: 0
+  desc: Switch to specify whether or not mapped output file(s) by a specified number
+    of columns (parameter ncol) of daily, monthly, yearly, or total simulation results
+    is generated (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+mapOutVar_names:
+  default: null
+  desc: List of variable names for which output is written to mapped output files(s);
+    variables must be of type real or double.
+  numvals: 1
+  type: 4
+model_mode:
+  default: PRMS5
+  desc: Flag to indicate the simulation mode (PRMS=PRMS; FROST=growing season for
+    each HRU; WRITE_CLIMATE=write CBH files of minimum and maximum air temperature
+    (variables tminf and tmaxf-Fahrenheit); precipitation (variable hru_ppt-inches);
+    solar radiation (variable swrad-Langleys); potential ET (variable potet-inches);
+    and/or transpiration flag (variable transp_on-none); POTET=simulate to potential
+    ET; TRANSPIRE=simulate to transpiration period; DOCUMENTATION=write files of all
+    declared parameters and variables in the executable)
+  numvals: 1
+  type: 4
+model_output_file:
+  default: prms.out
+  desc: Pathname for Water-Budget File for results module basin_sum
+  numvals: 1
+  type: 4
+naniOutVars:
+  default: 0
+  desc: Number of output variables specified in the aniOutVar_names list
+  numvals: 1
+  type: 1
+ndispGraphs:
+  default: 0
+  desc: Number of plots included in the runtime graph
+  numvals: 1
+  type: 1
+nhruOutBaseFileName:
+  default: nhru_summary_
+  desc: String to define the prefix for each nhru summary output file.
+  numvals: 1
+  type: 4
+nhruOutON_OFF:
+  default: 0
+  desc: Switch to specify whether or not nhru summary output files are generated (0=no;
+    1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+nhruOutVar_names:
+  default: null
+  desc: List of variable names for which output is written to nhru summary Comma Separated
+    Values (CSV) output files(s). Each variable is written to a separate file with
+    the prefix of each file equal to the value of nhruOutBaseFileName; variables must
+    be of type real or double. Each variable is written to a separate file with the
+    prefix of each file equal to the value of nhruOutBaseFileName. The suffix of the
+    files is based on the value of nhruOut_freq and will be .csv; _meanyearly.csv;
+    _yearly.csv; _meanmonthly.csv; or _monthly.csv. Variables must be of type real
+    or double
+  numvals: 1
+  type: 4
+nhruOutVars:
+  default: 0
+  desc: Number of variables to include in nhru summary output file(s)
+  numvals: 1
+  type: 1
+nhruOut_format:
+  default: 1
+  desc: none
+  numvals: 1
+  type: 1
+nhruOut_freq:
+  default: 1
+  desc: Output frequency and type (1=daily; 2=monthly; 3=both; 4=mean monthly; 5=mean
+    yearly; 6=yearly)
+  numvals: 1
+  related_variables:
+  - nhruOutVars
+  - nhruOutON_OFF
+  type: 1
+  values:
+    1: daily
+    2: monthly
+    3: daily,monthly
+    4: mean monthly
+    5: mean yearly
+    6: yearly
+  values_type: interval
+nmapOutVars:
+  default: 0
+  desc: Number of variables to include in mapped output file(s)
+  numvals: 1
+  type: 1
+nsegmentOutBaseFileName:
+  default: nsegment_summary_
+  desc: none
+  numvals: 1
+  type: 4
+nsegmentOutON_OFF:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+nsegmentOutVar_names:
+  default: null
+  desc: none
+  numvals: 1
+  type: 4
+nsegmentOutVars:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+nsegmentOut_format:
+  default: 1
+  desc: none
+  numvals: 1
+  type: 1
+nsegmentOut_freq:
+  default: 1
+  desc: none
+  numvals: 1
+  related_variables:
+  - nsegmentOutVars
+  - nsegmentOutON_OFF
+  type: 1
+  values:
+    1: daily
+    2: monthly
+    3: daily,monthly
+    4: mean monthly
+    5: mean yearly
+    6: yearly
+  values_type: interval
+nstatVars:
+  default: 0
+  desc: Number of variables to include in Statistics Variables File and names specified
+    in statVar_names
+  numvals: 1
+  type: 1
+nsubOutBaseFileName:
+  default: nsub_summary_
+  desc: String to define the prefix for each nsub summary output file.
+  numvals: 1
+  type: 4
+nsubOutON_OFF:
+  default: 0
+  desc: Switch to specify whether or not nsub summary output files are generated (0=no;
+    1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+nsubOutVar_names:
+  default: null
+  desc: List of variable names for which output is written to nsub summary Comma Separated
+    Values (CSV) output files(s). Each variable is written to a separate file with
+    the prefix of each file equal to the value of nsubOutBaseFileName; variables must
+    be of type real or double. Each variable is written to a separate file with the
+    prefix of each file equal to the value of nsubOutBaseFileName. The suffix of the
+    files is based on the value of nsubOut_freq and will be .csv; _meanyearly.csv;
+    _yearly.csv; _meanmonthly.csv; or _monthly.csv. Variables must be of type real
+    or double
+  numvals: 1
+  type: 4
+nsubOutVars:
+  default: 0
+  desc: Number of variables to include in nsub summary output file(s)
+  numvals: 1
+  type: 1
+nsubOut_format:
+  default: 1
+  desc: none
+  numvals: 1
+  type: 1
+nsubOut_freq:
+  default: 1
+  desc: Output frequency and type (1=daily; 2=monthly; 3=both; 4=mean monthly; 5=mean
+    yearly; 6=yearly)
+  numvals: 1
+  related_variables:
+  - nsubOutVars
+  - nsubOutON_OFF
+  type: 1
+  values:
+    1: daily
+    2: monthly
+    3: daily,monthly
+    4: mean monthly
+    5: mean yearly
+    6: yearly
+  values_type: interval
+orad_flag:
+  default: 1
+  desc: Flag to specify whether or not the variable orad is specified as the last
+    column of the swrad_day CBH file (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+outVarON_OFF:
+  default: 0
+  desc: Switch to specify whether or not combined basin, nhru, nsegment summary output
+    files are generated (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+outVar_base_filename:
+  default: summary
+  desc: String to define the prefix for each combined summary output file.
+  numvals: 1
+  type: 4
+outVar_names:
+  default: null
+  desc: List of variable names for which output is written to the combine summary
+    file
+  numvals: 1
+  type: 4
+param_file:
+  default: prms.params
+  desc: Pathname(s) for Parameter File(s)
+  numvals: 1
+  type: 4
+parameter_check_flag:
+  default: 0
+  desc: Flag to indicate if selected parameter values validation checks are treated
+    as warnings or errors (0=no; 1=yes; 2=check parameters and then stop)
+  numvals: 1
+  type: 1
+potet_day:
+  default: potet.day
+  desc: Pathname of the CBH file of pre-processed potential-ET input data for each
+    HRU to specify variable potet-inches
+  numvals: 1
+  type: 4
+potetcoef_dynamic:
+  default: dyn_potet_coef.param
+  desc: Pathname of the time series of pre-processed potential evapotranspiration
+    coefficient values where the parameter is dependent on the value of et_module
+  force_default: 1
+  numvals: 1
+  type: 4
+precip_day:
+  default: precip.day
+  desc: Pathname of the CBH file of pre-processed precipitation input data for each
+    HRU to specify variable precip-inches
+  numvals: 1
+  type: 4
+precip_module:
+  default: precip_1sta
+  desc: Module name for precipitation-distribution method (climate_hru, ide_dist,
+    precip_1sta, precip_dist2, precip_laps, or xyz_dist)
+  numvals: 1
+  type: 4
+print_debug:
+  default: 0
+  desc: Flag to indicate type of debug output (-2=minimal output to screen and no
+    model_output_file; -1 =minimize screen output; 0=none; 1=water balances; 2=basin
+    module; 4=basin_sum module; 5=soltab module; 7=soilzone module; 9=snowcomp module;
+    13=cascade module; 14=subbasin module)
+  numvals: 1
+  type: 1
+prms_warmup:
+  default: 1
+  desc: none
+  numvals: 1
+  type: 1
+radtrncf_dynamic:
+  default: dyn_rad_trncf.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    rad_trncf
+  force_default: 1
+  numvals: 1
+  type: 4
+save_vars_to_file:
+  default: 0
+  desc: Flag to determine if an Initial Conditions File will be generated at the end
+    of simulation (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+segment_transferON_OFF:
+  default: 0
+  desc: Flag to indicate to use stream segment transfer flow rates from the segment_transfer_file
+    (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+segment_transfer_file:
+  default: seg.transfer
+  desc: Pathname of the time series of pre-processed flow rates for transfers from
+    stream segments
+  numvals: 1
+  type: 4
+snareathresh_dynamic:
+  default: dyn_snarea_thresh.param
+  desc: none
+  force_default: 1
+  numvals: 1
+  type: 4
+snow_intcp_dynamic:
+  default: dyn_snow_intcp.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    snow_intcp
+  force_default: 1
+  numvals: 1
+  type: 4
+soilmoist_dynamic:
+  default: dyn_soil_moist.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    soil_moist_max
+  force_default: 1
+  numvals: 1
+  type: 4
+soilrechr_dynamic:
+  default: dyn_soil_rechr.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    soil_rechr_max_frac
+  force_default: 1
+  numvals: 1
+  type: 4
+soilzone_module:
+  default: soilzone
+  desc: none
+  numvals: 1
+  type: 4
+solrad_module:
+  default: ddsolrad
+  desc: Module name for solar-radiation-distribution method (ccsolrad or ddsolrad)
+  numvals: 1
+  type: 4
+springfrost_dynamic:
+  default: dyn_spring_frost.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    spring_frost
+  force_default: 1
+  numvals: 1
+  type: 4
+srain_intcp_dynamic:
+  default: dyn_srain_intcp.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    srain_intcp
+  force_default: 1
+  numvals: 1
+  type: 4
+sro2dprst_imperv_dyn:
+  default: dyn_sro_to_dprst_imperv.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    sro_to_dprst_imperv
+  force_default: 1
+  numvals: 1
+  type: 4
+sro2dprst_perv_dyn:
+  default: dyn_sro_to_dprst_perv.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    sro_to_dprst_perv
+  force_default: 1
+  numvals: 1
+  type: 4
+srunoff_module:
+  default: srunoff_smidx
+  desc: Module name for surface-runoff/infiltration computation method (srunoff_carea
+    or srunoff_smidx)
+  numvals: 1
+  type: 4
+start_time:
+  default: 1980-1-1
+  desc: 'Simulation start date and time specified in order in the control item as:
+    year, month, day, hour, minute, second'
+  numvals: 1
+  type: 1
+statVar_element:
+  default: null
+  desc: List of identification numbers corresponding to variables specified in statVar_names
+    list (1 to variable's dimension size)
+  numvals: 1
+  type: 4
+statVar_names:
+  default: null
+  desc: List of variable names for which output is written to Statistics Variables
+    File
+  numvals: 1
+  type: 4
+stat_var_file:
+  default: statvar.out
+  desc: Pathname for Statistics Variables File
+  numvals: 1
+  type: 4
+statsON_OFF:
+  default: 0
+  desc: Switch to specify whether or not the Statistics Variables File is generated
+    (0=no; 1=statvar text format; 2=CSV format)
+  numvals: 1
+  type: 1
+stats_output_file:
+  default: stats.out
+  desc: none
+  numvals: 1
+  type: 4
+stream_temp_flag:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+stream_temp_shade_flag:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+strmflow_module:
+  default: strmflow
+  desc: Module name for streamflow routing simulation method (strmflow, muskingum,
+    strmflow_in_out, or muskingum_lake)
+  numvals: 1
+  type: 4
+strmtemp_humidity_flag:
+  default: 0
+  desc: none
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+subbasin_flag:
+  default: 1
+  desc: Flag to indicate if internal subbasin are computed (0=no; 1=yes)
+  numvals: 1
+  type: 1
+  values:
+    0: 'off'
+    1: 'on'
+  values_type: flag
+swrad_day:
+  default: swrad.day
+  desc: Pathname of the CBH file of pre-processed solar-radiation input data for each
+    HRU to specify variable swrad-Langleys
+  numvals: 1
+  type: 4
+temp_module:
+  default: temp_1sta
+  desc: Module name for temperature-distribution method (climate_hru, temp_1sta, temp_dist2,
+    temp_laps, ide_dist, or xyz_dist)
+  numvals: 1
+  type: 4
+tmax_day:
+  default: tmax.day
+  desc: Pathname of the CBH file of pre-processed maximum air temperature input data
+    for each HRU to specify variable tmaxf-degrees Fahrenheit
+  numvals: 1
+  type: 4
+tmin_day:
+  default: tmin.day
+  desc: Pathname of the CBH file of pre-processed minimum air temperature input data
+    for each HRU to specify variable tminf-degrees Fahrenheit
+  numvals: 1
+  type: 4
+transp_day:
+  default: transp.day
+  desc: Pathname of the CBH file of pre-processed transpiration on or off flag for
+    each HRU file to specify variable transp_on-none
+  numvals: 1
+  type: 4
+transp_module:
+  default: transp_tindex
+  desc: Module name for transpiration simulation method (climate_hru, transp_frost,
+    or transp_tindex)
+  numvals: 1
+  type: 4
+transp_on_dynamic:
+  default: dyn_transp_on.param
+  desc: none
+  numvals: 1
+  type: 4
+transpbeg_dynamic:
+  default: dyn_transp_beg.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    transp_beg
+  numvals: 1
+  type: 4
+transpend_dynamic:
+  default: dyn_transp_end.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    transp_end
+  numvals: 1
+  type: 4
+var_init_file:
+  default: prms_ic.in
+  desc: Pathname for Initial Conditions input file
+  numvals: 1
+  type: 4
+var_save_file:
+  default: prms_ic.out
+  desc: Pathname for the Initial Conditions File to be generated at end of simulation
+  numvals: 1
+  type: 4
+wind_module:
+  default: null
+  desc: Module name for wind distribution
+  numvals: 1
+  type: 4
+windspeed_day:
+  default: windspeed.day
+  desc: Pathname of the CBH file of pre-processed wind speed input data for each HRU
+    to specify variable windspeed_hru-meters/second
+  numvals: 1
+  type: 4
+wrain_intcp_dynamic:
+  default: dyn_wrain_intcp.param
+  desc: Pathname of the time series of pre-processed values for dynamic parameter
+    wrain_intcp
+  numvals: 1
+  type: 4

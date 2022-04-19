@@ -5,9 +5,9 @@ from typing import Union
 
 import numpy as np
 
+from ..base.meta import Meta
 from ..utils import ControlVariables
 from .accessor import Accessor
-from ..base.meta import Meta
 
 fileish = Union[str, pl.PosixPath]
 

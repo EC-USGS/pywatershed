@@ -1,9 +1,9 @@
 import pathlib as pl
-from typing import Union, Iterable
-
-from ..constants import __pynhm_root__
+from typing import Iterable, Union
 
 import yaml
+
+from ..constants import __pynhm_root__
 
 fileish = Union[str, pl.Path]
 

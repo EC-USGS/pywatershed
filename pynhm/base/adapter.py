@@ -8,25 +8,25 @@ from pynhm.utils.netcdf_utils import NetCdfRead
 fileish = Union[str, pl.Path]
 
 
-def variable_factory(
+def adapter_factory(
     var,
     variable_name: str = None,
     start_time: np.datetime64 = None,
 ):
     if isinstance(var, (str, pl.Path)):
         if pl.Path(var).suffix == ".nc":
-            return VariableFromNetcdf(
+            return AdapterNetcdf(
                 var,
                 variable=variable_name,
                 start_time=start_time,
             )
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
-        return VariableFromOnedarray(var, variable=variable_name)
+        return AdapterOnedarray(var, variable=variable_name)
     else:
         raise TypeError("oops you screwed up")
 
 
-class Variable:
+class Adapter:
     def __init__(
         self,
         variable: str,
@@ -41,7 +41,7 @@ class Variable:
         raise RuntimeError("contact code developers (sos=0); not really")
 
 
-class VariableFromNetcdf(Variable):
+class AdapterNetcdf(Adapter):
     def __init__(
         self,
         fname: fileish,
@@ -71,7 +71,7 @@ class VariableFromNetcdf(Variable):
         return self._current_value
 
 
-class VariableFromOnedarray(Variable):
+class AdapterOnedarray(Adapter):
     def __init__(
         self,
         data: np.ndarray,

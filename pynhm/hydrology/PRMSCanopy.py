@@ -5,10 +5,10 @@ import numpy as np
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
+from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..base.variableClass import Variable, variable_factory
 
-variableish = Union[str, np.ndarray, Variable]
+adaptable = Union[str, np.ndarray, Adapter]
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -31,12 +31,12 @@ class PRMSCanopy(StorageUnit):
         self,
         control: Control,
         params: PrmsParameters,
-        pkwater_equiv: variableish,
-        transp_on: variableish,
-        hru_ppt: variableish,
-        hru_rain: variableish,
-        hru_snow: variableish,
-        potet: variableish,
+        pkwater_equiv: adaptable,
+        transp_on: adaptable,
+        hru_ppt: adaptable,
+        hru_rain: adaptable,
+        hru_snow: adaptable,
+        potet: adaptable,
         verbose: bool = False,
     ):
 
@@ -52,29 +52,30 @@ class PRMSCanopy(StorageUnit):
 
         # store dependencies
         self._input_variables_dict = {}
-        self._input_variables_dict["pkwater_equiv"] = variable_factory(
+        self._input_variables_dict["pkwater_equiv"] = adapter_factory(
             pkwater_equiv, "pkwater_equiv"
         )
-        self._input_variables_dict["transp_on"] = variable_factory(
+        self._input_variables_dict["transp_on"] = adapter_factory(
             transp_on, "transp_on"
         )
-        self._input_variables_dict["hru_ppt"] = variable_factory(
+        self._input_variables_dict["hru_ppt"] = adapter_factory(
             hru_ppt, "hru_ppt"
         )
-        self._input_variables_dict["hru_rain"] = variable_factory(
+        self._input_variables_dict["hru_rain"] = adapter_factory(
             hru_rain, "hru_rain"
         )
-        self._input_variables_dict["hru_snow"] = variable_factory(
+        self._input_variables_dict["hru_snow"] = adapter_factory(
             hru_snow, "hru_snow"
         )
-        self._input_variables_dict["potet"] = variable_factory(potet, "potet")
+        self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
+        return
 
+    def set_initial_conditions(self):
         # Where does the initial storage come from? Document here.
         # apparently it's just zero?
         # self.inctp_stor = self.intcp_stor_init.copy()
         self.intcp_stor[:] = np.zeros([1])[0]
         self.intcp_stor_old = None
-
         return
 
     @staticmethod
@@ -98,7 +99,7 @@ class PRMSCanopy(StorageUnit):
         )
 
     @staticmethod
-    def get_input_variables() -> tuple:
+    def get_inputs() -> tuple:
         """Get canopy reservoir input variables
 
         Returns:

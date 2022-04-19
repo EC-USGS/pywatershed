@@ -4,8 +4,8 @@ from datetime import datetime
 import numpy as np
 import pytest
 
+from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.base.variableClass import variable_factory
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
@@ -86,7 +86,7 @@ class TestPRMSCanopySimple:
         prms_params = PrmsParameters(prms_params)
 
         input_variables = {}
-        for key in PRMSCanopy.get_input_variables():
+        for key in PRMSCanopy.get_inputs():
             input_variables[key] = np.ones([nhru])
 
         # todo: this is testing instantiation, but not physics
@@ -130,11 +130,11 @@ class TestPRMSCanopyDomain:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_files[key].with_suffix(".nc")
-            ans[key] = variable_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(nc_pth, variable_name=key)
 
         # setup the canopy
         input_variables = {}
-        for key in PRMSCanopy.get_input_variables():
+        for key in PRMSCanopy.get_inputs():
             nc_pth = output_files[key].with_suffix(".nc")
             input_variables[key] = nc_pth
 

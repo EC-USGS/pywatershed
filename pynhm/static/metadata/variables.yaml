@@ -1484,6 +1484,8 @@ dprst_seep_hru:
     0: nhru
   modules:
   - srunoff
+  input_to:
+  - PRMSGroundwater
   type: D
   units: inches
 dprst_sroff_hru:
@@ -1840,6 +1842,7 @@ gwres_flow:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: F
   units: inches
 gwres_in:
@@ -1848,6 +1851,7 @@ gwres_in:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: D
   units: acre-inches
 gwres_sink:
@@ -1857,6 +1861,7 @@ gwres_sink:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: F
   units: inches
 gwres_stor:
@@ -1865,6 +1870,7 @@ gwres_stor:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: D
   units: inches
 gwstor_minarea_wb:
@@ -3204,6 +3210,8 @@ soil_to_gw:
     0: nhru
   modules:
   - soilzone
+  input_to:
+  - PRMSGroundwater
   type: F
   units: inches
 soil_to_ssr:
@@ -3298,6 +3306,8 @@ ssr_to_gw:
     0: nssr
   modules:
   - soilzone
+  input_to:
+  - PRMSGroundwater
   type: F
   units: inches
 ssres_flow:

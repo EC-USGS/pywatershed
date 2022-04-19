@@ -7,6 +7,7 @@ import numpy as np
 
 from ..utils import ControlVariables
 from .accessor import Accessor
+from ..base.meta import Meta
 
 fileish = Union[str, pl.PosixPath]
 
@@ -45,7 +46,7 @@ class Control(Accessor):
         self._previous_time = None
         self._i_time = 0
 
-        # self.metadata
+        self.meta = Meta()
         # This will have the time dimension name
         # This will have the time coordimate name
 

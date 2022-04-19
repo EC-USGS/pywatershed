@@ -193,6 +193,7 @@ class NetCdfWrite:
         name: fileish,
         hru_ids: arrayish,
         variables: listish,
+        var_meta: dict,
         time_units: str = "days since 1970-01-01 00:00:00",
         clobber: bool = True,
         zlib: bool = True,
@@ -234,6 +235,11 @@ class NetCdfWrite:
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
+            for key, val in var_meta.items():
+                # JLM this is a hack. either define an arg or edit the yaml or both
+                if key in ["dimensions"]:
+                    continue
+                self.variables[vv].setncattr(key, val)
 
     def __del__(self):
         self.close()

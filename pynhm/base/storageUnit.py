@@ -17,9 +17,10 @@ class StorageUnit(Accessor):
         control: Control,
         params: PrmsParameters,
         verbose: bool,
+        subclass_name="StorageUnit",
     ):
 
-        self.name = "Storage Unit"
+        self.name = subclass_name
         self.control = control
         self.params = params
         self.verbose = verbose
@@ -29,8 +30,9 @@ class StorageUnit(Accessor):
         self._output_netcdf = False
         self._netcdf = None
         self._separate_netcdf = True
-        self._itime_step = -1  # JLM CHECK
+        self._itime_step = -1
 
+        self.get_metadata()
         self.initialize_self_variables()
         self.set_initial_conditions()
 
@@ -57,6 +59,7 @@ class StorageUnit(Accessor):
         """
         if self._output_netcdf:
             self.__output_netcdf()
+        return
 
     def finalize(self) -> None:
         """Finalize storageUnit
@@ -66,6 +69,7 @@ class StorageUnit(Accessor):
 
         """
         self._finalize_netcdf()
+        return
 
     @staticmethod
     def get_parameters() -> list:
@@ -99,9 +103,28 @@ class StorageUnit(Accessor):
             setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
+        return
 
     def set_initial_conditons(self):
         raise Exception("This must be overridden")
+        return
+
+    def get_metadata(self):
+        # good to check as metadata is shifting but might consider taking out in long-run
+        self.var_meta = self.control.meta.get_var_subclass(self.name)
+        assert set(self.var_meta.keys()) == set(self.variables)
+
+        self.input_meta = self.control.meta.get_inputs_subclass(self.name)
+        assert set(self.input_meta.keys()) == set(self.inputs)
+
+        self.param_meta = self.control.meta.get_params(self.parameters)
+
+        # This a hack as we are mushing dims into params. time dimension
+        # is also not currently handled at all. Probably need to define dimensions
+        # on StorageUnits
+        dims = set(self.parameters).difference(set(self.param_meta.keys()))
+        self.param_meta = self.control.meta.get_dims(dims)
+        return
 
     def output_to_csv(self, pth):
         """
@@ -146,17 +169,17 @@ class StorageUnit(Accessor):
                     nc_path,
                     self.params.nhm_coordinate,
                     [variable],
+                    self.var_meta[variable],
                 )
         else:
             initial_variable = self.variables[0]
             pl.Path(name).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                name,
-                self.id,
-                self.variables,
+                name, self.id, self.variables, self.var_meta
             )
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
+        return
 
     def __output_netcdf(self) -> None:
         """Output variable data for a time step
@@ -177,6 +200,7 @@ class StorageUnit(Accessor):
                     self._itime_step,
                     getattr(self, variable),
                 )
+        return
 
     def _finalize_netcdf(self) -> None:
         if self._output_netcdf:
@@ -184,3 +208,4 @@ class StorageUnit(Accessor):
                 self._netcdf[variable].close()
                 if not self._separate_netcdf:
                     break
+        return

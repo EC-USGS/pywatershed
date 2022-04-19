@@ -40,14 +40,15 @@ class PRMSCanopy(StorageUnit):
         verbose: bool = False,
     ):
 
+        self.name = "PRMSCanopy"
         verbose = True
         super().__init__(
             control=control,
             params=params,
             verbose=verbose,
+            subclass_name=self.name,
         )
 
-        self.name = "PRMSCanopy"
         # self._current_time = self.control.current_time
 
         # store dependencies
@@ -128,11 +129,9 @@ class PRMSCanopy(StorageUnit):
             "net_rain",
             "net_snow",
             "intcp_evap",
-            "rainfall_adj",
-            "snowfall_adj",
-            "potet",
-            "interception_form",
-            "intcp_transp_on",
+            "intcp_form",
+            "intcp_transp_on",  # this is private in prms6 and is not in the metadata
+            # i defined metadata for it in a very adhoc way
         )
 
     def advance(self):
@@ -158,9 +157,9 @@ class PRMSCanopy(StorageUnit):
             v = getattr(self, key)
             v[:] = value.current
 
-        self.interception_form[:] = RAIN
+        self.intcp_form[:] = RAIN
         idx = np.where(self.hru_snow > 0)
-        self.interception_form[idx] = SNOW
+        self.intcp_form[idx] = SNOW
 
         assert self.pkwater_equiv.shape == (self.nhru,)
 
@@ -415,7 +414,7 @@ class PRMSCanopy(StorageUnit):
         # evsn = np.where(prcp < NEARZERO, potet * self.potet_sublim, 0.)
         # intcp_stor_save = intcp_stor.copy()
         # depth = np.where(
-        #     self.interception_form == SNOW,
+        #     self.intcp_form == SNOW,
         #     intcp_stor - evsn,
         #     intcp_stor - evrn,
         # )
@@ -430,7 +429,7 @@ class PRMSCanopy(StorageUnit):
                     evrn = potet[i] / epan_coef
                     evsn = potet[i] * self.potet_sublim[i]
 
-                    if self.interception_form[i] == SNOW:
+                    if self.intcp_form[i] == SNOW:
                         z = intcpstor - evsn
                         if z > 0:
                             intcpstor = z

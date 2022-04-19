@@ -4,8 +4,8 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from pynhm.base.control import Control
 from pynhm.base.adapter import adapter_factory
+from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables

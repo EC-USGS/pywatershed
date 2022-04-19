@@ -6,8 +6,8 @@ from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.control import Control
 from ..base.adapter import Adapter, adapter_factory
+from ..base.control import Control
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -52,10 +52,12 @@ class PRMSGroundwater(StorageUnit):
             "dprst_seep_hru",
         )
 
+        return
+
+    def set_initial_conditions(self):
         # initialize groundwater reservoir storage
         self.gwres_stor = self.gwstor_init.copy()
         self.gwres_stor_old = self.gwstor_init.copy()
-
         return
 
     @staticmethod

@@ -32,6 +32,7 @@ class StorageUnit(Accessor):
         self._itime_step = -1  # JLM CHECK
 
         self.initialize_self_variables()
+        self.set_initial_conditions()
 
         return None
 
@@ -98,6 +99,9 @@ class StorageUnit(Accessor):
             setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
+
+    def set_initial_conditons(self):
+        raise Exception("This must be overridden")
 
     def output_to_csv(self, pth):
         """

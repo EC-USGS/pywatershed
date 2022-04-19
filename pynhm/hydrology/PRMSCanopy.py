@@ -5,8 +5,8 @@ import numpy as np
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.control import Control
 from ..base.adapter import Adapter, adapter_factory
+from ..base.control import Control
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -68,13 +68,14 @@ class PRMSCanopy(StorageUnit):
             hru_snow, "hru_snow"
         )
         self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
+        return
 
+    def set_initial_conditions(self):
         # Where does the initial storage come from? Document here.
         # apparently it's just zero?
         # self.inctp_stor = self.intcp_stor_init.copy()
         self.intcp_stor[:] = np.zeros([1])[0]
         self.intcp_stor_old = None
-
         return
 
     @staticmethod

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from pynhm.base.control import Control
-from pynhm.base.variableClass import variable_factory
+from pynhm.base.adapter import adapter_factory
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
 from pynhm.utils import ControlVariables
@@ -130,7 +130,7 @@ class TestPRMSCanopyDomain:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_files[key].with_suffix(".nc")
-            ans[key] = variable_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(nc_pth, variable_name=key)
 
         # setup the canopy
         input_variables = {}

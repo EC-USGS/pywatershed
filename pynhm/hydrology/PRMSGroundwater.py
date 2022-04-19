@@ -7,9 +7,9 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
 from ..base.control import Control
-from ..base.variableClass import Variable, variable_factory
+from ..base.adapter import Adapter, adapter_factory
 
-variableish = Union[str, np.ndarray, Variable]
+adaptable = Union[str, np.ndarray, Adapter]
 
 
 class PRMSGroundwater(StorageUnit):
@@ -25,9 +25,9 @@ class PRMSGroundwater(StorageUnit):
         self,
         control: Control,
         params: PrmsParameters,
-        soil_to_gw: variableish,
-        ssr_to_gw: variableish,
-        dprst_seep_hru: variableish,
+        soil_to_gw: adaptable,
+        ssr_to_gw: adaptable,
+        dprst_seep_hru: adaptable,
         verbose: bool = False,
     ) -> "PRMSGroundwater":
 
@@ -40,14 +40,14 @@ class PRMSGroundwater(StorageUnit):
         self.name = "PRMSGroundwater"
 
         self._input_variables_dict = {}
-        self._input_variables_dict["soil_to_gw"] = variable_factory(
+        self._input_variables_dict["soil_to_gw"] = adapter_factory(
             soil_to_gw, "soil_to_gw"
         )
-        self._input_variables_dict["ssr_to_gw"] = variable_factory(
+        self._input_variables_dict["ssr_to_gw"] = adapter_factory(
             ssr_to_gw,
             "ssr_to_gw",
         )
-        self._input_variables_dict["dprst_seep_hru"] = variable_factory(
+        self._input_variables_dict["dprst_seep_hru"] = adapter_factory(
             dprst_seep_hru,
             "dprst_seep_hru",
         )

@@ -77,7 +77,7 @@ class PRMSGroundwater(StorageUnit):
         )
 
     @staticmethod
-    def get_input_variables() -> tuple:
+    def get_inputs() -> tuple:
         """Get groundwater reservoir input variables
 
         Returns:

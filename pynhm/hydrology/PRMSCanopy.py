@@ -98,7 +98,7 @@ class PRMSCanopy(StorageUnit):
         )
 
     @staticmethod
-    def get_input_variables() -> tuple:
+    def get_inputs() -> tuple:
         """Get canopy reservoir input variables
 
         Returns:

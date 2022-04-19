@@ -18,7 +18,7 @@ class TestPRMSGroundwaterDomain:
         # load csv files into dataframes
         output_files = domain["prms_outputs"]
         input_variables = {}
-        for key in PRMSGroundwater.get_input_variables():
+        for key in PRMSGroundwater.get_inputs():
             output_path = output_files[key]
             nc_path = output_path.with_suffix(".nc")
             input_variables[key] = nc_path

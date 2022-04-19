@@ -71,7 +71,7 @@ class StorageUnit(Accessor):
         raise Exception("This must be overridden")
 
     @staticmethod
-    def get_input_variables() -> list:
+    def get_inputs() -> list:
         raise Exception("This must be overridden")
 
     @staticmethod
@@ -83,8 +83,8 @@ class StorageUnit(Accessor):
         return self.get_parameters()
 
     @property
-    def input_variables(self) -> list:
-        return self.get_input_variables()
+    def inputs(self) -> list:
+        return self.get_inputs()
 
     @property
     def variables(self) -> list:
@@ -96,7 +96,7 @@ class StorageUnit(Accessor):
             setattr(self, name, self.params.parameters[name])
         for name in self.variables:
             setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
-        for name in self.input_variables:
+        for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
 
     def output_to_csv(self, pth):

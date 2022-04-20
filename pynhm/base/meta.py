@@ -31,6 +31,8 @@ class Meta:
 
         self.name = "Meta"
 
+        print(dimensions)
+
         self.dimensions = load_yaml_file(dimensions)
         self.control = load_yaml_file(control)
         self.parameters = load_yaml_file(parameters)

@@ -1484,6 +1484,8 @@ dprst_seep_hru:
     0: nhru
   modules:
   - srunoff
+  input_to:
+  - PRMSGroundwater
   type: D
   units: inches
 dprst_sroff_hru:
@@ -1840,6 +1842,7 @@ gwres_flow:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: F
   units: inches
 gwres_in:
@@ -1848,6 +1851,7 @@ gwres_in:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: D
   units: acre-inches
 gwres_sink:
@@ -1857,6 +1861,7 @@ gwres_sink:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: F
   units: inches
 gwres_stor:
@@ -1865,6 +1870,7 @@ gwres_stor:
     0: ngw
   modules:
   - gwflow
+  - PRMSGroundwater
   type: D
   units: inches
 gwstor_minarea_wb:
@@ -2001,6 +2007,8 @@ hru_ppt:
     0: nhru
   modules:
   - precipitation
+  input_to:
+  - PRMSCanopy
   type: F
   units: inches
 hru_rain:
@@ -2009,6 +2017,8 @@ hru_rain:
     0: nhru
   modules:
   - precipitation
+  input_to:
+  - PRMSCanopy
   type: F
   units: inches
 hru_snow:
@@ -2017,6 +2027,8 @@ hru_snow:
     0: nhru
   modules:
   - precipitation
+  input_to:
+  - PRMSCanopy
   type: F
   units: inches
 hru_sroffi:
@@ -2123,6 +2135,7 @@ intcp_evap:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: F
   units: inches
 intcp_form:
@@ -2131,6 +2144,7 @@ intcp_form:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: I
   units: none
 intcp_on:
@@ -2147,6 +2161,7 @@ intcp_stor:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: F
   units: inches
 interflow_max:
@@ -2450,6 +2465,7 @@ net_rain:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: F
   units: inches
 net_snow:
@@ -2458,6 +2474,7 @@ net_snow:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: F
   units: inches
 newsnow:
@@ -2647,6 +2664,8 @@ pkwater_equiv:
   modules:
   - climateflow
   - snowcomp
+  input_to:
+  - PRMSCanopy
   type: D
   units: inches
 potet:
@@ -2655,6 +2674,8 @@ potet:
     0: nhru
   modules:
   - potet
+  input_to:
+  - PRMSCanopy
   type: F
   units: inches
 potet_lower:
@@ -3204,6 +3225,8 @@ soil_to_gw:
     0: nhru
   modules:
   - soilzone
+  input_to:
+  - PRMSGroundwater
   type: F
   units: inches
 soil_to_ssr:
@@ -3298,6 +3321,8 @@ ssr_to_gw:
     0: nssr
   modules:
   - soilzone
+  input_to:
+  - PRMSGroundwater
   type: F
   units: inches
 ssres_flow:
@@ -3857,6 +3882,17 @@ transp_on:
     0: nhru
   modules:
   - transpiration
+  input_to:
+  - PRMSCanopy
+  type: I
+  units: none
+intcp_transp_on:
+  desc: Flag indicating whether transpiration is occurring in the canopy (0=no;1=yes)
+  dimensions:
+    0: nhru
+  modules:
+  - transpiration
+  - PRMSCanopy
   type: I
   units: none
 unused_potet:

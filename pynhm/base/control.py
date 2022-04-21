@@ -5,6 +5,7 @@ from typing import Union
 
 import numpy as np
 
+from ..base.meta import Meta
 from ..utils import ControlVariables
 from .accessor import Accessor
 
@@ -45,7 +46,7 @@ class Control(Accessor):
         self._previous_time = None
         self._i_time = 0
 
-        # self.metadata
+        self.meta = Meta()
         # This will have the time dimension name
         # This will have the time coordimate name
 

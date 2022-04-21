@@ -31,13 +31,19 @@ class PRMSGroundwater(StorageUnit):
         verbose: bool = False,
     ) -> "PRMSGroundwater":
 
+        self.name = "PRMSGroundwater"
         super().__init__(
             control=control,
             params=params,
             verbose=verbose,
+            subclass_name=self.name,
         )
 
-        self.name = "PRMSGroundwater"
+        # self.budget = Budget({
+        #     "gwres_flow": {self.gwres_flow, self.met['gwres_flow'], self.name}
+        #     "gwres_in",
+        #     "gwres_sink",
+        #     "gwres_stor",
 
         self._input_variables_dict = {}
         self._input_variables_dict["soil_to_gw"] = adapter_factory(

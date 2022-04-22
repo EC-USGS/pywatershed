@@ -21,10 +21,13 @@ prms_outputs:
   tmin_adj: output/tminf.csv
   swrad: output/swrad.csv
   potet: output/potet.csv
-  intcpstor: output/hru_intcpstor.csv
   net_rain: output/net_rain.csv
   net_snow: output/net_snow.csv
+  net_ppt: output/net_ppt.csv
   intcp_evap: output/intcp_evap.csv
+  intcp_stor: output/intcp_stor.csv
+  hru_intcpstor: output/hru_intcpstor.csv
+  hru_intcpevap: output/hru_intcpevap.csv
   pkwater_equiv: output/pkwater_equiv.csv
   soil_to_gw: output/soil_to_gw.csv
   ssr_to_gw: output/ssr_to_gw.csv

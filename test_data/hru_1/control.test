@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-42
+41
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-42
+41
 4
 hru_actet
 hru_impervstor
@@ -285,7 +285,6 @@ transp_on
 net_rain
 net_snow
 net_ppt
-intcp_evap
 intcp_stor
 intcp_evap
 intcp_changeover

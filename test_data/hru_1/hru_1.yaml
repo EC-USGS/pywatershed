@@ -23,7 +23,11 @@ prms_outputs:
   intcpstor: output/hru_intcpstor.csv
   net_rain: output/net_rain.csv
   net_snow: output/net_snow.csv
+  net_ppt: output/net_ppt.csv
   intcp_evap: output/intcp_evap.csv
+  intcp_stor: output/intcp_stor.csv
+  hru_intcpstor: output/hru_intcpstor.csv
+  hru_intcpevap: output/hru_intcpevap.csv
   soltab: soltab_debug
   pkwater_equiv: output/pkwater_equiv.csv
   transp_on: output/transp_on.csv

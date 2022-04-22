@@ -1967,6 +1967,7 @@ hru_intcpevap:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: F
   units: inches
 hru_intcpstor:
@@ -1975,6 +1976,7 @@ hru_intcpstor:
     0: nhru
   modules:
   - intcp
+  - PRMSCanopy
   type: F
   units: inches
 hru_lateral_flow:
@@ -2451,14 +2453,6 @@ net_apply:
   - intcp
   type: F
   units: inches
-net_ppt:
-  desc: Precipitation (rain and/or snow) that falls through the canopy for each HRU
-  dimensions:
-    0: nhru
-  modules:
-  - intcp
-  type: F
-  units: inches
 net_rain:
   desc: Rain that falls through canopy for each HRU
   dimensions:
@@ -2470,6 +2464,15 @@ net_rain:
   units: inches
 net_snow:
   desc: Snow that falls through canopy for each HRU
+  dimensions:
+    0: nhru
+  modules:
+  - intcp
+  - PRMSCanopy
+  type: F
+  units: inches
+net_ppt:
+  desc: Precipitation (rain and/or snow) that falls through the canopy for each HRU
   dimensions:
     0: nhru
   modules:

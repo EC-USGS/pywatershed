@@ -125,14 +125,17 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         # JLM: these names are historical, I dont love them
         self._potential_variables = [
-            "prcp",
+            "hru_ppt",
             "rhavg",
-            "rainfall",
-            "snowfall",
+            "hru_rain",
+            "hru_snow",
             "tmax",
+            "tmaxf",
             "tmin",
+            "tminf",
             "swrad",
             "potet",
+            "prcp",
         ]
 
         self._parameter_list = list(
@@ -168,11 +171,11 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
     @classmethod
     def load_prms_output(
         cls,
-        prcp: fileish = None,
-        rainfall: fileish = None,
-        snowfall: fileish = None,
-        tmax: fileish = None,
-        tmin: fileish = None,
+        hru_ppt: fileish = None,
+        hru_rain: fileish = None,
+        hru_snow: fileish = None,
+        tmaxf: fileish = None,
+        tminf: fileish = None,
         swrad: fileish = None,
         potet: fileish = None,
         **kwargs,
@@ -183,11 +186,11 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         obj = cls({}, **kwargs)
 
         obj.prms_output_files = {
-            "prcp": prcp,
-            "rainfall": rainfall,
-            "snowfall": snowfall,
-            "tmax": tmax,
-            "tmin": tmin,
+            "hru_ppt": hru_ppt,
+            "hru_rain": hru_rain,
+            "hru_snow": hru_snow,
+            "tmaxf": tmaxf,
+            "tminf": tminf,
             "swrad": swrad,
             "potet": potet,
         }
@@ -221,7 +224,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         obj.ds_var_list = None
         obj.ds_var_chunking = None
 
-        obj._self_file_vars = {}
+        obj._file_vars = {}
         obj._nc_read_vars = nc_read_vars
         obj._optional_read_vars = ["rhavg", "swrad", "potet"]
         obj._nc_file = nc_file
@@ -258,68 +261,37 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         if self._nc_read_vars is None:
 
-            # If specific variables are not specified for reading,
-            # then set the list of variables in the file to use.
-            # Assumption is: use adjusted variables over unadjusted ones
-            # The logic below just sets this perference for adjusted
-            # variables over unadjusted vars which are warned about when
-            # used as backup
-            n_states_adj = 0
             for self_var in self._potential_variables:
-                adj_var = f"{self_var}_adj"
-                if adj_var in self.ds_var_list:
-                    self._self_file_vars[self_var] = adj_var
-                    n_states_adj += 1
-                elif self_var in self.ds_var_list:
-                    self._self_file_vars[self_var] = self_var
-                    msg = (
-                        f"Adjusted variable '{adj_var}' not found in dataset, "
-                        f"using apparently unadjusted variable instead: "
-                        f"'{self_var}'"
-                    )
-                    warnings.warn(msg)
-                else:
-                    msg = (
-                        f"Neither variable '{self_var}' nor {adj_var}"
-                        f"found in the file: '{self._nc_file}'"
-                    )
-                    if self_var in self._optional_read_vars:
-                        warnings.warn(msg)
-                    else:
-                        raise ValueError(msg)
+                self._file_vars[self_var] = self_var
 
         else:
 
             # Find the specified/requested variables to read from file.
-            n_states_adj = 0
-            for self_var in self._potential_variables:
-                adj_var = f"{self_var}_adj"
-                if adj_var in self._nc_read_vars:
-                    self._self_file_vars[self_var] = adj_var
-                    n_states_adj += 1
-                elif self_var in self._nc_read_vars:
-                    self._self_file_vars[self_var] = self_var
-                else:
-                    continue
-
-            # Post-mortem on what requested varaibles were not found:
             for read_var in self._nc_read_vars:
-                if read_var not in list(self._self_file_vars.values()):
-                    msg = (
-                        f"Requested variable '{read_var}' not found in file "
-                        f"'{self._nc_file}'"
-                    )
-                    raise ValueError(msg)
+                if read_var in self._potential_variables:
+                    self._file_vars[read_var] = read_var
+                else:
+                    raise KeyError(f"{read_var} not a variable on {self.name}")
 
             # finally reduce the state vars to what we have
-            for state_var in deepcopy(self.variables):
-                if state_var not in self._self_file_vars.keys():
-                    del self.__dict__[state_var]
-                    _ = self.variables.remove(state_var)
+            # for state_var in deepcopy(self.variables):
+            #    if state_var not in self._file_vars.keys():
+            #        del self.__dict__[state_var]
+            #        _ = self.variables.remove(state_var)
 
         # If it looks like we read adjusted parameters, try to block double
         # adjustments on parameter_adjust
-        if n_states_adj > 0:
+        adj_set = {
+            "hru_ppt",
+            "hru_rain",
+            "hru_snow",
+            "tmaxf",
+            "tminf",
+            "swrad",
+            "potet",
+        }
+        adj_variables_present = adj_set.intersection(set(self._file_vars))
+        if len(adj_variables_present):
             self._allow_param_adjust = False
         else:
             self._allow_param_adjust = True
@@ -328,9 +300,12 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
     def _read_nc_file(self) -> None:
         # JLM: "front load" option vs "load as you go"
-        for self_var, file_var in self._self_file_vars.items():
+        for self_var, file_var in self._file_vars.items():
             # JLM: Later use chunking here to get data
             # JLM: have to update datetime in that case?
+            if file_var not in self.dataset.variables.keys():
+                warnings.warn(f"Variable {file_var} not found in file")
+                continue
             data = self.dataset.variables[file_var][:]
             if data.mask:
                 msg = (
@@ -357,7 +332,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         if not self._allow_param_adjust:
             msg = (
                 "Parameter adjustments not permitted when any state "
-                " variables are already adjusted. \n {self._self_file_vars}"
+                " variables are already adjusted. \n {self._file_vars}"
             )
             raise ValueError(msg)
 
@@ -370,16 +345,10 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         self._state_adjusted_here = True
         self._allow_param_adjust = False
 
-        map_adj_dict = {
-            "prcp": "prcp_adj",
-            "tmax": "tmax_adj",
-            "tmin": "tmin_adj",
-            "rainfall": "rainfall_adj",
-            "snowfall": "snowfall_adj",
-        }
-
-        for self_var, adj_var in map_adj_dict.items():
-            self[self_var] = var_dict_adj[adj_var]
+        for vv in var_dict_adj.keys():
+            if vv == "datetime":
+                continue
+            self[vv] = var_dict_adj[vv]
 
         return
 
@@ -394,8 +363,8 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         self["swrad"] = self._ddsolrad_run(
             dates=self["datetime"],
-            tmax_hru=self["tmax"],
-            hru_ppt=self["prcp"],
+            tmax_hru=self["tmaxf"],
+            hru_ppt=self["hru_ppt"],
             soltab_potsw=solar_geom["potential_sw_rad"],
             **params,
         )
@@ -564,8 +533,8 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
         self["potet"] = self._potet_jh_run(
             dates=self["datetime"],
-            tmax_hru=self["tmax"],
-            tmin_hru=self["tmin"],
+            tmax_hru=self["tmaxf"],
+            tmin_hru=self["tminf"],
             swrad=self["swrad"],
             **params,
         )

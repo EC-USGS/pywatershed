@@ -39,12 +39,6 @@ class PRMSGroundwater(StorageUnit):
             subclass_name=self.name,
         )
 
-        # self.budget = Budget({
-        #     "gwres_flow": {self.gwres_flow, self.met['gwres_flow'], self.name}
-        #     "gwres_in",
-        #     "gwres_sink",
-        #     "gwres_stor",
-
         self._input_variables_dict = {}
         self._input_variables_dict["soil_to_gw"] = adapter_factory(
             soil_to_gw, "soil_to_gw"

@@ -33,7 +33,7 @@ cbh_metadata = {
         "units": "degree_fahrenheit",
         "standard_name": "maximum_daily_air_temperature",
     },
-    "tmax_adj": {
+    "tmaxf": {
         "type": "f4",
         "_FillValue": fill_value_f4,
         "long_name": "Maximum daily air temperature from parameter adjustments",
@@ -47,7 +47,7 @@ cbh_metadata = {
         "units": "degree_fahrenheit",
         "standard_name": "minimum_daily_air_temperature",
     },
-    "tmin_adj": {
+    "tminf": {
         "type": "f4",
         "_FillValue": fill_value_f4,
         "long_name": "Minimum daily air temperature from parameter adjustments",
@@ -61,14 +61,14 @@ cbh_metadata = {
         "units": "in",
         "standard_name": "daily_total_precipitation",
     },
-    "prcp_adj": {
+    "hru_ppt": {
         "type": "f4",
         "_FillValue": fill_value_f4,
         "long_name": "daily total precipitation from parameter adjustments",
         "units": "in",
         "standard_name": "daily_total_precipitation",
     },
-    "rainfall_adj": {
+    "hru_rain": {
         "type": "f4",
         "_FillValue": fill_value_f4,
         "long_name": "daily rainfall from parameter adjustments",
@@ -82,7 +82,7 @@ cbh_metadata = {
         "units": "percent",
         "standard_name": "rhavg",
     },
-    "snowfall_adj": {
+    "hru_snow": {
         "type": "f4",
         "_FillValue": fill_value_f4,
         "long_name": "daily snowfall from parameter adjustments",

@@ -12,7 +12,10 @@ ai:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
+  init_val:
+    PRMSSnow: zero
   units: inches
 albedo:
   desc: Snow surface albedo or the fraction of radiation reflected from the snowpack
@@ -21,6 +24,7 @@ albedo:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: decimal fraction
 basin_2ndstflow:
@@ -1713,7 +1717,10 @@ frac_swe:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: decimal fraction
 freeh2o:
   desc: Storage of free liquid water in the snowpack on each HRU
@@ -1721,7 +1728,10 @@ freeh2o:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: inches
 gate_ht:
   desc: Height of the gate opening at each dam with a gate
@@ -2009,6 +2019,7 @@ hru_ppt:
   - precipitation
   input_to:
   - PRMSCanopy
+  - PRMSSnow
   type: F
   units: inches
 hru_rain:
@@ -2094,6 +2105,7 @@ iasw:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
   units: none
 imperv_evap:
@@ -2127,6 +2139,7 @@ int_alb:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
   units: none
 intcp_evap:
@@ -2179,6 +2192,7 @@ iso:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
   units: none
 lake_2gw:
@@ -2415,6 +2429,7 @@ lso:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
   units: number of iterations
 lst:
@@ -2424,6 +2439,7 @@ lst:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
   units: none
 lwrad_net:
@@ -2441,6 +2457,7 @@ mso:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
   units: none
 net_apply:
@@ -2457,6 +2474,8 @@ net_ppt:
     0: nhru
   modules:
   - intcp
+  input_to:
+  - PRMSSnow
   type: F
   units: inches
 net_rain:
@@ -2466,6 +2485,8 @@ net_rain:
   modules:
   - intcp
   - PRMSCanopy
+  input_to:
+  - PRMSSnow
   type: F
   units: inches
 net_snow:
@@ -2475,6 +2496,8 @@ net_snow:
   modules:
   - intcp
   - PRMSCanopy
+  input_to:
+  - PRMSSnow
   type: F
   units: inches
 newsnow:
@@ -2556,6 +2579,8 @@ orad_hru:
     0: nhru
   modules:
   - solrad
+  input_to:
+  - PRMSSnow
   type: F
   units: Langleys
 pan_evap:
@@ -2598,6 +2623,7 @@ pk_def:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: Langleys
 pk_den:
@@ -2606,7 +2632,10 @@ pk_den:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: gm/cm3
 pk_depth:
   desc: Depth of snowpack on each HRU
@@ -2614,7 +2643,10 @@ pk_depth:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
+  init_val:
+    PRMSSnow: zero
   units: inches
 pk_ice:
   desc: Storage of frozen water in the snowpack on each HRU
@@ -2622,6 +2654,9 @@ pk_ice:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
+  init_val:
+    PRMSSnow: zero
   type: F
   units: inches
 pk_precip:
@@ -2630,7 +2665,10 @@ pk_precip:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: inches
 pk_temp:
   desc: Temperature of the snowpack on each HRU
@@ -2638,6 +2676,7 @@ pk_temp:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: degrees Celsius
 pksv:
@@ -2647,6 +2686,7 @@ pksv:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
   units: inches
 pkwater_ante:
@@ -2655,6 +2695,7 @@ pkwater_ante:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
   units: inches
 pkwater_equiv:
@@ -2664,6 +2705,7 @@ pkwater_equiv:
   modules:
   - climateflow
   - snowcomp
+  - PRMSSnow
   input_to:
   - PRMSCanopy
   type: D
@@ -2710,7 +2752,10 @@ pptmix_nopack:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: I
+  init_val:
+    PRMSSnow: False
   units: none
 precip:
   desc: Precipitation at each measurement station
@@ -2776,6 +2821,8 @@ prmx:
     0: nhru
   modules:
   - precipitation
+  input_to:
+  - PRMSSnow
   type: F
   units: decimal fraction
 pss:
@@ -2784,6 +2831,7 @@ pss:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
   units: inches
 pst:
@@ -2793,6 +2841,7 @@ pst:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
   units: inches
 rain_day:
@@ -2826,6 +2875,7 @@ salb:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: days
 scrv:
@@ -2834,6 +2884,7 @@ scrv:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: D
   units: inches
 seg_ccov:
@@ -3072,6 +3123,7 @@ slst:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: days
 sm2gw_grav:
@@ -3088,7 +3140,10 @@ snow_evap:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: inches
 snow_free:
   desc: Fraction of snow-free surface for each HRU
@@ -3105,7 +3160,10 @@ snowcov_area:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: decimal fraction
 snowcov_areasv:
   desc: Snow cover fraction when there is new snow and in melt phase; used to interpolate
@@ -3114,6 +3172,7 @@ snowcov_areasv:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: decimal fraction
 snowdepth:
@@ -3138,7 +3197,10 @@ snowmelt:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: inches
 snsv:
   desc: Tracks the cumulative amount of new snow until there is enough to reset the
@@ -3147,6 +3209,7 @@ snsv:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
   units: inches
 soil_lower:
@@ -3615,6 +3678,8 @@ swrad:
     0: nhru
   modules:
   - solrad
+  input_to:
+  - PRMSSnow
   type: F
   units: Langleys
 t_ground:
@@ -3656,6 +3721,8 @@ tavgc:
     0: nhru
   modules:
   - deprecated
+  input_to:
+  - PRMSSnow
   type: F
   units: degrees Celsius
 tavgf:
@@ -3672,7 +3739,10 @@ tcal:
     0: nhru
   modules:
   - snowcomp
+  - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: Langleys
 temp_avg:
   desc: Average stream temperature based on all inflows and previous temperature for
@@ -3713,6 +3783,8 @@ tmaxc:
     0: nhru
   modules:
   - deprecated
+  input_to:
+  - PRMSSnow
   type: F
   units: degrees Celsius
 tmaxf:
@@ -3745,6 +3817,8 @@ tminc:
     0: nhru
   modules:
   - deprecated
+  input_to:
+  - PRMSSnow
   type: F
   units: degrees Celsius
 tminf:
@@ -3884,6 +3958,7 @@ transp_on:
   - transpiration
   input_to:
   - PRMSCanopy
+  - PRMSSnow
   type: I
   units: none
 intcp_transp_on:

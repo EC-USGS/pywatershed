@@ -109,10 +109,9 @@ def test_cbh_adj(domain, params_and_none):
     cbh = CBH(
         domain["input_files_dict"], parameters=params_and_none, adjust=True
     )
+    adj_vars = ["hru_ppt", "hru_rain", "hru_snow", "tmaxf", "tminf"]
     if params_and_none is not None:
-        results = {
-            key: val.mean() for key, val in cbh.state.items() if "_adj" in key
-        }
+        results = {var: cbh.state[var].mean() for var in adj_vars}
         answers = domain["test_ans"]["preprocess_cbh"]["adj"]["params"]
         assert_or_print(
             results, answers, "adj:params", print_ans=domain["print_ans"]
@@ -135,28 +134,32 @@ def test_cbh_adj(domain, params_and_none):
 # Test forcing adj, compare to prms output
 def test_cbh_adj_prms_output(domain, params):
     cbh = CBH(domain["input_files_dict"], params, adjust=True)
-    for var, var_file in domain["prms_outputs"].items():
-        # todo: this needs to be fixed so that it does not need to be modified
-        #  anytime a new PRMS output variable is added
-        if not var in (
-            "prcp_adj",
-            "rainfall_adj",
-            "snowfall_adj",
-            "tmax_adj",
-            "tmin_adj",
+    # calculate swrad and potet.
+    # TODO rename the atm adj outputs to match
+
+    vars = [
+        "hru_ppt",
+        "hru_rain",
+        "hru_snow",
+        "tmaxf",
+        "tminf",
+        "swrad",
+        "potet",
+    ]
+
+    for var in vars:
+        prms_var_file = domain["prms_output_dir"] / f"{var}.csv"
+        if var in (
+            "swrad",
+            "potet",
         ):
+            msg = (
+                f"Skipping {var} as it is not currently preprocessed, "
+                f"this skip should be removed when it is"
+            )
+            warnings.warn(msg)
             continue
-        # if var in (
-        #     "swrad",
-        #     "potet",
-        # ):
-        #     msg = (
-        #         f"Skipping {var} as it is not currently preprocessed, "
-        #         f"this skip should be removed when it is"
-        #     )
-        #     warnings.warn(msg)
-        #     continue
-        prms_output = load_prms_statscsv(var_file)
+        prms_output = load_prms_statscsv(prms_var_file)
         p_dates = prms_output.index.values
         p_array = prms_output.to_numpy()
         wh_dates = np.where(np.isin(cbh.state["datetime"], p_dates))

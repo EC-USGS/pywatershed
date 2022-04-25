@@ -125,17 +125,17 @@ class TestPRMSCanopyDomain:
             "net_snow",
             "intcp_evap",
         ]
-        output_files = domain["prms_outputs"]
+        output_dir = domain["prms_output_dir"]
 
         ans = {}
         for key in comparison_var_names:
-            nc_pth = output_files[key].with_suffix(".nc")
+            nc_pth = output_dir / f"{key}.nc"
             ans[key] = adapter_factory(nc_pth, variable_name=key)
 
         # setup the canopy
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
-            nc_pth = output_files[key].with_suffix(".nc")
+            nc_pth = output_dir / f"{key}.nc"
             input_variables[key] = nc_pth
 
         cnp = PRMSCanopy(control=control, params=params, **input_variables)

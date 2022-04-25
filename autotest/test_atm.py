@@ -30,7 +30,7 @@ class TestNHMSolarGeometry:
         params = PrmsParameters.load(domain["param_file"])
         solar_geom = NHMSolarGeometry(params)
         potential_sw_rad_ans, sun_hrs_ans = load_soltab_debug(
-            domain["prms_outputs"]["soltab"]
+            domain["prms_run_dir"] / "soltab_debug"
         )
 
         # check the shapes
@@ -132,7 +132,7 @@ state_dict = {
         ]
     ),
     "spatial_id": np.array([5307, 5308]),
-    "tmin": np.array(
+    "tminf": np.array(
         [
             [46.1209, 45.76805],
             [37.7609, 37.4881],
@@ -144,20 +144,20 @@ state_dict = {
             [81.98999786376953, 82.3499984741211],
         ]
     ),
-    "tmax": np.array(
+    "tmaxf": np.array(
         [
             [57.41188049316406, 56.47270965576172],
             [55.511878967285156, 55.032711029052734],
         ]
     ),
-    "snowfall": np.array([[0.0, 0.0], [0.0, 0.0]]),
-    "prcp": np.array(
+    "hru_snow": np.array([[0.0, 0.0], [0.0, 0.0]]),
+    "hru_ppt": np.array(
         [
             [0.31392958760261536, 0.24780480563640594],
             [0.6605601906776428, 0.5214226245880127],
         ]
     ),
-    "rainfall": np.array(
+    "hru_rain": np.array(
         [
             [0.31392958760261536, 0.24780480563640594],
             [0.6605601906776428, 0.5214226245880127],
@@ -173,19 +173,17 @@ def params(domain):
 
 @pytest.fixture(scope="function")
 def atm_nhm_init_prms_output(domain):
-    var_translate = {
-        "prcp_adj": "prcp",
-        "rainfall_adj": "rainfall",
-        "snowfall_adj": "snowfall",
-        "tmax_adj": "tmax",
-        "tmin_adj": "tmin",
-        "swrad": "swrad",
-        "potet": "potet",
-    }
+    vars = [
+        "hru_ppt",
+        "hru_rain",
+        "hru_snow",
+        "tmaxf",
+        "tminf",
+        "swrad",
+        "potet",
+    ]
     var_file_dict = {
-        var_translate[var]: file
-        for var, file in domain["prms_outputs"].items()
-        if var in var_translate.keys()
+        var: domain["prms_output_dir"] / f"{var}.csv" for var in vars
     }
     atm = NHMBoundaryLayer.load_prms_output(
         **var_file_dict, **atm_init_test_dict
@@ -305,30 +303,26 @@ class TestNHMBoundaryLayer:
 
     @pytest.mark.parametrize(
         "read_vars",
-        [["prcp", "tmax", "tmin"], ["notavar"], ["tmin_adj"]],
+        [["prcp", "tmax", "tmin"], ["notavar"], ["tmin"]],
         ids=["toadj", "invalid", "preadj"],
     )
     def test_nc_read_vars(self, atm_nhm_init_nc, params, read_vars):
         atm_read_dict = deepcopy(atm_init_test_dict)
         atm_read_dict["nc_read_vars"] = read_vars
-        try:
+        if read_vars[0] in ["notavar"]:
+            with pytest.raises(KeyError):
+                atm_read = NHMBoundaryLayer.load_netcdf(
+                    atm_nhm_init_nc._nc_file,
+                    parameters=params,
+                    **atm_read_dict,
+                )
+        else:
             atm_read = NHMBoundaryLayer.load_netcdf(
                 atm_nhm_init_nc._nc_file, parameters=params, **atm_read_dict
             )
-            if read_vars[0] in ["notavar"]:
-                assert False
-            else:
-                assert set(atm_read.variables) == set(
-                    [
-                        var.split("_")[0]
-                        for var in atm_read_dict["nc_read_vars"]
-                    ]
-                )
-        except ValueError:
-            if read_vars[0] in ["notavar"]:
-                assert True
-            else:
-                assert False
+            assert set(atm_read.variables) == set(
+                [var.split("_")[0] for var in atm_read_dict["nc_read_vars"]]
+            )
         return
 
     def test_state_adj(self, domain, atm_nhm_init_nc, params):
@@ -337,8 +331,8 @@ class TestNHMBoundaryLayer:
         atm_to_adj = NHMBoundaryLayer.load_netcdf(
             atm_nhm_init_nc._nc_file, parameters=params, **atm_adj_dict
         )
-        atm_to_adj.param_adjust()
 
+        atm_to_adj.param_adjust()
         for vv in atm_to_adj.variables:
             # JLM: we loose rhavg in the adjustments... it's a bit of a mystery
             # if that should also be adjusted. checking on that w parker
@@ -358,11 +352,11 @@ class TestNHMBoundaryLayer:
         atm_nhm_init_nc.calculate_potential_et_jh()
 
         var_tol = {
-            "prcp": 1e-5,
-            "rainfall": 1e-5,
-            "snowfall": 1e-5,
-            "tmax": 1e-4,
-            "tmin": 1e-4,
+            "hru_ppt": 1e-5,
+            "hru_rain": 1e-5,
+            "hru_snow": 1e-5,
+            "tmaxf": 1e-4,
+            "tminf": 1e-4,
             "swrad": 1e-3,
             "potet": 1e-5,
         }
@@ -375,12 +369,14 @@ class TestNHMBoundaryLayer:
                 atol=tol,
             )  # Only the atol matters here
 
-            # dd = np.abs(atm_nhm_init_prms_output[var] - atm_nhm_init_nc[var]).max()
+            # dd = np.abs(
+            #     atm_nhm_init_prms_output[var] - atm_nhm_init_nc[var]
+            # ).max()
             # print(dd, var)
 
             assert result.all(), var
 
-        var = "prcp"
+        var = "hru_ppt"
         for tt in range(3):
             result = np.isclose(
                 atm_nhm_init_prms_output.get_current_state(var),

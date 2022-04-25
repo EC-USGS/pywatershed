@@ -16,11 +16,10 @@ class TestPRMSGroundwaterDomain:
         control = Control.load(domain["control_file"])
 
         # load csv files into dataframes
-        output_files = domain["prms_outputs"]
+        output_dir = domain["prms_output_dir"]
         input_variables = {}
         for key in PRMSGroundwater.get_inputs():
-            output_path = output_files[key]
-            nc_path = output_path.with_suffix(".nc")
+            nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
         gw = PRMSGroundwater(control, prms_params, **input_variables)
@@ -29,8 +28,7 @@ class TestPRMSGroundwaterDomain:
 
         output_compare = {}
         for key in PRMSGroundwater.get_variables():
-            output_path = output_files[key]
-            base_nc_path = output_path.with_suffix(".nc")
+            base_nc_path = output_dir / f"{key}.nc"
             compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
             output_compare[key] = (base_nc_path, compare_nc_path)
 

@@ -124,6 +124,15 @@ class StorageUnit(Accessor):
         # on StorageUnits
         dims = set(self.parameters).difference(set(self.param_meta.keys()))
         self.param_meta = self.control.meta.get_dims(dims)
+
+        # JLM this is something of a hack at the moment
+        meta_drop = ["dimensions", "init_val"]
+        for att in ["var_meta", "input_meta", "param_meta"]:
+            for var in self[att].keys():
+                for dd in meta_drop:
+                    if dd in self[att][var].keys():
+                        del self[att][var][dd]
+
         return
 
     def output_to_csv(self, pth):

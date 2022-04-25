@@ -261,6 +261,7 @@ gwres_sink
 gwres_stor
 hru_actet
 hru_impervstor
+hru_intcpevap
 hru_intcpstor
 hru_lateral_flow
 hru_ppt
@@ -270,6 +271,7 @@ hru_storage
 infil
 intcp_changeover
 intcp_evap
+intcp_stor
 net_ppt
 net_rain
 net_snow

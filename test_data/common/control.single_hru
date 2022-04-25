@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-45
+47
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-45
+47
 4
 dprst_seep_hru
 dprst_stor_hru
@@ -261,6 +261,7 @@ gwres_sink
 gwres_stor
 hru_actet
 hru_impervstor
+hru_intcpevap
 hru_intcpstor
 hru_lateral_flow
 hru_ppt
@@ -270,6 +271,7 @@ hru_storage
 infil
 intcp_changeover
 intcp_evap
+intcp_stor
 net_ppt
 net_rain
 net_snow

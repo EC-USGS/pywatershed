@@ -117,13 +117,13 @@ class TestPRMSCanopyDomain:
         # get the answer data
 
         comparison_var_names = [
-            # "rainfall_adj",
-            # "snowfall_adj",
-            # "intcp_stor",  # not in the prms output currently
-            # "potet",
             "net_rain",
             "net_snow",
+            "net_ppt",
+            "intcp_stor",
             "intcp_evap",
+            "hru_intcpstor",
+            "hru_intcpevap",
         ]
         output_dir = domain["prms_output_dir"]
 
@@ -136,23 +136,41 @@ class TestPRMSCanopyDomain:
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
             nc_pth = output_dir / f"{key}.nc"
+            if "pkwater_equiv" in str(nc_pth):
+                nc_pth = output_dir / "pkwater_equiv_prev.nc"
             input_variables[key] = nc_pth
 
         cnp = PRMSCanopy(control=control, params=params, **input_variables)
 
+        all_success = True
         for istep in range(control.n_times):
             # control.advance()
             cnp.advance()
             cnp.calculate(1.0)
 
             # compare along the way
+            atol = 1.0e-5
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():
-                assert np.isclose(ans[key].current, cnp[key], atol=1e-1).all()
+                a1 = ans[key].current
+                a2 = cnp[key]
+                success = np.isclose(a1, a2, atol=atol).all()
+                if not success:
+                    all_success = False
+                    diff = a1 - a2
+                    diffmin = diff.min()
+                    diffmax = diff.max()
+                    print(f"time step {istep}")
+                    print(f"output variable {key}")
+                    print(f"prms   {a1.min()}    {a1.max()}")
+                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"diff   {diffmin}  {diffmax}")
 
         cnp.finalize()
 
+        if not all_success:
+            raise Exception("pynhm results do not match prms results")
         # is comparing along the way slower or faster than comparing netcdf?
 
         # prms_output_dataframes = {}

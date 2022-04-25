@@ -212,14 +212,14 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
         )
         raise ValueError(msg)
 
-    cbh_dict["tmax_adj"] = np.zeros(
+    cbh_dict["tmaxf"] = np.zeros(
         cbh_dict["tmax"].shape, dtype=cbh_dict["tmax"].dtype
     )  # (time, space)
-    cbh_dict["tmin_adj"] = np.zeros(
+    cbh_dict["tminf"] = np.zeros(
         cbh_dict["tmin"].shape, dtype=cbh_dict["tmin"].dtype
     )
-    cbh_dict["tmax_adj"] = cbh_dict["tmax"] + tmax_param[month_ind]
-    cbh_dict["tmin_adj"] = cbh_dict["tmin"] + tmin_param[month_ind]
+    cbh_dict["tmaxf"] = cbh_dict["tmax"] + tmax_param[month_ind]
+    cbh_dict["tminf"] = cbh_dict["tmin"] + tmin_param[month_ind]
 
     # To check the resulting shape used above
     # tmax_time_params = tmax_param[month_ind]
@@ -261,13 +261,13 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
         msg = "Unexpected month dimension for cbh precip adjustment params"
         raise ValueError(msg)
 
-    cbh_dict["prcp_adj"] = np.zeros(
+    cbh_dict["hru_ppt"] = np.zeros(
         cbh_dict["prcp"].shape, dtype=cbh_dict["prcp"].dtype
     )  # (time, space)
-    cbh_dict["rainfall_adj"] = np.zeros(
+    cbh_dict["hru_rain"] = np.zeros(
         cbh_dict["prcp"].shape, dtype=cbh_dict["prcp"].dtype
     )
-    cbh_dict["snowfall_adj"] = np.zeros(
+    cbh_dict["hru_snow"] = np.zeros(
         cbh_dict["prcp"].shape, dtype=cbh_dict["prcp"].dtype
     )
 
@@ -279,19 +279,17 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
     # so we set the mask in the reverse order
 
     # Calculate the mix everywhere, then set the precip/rain/snow amounts from the conditions.
-    tdiff = cbh_dict["tmax_adj"] - cbh_dict["tmin_adj"]
+    tdiff = cbh_dict["tmaxf"] - cbh_dict["tminf"]
     prmx = (
-        (cbh_dict["tmax_adj"] - tmax_allsnow_param[month_ind]) / tdiff
+        (cbh_dict["tmaxf"] - tmax_allsnow_param[month_ind]) / tdiff
     ) * adjmix_rain_param[month_ind]
     del tdiff
 
-    wh_all_snow = np.where(
-        cbh_dict["tmax_adj"] <= tmax_allsnow_param[month_ind]
-    )
+    wh_all_snow = np.where(cbh_dict["tmaxf"] <= tmax_allsnow_param[month_ind])
     wh_all_rain = np.where(
         np.logical_or(
-            cbh_dict["tmin_adj"] > tmax_allsnow_param[month_ind],
-            cbh_dict["tmax_adj"] >= tmax_allrain_param[month_ind],
+            cbh_dict["tminf"] > tmax_allsnow_param[month_ind],
+            cbh_dict["tmaxf"] >= tmax_allrain_param[month_ind],
         )
     )
     prmx[wh_all_rain] = one
@@ -302,26 +300,26 @@ def cbh_adjust(cbh_dict: dict, params: PrmsParameters) -> dict:
     wh_all_rain = np.where(prmx >= one)
 
     # Mixed case (everywhere, to be overwritten by the all-snow/rain-fall cases)
-    cbh_dict["prcp_adj"] = cbh_dict["prcp"] * snow_cbh_adj_param[month_ind]
-    cbh_dict["rainfall_adj"] = prmx * cbh_dict["prcp_adj"]
-    cbh_dict["snowfall_adj"] = cbh_dict["prcp_adj"] - cbh_dict["rainfall_adj"]
+    cbh_dict["hru_ppt"] = cbh_dict["prcp"] * snow_cbh_adj_param[month_ind]
+    cbh_dict["hru_rain"] = prmx * cbh_dict["hru_ppt"]
+    cbh_dict["hru_snow"] = cbh_dict["hru_ppt"] - cbh_dict["hru_rain"]
     del prmx
 
     # All precip is snow case
     # The condition to be used later:
-    cbh_dict["prcp_adj"][wh_all_snow] = (
+    cbh_dict["hru_ppt"][wh_all_snow] = (
         cbh_dict["prcp"] * snow_cbh_adj_param[month_ind]
     )[wh_all_snow]
-    cbh_dict["snowfall_adj"][wh_all_snow] = cbh_dict["prcp_adj"][wh_all_snow]
-    cbh_dict["rainfall_adj"][wh_all_snow] = zero
+    cbh_dict["hru_snow"][wh_all_snow] = cbh_dict["hru_ppt"][wh_all_snow]
+    cbh_dict["hru_rain"][wh_all_snow] = zero
 
     # All precip is rain case
     # The condition to be used later:
-    cbh_dict["prcp_adj"][wh_all_rain] = (
+    cbh_dict["hru_ppt"][wh_all_rain] = (
         cbh_dict["prcp"] * rain_cbh_adj_param[month_ind]
     )[wh_all_rain]
-    cbh_dict["rainfall_adj"][wh_all_rain] = cbh_dict["prcp_adj"][wh_all_rain]
-    cbh_dict["snowfall_adj"][wh_all_rain] = zero
+    cbh_dict["hru_rain"][wh_all_rain] = cbh_dict["hru_ppt"][wh_all_rain]
+    cbh_dict["hru_snow"][wh_all_rain] = zero
 
     return None
 
@@ -334,7 +332,7 @@ def cbh_check(cbh_dict: dict, verbosity: int = 0) -> None:
 
     assert (~np.isnat(cbh_dict["datetime"])).all()
 
-    for adj in ["", "_adj"]:
+    for adj in ["", "f"]:
 
         # assume one variable represents if there are any adjustments
         if f"tmax{adj}" not in cbh_dict.keys():

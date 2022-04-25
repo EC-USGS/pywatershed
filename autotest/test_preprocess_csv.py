@@ -7,7 +7,7 @@ import pandas as pd
 
 from pynhm.preprocess import CsvFile
 
-max_csv_files = 4
+csv_test_vars = ["hru_ppt", "intcp_stor", "potet", "gwres_stor"]
 
 
 def compare_netcdf(csv, nc_name):
@@ -33,7 +33,8 @@ def compare_netcdf(csv, nc_name):
 
 
 def test_single_csv(domain):
-    csv = CsvFile(name=list(domain["prms_outputs"].values())[-1])
+    var = "gwres_stor"
+    csv = CsvFile(name=domain["prms_output_dir"] / f"{var}.csv")
 
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
@@ -41,7 +42,8 @@ def test_single_csv(domain):
 
 
 def test_single_csv_to_netcdf(domain):
-    path = list(domain["prms_outputs"].values())[-1]
+    var = "gwres_stor"
+    path = domain["prms_output_dir"] / f"{var}.csv"
     csv = CsvFile(name=path)
 
     basedir = pl.Path(path.parent)
@@ -59,36 +61,18 @@ def test_single_csv_to_netcdf(domain):
 def test_multiple_csv(domain):
     csv = CsvFile()
     imax = 0
-    for name, path in domain["prms_outputs"].items():
-        if path.suffix in (".csv",):
-            csv.add_path(path)
-            if imax >= max_csv_files:
-                break
-            imax += 1
-
+    for var in csv_test_vars:
+        csv.add_path(domain["prms_output_dir"] / f"{var}.csv")
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
     return
 
 
-def test_multiple_csv_to_netcdf(domain):
+def test_multiple_csv_to_netcdf(domain, tmp_path):
     csv = CsvFile()
-    basedir = None
-    imax = 0
-    for name, path in domain["prms_outputs"].items():
-        if path.suffix in (".csv",):
-            basedir = pl.Path(path.parent)
-            csv.add_path(path)
-            if imax >= max_csv_files:
-                break
-            imax += 1
-
-    nc_file = basedir / "multiple_variables.nc"
+    for var in csv_test_vars:
+        csv.add_path(domain["prms_output_dir"] / f"{var}.csv")
+    nc_file = tmp_path / "multiple_variables.nc"
     csv.to_netcdf(nc_file)
-
     compare_netcdf(csv, nc_file)
-
-    # clean up netcdf file
-    os.remove(nc_file)
-
     return

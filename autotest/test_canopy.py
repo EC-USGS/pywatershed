@@ -125,20 +125,19 @@ class TestPRMSCanopyDomain:
             "hru_intcpstor",
             "hru_intcpevap",
         ]
-        output_files = domain["prms_outputs"]
+        output_dir = domain["prms_output_dir"]
 
         ans = {}
         for key in comparison_var_names:
-            nc_pth = output_files[key].with_suffix(".nc")
+            nc_pth = output_dir / f"{key}.nc"
             ans[key] = adapter_factory(nc_pth, variable_name=key)
 
         # setup the canopy
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
-            nc_pth = output_files[key].with_suffix(".nc")
-            nc_pth = str(nc_pth)
-            if "pkwater_equiv" in nc_pth:
-                nc_pth = nc_pth.replace("pkwater_equiv", "pkwater_equiv_prev") # hack to use lagged pkwater_equiv
+            nc_pth = output_dir / f"{key}.nc"
+            if "pkwater_equiv" in str(nc_pth):
+                nc_pth = output_dir / "pkwater_equiv_prev.nc"
             input_variables[key] = nc_pth
 
         cnp = PRMSCanopy(control=control, params=params, **input_variables)
@@ -150,7 +149,7 @@ class TestPRMSCanopyDomain:
             cnp.calculate(1.0)
 
             # compare along the way
-            atol = 1.e-5
+            atol = 1.0e-5
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():

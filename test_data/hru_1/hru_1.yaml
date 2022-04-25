@@ -9,35 +9,8 @@ cbh_inputs:
 control_file: control.test
 param_file: myparam.param
 
-prms_outputs:
-  prcp_adj: output/hru_ppt.csv
-  hru_ppt: output/hru_ppt.csv
-  rainfall_adj: output/hru_rain.csv
-  hru_rain: output/hru_rain.csv
-  snowfall_adj: output/hru_snow.csv
-  hru_snow: output/hru_snow.csv
-  tmax_adj: output/tmaxf.csv
-  tmin_adj: output/tminf.csv
-  swrad: output/swrad.csv
-  potet: output/potet.csv
-  intcpstor: output/hru_intcpstor.csv
-  net_rain: output/net_rain.csv
-  net_snow: output/net_snow.csv
-  net_ppt: output/net_ppt.csv
-  intcp_evap: output/intcp_evap.csv
-  intcp_stor: output/intcp_stor.csv
-  hru_intcpstor: output/hru_intcpstor.csv
-  hru_intcpevap: output/hru_intcpevap.csv
-  soltab: soltab_debug
-  pkwater_equiv: output/pkwater_equiv.csv
-  transp_on: output/transp_on.csv
-  soil_to_gw: output/soil_to_gw.csv
-  ssr_to_gw: output/ssr_to_gw.csv
-  dprst_seep_hru: output/dprst_seep_hru.csv
-  gwres_flow: output/gwres_flow.csv
-  gwres_in: output/gwres_in.csv
-  gwres_sink: output/gwres_sink.csv
-  gwres_stor: output/gwres_stor.csv
+prms_run_dir: ./
+prms_output_dir: ./output
 
 cbh_nc: cbh.nc
 
@@ -70,8 +43,8 @@ test_ans:
         tmax: 61.77499833055092
         tmin: 43.415390984974955
       params:
-        tmax_adj: 60.63638466864774
-        tmin_adj: 43.89704419979967
-        prcp_adj: 0.1416483701569282
-        rainfall_adj: 0.1372140761113731
-        snowfall_adj: 0.004434294045555103
+        tmaxf: 60.63638466864774
+        tminf: 43.89704419979967
+        hru_ppt: 0.1416483701569282
+        hru_rain: 0.1372140761113731
+        hru_snow: 0.004434294045555103

@@ -236,9 +236,6 @@ class NetCdfWrite:
                 chunksizes=tuple(chunk_sizes.values()),
             )
             for key, val in var_meta.items():
-                # JLM this is a hack. either define an arg or edit the yaml or both
-                if key in ["dimensions"]:
-                    continue
                 self.variables[vv].setncattr(key, val)
 
     def __del__(self):

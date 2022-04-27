@@ -7,6 +7,12 @@ import numpy as np
 
 from ..base.meta import Meta
 from ..utils import ControlVariables
+from ..utils.time_utils import (
+    datetime_dowy,
+    datetime_doy,
+    datetime_month,
+    datetime_year,
+)
 from .accessor import Accessor
 
 fileish = Union[str, pl.PosixPath]
@@ -20,6 +26,7 @@ class Control(Accessor):
         start_time: np.datetime64,
         end_time: np.datetime64,
         time_step: np.timedelta64,
+        config: dict = None,
         verbosity: int = 0,
         **kwargs,
     ):
@@ -46,6 +53,8 @@ class Control(Accessor):
         self._previous_time = None
         self._i_time = 0
 
+        self.config = config
+
         self.meta = Meta()
         # This will have the time dimension name
         # This will have the time coordimate name
@@ -67,10 +76,12 @@ class Control(Accessor):
 
         """
         control = ControlVariables.load(control_file)
+
         return cls(
             control.control["start_time"],
             control.control["end_time"],
             control.control["initial_deltat"],
+            config=control.control,
             verbosity=verbosity,
         )
 
@@ -78,6 +89,26 @@ class Control(Accessor):
     def current_time(self):
         """Get the current time."""
         return self._current_time
+
+    @property
+    def current_year(self):
+        """Get the current year."""
+        return datetime_year(self._current_time)
+
+    @property
+    def current_month(self):
+        """Get the current month."""
+        return datetime_month(self._current_time)
+
+    @property
+    def current_doy(self):
+        """Get the current day of year."""
+        return datetime_doy(self._current_time)
+
+    @property
+    def current_dowy(self):
+        """Get the current day of water year."""
+        return datetime_dowy(self._current_time)
 
     @property
     def previous_time(self):

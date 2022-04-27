@@ -40,22 +40,6 @@ class Meta:
 
         return
 
-    def get_var_subclass(self, subclass_name: str) -> dict:
-        """Get the variable metadata for the supplied subclass."""
-        return {
-            key: value
-            for key, value in self.variables.items()
-            if subclass_name in value["modules"]
-        }
-
-    def get_inputs_subclass(self, subclass_name: str) -> dict:
-        """Get the inputs metadata for the supplied subclass."""
-        return {
-            key: value
-            for key, value in self.variables.items()
-            if ("input_to" in value) and (subclass_name in value["input_to"])
-        }
-
     def _get_meta_in_list(self, meta: str, the_list: Iterable) -> dict:
         return {
             key: value

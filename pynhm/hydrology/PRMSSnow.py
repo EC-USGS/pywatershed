@@ -7,7 +7,7 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..constants import one, zero
+from ..constants import HruType, one, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -64,7 +64,7 @@ class PRMSSnow(StorageUnit):
         control: Control,
         params: PrmsParameters,
         orad_hru: adaptable,
-        # soltab_horad_potsw: adaptable,
+        soltab_horad_potsw: adaptable,
         swrad: adaptable,
         hru_ppt: adaptable,
         prmx: adaptable,
@@ -76,7 +76,7 @@ class PRMSSnow(StorageUnit):
         net_snow: adaptable,
         transp_on: adaptable,
         verbose: bool = False,
-    ) -> "PRMSGroundwater":
+    ) -> "PRMSSnow":
 
         self.name = "PRMSSnow"
         super().__init__(
@@ -95,7 +95,7 @@ class PRMSSnow(StorageUnit):
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get groundwater reservoir parameters
+        """Get snow pack parameters
 
         Returns:
             parameters: input parameters
@@ -106,7 +106,7 @@ class PRMSSnow(StorageUnit):
             "ndeplval",
             "nmonths",
             # "cov_type",
-            # "hru_type",
+            "hru_type",
             # "hru_route_order",  # really necessary? does it matter for column calcs?
             "albset_rna",
             "albset_rnm",
@@ -130,7 +130,7 @@ class PRMSSnow(StorageUnit):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get groundwater reservoir input variables
+        """Get snow pack input variables
 
         Returns:
             variables: input variables
@@ -143,7 +143,7 @@ class PRMSSnow(StorageUnit):
             "net_snow",
             "orad_hru",
             "prmx",
-            # "soltab_horad_potsw",
+            "soltab_horad_potsw",
             "swrad",
             "tavgc",
             "tmaxc",
@@ -153,10 +153,10 @@ class PRMSSnow(StorageUnit):
 
     @staticmethod
     def get_variables() -> tuple:
-        """Get groundwater reservoir output variables
+        """Get snow pack variables
 
         Returns:
-            variables: output variables
+            variables: variables
 
         """
         return (
@@ -196,57 +196,15 @@ class PRMSSnow(StorageUnit):
             # acum, amlt, deninv, denmaxinv are not worth tracking on self as in PRMS6
         )
 
-    def set_initial_conditions(self):
-        """Initialize PRMSSnow snowpack variables."""
+    @staticmethod
+    def get_restart_variables() -> tuple:
+        """Get snow pack restart variables
 
-        # I have set metadata on each var for var_init: [zero, False] to init those vars
+        Returns:
+            variables: restart variables
+        """
 
-        # (should these be labeled as such in metadata?)
-        self.deninv = one / self.den_init.copy()
-        self.denmaxinv = one / self.den_max.copy()
-        self.pkwater_equiv = self.snowpack_init.copy()
-        self.pkwater_equiv_ante = None
-
-        sd = self.ndeplval / 11
-        # self.snarea_curve_2d = reshape(self.snarea_curve, (/11, sd/))
-
-        pkweq_gt_zero = self.pkwater_equiv > zero
-        wh_pkweq_gt_zero = np.where(pkweq_gt_zero)
-        self.pk_depth[wh_pkweq_gt_zero] = (
-            self.pkwater_equiv[wh_pkweq_gt_zero]
-            * self.deninv[wh_pkweq_gt_zero]
-        )
-        self.pk_den[wh_pkweq_gt_zero] = (
-            self.pkwater_equiv[wh_pkweq_gt_zero]
-            / self.pk_depth[wh_pkweq_gt_zero]
-        )
-        self.pk_ice[wh_pkweq_gt_zero] = self.pkwater_equiv[wh_pkweq_gt_zero]
-        self.freeh2o[wh_pkweq_gt_zero] = (
-            self.pk_ice[wh_pkweq_gt_zero] * self.freeh2o_cap[wh_pkweq_gt_zero]
-        )
-        self.ai[wh_pkweq_gt_zero] = self.pkwater_equiv[
-            wh_pkweq_gt_zero
-        ]  # inches
-
-        ai_gt_snarea_thresh = self.ai > self.snarea_thresh
-        wh_pkweq_gt_zero_and_ai_gt_snth = np.where(
-            pkweq_gt_zero & ai_gt_snarea_thresh
-        )
-        self.ai[wh_pkweq_gt_zero_and_ai_gt_snth] = self.snarea_thresh[
-            wh_pkweq_gt_zero_and_ai_gt_snth
-        ]
-
-        # self.snowcov_area[wh_pkweq_gt_zero] = self.sca_deplcrv(self.snarea_curve_2d(1:11, self.hru_deplcrv(chru)), &
-        #                                           self.frac_swe[wh_pkweq_gt_zero])
-
-        self.pss = self.pkwater_equiv
-        self.pst = self.pkwater_equiv
-
-        # now get from restart
-        # if restart then get these variables from the restart file.
-        # JLM: this seems like an overkill list and dosent shed light on what states have memory.
-        # JLM: could there be a diagnostic part of the advance?
-        restart_variables = [
+        return (
             "albedo",
             "freeh2o",
             "iasw",
@@ -269,7 +227,129 @@ class PRMSSnow(StorageUnit):
             "snowcov_area",
             "snowcov_areasv",
             "snsv",
-        ]
+        )
+
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get snow pack inital values
+
+        Returns:
+            dict: inital values for named variables
+        """
+
+        return {
+            "ai": zero,
+            "albedo": zero,
+            "frac_swe": zero,
+            "freeh2o": zero,
+            "iasw": False,
+            "int_alb": one,
+            "iso": one,
+            "lso": zero,
+            "lst": False,
+            "mso": one,
+            "pk_def": zero,
+            "pk_den": zero,
+            "pk_depth": zero,
+            "pk_ice": zero,
+            "pk_precip": zero,
+            "pk_temp": zero,
+            "pksv": zero,
+            "pptmix_nopack": False,
+            "salb": zero,
+            "scrv": zero,
+            "slst": zero,
+            "snow_evap": zero,
+            "snowcov_area": zero,
+            "snowcov_areasv": zero,
+            "snowmelt": zero,
+            "snsv": zero,
+            "tcal": zero,
+        }
+
+    def set_initial_conditions(self):
+        """Initialize PRMSSnow snowpack variables."""
+
+        # Deninv and denmaxinv not in variables nor in metadata but we can set them on self
+        self.deninv = one / self.den_init.copy()
+        self.denmaxinv = one / self.den_max.copy()
+
+        self.pkwater_equiv = self.snowpack_init.copy()
+        self.pkwater_equiv_ante = None
+
+        sd = int(self.ndeplval / 11)
+        self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
+
+        if self.control.config["init_vars_from_file"] in [0, 2, 3]:
+
+            # The super().__init__ already set_initial_conditions using its set_inital_conditions
+            # Below Im just following PRMS6, will reconcile later with the super (may be redundant).
+            vars_init = [
+                "albedo",
+                "iasw",
+                "int_alb",
+                "iso",
+                "lso",
+                "lst",
+                "mso",
+                "pk_def",
+                "pk_temp",
+                "pksv",
+                "salb",
+                "scrv",
+                "slst",
+                "snowcov_areasv",
+                "snsv",
+            ]
+            for vv in vars_init:
+                self.initialize_var(vv)
+
+            pkweq_gt_zero = self.pkwater_equiv > zero
+            wh_pkweq_gt_zero = np.where(pkweq_gt_zero)
+            self.pk_depth[wh_pkweq_gt_zero] = (
+                self.pkwater_equiv[wh_pkweq_gt_zero]
+                * self.deninv[wh_pkweq_gt_zero]
+            )
+            self.pk_den[wh_pkweq_gt_zero] = (
+                self.pkwater_equiv[wh_pkweq_gt_zero]
+                / self.pk_depth[wh_pkweq_gt_zero]
+            )
+            self.pk_ice[wh_pkweq_gt_zero] = self.pkwater_equiv[
+                wh_pkweq_gt_zero
+            ]
+            self.freeh2o[wh_pkweq_gt_zero] = (
+                self.pk_ice[wh_pkweq_gt_zero]
+                * self.freeh2o_cap[wh_pkweq_gt_zero]
+            )
+            self.ai[wh_pkweq_gt_zero] = self.pkwater_equiv[
+                wh_pkweq_gt_zero
+            ]  # inches
+
+            ai_gt_snarea_thresh = self.ai > self.snarea_thresh
+            wh_pkweq_gt_zero_and_ai_gt_snth = np.where(
+                pkweq_gt_zero & ai_gt_snarea_thresh
+            )
+            self.ai[wh_pkweq_gt_zero_and_ai_gt_snth] = self.snarea_thresh[
+                wh_pkweq_gt_zero_and_ai_gt_snth
+            ]
+
+            for ww in range(len(wh_pkweq_gt_zero[0])):
+                self.snowcov_area[wh_pkweq_gt_zero[ww]] = self.sca_deplcrv(
+                    self.snarea_curve_2d[
+                        1:11, self.hru_deplcrv[wh_pkweq_gt_zero[ww]]
+                    ],
+                    self.frac_swe[wh_pkweq_gt_zero[ww]],
+                )
+
+            self.pss = self.pkwater_equiv
+            self.pst = self.pkwater_equiv
+
+        else:
+
+            raise RuntimeError("Snow restart capability not implemented")
+            # JLM: a list of restart variables dosent shed light on what states actually have memory.
+            # JLM: could there be a diagnostic part of the advance?
+
         return
 
     def advance(self) -> None:
@@ -282,7 +362,11 @@ class PRMSSnow(StorageUnit):
         self._itime_step += 1
 
         for key, value in self._input_variables_dict.items():
-            value.advance()
+            # JLM: This is only because adapter advances dont all take current time.
+            if key == "soltab_horad_potsw":
+                value.advance(self.control.current_time)
+            else:
+                value.advance()
             v = getattr(self, key)
             v[:] = value.current
 
@@ -296,7 +380,6 @@ class PRMSSnow(StorageUnit):
 
         Returns:
             None
-
         """
 
         self._simulation_time = simulation_time
@@ -315,7 +398,10 @@ class PRMSSnow(StorageUnit):
 
         cals = zero
 
+        # these dont really need to be set on self
         newsnow = np.zeros([self.nhru], dtype=int)
+        pptmix = np.zeros([self.nhru])
+
         net_snow_gt_zero = self.net_snow > zero
         wh_net_snow_gt_zero = np.where(net_snow_gt_zero)
         newsnow[wh_net_snow_gt_zero] = 1
@@ -324,7 +410,31 @@ class PRMSSnow(StorageUnit):
         wh_net_snow_gt_zero_and_net_rain_gt_zero = np.where(
             net_rain_gt_zero & net_rain_gt_zero
         )
-        pptmix = np.zeros([self.nhru])
+        pptmix[wh_net_snow_gt_zero_and_net_rain_gt_zero] = 1
+
+        pptmix_nopack = False
+
+        for jj in range(self.nhru):
+
+            if self.hru_type[jj] == HruType.LAKE:
+                continue
+
+            trd = self.orad_hru[jj] / self.soltab_horad_potsw[jj]
+
+        # If it's the first julian day of the water year, several
+        # variables need to be reset:
+        # - reset the previous snow water eqivalent plus new snow to 0
+        # - reset flags to indicate it is not melt season or potetential melt season
+        # - reset the counter for the number of days a snowpack is at 0 deg Celsius
+        # TODO: rsr, do we want to reset all HRUs, what about Southern Hemisphere
+        if self.control.current_dowy == 1:
+            self.pss[jj] = zero  # [inches]
+            self.iso[jj] = True  # [flag]
+            self.mso[jj] = True  # [flag]
+            self.lso[jj] = 0  # [counter]
+
+        # HRU SET-UP - SET DEFAULT VALUES AND/OR BASE CONDITIONS FOR THIS TIME PERIOD
+        # **************************************************************
 
         # HRU STEP 1 - DEAL WITH PRECIPITATION AND ITS EFFECT ON THE WATER
         #              CONTENT AND HEAT CONTENT OF SNOW PACK
@@ -348,3 +458,27 @@ class PRMSSnow(StorageUnit):
         # *********************************************************
 
         return
+
+    @staticmethod
+    def sca_deplcrv(snarea_curve: np.ndarray, frac_swe: float) -> float:
+        """Interpolate along snow covered area depletion curve"""
+        if frac_swe > one:
+            res = snarea_curve[-1]
+        else:
+            # Get the indices (as integers) of the depletion curve that bracket the
+            # given frac_swe (next highest and next lowest).
+            idx = int(10.0 * (frac_swe + 0.2)) - 1  # [index]
+            jdx = idx - 1 - 1  # [index]
+            if idx > (11 - 1):
+                idx = 11 - 1
+            # Calculate the fraction of the distance (from the next lowest) the given
+            # frac_swe is between the next highest and lowest curve values.
+            dify = (frac_swe * 10.0) - float(jdx - 1)  # [fraction]
+            # Calculate the difference in snow covered area represented by next
+            # highest and lowest curve values.
+            difx = snarea_curve[idx] - snarea_curve[jdx]
+            # Linearly interpolate a snow covered area between those represented by
+            # the next highest and lowest curve values.
+            res = snarea_curve[jdx] + dify * difx
+
+        return res

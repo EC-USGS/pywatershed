@@ -7,6 +7,7 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
+from ..constants import zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -70,10 +71,7 @@ class PRMSCanopy(StorageUnit):
         return
 
     def set_initial_conditions(self):
-        # Where does the initial storage come from? Document here.
-        # apparently it's just zero?
         # self.inctp_stor = self.intcp_stor_init.copy()
-        self.intcp_stor[:] = np.zeros([1])[0]
         self.intcp_stor_old = None
         return
 
@@ -134,6 +132,26 @@ class PRMSCanopy(StorageUnit):
             "intcp_transp_on",  # this is private in prms6 and is not in the metadata
             # i defined metadata for it in a very adhoc way
         )
+
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get canopy inital values
+
+        Returns:
+            dict: inital values for named variables
+        """
+
+        return {
+            "net_rain": zero,
+            "net_snow": zero,
+            "net_ppt": zero,
+            "intcp_stor": zero,  # JLM: this is the only one that was explicitly defined
+            "intcp_evap": zero,
+            "hru_intcpstor": zero,
+            "hru_intcpevap": zero,
+            "intcp_form": 0,  # could make boolean but would have to make the RAIN/SNOW match
+            "intcp_transp_on": 0,  # could make boolean
+        }
 
     def advance(self):
         """Advance canopy

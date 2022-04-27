@@ -87,12 +87,7 @@ class NHMSolarGeometry(StateAccess):
         # JLM: Document. these names are bad, fix them when it's tested.
         # JLM: It would be nice to inherit state accessors here
         super().__init__()
-        self._potential_variables = [
-            "hru_cossl",
-            "potential_sw_rad_flat",
-            "potential_sw_rad",
-            "sun_hrs",
-        ]
+        self._potential_variables = self.variables  # until refactor
         self.parameters = parameters
         # JLM: This should be in the base class for handling space
         if "nhm_id" in self.parameters.parameters.keys():
@@ -135,6 +130,25 @@ class NHMSolarGeometry(StateAccess):
         )
 
         return
+
+    @staticmethod
+    def get_variables():
+        """Get solar geometry variables
+
+        Returns:
+            variables: output variables
+
+        """
+        return (
+            "hru_cossl",
+            "potential_sw_rad_flat",  # rename to match PRMS.
+            "potential_sw_rad",
+            "sun_hrs",
+        )
+
+    @property
+    def variables(self):
+        return self.get_variables()
 
     # @jit
     @staticmethod

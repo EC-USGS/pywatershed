@@ -4,11 +4,27 @@ import pathlib as pl
 import numpy as np
 import pandas as pd
 
+from ..constants import zero, one, nan
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
 from .control import Control
+
+# These could be changed in the metadata yaml
+type_translation = {
+    "D": "float64",
+    "F": "float64",
+    "I": "int32",
+    "B": "bool",  # not used despite the popularity of "flags"
+}
+val_translation = {
+    "zero": zero,
+    "one": one,
+    True: True,
+    False: False,
+    nan: np.nan,
+}
 
 
 class StorageUnit(Accessor):
@@ -83,6 +99,10 @@ class StorageUnit(Accessor):
     def get_variables() -> list:
         raise Exception("This must be overridden")
 
+    @staticmethod
+    def get_restart_variables() -> list:
+        raise Exception("This must be overridden")
+
     @property
     def parameters(self) -> list:
         return self.get_parameters()
@@ -95,14 +115,39 @@ class StorageUnit(Accessor):
     def variables(self) -> list:
         return self.get_variables()
 
-    def initialize_self_variables(self):
-        # todo: get the type from metadata
+    @property
+    def restart_variables(self) -> list:
+        return self.get_restart_variables()
+
+    def initialize_self_variables(self, restart: bool = False):
+        # skip restart variables if restart (for speed) ? the code is below but commented.
         for name in self.parameters:
             setattr(self, name, self.params.parameters[name])
-        for name in self.variables:
-            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
         for name in self.inputs:
-            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
+            setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
+        for name in self.variables:
+            # if restart and (name in self.restart_variables):
+            #     continue
+            self.initialize_from_meta(name)
+        return
+
+    def initialize_from_meta(self, var_name):
+        if var_name in self.var_meta.keys():
+            attr = "var_meta"
+        else:
+            attr = "input_meta"
+
+        if "init_val" in self[attr][var_name]:
+            init_type = type_translation[self[attr][var_name]["type"]]
+            init_val = val_translation[
+                self[attr][var_name]["init_val"][self.name]
+            ]
+            setattr(
+                self, var_name, np.full(self.nhru, init_val, dtype=init_type)
+            )
+        elif self.verbose:
+            print(f"{var_name} not initialized from metadata")
+
         return
 
     def set_initial_conditons(self):
@@ -124,14 +169,6 @@ class StorageUnit(Accessor):
         # on StorageUnits
         dims = set(self.parameters).difference(set(self.param_meta.keys()))
         self.param_meta = self.control.meta.get_dims(dims)
-
-        # JLM this is something of a hack at the moment
-        meta_drop = ["dimensions", "init_val"]
-        for att in ["var_meta", "input_meta", "param_meta"]:
-            for var in self[att].keys():
-                for dd in meta_drop:
-                    if dd in self[att][var].keys():
-                        del self[att][var][dd]
 
         return
 

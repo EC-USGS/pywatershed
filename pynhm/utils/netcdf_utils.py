@@ -236,6 +236,8 @@ class NetCdfWrite:
                 chunksizes=tuple(chunk_sizes.values()),
             )
             for key, val in var_meta.items():
+                if isinstance(val, dict):
+                    continue
                 self.variables[vv].setncattr(key, val)
 
     def __del__(self):

@@ -1,13 +1,22 @@
 import pathlib as pl
 
+import pytest
+
+from pynhm.atmosphere.NHMSolarGeometry import NHMSolarGeometry
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
+@pytest.fixture(scope="function")
+def solar_geom(domain):
+    params = PrmsParameters.load(domain["param_file"])
+    return NHMSolarGeometry(params)
+
+
 class TestPRMSSnow:
-    def test_init(self, domain, tmp_path):
+    def test_init(self, domain, solar_geom, tmp_path):
         tmp_path = pl.Path(tmp_path)
         prms_params = PrmsParameters.load(domain["param_file"])
 
@@ -18,8 +27,11 @@ class TestPRMSSnow:
         output_dir = domain["prms_output_dir"]
         input_variables = {}
         for key in PRMSSnow.get_inputs():
-            nc_path = output_dir / f"{key}.nc"
-            input_variables[key] = nc_path
+            if key == "soltab_horad_potsw":
+                input_variables[key] = solar_geom["potential_sw_rad_flat"]
+            else:
+                nc_path = output_dir / f"{key}.nc"
+                input_variables[key] = nc_path
 
         snow = PRMSSnow(control, prms_params, **input_variables)
         nc_parent = tmp_path / domain["domain_name"]
@@ -37,8 +49,7 @@ class TestPRMSSnow:
         for istep in range(control.n_times):
 
             snow.advance()
-
-        #   gw.calculate(float(istep))
+            snow.calculate(float(istep))
 
         #   gw.output()
 

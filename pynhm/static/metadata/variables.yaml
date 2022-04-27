@@ -26,6 +26,8 @@ albedo:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: decimal fraction
 basin_2ndstflow:
   desc: Basin volume-weighted average streamflow from each lake with a second outlet
@@ -2108,7 +2110,9 @@ iasw:
   modules:
   - snowcomp
   - PRMSSnow
-  type: I
+  type: B
+  init_val:
+    PRMSSnow: False
   units: none
 imperv_evap:
   desc: Evaporation from impervious area for each HRU
@@ -2143,6 +2147,8 @@ int_alb:
   - snowcomp
   - PRMSSnow
   type: I
+  init_val:
+    PRMSSnow: one
   units: none
 intcp_evap:
   desc: Evaporation from the canopy for each HRU
@@ -2196,6 +2202,8 @@ iso:
   - snowcomp
   - PRMSSnow
   type: I
+  init_val:
+    PRMSSnow: one
   units: none
 lake_2gw:
   desc: Total seepage from each lake using broad-crested weir or gate opening routing
@@ -2433,6 +2441,8 @@ lso:
   - snowcomp
   - PRMSSnow
   type: I
+  init_val:
+    PRMSSnow: zero
   units: number of iterations
 lst:
   desc: Flag indicating whether there was new snow that was insufficient to reset
@@ -2442,7 +2452,9 @@ lst:
   modules:
   - snowcomp
   - PRMSSnow
-  type: I
+  type: B
+  init_val:
+    PRMSSnow: False
   units: none
 lwrad_net:
   desc: Net long-wave radiation for each HRU
@@ -2461,6 +2473,8 @@ mso:
   - snowcomp
   - PRMSSnow
   type: I
+  init_val:
+    PRMSSnow: one
   units: none
 net_apply:
   desc: canopy_gain minus interception
@@ -2628,6 +2642,8 @@ pk_def:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: Langleys
 pk_den:
   desc: Density of the snowpack on each HRU
@@ -2681,6 +2697,8 @@ pk_temp:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: degrees Celsius
 pksv:
   desc: Snowpack water equivalent when there is new snow and in melt phase; used to
@@ -2691,6 +2709,8 @@ pksv:
   - snowcomp
   - PRMSSnow
   type: D
+  init_val:
+    PRMSSnow: zero
   units: inches
 pkwater_ante:
   desc: Antecedent snowpack water equivalent on each HRU
@@ -2756,7 +2776,7 @@ pptmix_nopack:
   modules:
   - snowcomp
   - PRMSSnow
-  type: I
+  type: B
   init_val:
     PRMSSnow: False
   units: none
@@ -2880,6 +2900,8 @@ salb:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: days
 scrv:
   desc: Snowpack water equivalent plus a portion of new snow on each HRU
@@ -2889,6 +2911,8 @@ scrv:
   - snowcomp
   - PRMSSnow
   type: D
+  init_val:
+    PRMSSnow: zero
   units: inches
 seg_ccov:
   desc: Area-weighted average cloud cover fraction for each segment from HRUs contributing
@@ -3128,6 +3152,8 @@ slst:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: days
 sm2gw_grav:
   desc: Drainage from each gravity reservoir to each MODFLOW cell
@@ -3177,6 +3203,8 @@ snowcov_areasv:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: decimal fraction
 snowdepth:
   desc: Snow depth at each measurement station
@@ -3214,6 +3242,8 @@ snsv:
   - snowcomp
   - PRMSSnow
   type: F
+  init_val:
+    PRMSSnow: zero
   units: inches
 soil_lower:
   desc: Storage in the lower zone of the capillary reservoir that is only available
@@ -3362,6 +3392,8 @@ soltab_horad_potsw:
     1: nhru
   modules:
   - soltab
+  input_to:
+  - PRMSSnow
   type: D
   units: Langleys
 soltab_potsw:

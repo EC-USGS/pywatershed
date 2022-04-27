@@ -18,18 +18,6 @@ def test_init(meta):
     return
 
 
-def test_get_subclass(meta):
-    gw_var_meta = meta.get_var_subclass("PRMSGroundwater")
-    gw_vars = PRMSGroundwater.get_variables()
-    assert set(gw_var_meta.keys()) == set(gw_vars)
-
-    gw_input_meta = meta.get_inputs_subclass("PRMSGroundwater")
-    gw_inputs = PRMSGroundwater.get_inputs()
-    assert set(gw_input_meta.keys()) == set(gw_inputs)
-
-    return
-
-
 def test_get_in_list(meta):
     gw_vars = PRMSGroundwater.get_variables()
     gw_var_meta = meta.get_vars(gw_vars)

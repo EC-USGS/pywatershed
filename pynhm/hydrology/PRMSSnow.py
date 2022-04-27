@@ -229,6 +229,44 @@ class PRMSSnow(StorageUnit):
             "snsv",
         )
 
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get snow pack inital values
+
+        Returns:
+            dict: inital values for named variables
+        """
+
+        return {
+            "ai": zero,
+            "albedo": zero,
+            "frac_swe": zero,
+            "freeh2o": zero,
+            "iasw": False,
+            "int_alb": one,
+            "iso": one,
+            "lso": zero,
+            "lst": False,
+            "mso": one,
+            "pk_def": zero,
+            "pk_den": zero,
+            "pk_depth": zero,
+            "pk_ice": zero,
+            "pk_precip": zero,
+            "pk_temp": zero,
+            "pksv": zero,
+            "pptmix_nopack": False,
+            "salb": zero,
+            "scrv": zero,
+            "slst": zero,
+            "snow_evap": zero,
+            "snowcov_area": zero,
+            "snowcov_areasv": zero,
+            "snowmelt": zero,
+            "snsv": zero,
+            "tcal": zero,
+        }
+
     def set_initial_conditions(self):
         """Initialize PRMSSnow snowpack variables."""
 
@@ -264,7 +302,7 @@ class PRMSSnow(StorageUnit):
                 "snsv",
             ]
             for vv in vars_init:
-                self.initialize_from_meta(vv)
+                self.initialize_var(vv)
 
             pkweq_gt_zero = self.pkwater_equiv > zero
             wh_pkweq_gt_zero = np.where(pkweq_gt_zero)

@@ -18,13 +18,6 @@ type_translation = {
     "I": "int32",
     "B": "bool",  # not used despite the popularity of "flags"
 }
-val_translation = {
-    "zero": zero,
-    "one": one,
-    True: True,
-    False: False,
-    nan: np.nan,
-}
 
 
 class StorageUnit(Accessor):
@@ -103,6 +96,10 @@ class StorageUnit(Accessor):
     def get_restart_variables() -> list:
         raise Exception("This must be overridden")
 
+    @staticmethod
+    def get_init_values() -> list:
+        raise Exception("This must be overridden")
+
     @property
     def parameters(self) -> list:
         return self.get_parameters()
@@ -119,34 +116,34 @@ class StorageUnit(Accessor):
     def restart_variables(self) -> list:
         return self.get_restart_variables()
 
+    @property
+    def init_values(self) -> list:
+        return self.get_init_values()
+
     def initialize_self_variables(self, restart: bool = False):
         # skip restart variables if restart (for speed) ? the code is below but commented.
+        # restart_variables = self.restart_variables
         for name in self.parameters:
             setattr(self, name, self.params.parameters[name])
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
         for name in self.variables:
-            # if restart and (name in self.restart_variables):
+            # if restart and (name in restart_variables):
             #     continue
-            self.initialize_from_meta(name)
+            self.initialize_var(name)
         return
 
-    def initialize_from_meta(self, var_name):
-        if var_name in self.var_meta.keys():
-            attr = "var_meta"
-        else:
-            attr = "input_meta"
-
-        if "init_val" in self[attr][var_name]:
-            init_type = type_translation[self[attr][var_name]["type"]]
-            init_val = val_translation[
-                self[attr][var_name]["init_val"][self.name]
-            ]
+    def initialize_var(self, var_name):
+        init_vals = self.get_init_values()
+        if var_name in init_vals.keys():
+            init_type = type_translation[self.var_meta[var_name]["type"]]
             setattr(
-                self, var_name, np.full(self.nhru, init_val, dtype=init_type)
+                self,
+                var_name,
+                np.full(self.nhru, init_vals[var_name], dtype=init_type),
             )
         elif self.verbose:
-            print(f"{var_name} not initialized from metadata")
+            print(f"{var_name} not initialized (no inital value specified)")
 
         return
 
@@ -155,13 +152,8 @@ class StorageUnit(Accessor):
         return
 
     def get_metadata(self):
-        # good to check as metadata is shifting but might consider taking out in long-run
-        self.var_meta = self.control.meta.get_var_subclass(self.name)
-        assert set(self.var_meta.keys()) == set(self.variables)
-
-        self.input_meta = self.control.meta.get_inputs_subclass(self.name)
-        assert set(self.input_meta.keys()) == set(self.inputs)
-
+        self.var_meta = self.control.meta.get_vars(self.variables)
+        self.input_meta = self.control.meta.get_vars(self.variables)
         self.param_meta = self.control.meta.get_params(self.parameters)
 
         # This a hack as we are mushing dims into params. time dimension

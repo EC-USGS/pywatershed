@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 
 from pynhm.utils.netcdf_utils import NetCdfRead
+
 from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]

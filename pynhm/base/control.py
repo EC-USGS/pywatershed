@@ -8,10 +8,10 @@ import numpy as np
 from ..base.meta import Meta
 from ..utils import ControlVariables
 from ..utils.time_utils import (
-    datetime_year,
-    datetime_month,
-    datetime_doy,
     datetime_dowy,
+    datetime_doy,
+    datetime_month,
+    datetime_year,
 )
 from .accessor import Accessor
 

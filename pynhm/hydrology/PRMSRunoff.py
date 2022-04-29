@@ -146,8 +146,8 @@ class PRMSRunoff(StorageUnit):
         # Make calculations
         for i in range(self.nhru):
 
-            self.infil[i] = 0.
-            srp = 0.
+            self.infil[i] = 0.0
+            srp = 0.0
 
             # If rain/snow event with no antecedent snowpack, compute the runoff from the
             # rain first and then proceed with the snowmelt computations.
@@ -162,7 +162,9 @@ class PRMSRunoff(StorageUnit):
                 precip,
             )
 
-            self.infil[i], srp = self.compute_infil_srp(self.contrib_fraction[i], self.net_rain[i], self.infil[i], srp)
+            self.infil[i], srp = self.compute_infil_srp(
+                self.contrib_fraction[i], self.net_rain[i], self.infil[i], srp
+            )
 
         return
 

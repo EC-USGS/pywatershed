@@ -11,11 +11,11 @@ from ..constants import CovType, HruType, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
-# set constants
+# set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
-DNEARZERO = np.finfo(float).eps    # EPSILON(0.0D0)
-BARESOIL = CovType.BARESOIL.value  # Use value here because these values used in > comparisons
-GRASSES = CovType.GRASSES.value    # Use value here because these values used in > comparisons
+DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
+BARESOIL = CovType.BARESOIL.value
+GRASSES = CovType.GRASSES.value
 LAND = HruType.LAND
 LAKE = HruType.LAKE
 RAIN = 0

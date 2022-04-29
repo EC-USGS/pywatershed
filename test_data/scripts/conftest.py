@@ -56,7 +56,7 @@ test_dirs = sorted(
 domain_globs_schedule = ["*conus*"]
 
 # For generating timeseries of previous states
-previous_vars = ["pkwater_equiv"]
+previous_vars = ["pkwater_equiv", "soil_moist"]
 
 
 def scheduler_active():

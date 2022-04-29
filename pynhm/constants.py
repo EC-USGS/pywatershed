@@ -17,3 +17,11 @@ class HruType(Enum):
     LAND = 1
     LAKE = 2
     SWALE = 3
+
+
+class CovType(Enum):
+    BARESOIL = 0
+    GRASSES = 1
+    SHRUBS = 2
+    TREES = 3
+    CONIFEROUS = 4

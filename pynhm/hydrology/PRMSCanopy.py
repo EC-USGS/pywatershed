@@ -7,24 +7,21 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..constants import zero
+from ..constants import HruType, CovType, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
+# set constants
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
-
+BARESOIL = CovType.BARESOIL
+GRASSES = CovType.GRASSES
+LAND = HruType.LAND
+LAKE = HruType.LAKE
 RAIN = 0
 SNOW = 1
-
-BARESOIL = 0
-GRASSES = 1
-
 OFF = 0
 ACTIVE = 1
-
-LAND = 1
-LAKE = 2
 
 
 class PRMSCanopy(StorageUnit):

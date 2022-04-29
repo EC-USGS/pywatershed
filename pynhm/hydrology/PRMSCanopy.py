@@ -13,9 +13,9 @@ adaptable = Union[str, np.ndarray, Adapter]
 
 # set constants
 NEARZERO = 1.0e-6
-DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
-BARESOIL = CovType.BARESOIL
-GRASSES = CovType.GRASSES
+DNEARZERO = np.finfo(float).eps    # EPSILON(0.0D0)
+BARESOIL = CovType.BARESOIL.value  # Use value here because these values used in > comparisons
+GRASSES = CovType.GRASSES.value    # Use value here because these values used in > comparisons
 LAND = HruType.LAND
 LAKE = HruType.LAKE
 RAIN = 0

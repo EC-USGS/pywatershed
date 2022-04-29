@@ -49,6 +49,8 @@ amlt_init = [
     0.40,
 ]
 
+maxalb = 15
+
 
 class PRMSSnow(StorageUnit):
     """PRMS snow pack
@@ -483,22 +485,27 @@ class PRMSSnow(StorageUnit):
             ) or self.net_snow[jj] > zero:
                 self.ppt_to_pack(jj)
 
-            # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA
-            # **********************************************************
+            if self.pkwater_equiv[jj] > zero:
+                # If there is still snow after precipitation
 
-            # HRU STEP 3 - COMPUTE THE NEW ALBEDO
-            # **********************************************************
+                # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from depletion curve
+                # **********************************************************
+                self.snowcov(jj)
 
-            # HRU STEP 4 - DETERMINE RADIATION FLUXES AND SNOWPACK
-            #              STATES NECESSARY FOR ENERGY BALANCE
-            # **********************************************************
+                # HRU STEP 3 - COMPUTE THE NEW ALBEDO
+                # **********************************************************
+                self.snowalbedo(jj)
 
-            #  HRU STEP 5 - CALCULATE SNOWPACK LOSS TO EVAPORATION
-            # ********************************************************
+                # HRU STEP 4 - DETERMINE RADIATION FLUXES AND SNOWPACK
+                #              STATES NECESSARY FOR ENERGY BALANCE
+                # **********************************************************
 
-            #  HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
-            #                 INCREMENT THE BASIN TOTALS
-            # *********************************************************
+                #  HRU STEP 5 - CALCULATE SNOWPACK LOSS TO EVAPORATION
+                # ********************************************************
+
+                #  HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
+                #                 INCREMENT THE BASIN TOTALS
+                # *********************************************************
 
         return
 
@@ -856,5 +863,447 @@ class PRMSSnow(StorageUnit):
 
                 # Reset the previous-snowpack-plus-new-snow to the current pack water equivalent.
                 self.pss = self.pkwater_equiv  # [inches]
+
+        return
+
+    def snowcov(self, jj):
+        """Compute snow-covered area"""
+
+        # Local Variables: all doubles
+        # snowcov_area_ante: Antecedent snow-covered area [fraction]
+        # difx: Difference between the maximum snow-covered area and the snow-covered area before the last new snow [inches]
+        # dify: Difference between the water equivalent before the last new snow and the previous water equivalent [inches]
+        # fracy: Ratio of the unmelted amount of previous new snow in the snow pack to the value of 3/4 of previous new snow [fraction]
+
+        # self variables
+        # ai(RW), frac_swe(RW), iasw(RW), pksv(RW), scrv(RW), snowcov_area(RW),
+        # snowcov_areasv(RW),
+
+        snowcov_area_ante = self.snowcov_area[jj]
+
+        # Reset snowcover area to the maximum
+        self.snowcov_area[jj] = self.snarea_curve_2d[
+            11, self.hru_deplcrv[jj]
+        ]  # [fraction of area]
+
+        # Track the maximum pack water equivalent for the current snow pack.
+        if self.pkwater_equiv[jj] > self.pst[jj]:
+            self.pst[jj] = self.pkwater_equiv[jj]  # [inches]
+
+        # Set ai to the maximum packwater equivalent, but no higher than the
+        # threshold for complete snow cover.
+        self.ai[jj] = self.pst[jj]  # [inches]
+        # DEBUG:
+        # write(*,*) '   ai, pst', ai, pst
+        if self.ai[jj] > self.snarea_thresh[jj]:
+            self.ai = self.snarea_thresh[jj]  # [inches]
+
+        # Calculate the ratio of the current packwater equivalent to the maximum
+        # packwater equivalent for the given snowpack.
+        # DEBUG:
+        # write(*,*) chru, pkwater_equiv, ai, dble(self.snarea_thresh[jj])
+        if self.ai[jj] == zero:
+            self.frac_swe[jj] = zero
+        else:
+            self.frac_swe[jj] = (
+                self.pkwater_equiv[jj] / self.ai[jj]
+            )  # [fraction]
+
+        # There are 3 potential conditions for the snow area curve:
+        # A. snow is accumulating and the pack is currently at its maximum level.
+        # B. snow is depleting and the area is determined by the snow area curve.
+        # C. new snow has occured on a depleting pack, temporarily resetting to 100% cover.
+        # For case (C), the snow covered area is linearly interpolated between 100%
+        # and the snow covered area before the new snow.
+        # In general, 1/4 of the new snow has to melt before the snow covered area
+        # goes below 100%, and then the remaining 3/4 has to melt to return to the
+        # previous snow covered area.
+
+        # First, the code decides whether snow is accumulating (A) or not (B/C).
+        # 2 options below (if-then, else)
+        if self.pkwater_equiv[jj] >= self.ai[jj]:
+            # (1) The pack water equivalent is at the maximum
+            # Stay on the snow area curve (it will be at the maximum because the pack
+            # water equivalent is equal to ai and it can't be higher).
+            # iasw = 0
+            self.iasw[jj] = False
+        else:
+            # (2) The pack water equivalent is less than the maximum
+            # If the snowpack isn't accumulating to a new maximum, it is either on the
+            # curve (condition B above) or being interpolated between the previous
+            # place on the curve and 100% (condition C above).
+            # 2 options below (if-then, elseif)
+
+            if self.newsnow[jj]:
+                # (2.1) There was new snow...
+                # New snow will always reset the snow cover to 100%. However, different
+                # states change depending  on whether the previous snow area condition
+                # was on the curve or being interpolated between the curve and 100%.
+                # 2 options below (if-then, else)
+                # if (iasw > 0) then
+
+                if self.iasw[jj]:
+                    # (2.1.1) The snow area is being interpolated between 100%
+                    #         and a previous location on the curve...
+                    # The location on the interpolated line is based on how much of the
+                    # new snow has melted.  Because the first 1/4 of the new snow doesn't
+                    # matter, it has to keep track of the current snow pack plus 3/4 of
+                    # the new snow.
+                    self.scrv[jj] = self.scrv[jj] + (
+                        0.75 * self.net_snow[jj]
+                    )  # [inches]
+                    # scrv = pkwater_equiv - (0.25D0*dble(net_snow))) # [inches]
+                    # RAPCOMMENT - CHANGED TO INCREMENT THE SCRV VALUE if ALREADY
+                    #             INTERPOLATING BETWEEN CURVE AND 100%
+
+                else:
+                    # (2.1.2) The current snow area is on the curve...
+                    # If switching from the snow area curve to interpolation between the
+                    # curve and 100%, the current state of the snow pack has to be saved
+                    # so that the interpolation can continue until back to the original
+                    # conditions.
+                    # First, set the flag to indicate interpolation between 100% and the
+                    # previous area should be done.
+                    # iasw = 1  # [flag]
+                    self.iasw = True  # [flag]
+
+                    # Save the current snow covered area (before the new net snow).
+                    self.snowcov_areasv[
+                        jj
+                    ] = snowcov_area_ante  # [inches] PAN: this is [fraction]
+
+                    # Save the current pack water equivalent (before the new net snow).
+                    self.pksv[jj] = (
+                        self.pkwater_equiv[jj] - self.net_snow[jj]
+                    )  # [inches]
+
+                    # The location on the interpolated line is based on how much of the
+                    # new snow has melted.  Because the first 1/4 of the new snow doesn't
+                    # matter, it has to keep track of the current snow pack plus 3/4 of
+                    # the new snow.
+                    self.scrv[jj] = self.pkwater_equiv[jj] - (
+                        0.25 * self.net_snow[jj]
+                    )  # [inches]
+
+                # The subroutine terminates here because the snow covered area always
+                # starts at 100% if there is any new snow (no need to reset it from the
+                # maximum value set at the beginning of the subroutine).
+                return
+
+            elif self.iasw[jj]:
+                # (2.2) There was no new snow, but the snow covered area is currently
+                #       being interpolated between 100% from a previous new snow and the
+                #       snow covered area before that previous new snow...
+
+                # If the first 1/4 of the previous new snow has not melted yet, then the
+                # snow covered area is still 100% and the subroutine can terminate.
+                if self.pkwater_equiv[jj] > self.scrv[jj]:
+                    return
+
+                # At this point, the program is almost sure it is interpolating between
+                # the previous snow covered area and 100%, but it is possible that
+                # enough snow has melted to return to the snow covered area curve instead.
+                # 2 options below (if-then, else)
+                if selfpkwater_equiv[jj] >= self.pksv[jj]:
+
+                    # (2.2.1) The snow pack still has a larger water equivalent than before
+                    #         the previous new snow.  I.e., new snow has not melted back to
+                    #         original area...
+
+                    # Do the interpolation between 100% and the snow covered area before
+                    # the previous new snow.
+
+                    # Calculate the difference between the maximum snow covered area
+                    # (remember that snowcov_area is always set to the maximum value at
+                    # this point) and the snow covered area before the last new snow.
+                    difx = self.snowcov_area[jj] - self.snowcov_areasv[jj]
+
+                    # Calculate the difference between the water equivalent before the
+                    # last new snow and the previous water equivalent plus 3/4 of the last
+                    # new snow. In effect, get the value of 3/4 of the previous new snow.
+                    dify = self.scrv[jj] - self.pksv[jj]  # [inches]   #gl1098
+
+                    # If 3/4 of the previous new snow is significantly different from
+                    # zero, then calculate the ratio of the unmelted amount of previous
+                    # new snow in the snow pack to the value of 3/4 of previous new snow.
+                    # In effect, this is the fraction of the previous new snow that
+                    # determines the current interpolation of snow covered area.
+                    fracy = zero  # [fraction]   #gl1098
+                    if dify > zero:
+                        fracy = (
+                            self.pkwater_equiv[jj] - self.pksv[jj]
+                        ) / dify  # [fraction]
+
+                    # Linearly interpolate the new snow covered area.
+                    self.snowcov_area[jj] = (
+                        self.snowcov_areasv[jj] + fracy * difx
+                    )  # [fraction of area]
+
+                    # Terminate the subroutine.
+                    return
+
+                else:
+                    # (2.2.2) The snow pack has returned to the snow water equivalent before
+                    #         the previous new snow. I.e. back to original area before new snow.
+
+                    # Reset the flag to use the snow area curve
+                    # iasw = 0  # [flag]
+                    self.iasw[jj] = False  # [flag]
+
+            # <- <-
+            # If this subroutine is still running at this point, then the program
+            # knows that the snow covered area needs to be adjusted according to the
+            # snow covered area curve.  So at this point it must interpolate between
+            # points on the snow covered area curve (not the same as interpolating
+            # between 100% and the previous spot on the snow area depletion curve).
+            self.snowcov_area = self.sca_deplcrv(
+                self.snarea_curve_2d[0:10, self.hru_deplcrv[jj]], self.frac_swe
+            )
+
+        return
+
+    def snalbedo(self, jj):
+        """Compute snowpack albedo"""
+
+        # Local Variables
+        # l: Number of days (or effective days) since last snowfall [days]
+
+        # self variables
+        # albedo, int_alb, iso, lst, slst, snsv,
+
+        # The albedo is always reset to a new initial (high) value when there is
+        # new snow above a threshold (parameter). Albedo is then a function of the
+        # number of days since the last new snow. Intermediate conditions apply
+        # when there is new snow below the threshold to reset the albedo to its
+        # highest value.
+        # The curve for albedo change (decreasing) is different for the snow
+        # accumulation season and the snow melt season.
+        # The albedo first depends on if there is no new snow during the current
+        # time step, if there is new snow during accumulation season, or if there
+        # is new snow during melt season.
+
+        # 3 options below (if-then, elseif, else)
+        if self.newsnow[jj]:
+            # (1) There is no new snow
+
+            # If no new snow, check if there was previous new snow that
+            # was not sufficient to reset the albedo (lst=1)
+            # lst can only be greater than 0 during melt season (see below)
+            # if (lst > 0) then
+            if self.lst[jj]:
+                # slst is the number of days (float) since the last new snowfall.
+                # Set the albedo curve back three days from the number of days since
+                # the previous snowfall (see salb assignment below).
+                # (note that "shallow new snow" indicates new snow that is insufficient
+                # to completely reset the albedo curve)
+                # In effect, a shallow new snow sets the albedo curve back a few days,
+                # rather than resetting it entirely.
+                self.slst[jj] = self.salb[jj] - 3.0  # [days]
+
+                # Make sure the number of days since last new snow isn't less than 1.
+                if self.slst[jj] < one:
+                    self.slst[jj] = one  # [days]
+
+                if self.iso[jj] != 2:
+                    # If not in melt season.
+
+                    # NOTE: This code is unreachable in its current state. This code
+                    # is only run during melt season due to the fact that lst can only
+                    # be set to 1 in the melt season. Therefore, iso is always going to
+                    # be equal to 2.
+                    # Make sure the maximum point on the albedo curve is 5.
+                    # In effect, if there is any new snow, the albedo can only get so
+                    # low in accumulation season, even if the new snow is insufficient
+                    # to reset albedo entirely.
+                    if self.slst[jj] > 5.0:
+                        self.slst[jj] = 5.0  # [days]
+
+                # Reset the shallow new snow flag and cumulative shallow snow variable (see below).
+                # lst = 0  # [flag]
+                self.lst[jj] = False  # [flag]
+                snsv = zero  # [inches]
+
+            elif self.iso[jj] == 2:
+                # (2) New snow during the melt season
+                # RAPCOMMENT - CHANGED TO ISO FROM MSO
+
+                # If there is too much rain in a precipitation mix, albedo will not be reset.
+                # New snow changes albedo only if the fraction rain is less than the
+                # threshold above which albedo is not reset.
+                if self.prmx[jj] < self.albset_rnm:
+                    # If the fraction rain doesn't prevent the albedo from being reset,
+                    # then how the albedo changes depends on whether the snow amount is
+                    # above or below the threshold for resetting albedo.
+                    # 2 options below (if-then, else)
+                    if self.net_snow[jj] > self.albset_snm:
+                        # (2.1) If there is enough new snow to reset the albedo
+                        # Reset number of days since last new snow to 0.
+                        self.slst[jj] = zero  # [days]
+                        # lst = 0  # [flag]
+                        self.lst[jj] = False  # [flag]
+                        # Reset the saved new snow to 0.
+                        self.snsv[jj] = zero  # [inches]
+                    else:
+                        # (2.2) If there is not enough new snow this time period to reset the
+                        #       albedo on its own.
+
+                        # snsv tracks the amount of snow that has fallen as long as the
+                        # total new snow is not enough to reset the albedo.
+                        self.snsv[jj] = (
+                            self.snsv[jj] + self.net_snow[jj]
+                        )  # [inches]
+
+                        # Even if the new snow during this time period is insufficient to
+                        # reset the albedo, it may still reset the albedo if it adds enough
+                        # to previous shallow snow accumulation.  The change in albedo
+                        # depends on if the total amount of accumulated shallow snow has
+                        # become enough to reset the albedo or not.
+                        # 2 options below (if-then, else)
+                        if self.snsv[jj] > self.albset_snm:
+                            # (2.2.1) If accumulated shallow snow is enough to reset the albedo.
+                            # Reset the albedo states.
+                            self.slst[jj] = zero  # [days]
+                            # lst = 0  # [flag]
+                            self.lst[jj] = False  # [flag]
+                            self.snsv[jj] = zero  # [inches]
+                        else:
+                            # (2.2.2) If the accumulated shallow snow is not enough to
+                            #         reset the albedo curve.
+
+                            # salb records the number of days since the last new snow
+                            # that reset albedo.
+                            # if (lst == 0) then
+                            if not self.lst[jj]:
+                                self.salb[jj] = self.slst[jj]  # [days]
+
+                            # Reset the number of days since new snow
+                            self.slst[jj] = zero  # [days]
+
+                            # Set the flag indicating that there is shallow new snow
+                            # (i.e. not enough new snow to reset albedo).
+                            # lst = 1  # [flag]
+                            self.lst[jj] = True  # [flag]
+            # <-  <-  <-
+            else:
+                # (3) New snow during the accumulation season.
+
+                # The change in albedo depends on if the precipitation is a mix, if the
+                # rain is above a threshold,  or if the snow is above a threshold.
+                # 4 options below (if-then, elseif, elseif, else)
+                if self.pptmix[jj] < one:
+                    # (3.1) This is not a mixed event...
+                    # During the accumulation season, the threshold for resetting the
+                    # albedo does not apply if there is a snow-only event. Therefore, no
+                    # matter how little snow there is, it will always reset the albedo
+                    # curve the the maximum, if it occurs during the accumulation season.
+                    # Reset the time since last snow to 0.
+                    self.slst[jj] = zero  # [days]
+                    # There is no new shallow snow
+                    # lst = 0  # [flag]
+                    self.lst[jj] = False  # [flag]
+                elif self.prmx[jj] >= self.albset_rna:
+                    # (3.2) This is a mixed event and the fraction rain is above
+                    #       the threshold above which albedo is not reset...
+                    # There is no new shallow snow.
+                    # lst = 0  # [flag]
+                    self.lst[jj] = False  # [flag]
+                    # Albedo continues to decrease on the curve
+                elif self.net_snow[jj] >= self.albset_sna:
+                    # (3.3) If it is a mixed event and there is enough new snow to reset albedo...
+                    # Reset the albedo.
+                    self.slst[jj] = zero  # [days]
+                    # There is no new shallow snow.
+                    # lst = 0  # [flag]
+                    self.lst[jj] = False  # [flag]
+                else:
+                    # (3.4) This is a mixed event and the new snow was not enough to reset the albedo...
+                    # Set the albedo curve back 3 days (increasing the albedo).
+                    self.slst[jj] = self.slst[jj] - 3.0  # [days]
+
+                    # Make sure the number of days since last new snow is not less than 0.
+                    if self.slst[jj] < zero:
+                        self.slst[jj] = zero  # [days]
+
+                        # Make sure the number of days since last new snow is not greater than 5.
+                        # In effect, if there is any new snow, the albedo can only get so low
+                        # in accumulation season, even if the new snow is insufficient to
+                        # reset albedo entirely
+                    if self.slst[jj] > 5.0:
+                        slst = 5.0  # [days]
+
+                    # lst = 0  # [flag]
+                    self.lst[jj] = False  # [flag]
+
+                self.snsv[jj] = zero  # [inches]
+
+            # At this point, the subroutine knows where on the curve the albedo should
+            # be based on current conditions and the new snow (determined by value
+            # of slst variable).
+
+            # Get the integer value for days (or effective days) since last snowfall.
+            ll = int(self.slst[jj] + 0.5)  # [days]
+
+            # Increment the state variable for days since the last snowfall.
+            self.slst[jj] = self.slst[jj] + 1.0  # [days]
+
+            # ******Compute albedo
+            # Albedo will only be different from the max (default value) if it has
+            # been more than 0 days since the last new snow capable of resetting the
+            # albedo.  If albedo is at the maximum, the maximum is different for
+            # accumulation and melt season.
+
+            # 3 options below (if-then, elseif, else)
+
+            if ll > 0:
+                # (1) It has been more than 0 days since the last new snow.
+                # Albedo depends on whether it is currently on the accumulation season
+                # curve or on the melt season curve.
+                # 3 options below (if-then, elseif, else)
+
+                if self.int_alb[jj] == 2:
+                    # (1.1) Currently using the melt season curve (Old snow - Spring melt period)...
+                    # Don't go past the last possible albedo value.
+                    if ll > maxalb:
+                        ll = maxalb  # [days]
+                    # Get the albedo number from the melt season curve.
+                    self.albedo[jj] = amlt_init[ll]  # [fraction of radiation]
+
+                elif ll <= MAXALB:
+                    # (1.2) Currently using the accumulation season curve (Old snow - Winter accumulation period)...
+                    #       and not past the maximum curve index.
+                    # Get the albedo number from the accumulation season curve.
+                    self.albedo[jj] = self.acum[ll]  # [fraction of radiation]
+                else:
+                    # (1.3) Currently using the accumulation season curve and past the maximum curve index...
+                    # Start using the the MELT season curve at 12 days previous to the
+                    # current number of days since the last new snow.
+                    ll = ll - 12  # [days]
+                    # Keep using the melt season curve until its minimum value
+                    # (maximum index) is reached or until there is new snow.
+                    if ll > MAXALB:
+                        ll = MAXALB  # [days]
+
+                    # Get the albedo value from the melt season curve.
+                    self.albedo[jj] = self.amlt[ll]  # [fraction of radiation]
+
+            elif self.iso[jj] == 2:
+                # (2) New snow has reset the albedo and it is melt season.
+                # Set albedo to initial value during melt season.
+                # NOTE: RAPCOMMENT - CHANGED TO ISO FROM MSO
+                # albedo = 0.81  # [fraction of radiation] original value
+                self.albedo[
+                    jj
+                ] = 0.72  # [fraction of radiation] value Rob suggested
+                # int_alb is a flag to indicate use of the melt season curve (2)
+                # or accumulation season curve (1).
+                # Set flag to indicate melt season curve.
+                self.int_alb[jj] = 2  # [flag]
+
+            else:
+                # (3) New snow has reset the albedo and it is accumulation season.
+                # Set albedo to initial value during accumulation season.
+                self.albedo[jj] = 0.91  # [fraction of radiation]
+                # Set flag to indicate accumulation season curve.
+                self.int_alb[jj] = 1  # [flag]
 
         return

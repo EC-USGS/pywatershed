@@ -3,7 +3,7 @@ from enum import Enum
 
 import numpy as np
 
-# PRMS6 Constatns module:
+# PRMS6 Constants module:
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/misc/m_constants.f90
 
 __pynhm_root__ = pl.Path(__file__).parent
@@ -16,6 +16,8 @@ epsilon = np.finfo(zero).eps
 
 fill_value_f4 = 9.96921e36
 
+inch2cm = 2.54
+
 
 class HruType(Enum):
     INACTIVE = 0
@@ -24,4 +26,9 @@ class HruType(Enum):
     SWALE = 3
 
 
-inch2cm = 2.54
+class CovType(Enum):
+    BARESOIL = 0
+    GRASSES = 1
+    SHRUBS = 2
+    TREES = 3
+    CONIFEROUS = 4

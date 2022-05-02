@@ -7,24 +7,21 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..constants import zero
+from ..constants import CovType, HruType, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
+# set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
-
+BARESOIL = CovType.BARESOIL.value
+GRASSES = CovType.GRASSES.value
+LAND = HruType.LAND
+LAKE = HruType.LAKE
 RAIN = 0
 SNOW = 1
-
-BARESOIL = 0
-GRASSES = 1
-
 OFF = 0
 ACTIVE = 1
-
-LAND = 1
-LAKE = 2
 
 
 class PRMSCanopy(StorageUnit):
@@ -153,20 +150,13 @@ class PRMSCanopy(StorageUnit):
             "intcp_transp_on": 0,  # could make boolean
         }
 
-    def advance(self):
+    def _advance_variables(self):
         """Advance canopy
         Returns:
             None
 
         """
         self.intcp_stor_old = self.intcp_stor
-        self._itime_step += 1
-
-        for key, value in self._input_variables_dict.items():
-            value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
         return
 
     def calculate(self, time_length, vectorized=False):

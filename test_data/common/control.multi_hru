@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-51
+52
 ####
 nhruOut_freq
 1
@@ -251,9 +251,10 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-51
+52
 4
 albedo
+contrib_fraction
 dprst_seep_hru
 dprst_stor_hru
 gwres_flow

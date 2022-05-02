@@ -48,6 +48,7 @@ class TestPRMSSnow:
 
         for istep in range(control.n_times):
 
+            control.advance()
             snow.advance()
             snow.calculate(float(istep))
 

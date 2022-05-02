@@ -153,7 +153,7 @@ class StorageUnit(Accessor):
 
     def get_metadata(self):
         self.var_meta = self.control.meta.get_vars(self.variables)
-        self.input_meta = self.control.meta.get_vars(self.variables)
+        self.input_meta = self.control.meta.get_vars(self.inputs)
         self.param_meta = self.control.meta.get_params(self.parameters)
 
         # This a hack as we are mushing dims into params. time dimension
@@ -161,6 +161,17 @@ class StorageUnit(Accessor):
         # on StorageUnits
         dims = set(self.parameters).difference(set(self.param_meta.keys()))
         self.param_meta = self.control.meta.get_dims(dims)
+
+        if self.verbose:
+            from pprint import pprint
+
+            print("Metadata print out for StorageUnit subclass {self.name} :")
+            print(f"\n\nParameters ({len(self.param_meta.keys())}): {'*'* 70}")
+            pprint(self.param_meta)
+            print(f"\n\nInputs ({len(self.input_meta.keys())}): {'*'* 70}")
+            pprint(self.input_meta)
+            print(f"\n\nVariables ({len(self.var_meta.keys())}): {'*'* 70}")
+            pprint(self.var_meta)
 
         return
 

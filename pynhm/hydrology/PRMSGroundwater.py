@@ -117,21 +117,12 @@ class PRMSGroundwater(StorageUnit):
         # No GW res values need initialized prior to calculation.
         return {}
 
-    def advance(self) -> None:
-        """Advance the groundwater reservoir
+    def _advance_variables(self) -> None:
+        """Advance the groundwater reservoir variables
         Returns:
             None
-
         """
         self.gwres_stor_old = self.gwres_stor
-        self._itime_step += 1
-
-        for key, value in self._input_variables_dict.items():
-            value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
-        return
 
     def calculate(self, simulation_time):
         """Calculate groundwater reservoir terms for a time step

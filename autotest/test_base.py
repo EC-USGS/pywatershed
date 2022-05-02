@@ -41,10 +41,11 @@ class TestControl:
         assert control.start_time == time_dict_g["start_time"]
         assert control.end_time == time_dict_g["end_time"]
         assert control.time_step == time_dict_g["time_step"]
-        assert control.current_time == time_dict_g["start_time"]
+        assert control.current_time == None
         assert control.previous_time is None
         assert control.n_times == 2
-        assert control.i_time == 0
+        assert control.itime_step == -1
+        control.advance()
         control.advance()
         assert control.start_time == time_dict_g["start_time"]
         assert control.end_time == time_dict_g["end_time"]
@@ -52,7 +53,7 @@ class TestControl:
         assert control.current_time == time_dict_g["end_time"]
         assert control.previous_time == time_dict_g["start_time"]
         assert control.n_times == 2
-        assert control.i_time == 1
+        assert control.itime_step == 1
         with pytest.raises(ValueError):
             control.advance()
         return None

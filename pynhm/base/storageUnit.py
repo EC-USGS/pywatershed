@@ -149,6 +149,28 @@ class StorageUnit(Accessor):
 
     def set_initial_conditons(self):
         raise Exception("This must be overridden")
+
+    def _advance_variables(self):
+        raise Exception("This must be overridden")
+
+    def _advance_inputs(self):
+        for key, value in self._input_variables_dict.items():
+            value.advance()
+            v = getattr(self, key)
+            v[:] = value.current
+        return
+
+    def advance(self):
+        """
+        Advance the storage unit in time.
+
+        Returns:
+            None
+
+        """
+        self._advance_variables()
+        self._advance_inputs()
+        self._itime_step += 1
         return
 
     def get_metadata(self):

@@ -144,7 +144,7 @@ class TestPRMSCanopyDomain:
 
         all_success = True
         for istep in range(control.n_times):
-            # control.advance()
+            control.advance()
             cnp.advance()
             cnp.calculate(1.0)
 

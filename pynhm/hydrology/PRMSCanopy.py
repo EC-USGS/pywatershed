@@ -150,20 +150,13 @@ class PRMSCanopy(StorageUnit):
             "intcp_transp_on": 0,  # could make boolean
         }
 
-    def advance(self):
+    def _advance_variables(self):
         """Advance canopy
         Returns:
             None
 
         """
         self.intcp_stor_old = self.intcp_stor
-        self._itime_step += 1
-
-        for key, value in self._input_variables_dict.items():
-            value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
         return
 
     def calculate(self, time_length, vectorized=False):

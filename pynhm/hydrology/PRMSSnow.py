@@ -352,17 +352,17 @@ class PRMSSnow(StorageUnit):
 
         return
 
-    def advance(self) -> None:
-        """Advance the snow pack
+    def _advance_variables(self) -> None:
+        self.pkwater_ante = self.pkwater_equiv
+        return
+
+    def _advance_inputs(self) -> None:
+        """Advance the snow pack inputs
         Returns:
             None
-
         """
-        self.pkwater_ante = self.pkwater_equiv
-        self._itime_step += 1
-
+        # JLM: This method is only because adapter advances dont all take current time.
         for key, value in self._input_variables_dict.items():
-            # JLM: This is only because adapter advances dont all take current time.
             if key == "soltab_horad_potsw":
                 value.advance(self.control.current_time)
             else:

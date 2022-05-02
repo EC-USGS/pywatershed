@@ -37,6 +37,8 @@ class TestPRMSGroundwaterDomain:
 
         for istep in range(control.n_times):
 
+            control.advance()
+
             gw.advance()
 
             gw.calculate(float(istep))

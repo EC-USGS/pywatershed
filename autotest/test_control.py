@@ -138,3 +138,8 @@ def test_control_advance(control_simple):
         #         cnp._input_variables_dict[ii]._itime_step
         #         == control_simple.itime_step
         #     )
+
+
+def test_init_load(domain):
+    control = Control.load(domain["control_file"])
+    return None

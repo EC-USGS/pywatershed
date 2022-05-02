@@ -12,6 +12,7 @@ from pynhm.utils import ControlVariables
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
+
 @pytest.fixture(scope="function")
 def control(domain):
     return Control.load(domain["control_file"])

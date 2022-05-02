@@ -12,29 +12,25 @@ time_dict = {
 }
 
 
-@pytest.fixture(scope="function")
-def control_simple():
-    return Control(**time_dict)
-
-
-def test_control_simple(control_simple):
-    assert control_simple.config is None
+def test_control_simple():
+    control = Control(**time_dict)
+    assert control.config is None
     ts = time_dict["time_step"]
-    assert control_simple.time_step == ts
-    assert control_simple.start_time == time_dict["start_time"]
-    assert control_simple.end_time == time_dict["end_time"]
-    assert control_simple.current_time is None
-    prev_time = control_simple.current_time
-    n_times = control_simple.n_times
+    assert control.time_step == ts
+    assert control.start_time == time_dict["start_time"]
+    assert control.end_time == time_dict["end_time"]
+    assert control.current_time is None
+    prev_time = control.current_time
+    n_times = control.n_times
     assert n_times == 4
 
     for ii in range(n_times):
-        control_simple.advance()
-        assert prev_time == control_simple.previous_time
-        assert control_simple.i_time == ii
-        assert control_simple.current_time == time_dict["start_time"] + ii * ts
+        control.advance()
+        assert prev_time == control.previous_time
+        assert control.i_time == ii
+        assert control.current_time == time_dict["start_time"] + ii * ts
 
-        current_time = control_simple.current_time
+        current_time = control.current_time
 
         # This constitutes a test of utils/time_utils.py
         fmt_var = {
@@ -44,17 +40,17 @@ def test_control_simple(control_simple):
         }
         for fmt, var in fmt_var.items():
             check = int(datetime.strftime(current_time.astype(datetime), fmt))
-            assert check == control_simple[var]
+            assert check == control[var]
 
         # test dowy
-        year = control_simple.current_year
-        month = control_simple.current_month
+        year = control.current_year
+        month = control.current_month
         year = year if month >= 10 else year - 1
         wy_start = np.datetime64(f"{year}-10-01")
         dowy = (current_time - wy_start).astype("timedelta64[D]")
-        assert dowy == control_simple.current_dowy
+        assert dowy == control.current_dowy
 
-        prev_time = control_simple.current_time
+        prev_time = control.current_time
 
     with pytest.raises(ValueError):
-        control_simple.advance()
+        control.advance()

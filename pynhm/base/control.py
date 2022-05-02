@@ -59,7 +59,7 @@ class Control(Accessor):
         self._init_time = None  # get from control file if restart?
         self._current_time = None
         self._previous_time = None
-        self._i_time = 0
+        self._itime_step = -1
 
         self.config = config
 
@@ -124,9 +124,9 @@ class Control(Accessor):
         return self._previous_time
 
     @property
-    def i_time(self):
+    def itime_step(self):
         """The counth of the current time [0, self.n_times-1]"""
-        return self._i_time
+        return self._itime_step
 
     @property
     def time_step(self):
@@ -150,16 +150,16 @@ class Control(Accessor):
 
     def advance(self):
         """Advance time."""
+        if self._current_time == self._end_time:
+            raise ValueError("End of time reached")
+
+        self._itime_step += 1
 
         if self._current_time is None:
             self._current_time = self._start_time
             return
 
-        if self._current_time == self._end_time:
-            raise ValueError("End of time reached")
-
         self._previous_time = self._current_time
         self._current_time += self.time_step
-        self._i_time += 1
 
         return None

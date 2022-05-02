@@ -49,6 +49,7 @@ class Adapter:
         self,
         variable: str,
     ) -> None:
+        self.name = "Adapter"
         self._variable = variable
         return None
 
@@ -67,18 +68,16 @@ class AdapterNetcdf(Adapter):
         start_time: np.datetime64 = None,
     ) -> None:
         super().__init__(variable)
+        self.name = "AdapterNetcdf"
         self._fname = fname
         self._dataset = NetCdfRead(fname)
         self._datetime = self._dataset.date_times
         if start_time is None:
             self._start_time = self._datetime[0]
-            self._itime_step = 0
         else:
             self._start_time = start_time
-            self._itime_step = np.where(self._datetime == start_time)[0]
 
         self._current_value = None
-        # JLM: current value is None on init?
 
     def advance(self):
         self._current_value = self._dataset.advance(self._variable)
@@ -96,6 +95,7 @@ class AdapterOnedarray(Adapter):
         variable,
     ) -> None:
         super().__init__(variable)
+        self.name = "AdapterOnedarray"
         self._current_value = data
         return
 
@@ -114,6 +114,7 @@ class AdapterTwodarraySoltab(Adapter):
         variable: str,
     ) -> None:
         super().__init__(variable)
+        self.name = "AdapterTwodarraySoltab"
         self._data = data
         self._current_value = None
         return

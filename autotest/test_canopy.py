@@ -12,53 +12,6 @@ from pynhm.utils import ControlVariables
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
-forcings_dict = {
-    "datetime": np.array(
-        [
-            datetime(1979, 1, 3, 0, 0),
-            datetime(1979, 1, 4, 0, 0),
-        ]
-    ),
-    "spatial_id": np.array([5307, 5308]),
-    "tmin": np.array(
-        [
-            [46.1209, 45.76805],
-            [37.7609, 37.4881],
-        ]
-    ),
-    "rhavg": np.array(
-        [
-            [82.45999908447266, 82.5999984741211],
-            [81.98999786376953, 82.3499984741211],
-        ]
-    ),
-    "tmax": np.array(
-        [
-            [57.41188049316406, 56.47270965576172],
-            [55.511878967285156, 55.032711029052734],
-        ]
-    ),
-    "snowfall": np.array([[0.0, 0.0], [0.0, 0.0]]),
-    "prcp": np.array(
-        [
-            [0.31392958760261536, 0.24780480563640594],
-            [0.6605601906776428, 0.5214226245880127],
-        ]
-    ),
-    "rainfall": np.array(
-        [
-            [0.31392958760261536, 0.24780480563640594],
-            [0.6605601906776428, 0.5214226245880127],
-        ]
-    ),
-    "potet": np.array(
-        [
-            [0.25, 0.26],
-            [0.26, 0.27],
-        ]
-    ),
-}
-
 
 class TestPRMSCanopySimple:
     def test_init(self):
@@ -90,12 +43,12 @@ class TestPRMSCanopySimple:
             input_variables[key] = np.ones([nhru])
 
         # todo: this is testing instantiation, but not physics
-        ntimes = control.n_times
-        self.cnp = PRMSCanopy(
+        cnp = PRMSCanopy(
             control=control, params=prms_params, **input_variables
         )
-        self.cnp.advance()
-        self.cnp.calculate(time_length=1.0)
+        control.advance()
+        cnp.advance()
+        cnp.calculate(time_length=1.0)
 
         return
 

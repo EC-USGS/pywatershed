@@ -1,5 +1,6 @@
 import os
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 import pandas as pd
@@ -155,7 +156,7 @@ class StorageUnit(Accessor):
 
     def _advance_inputs(self):
         for key, value in self._input_variables_dict.items():
-            value.advance()
+            value.advance()  # (self.control.itime_step)
             v = getattr(self, key)
             v[:] = value.current
         return
@@ -166,8 +167,15 @@ class StorageUnit(Accessor):
 
         Returns:
             None
-
         """
+        if self._itime_step >= self.control.itime_step:
+            if self.verbose:
+                msg = f"{self.name} did not advance because it is not behind control time"
+                # warn(msg)
+                print(msg)  # can/howto make warn flush in real time?
+                # is a warning sufficient? an error
+            return
+
         self._advance_variables()
         self._advance_inputs()
         self._itime_step += 1

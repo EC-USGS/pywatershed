@@ -51,6 +51,7 @@ amlt_init = [
 ]
 
 maxalb = 15
+onethird = 1.0 / 3.0
 
 
 class PRMSSnow(StorageUnit):
@@ -69,8 +70,9 @@ class PRMSSnow(StorageUnit):
         orad_hru: adaptable,
         soltab_horad_potsw: adaptable,
         swrad: adaptable,
+        hru_intcpevap: adaptable,
         hru_ppt: adaptable,
-        pptmix: adaptable,
+        potet: adaptable,
         prmx: adaptable,
         tavgc: adaptable,
         tmaxc: adaptable,
@@ -113,7 +115,6 @@ class PRMSSnow(StorageUnit):
             "covden_win",
             "covden_sum",
             "hru_type",
-            # "hru_route_order",  # really necessary? does it matter for column calcs?
             "albset_rna",
             "albset_rnm",
             "albset_sna",
@@ -126,6 +127,7 @@ class PRMSSnow(StorageUnit):
             "hru_deplcrv",
             "melt_force",
             "melt_look",
+            "potet_sublim",
             "rad_trncf",
             "snarea_curve",
             "snarea_thresh",
@@ -145,11 +147,12 @@ class PRMSSnow(StorageUnit):
         """
         return (
             "hru_ppt",
+            "hru_intcpevap",
             "net_ppt",
             "net_rain",
             "net_snow",
             "orad_hru",
-            "pptmix",
+            "potet",
             "prmx",
             "soltab_horad_potsw",
             "swrad",
@@ -393,38 +396,27 @@ class PRMSSnow(StorageUnit):
 
         self._simulation_time = simulation_time
 
-        # curr_month => model_time%Nowmonth, &
-        # day_of_year => model_time%day_of_year, &
-        # day_of_water_year => model_time%day_of_water_year, &
-
-        # nhru => model_basin%nhru, &
-        # nmonths => model_basin%nmonths, &
-        # active_hrus => model_basin%active_hrus, &
-        # active_mask => model_basin%active_mask, &
-        # cov_type => model_basin%cov_type, &
-        # hru_type => model_basin%hru_type, &
-        # hru_route_order => model_basin%hru_route_order, &
-
-        cals = zero
-
-        # see if these really need to be set on self
-        self.newsnow = np.full([self.nhru], False, dtype=bool)
-        pptmix = np.zeros([self.nhru])
-
         self.canopy_covden = self.covden_win
         self.canopy_covden[np.where(self.transp_on)] = self.covden_sum
 
+        cals = zero
+
+        # newsnow
+        self.newsnow = np.full([self.nhru], False, dtype=bool)
         net_snow_gt_zero = self.net_snow > zero
         wh_net_snow_gt_zero = np.where(net_snow_gt_zero)
         self.newsnow[wh_net_snow_gt_zero] = True
 
+        # pptmix
+        self.pptmix = np.zeros([self.nhru])
         net_rain_gt_zero = self.net_rain > zero
         wh_net_snow_gt_zero_and_net_rain_gt_zero = np.where(
             net_rain_gt_zero & net_rain_gt_zero
         )
-        pptmix[wh_net_snow_gt_zero_and_net_rain_gt_zero] = 1
+        self.pptmix[wh_net_snow_gt_zero_and_net_rain_gt_zero] = 1
 
-        pptmix_nopack = False
+        # default assumption
+        self.pptmix_nopack[:] = False
 
         for jj in range(self.nhru):
 
@@ -445,6 +437,7 @@ class PRMSSnow(StorageUnit):
                 self.mso[jj] = True  # [flag]
                 self.lso[jj] = 0  # [counter]
 
+            # <
             # HRU SET-UP - SET DEFAULT VALUES AND/OR BASE CONDITIONS FOR THIS TIME PERIOD
             # **************************************************************
 
@@ -464,6 +457,7 @@ class PRMSSnow(StorageUnit):
             if self.control.current_doy == self.melt_force[jj]:
                 self.iso[jj] = 2  # [flag]  # JLM: why not use enumerator here?
 
+            # <
             # If the day of the water year is beyond the first day to look for melt
             # season indicated by the parameter, then set the flag indicating to watch
             # for melt season.
@@ -471,6 +465,7 @@ class PRMSSnow(StorageUnit):
             if self.control.current_doy == self.melt_look[jj]:
                 self.mso[jj] = 2  # [flag]  # could emume this BEFORE/AFTER
 
+            # <
             if self.pkwater_equiv[jj] < epsilon:
                 # No existing snowpack
                 if not self.newsnow[jj]:
@@ -482,6 +477,7 @@ class PRMSSnow(StorageUnit):
                     # We have new snow; the initial snow-covered area is complete (1)
                     self.snowcov_area[jj] = one  # [fraction of area]
 
+            # <<
             # HRU STEP 1 - DEAL WITH PRECIPITATION AND ITS EFFECT ON THE WATER
             #              CONTENT AND HEAT CONTENT OF SNOW PACK
             # ***********************************************************************
@@ -508,11 +504,94 @@ class PRMSSnow(StorageUnit):
 
                 #  HRU STEP 5 - CALCULATE SNOWPACK LOSS TO EVAPORATION
                 # ********************************************************
+                if self.pkwater_equiv[jj] > zero:
+                    # Snow can evaporate when transpiration is not occuring or when
+                    # transpiration is occuring with cover types of bare soil or grass.
+                    # if (transp_on[jj] == 0 .or. (transp_on[jj] == 1 .and. cov_type[jj] < 2):
+                    if (not self.transp_on[jj]) or (
+                        self.transp_on[jj] and self.cov_type[jj] < 2
+                    ):
+                        self.snowevap(jj)
 
-                #  HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
-                #                 INCREMENT THE BASIN TOTALS
+                # <<
+                elif self.pkwater_equiv[jj] < zero:
+                    if self.verbose:
+                        if self.pkwater_equiv[jj] < (-1 * epsilon):
+                            print(
+                                f"snowpack issue 3, negative pkwater_equiv, "
+                                f"HRU: {jj}, value: {self.pkwater_equiv[jj]}"
+                            )
+
+                    # <<
+                    # just to be sure negative values are ignored
+                    self.pkwater_equiv[jj] = zero
+
+                # <
+                # HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
+                #                INCREMENT THE BASIN TOTALS
                 # *********************************************************
 
+                # Final state of the snowpack depends on whether it still exists after
+                # all the processing above.
+                # 2 options below (if-then, else)
+
+                if self.pkwater_equiv[jj] > zero:
+                    # (1) Snow pack still exists
+                    # Snowpack still exists
+                    if self.pk_den[jj] > zero:
+                        self.pk_depth[jj] = (
+                            self.pkwater_equiv[jj] / self.pk_den[jj]
+                        )
+                    else:
+                        self.pk_den[jj] = self.den_max
+                        self.pk_depth[jj] = pkwater_equiv[jj] * self.denmaxinv
+
+                    # <
+                    self.pss[jj] = self.pkwater_equiv[jj]
+
+                    # If it is during the melt period and snowfall was insufficient to
+                    # reset albedo, then reduce the cumulative new snow by the amount
+                    # melted during the period (but don't let it be negative).
+                    # if (self.lst[jj] > 0:
+                    if self.lst[jj]:
+                        self.snsv[jj] = self.snsv[jj] - self.snowmelt[jj]
+
+                        if self.snsv[jj] < zero:
+                            self.snsv[jj] = zero
+
+                # <<<<
+                # LAST check to clear out all arrays if packwater is gone
+                if self.pkwater_equiv[jj] <= zero:
+                    if self.verbose:
+                        if self.pkwater_equiv[jj] < -epsilon:
+                            print(
+                                f"Snowpack problem, pkwater_equiv negative, HRU: {jj}, value: {self.pkwater_equiv[jj]}"
+                            )
+
+                    # <<
+                    self.pkwater_equiv[
+                        jj
+                    ] = zero  # just to be sure negative values are ignored
+
+                    # Snowpack has been completely depleted, reset all states to no-snowpack values
+                    self.pk_depth[jj] = zero
+                    self.pss[jj] = zero
+                    self.snsv[jj] = zero
+                    self.lst[jj] = False
+                    self.pst[jj] = zero
+                    self.iasw[jj] = False
+                    self.albedo[jj] = zero
+                    self.pk_den[jj] = zero
+                    self.snowcov_area[jj] = zero
+                    self.pk_def[jj] = zero
+                    self.pk_temp[jj] = zero
+                    self.pk_ice[jj] = zero
+                    self.freeh2o[jj] = zero
+                    self.snowcov_areasv[jj] = zero  # rsr, not in original code
+                    self.ai[jj] = zero
+                    self.frac_swe[jj] = zero
+
+            # <<
         return
 
     @staticmethod
@@ -537,6 +616,7 @@ class PRMSSnow(StorageUnit):
             # the next highest and lowest curve values.
             res = snarea_curve[jdx] + dify * difx
 
+        # <
         return res
 
     def ppt_to_pack(self, jj):
@@ -576,6 +656,7 @@ class PRMSSnow(StorageUnit):
                 self.pkwater_equiv[
                     jj
                 ] = zero  # To be sure negative snowpack is ignored
+        # <<
         else:
             # (2) If precipitation is all snow or all rain...
             # If there is any rain, the rain temperature is the average temperature.
@@ -588,7 +669,7 @@ class PRMSSnow(StorageUnit):
                     self.tmaxc[jj] + self.tmax_allsnow[month_ind, jj]
                 ) * 0.5  # [degrees C]
 
-        # <-  <-
+        # <<
         if train < zero:
             train = zero  # [degrees C] # train can't be < 0
         if tsnow > zero:
@@ -604,10 +685,9 @@ class PRMSSnow(StorageUnit):
         # or a mixed event is processed differently when a snowpack exists.
         # 2 options below (if-then, elseif)
 
-        # -----------------------------------------------------------------------------
-        # -----------------------------------------------------------------------------
         if self.pkwater_equiv[jj] > zero:
             # (1) There is net rain on an existing snowpack...
+
             if self.net_rain[jj] > zero:
                 # Add rain water to pack (rain on snow) and increment the precipitation
                 # on the snowpack by the rain water.
@@ -705,6 +785,7 @@ class PRMSSnow(StorageUnit):
                         #     print *, '*', pkwater_equiv[jj]
                         # endif
 
+                # <<
                 else:
                     # (1.2) Rain on snowpack that is isothermal at 0 degC (no heat deficit)...
                     # All net rain is added to free water in the snowpack.
@@ -718,6 +799,7 @@ class PRMSSnow(StorageUnit):
 
                     self.calin(calpr, jj)
 
+        # <<<
         elif self.net_rain[jj] > zero:
             # (2) If there is net rain but no snowpack, set flag for a mix on no snowpack.
 
@@ -727,6 +809,7 @@ class PRMSSnow(StorageUnit):
             # set inappropriately.
             self.pptmix_nopack[jj] = True  # [flag]
 
+        # <
         # At this point, the subroutine has handled all conditions where there is
         # net rain, so if there is net snow (doesn't matter if there is a pack or not)...
         if self.net_snow[jj] > zero:
@@ -749,6 +832,7 @@ class PRMSSnow(StorageUnit):
                     -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
                 )  # [degrees C]
 
+            # <
             else:
                 # (2) If the new snow is colder than 0 degC...
                 # Calculate the amount of heat the new snow will absorb if warming it
@@ -762,6 +846,7 @@ class PRMSSnow(StorageUnit):
                 if self.freeh2o[jj] > zero:
                     # (2.1) If there is free water in the pack (at least some of it is going to freeze)...
                     self.caloss(calps, jj)
+
                 else:
                     # (2.2) If there is no free water (snow pack has a heat deficit greater
                     #       than or equal to 0)...
@@ -772,6 +857,7 @@ class PRMSSnow(StorageUnit):
                         -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
                     )  # [degrees C]
 
+        # <<<
         return
 
     def calin(self, cal, jj):
@@ -803,7 +889,10 @@ class PRMSSnow(StorageUnit):
             )  # [degrees C]
 
         elif abs(dif) < epsilon:
-            # JLM: The test had been equality with zero, changed to less than epsilon.
+            # JLM: I moved this from an else at the bottom to this
+            #      point in the conditional chain.
+            # JLM: The test had been equality with zero, changed to
+            #      less than epsilon.
             # (2) Just enough heat to overcome heat deficit
             # rsr 1/27/2016 why not set all snow states to 0 ???
             # Set temperature and heat deficit to zero.
@@ -839,6 +928,7 @@ class PRMSSnow(StorageUnit):
                 # print *, 'snowcov_area really small, melt all ice', snowcov_area, ' pmlt:', pmlt, ' dif:', dif, ' pk_ice:', pk_ice
                 apk_ice = zero
 
+            # <
             # If snow is melting, the heat is handled based on whether all or only
             # part of the pack ice melts.
             # 2 options below (if-then, else)
@@ -882,9 +972,11 @@ class PRMSSnow(StorageUnit):
                 # If there is more free water than the snowpack can hold, then there is
                 # going to be melt...
                 if dif_water > zero:
+
                     if dif_water > self.pkwater_equiv[jj]:
                         dif_water = self.pkwater_equiv[jj]
 
+                    # <
                     # total packwater decreases by the excess and a new depth is calculated
                     # based on density.
                     self.pkwater_equiv[jj] = (
@@ -901,6 +993,7 @@ class PRMSSnow(StorageUnit):
                         #              no division by zero (this can happen if there is a
                         #              mixed event on no existing snowpack because a pack
                         #              density has not been calculated, yet).
+
                     else:
                         # rsr, this should not happen, remove later
                         # if print_debug > -1:
@@ -912,12 +1005,16 @@ class PRMSSnow(StorageUnit):
                             self.pkwater_equiv[jj] * self.denmaxinv[jj]
                         )  # [inches]
 
+                    # <
                     # Snowmelt increases by the excess free water.
-                self.snowmelt[jj] = self.snowmelt[jj] + dif_water  # [inches]
+                    self.snowmelt[jj] = (
+                        self.snowmelt[jj] + dif_water
+                    )  # [inches]
 
-                # Reset the previous-snowpack-plus-new-snow to the current pack water equivalent.
-                self.pss[jj] = self.pkwater_equiv[jj]  # [inches]
+                    # Reset the previous-snowpack-plus-new-snow to the current pack water equivalent.
+                    self.pss[jj] = self.pkwater_equiv[jj]  # [inches]
 
+        # <<<
         return
 
     def caloss(self, cal, jj):
@@ -931,6 +1028,7 @@ class PRMSSnow(StorageUnit):
             # Heat deficit increases because snow is colder than pack
             # (minus a negative number = plus).
             self.pk_def[jj] = self.pk_def[jj] - cal  # [cal/cm^2]
+
         else:
             # (2) Free water exists in pack
             # Calculate the total amount of heat per area that can be released by
@@ -954,6 +1052,8 @@ class PRMSSnow(StorageUnit):
                     -cal / 203.2
                 )  # [inches]
                 return
+
+            # <
             else:  # if ( dif<=zero :
                 # (1) All free water freezes
                 # If all the water freezes, then the remaining heat that can be
@@ -967,16 +1067,19 @@ class PRMSSnow(StorageUnit):
                 )  # [inches]
                 self.freeh2o[jj] = zero  # [inches]
 
+        # <<
         if self.pkwater_equiv[jj] > zero:
             # There is still a snowpack, calculate the new temperature.
             self.pk_temp[jj] = (
                 -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
             )  # [degrees C]
+
         elif self.pkwater_equiv[jj] < zero:
             # if ( pkwater_equiv<-DNEARZERO ) &
             #   print *, 'snowpack issue 4, negative pkwater_equiv', pkwater_equiv
             self.pkwater_equiv[jj] = zero
 
+        # <
         return
 
     def snowcov(self, jj):
@@ -1003,6 +1106,7 @@ class PRMSSnow(StorageUnit):
         if self.pkwater_equiv[jj] > self.pst[jj]:
             self.pst[jj] = self.pkwater_equiv[jj]  # [inches]
 
+        # <
         # Set ai to the maximum packwater equivalent, but no higher than the
         # threshold for complete snow cover.
         self.ai[jj] = self.pst[jj]  # [inches]
@@ -1011,6 +1115,7 @@ class PRMSSnow(StorageUnit):
         if self.ai[jj] > self.snarea_thresh[jj]:
             self.ai[jj] = self.snarea_thresh[jj]  # [inches]
 
+        # <
         # Calculate the ratio of the current packwater equivalent to the maximum
         # packwater equivalent for the given snowpack.
         # DEBUG:
@@ -1022,6 +1127,7 @@ class PRMSSnow(StorageUnit):
                 self.pkwater_equiv[jj] / self.ai[jj]
             )  # [fraction]
 
+        # <
         # There are 3 potential conditions for the snow area curve:
         # A. snow is accumulating and the pack is currently at its maximum level.
         # B. snow is depleting and the area is determined by the snow area curve.
@@ -1040,6 +1146,7 @@ class PRMSSnow(StorageUnit):
             # water equivalent is equal to ai and it can't be higher).
             # iasw = 0
             self.iasw[jj] = False
+
         else:
             # (2) The pack water equivalent is less than the maximum
             # If the snowpack isn't accumulating to a new maximum, it is either on the
@@ -1098,11 +1205,13 @@ class PRMSSnow(StorageUnit):
                         0.25 * self.net_snow[jj]
                     )  # [inches]
 
+                # <
                 # The subroutine terminates here because the snow covered area always
                 # starts at 100% if there is any new snow (no need to reset it from the
                 # maximum value set at the beginning of the subroutine).
                 return
 
+            # <
             elif self.iasw[jj]:
                 # (2.2) There was no new snow, but the snow covered area is currently
                 #       being interpolated between 100% from a previous new snow and the
@@ -1113,6 +1222,7 @@ class PRMSSnow(StorageUnit):
                 if self.pkwater_equiv[jj] > self.scrv[jj]:
                     return
 
+                # <
                 # At this point, the program is almost sure it is interpolating between
                 # the previous snow covered area and 100%, but it is possible that
                 # enough snow has melted to return to the snow covered area curve instead.
@@ -1147,6 +1257,7 @@ class PRMSSnow(StorageUnit):
                             self.pkwater_equiv[jj] - self.pksv[jj]
                         ) / dify  # [fraction]
 
+                    # <
                     # Linearly interpolate the new snow covered area.
                     self.snowcov_area[jj] = (
                         self.snowcov_areasv[jj] + fracy * difx
@@ -1163,7 +1274,7 @@ class PRMSSnow(StorageUnit):
                     # iasw = 0  # [flag]
                     self.iasw[jj] = False  # [flag]
 
-            # <- <-
+            # <<
             # If this subroutine is still running at this point, then the program
             # knows that the snow covered area needs to be adjusted according to the
             # snow covered area curve.  So at this point it must interpolate between
@@ -1174,6 +1285,7 @@ class PRMSSnow(StorageUnit):
                 self.frac_swe,
             )
 
+        # <
         return
 
     def snalbedo(self, jj):
@@ -1218,6 +1330,7 @@ class PRMSSnow(StorageUnit):
                 if self.slst[jj] < one:
                     self.slst[jj] = one  # [days]
 
+                # <
                 if self.iso[jj] != 2:
                     # If not in melt season.
 
@@ -1232,194 +1345,214 @@ class PRMSSnow(StorageUnit):
                     if self.slst[jj] > 5.0:
                         self.slst[jj] = 5.0  # [days]
 
+                # <
                 # Reset the shallow new snow flag and cumulative shallow snow variable (see below).
                 # lst = 0  # [flag]
                 self.lst[jj] = False  # [flag]
                 snsv = zero  # [inches]
 
-            elif self.iso[jj] == 2:
-                # (2) New snow during the melt season
-                # RAPCOMMENT - CHANGED TO ISO FROM MSO
+        # <<
+        elif self.iso[jj] == 2:
+            # (2) New snow during the melt season
+            # RAPCOMMENT - CHANGED TO ISO FROM MSO
 
-                # If there is too much rain in a precipitation mix, albedo will not be reset.
-                # New snow changes albedo only if the fraction rain is less than the
-                # threshold above which albedo is not reset.
-                if self.prmx[jj] < self.albset_rnm:
-                    # If the fraction rain doesn't prevent the albedo from being reset,
-                    # then how the albedo changes depends on whether the snow amount is
-                    # above or below the threshold for resetting albedo.
+            # If there is too much rain in a precipitation mix, albedo will not be reset.
+            # New snow changes albedo only if the fraction rain is less than the
+            # threshold above which albedo is not reset.
+            if self.prmx[jj] < self.albset_rnm:
+                # If the fraction rain doesn't prevent the albedo from being reset,
+                # then how the albedo changes depends on whether the snow amount is
+                # above or below the threshold for resetting albedo.
+                # 2 options below (if-then, else)
+
+                if self.net_snow[jj] > self.albset_snm:
+                    # (2.1) If there is enough new snow to reset the albedo
+                    # Reset number of days since last new snow to 0.
+                    self.slst[jj] = zero  # [days]
+                    # lst = 0  # [flag]
+                    self.lst[jj] = False  # [flag]
+                    # Reset the saved new snow to 0.
+                    self.snsv[jj] = zero  # [inches]
+
+                else:
+                    # (2.2) If there is not enough new snow this time period to reset the
+                    #       albedo on its own.
+
+                    # snsv tracks the amount of snow that has fallen as long as the
+                    # total new snow is not enough to reset the albedo.
+                    self.snsv[jj] = (
+                        self.snsv[jj] + self.net_snow[jj]
+                    )  # [inches]
+
+                    # Even if the new snow during this time period is insufficient to
+                    # reset the albedo, it may still reset the albedo if it adds enough
+                    # to previous shallow snow accumulation.  The change in albedo
+                    # depends on if the total amount of accumulated shallow snow has
+                    # become enough to reset the albedo or not.
                     # 2 options below (if-then, else)
-                    if self.net_snow[jj] > self.albset_snm:
-                        # (2.1) If there is enough new snow to reset the albedo
-                        # Reset number of days since last new snow to 0.
+
+                    if self.snsv[jj] > self.albset_snm:
+                        # (2.2.1) If accumulated shallow snow is enough to reset the albedo.
+                        # Reset the albedo states.
                         self.slst[jj] = zero  # [days]
                         # lst = 0  # [flag]
                         self.lst[jj] = False  # [flag]
-                        # Reset the saved new snow to 0.
                         self.snsv[jj] = zero  # [inches]
+
                     else:
-                        # (2.2) If there is not enough new snow this time period to reset the
-                        #       albedo on its own.
+                        # (2.2.2) If the accumulated shallow snow is not enough to
+                        #         reset the albedo curve.
 
-                        # snsv tracks the amount of snow that has fallen as long as the
-                        # total new snow is not enough to reset the albedo.
-                        self.snsv[jj] = (
-                            self.snsv[jj] + self.net_snow[jj]
-                        )  # [inches]
+                        # salb records the number of days since the last new snow
+                        # that reset albedo.
+                        # if (lst == 0) then
+                        if not self.lst[jj]:
+                            self.salb[jj] = self.slst[jj]  # [days]
 
-                        # Even if the new snow during this time period is insufficient to
-                        # reset the albedo, it may still reset the albedo if it adds enough
-                        # to previous shallow snow accumulation.  The change in albedo
-                        # depends on if the total amount of accumulated shallow snow has
-                        # become enough to reset the albedo or not.
-                        # 2 options below (if-then, else)
-                        if self.snsv[jj] > self.albset_snm:
-                            # (2.2.1) If accumulated shallow snow is enough to reset the albedo.
-                            # Reset the albedo states.
-                            self.slst[jj] = zero  # [days]
-                            # lst = 0  # [flag]
-                            self.lst[jj] = False  # [flag]
-                            self.snsv[jj] = zero  # [inches]
-                        else:
-                            # (2.2.2) If the accumulated shallow snow is not enough to
-                            #         reset the albedo curve.
-
-                            # salb records the number of days since the last new snow
-                            # that reset albedo.
-                            # if (lst == 0) then
-                            if not self.lst[jj]:
-                                self.salb[jj] = self.slst[jj]  # [days]
-
-                            # Reset the number of days since new snow
-                            self.slst[jj] = zero  # [days]
-
-                            # Set the flag indicating that there is shallow new snow
-                            # (i.e. not enough new snow to reset albedo).
-                            # lst = 1  # [flag]
-                            self.lst[jj] = True  # [flag]
-            # <-  <-  <-
-            else:
-                # (3) New snow during the accumulation season.
-
-                # The change in albedo depends on if the precipitation is a mix, if the
-                # rain is above a threshold,  or if the snow is above a threshold.
-                # 4 options below (if-then, elseif, elseif, else)
-                if self.pptmix[jj] < one:
-                    # (3.1) This is not a mixed event...
-                    # During the accumulation season, the threshold for resetting the
-                    # albedo does not apply if there is a snow-only event. Therefore, no
-                    # matter how little snow there is, it will always reset the albedo
-                    # curve the the maximum, if it occurs during the accumulation season.
-                    # Reset the time since last snow to 0.
-                    self.slst[jj] = zero  # [days]
-                    # There is no new shallow snow
-                    # lst = 0  # [flag]
-                    self.lst[jj] = False  # [flag]
-                elif self.prmx[jj] >= self.albset_rna:
-                    # (3.2) This is a mixed event and the fraction rain is above
-                    #       the threshold above which albedo is not reset...
-                    # There is no new shallow snow.
-                    # lst = 0  # [flag]
-                    self.lst[jj] = False  # [flag]
-                    # Albedo continues to decrease on the curve
-                elif self.net_snow[jj] >= self.albset_sna:
-                    # (3.3) If it is a mixed event and there is enough new snow to reset albedo...
-                    # Reset the albedo.
-                    self.slst[jj] = zero  # [days]
-                    # There is no new shallow snow.
-                    # lst = 0  # [flag]
-                    self.lst[jj] = False  # [flag]
-                else:
-                    # (3.4) This is a mixed event and the new snow was not enough to reset the albedo...
-                    # Set the albedo curve back 3 days (increasing the albedo).
-                    self.slst[jj] = self.slst[jj] - 3.0  # [days]
-
-                    # Make sure the number of days since last new snow is not less than 0.
-                    if self.slst[jj] < zero:
+                        # <
+                        # Reset the number of days since new snow
                         self.slst[jj] = zero  # [days]
 
-                        # Make sure the number of days since last new snow is not greater than 5.
-                        # In effect, if there is any new snow, the albedo can only get so low
-                        # in accumulation season, even if the new snow is insufficient to
-                        # reset albedo entirely
-                    if self.slst[jj] > 5.0:
-                        slst = 5.0  # [days]
+                        # Set the flag indicating that there is shallow new snow
+                        # (i.e. not enough new snow to reset albedo).
+                        # lst = 1  # [flag]
+                        self.lst[jj] = True  # [flag]
 
-                    # lst = 0  # [flag]
-                    self.lst[jj] = False  # [flag]
+        # <<<<
+        else:
+            # (3) New snow during the accumulation season.
+            # The change in albedo depends on if the precipitation is a mix, if the
+            # rain is above a threshold,  or if the snow is above a threshold.
+            # 4 options below (if-then, elseif, elseif, else)
 
-                self.snsv[jj] = zero  # [inches]
+            if self.pptmix[jj] < one:
+                # (3.1) This is not a mixed event...
+                # During the accumulation season, the threshold for resetting the
+                # albedo does not apply if there is a snow-only event. Therefore, no
+                # matter how little snow there is, it will always reset the albedo
+                # curve the the maximum, if it occurs during the accumulation season.
+                # Reset the time since last snow to 0.
+                self.slst[jj] = zero  # [days]
+                # There is no new shallow snow
+                # lst = 0  # [flag]
+                self.lst[jj] = False  # [flag]
 
-            # At this point, the subroutine knows where on the curve the albedo should
-            # be based on current conditions and the new snow (determined by value
-            # of slst variable).
+            elif self.prmx[jj] >= self.albset_rna:
+                # (3.2) This is a mixed event and the fraction rain is above
+                #       the threshold above which albedo is not reset...
+                # There is no new shallow snow.
+                # lst = 0  # [flag]
+                self.lst[jj] = False  # [flag]
+                # Albedo continues to decrease on the curve
 
-            # Get the integer value for days (or effective days) since last snowfall.
-            ll = int(self.slst[jj] + 0.5)  # [days]
-
-            # Increment the state variable for days since the last snowfall.
-            self.slst[jj] = self.slst[jj] + 1.0  # [days]
-
-            # ******Compute albedo
-            # Albedo will only be different from the max (default value) if it has
-            # been more than 0 days since the last new snow capable of resetting the
-            # albedo.  If albedo is at the maximum, the maximum is different for
-            # accumulation and melt season.
-
-            # 3 options below (if-then, elseif, else)
-
-            if ll > 0:
-                # (1) It has been more than 0 days since the last new snow.
-                # Albedo depends on whether it is currently on the accumulation season
-                # curve or on the melt season curve.
-                # 3 options below (if-then, elseif, else)
-
-                if self.int_alb[jj] == 2:
-                    # (1.1) Currently using the melt season curve (Old snow - Spring melt period)...
-                    # Don't go past the last possible albedo value.
-                    if ll > maxalb:
-                        ll = maxalb  # [days]
-                    # Get the albedo number from the melt season curve.
-                    self.albedo[jj] = amlt_init[ll]  # [fraction of radiation]
-
-                elif ll <= maxalb:
-                    # (1.2) Currently using the accumulation season curve (Old snow - Winter accumulation period)...
-                    #       and not past the maximum curve index.
-                    # Get the albedo number from the accumulation season curve.
-                    self.albedo[jj] = acum_init[ll]  # [fraction of radiation]
-                else:
-                    # (1.3) Currently using the accumulation season curve and past the maximum curve index...
-                    # Start using the the MELT season curve at 12 days previous to the
-                    # current number of days since the last new snow.
-                    ll = ll - 12  # [days]
-                    # Keep using the melt season curve until its minimum value
-                    # (maximum index) is reached or until there is new snow.
-                    if ll > maxalb:
-                        ll = maxalb  # [days]
-
-                    # Get the albedo value from the melt season curve.
-                    self.albedo[jj] = self.amlt[ll]  # [fraction of radiation]
-
-            elif self.iso[jj] == 2:
-                # (2) New snow has reset the albedo and it is melt season.
-                # Set albedo to initial value during melt season.
-                # NOTE: RAPCOMMENT - CHANGED TO ISO FROM MSO
-                # albedo = 0.81  # [fraction of radiation] original value
-                self.albedo[
-                    jj
-                ] = 0.72  # [fraction of radiation] value Rob suggested
-                # int_alb is a flag to indicate use of the melt season curve (2)
-                # or accumulation season curve (1).
-                # Set flag to indicate melt season curve.
-                self.int_alb[jj] = 2  # [flag]
+            elif self.net_snow[jj] >= self.albset_sna:
+                # (3.3) If it is a mixed event and there is enough new snow to reset albedo...
+                # Reset the albedo.
+                self.slst[jj] = zero  # [days]
+                # There is no new shallow snow.
+                # lst = 0  # [flag]
+                self.lst[jj] = False  # [flag]
 
             else:
-                # (3) New snow has reset the albedo and it is accumulation season.
-                # Set albedo to initial value during accumulation season.
-                self.albedo[jj] = 0.91  # [fraction of radiation]
-                # Set flag to indicate accumulation season curve.
-                self.int_alb[jj] = 1  # [flag]
+                # (3.4) This is a mixed event and the new snow was not enough to reset the albedo...
+                # Set the albedo curve back 3 days (increasing the albedo).
+                self.slst[jj] = self.slst[jj] - 3.0  # [days]
 
+                # Make sure the number of days since last new snow is not less than 0.
+                if self.slst[jj] < zero:
+                    self.slst[jj] = zero  # [days]
+
+                # <
+                # Make sure the number of days since last new snow is not greater than 5.
+                # In effect, if there is any new snow, the albedo can only get so low
+                # in accumulation season, even if the new snow is insufficient to
+                # reset albedo entirely
+                if self.slst[jj] > 5.0:
+                    slst = 5.0  # [days]
+
+                # <
+                # lst = 0  # [flag]
+                self.lst[jj] = False  # [flag]
+
+            # <
+            self.snsv[jj] = zero  # [inches]
+
+        # <
+        # At this point, the subroutine knows where on the curve the albedo should
+        # be based on current conditions and the new snow (determined by value
+        # of slst variable).
+
+        # Get the integer value for days (or effective days) since last snowfall.
+        ll = int(self.slst[jj] + 0.5)  # [days]
+
+        # Increment the state variable for days since the last snowfall.
+        self.slst[jj] = self.slst[jj] + 1.0  # [days]
+
+        # ******Compute albedo
+        # Albedo will only be different from the max (default value) if it has
+        # been more than 0 days since the last new snow capable of resetting the
+        # albedo.  If albedo is at the maximum, the maximum is different for
+        # accumulation and melt season.
+        # 3 options below (if-then, elseif, else)
+
+        if ll > 0:
+            # (1) It has been more than 0 days since the last new snow.
+            # Albedo depends on whether it is currently on the accumulation season
+            # curve or on the melt season curve.
+            # 3 options below (if-then, elseif, else)
+
+            if self.int_alb[jj] == 2:
+                # (1.1) Currently using the melt season curve (Old snow - Spring melt period)...
+                # Don't go past the last possible albedo value.
+                if ll > maxalb:
+                    ll = maxalb  # [days]
+
+                # <
+                # Get the albedo number from the melt season curve.
+                self.albedo[jj] = amlt_init[ll - 1]  # [fraction of radiation]
+
+            elif ll <= maxalb:
+                # (1.2) Currently using the accumulation season curve (Old snow - Winter accumulation period)...
+                #       and not past the maximum curve index.
+                # Get the albedo number from the accumulation season curve.
+                self.albedo[jj] = acum_init[ll - 1]  # [fraction of radiation]
+
+            else:
+                # (1.3) Currently using the accumulation season curve and past the maximum curve index...
+                # Start using the the MELT season curve at 12 days previous to the
+                # current number of days since the last new snow.
+                ll = ll - 12  # [days]
+                # Keep using the melt season curve until its minimum value
+                # (maximum index) is reached or until there is new snow.
+                if ll > maxalb:
+                    ll = maxalb  # [days]
+
+                # <
+                # Get the albedo value from the melt season curve.
+                self.albedo[jj] = amlt_init[ll - 1]  # [fraction of radiation]
+
+        # <<
+        elif self.iso[jj] == 2:
+            # (2) New snow has reset the albedo and it is melt season.
+            # Set albedo to initial value during melt season.
+            # NOTE: RAPCOMMENT - CHANGED TO ISO FROM MSO
+            # albedo = 0.81  # [fraction of radiation] original value
+            self.albedo[
+                jj
+            ] = 0.72  # [fraction of radiation] value Rob suggested
+            # int_alb is a flag to indicate use of the melt season curve (2)
+            # or accumulation season curve (1).
+            # Set flag to indicate melt season curve.
+            self.int_alb[jj] = 2  # [flag]
+
+        else:
+            # (3) New snow has reset the albedo and it is accumulation season.
+            # Set albedo to initial value during accumulation season.
+            self.albedo[jj] = 0.91  # [fraction of radiation]
+            # Set flag to indicate accumulation season curve.
+            self.int_alb[jj] = 1  # [flag]
+
+        # <
         return
 
     def step_4(self, jj, trd):
@@ -1434,6 +1567,7 @@ class PRMSSnow(StorageUnit):
         if self.hru_ppt[jj] > zero:
             emis = one  # [fraction of radiation]
 
+        # <
         # Save the current value of emissivity
         esv = emis  # [fraction of radiation]
 
@@ -1455,6 +1589,7 @@ class PRMSSnow(StorageUnit):
             # RSR: cov_type==4 is valid for trees (coniferous)
             cec = cec * 0.5  # [cal/(cm^2 degC)] or [Langleys/degC]
 
+        # <
         # Calculate the new snow depth (Riley et al. 1973)
         # RSR: the following 3 lines of code were developed by Rob Payn, 7/10/2013
         # The snow depth depends on the previous snow pack water equivalent plus
@@ -1474,6 +1609,7 @@ class PRMSSnow(StorageUnit):
         else:
             self.pk_den[jj] = zero  # [inch water equiv / inch depth]
 
+        # <
         # The effective thermal conductivity is approximated (empirically)
         # as zero077 times (snowpack density)^2 [cal / (sec g degC)] Therefore,
         # the effective conductivity term (inside the square root) in the
@@ -1499,13 +1635,14 @@ class PRMSSnow(StorageUnit):
         # than 4 cycles of the snorun function.
         if self.iso[jj] == 1:
             # Before the first melt-force day
+
             if self.mso[jj] == 2:
                 # After the first melt-look day
-
                 # Melt season is determined by the number of days the snowpack is
                 # above 0 degrees C. The first time that the snowpack is isothermal
                 # at 0 degrees C for more than 4 days is the beginning of snowmelt season.
                 # 2 options below (if-then, else)
+
                 if self.pk_temp[jj] >= zero:
                     # (1) The snowpack temperature is 0 degrees
                     # Increment the number of days that the snowpack has been
@@ -1518,11 +1655,13 @@ class PRMSSnow(StorageUnit):
                         self.iso[jj] = 2  # [flag]
                         self.lso[jj] = 0  # [days]
 
+                # <<
                 else:
                     # (2) The snowpack temperature is less than 0 degrees
                     # Reset the counter for days snowpack temperature is above 0
                     self.lso[jj] = 0  # [days]
 
+        # <<<
         # Compute energy balance for night period
         # niteda is a flag indicating nighttime (1) or daytime (2)
         # Set the flag indicating night time
@@ -1565,6 +1704,7 @@ class PRMSSnow(StorageUnit):
             # Track total heat flux from both night and day periods
             self.tcal[jj] = self.tcal[jj] + cals  # [cal/cm^2] or [Langleys]
 
+        # <
         return
 
     def snowbal(
@@ -1581,8 +1721,6 @@ class PRMSSnow(StorageUnit):
         """Snowpack energy balance: 1st call is for night period, 2nd call for day period."""
 
         # This function should just set self.tcal instead of returning cal.
-
-        onethird = 1.0 / 3.0
 
         # ***********************************************************************
         # Calculate the potential long wave energy from air based on temperature
@@ -1613,6 +1751,7 @@ class PRMSSnow(StorageUnit):
             ts = zero  # [degrees C]
             sno = 325.7  # [cal/cm^2] or [Langleys]
 
+        # <
         if self.hru_ppt[jj] > zero:
             # If precipitation over the time period was due to convective thunderstorms,
             # then the emissivity should be reset.
@@ -1635,6 +1774,7 @@ class PRMSSnow(StorageUnit):
                     if trd > ONETHIRD:
                         emis = emis_noppt  # [fraction of radiation]
 
+                # <<
                 else:
                     # (2) Day
                     # If measured radiation is greater than 1/3 potential radiation but
@@ -1648,6 +1788,7 @@ class PRMSSnow(StorageUnit):
                     if trd >= 0.5:
                         emis = 0.95 - (0.2 * trd)  # [fraction of radiation]
 
+        # <<<<
         # Calculate the net incoming long wave radiation coming from the sky or
         # canopy in the uncovered or covered portions of the snowpack, respectively.
         # Note that the canopy is assumed to be a perfect blackbody (emissivity=1)
@@ -1668,6 +1809,7 @@ class PRMSSnow(StorageUnit):
         if (temp > zero) and (self.hru_ppt[jj] > zero):
             cecsub = cec * temp  # [cal/cm^2] or [Langleys]
 
+        # <
         # Total energy potentially available from atmosphere: longwave,
         # shortwave, and condensation/convection.
         cal = sky + can + cecsub + sw  # [cal/cm^2] or [Langleys]
@@ -1681,6 +1823,7 @@ class PRMSSnow(StorageUnit):
             # JLM: set self.tcal[jj] from cal here?
             return cal
 
+        # <
         # If the program gets to this point, then either the surface temperature
         # is less than 0 degC, or the total energy from the atmosphere is not
         # providing energy to the snowpack.
@@ -1702,13 +1845,14 @@ class PRMSSnow(StorageUnit):
         # atmosphere can only penetrate into the snow pack if the temperature
         # gradient allows conduction from the surface into the snowpack.
         # 4 options below (if-then, elseif, elseif, else)
+
         if qcond < zero:
             # (1) Heat is conducted from the snowpack to the surface
             #     (atmospheric energy is NOT applied to snowpack)...
-
             # If the temperature of the snowpack is below 0 degC,
             # add to the heat deficit.  Otherwise, remove heat
             # from the 0 degC isothermal snow pack.
+
             if self.pk_temp[jj] < zero:
                 # Increase the heat deficit (minus a negative) and adjust temperature.
                 self.pk_def[jj] = (
@@ -1725,7 +1869,7 @@ class PRMSSnow(StorageUnit):
                 # it maintains its value and the referencing code uses it to calculate
                 # the total energy balance of the snowpack. Right now cal isn't used for
                 # anything outside this subroutine, but care should be taken if it is.
-
+        # <<
         elif qcond < epsilon:
             # (2)  There is no heat conduction, qcond = zero
             # If the pack temperature is isothermal at 0 degC, then apply any
@@ -1740,6 +1884,7 @@ class PRMSSnow(StorageUnit):
                 if cal > zero:
                     sel.calin(cal, chru)
 
+        # <<<
         elif ts >= zero:
             # (3) conduction is from the surface to the snowpack and the
             #     surface temperature is 0 degrees C...
@@ -1761,6 +1906,7 @@ class PRMSSnow(StorageUnit):
                     self.pkwater_equiv[jj] * 1.27
                 )  # [degrees C]
 
+        # <<
         else:
             # (4) conduction is from the surface to the snowpack and the
             #     surface temperature is less than 0 degrees C...
@@ -1798,6 +1944,109 @@ class PRMSSnow(StorageUnit):
                     -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
                 )  # [degrees C]
 
+        # <
         # JLM can a function just return cal? and not also compute the side effects?
         # or we can just set tcal directly on self instread of returning it
         return cal
+
+    def snowevap(self, jj):
+        # Local Variables
+        # avail_et:
+        # cal:  Amount of heat deficit that is removed by sublimating ice [cal/cm^2]
+        # ez: Amount of evaporation affecting the snowpack [inches]
+
+        # The amount of evaporation affecting the snowpack is the total
+        # evaporation potential minus the evaporation from the interception storage.
+        ez = (
+            self.potet_sublim[jj] * self.potet[jj] * self.snowcov_area[jj]
+            - self.hru_intcpevap[jj]
+        )  # [inches]
+
+        # The effects of evaporation depend on whether there is any potential for
+        # evaporation, and if the potential evapotation is enough to completely
+        # deplete the snow pack or not.
+        # 3 options below (if-then, elseif, else)
+        if ez < epsilon:
+            # (1) There is no potential for evaporation...
+            self.snow_evap[jj] = 0.0  # [inches]
+
+        elif ez >= self.pkwater_equiv[jj]:
+            # (2) Enough potential evaporation to entirely deplete the snowpack...
+            # Set the evaporation to the pack water equivalent and set all snowpack
+            # variables to no-snowpack values.
+            self.snow_evap[jj] = self.pkwater_equiv[jj]  # [inches]
+            self.pkwater_equiv[jj] = zero  # [inches]
+            self.pk_ice[jj] = zero  # [inches]
+            self.pk_def[jj] = zero  # [cal/cm^2]
+            self.freeh2o[jj] = zero  # [inches]
+            self.pk_temp[jj] = zero  # [degrees C]
+
+        else:
+            # (3) Potential evaporation only partially depletes snowpack...
+            # Evaporation depletes the amount of ice in the snowpack (sublimation).
+            self.pk_ice[jj] = self.pk_ice[jj] - ez
+            # Change the pack conditions according to whether there is any ice left
+            # in the snowpack.
+            if self.pk_ice[jj] < zero:
+                # RAPCOMMENT - CHANGED TO CHECK FOR NEGATIVE PACK ICE
+                #              If all pack ice is removed, then there cannot be a
+                #              heat deficit.
+                self.pk_ice[jj] = zero
+                self.pk_def[jj] = zero
+                self.pk_temp[jj] = zero
+            else:
+                # Calculate the amount of heat deficit that is removed by the
+                # sublimating ice. Note that this only changes the heat deficit if the
+                # pack temperature is less than 0 degC.
+                cal = self.pk_temp[jj] * ez * 1.27
+                self.pk_def[jj] = self.pk_def[jj] + cal
+
+            # <
+            # Remove the evaporated water from the pack water equivalent.
+            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] - ez
+            self.snow_evap[jj] = ez
+
+        # <
+        if self.snow_evap[jj] < zero:
+            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] - snow_evap
+
+            if self.pkwater_equiv[jj] < zero:
+                if self.verbose:
+                    if self.pkwater_equiv[jj] < -epsilon:
+                        print(
+                            f"snowpack issue, negative pkwater_equiv in snowevap: {pkwater_equiv}"
+                        )
+
+                    #  <
+                    self.pkwater_equiv[jj] = zero
+
+            # <<
+            self.snow_evap[jj] = zero
+
+        # <
+        avail_et = self.potet[jj] - self.hru_intcpevap[jj] - self.snow_evap[jj]
+        if avail_et < zero:
+            self.snow_evap[jj] = self.snow_evap[jj] + avail_et
+            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] - avail_et
+
+            if self.snow_evap[jj] < zero:
+                self.pkwater_equiv[jj] = (
+                    self.pkwater_equiv[jj] - self.snow_evap[jj]
+                )
+
+                if self.pkwater_equiv[jj] < zero:
+                    if self.verbose:
+                        if self.pkwater_equiv[kk] < -epsilon:
+                            print(
+                                f"snowpack issue 2, negative pkwater_equiv in snowevap: {pkwater_equiv}"
+                            )
+
+                    # <<
+                    # To be sure negative snowpack is ignored
+                    self.pkwater_equiv[jj] = zero
+
+                # <
+                snow_evap = zero
+
+        # <<
+        return

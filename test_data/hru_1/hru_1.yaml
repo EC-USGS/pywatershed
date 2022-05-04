@@ -2,7 +2,6 @@ domain_name: hru_1
 
 cbh_inputs:
       prcp: prcp.cbh
-      rhavg: rhavg.cbh
       tmax: tmax.cbh
       tmin: tmin.cbh
 
@@ -25,26 +24,25 @@ test_ans:
     nhru: 1
     ngw: 1
     nssr: 1
+    nsegment: 1
 
   preprocess_cbh:
     files_to_df:
-      prcp: 0.13306377295492486
-    df_concat: 42.33088831385643
+      prcp: 0.13502103505843072
+    df_concat: 34.968545798553144
     np_dict:
-      prcp: 0.13306377295492486
-      rhavg: 64.0001001669449
-      tmax: 61.77499833055092
-      tmin: 43.415390984974955
+      prcp: 0.13502103505843072
+      tmax: 61.986048747913195
+      tmin: 42.78456761268781
       datetime: 930873600.0
     adj:
       no_params:
-        prcp: 0.13306377295492486
-        rhavg: 64.0001001669449
-        tmax: 61.77499833055092
-        tmin: 43.415390984974955
+        prcp: 0.13502103505843072
+        tmax: 61.986048747913195
+        tmin: 42.78456761268781
       params:
-        tmaxf: 60.63638466864774
-        tminf: 43.89704419979967
-        hru_ppt: 0.1416483701569282
-        hru_rain: 0.1372140761113731
-        hru_snow: 0.004434294045555103
+        tmaxf: 61.89690864674458
+        tminf: 41.38994155392321
+        hru_ppt: 0.14205814904106845
+        hru_rain: 0.12638347050016802
+        hru_snow: 0.015674678540900454

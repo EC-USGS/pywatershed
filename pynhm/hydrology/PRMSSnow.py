@@ -287,7 +287,7 @@ class PRMSSnow(StorageUnit):
         self.denmaxinv = one / self.den_max.copy()
 
         self.pkwater_equiv = self.snowpack_init.copy()
-        self.pkwater_equiv_ante = None
+        self.pkwater_ante = None
 
         sd = int(self.ndeplval / 11)
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
@@ -353,8 +353,8 @@ class PRMSSnow(StorageUnit):
                     self.frac_swe[wh_pkweq_gt_zero[ww]],
                 )
 
-            self.pss = self.pkwater_equiv
-            self.pst = self.pkwater_equiv
+            self.pss = self.pkwater_equiv.copy()
+            self.pst = self.pkwater_equiv.copy()
 
         else:
 
@@ -365,7 +365,7 @@ class PRMSSnow(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
-        self.pkwater_ante = self.pkwater_equiv
+        self.pkwater_ante = self.pkwater_equiv.copy()
         return
 
     def _advance_inputs(self) -> None:
@@ -397,7 +397,8 @@ class PRMSSnow(StorageUnit):
         self._simulation_time = simulation_time
 
         self.canopy_covden = self.covden_win
-        self.canopy_covden[np.where(self.transp_on)] = self.covden_sum
+        wh_transp_on = np.where(self.transp_on)
+        self.canopy_covden[wh_transp_on] = self.covden_sum[wh_transp_on]
 
         cals = zero
 
@@ -423,6 +424,7 @@ class PRMSSnow(StorageUnit):
             if self.hru_type[jj] == HruType.LAKE:
                 continue
 
+            # <
             trd = self.orad_hru[jj] / self.soltab_horad_potsw[jj]
 
             # If it's the first julian day of the water year, several
@@ -487,6 +489,7 @@ class PRMSSnow(StorageUnit):
             ) or self.net_snow[jj] > zero:
                 self.ppt_to_pack(jj)
 
+            # <
             if self.pkwater_equiv[jj] > zero:
                 # If there is still snow after precipitation
                 # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from depletion curve
@@ -538,6 +541,7 @@ class PRMSSnow(StorageUnit):
                 if self.pkwater_equiv[jj] > zero:
                     # (1) Snow pack still exists
                     # Snowpack still exists
+
                     if self.pk_den[jj] > zero:
                         self.pk_depth[jj] = (
                             self.pkwater_equiv[jj] / self.pk_den[jj]
@@ -630,8 +634,7 @@ class PRMSSnow(StorageUnit):
         calps = zero
         pndz = zero
 
-        month = self.control.current_month
-        month_ind = month - 1
+        month_ind = self.control.current_month - 1
 
         tsnow = self.tavgc[jj]  # [degrees C]
 
@@ -732,7 +735,7 @@ class PRMSSnow(StorageUnit):
                         # In the process of giving up its heat, all the net rain freezes and
                         # becomes pack ice.
                         self.pk_ice[jj] = (
-                            self.pk_ice[jj] + net_rain[jj]
+                            self.pk_ice[jj] + self.net_rain[jj]
                         )  # [inches]
 
                     elif self.net_rain[jj] < pndz:
@@ -780,7 +783,6 @@ class PRMSSnow(StorageUnit):
                         # endif
 
                         self.calin(calpr, jj)
-
                         # if (chru == 5):
                         #     print *, '*', pkwater_equiv[jj]
                         # endif
@@ -796,7 +798,6 @@ class PRMSSnow(StorageUnit):
 
                     # Add the new heat to the snow pack (the heat in rain will melt some
                     # of the pack ice when the water cools to 0 degC).
-
                     self.calin(calpr, jj)
 
         # <<<
@@ -971,6 +972,7 @@ class PRMSSnow(StorageUnit):
 
                 # If there is more free water than the snowpack can hold, then there is
                 # going to be melt...
+
                 if dif_water > zero:
 
                     if dif_water > self.pkwater_equiv[jj]:
@@ -1698,9 +1700,7 @@ class PRMSSnow(StorageUnit):
             # Temperature is halfway between the maximum and average temperature
             # for the day.
             temp = (self.tmaxc[jj] + self.tavgc[jj]) * 0.5  # [degrees C]
-
             cals = self.snowbal(jj, niteda, cec, cst, esv, sw, temp, trd)
-
             # Track total heat flux from both night and day periods
             self.tcal[jj] = self.tcal[jj] + cals  # [cal/cm^2] or [Langleys]
 

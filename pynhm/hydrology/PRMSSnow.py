@@ -400,7 +400,7 @@ class PRMSSnow(StorageUnit):
         wh_transp_on = np.where(self.transp_on)
         self.canopy_covden[wh_transp_on] = self.covden_sum[wh_transp_on]
 
-        cals = zero
+        cals = zero  # JLM this is unnecessary.
 
         # newsnow
         self.newsnow = np.full([self.nhru], False, dtype=bool)
@@ -1187,7 +1187,7 @@ class PRMSSnow(StorageUnit):
                     # First, set the flag to indicate interpolation between 100% and the
                     # previous area should be done.
                     # iasw = 1  # [flag]
-                    self.iasw = True  # [flag]
+                    self.iasw[jj] = True  # [flag]
 
                     # Save the current snow covered area (before the new net snow).
                     self.snowcov_areasv[
@@ -1229,7 +1229,7 @@ class PRMSSnow(StorageUnit):
                 # the previous snow covered area and 100%, but it is possible that
                 # enough snow has melted to return to the snow covered area curve instead.
                 # 2 options below (if-then, else)
-                if selfpkwater_equiv[jj] >= self.pksv[jj]:
+                if self.pkwater_equiv[jj] >= self.pksv[jj]:
 
                     # (2.2.1) The snow pack still has a larger water equivalent than before
                     #         the previous new snow.  I.e., new snow has not melted back to
@@ -1282,9 +1282,9 @@ class PRMSSnow(StorageUnit):
             # snow covered area curve.  So at this point it must interpolate between
             # points on the snow covered area curve (not the same as interpolating
             # between 100% and the previous spot on the snow area depletion curve).
-            self.snowcov_area = self.sca_deplcrv(
+            self.snowcov_area[jj] = self.sca_deplcrv(
                 self.snarea_curve_2d[self.hru_deplcrv[jj] - 1, :],
-                self.frac_swe,
+                self.frac_swe[jj],
             )
 
         # <
@@ -1676,16 +1676,10 @@ class PRMSSnow(StorageUnit):
         # for the day.
         temp = (self.tminc[jj] + self.tavgc[jj]) * 0.5
 
-        # -----------------------------------------------------------------------------
-        # JLM there should be a break here where all the hrus are advanced before snowbal is
-        # computed - radiation above and energy balance below? some of the stuff above could be
-        # calculated in snowbal too
+        # Track total heat flux from both night and day periods
 
         # Calculate the night time energy balance
         cals = self.snowbal(jj, niteda, cec, cst, esv, sw, temp, trd)
-
-        # Track total heat flux from both night and day periods
-        # THIS SHOULD HAPPEN IN SNOBAL
         self.tcal[jj] = cals  # [cal/cm^2] or [Langleys]
 
         # Compute energy balance for day period (if the snowpack still exists)
@@ -1820,7 +1814,6 @@ class PRMSSnow(StorageUnit):
         # the snowpack and subroutine terminates.
         if (ts >= zero) and (cal > zero):
             self.calin(cal, jj)
-            # JLM: set self.tcal[jj] from cal here?
             return cal
 
         # <

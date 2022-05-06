@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .cbh_metadata import cbh_metadata
+from ..base.meta import Meta, meta_numpy_type, meta_netcdf_type
 
 fileish = Union[str, pl.PosixPath]
 
@@ -21,25 +22,44 @@ class CsvFile:
         if name is not None:
             self._add_path(name)
         self.convert = convert
+        self._variables = None
+        self._coordinates = None
         self._data = None
+        self.meta = Meta()
 
     @property
-    def hru_ids(self) -> list:
-        """Get a list of hru ids
+    def nhm_id(self) -> list:
+        """Get a list of nhm ids
 
         Returns:
-            hru_ids: list of hru_ids
+            nhm_ids: list of  nhm ids
 
         """
-        if self._data is None:
-            self._get_data()
+        self._lazy_data_evaluation()
 
-        hru_ids = []
-        for name in self._data.dtype.names[1:]:
-            hru_id = name.split("_")[-1]
-            if hru_id not in hru_ids:
-                hru_ids.append(int(hru_id))
-        return hru_ids
+        key = "nhm_id"
+        if key in self._coordinates.keys():
+            nhm_ids = self._coordinates[key]
+        else:
+            nhm_ids = None
+        return nhm_ids
+
+    @property
+    def nhm_seg(self) -> list:
+        """Get a list of nhm segments
+
+        Returns:
+            nhm_segs: list of nhm segments
+
+        """
+        self._lazy_data_evaluation()
+
+        key = "nhm_seg"
+        if key in self._coordinates.keys():
+            nhm_segs = self._coordinates[key]
+        else:
+            nhm_segs = None
+        return nhm_segs
 
     @property
     def variable_names(self) -> list:
@@ -49,16 +69,8 @@ class CsvFile:
             variables: list of variables
 
         """
-        if self._data is None:
-            self._get_data()
-
-        variables = []
-        for name in self._data.dtype.names[1:]:
-            hru_id = name.split("_")[-1]
-            variable = name.replace(f"_{hru_id}", "")
-            if variable not in variables:
-                variables.append(variable)
-        return variables
+        self._lazy_data_evaluation()
+        return self._variables
 
     @property
     def data(self) -> np.recarray:
@@ -68,8 +80,7 @@ class CsvFile:
             data : numpy recarray containing all of the csv data
 
         """
-        if self._data is None:
-            self._get_data()
+        self._lazy_data_evaluation()
         return self._data
 
     def add_path(
@@ -95,9 +106,7 @@ class CsvFile:
             df: csv output data as a pandas dataframe
 
         """
-        if self._data is None:
-            self._get_data()
-
+        self._lazy_data_evaluation()
         df = pd.DataFrame(self._data).set_index("date")
         return df
 
@@ -125,13 +134,7 @@ class CsvFile:
             None
 
         """
-        if self._data is None:
-            self._get_data()
-
-        hru_ids = self.hru_ids
-        variables = self.variable_names
-        ntimes = self._data.shape[0]
-        nhrus = len(hru_ids)
+        self._lazy_data_evaluation()
 
         ds = nc4.Dataset(name, "w", clobber=clobber)
         ds.setncattr("Description", "PRMS output data")
@@ -141,8 +144,10 @@ class CsvFile:
 
         # Dimensions
         # None for the len argument gives an unlimited dim
+        ntimes = self._data.shape[0]
         ds.createDimension("time", ntimes)
-        ds.createDimension("hru_id", nhrus)
+        for key, value in self._coordinates.items():
+            ds.createDimension(key, len(value))
 
         # Dim Variables
         time = ds.createVariable("datetime", "f4", ("time",))
@@ -155,26 +160,55 @@ class CsvFile:
             calendar="standard",
         )
 
-        hruid = ds.createVariable("hru_id", "i4", ("hru_id"))
-        hruid[:] = np.array(hru_ids, dtype=int)
+        for key, value in self._coordinates.items():
+            coord_id = ds.createVariable(key, "i4", (key))
+            coord_id[:] = np.array(value, dtype=int)
+
+        dimensions = self.meta.get_dimensions(self.variable_names)
 
         # Variables
-        for vv in variables:
-            vvtype = "f4"
+        for variable_name in self.variable_names:
+            if self.meta.is_available(variable_name):
+                meta_dict = self.meta.find_variables(variable_name)
+                variable_type = meta_netcdf_type(meta_dict[variable_name])
+                dimension = dimensions[variable_name]
+                if "nsegment" in dimension:
+                    dim_name = "nhm_seg"
+                else:
+                    dim_name = "nhm_id"
+                dtype = meta_numpy_type(meta_dict[variable_name])
+            else:
+                variable_type = "f4"
+                dim_name = "nhm_id"
+                dtype = np.float32
+
+            ids = self._coordinates[dim_name]
+            nids = len(ids)
+
             var = ds.createVariable(
-                vv,
-                vvtype,
-                ("time", "hru_id"),
-                fill_value=nc4.default_fillvals[vvtype],  # JLM: sus
+                variable_name,
+                variable_type,
+                ("time", dim_name),
+                fill_value=nc4.default_fillvals[variable_type],  # JLM: sus
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
-            arr = np.zeros((ntimes, nhrus), dtype=np.float32)
-            for idx, hru in enumerate(hru_ids):
-                key = f"{vv}_{hru}"
+            # add additional meta data
+            if self.meta.is_available(variable_name):
+                var_meta = self.meta.find_variables(variable_name)[
+                    variable_name
+                ]
+                for key, val in var_meta.items():
+                    if isinstance(val, dict):
+                        continue
+                    ds.variables[variable_name].setncattr(key, val)
+
+            arr = np.zeros((ntimes, nids), dtype=dtype)
+            for idx, on_id in enumerate(ids):
+                key = f"{variable_name}_{on_id}"
                 arr[:, idx] = self._data[key][:]
-            ds.variables[vv][:, :] = arr
+            ds.variables[variable_name][:, :] = arr
 
         ds.close()
         print(f"Wrote netcdf file: {name}")
@@ -189,6 +223,10 @@ class CsvFile:
         elif not isinstance(name, pl.Path):
             raise TypeError(f"{name} must be a string or pathlib.Path object")
         self.paths[name.name] = name
+
+    def _lazy_data_evaluation(self):
+        if self._data is None:
+            self._get_data()
 
     def _get_data(self) -> None:
         """Read csv data into a single numpy recarray
@@ -216,19 +254,50 @@ class CsvFile:
                 except:
                     raise IOError(f"numpy could not parse...'{path}'")
 
-            ntimes = max(arr.shape[0], ntimes)
-            column_base = path.stem
+            # determine variable name and add to list of variable names
+            variable_name = path.stem
+            if self._variables is None:
+                self._variables = [variable_name]
+            else:
+                self._variables.append(variable_name)
+
+            # determine the variable type
+            if self.meta.is_available(variable_name):
+                variable_type = meta_numpy_type(
+                    self.meta.find_variables(variable_name)[variable_name]
+                )
+                if (
+                    "nsegment"
+                    in self.meta.get_dimensions(variable_name)[variable_name]
+                ):
+                    coordinate_name = "nhm_seg"
+                else:
+                    coordinate_name = "nhm_id"
+            else:
+                variable_type = np.float32
+                coordinate_name = "nhm_id"
+
+            # set coordinates
+            if self._coordinates is None:
+                self._coordinates = {}
+            if coordinate_name not in list(self._coordinates.keys()):
+                self._coordinates[coordinate_name] = [
+                    idx for idx in arr.dtype.names[1:]
+                ]
+
             column_names = [
-                f"{column_base}_{hru_id.strip()}"
-                for hru_id in arr.dtype.names[1:]
+                f"{variable_name}_{idx.strip()}" for idx in arr.dtype.names[1:]
             ]
             arr.dtype.names = ["date"] + column_names
 
             # add additional column names to the dtype
             for name in column_names:
-                dtype.append((name, np.float32))
+                dtype.append((name, variable_type))
 
             all_data.append(arr)
+
+            # reset ntimes, if necessary
+            ntimes = max(arr.shape[0], ntimes)
 
         self._data = np.zeros(ntimes, dtype=dtype)
         for idx, arr in enumerate(all_data):

@@ -570,7 +570,7 @@
             Nhrugl = Nhrugl + 1
             cell_idm(Nhrugl) = REAL(j)
             str_idm(Nhrugl) = REAL(hru_flowline(j))
-            uraw0(Nhrugl) = Hru_elev_meters(j) !inital Hru_elev in meters
+            uraw0(Nhrugl) = Hru_elev_meters(j) !initial Hru_elev in meters
             xraw0(Nhrugl) = hru_dcum(j) - Hru_length(j)*0.5 !in km, put it at middle
             hrawt(Nhrugl) = Hru_width(j) !in km
           ENDIF
@@ -985,7 +985,7 @@
             ENDDO
             CALL tag_count(0, hru_flowline, toflowline, glacier_frac_use)
 ! order flowline parts of each glacier
-            gln = 0 !initalize, end value is Ngl for this timestep
+            gln = 0 !initialize, end value is Ngl for this timestep
             DO j = 1, Ntp
               IF ( toflowline(j)==0 ) THEN
                 gln = gln + 1
@@ -1006,7 +1006,7 @@
                 ENDDO
               ENDIF
             ENDDO
-            topn = 0 !initalize, end value is Ntp for this timestep
+            topn = 0 !initialize, end value is Ntp for this timestep
             DO j = 1, Ntp
               DO i = 1, Ntp
                 IF ( j==toflowline(i) ) EXIT !j is not a top stream

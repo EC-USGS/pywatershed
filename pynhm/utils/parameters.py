@@ -96,18 +96,45 @@ class PrmsParameters:
         return dimensions
 
     @property
-    def nhm_coordinate(self) -> np.ndarray:
-        """Get the nhm coordinate
+    def nhm_hru_coordinate(self) -> np.ndarray:
+        """Get the nhm hru coordinate
 
         Returns:
             id: nhm coordinate for each hru
 
         """
         if "nhm_id" in self.parameters.keys():
-            id = self.parameters["nhm_id"]
+            nhm_id = self.parameters["nhm_id"]
         else:
-            id = np.arange(1, self.parameters["nhru"] + 1)
-        return id
+            nhm_id = np.arange(1, self.parameters["nhru"] + 1)
+        return nhm_id
+
+    @property
+    def nhm_segment_coordinate(self) -> np.ndarray:
+        """Get the nhm segment coordinate
+
+        Returns:
+            id: nhm coordinate for each segment
+
+        """
+        if "nhm_seg" in self.parameters.keys():
+            nhm_seg = self.parameters["nhm_seg"]
+        else:
+            nhm_seg = np.arange(1, self.parameters["nsegment"] + 1)
+        return nhm_seg
+
+    @property
+    def nhm_coordinates(self) -> dict:
+        """Get the nhm coordinates
+
+        Returns:
+            id: nhm coordinates
+
+        """
+        return {
+            "nhm_id": self.nhm_hru_coordinate,
+            "nhm_seg": self.nhm_segment_coordinate,
+        }
 
     @staticmethod
     def load(parameter_file: fileish) -> "PrmsParameters":

@@ -6,8 +6,8 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 
+from ..base.meta import Meta, meta_netcdf_type, meta_numpy_type
 from .cbh_metadata import cbh_metadata
-from ..base.meta import Meta, meta_numpy_type, meta_netcdf_type
 
 fileish = Union[str, pl.PosixPath]
 

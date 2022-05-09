@@ -4,7 +4,7 @@ from typing import Union
 import netCDF4 as nc4
 import numpy as np
 
-from ..base.meta import meta_netcdf_type, meta_dimensions
+from ..base.meta import meta_dimensions, meta_netcdf_type
 
 fileish = Union[str, pl.Path]
 listish = Union[list, tuple]
@@ -65,8 +65,12 @@ class NetCdfRead:
             spatial_id_names.append("nhm_seg")
         elif "hru_seg" in self.ds_var_list:
             spatial_id_names.append("hru_seg")
+
+        # set default spatial id
         if len(spatial_id_names) < 1:
             spatial_id_names.append("hru_id")
+
+        # set spatial id dictionary
         self._spatial_ids = {}
         for spatial_id_name in spatial_id_names:
             self._spatial_ids[spatial_id_name] = self.dataset.variables[
@@ -247,19 +251,16 @@ class NetCdfWrite:
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
         self.dataset.setncattr("Description", "PYNHM output data")
 
-        # coordinate_dimensions = []
         variable_dimensions = {}
         nhru_coordinate = False
         nsegment_coordinate = False
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name
-            if "nhru" in dimension_name:
+            if "nhru" in dimension_name or "ngw" in dimension_name:
                 nhru_coordinate = True
             if "nsegment" in dimension_name:
                 nsegment_coordinate = True
-            # if dimension_name not in coordinate_dimensions:
-            #     coordinate_dimensions.append(dimension_name)
 
         if nhru_coordinate:
             hru_ids = coordinates["nhm_id"]
@@ -269,8 +270,6 @@ class NetCdfWrite:
                 nhrus = hru_ids.shape[0]
             self.nhrus = nhrus
             self.hru_ids = hru_ids
-        # else:
-        #     self.nhrus = None
 
         if nsegment_coordinate:
             hru_segments = coordinates["nhm_seg"]
@@ -280,8 +279,6 @@ class NetCdfWrite:
                 nsegments = hru_segments.shape[0]
             self.nsegments = nsegments
             self.hru_segments = hru_segments
-        # else:
-        #     self.nsegments = None
 
         # Dimensions
         # None for the len argument gives an unlimited dim
@@ -437,7 +434,8 @@ class NetCdfCompare:
             compare_arr = self._compare.get_data(variable)
             if not np.allclose(base_arr, compare_arr, atol=atol):
                 success = False
-                failures[variable] = np.max(np.abs(compare_arr - base_arr))
+                diff = np.abs(compare_arr - base_arr)
+                failures[variable] = np.max(diff)
         return success, failures
 
     @property

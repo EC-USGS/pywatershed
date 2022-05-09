@@ -1,7 +1,7 @@
-import numpy as np
 import pathlib as pl
 from typing import Iterable, Union
 
+import numpy as np
 import yaml
 
 from ..constants import __pynhm_root__

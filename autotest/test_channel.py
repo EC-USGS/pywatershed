@@ -1,5 +1,7 @@
 import pathlib as pl
 
+import numpy as np
+
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.utils.netcdf_utils import NetCdfCompare

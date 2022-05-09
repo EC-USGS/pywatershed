@@ -159,12 +159,14 @@ class PRMSChannel(StorageUnit):
         # calculate lateral flow term
         self.seg_lateral_inflow[:] = 0.0
         for ihru in range(self.nhru):
+            irch = self.hru_segment[ihru]
+            if irch < 0:
+                continue
             lateral_inflow = (
                 self.sroff[ihru]
                 + self.ssres_flow[ihru]
                 + self.gwres_flow[ihru]
             ) * in_to_cfs[ihru]
-            irch = self.hru_segment[ihru]
             self.seg_lateral_inflow[irch] += lateral_inflow
 
         return

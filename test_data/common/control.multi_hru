@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-48
+54
 ####
 nhruOut_freq
 1
@@ -251,8 +251,9 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-48
+54
 4
+albedo
 contrib_fraction
 dprst_seep_hru
 dprst_stor_hru
@@ -280,8 +281,10 @@ orad_hru
 pkwater_ante
 pkwater_equiv
 potet
+pptmix
 prmx
 recharge
+salb
 slow_flow
 snowcov_area
 snowmelt
@@ -296,6 +299,7 @@ ssr_to_gw
 swrad
 tavgc
 tavgf
+tcal
 tmaxc
 tmaxf
 tminc

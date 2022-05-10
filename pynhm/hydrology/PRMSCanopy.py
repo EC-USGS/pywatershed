@@ -69,7 +69,7 @@ class PRMSCanopy(StorageUnit):
 
     def set_initial_conditions(self):
         # self.inctp_stor = self.intcp_stor_init.copy()
-        self.intcp_stor_old = None
+        # self.intcp_stor_old = None
         return
 
     @staticmethod
@@ -156,7 +156,7 @@ class PRMSCanopy(StorageUnit):
             None
 
         """
-        self.intcp_stor_old = self.intcp_stor
+        # self.intcp_stor_old = self.intcp_stor
         return
 
     def calculate(self, time_length, vectorized=False):

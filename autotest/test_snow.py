@@ -81,9 +81,9 @@ class TestPRMSSnow:
                 input_variables[key] = nc_path
 
         snow = PRMSSnow(control, params, **input_variables)
-
         all_success = True
-        for istep in range(control.n_times):
+        # for istep in range(control.n_times):
+        for istep in range(10):
 
             control.advance()
             snow.advance()
@@ -111,15 +111,14 @@ class TestPRMSSnow:
                     print(f"pynhm  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
 
-            if istep == 15:
-                asdf
+            # if istep == 15:
+            #     asdf
 
-        cnp.finalize()
+        snow.finalize()
 
         if not all_success:
             raise Exception("pynhm results do not match prms results")
 
-        asdf
         #   gw.output()
 
         # gw.finalize()

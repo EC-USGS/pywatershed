@@ -476,7 +476,9 @@ class PRMSSnow(StorageUnit):
                     self.snowcov_area[jj] = zero
                     continue
                 else:
-                    # We have new snow; the initial snow-covered area is complete (1)
+                    # We ahave new snow; the initial snow-covered area is complete (1)
+                    # JLM: why set this here? just for the case of no existing snow?
+                    # This might be removable.
                     self.snowcov_area[jj] = one  # [fraction of area]
 
             # <<
@@ -654,11 +656,13 @@ class PRMSSnow(StorageUnit):
                 tsnow = (
                     self.tminc[jj] + self.tmax_allsnow[month_ind, jj]
                 ) * 0.5  # [degrees C]
+
             elif self.pkwater_equiv[jj] < zero:
                 # If no existing snowpack, snow temperature is the average temperature for the day.
                 self.pkwater_equiv[
                     jj
                 ] = zero  # To be sure negative snowpack is ignored
+
         # <<
         else:
             # (2) If precipitation is all snow or all rain...
@@ -832,6 +836,7 @@ class PRMSSnow(StorageUnit):
                 self.pk_temp[jj] = (
                     -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
                 )  # [degrees C]
+                # JLM: i dont see where pk_def is set if there was not existing snowpk
 
             # <
             else:
@@ -895,8 +900,7 @@ class PRMSSnow(StorageUnit):
             # JLM: The test had been equality with zero, changed to
             #      less than epsilon.
             # (2) Just enough heat to overcome heat deficit
-            # rsr 1/27/2016 why not set all snow states to 0 ???
-            # Set temperature and heat deficit to zero.
+            # Set temperature and heat deficit to zero. the pack is "ripe"
             self.pk_temp[jj] = zero  # [degrees C]
             self.pk_def[jj] = zero  # [cal/cm^2]
 
@@ -1089,17 +1093,26 @@ class PRMSSnow(StorageUnit):
 
         # Local Variables: all doubles
         # snowcov_area_ante: Antecedent snow-covered area [fraction]
-        # difx: Difference between the maximum snow-covered area and the snow-covered area before the last new snow [inches]
-        # dify: Difference between the water equivalent before the last new snow and the previous water equivalent [inches]
-        # fracy: Ratio of the unmelted amount of previous new snow in the snow pack to the value of 3/4 of previous new snow [fraction]
+        # difx: Difference between the maximum snow-covered area and the
+        #       snow-covered area before the last new snow [inches]
+        # dify: Difference between the water equivalent before the last new
+        #       snow and the previous water equivalent [inches]
+        # fracy: Ratio of the unmelted amount of previous new snow in the snow
+        #        pack to the value of 3/4 of previous new snow [fraction]
 
         # self variables
         # ai(RW), frac_swe(RW), iasw(RW), pksv(RW), scrv(RW), snowcov_area(RW),
         # snowcov_areasv(RW),
 
+        # JLM: why is the portion of new snow (3/4) used in the depletion curve
+        #      not a parameter? Or it at least seems like it would be related
+        #      to self.hru_delpcrv[jj] (lower values for higher curves)
+
         snowcov_area_ante = self.snowcov_area[jj]
 
         # Reset snowcover area to the maximum
+        # JLM: dont do this, it's not clear in multiple places. just save the
+        # max as a local variable and use that.
         self.snowcov_area[jj] = self.snarea_curve_2d[
             self.hru_deplcrv[jj] - 1, 11 - 1
         ]  # [fraction of area]
@@ -1177,6 +1190,10 @@ class PRMSSnow(StorageUnit):
                     # scrv = pkwater_equiv - (0.25D0*dble(net_snow))) # [inches]
                     # RAPCOMMENT - CHANGED TO INCREMENT THE SCRV VALUE if ALREADY
                     #             INTERPOLATING BETWEEN CURVE AND 100%
+                    # JLM: why NOT use pkwater_equiv on the RHS? it makes scrv
+                    # appear prognostic and the logic is complicated enough
+                    # to be uncertain if it is/should be drifting from
+                    # pkwater_equiv
 
                 else:
                     # (2.1.2) The current snow area is on the curve...
@@ -1218,6 +1235,9 @@ class PRMSSnow(StorageUnit):
                 # (2.2) There was no new snow, but the snow covered area is currently
                 #       being interpolated between 100% from a previous new snow and the
                 #       snow covered area before that previous new snow...
+                # JLM: not handling the case of no newsnow but being ON the
+                #      curve is not great, apparently it's just what happens
+                #      after all conditions
 
                 # If the first 1/4 of the previous new snow has not melted yet, then the
                 # snow covered area is still 100% and the subroutine can terminate.
@@ -1241,6 +1261,12 @@ class PRMSSnow(StorageUnit):
                     # Calculate the difference between the maximum snow covered area
                     # (remember that snowcov_area is always set to the maximum value at
                     # this point) and the snow covered area before the last new snow.
+                    # JLM: use snowcov_frac_max instead of relying on the max being
+                    #      temporarily set on the variable for clarity
+                    # JLM: difx and dify are misleading, use better names
+                    #      i'd assume x is swe/pkwater_equiv and y is
+                    #      the associate sca, but apparently they are just
+                    #      dummy names
                     difx = self.snowcov_area[jj] - self.snowcov_areasv[jj]
 
                     # Calculate the difference between the water equivalent before the
@@ -1282,6 +1308,9 @@ class PRMSSnow(StorageUnit):
             # snow covered area curve.  So at this point it must interpolate between
             # points on the snow covered area curve (not the same as interpolating
             # between 100% and the previous spot on the snow area depletion curve).
+            # JLM: better to just call this explicitly above, with each regime
+            #      and make a case for no new snow and not interpolating?
+            #      could also make this a function...
             self.snowcov_area[jj] = self.sca_deplcrv(
                 self.snarea_curve_2d[self.hru_deplcrv[jj] - 1, :],
                 self.frac_swe[jj],
@@ -1539,9 +1568,8 @@ class PRMSSnow(StorageUnit):
             # Set albedo to initial value during melt season.
             # NOTE: RAPCOMMENT - CHANGED TO ISO FROM MSO
             # albedo = 0.81  # [fraction of radiation] original value
-            self.albedo[
-                jj
-            ] = 0.72  # [fraction of radiation] value Rob suggested
+            # [fraction of radiation] value Rob suggested
+            self.albedo[jj] = 0.72
             # int_alb is a flag to indicate use of the melt season curve (2)
             # or accumulation season curve (1).
             # Set flag to indicate melt season curve.
@@ -1603,6 +1631,7 @@ class PRMSSnow(StorageUnit):
         )
 
         # RAPCOMMENT - CHANGED TO THE APPROPRIATE FINITE DIFFERENCE APPROXIMATION OF SNOW DEPTH
+        # JLM: pk_depth is prognostic here
         self.pk_depth[jj] = dpt1  # [inches]
 
         # Calculate the snowpack density

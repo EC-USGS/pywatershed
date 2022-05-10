@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-52
+55
 ####
 nhruOut_freq
 1
@@ -251,10 +251,11 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-52
+55
 4
 albedo
 contrib_fraction
+dprst_evap_hru
 dprst_seep_hru
 dprst_stor_hru
 gwres_flow
@@ -262,6 +263,7 @@ gwres_in
 gwres_sink
 gwres_stor
 hru_actet
+hru_impervevap
 hru_impervstor
 hru_intcpevap
 hru_intcpstor
@@ -287,6 +289,7 @@ recharge
 salb
 slow_flow
 snowcov_area
+snow_evap
 snowmelt
 soil_moist
 soil_moist_tot

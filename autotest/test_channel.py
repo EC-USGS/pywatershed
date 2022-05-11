@@ -53,6 +53,9 @@ class TestPRMSChannelDomain:
             if not success:
                 print(f"comparison for {key} failed: maximum error {diff}")
                 assert_error = True
+            else:
+                print(f"comparison for {key} passed")
+
         assert not assert_error, "comparison failed"
 
         return

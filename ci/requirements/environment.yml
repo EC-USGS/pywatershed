@@ -4,6 +4,7 @@ channels:
   - nodefaults
 dependencies:
   - netCDF4
+  - networkx
   - numpy
   - pandas
   - pip

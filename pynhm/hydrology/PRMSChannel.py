@@ -89,14 +89,17 @@ class PRMSChannel(StorageUnit):
 
         # calculate the Muskingum parameters
         velocity = (
-            (1.0 / self.mann_n)
-            * np.sqrt(self.seg_slope)
-            * self.seg_depth ** (2.0 / 3.0)
+            (
+                (1.0 / self.mann_n)
+                * np.sqrt(self.seg_slope)
+                * self.seg_depth ** (2.0 / 3.0)
+            )
+            * 60.0
+            * 60.0
         )
         Kcoef = np.full(self.nsegment, 0.01, dtype=float)
-        Kcoef = np.where(
-            velocity > 0., self.seg_length / (velocity * 60.0 * 60.0), Kcoef
-        )
+        idx = velocity > 0.0
+        Kcoef[idx] = self.seg_length[idx] / velocity[idx]
         self._Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
 
         self._ts = np.ones(self.nsegment, dtype=float)

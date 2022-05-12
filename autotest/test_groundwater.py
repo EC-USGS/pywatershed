@@ -51,7 +51,12 @@ class TestPRMSGroundwaterDomain:
         for key, (base, compare) in output_compare.items():
             success, diff = NetCdfCompare(base, compare).compare()
             if not success:
-                print(f"comparison for {key} failed: maximum error {diff}")
+                print(
+                    f"comparison for {key} failed: "
+                    + f"maximum error {diff[key][0]} "
+                    + f"(maximum allowed error {diff[key][1]}) "
+                    + f"in column {diff[key][2]}"
+                )
                 assert_error = True
         assert not assert_error, "comparison failed"
 

@@ -8,7 +8,7 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..constants import zero
+from ..constants import SegmentType, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -64,10 +64,9 @@ class PRMSChannel(StorageUnit):
     def _process_channel_data(self):
         # convert prms data to zero-based
         self.hru_segment -= 1
-
-        # calculate connectivity
         self.tosegment -= 1
 
+        # calculate connectivity
         connectivity = []
         for iseg in range(self.nsegment):
             tosegment = self.tosegment[iseg]
@@ -87,6 +86,8 @@ class PRMSChannel(StorageUnit):
             segment_order = [i for i in range(self.nsegment)]
         self._segment_order = segment_order
 
+        # self._segment_order = self._order_segment()
+
         # calculate the Muskingum parameters
         velocity = (
             (
@@ -97,9 +98,22 @@ class PRMSChannel(StorageUnit):
             * 60.0
             * 60.0
         )
-        Kcoef = np.full(self.nsegment, 0.01, dtype=float)
+        self.seg_slope = np.where(
+            self.seg_slope < 1e-7, 0.0001, self.seg_slope
+        )  # not in prms6
+
+        # initialize Kcoef to 24.0 for segments with zero velocities
+        # this is different that prms, which relied on divide by zero resulting
+        # in a value of infinity that when evaluated relative to a maximum
+        # desired Kcoef value of 24 would be reset to 24. This approach is
+        # equivalent and avoids the occurence of a divide by zero.
+        Kcoef = np.full(self.nsegment, 24.0, dtype=float)
+
+        # only calculate Kcoef for cells with velocities greater than zero
         idx = velocity > 0.0
         Kcoef[idx] = self.seg_length[idx] / velocity[idx]
+        Kcoef = np.where(self.segment_type == SegmentType.LAKE, 24.0, Kcoef)
+        Kcoef = np.where(Kcoef < 0.01, 0.01, Kcoef)
         self._Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
 
         self._ts = np.ones(self.nsegment, dtype=float)
@@ -136,6 +150,7 @@ class PRMSChannel(StorageUnit):
                 self._tsi[iseg] = 24
 
         d = self._Kcoef - (self._Kcoef * self.x_coef) + (0.5 * self._ts)
+        d = np.where(np.abs(d) < 1e-6, 0.0001, d)
         self._c0 = (-(self._Kcoef * self.x_coef) + (0.5 * self._ts)) / d
         self._c1 = ((self._Kcoef * self.x_coef) + (0.5 * self._ts)) / d
         self._c2 = (
@@ -144,12 +159,12 @@ class PRMSChannel(StorageUnit):
 
         # Short travel time
         idx = self._c2 < 0.0
-        self._c1[idx] = self._c1[idx] + self._c2[idx]
+        self._c1[idx] += self._c2[idx]
         self._c2[idx] = 0.0
 
         # Long travel time
         idx = self._c0 < 0.0
-        self._c1[idx] = self._c1[idx] + self._c0[idx]
+        self._c1[idx] += self._c0[idx]
         self._c0[idx] = 0.0
 
         # local flow variables
@@ -169,6 +184,30 @@ class PRMSChannel(StorageUnit):
             self._seg_inflow[jseg] = self.seg_outflow[iseg]
 
         return
+
+    def _order_segment(self):
+        x_off = np.zeros(self.nsegment, dtype=int)
+        segment_order = np.zeros(self.nsegment, dtype=int)
+        lval = 0
+
+        while lval < self.nsegment:
+            for i in range(self.nsegment):
+                # if current segment has not been found consider it
+                if x_off[i] == 0:
+                    test = 1
+                    for j in range(self.nsegment):
+                        if self.tosegment[j] == i:
+                            # if segment i is a tosegment, test to see if the
+                            # originating has been found
+                            if x_off[j] == 0:
+                                test = 0
+                                break
+                    if test == 1:
+                        segment_order[lval] = i
+                        x_off[i] = 1
+                        lval += 1
+
+        return segment_order
 
     def set_initial_conditions(self):
         # initialize channel segment storage
@@ -196,6 +235,8 @@ class PRMSChannel(StorageUnit):
             "tosegment_nhm",
             "x_coef",
             "segment_flow_init",
+            "obsin_segment",
+            "obsout_segment",
         )
 
     @staticmethod
@@ -291,9 +332,7 @@ class PRMSChannel(StorageUnit):
         for ihr in range(24):
             self.seg_upstream_inflow[:] = 0.0
 
-            for iseg in range(self.nsegment):
-                jseg = self._segment_order[iseg]
-
+            for jseg in self._segment_order:
                 # current inflow to the segment is the time-weighted average
                 # of the outflow of the upstream segments and the lateral HRU
                 # inflow plus any gains

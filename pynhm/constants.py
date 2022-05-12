@@ -25,3 +25,18 @@ class CovType(Enum):
     SHRUBS = 2
     TREES = 3
     CONIFEROUS = 4
+
+
+class SegmentType(Enum):
+    SEGMENT = 0
+    HEADWATER = 1
+    LAKE = 2
+    REPLACEINFLOW = 3
+    INBOUNDNHM = 4
+    OUTBOUNDNHM = 5
+    INBOUNDREGION = 6
+    OUTBOUNDREGION = 7
+    OUTBOUNDOCEAN = 8
+    SINK = 9
+    INBOUNDGREATLAKES = 10
+    OUTBOUNDGREATLAKES = 11

@@ -305,7 +305,6 @@ class NetCdfWrite:
 
         self.variables = {}
         for var_name in variables:
-            # variabletype = "f4"
             variabletype = meta_netcdf_type(var_meta[var_name])
             if "nsegment" in variable_dimensions[var_name]:
                 spatial_coordinate = "hru_seg"
@@ -315,14 +314,13 @@ class NetCdfWrite:
             self.variables[var_name] = self.dataset.createVariable(
                 var_name,
                 variabletype,
-                # ("time", "hru_id"),
                 ("time", spatial_coordinate),
                 fill_value=nc4.default_fillvals[variabletype],
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
-            for key, val in var_meta.items():
+            for key, val in var_meta[var_name].items():
                 if isinstance(val, dict):
                     continue
                 self.variables[var_name].setncattr(key, val)
@@ -435,7 +433,11 @@ class NetCdfCompare:
             if not np.allclose(base_arr, compare_arr, atol=atol):
                 success = False
                 diff = np.abs(compare_arr - base_arr)
-                failures[variable] = np.max(diff)
+                failures[variable] = (
+                    np.max(diff),
+                    atol,
+                    np.argmax(np.max(diff, axis=0)),
+                )
         return success, failures
 
     @property

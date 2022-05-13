@@ -620,7 +620,6 @@ class PRMSRunoff(StorageUnit):
             imperv_stor = imperv_stor - imperv_evap
         return imperv_stor, imperv_evap
 
-
     #       SUBROUTINE compute_infil(Net_rain, Net_ppt, Imperv_stor, Imperv_stor_max, Snowmelt, &
     #      &                         Snowinfil_max, Net_snow, Pkwater_equiv, Infil, Hru_type, Intcp_changeover)
     #       USE PRMS_CONSTANTS, ONLY: NEARZERO, DNEARZERO, LAND, ACTIVE, CASCADE_OFF
@@ -634,9 +633,24 @@ class PRMSRunoff(StorageUnit):
     #       REAL, INTENT(IN) :: Snowmelt, Snowinfil_max, Net_snow, Intcp_changeover
     #       DOUBLE PRECISION, INTENT(IN) :: Pkwater_equiv
     #       REAL, INTENT(INOUT) :: Imperv_stor, Infil
-    def compute_infil(self, net_rain, net_ppt, imperv_stor, imperv_stor_max, snowmelt,
-                      snowinfil_max, net_snow, pkwater_equiv, infil, hru_type, intcp_changeover,
-                      hruarea_imperv, sri, srp, ihru):
+    def compute_infil(
+        self,
+        net_rain,
+        net_ppt,
+        imperv_stor,
+        imperv_stor_max,
+        snowmelt,
+        snowinfil_max,
+        net_snow,
+        pkwater_equiv,
+        infil,
+        hru_type,
+        intcp_changeover,
+        hruarea_imperv,
+        sri,
+        srp,
+        ihru,
+    ):
 
         # cdl -- did not implement cascade
         #       hru_flag = 0
@@ -659,7 +673,7 @@ class PRMSRunoff(StorageUnit):
         if cascade_active:
             raise Exception("bad bad bad")
         else:
-            avail_water = 0.
+            avail_water = 0.0
 
         # ! compute runoff from canopy changeover water
         #       IF ( Intcp_changeover>0.0 ) THEN
@@ -667,11 +681,13 @@ class PRMSRunoff(StorageUnit):
         #         Infil = Infil + Intcp_changeover
         #         IF ( hru_flag==1 ) CALL perv_comp(Intcp_changeover, Intcp_changeover, Infil, Srp)
         #       ENDIF
-        if intcp_changeover > 0.:
+        if intcp_changeover > 0.0:
             avail_water = avail_water + intcp_changeover
             infil = infil + intcp_changeover
             if hru_flag == 1:
-                infil, srp = self.perv_comp(intcp_changeover, intcp_changeover, infil, srp, ihru)
+                infil, srp = self.perv_comp(
+                    intcp_changeover, intcp_changeover, infil, srp, ihru
+                )
 
         # !******if rain/snow event with no antecedent snowpack,
         # !******compute the runoff from the rain first and then proceed with the
@@ -686,7 +702,9 @@ class PRMSRunoff(StorageUnit):
             avail_water = avail_water + net_rain
             infil = infil + net_rain
             if hru_flag == 1:
-                infil, srp = self.perv_comp(net_rain, net_rain, infil, srp, ihru)
+                infil, srp = self.perv_comp(
+                    net_rain, net_rain, infil, srp, ihru
+                )
 
         # !******If precipitation on snowpack, all water available to the surface is
         # !******considered to be snowmelt, and the snowmelt infiltration
@@ -705,14 +723,18 @@ class PRMSRunoff(StorageUnit):
         #             CALL perv_comp(Snowmelt, Net_ppt, Infil, Srp)
         #           ENDIF
         #         ENDIF
-        if snowmelt > 0.:
+        if snowmelt > 0.0:
             avail_water = avail_water + snowmelt
             infil = infil + snowmelt
             if hru_flag == 1:
-                if pkwater_equiv > 0. or net_ppt - net_snow < NEARZERO:
-                    infil, srp = self.check_capacity(snowinfil_max, infil, srp, ihru)
+                if pkwater_equiv > 0.0 or net_ppt - net_snow < NEARZERO:
+                    infil, srp = self.check_capacity(
+                        snowinfil_max, infil, srp, ihru
+                    )
                 else:
-                    infil, srp = self.perv_comp(snowmelt, net_ppt, infil, srp, ihru)
+                    infil, srp = self.perv_comp(
+                        snowmelt, net_ppt, infil, srp, ihru
+                    )
 
         # !******There was no snowmelt but a snowpack may exist.  If there is
         # !******no snowpack then check for rain on a snowfree HRU.
@@ -733,7 +755,9 @@ class PRMSRunoff(StorageUnit):
                 avail_water = avail_water + net_rain
                 infil = infil + net_rain
                 if hru_flag == 1:
-                    infil, srp = self.perv_comp(net_rain, net_rain, infil, srp, ihru)
+                    infil, srp = self.perv_comp(
+                        net_rain, net_rain, infil, srp, ihru
+                    )
         #
         # !***** Snowpack exists, check to see if infil exceeds maximum daily
         # !***** snowmelt infiltration rate. Infil results from rain snow mix
@@ -742,9 +766,11 @@ class PRMSRunoff(StorageUnit):
         #       ELSEIF ( Infil>0.0 ) THEN
         #         IF ( hru_flag==1 ) CALL check_capacity(Snowinfil_max, Infil)
         #       ENDIF
-        elif infil > 0.:
+        elif infil > 0.0:
             if hru_flag == 1:
-                infil, srp = self.check_capacity(snowinfil_max, infil, srp, ihru)
+                infil, srp = self.check_capacity(
+                    snowinfil_max, infil, srp, ihru
+                )
 
         # !******Impervious area computations
         #       IF ( Hruarea_imperv>0.0 ) THEN
@@ -795,10 +821,12 @@ class PRMSRunoff(StorageUnit):
         smidx_module = True
         if smidx_module:
             smidx = self.soil_moist[ihru] + 0.5 * ptc
-            if smidx > 25.:
+            if smidx > 25.0:
                 ca_fraction = self.carea_max[ihru]
             else:
-                ca_fraction = self.smidx_coef[ihru] * 10. ** (self.smidx_exp[ihru] * smidx)
+                ca_fraction = self.smidx_coef[ihru] * 10.0 ** (
+                    self.smidx_exp[ihru] * smidx
+                )
         else:
             raise Exception("you did a bad thing...")
 
@@ -822,7 +850,6 @@ class PRMSRunoff(StorageUnit):
         srp = srp + srpp
 
         return infil, srp
-
 
     # !***********************************************************************
     # ! fill soil to soil_moist_max, if more than capacity restrict

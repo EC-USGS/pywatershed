@@ -6,6 +6,7 @@ dependencies:
   - netCDF4
   - networkx
   - numpy
+  - numba
   - pandas
   - pip
   - pytest

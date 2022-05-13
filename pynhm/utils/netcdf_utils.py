@@ -157,7 +157,7 @@ class NetCdfRead:
             arr: numpy array with the spatial IDs in the NetCDF file
 
         """
-        return self._spatial_id
+        return self._spatial_ids
 
     @property
     def variables(self):

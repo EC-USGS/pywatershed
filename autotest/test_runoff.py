@@ -30,7 +30,7 @@ class TestPRMSRunoffDomain:
         # get the answer data
 
         comparison_var_names = [
-            "contrib_fraction",
+            "infil",
         ]
         output_dir = domain["prms_output_dir"]
 

@@ -32,3 +32,15 @@ class CovType(Enum):
     SHRUBS = 2
     TREES = 3
     CONIFEROUS = 4
+
+
+class SoilType(Enum):
+    SAND = 1
+    LOAM = 2
+    CLAY = 3
+
+
+class ETType(Enum):
+    ET_DEFAULT = 1
+    EVAP_ONLY = 2
+    EVAP_PLUS_TRANSP = 3

@@ -25,7 +25,34 @@ class TestPRMSSoilzone:
         output_dir = domain["prms_output_dir"]
 
         # get the answer data
-        comparison_var_names = []
+        comparison_var_names = [
+            # "cap_infil_tot",
+            # "cap_waterin",
+            # "dunnian_flow",
+            "hru_actet",
+            # "lakein_sz",
+            # "perv_actet",
+            # "potet_lower",
+            # "potet_rechr",
+            "recharge",
+            "slow_flow",
+            # "slow_stor",
+            # "snow_free",
+            # "soil_lower",
+            # "soil_lower_ratio",
+            "soil_moist",
+            "soil_moist_tot",
+            "soil_rechr",
+            "soil_to_gw",
+            # "soil_to_ssr",
+            # "soil_zone_max",
+            "ssr_to_gw",
+            "ssres_flow",
+            # "ssres_in",
+            "ssres_stor",
+            # "swale_actet",
+            # "unused_potet",
+        ]
 
         ans = {}
         for key in comparison_var_names:
@@ -40,8 +67,8 @@ class TestPRMSSoilzone:
 
         soil = PRMSSoilzone(control, params, **input_variables)
         all_success = True
-        # for istep in range(control.n_times):
-        for istep in range(10):
+        for istep in range(control.n_times):
+            # for istep in range(10):
 
             control.advance()
             soil.advance()
@@ -58,16 +85,18 @@ class TestPRMSSoilzone:
                 a1 = ans[key].current
                 a2 = soil[key]
                 success = np.isclose(a1, a2, atol=atol).all()
+                if success:
+                    print(f"SUCCESS output variable: {key}")
                 if not success:
                     all_success = False
                     diff = a1 - a2
                     diffmin = diff.min()
                     diffmax = diff.max()
-                    print(f"time step {istep}")
-                    print(f"output variable: {key}")
-                    print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
-                    print(f"diff   {diffmin}  {diffmax}")
+                    # print(f"time step {istep}")
+                    print(f"fail output variable: {key}")
+                    # print(f"prms   {a1.min()}    {a1.max()}")
+                    # print(f"pynhm  {a2.min()}    {a2.max()}")
+                    # print(f"diff   {diffmin}  {diffmax}")
 
             # if istep == 15:
             #     asdf

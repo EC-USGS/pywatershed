@@ -96,6 +96,16 @@ class PRMSRunoff(StorageUnit):
         # variables
         self.basin_init()
 
+        # cdl -- todo:
+        # this variable is calculated and stored by PRMS but does not seem
+        # to be used widely
+        self.dprst_in = np.zeros(self.nhru, dtype=float)
+        self.dprst_vol_open_max = np.zeros(self.nhru, dtype=float)
+        self.dprst_vol_clos_max = np.zeros(self.nhru, dtype=float)
+
+        # call the depression storage init
+        self.dprst_init()
+
         return
 
     def set_initial_conditions(self):
@@ -123,6 +133,18 @@ class PRMSRunoff(StorageUnit):
             "smidx_exp",
             "soil_moist_max",
             "snowinfil_max",
+            "dprst_depth_avg",
+            "dprst_et_coef",
+            "dprst_flow_coef",
+            "dprst_frac",
+            "dprst_frac_init",
+            "dprst_frac_open",
+            "dprst_seep_rate_clos",
+            "dprst_seep_rate_open",
+            "sro_to_dprst_imperv",
+            "sro_to_dprst_perv",
+            "va_open_exp",
+            "va_clos_exp",
         )
 
     @staticmethod
@@ -166,6 +188,17 @@ class PRMSRunoff(StorageUnit):
             "imperv_evap",
             "hru_impervevap",
             "hru_impervstor",
+            "dprst_vol_clos",
+            "dprst_vol_open",
+            "dprst_area_clos",
+            "dprst_area_open",
+            "dprst_area_clos_max",
+            "dprst_area_open_max",
+            "dprst_sroff_hru",
+            "dprst_seep_hru",
+            "dprst_evap_hru",
+            "dprst_insroff_hru",
+            "dprst_stor_hru",
         )
 
     @staticmethod
@@ -175,7 +208,6 @@ class PRMSRunoff(StorageUnit):
         Returns:
             dict: initial values for named variables
         """
-
         return {
             "contrib_fraction": zero,
             "infil": zero,
@@ -186,6 +218,17 @@ class PRMSRunoff(StorageUnit):
             "imperv_evap": zero,
             "hru_impervevap": zero,
             "hru_impervstor": zero,
+            "dprst_vol_clos": zero,
+            "dprst_vol_open": zero,
+            "dprst_area_clos": zero,
+            "dprst_area_open": zero,
+            "dprst_area_clos_max": zero,
+            "dprst_area_open_max": zero,
+            "dprst_sroff_hru": zero,
+            "dprst_seep_hru": zero,
+            "dprst_evap_hru": zero,
+            "dprst_insroff_hru": zero,
+            "dprst_stor_hru": zero,
         }
 
     def advance(self):
@@ -214,72 +257,8 @@ class PRMSRunoff(StorageUnit):
             None
 
         """
-        if vectorized:
-            self.calculate_vectorized(time_length)
-        else:
-            # self.calculate_procedural(time_length)
-            self.calculate_prms_style()
+        self.calculate_prms_style()
         return
-
-    def calculate_procedural(self, time_length):
-
-        # Make calculations
-        for i in range(self.nhru):
-
-            self.infil[i] = 0.0
-            srp = 0.0
-
-            # If rain/snow event with no antecedent snowpack, compute the runoff from the
-            # rain first and then proceed with the snowmelt computations.
-            self.infil[i] = self.infil[i] + self.net_rain[i]
-
-            precip = self.net_rain[i]
-            self.contrib_fraction[i] = self.calculate_contrib_fraction(
-                self.carea_max[i],
-                self.smidx_coef[i],
-                self.smidx_exp[i],
-                self.soil_moist[i],
-                precip,
-            )
-
-            self.infil[i], srp = self.compute_infil_srp(
-                self.contrib_fraction[i], self.net_rain[i], self.infil[i], srp
-            )
-
-            runoff = runoff + srp * perv_area + sri * Hruarea_imperv
-            srunoff = runoff / Hruarea_dble
-
-        return
-
-    def calculate_vectorized(self, time_length):
-
-        # Make calculations
-        precip = self.net_rain
-        self.contrib_fraction = self.calculate_contrib_fraction(
-            self.carea_max,
-            self.smidx_coef,
-            self.smidx_exp,
-            self.soil_moist,
-            precip,
-        )
-
-        return
-
-    @staticmethod
-    def calculate_contrib_fraction(
-        carea_max, smidx_coef, smidx_exp, soil_moist, precip
-    ):
-        smidx = soil_moist + (0.5 * precip)
-        contrib_frac = smidx_coef * 10.0 ** (smidx_exp * smidx)
-        contrib_frac = min(carea_max, contrib_frac)
-        return contrib_frac
-
-    @staticmethod
-    def compute_infil_srp(contrib_frac, precip, infil, perv_runoff):
-        adjusted_precip = contrib_frac * precip
-        infil = infil - adjusted_precip
-        perv_runoff = perv_runoff + adjusted_precip
-        return infil, perv_runoff
 
     def calculate_prms_style(self):
 
@@ -293,7 +272,7 @@ class PRMSRunoff(StorageUnit):
             ihru = i
 
             hruarea = self.hru_area[i]
-            Hruarea_dble = hruarea
+            hruarea_dble = hruarea
             upslope = 0.0
 
             # cdl if cascade_flag > CASCADE_OFF:
@@ -337,6 +316,7 @@ class PRMSRunoff(StorageUnit):
             self.hru_sroffp[i] = 0.0
             self.contrib_fraction[i] = 0.0
             hruarea_imperv = self.hru_imperv[i]
+            imperv_frac = 0.0
             if hruarea_imperv > 0.0:
                 imperv_frac = self.hru_percent_imperv[i]
                 self.hru_sroffi[i] = 0.0
@@ -437,6 +417,45 @@ class PRMSRunoff(StorageUnit):
             #             ENDIF
             #           ENDIF
             #         ENDIF
+            dprst_flag = ACTIVE  # cdl todo: hardwired
+            frzen = OFF  # cdl todo: hardwired
+            if dprst_flag == ACTIVE:
+                self.dprst_in[i] = 0.0
+                dprst_chk = OFF
+                if self.dprst_area_max[i] > 0.0:
+                    dprst_chk = 0.0
+                    if frzen == OFF:
+                        (
+                            self.dprst_in[i],
+                            self.dprst_vol_open[i],
+                            avail_et,
+                            self.dprst_vol_clos[i],
+                            self.dprst_vol_open[i],
+                            srp,
+                            sri,
+                        ) = self.dprst_comp(
+                            self.dprst_vol_clos[i],
+                            self.dprst_area_clos_max[i],
+                            self.dprst_area_clos[i],
+                            self.dprst_vol_open_max[i],
+                            self.dprst_vol_open[i],
+                            self.dprst_area_open_max[i],
+                            self.dprst_area_open[i],
+                            self.dprst_sroff_hru[i],
+                            self.dprst_seep_hru[i],
+                            self.sro_to_dprst_perv[i],
+                            self.sro_to_dprst_imperv[i],
+                            self.dprst_evap_hru[i],
+                            avail_et,
+                            self.net_rain[i],
+                            self.dprst_in[i],
+                            ihru,
+                            srp,
+                            sri,
+                            imperv_frac,
+                            perv_frac,
+                        )
+                        runoff = runoff + self.dprst_sroff_hru[i] * hruarea
 
             # cdl -- the upper part of this block needs to be done to calculate runoff and srunoff
             #         srunoff = 0.0
@@ -880,3 +899,720 @@ class PRMSRunoff(StorageUnit):
             srp = srp + excess - snowinfil_max
             infil = snowinfil_max + capacity
         return infil, srp
+
+    #       SUBROUTINE dprst_init()
+    #       USE PRMS_SRUNOFF
+    #       USE PRMS_CONSTANTS, ONLY: ACTIVE, NEARZERO
+    #       USE PRMS_MODULE, ONLY: Init_vars_from_file, Nhru, PRMS4_flag, Inputerror_flag
+    #       USE PRMS_BASIN, ONLY: Dprst_clos_flag, Dprst_frac, &
+    #      &    Dprst_area_clos_max, Dprst_area_open_max, Basin_area_inv, &
+    #      &    Hru_area_dble, Active_hrus, Hru_route_order, Dprst_open_flag
+    #       USE PRMS_FLOWVARS, ONLY: Dprst_vol_open, Dprst_vol_clos
+    #       IMPLICIT NONE
+    # ! Functions
+    #       INTRINSIC :: EXP, LOG, DBLE, SNGL
+    #       INTEGER, EXTERNAL :: getparam
+    # ! Local Variables
+    #       INTEGER :: i, j
+    #       REAL :: frac_op_ar, frac_cl_ar, open_vol_r, clos_vol_r
+    # !***********************************************************************
+    def dprst_init(self):
+
+        #       Dprst_evap_hru = 0.0
+        #       Dprst_seep_hru = 0.0D0
+        #       Dprst_sroff_hru = 0.0D0
+        #       Dprst_insroff_hru = 0.0
+        #       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) THEN
+        #         IF ( getparam(MODNAME, 'dprst_frac_init', Nhru, 'real', Dprst_frac_init)/=0 ) CALL read_error(2, 'dprst_frac_init')
+        #       ENDIF
+        #       IF ( getparam(MODNAME, 'dprst_flow_coef', Nhru, 'real', Dprst_flow_coef)/=0 ) CALL read_error(2, 'dprst_flow_coef')
+        #       IF ( Dprst_open_flag==ACTIVE ) THEN
+        #         IF ( getparam(MODNAME, 'dprst_seep_rate_open', Nhru, 'real', Dprst_seep_rate_open)/=0 )  &
+        #      &       CALL read_error(2, 'dprst_seep_rate_open')
+        #         IF ( getparam(MODNAME, 'va_open_exp', Nhru, 'real', Va_open_exp)/=0 ) CALL read_error(2, 'va_open_exp')
+        #         IF ( getparam(MODNAME, 'op_flow_thres', Nhru, 'real', Op_flow_thres)/=0 ) CALL read_error(2, 'op_flow_thres')
+        #       ELSE
+        #         Dprst_seep_rate_open = 0.0
+        #         Va_open_exp = 0.0
+        #         Op_flow_thres = 0.0
+        #       ENDIF
+        #       IF ( PRMS4_flag==ACTIVE ) THEN
+        #         IF ( getparam(MODNAME, 'sro_to_dprst', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst')
+        #       ELSE
+        #         IF ( getparam(MODNAME, 'sro_to_dprst_perv', Nhru, 'real', Sro_to_dprst_perv)/=0 ) CALL read_error(2, 'sro_to_dprst_perv')
+        #       ENDIF
+        #       IF ( getparam(MODNAME, 'sro_to_dprst_imperv', Nhru, 'real', Sro_to_dprst_imperv)/=0 ) &
+        #      &     CALL read_error(2, 'sro_to_dprst_imperv')
+        #       IF ( getparam(MODNAME, 'dprst_depth_avg', Nhru, 'real', Dprst_depth_avg)/=0 ) CALL read_error(2, 'dprst_depth_avg')
+        #       IF ( getparam(MODNAME, 'dprst_et_coef', Nhru, 'real', Dprst_et_coef)/=0 ) CALL read_error(2, 'dprst_et_coef')
+        #       IF ( Dprst_clos_flag==ACTIVE ) THEN
+        #         IF ( getparam(MODNAME, 'dprst_seep_rate_clos', Nhru, 'real', Dprst_seep_rate_clos)/=0 ) &
+        #      &       CALL read_error(2, 'dprst_seep_rate_clos')
+        #         IF ( getparam(MODNAME, 'va_clos_exp', Nhru, 'real', Va_clos_exp)/=0 ) CALL read_error(2, 'va_clos_exp')
+        #       ELSE
+        #         Dprst_seep_rate_clos = 0.0
+        #         Va_clos_exp = 0.0
+        #       ENDIF
+        #       Dprst_in = 0.0D0
+        #       Dprst_area_open = 0.0
+        #       Dprst_area_clos = 0.0
+        #       Dprst_stor_hru = 0.0D0
+        #       Dprst_vol_thres_open = 0.0D0
+        #       Dprst_vol_open_max = 0.0D0
+        #       Dprst_vol_clos_max = 0.0D0
+        #       Dprst_vol_frac = 0.0
+        #       Dprst_vol_open_frac = 0.0
+        #       Dprst_vol_clos_frac = 0.0
+        #       Basin_dprst_volop = 0.0D0
+        #       Basin_dprst_volcl = 0.0D0
+        #       DO j = 1, Active_hrus
+        #         i = Hru_route_order(j)
+        for j in range(self.nhru):
+            i = j
+            #
+            #         IF ( Dprst_frac(i)>0.0 ) THEN
+            if self.dprst_frac[i] > 0.0:
+
+                #           IF ( Dprst_depth_avg(i)==0.0 ) THEN
+                #             PRINT *, 'ERROR, dprst_frac>0 and dprst_depth_avg==0 for HRU:', i, '; dprst_frac:', Dprst_frac(i)
+                #             Inputerror_flag = 1
+                #             CYCLE
+                #           ENDIF
+                if self.dprst_depth_avg[i] == 0.0:
+                    raise Exception(
+                        f"dprst_fac > and dprst_depth_avg == 0 for HRU {i}"
+                    )
+
+                # !         calculate open and closed volumes (acre-inches) of depression storage by HRU
+                # !         Dprst_area_open_max is the maximum open depression area (acres) that can generate surface runoff:
+                #           IF ( Dprst_clos_flag==ACTIVE ) Dprst_vol_clos_max(i) = DBLE( Dprst_area_clos_max(i)*Dprst_depth_avg(i) )
+                #           IF ( Dprst_open_flag==ACTIVE ) Dprst_vol_open_max(i) = DBLE( Dprst_area_open_max(i)*Dprst_depth_avg(i) )
+                dprst_clos_flag = ACTIVE
+                if dprst_clos_flag == ACTIVE:
+                    self.dprst_vol_clos_max[i] = (
+                        self.dprst_area_clos_max[i] * self.dprst_depth_avg[i]
+                    )
+                dprst_open_flag = ACTIVE
+                if dprst_open_flag == ACTIVE:
+                    self.dprst_vol_open_max[i] = (
+                        self.dprst_area_open_max[i] * self.dprst_depth_avg[i]
+                    )
+
+                #
+                # !         calculate the initial open and closed depression storage volume:
+                #           IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) THEN
+                #             IF ( Dprst_open_flag==ACTIVE ) Dprst_vol_open(i) = DBLE(Dprst_frac_init(i))*Dprst_vol_open_max(i)
+                #             IF ( Dprst_clos_flag==ACTIVE ) Dprst_vol_clos(i) = DBLE(Dprst_frac_init(i))*Dprst_vol_clos_max(i)
+                #           ENDIF
+                dprst_open_flag = ACTIVE
+                if dprst_open_flag == ACTIVE:
+                    self.dprst_vol_open[i] = (
+                        self.dprst_frac_init[i] * self.dprst_vol_open_max[i]
+                    )
+                dprst_clos_flag = ACTIVE
+                if dprst_clos_flag == ACTIVE:
+                    self.dprst_vol_clos[i] = (
+                        self.dprst_frac_init[i] * self.dprst_vol_clos_max[i]
+                    )
+
+                #
+                # !         threshold volume is calculated as the % of maximum open
+                # !         depression storage above which flow occurs *  total open depression storage volume
+                #           Dprst_vol_thres_open(i) = DBLE(Op_flow_thres(i))*Dprst_vol_open_max(i)
+                #
+                # !         initial open and closed storage volume as fraction of total open and closed storage volume
+                #
+                # !         Open depression surface area for each HRU:
+                #           IF ( Dprst_vol_open(i)>0.0D0 ) THEN
+                #             open_vol_r = SNGL( Dprst_vol_open(i)/Dprst_vol_open_max(i) )
+                #             IF ( open_vol_r<NEARZERO ) THEN
+                #               frac_op_ar = 0.0
+                #             ELSEIF ( open_vol_r>1.0 ) THEN
+                #               frac_op_ar = 1.0
+                #             ELSE
+                #               frac_op_ar = EXP(Va_open_exp(i)*LOG(open_vol_r))
+                #             ENDIF
+                #             Dprst_area_open(i) = Dprst_area_open_max(i)*frac_op_ar
+                #             IF ( Dprst_area_open(i)>Dprst_area_open_max(i) ) Dprst_area_open(i) = Dprst_area_open_max(i)
+                # !            IF ( Dprst_area_open(i)<NEARZERO ) Dprst_area_open(i) = 0.0
+                #           ENDIF
+                if self.dprst_vol_open[i] > 0.0:
+                    open_vol_r = (
+                        self.dprst_vol_open[i] / self.dprst_vol_open_max[i]
+                    )
+                    if open_vol_r < NEARZERO:
+                        frac_op_ar = 0.0
+                    elif open_vol_r > 1.0:
+                        frac_op_ar = 1.0
+                    else:
+                        frac_op_ar = np.exp(
+                            self.va_open_exp[i] * np.log(open_vol_r)
+                        )
+                    self.dprst_area_open[i] = (
+                        self.dprst_area_open_max[i] * frac_op_ar
+                    )
+                    if self.dprst_area_open[i] > self.dprst_area_open_max[i]:
+                        self.dprst_area_open[i] = self.dprst_area_open_max[i]
+
+                #
+                # !         Closed depression surface area for each HRU:
+                #           IF ( Dprst_vol_clos(i)>0.0D0 ) THEN
+                #             clos_vol_r = SNGL( Dprst_vol_clos(i)/Dprst_vol_clos_max(i) )
+                #             IF ( clos_vol_r<NEARZERO ) THEN
+                #               frac_cl_ar = 0.0
+                #             ELSEIF ( clos_vol_r>1.0 ) THEN
+                #               frac_cl_ar = 1.0
+                #             ELSE
+                #               frac_cl_ar = EXP(Va_clos_exp(i)*LOG(clos_vol_r))
+                #             ENDIF
+                #             Dprst_area_clos(i) = Dprst_area_clos_max(i)*frac_cl_ar
+                #             IF ( Dprst_area_clos(i)>Dprst_area_clos_max(i) ) Dprst_area_clos(i) = Dprst_area_clos_max(i)
+                # !            IF ( Dprst_area_clos(i)<NEARZERO ) Dprst_area_clos(i) = 0.0
+                #           ENDIF
+                if self.dprst_vol_clos[i] > 0.0:
+                    clos_vol_r = (
+                        self.dprst_vol_clos[i] / self.dprst_vol_clos_max[i]
+                    )
+                    if clos_vol_r < NEARZERO:
+                        frac_cl_ar = 0.0
+                    elif clos_vol_r > 1.0:
+                        frac_cl_ar = 1.0
+                    else:
+                        frac_cl_ar = np.exp(
+                            self.va_clos_exp[i] * np.log(clos_vol_r)
+                        )
+                    self.dprst_area_clos[i] = (
+                        self.dprst_area_clos_max[i] * frac_cl_ar
+                    )
+                    if self.dprst_area_clos[i] > self.dprst_area_clos_max[i]:
+                        self.dprst_area_clos[i] = self.dprst_area_clos_max[i]
+
+                #
+                # !         calculate the basin open and closed depression storage volumes
+                #           Basin_dprst_volop = Basin_dprst_volop + Dprst_vol_open(i)
+                #           Basin_dprst_volcl = Basin_dprst_volcl + Dprst_vol_clos(i)
+                #           Dprst_stor_hru(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/Hru_area_dble(i)
+                self.dprst_stor_hru[i] = (
+                    self.dprst_vol_open[i] + self.dprst_vol_clos[i]
+                ) / self.hru_area[i]
+
+                #           IF ( Dprst_vol_open_max(i)>0.0 ) Dprst_vol_open_frac(i) = SNGL( Dprst_vol_open(i)/Dprst_vol_open_max(i) )
+                if self.dprst_vol_open_max[i] > 0.0:
+                    self.dprst_vol_open_frac[i] = (
+                        self.dprst_vol_open[i] / self.dprst_vol_open_max[i]
+                    )
+
+                #           IF ( Dprst_vol_clos_max(i)>0.0 ) Dprst_vol_clos_frac(i) = SNGL( Dprst_vol_clos(i)/Dprst_vol_clos_max(i) )
+                if self.dprst_vol_clos_max[i] > 0.0:
+                    self.dprst_vol_clos_frac[i] = (
+                        self.dprst_vol_clos[i] / self.dprst_vol_clos_max[i]
+                    )
+
+                #           if (Dprst_vol_open_max(i)+Dprst_vol_clos_max(i) > 0.0 ) then  !RGN added to avoid divide by zero 1/20/2022
+                #             Dprst_vol_frac(i) = SNGL( (Dprst_vol_open(i)+Dprst_vol_clos(i))/(Dprst_vol_open_max(i)+Dprst_vol_clos_max(i)) )
+                #           end if
+                if (
+                    self.dprst_vol_open_max[i] + self.dprst_vol_clos_max[i]
+                    > 0.0
+                ):
+                    self.dprst_vol_frac[i] = (
+                        self.dprst_vol_open[i] + self.dprst_vol_clos[i]
+                    ) / (
+                        self.dprst_vol_open_max[i] + self.dprst_vol_clos_max[i]
+                    )
+
+        #         ENDIF
+        #       ENDDO
+        #       Basin_dprst_volop = Basin_dprst_volop*Basin_area_inv
+        #       Basin_dprst_volcl = Basin_dprst_volcl*Basin_area_inv
+        #
+        #       IF ( Init_vars_from_file==0 .OR. Init_vars_from_file==2 .OR. Init_vars_from_file==7 ) DEALLOCATE ( Dprst_frac_init )
+        #
+        #       END SUBROUTINE dprst_init
+        return
+
+    #       SUBROUTINE dprst_comp(Dprst_vol_clos, Dprst_area_clos_max, Dprst_area_clos, &
+    #      &           Dprst_vol_open_max, Dprst_vol_open, Dprst_area_open_max, Dprst_area_open, &
+    #      &           Dprst_sroff_hru, Dprst_seep_hru, Sro_to_dprst_perv, Sro_to_dprst_imperv, Dprst_evap_hru, &
+    #      &           Avail_et, Net_rain, Dprst_in)
+    #       USE PRMS_CONSTANTS, ONLY: ERROR_water_use, NEARZERO, DNEARZERO, OFF, ACTIVE ! , DEBUG_less
+    #       USE PRMS_MODULE, ONLY: Cascade_flag, Dprst_add_water_use, Dprst_transfer_water_use, &
+    #      &    Nowyear, Nowmonth, Nowday !, Print_debug
+    #       USE PRMS_SRUNOFF, ONLY: Srp, Sri, Ihru, Perv_frac, Imperv_frac, Hruarea, Dprst_et_coef, &
+    #      &    Dprst_seep_rate_open, Dprst_seep_rate_clos, Va_clos_exp, Va_open_exp, Dprst_flow_coef, &
+    #      &    Dprst_vol_thres_open, Dprst_vol_clos_max, Dprst_insroff_hru, Upslope_hortonian, &
+    #      &    Basin_dprst_volop, Basin_dprst_volcl, Basin_dprst_evap, Basin_dprst_seep, Basin_dprst_sroff, &
+    #      &    Dprst_vol_open_frac, Dprst_vol_clos_frac, Dprst_vol_frac, Dprst_stor_hru, Hruarea_dble
+    #       USE PRMS_BASIN, ONLY: Dprst_frac_open, Dprst_frac_clos
+    #       USE PRMS_WATER_USE, ONLY: Dprst_transfer, Dprst_gain
+    #       USE PRMS_SET_TIME, ONLY: Cfs_conv
+    #       USE PRMS_INTCP, ONLY: Net_snow
+    #       USE PRMS_CLIMATEVARS, ONLY: Potet
+    #       USE PRMS_FLOWVARS, ONLY: Pkwater_equiv
+    #       USE PRMS_SNOW, ONLY: Snowmelt, Pptmix_nopack, Snowcov_area
+    #       IMPLICIT NONE
+    # ! Functions
+    #       INTRINSIC :: EXP, LOG, MAX, DBLE, SNGL
+    # ! Arguments
+    #       REAL, INTENT(IN) :: Dprst_area_open_max, Dprst_area_clos_max, Net_rain
+    #       REAL, INTENT(IN) :: Sro_to_dprst_perv, Sro_to_dprst_imperv
+    #       DOUBLE PRECISION, INTENT(IN) :: Dprst_vol_open_max
+    #       DOUBLE PRECISION, INTENT(INOUT) :: Dprst_vol_open, Dprst_vol_clos, Dprst_in
+    #       REAL, INTENT(INOUT) :: Avail_et
+    #       REAL, INTENT(OUT) :: Dprst_area_open, Dprst_area_clos, Dprst_evap_hru
+    #       DOUBLE PRECISION, INTENT(OUT) :: Dprst_sroff_hru, Dprst_seep_hru
+    # ! Local Variables
+    #       REAL :: inflow, dprst_avail_et
+    #       REAL :: dprst_srp, dprst_sri
+    #       REAL :: dprst_srp_open, dprst_srp_clos, dprst_sri_open, dprst_sri_clos
+    #       REAL :: frac_op_ar, frac_cl_ar, open_vol_r, clos_vol_r, unsatisfied_et
+    #       REAL :: tmp, dprst_evap_open, dprst_evap_clos
+    #       DOUBLE PRECISION :: seep_open, seep_clos, tmp1
+    # !***********************************************************************
+    def dprst_comp(
+        self,
+        dprst_vol_clos,
+        dprst_area_clos_max,
+        dprst_area_clos,
+        dprst_vol_open_max,
+        dprst_vol_open,
+        dprst_area_open_max,
+        dprst_area_open,
+        dprst_sroff_hru,
+        dprst_seep_hru,
+        sro_to_dprst_perv,
+        sro_to_dprst_imperv,
+        dprst_evap_hru,
+        avail_et,
+        net_rain,
+        dprst_in,
+        ihru,
+        srp,
+        sri,
+        imperv_frac,
+        perv_frac,
+    ):
+
+        # !     add the hortonian flow to the depression storage volumes:
+        #       IF ( Cascade_flag>OFF ) THEN
+        #         inflow = SNGL( Upslope_hortonian(Ihru) )
+        #       ELSE
+        #         inflow = 0.0
+        #       ENDIF
+        cascade_flag = OFF  # cdl -- todo: hardwired
+        if cascade_flag > OFF:
+            raise Exception("i am brokin")
+        else:
+            inflow = 0.0
+
+        #
+        #       IF ( Pptmix_nopack(Ihru)==ACTIVE ) inflow = inflow + Net_rain
+        if self.pptmix_nopack[ihru]:
+            inflow = inflow + net_rain
+
+        #
+        # !******If precipitation on snowpack all water available to the surface is considered to be snowmelt
+        # !******If there is no snowpack and no precip,then check for melt from last of snowpack.
+        # !******If rain/snow mix with no antecedent snowpack, compute snowmelt portion of runoff.
+        #
+        #       IF ( Snowmelt(Ihru)>0.0 ) THEN
+        #         inflow = inflow + Snowmelt(Ihru)
+        if self.snowmelt[ihru]:
+            inflow = inflow + self.snowmelt[ihru]
+
+        #
+        # !******There was no snowmelt but a snowpack may exist.  If there is
+        # !******no snowpack then check for rain on a snowfree HRU.
+        #       ELSEIF ( Pkwater_equiv(Ihru)<DNEARZERO ) THEN
+        elif self.pkwater_equiv[ihru] < DNEARZERO:
+            #
+            # !      If no snowmelt and no snowpack but there was net snow then
+            # !      snowpack was small and was lost to sublimation.
+            #         IF ( Net_snow(Ihru)<NEARZERO .AND. Net_rain>0.0 ) THEN
+            #           inflow = inflow + Net_rain
+            #         ENDIF
+            #       ENDIF
+            if self.net_snow[ihru] < NEARZERO and net_rain > 0.0:
+                inflow = inflow + net_rain
+
+        # cdl -- not implemented
+        #
+        #       IF ( Dprst_add_water_use==ACTIVE ) THEN
+        #         IF ( Dprst_gain(Ihru)>0.0 ) inflow = inflow + Dprst_gain(Ihru) / SNGL( Cfs_conv )
+        #       ENDIF
+        dprst_add_water_use = OFF
+        if dprst_add_water_use == ACTIVE:
+            raise Exception("not supported")
+
+        #
+        #       Dprst_in = 0.0D0
+        #       IF ( Dprst_area_open_max>0.0 ) THEN
+        #         Dprst_in = DBLE( inflow*Dprst_area_open_max ) ! inch-acres
+        #         Dprst_vol_open = Dprst_vol_open + Dprst_in
+        #       ENDIF
+        dprst_in = 0.0
+        if dprst_area_open_max > 0.0:
+            dprst_in = inflow * dprst_area_open_max
+            dprst_vol_open = dprst_vol_open + dprst_in
+
+        #
+        #       IF ( Dprst_area_clos_max>0.0 ) THEN
+        #         tmp1 = DBLE( inflow*Dprst_area_clos_max ) ! inch-acres
+        #         Dprst_vol_clos = Dprst_vol_clos + tmp1
+        #         Dprst_in = Dprst_in + tmp1
+        #       ENDIF
+        #       Dprst_in = Dprst_in/Hruarea_dble ! inches over HRU
+        if dprst_area_clos_max > 0.0:
+            tmp1 = inflow * dprst_area_clos_max
+            dprst_vol_clos = dprst_vol_clos + tmp1
+            dprst_in = dprst_in + tmp1
+        dprst_in = dprst_in / self.hru_area[ihru]
+
+        #
+        #       ! add any pervious surface runoff fraction to depressions
+        #       dprst_srp = 0.0
+        #       dprst_sri = 0.0
+        #       IF ( Srp>0.0 ) THEN
+        #         tmp = Srp*Perv_frac*Sro_to_dprst_perv*Hruarea
+        #         IF ( Dprst_area_open_max>0.0 ) THEN
+        #           dprst_srp_open = tmp*Dprst_frac_open(Ihru) ! acre-inches
+        #           dprst_srp = dprst_srp_open/Hruarea
+        #           Dprst_vol_open = Dprst_vol_open + DBLE( dprst_srp_open )
+        #         ENDIF
+        #         IF ( Dprst_area_clos_max>0.0 ) THEN
+        #           dprst_srp_clos = tmp*Dprst_frac_clos(Ihru)
+        #           dprst_srp = dprst_srp + dprst_srp_clos/Hruarea
+        #           Dprst_vol_clos = Dprst_vol_clos + DBLE( dprst_srp_clos )
+        #         ENDIF
+        #         Srp = Srp - dprst_srp/Perv_frac
+        #         IF ( Srp<0.0 ) THEN
+        #           IF ( Srp<-NEARZERO ) PRINT *, 'dprst srp<0.0', Srp, dprst_srp
+        #           ! may need to adjust dprst_srp and volumes
+        #           Srp = 0.0
+        #         ENDIF
+        #       ENDIF
+        dprst_srp = 0.0
+        dprst_sri = 0.0
+        if srp > 0.0:
+            tmp = sri * imperv_frac * sro_to_dprst_imperv * self.hru_area[ihru]
+            if dprst_area_open_max > 0.0:
+                dprst_srp_open = tmp * self.dprst_frac_open[ihru]
+                dprst_srp = dprst_srp_open / self.hru_area[ihru]
+                dprst_vol_open = dprst_vol_open + dprst_srp_open
+            if dprst_area_clos_max > 0.0:
+                dprst_srp_clos = tmp * self.dprst_frac_clos[ihru]
+                dprst_srp = dprst_srp + dprst_srp_clos / self.hru_area[ihru]
+                dprst_vol_clos = dprst_vol_clos + dprst_srp_clos
+            srp = srp - dprst_srp / perv_frac
+            if srp < 0.0:
+                if srp < -NEARZERO:
+                    srp = 0.0
+
+        #
+        #       IF ( Sri>0.0 ) THEN
+        #         tmp = Sri*Imperv_frac*Sro_to_dprst_imperv*Hruarea
+        #         IF ( Dprst_area_open_max>0.0 ) THEN
+        #           dprst_sri_open = tmp*Dprst_frac_open(Ihru)
+        #           dprst_sri = dprst_sri_open/Hruarea
+        #           Dprst_vol_open = Dprst_vol_open + DBLE( dprst_sri_open )
+        #         ENDIF
+        #         IF ( Dprst_area_clos_max>0.0 ) THEN
+        #           dprst_sri_clos = tmp*Dprst_frac_clos(Ihru)
+        #           dprst_sri = dprst_sri + dprst_sri_clos/Hruarea
+        #           Dprst_vol_clos = Dprst_vol_clos + DBLE( dprst_sri_clos )
+        #         ENDIF
+        #         Sri = Sri - dprst_sri/Imperv_frac
+        #         IF ( Sri<0.0 ) THEN
+        #           IF ( Sri<-NEARZERO ) PRINT *, 'dprst sri<0.0', Sri, dprst_sri
+        #           ! may need to adjust dprst_sri and volumes
+        #           Sri = 0.0
+        #         ENDIF
+        #       ENDIF
+        #       Dprst_insroff_hru(Ihru) = dprst_srp + dprst_sri
+        if sri > 0.0:
+            tmp = sri * imperv_frac * sro_to_dprst_imperv * self.hru_area[ihru]
+            if dprst_area_open_max > 0.0:
+                dprst_sri_open = tmp * self.dprst_frac_open[ihru]
+                dprst_sri = dprst_sri_open / self.hru_area[ihru]
+                dprst_vol_open = dprst_vol_open + dprst_sri_open
+            if dprst_area_clos_max > 0.0:
+                dprst_sri_clos = tmp * self.dprst_frac_clos[ihru]
+                dprst_sri = dprst_sri + dprst_sri_clos / self.hru_area[ihru]
+                dprst_vol_clos = dprst_vol_clos + dprst_sri_clos
+            sri = sri - dprst_sri / imperv_frac
+            if sri < 0.0:
+                if sri < -NEARZERO:
+                    sri = 0.0
+            self.dprst_insroff_hru[ihru] = dprst_srp + dprst_sri
+
+        # cdl -- todo: did not implement
+        #       IF ( Dprst_transfer_water_use==ACTIVE ) THEN
+        #         IF ( Dprst_area_open_max>0.0 ) THEN
+        #           IF ( Dprst_transfer(Ihru)>0.0 ) THEN
+        #             IF ( SNGL(Dprst_vol_open*Cfs_conv)<Dprst_transfer(Ihru) ) THEN
+        #               PRINT *, 'ERROR, not enough storage for transfer from open surface-depression storage:', &
+        #      &                  Ihru, ' Date:', Nowyear, Nowmonth, Nowday
+        #               PRINT *, '       storage: ', Dprst_vol_open, '; transfer: ', Dprst_transfer(Ihru)/Cfs_conv
+        #               ERROR STOP ERROR_water_use
+        #             ENDIF
+        #             Dprst_vol_open = Dprst_vol_open - DBLE( Dprst_transfer(Ihru)*Dprst_area_open_max ) / Cfs_conv
+        #           ENDIF
+        #         ENDIF
+        #         IF ( Dprst_area_clos_max>0.0 ) THEN
+        #           IF ( Dprst_transfer(Ihru)>0.0 ) THEN
+        #             IF ( SNGL(Dprst_area_clos_max*Cfs_conv)<Dprst_transfer(Ihru) ) THEN
+        #               PRINT *, 'ERROR, not enough storage for transfer from closed surface-depression storage:', &
+        #      &                  Ihru, ' Date:', Nowyear, Nowmonth, Nowday
+        #               PRINT *, '       storage: ', Dprst_vol_clos, '; transfer: ', Dprst_transfer(Ihru)/Cfs_conv
+        #               ERROR STOP ERROR_water_use
+        #             ENDIF
+        #             Dprst_vol_clos = Dprst_vol_clos - DBLE( Dprst_transfer(Ihru)*Dprst_area_clos_max ) / Cfs_conv
+        #           ENDIF
+        #         ENDIF
+        #       ENDIF
+        #
+        # !     Open depression surface area for each HRU:
+        #       Dprst_area_open = 0.0
+        #       IF ( Dprst_vol_open>0.0D0 ) THEN
+        #         open_vol_r = SNGL( Dprst_vol_open/Dprst_vol_open_max )
+        #         IF ( open_vol_r<NEARZERO ) THEN
+        #           frac_op_ar = 0.0
+        #         ELSEIF ( open_vol_r>1.0 ) THEN
+        #           frac_op_ar = 1.0
+        #         ELSE
+        #           frac_op_ar = EXP(Va_open_exp(Ihru)*LOG(open_vol_r))
+        #         ENDIF
+        #         Dprst_area_open = Dprst_area_open_max*frac_op_ar
+        #         IF ( Dprst_area_open>Dprst_area_open_max ) Dprst_area_open = Dprst_area_open_max
+        # !        IF ( Dprst_area_open<NEARZERO ) Dprst_area_open = 0.0
+        #       ENDIF
+        dprst_area_open = 0.0
+        if dprst_vol_open > 0.0:
+            open_vol_r = dprst_vol_open / dprst_vol_open_max
+            if open_vol_r < NEARZERO:
+                frac_op_ar = 0.0
+            elif open_vol_r > 1.0:
+                frac_op_ar = 1.0
+            else:
+                frac_op_ar = np.exp(
+                    self.va_open_exp[ihru] * np.log(open_vol_r)
+                )
+            dprst_area_open = dprst_area_open_max * frac_op_ar
+            if dprst_area_open > dprst_area_open_max:
+                dprst_area_open = dprst_area_open_max
+
+        #
+        # !     Closed depression surface area for each HRU:
+        #       IF ( Dprst_area_clos_max>0.0 ) THEN
+        #         Dprst_area_clos = 0.0
+        #         IF ( Dprst_vol_clos>0.0D0 ) THEN
+        #           clos_vol_r = SNGL( Dprst_vol_clos/Dprst_vol_clos_max(Ihru) )
+        #           IF ( clos_vol_r<NEARZERO ) THEN
+        #             frac_cl_ar = 0.0
+        #           ELSEIF ( clos_vol_r>1.0 ) THEN
+        #             frac_cl_ar = 1.0
+        #           ELSE
+        #             frac_cl_ar = EXP(Va_clos_exp(Ihru)*LOG(clos_vol_r))
+        #           ENDIF
+        #           Dprst_area_clos = Dprst_area_clos_max*frac_cl_ar
+        #           IF ( Dprst_area_clos>Dprst_area_clos_max ) Dprst_area_clos = Dprst_area_clos_max
+        # !          IF ( Dprst_area_clos<NEARZERO ) Dprst_area_clos = 0.0
+        #         ENDIF
+        #       ENDIF
+        if dprst_area_clos_max > 0.0:
+            dprst_area_clos = 0.0
+            if dprst_vol_clos > 0.0:
+                clos_vol_r = dprst_vol_clos / self.dprst_vol_clos_max[ihru]
+                if clos_vol_r < NEARZERO:
+                    frac_cl_ar = 0.0
+                elif clos_vol_r > 1.0:
+                    frac_cl_ar = 1.0
+                else:
+                    frac_cl_ar = np.exp(
+                        self.va_clos_exp[ihru] * np.log(clos_vol_r)
+                    )
+                dprst_area_clos = dprst_area_clos_max * frac_cl_ar
+                if dprst_area_clos > dprst_area_clos_max:
+                    dprst_area_clos = dprst_area_clos_max
+                if dprst_area_clos < NEARZERO:
+                    dprst_area_clos = 0.0
+
+        #
+        #       ! evaporate water from depressions based on snowcov_area
+        #       ! dprst_evap_open & dprst_evap_clos = inches-acres on the HRU
+        #       unsatisfied_et = Avail_et
+        #       dprst_avail_et = (Potet(Ihru)*(1.0-Snowcov_area(Ihru)))*Dprst_et_coef(Ihru)
+        #       Dprst_evap_hru = 0.0
+        #       IF ( dprst_avail_et>0.0 ) THEN
+        #         dprst_evap_open = 0.0
+        #         dprst_evap_clos = 0.0
+        #         IF ( Dprst_area_open>0.0 ) THEN
+        #           dprst_evap_open = MIN(Dprst_area_open*dprst_avail_et, SNGL(Dprst_vol_open))
+        #           IF ( dprst_evap_open/Hruarea>unsatisfied_et ) THEN
+        #             dprst_evap_open = unsatisfied_et*Hruarea
+        #           ENDIF
+        #           IF ( dprst_evap_open>SNGL(Dprst_vol_open) ) dprst_evap_open = SNGL( Dprst_vol_open )
+        #           unsatisfied_et = unsatisfied_et - dprst_evap_open/Hruarea
+        #           Dprst_vol_open = Dprst_vol_open - DBLE( dprst_evap_open )
+        #         ENDIF
+        #         IF ( Dprst_area_clos>0.0 ) THEN
+        #           dprst_evap_clos = MIN(Dprst_area_clos*dprst_avail_et, SNGL(Dprst_vol_clos))
+        #           IF ( dprst_evap_clos/Hruarea>unsatisfied_et ) THEN
+        #             dprst_evap_clos = unsatisfied_et*Hruarea
+        #           ENDIF
+        #           IF ( dprst_evap_clos>SNGL(Dprst_vol_clos) ) dprst_evap_clos = SNGL( Dprst_vol_clos )
+        #           Dprst_vol_clos = Dprst_vol_clos - DBLE( dprst_evap_clos )
+        #         ENDIF
+        #         Dprst_evap_hru = (dprst_evap_open + dprst_evap_clos)/Hruarea
+        #       ENDIF
+        unsatisfied_et = avail_et
+        dprst_avail_et = (
+            self.potet[ihru]
+            * (1.0 - self.snowcov_area[ihru])
+            * self.dprst_et_coef[ihru]
+        )
+        dprst_evap_hru = 0.0
+        if dprst_avail_et > 0.0:
+            dprst_evap_open = 0.0
+            dprst_evap_clos = 0.0
+            if dprst_area_open > 0.0:
+                dprst_evap_open = min(
+                    dprst_area_open * dprst_avail_et, dprst_vol_open
+                )
+                if dprst_evap_open / self.hru_area[ihru] > unsatisfied_et:
+                    dprst_evap_open = unsatisfied_et * self.hru_area[ihru]
+                if dprst_evap_open > dprst_vol_open:
+                    dprst_evap_open = dprst_vol_open
+                unsatisfied_et = (
+                    unsatisfied_et - dprst_evap_open / self.hru_area[ihru]
+                )
+                dprst_vol_open = dprst_vol_open - dprst_evap_open
+                if dprst_area_clos > 0.0:
+                    dprst_evap_clos = min(
+                        dprst_area_clos * dprst_avail_et, dprst_vol_clos
+                    )
+                    if dprst_evap_clos / self.hru_area[ihru] > unsatisfied_et:
+                        dprst_evap_clos = unsatisfied_et * self.hru_area[ihru]
+                    if dprst_evap_clos > dprst_vol_clos:
+                        dprst_evap_clos = dprst_vol_clos
+                    dprst_vol_clos = dprst_vol_clos - dprst_evap_clos
+                dprst_evap_hru = (
+                    dprst_evap_open + dprst_evap_clos
+                ) / self.hru_area[ihru]
+
+        #
+        #       ! compute seepage
+        #       Dprst_seep_hru = 0.0D0
+        #       IF ( Dprst_vol_open>0.0D0 ) THEN
+        #         seep_open = Dprst_vol_open*DBLE( Dprst_seep_rate_open(Ihru) )
+        #         Dprst_vol_open = Dprst_vol_open - seep_open
+        #         IF ( Dprst_vol_open<0.0D0 ) THEN
+        # !          IF ( Dprst_vol_open<-DNEARZERO ) PRINT *, 'negative dprst_vol_open:', Dprst_vol_open, ' HRU:', Ihru
+        #           seep_open = seep_open + Dprst_vol_open
+        #           Dprst_vol_open = 0.0D0
+        #         ENDIF
+        #         Dprst_seep_hru = seep_open/Hruarea_dble
+        #       ENDIF
+        dprst_seep_hru = 0.0
+        if dprst_vol_open > 0.0:
+            seep_open = dprst_vol_open * self.dprst_seep_rate_open[ihru]
+            dprst_vol_open = dprst_vol_open - seep_open
+            if dprst_vol_open < 0.0:
+                seep_open = seep_open + dprst_vol_open
+                dprst_vol_open = 0.0
+            dprst_seep_hru = seep_open / self.hru_area[ihru]
+
+        #
+        #       ! compute open surface runoff
+        #       Dprst_sroff_hru = 0.0D0
+        #       IF ( Dprst_vol_open>0.0D0 ) THEN
+        #         Dprst_sroff_hru = MAX( 0.0D0, Dprst_vol_open-Dprst_vol_open_max )
+        #         Dprst_sroff_hru = Dprst_sroff_hru + &
+        #      &                    MAX( 0.0D0, (Dprst_vol_open-Dprst_sroff_hru-Dprst_vol_thres_open(Ihru))*DBLE(Dprst_flow_coef(Ihru)) )
+        #         Dprst_vol_open = Dprst_vol_open - Dprst_sroff_hru
+        #         Dprst_sroff_hru = Dprst_sroff_hru/Hruarea_dble
+        #         ! sanity checks
+        #         IF ( Dprst_vol_open<0.0D0 ) THEN
+        # !          IF ( Dprst_vol_open<-DNEARZERO ) PRINT *, 'issue, dprst_vol_open<0.0', Dprst_vol_open
+        #           Dprst_vol_open = 0.0D0
+        #         ENDIF
+        #       ENDIF
+        dprst_sroff_hru = 0.0
+        if dprst_vol_open > 0.0:
+            dprst_sroff_hru = max(0.0, dprst_vol_open - dprst_vol_open_max)
+            dprst_sroff_hru = dprst_sroff_hru + max(
+                0.0,
+                dprst_vol_open
+                - dprst_sroff_hru
+                - self.dprst_vol_thres_open[ihru] * self.dprst_flow_coef[ihru],
+            )
+            dprst_vol_open = dprst_vol_open - dprst_sroff_hru
+            dprst_sroff_hru = dprst_sroff_hru / self.hru_area[ihru]
+            if dprst_vol_open < 0.0:
+                dprst_vol_open = 0.0
+
+        #
+        #       IF ( Dprst_area_clos_max>0.0 ) THEN
+        #         IF ( Dprst_area_clos>NEARZERO ) THEN
+        #           seep_clos = Dprst_vol_clos*DBLE( Dprst_seep_rate_clos(Ihru) )
+        #           Dprst_vol_clos = Dprst_vol_clos - seep_clos
+        #           IF ( Dprst_vol_clos<0.0D0 ) THEN
+        # !            IF ( Dprst_vol_clos<-DNEARZERO ) PRINT *, 'issue, dprst_vol_clos<0.0', Dprst_vol_clos
+        #             seep_clos = seep_clos + Dprst_vol_clos
+        #             Dprst_vol_clos = 0.0D0
+        #           ENDIF
+        #           Dprst_seep_hru = Dprst_seep_hru + seep_clos/Hruarea_dble
+        #         ENDIF
+        #       ENDIF
+        if dprst_area_clos_max > 0.0:
+            if dprst_area_clos > NEARZERO:
+                seep_clos = dprst_vol_clos * self.dprst_seep_rate_clos[ihru]
+                dprst_vol_clos = dprst_vol_clos - seep_clos
+                if dprst_vol_clos < 0.0:
+                    seep_clos = seep_clos + dprst_vol_clos
+                    dprst_vol_clos = 0.0
+                dprst_seep_hru = (
+                    dprst_seep_hru + seep_clos / self.hru_area[ihru]
+                )
+
+        #
+        #       Basin_dprst_volop = Basin_dprst_volop + Dprst_vol_open
+        #       Basin_dprst_volcl = Basin_dprst_volcl + Dprst_vol_clos
+        #       Basin_dprst_evap = Basin_dprst_evap + DBLE( Dprst_evap_hru*Hruarea )
+        #       Basin_dprst_seep = Basin_dprst_seep + Dprst_seep_hru*Hruarea_dble
+        #       Basin_dprst_sroff = Basin_dprst_sroff + Dprst_sroff_hru*Hruarea_dble
+        #       Avail_et = Avail_et - Dprst_evap_hru
+        #       IF ( Dprst_vol_open_max>0.0 ) Dprst_vol_open_frac(Ihru) = SNGL( Dprst_vol_open/Dprst_vol_open_max )
+        #       IF ( Dprst_vol_clos_max(Ihru)>0.0 ) Dprst_vol_clos_frac(Ihru) = SNGL( Dprst_vol_clos/Dprst_vol_clos_max(Ihru) )
+        #       if (Dprst_vol_open_max+Dprst_vol_clos_max(Ihru) > 0.0 ) then  !RGN added to avoid divide by zero 1/20/2022
+        #         Dprst_vol_frac(Ihru) = SNGL( (Dprst_vol_open+Dprst_vol_clos)/(Dprst_vol_open_max+Dprst_vol_clos_max(Ihru)) )
+        #       end if
+        #       Dprst_stor_hru(Ihru) = (Dprst_vol_open+Dprst_vol_clos)/Hruarea_dble
+        #
+        #       END SUBROUTINE dprst_comp
+        avail_et = avail_et - dprst_evap_hru
+        if dprst_vol_open_max > 0.0:
+            self.dprst_vol_open_frac[ihru] = (
+                dprst_vol_open / dprst_vol_open_max
+            )
+        if self.dprst_vol_clos_max[ihru] > 0.0:
+            self.dprst_vol_clos_frac[ihru] = (
+                dprst_vol_clos / self.dprst_vol_clos_max[ihru]
+            )
+        if dprst_vol_open_max + self.dprst_vol_clos_max[ihru] > 0.0:
+            self.dprst_vol_frac[ihru] = (dprst_vol_open + dprst_vol_clos) / (
+                dprst_vol_open + self.dprst_vol_clos_max[ihru]
+            )
+        self.dprst_stor_hru[ihru] = (
+            dprst_vol_open + dprst_vol_clos
+        ) / self.hru_area[ihru]
+
+        return (
+            dprst_in,
+            dprst_vol_open,
+            avail_et,
+            dprst_vol_clos,
+            dprst_vol_open,
+            srp,
+            sri,
+        )

@@ -475,21 +475,21 @@ class PRMSRunoff(StorageUnit):
             if self.hru_type[i] == LAND:
                 runoff = runoff + srp * perv_area + sri * hruarea_imperv
                 srunoff = runoff / hruarea
-            #
-            # !******Compute HRU weighted average (to units of inches/dt)
-            #           IF ( Cascade_flag>CASCADE_OFF ) THEN
-            #             hru_sroff_down = 0.0D0
-            #             IF ( srunoff>0.0 ) THEN
-            #               IF ( Ncascade_hru(i)>0 ) CALL run_cascade_sroff(Ncascade_hru(i), srunoff, hru_sroff_down)
-            #               Hru_hortn_cascflow(i) = hru_sroff_down
-            #               !IF ( Hru_hortn_cascflow(i)<0.0D0 ) Hru_hortn_cascflow(i) = 0.0D0
-            #               !IF ( Upslope_hortonian(i)<0.0D0 ) Upslope_hortonian(i) = 0.0D0
-            #               Basin_sroff_upslope = Basin_sroff_upslope + Upslope_hortonian(i)*Hruarea_dble
-            #               Basin_sroff_down = Basin_sroff_down + hru_sroff_down*Hruarea_dble
-            #             ELSE
-            #               Hru_hortn_cascflow(i) = 0.0D0
-            #             ENDIF
-            #           ENDIF
+                #
+                # !******Compute HRU weighted average (to units of inches/dt)
+                #           IF ( Cascade_flag>CASCADE_OFF ) THEN
+                #             hru_sroff_down = 0.0D0
+                #             IF ( srunoff>0.0 ) THEN
+                #               IF ( Ncascade_hru(i)>0 ) CALL run_cascade_sroff(Ncascade_hru(i), srunoff, hru_sroff_down)
+                #               Hru_hortn_cascflow(i) = hru_sroff_down
+                #               !IF ( Hru_hortn_cascflow(i)<0.0D0 ) Hru_hortn_cascflow(i) = 0.0D0
+                #               !IF ( Upslope_hortonian(i)<0.0D0 ) Upslope_hortonian(i) = 0.0D0
+                #               Basin_sroff_upslope = Basin_sroff_upslope + Upslope_hortonian(i)*Hruarea_dble
+                #               Basin_sroff_down = Basin_sroff_down + hru_sroff_down*Hruarea_dble
+                #             ELSE
+                #               Hru_hortn_cascflow(i) = 0.0D0
+                #             ENDIF
+                #           ENDIF
                 self.hru_sroffp[i] = srp * perv_frac
             #           Hru_sroffp(i) = Srp*Perv_frac
             #           Basin_sroffp = Basin_sroffp + Srp*perv_area
@@ -553,7 +553,9 @@ class PRMSRunoff(StorageUnit):
             # cdl -- saving sroff here
             #         IF ( dprst_chk==ACTIVE ) Dprst_stor_hru(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/Hruarea_dble
             if dprst_chk == ACTIVE:
-                self.dprst_stor_hru[i] = (self.dprst_vol_open[i] + self.dprst_vol_clos[i]) / hruarea
+                self.dprst_stor_hru[i] = (
+                    self.dprst_vol_open[i] + self.dprst_vol_clos[i]
+                ) / hruarea
             #
             #         Sroff(i) = srunoff
             self.sroff[i] = srunoff
@@ -615,9 +617,13 @@ class PRMSRunoff(StorageUnit):
             if dprst_flag == ACTIVE:
                 self.dprst_area_max[i] = self.dprst_frac[i] * harea
                 if self.dprst_area_max[i] > 0.0:
-                    self.dprst_area_open_max[i] = self.dprst_area_max[i] * self.dprst_frac_open[i]
+                    self.dprst_area_open_max[i] = (
+                        self.dprst_area_max[i] * self.dprst_frac_open[i]
+                    )
                     self.dprst_frac_clos[i] = 1.0 - self.dprst_frac_open[i]
-                    self.dprst_area_clos_max[i] = self.dprst_area_max[i] - self.dprst_area_open_max[i]
+                    self.dprst_area_clos_max[i] = (
+                        self.dprst_area_max[i] - self.dprst_area_open_max[i]
+                    )
                     if self.dprst_area_clos_max[i] > 0.0:
                         dprst_clos_flag = ACTIVE  # cdl -- todo: this variable should be stored to self?
                     if self.dprst_area_open_max[i] > 0.0:
@@ -1037,7 +1043,9 @@ class PRMSRunoff(StorageUnit):
                 # !         threshold volume is calculated as the % of maximum open
                 # !         depression storage above which flow occurs *  total open depression storage volume
                 #           Dprst_vol_thres_open(i) = DBLE(Op_flow_thres(i))*Dprst_vol_open_max(i)
-                self.dprst_vol_thres_open[i] = self.op_flow_thres[i] * self.dprst_vol_open_max[i]
+                self.dprst_vol_thres_open[i] = (
+                    self.op_flow_thres[i] * self.dprst_vol_open_max[i]
+                )
                 #
                 # !         initial open and closed storage volume as fraction of total open and closed storage volume
                 #
@@ -1561,9 +1569,12 @@ class PRMSRunoff(StorageUnit):
             dprst_sroff_hru = max(0.0, dprst_vol_open - dprst_vol_open_max)
             dprst_sroff_hru = dprst_sroff_hru + max(
                 0.0,
-                (dprst_vol_open
-                - dprst_sroff_hru
-                - self.dprst_vol_thres_open[ihru]) * self.dprst_flow_coef[ihru],
+                (
+                    dprst_vol_open
+                    - dprst_sroff_hru
+                    - self.dprst_vol_thres_open[ihru]
+                )
+                * self.dprst_flow_coef[ihru],
             )
             dprst_vol_open = dprst_vol_open - dprst_sroff_hru
             dprst_sroff_hru = dprst_sroff_hru / self.hru_area[ihru]

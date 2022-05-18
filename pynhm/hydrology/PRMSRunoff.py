@@ -92,16 +92,18 @@ class PRMSRunoff(StorageUnit):
             intcp_changeover, "intcp_changeover"
         )
 
-        # call the basin_init hack to calculate basin
-        # variables
-        self.basin_init()
-
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
         # to be used widely
         self.dprst_in = np.zeros(self.nhru, dtype=float)
         self.dprst_vol_open_max = np.zeros(self.nhru, dtype=float)
         self.dprst_vol_clos_max = np.zeros(self.nhru, dtype=float)
+        self.dprst_frac_clos = np.zeros(self.nhru, dtype=float)
+        self.dprst_vol_thres_open = np.zeros(self.nhru, dtype=float)
+
+        # call the basin_init hack to calculate basin
+        # variables
+        self.basin_init()
 
         # call the depression storage init
         self.dprst_init()
@@ -145,6 +147,7 @@ class PRMSRunoff(StorageUnit):
             "sro_to_dprst_perv",
             "va_open_exp",
             "va_clos_exp",
+            "op_flow_thres",
         )
 
     @staticmethod
@@ -188,8 +191,11 @@ class PRMSRunoff(StorageUnit):
             "imperv_evap",
             "hru_impervevap",
             "hru_impervstor",
+            "dprst_vol_frac",
             "dprst_vol_clos",
             "dprst_vol_open",
+            "dprst_vol_clos_frac",
+            "dprst_vol_open_frac",
             "dprst_area_clos",
             "dprst_area_open",
             "dprst_area_clos_max",
@@ -218,8 +224,11 @@ class PRMSRunoff(StorageUnit):
             "imperv_evap": zero,
             "hru_impervevap": zero,
             "hru_impervstor": zero,
+            "dprst_vol_frac": zero,
             "dprst_vol_clos": zero,
             "dprst_vol_open": zero,
+            "dprst_vol_clos_frac": zero,
+            "dprst_vol_open_frac": zero,
             "dprst_area_clos": zero,
             "dprst_area_open": zero,
             "dprst_area_clos_max": zero,
@@ -263,7 +272,7 @@ class PRMSRunoff(StorageUnit):
     def calculate_prms_style(self):
 
         dprst_chk = 0
-        Infil = 0.0
+        self.infil[:] = 0.0
         # DO k = 1, Active_hrus
         for k in range(self.nhru):
 
@@ -400,7 +409,6 @@ class PRMSRunoff(StorageUnit):
             #           ENDIF
             #         ENDIF
 
-            # cdl -- TODO depression storage needs to be implemented for NHM
             #         IF ( Dprst_flag==ACTIVE ) THEN
             #           Dprst_in(i) = 0.0D0
             #           dprst_chk = OFF
@@ -423,7 +431,7 @@ class PRMSRunoff(StorageUnit):
                 self.dprst_in[i] = 0.0
                 dprst_chk = OFF
                 if self.dprst_area_max[i] > 0.0:
-                    dprst_chk = 0.0
+                    dprst_chk = ACTIVE
                     if frzen == OFF:
                         (
                             self.dprst_in[i],
@@ -447,7 +455,7 @@ class PRMSRunoff(StorageUnit):
                             self.sro_to_dprst_imperv[i],
                             self.dprst_evap_hru[i],
                             avail_et,
-                            self.net_rain[i],
+                            availh2o,
                             self.dprst_in[i],
                             ihru,
                             srp,
@@ -482,6 +490,7 @@ class PRMSRunoff(StorageUnit):
             #               Hru_hortn_cascflow(i) = 0.0D0
             #             ENDIF
             #           ENDIF
+                self.hru_sroffp[i] = srp * perv_frac
             #           Hru_sroffp(i) = Srp*Perv_frac
             #           Basin_sroffp = Basin_sroffp + Srp*perv_area
             #         ENDIF
@@ -543,6 +552,8 @@ class PRMSRunoff(StorageUnit):
 
             # cdl -- saving sroff here
             #         IF ( dprst_chk==ACTIVE ) Dprst_stor_hru(i) = (Dprst_vol_open(i)+Dprst_vol_clos(i))/Hruarea_dble
+            if dprst_chk == ACTIVE:
+                self.dprst_stor_hru[i] = (self.dprst_vol_open[i] + self.dprst_vol_clos[i]) / hruarea
             #
             #         Sroff(i) = srunoff
             self.sroff[i] = srunoff
@@ -579,7 +590,7 @@ class PRMSRunoff(StorageUnit):
             #         Basin_dprst_sroff = Basin_dprst_sroff*Basin_area_inv
             #       ENDIF
 
-            return
+        return
 
     def basin_init(self):
         """
@@ -604,6 +615,13 @@ class PRMSRunoff(StorageUnit):
             if dprst_flag == ACTIVE:
                 self.dprst_area_max[i] = self.dprst_frac[i] * harea
                 if self.dprst_area_max[i] > 0.0:
+                    self.dprst_area_open_max[i] = self.dprst_area_max[i] * self.dprst_frac_open[i]
+                    self.dprst_frac_clos[i] = 1.0 - self.dprst_frac_open[i]
+                    self.dprst_area_clos_max[i] = self.dprst_area_max[i] - self.dprst_area_open_max[i]
+                    if self.dprst_area_clos_max[i] > 0.0:
+                        dprst_clos_flag = ACTIVE  # cdl -- todo: this variable should be stored to self?
+                    if self.dprst_area_open_max[i] > 0.0:
+                        dprst_open_flag = ACTIVE  # cdl -- todo: this variable should be stored to self?
                     perv_area = perv_area - self.dprst_area_max[i]
 
             self.hru_perv[i] = perv_area
@@ -1019,6 +1037,7 @@ class PRMSRunoff(StorageUnit):
                 # !         threshold volume is calculated as the % of maximum open
                 # !         depression storage above which flow occurs *  total open depression storage volume
                 #           Dprst_vol_thres_open(i) = DBLE(Op_flow_thres(i))*Dprst_vol_open_max(i)
+                self.dprst_vol_thres_open[i] = self.op_flow_thres[i] * self.dprst_vol_open_max[i]
                 #
                 # !         initial open and closed storage volume as fraction of total open and closed storage volume
                 #
@@ -1294,7 +1313,7 @@ class PRMSRunoff(StorageUnit):
         dprst_srp = 0.0
         dprst_sri = 0.0
         if srp > 0.0:
-            tmp = sri * imperv_frac * sro_to_dprst_imperv * self.hru_area[ihru]
+            tmp = srp * perv_frac * sro_to_dprst_perv * self.hru_area[ihru]
             if dprst_area_open_max > 0.0:
                 dprst_srp_open = tmp * self.dprst_frac_open[ihru]
                 dprst_srp = dprst_srp_open / self.hru_area[ihru]
@@ -1542,9 +1561,9 @@ class PRMSRunoff(StorageUnit):
             dprst_sroff_hru = max(0.0, dprst_vol_open - dprst_vol_open_max)
             dprst_sroff_hru = dprst_sroff_hru + max(
                 0.0,
-                dprst_vol_open
+                (dprst_vol_open
                 - dprst_sroff_hru
-                - self.dprst_vol_thres_open[ihru] * self.dprst_flow_coef[ihru],
+                - self.dprst_vol_thres_open[ihru]) * self.dprst_flow_coef[ihru],
             )
             dprst_vol_open = dprst_vol_open - dprst_sroff_hru
             dprst_sroff_hru = dprst_sroff_hru / self.hru_area[ihru]
@@ -1601,7 +1620,7 @@ class PRMSRunoff(StorageUnit):
             )
         if dprst_vol_open_max + self.dprst_vol_clos_max[ihru] > 0.0:
             self.dprst_vol_frac[ihru] = (dprst_vol_open + dprst_vol_clos) / (
-                dprst_vol_open + self.dprst_vol_clos_max[ihru]
+                dprst_vol_open_max + self.dprst_vol_clos_max[ihru]
             )
         self.dprst_stor_hru[ihru] = (
             dprst_vol_open + dprst_vol_clos

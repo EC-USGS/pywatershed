@@ -31,6 +31,8 @@ class TestPRMSRunoffDomain:
 
         comparison_var_names = [
             "infil",
+            "dprst_stor_hru",
+            "hru_impervstor",
         ]
         output_dir = domain["prms_output_dir"]
 
@@ -61,12 +63,16 @@ class TestPRMSRunoffDomain:
                 val.advance()
 
             # make a comparison check with answer
-            check = False
+            check = True
+            failfast = True
+            detailed = True
             if check:
                 atol = 1.0e-5
-                success = self.check_timestep_results(runoff, istep, ans, atol)
+                success = self.check_timestep_results(runoff, istep, ans, atol, detailed)
                 if not success:
                     all_success = False
+                    if failfast:
+                        assert success, "stopping..."
 
         runoff.finalize()
 
@@ -77,12 +83,14 @@ class TestPRMSRunoffDomain:
         return
 
     @staticmethod
-    def check_timestep_results(storageunit, istep, ans, atol):
+    def check_timestep_results(storageunit, istep, ans, atol, detailed=False):
+        all_success = True
         for key in ans.keys():
             a1 = ans[key].current
             a2 = storageunit[key]
             success = np.isclose(a1, a2, atol=atol).all()
             if not success:
+                all_success = False
                 diff = a1 - a2
                 diffmin = diff.min()
                 diffmax = diff.max()
@@ -92,4 +100,8 @@ class TestPRMSRunoffDomain:
                     print(f"prms   {a1.min()}    {a1.max()}")
                     print(f"pynhm  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
-        return success
+                    if detailed:
+                        idx = np.where(np.abs(diff) > atol)[0]
+                        for i in idx:
+                            print(f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}")
+        return all_success

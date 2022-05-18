@@ -27,15 +27,6 @@ class TestPRMSChannelDomain:
         nc_parent = tmp_path / domain["domain_name"]
         channel.initialize_netcdf(nc_parent)
 
-        output_compare = {}
-        for key in PRMSChannel.get_variables():
-            base_nc_path = output_dir / f"{key}.nc"
-            compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
-            output_compare[key] = (base_nc_path, compare_nc_path)
-
-        print(f"base_nc_path: {base_nc_path}")
-        print(f"compare_nc_path: {compare_nc_path}")
-
         for istep in range(control.n_times):
             control.advance()
 
@@ -46,6 +37,15 @@ class TestPRMSChannelDomain:
             channel.output()
 
         channel.finalize()
+
+        output_compare = {}
+        for key in PRMSChannel.get_variables():
+            base_nc_path = output_dir / f"{key}.nc"
+            compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
+            output_compare[key] = (base_nc_path, compare_nc_path)
+
+        print(f"base_nc_path: {base_nc_path}")
+        print(f"compare_nc_path: {compare_nc_path}")
 
         assert_error = False
         for key, (base, compare) in output_compare.items():

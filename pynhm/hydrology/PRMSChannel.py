@@ -19,10 +19,56 @@ SECS_PER_HOUR = 3600.0
 
 
 class PRMSChannel(StorageUnit):
-    """PRMS channel flow
+    """PRMS channel flow (muskingum_mann)
+
+    The muskingum module was originally developed for the Precipitation Runoff
+    Modeling System (PRMS) by Mastin and Vaccaro (2002) and developed further
+    by Markstrom and others (2008). This module has been modified from past
+    versions to make it more stable for stream network routing in watersheds
+    with stream segments with varying travel times. Although this module runs
+    on the same daily time step as the rest of the modules in PRMS, it has an
+    internal structure which allows for a different computational time step for
+    each segment in the stream network, ensuring that the simulation produces
+    stable values. Flow values computed at these finer time steps are
+    aggregated by the Muskingum module to provide consistent daily time step
+    values, regardless of the segment length.
+
+    Delta t, which is the travel time (in hours), is rounded down to an even
+    divisor of 24 hours (for example 24, 12, 6, 4, 3, 2, and 1). PRMS is
+    restricted to daily time steps, so Delta t segment can never be more than
+    one day in length. This means that the travel time of any segment in the
+    stream network (K_coef) must be less than one day. An implication of this
+    is that the routed streamflow in each segment is computed using different
+    solution time steps. Consequently, streamflow must be aggregated when
+    flowing from segments with shorter Delta t segment to segments with longer
+    Delta t. Likewise, streamflow must be disaggregated when flowing from
+    segments with longer Delta to shorter Delta t. In either case, flow
+    from upstream segments is averaged and summed to the appropriate value of
+    Delta t.
+
+    The muskingum_mann method is a modified version of the original muskingum
+    function in PRMS that was introduced in PRMS version 5.2.1 (1/20/2021).
+    The muskingum_mann method provides a method to calculate K_coef values
+    using mann_n, seg_length, seg_depth (bank full), and seg_slope. The
+    velocity at bank full segment depth is calculated using Manning's equation
+
+        velocity = ((1/n) sqrt(seg_slope) seg_depth**(2/3)
+
+    K_coef ,in hours, is then calculated using
+
+        K_coef = seg_length / (velocity * 60 * 60)
+
+    K_coef values computed greater than 24.0 are set to 24.0, values computed
+    less than 0.01 are set to 0.01, and the value for lake HRUs is set to 24.0.
 
     Args:
+        control: control object
         params: parameter object
+        sroff: surface runoff adapter object
+        ssres_flow: subsurface (gravity) reservoir lateral flow adapter object
+        gwres_flow: groundwater reservoir baseflow adapter object
+        verbose: verbose output boolean (default is False)
+
 
     """
 
@@ -58,12 +104,12 @@ class PRMSChannel(StorageUnit):
         )
 
         # process channel data
-        self._process_channel_data()
+        self._initialize_channel_data()
 
         return
 
-    def _process_channel_data(self) -> None:
-        """Process raw channel data"""
+    def _initialize_channel_data(self) -> None:
+        """Initialize internal variables from raw channel data"""
         # convert prms data to zero-based
         self.hru_segment -= 1
         self.tosegment -= 1
@@ -114,7 +160,9 @@ class PRMSChannel(StorageUnit):
         # only calculate Kcoef for cells with velocities greater than zero
         idx = velocity > 0.0
         Kcoef[idx] = self.seg_length[idx] / velocity[idx]
-        Kcoef = np.where(self.segment_type == SegmentType.LAKE, 24.0, Kcoef)
+        Kcoef = np.where(
+            self.segment_type == SegmentType.LAKE.value, 24.0, Kcoef
+        )
         Kcoef = np.where(Kcoef < 0.01, 0.01, Kcoef)
         self._Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
 
@@ -177,8 +225,7 @@ class PRMSChannel(StorageUnit):
         self._outflow_ts = np.zeros(self.nsegment, dtype=float)
         self._seg_current_sum = np.zeros(self.nsegment, dtype=float)
 
-        # initialize variables
-        self.seg_outflow = self.segment_flow_init
+        # initialize internal sef_inflow variable
         for iseg in range(self.nsegment):
             jseg = self.tosegment[iseg]
             if jseg < 0:
@@ -189,6 +236,7 @@ class PRMSChannel(StorageUnit):
 
     def set_initial_conditions(self) -> None:
         # initialize channel segment storage
+        self.seg_outflow = self.segment_flow_init
         return
 
     @staticmethod
@@ -252,7 +300,6 @@ class PRMSChannel(StorageUnit):
         Returns:
             dict: initial values for named variables
         """
-        # No GW res values need initialized prior to calculation.
         return {
             "seg_lateral_inflow": zero,
             "seg_upstream_inflow": zero,
@@ -264,6 +311,8 @@ class PRMSChannel(StorageUnit):
         Returns:
             None
         """
+        self._seg_inflow0[:] = self._seg_inflow.copy()
+        self._seg_outflow0[:] = self.seg_outflow.copy()
         return
 
     def calculate(self, simulation_time: float) -> None:
@@ -340,12 +389,12 @@ def muskingum_routing(
     c2: np.ndarray,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Muskinggum routing function that calculates the upstream inflow and
+    Muskingum routing function that calculates the upstream inflow and
     outflow for each segment
 
     Args:
         segment_order: segment routing order
-        tosegment: downstream segment for each segment
+        to_segment: downstream segment for each segment
         seg_lateral_inflow: segment lateral inflow
         seg_upstream_inflow: initial segment upstream inflow (set to 0)
         seg_inflow: segment inflow variable (internal calculations)
@@ -367,8 +416,8 @@ def muskingum_routing(
 
     """
     # initialize variables for the day
-    seg_inflow0[:] = seg_inflow.copy()
-    seg_outflow0[:] = seg_outflow.copy()
+    # seg_inflow0[:] = seg_inflow.copy()
+    # seg_outflow0[:] = seg_outflow.copy()
     seg_inflow[:] = 0.0
     seg_outflow[:] = 0.0
     inflow_ts[:] = 0.0

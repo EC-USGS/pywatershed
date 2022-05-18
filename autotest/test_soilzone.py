@@ -26,32 +26,33 @@ class TestPRMSSoilzone:
 
         # get the answer data
         comparison_var_names = [
-            # "cap_infil_tot",
-            # "cap_waterin",
-            # "dunnian_flow",
+            ### "cap_infil_tot",
+            ### "cap_waterin",
+            ### "dunnian_flow",
             "hru_actet",
-            # "lakein_sz",
-            # "perv_actet",
-            # "potet_lower",
-            # "potet_rechr",
+            ### "lakein_sz",
+            "perv_actet",
+            "potet_lower",
+            "potet_rechr",
             "recharge",
             "slow_flow",
-            # "slow_stor",
-            # "snow_free",
-            # "soil_lower",
+            "slow_stor",
+            ### "snow_free",
+            "soil_lower",
             # "soil_lower_ratio",
             "soil_moist",
             "soil_moist_tot",
+            "infil",
             "soil_rechr",
             "soil_to_gw",
-            # "soil_to_ssr",
-            # "soil_zone_max",
+            "soil_to_ssr",
+            ### "soil_zone_max",
             "ssr_to_gw",
             "ssres_flow",
-            # "ssres_in",
+            "ssres_in",
             "ssres_stor",
-            # "swale_actet",
-            # "unused_potet",
+            ### "swale_actet",
+            ### "unused_potet",
         ]
 
         ans = {}
@@ -71,32 +72,34 @@ class TestPRMSSoilzone:
             # for istep in range(10):
 
             control.advance()
-            soil.advance()
-            soil.calculate(float(istep))
 
             print("\n")
             print(control.current_time)
 
+            soil.advance()
+            soil.calculate(float(istep))
+
             # compare along the way
-            atol = 1.0e-5
+            atol = 1.0e-4
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():
-                a1 = ans[key].current
+                a1 = ans[key].current.data
                 a2 = soil[key]
                 success = np.isclose(a1, a2, atol=atol).all()
-                if success:
-                    print(f"SUCCESS output variable: {key}")
+                # if success:
+                # print(f"SUCCESS output variable: {key}")
                 if not success:
                     all_success = False
+                    # asdf
                     diff = a1 - a2
                     diffmin = diff.min()
                     diffmax = diff.max()
                     # print(f"time step {istep}")
                     print(f"fail output variable: {key}")
-                    # print(f"prms   {a1.min()}    {a1.max()}")
-                    # print(f"pynhm  {a2.min()}    {a2.max()}")
-                    # print(f"diff   {diffmin}  {diffmax}")
+                    print(f"prms   {a1.min()}    {a1.max()}")
+                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"diff   {diffmin}  {diffmax}")
 
             # if istep == 15:
             #     asdf

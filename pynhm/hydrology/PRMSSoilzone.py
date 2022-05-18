@@ -67,6 +67,7 @@ class PRMSSoilzone(StorageUnit):
         """
         return (
             "nhru",
+            "dprst_frac",
             "cov_type",
             "fastcoef_lin",
             "fastcoef_sq",
@@ -224,8 +225,25 @@ class PRMSSoilzone(StorageUnit):
         #      and their deficiencies are transparent?
         self.hru_area_imperv = self.hru_percent_imperv * self.hru_area
         self.hru_area_perv = self.hru_area - self.hru_area_imperv
-        self.hru_frac_perv = one - self.hru_percent_imperv
+
         self.soil_rechr_max = self.soil_rechr_max_frac * self.soil_moist_max
+        # asdf
+
+        # apparent issues with hru_frac_perv
+        # this%hru_frac_perv = 1.0 - this%hru_percent_imperv
+        self.hru_frac_perv = one - self.hru_percent_imperv
+
+        dprst_area_max = self.dprst_frac * self.hru_area
+
+        wh_active = np.where(self.hru_type != HruType.INACTIVE.value)
+        self.hru_area_perv[wh_active] = (
+            self.hru_area_perv[wh_active] - dprst_area_max[wh_active]
+        )
+        # Recompute hru_frac_perv to reflect the depression storage area
+        self.hru_frac_perv[wh_active] = (
+            self.hru_area_perv[wh_active] / self.hru_area[wh_active]
+        )
+
         self.snow_free = one - self.snowcov_area
         # edit a param
         wh_inactive_or_lake = np.where(
@@ -271,6 +289,40 @@ class PRMSSoilzone(StorageUnit):
             # call ctl_data%read_restart_variable(
             #     'ssres_stor', this%ssres_stor)
             raise RuntimeError("Soilzone restart capability not implemented")
+
+        # Parameter edits in climateflow
+        # JLM: some of these should just be runtime/value errors
+        # JLM: These are for "ACTIVE and non-lake" hrus....
+        # JLM check that.
+        self.soil_moist_max = np.where(
+            self.soil_moist_max < 0.00001, 0.00001, self.soil_moist_max
+        )
+        self.soil_rechr_max = np.where(
+            self.soil_rechr_max < 0.00001, 0.00001, self.soil_rechr_max
+        )
+        self.soil_rechr_max = np.where(
+            self.soil_rechr_max > self.soil_moist_max,
+            self.soil_moist_max,
+            self.soil_rechr_max,
+        )
+        self.soil_rechr = np.where(
+            self.soil_rechr > self.soil_rechr_max,
+            self.soil_rechr_max,
+            self.soil_rechr,
+        )
+        self.soil_moist = np.where(
+            self.soil_moist > self.soil_moist_max,
+            self.soil_moist_max,
+            self.soil_moist,
+        )
+        self.soil_rechr = np.where(
+            self.soil_rechr > self.soil_moist, self.soil_moist, self.soil_rechr
+        )
+        self.ssres_stor = np.where(
+            self.ssres_stor > self.sat_threshold,
+            self.sat_threshold,
+            self.ssres_stor,
+        )
 
         # <
         # need to set on swale_limit self? move to variables?
@@ -318,7 +370,7 @@ class PRMSSoilzone(StorageUnit):
 
         # <
         # need to set soil2gw_flag on self? move to variables?
-        self._soil2gw_flag = np.full(self.nhru, False, dtype=int)
+        self._soil2gw_flag = np.full(self.nhru, False, dtype=bool)
         wh_soil2gwmax = np.where(self.soil2gw_max > zero)
         self._soil2gw_flag[wh_soil2gwmax] = True
 
@@ -355,7 +407,7 @@ class PRMSSoilzone(StorageUnit):
         # # <
 
         if self.verbose:
-            self.soil_moist_ante = soil_moist
+            self.soil_moist_ante = self.soil_moist
             self.ssres_stor_ante = self.ssres_stor
 
         # <
@@ -377,6 +429,9 @@ class PRMSSoilzone(StorageUnit):
         self.hru_actet = (
             self.hru_impervevap + self.hru_intcpevap + self.snow_evap
         )
+
+        # This is obnoxious. i guess this should be an
+        # optional input? should default to zero?
         if self.control.config["dprst_flag"] == 1:
             self.hru_actet = self.hru_actet + self.dprst_evap_hru
 
@@ -408,43 +463,43 @@ class PRMSSoilzone(StorageUnit):
 
             # Compute preferential flow and storage, and any dunnian flow
             prefflow = zero
-            if self._pref_flow_flag[hh]:
-                self.pref_flow_infil[hh] = zero
-                pref_flow_maxin = zero
+            # if self._pref_flow_flag[hh]:
+            #     self.pref_flow_infil[hh] = zero
+            #     pref_flow_maxin = zero
 
-                if capwater_maxin > zero:
-                    # PRMSIV Step 1 - Partition infil between capillary and
-                    #                 preferential-flow (eqn 1-121)
-                    # pref_flow for whole HRU but capwater is pervious area
-                    # calculations on pervious area
-                    pref_flow_maxin = capwater_maxin * self.pref_flow_den[hh]
+            #     if capwater_maxin > zero:
+            #         # PRMSIV Step 1 - Partition infil between capillary and
+            #         #                 preferential-flow (eqn 1-121)
+            #         # pref_flow for whole HRU but capwater is pervious area
+            #         # calculations on pervious area
+            #         pref_flow_maxin = capwater_maxin * self.pref_flow_den[hh]
 
-                    # PRMSIV Step 3: no cascades and already normalized to
-                    #                pervious area. (eqn 1-124)
-                    capwater_maxin = capwater_maxin - pref_flow_maxin
+            #         # PRMSIV Step 3: no cascades and already normalized to
+            #         #                pervious area. (eqn 1-124)
+            #         capwater_maxin = capwater_maxin - pref_flow_maxin
 
-                    # renormalize pref_flow to whole HRU from pervious area
-                    pref_flow_maxin = pref_flow_maxin * self.hru_frac_perv[hh]
+            #         # renormalize pref_flow to whole HRU from pervious area
+            #         pref_flow_maxin = pref_flow_maxin * self.hru_frac_perv[hh]
 
-                    # PRMSIV Step 2 - Compute PFR storage, excess to Dunnian
-                    #                 (eqns 1-122 and 1-123)
-                    # Compute contribution to preferential-flow reservoir
-                    # storage
-                    self.pref_flow_stor[hh] = (
-                        self.pref_flow_stor[hh] + pref_flow_maxin
-                    )
-                    dunnianflw_pfr = max(
-                        zero, self.pref_flow_stor[hh] - self.pref_flow_max[hh]
-                    )
+            #         # PRMSIV Step 2 - Compute PFR storage, excess to Dunnian
+            #         #                 (eqns 1-122 and 1-123)
+            #         # Compute contribution to preferential-flow reservoir
+            #         # storage
+            #         self.pref_flow_stor[hh] = (
+            #             self.pref_flow_stor[hh] + pref_flow_maxin
+            #         )
+            #         dunnianflw_pfr = max(
+            #             zero, self.pref_flow_stor[hh] - self.pref_flow_max[hh]
+            #         )
 
-                    if dunnianflw_pfr > zero:
-                        self.pref_flow_stor[hh] = self.pref_flow_max[hh]
+            #         if dunnianflw_pfr > zero:
+            #             self.pref_flow_stor[hh] = self.pref_flow_max[hh]
 
-                    # <
-                    self.pref_flow_infil[hh] = pref_flow_maxin - dunnianflw_pfr
+            #         # <
+            #         self.pref_flow_infil[hh] = pref_flow_maxin - dunnianflw_pfr
 
-                # <
-                self._pfr_dunnian_flow[hh] = dunnianflw_pfr
+            #     # <
+            #     self._pfr_dunnian_flow[hh] = dunnianflw_pfr
 
             # <
             # whole HRU
@@ -601,6 +656,7 @@ class PRMSSoilzone(StorageUnit):
 
             # <
             self._gvr2pfr[hh] = topfr
+            pervactet = zero
 
             # Compute actual evapotranspiration
             if self.soil_moist[hh] > zero:
@@ -692,6 +748,8 @@ class PRMSSoilzone(StorageUnit):
             self.soil_lower[wh_lower_stor_max_gt_zero]
             / self.soil_lower_stor_max[wh_lower_stor_max_gt_zero]
         )
+        # if self.control.current_time == np.datetime64("1979-03-18T00:00:00"):
+        # asdf
 
         self.soil_moist_tot = (
             self.ssres_stor + self.soil_moist * self.hru_frac_perv
@@ -722,24 +780,25 @@ class PRMSSoilzone(StorageUnit):
 
         # PRMSIV Step 4 (eqn 1-125)
         # prognostic
-        soil_rechr = min(soil_rechr + infil, soil_rechr_max)
+        soil_rechr = np.minimum(soil_rechr + infil, soil_rechr_max)
 
         # PRMSIV Step 5
         # soil_moist_max from previous time step or soil_moist_max has
         # changed for a restart simulation
         # prognostic
         excess = soil_moist + infil
-        soil_moist = min(excess, soil_moist_max)  # PRMSIV eqn 1-126
+        soil_moist = np.minimum(excess, soil_moist_max)  # PRMSIV eqn 1-126
         # JLM: not yet sure why eqn 1-127 is skipped here
 
         # PRMSIV Step 6
         # The following are are eqns 1-128 and 1-129
         # not prognostic
         excess = (excess - soil_moist_max) * perv_frac
+
         if excess > zero:
             if soil2gw_flag:
                 # PRMSIV eqn 1-130
-                soil_to_gw = min(soil2gw_max, excess)
+                soil_to_gw = np.minimum(soil2gw_max, excess)
                 # PRMSIV eqn 1-131 (start)
                 # not prognostic
                 excess = excess - soil_to_gw
@@ -762,7 +821,7 @@ class PRMSSoilzone(StorageUnit):
 
             # <
             # PRMSIV eqn 1-131 (finish)
-            soil_to_ssr = max(zero, excess)
+            soil_to_ssr = np.maximum(zero, excess)
             # THis is also known as gvr_maxin
 
         # <
@@ -919,10 +978,10 @@ class PRMSSoilzone(StorageUnit):
 
                 # <
                 if (pctr < TWOTHIRDS) and (pctr > ONETHIRD):
-                    potet_rechr = pctr * sngl(avail_potet)
+                    potet_rechr = pctr * avail_potet
 
                 elif pctr <= ONETHIRD:
-                    potet_rechr = 0.5 * pctr * sngl(avail_potet)
+                    potet_rechr = 0.5 * pctr * avail_potet
 
                 # <
             else:
@@ -969,8 +1028,8 @@ class PRMSSoilzone(StorageUnit):
             # <
         else:
             et = zero
-        # <
 
+        # <
         return (
             soil_moist,
             soil_rechr,

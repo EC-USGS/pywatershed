@@ -1,12 +1,8 @@
 import os
 import pathlib as pl
-from warnings import warn
 
 import numpy as np
-import pandas as pd
 
-from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from ..constants import nan, one, zero
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
@@ -122,16 +118,28 @@ class StorageUnit(Accessor):
         return self.get_init_values()
 
     def initialize_self_variables(self, restart: bool = False):
-        # skip restart variables if restart (for speed) ? the code is below but commented.
-        # restart_variables = self.restart_variables
         for name in self.parameters:
             setattr(self, name, self.params.parameters[name])
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
+        # skip restart variables if restart (for speed) ?
+        # the code is below but commented.
+        # restart_variables = self.restart_variables
         for name in self.variables:
             # if restart and (name in restart_variables):
             #     continue
             self.initialize_var(name)
+
+        # demote any self variables to single?
+        # for vv in self.__dict__.keys():
+        # for vv in self.parameters:
+        #     if (
+        #         isinstance(self[vv], np.ndarray)
+        #         and self[vv].dtype == "float64"
+        #     ):
+        #         print(f"converting {vv} from float64 to float32")
+        #         self[vv] = self[vv].astype("float32")
+
         return
 
     def initialize_var(self, var_name):

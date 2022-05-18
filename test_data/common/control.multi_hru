@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-65
+67
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-65
+67
 4
 albedo
 contrib_fraction
@@ -287,6 +287,7 @@ potet
 potet_lower
 potet_rechr
 pptmix
+pptmix_nopack
 prmx
 recharge
 salb
@@ -297,6 +298,7 @@ snow_evap
 snowmelt
 soil_lower
 soil_lower_ratio
+snow_evap
 soil_moist
 soil_moist_tot
 soil_rechr

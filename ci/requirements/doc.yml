@@ -8,8 +8,10 @@ dependencies:
   - isort
   - flake8
   - pylint
+  - networkx
   - netCDF4
   - numpy
+  - numba
   - pandas
   - pip
   - pytest

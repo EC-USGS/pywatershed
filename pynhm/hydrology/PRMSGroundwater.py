@@ -109,10 +109,10 @@ class PRMSGroundwater(StorageUnit):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get groundwater reservoir inital values
+        """Get groundwater reservoir initial values
 
         Returns:
-            dict: inital values for named variables
+            dict: initial values for named variables
         """
         # No GW res values need initialized prior to calculation.
         return {}

@@ -4,6 +4,8 @@ from typing import Union
 import netCDF4 as nc4
 import numpy as np
 
+from ..base.meta import meta_dimensions, meta_netcdf_type
+
 fileish = Union[str, pl.Path]
 listish = Union[list, tuple]
 arrayish = Union[list, tuple, np.ndarray]
@@ -53,15 +55,32 @@ class NetCdfRead:
             # JLM: the global time type as in cbh_utils, define somewhere
         )
         self._ntimes = self._datetime.shape[0]
-        spatial_id_name = (
-            "nhm_id" if "nhm_id" in self.ds_var_list else "hru_id"
-        )
-        self._spatial_id = self.dataset.variables[spatial_id_name][:]
+
+        spatial_id_names = []
+        if "nhm_id" in self.ds_var_list:
+            spatial_id_names.append("nhm_id")
+        elif "hru_id" in self.ds_var_list:
+            spatial_id_names.append("hru_id")
+        if "nhm_seg" in self.ds_var_list:
+            spatial_id_names.append("nhm_seg")
+        elif "hru_seg" in self.ds_var_list:
+            spatial_id_names.append("hru_seg")
+
+        # set default spatial id
+        if len(spatial_id_names) < 1:
+            spatial_id_names.append("hru_id")
+
+        # set spatial id dictionary
+        self._spatial_ids = {}
+        for spatial_id_name in spatial_id_names:
+            self._spatial_ids[spatial_id_name] = self.dataset.variables[
+                spatial_id_name
+            ][:]
 
         self._variables = [
             name
             for name in self.ds_var_list
-            if name != "datetime" and name != spatial_id_name
+            if name != "datetime" and name not in spatial_id_names
         ]
 
     @property
@@ -95,10 +114,38 @@ class NetCdfRead:
         """Get number of HRUs in the NetCDF file
 
         Returns:
-            nhru: number of HRUs in the NetCDF file
+            nhru_shape: number of HRUs in the NetCDF file
 
         """
-        return self._spatial_id.shape[0]
+        hru_key = None
+        if "nhm_id" in self._spatial_ids.keys():
+            hru_key = "nhm_id"
+        elif "hru_id" in self._spatial_ids.keys():
+            hru_key = "hru_id"
+        if hru_key is not None:
+            nhru_shape = self._spatial_ids[hru_key].shape[0]
+        else:
+            nhru_shape = 0
+        return nhru_shape
+
+    @property
+    def nsegment(
+        self,
+    ) -> int:
+        """Get number of segments in the NetCDF file
+
+        Returns:
+            seg_shape: number of segments in the NetCDF file
+
+        """
+        seg_key = None
+        if "nhm_seg" in self._spatial_ids.keys():
+            seg_key = "nhm_seg"
+        if seg_key is not None:
+            seg_shape = self._spatial_ids[seg_key].shape[0]
+        else:
+            seg_shape = 0
+        return seg_shape
 
     @property
     def spatial_ids(
@@ -110,7 +157,7 @@ class NetCdfRead:
             arr: numpy array with the spatial IDs in the NetCDF file
 
         """
-        return self._spatial_id
+        return self._spatial_ids
 
     @property
     def variables(self):
@@ -191,7 +238,7 @@ class NetCdfWrite:
     def __init__(
         self,
         name: fileish,
-        hru_ids: arrayish,
+        coordinates: dict,
         variables: listish,
         var_meta: dict,
         time_units: str = "days since 1970-01-01 00:00:00",
@@ -204,41 +251,81 @@ class NetCdfWrite:
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
         self.dataset.setncattr("Description", "PYNHM output data")
 
-        if isinstance(hru_ids, (list, tuple)):
-            nhrus = len(hru_ids)
-        elif isinstance(hru_ids, np.ndarray):
-            nhrus = hru_ids.shape[0]
-        self.nhrus = nhrus
-        self.hru_ids = hru_ids
+        variable_dimensions = {}
+        nhru_coordinate = False
+        nsegment_coordinate = False
+        for var_name in variables:
+            dimension_name = meta_dimensions(var_meta[var_name])
+            variable_dimensions[var_name] = dimension_name
+            if "nhru" in dimension_name or "ngw" in dimension_name:
+                nhru_coordinate = True
+            if "nsegment" in dimension_name:
+                nsegment_coordinate = True
+
+        if nhru_coordinate:
+            hru_ids = coordinates["nhm_id"]
+            if isinstance(hru_ids, (list, tuple)):
+                nhrus = len(hru_ids)
+            elif isinstance(hru_ids, np.ndarray):
+                nhrus = hru_ids.shape[0]
+            self.nhrus = nhrus
+            self.hru_ids = hru_ids
+
+        if nsegment_coordinate:
+            hru_segments = coordinates["nhm_seg"]
+            if isinstance(hru_segments, (list, tuple)):
+                nsegments = len(hru_segments)
+            elif isinstance(hru_segments, np.ndarray):
+                nsegments = hru_segments.shape[0]
+            self.nsegments = nsegments
+            self.hru_segments = hru_segments
 
         # Dimensions
         # None for the len argument gives an unlimited dim
         self.dataset.createDimension("time", None)
-        self.dataset.createDimension("hru_id", self.nhrus)
+        if nhru_coordinate:
+            self.dataset.createDimension("hru_id", self.nhrus)
+        if nsegment_coordinate:
+            self.dataset.createDimension("hru_seg", self.nsegments)
 
         # Dim Variables
         self.time = self.dataset.createVariable("datetime", "f4", ("time",))
         self.time.units = time_units
 
-        self.hruid = self.dataset.createVariable("hru_id", "i4", ("hru_id"))
-        self.hruid[:] = np.array(hru_ids, dtype=int)
+        if nhru_coordinate:
+            self.hruid = self.dataset.createVariable(
+                "hru_id", "i4", ("hru_id")
+            )
+            self.hruid[:] = np.array(self.hru_ids, dtype=int)
+        if nsegment_coordinate:
+            self.segid = self.dataset.createVariable(
+                "hru_seg", "i4", ("hru_seg")
+            )
+            self.segid[:] = np.array(self.hru_segments, dtype=int)
 
         self.variables = {}
-        for vv in variables:
-            variabletype = "f4"
-            self.variables[vv] = self.dataset.createVariable(
-                vv,
+        for var_name in variables:
+            variabletype = meta_netcdf_type(var_meta[var_name])
+            if "nsegment" in variable_dimensions[var_name]:
+                spatial_coordinate = "hru_seg"
+            else:
+                spatial_coordinate = "hru_id"
+
+            self.variables[var_name] = self.dataset.createVariable(
+                var_name,
                 variabletype,
-                ("time", "hru_id"),
+                ("time", spatial_coordinate),
                 fill_value=nc4.default_fillvals[variabletype],
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
-            for key, val in var_meta.items():
+            for key, val in var_meta[var_name].items():
                 if isinstance(val, dict):
                     continue
-                self.variables[vv].setncattr(key, val)
+                self.variables[var_name].setncattr(key, val)
+
+        return
 
     def __del__(self):
         self.close()
@@ -345,7 +432,12 @@ class NetCdfCompare:
             compare_arr = self._compare.get_data(variable)
             if not np.allclose(base_arr, compare_arr, atol=atol):
                 success = False
-                failures[variable] = np.max(np.abs(compare_arr - base_arr))
+                diff = np.abs(compare_arr - base_arr)
+                failures[variable] = (
+                    np.max(diff),
+                    atol,
+                    np.argmax(np.max(diff, axis=0)),
+                )
         return success, failures
 
     @property

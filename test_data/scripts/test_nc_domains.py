@@ -1,9 +1,9 @@
-from datetime import timedelta
-import numpy as np
 import os
 import pathlib as pl
 import sys
+from datetime import timedelta
 
+import numpy as np
 import pytest
 
 from pynhm import CsvFile

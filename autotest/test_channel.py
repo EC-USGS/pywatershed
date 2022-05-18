@@ -1,13 +1,14 @@
 import pathlib as pl
 
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+import numpy as np
+
 from pynhm.base.control import Control
-from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
+from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
-class TestPRMSGroundwaterDomain:
+class TestPRMSChannelDomain:
     def test_init(self, domain, tmp_path):
         tmp_path = pl.Path(tmp_path)
         prms_params = PrmsParameters.load(domain["param_file"])
@@ -18,16 +19,16 @@ class TestPRMSGroundwaterDomain:
         # load csv files into dataframes
         output_dir = domain["prms_output_dir"]
         input_variables = {}
-        for key in PRMSGroundwater.get_inputs():
+        for key in PRMSChannel.get_inputs():
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        gw = PRMSGroundwater(control, prms_params, **input_variables)
+        channel = PRMSChannel(control, prms_params, **input_variables)
         nc_parent = tmp_path / domain["domain_name"]
-        gw.initialize_netcdf(nc_parent)
+        channel.initialize_netcdf(nc_parent)
 
         output_compare = {}
-        for key in PRMSGroundwater.get_variables():
+        for key in PRMSChannel.get_variables():
             base_nc_path = output_dir / f"{key}.nc"
             compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
             output_compare[key] = (base_nc_path, compare_nc_path)
@@ -36,16 +37,15 @@ class TestPRMSGroundwaterDomain:
         print(f"compare_nc_path: {compare_nc_path}")
 
         for istep in range(control.n_times):
-
             control.advance()
 
-            gw.advance()
+            channel.advance()
 
-            gw.calculate(float(istep))
+            channel.calculate(float(istep))
 
-            gw.output()
+            channel.output()
 
-        gw.finalize()
+        channel.finalize()
 
         assert_error = False
         for key, (base, compare) in output_compare.items():
@@ -58,6 +58,9 @@ class TestPRMSGroundwaterDomain:
                     + f"in column {diff[key][2]}"
                 )
                 assert_error = True
+            else:
+                print(f"comparison for {key} passed")
+
         assert not assert_error, "comparison failed"
 
         return

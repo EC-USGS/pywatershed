@@ -4,7 +4,9 @@ isort
 flake8
 pylint
 netCDF4
+networkx
 numpy
+numba
 pandas
 pip
 pytest

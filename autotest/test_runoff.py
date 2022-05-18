@@ -33,6 +33,7 @@ class TestPRMSRunoffDomain:
             "infil",
             "dprst_stor_hru",
             "hru_impervstor",
+            "sroff",
         ]
         output_dir = domain["prms_output_dir"]
 

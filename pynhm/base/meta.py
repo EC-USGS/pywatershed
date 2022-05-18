@@ -10,13 +10,31 @@ fileish = Union[str, pl.Path]
 varoptions = Union[str, list, tuple]
 
 
-def load_yaml_file(the_file):
+def load_yaml_file(the_file: pl.Path) -> dict:
+    """Load a yaml file
+
+    Args:
+        the_file: metadata yaml file
+
+    Returns:
+        data: dictionary with metadata in a metadata yaml file
+
+    """
     with pl.Path(the_file).open("r") as file_stream:
         data = yaml.load(file_stream, Loader=yaml.Loader)
     return data
 
 
 def meta_netcdf_type(meta_item: dict) -> str:
+    """Get the NetCDF data type for a variable
+
+    Args:
+        meta_item: variable meta data
+
+    Returns:
+        netcdf_type_str: NetCDF data type
+
+    """
     type_str = meta_type(meta_item)
     if type_str == "I":
         netcdf_type_str = "i4"
@@ -32,6 +50,15 @@ def meta_netcdf_type(meta_item: dict) -> str:
 
 
 def meta_numpy_type(meta_item: dict) -> str:
+    """Get the numpy dtype for a variable
+
+    Args:
+        meta_item: variable meta data
+
+    Returns:
+        numpy_type_str: numpy dtype
+
+    """
     type_str = meta_type(meta_item)
     if type_str == "I":
         numpy_type_str = int
@@ -47,6 +74,15 @@ def meta_numpy_type(meta_item: dict) -> str:
 
 
 def meta_type(meta_item: dict) -> str:
+    """Get variable data type from meta data
+
+    Args:
+        meta_item: variable meta data
+
+    Returns:
+        type_str: variable type from meta data
+
+    """
     return meta_item["type"]
 
 
@@ -60,7 +96,7 @@ def meta_dimensions(meta_item: dict) -> list:
         dimensions: tuple with dimension strings for a variable name
 
     """
-    return [value for key, value in meta_item["dimensions"].items()]
+    return list(meta_item["dimensions"].values())
 
 
 class Meta:
@@ -90,6 +126,15 @@ class Meta:
         return
 
     def is_available(self, variable_name: str) -> bool:
+        """Determine if a variable is available in the meta data
+
+        Args:
+            variable_name: variable name
+
+        Returns:
+            avail: boolean indicating of the variable name is available
+
+        """
         if (
             variable_name in self.variables.keys()
             or variable_name in self.dimensions.keys()
@@ -149,11 +194,16 @@ class Meta:
 
     def find_variables(self, variables: varoptions) -> dict:
         """
+        Find metadata for variables from variable, dimensions, control, and
+        parameter metadata types.
 
         Args:
-            variables:
+            variables: select variable names
 
         Returns:
+            variable_dict: metadata for select variable names. An empty
+            dictionary will be returned if the select variable names are not
+            found.
 
         """
         if isinstance(variables, str):

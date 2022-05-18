@@ -438,7 +438,7 @@ class PRMSRunoff(StorageUnit):
                             self.dprst_vol_open[i],
                             avail_et,
                             self.dprst_vol_clos[i],
-                            self.dprst_vol_open[i],
+                            self.dprst_sroff_hru[i],
                             srp,
                             sri,
                         ) = self.dprst_comp(
@@ -1642,7 +1642,7 @@ class PRMSRunoff(StorageUnit):
             dprst_vol_open,
             avail_et,
             dprst_vol_clos,
-            dprst_vol_open,
+            dprst_sroff_hru,
             srp,
             sri,
         )

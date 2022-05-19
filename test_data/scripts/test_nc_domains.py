@@ -1,10 +1,4 @@
-from datetime import timedelta
 import numpy as np
-import os
-import pathlib as pl
-import sys
-
-import pytest
 
 from pynhm import CsvFile
 
@@ -23,7 +17,7 @@ def test_csv_to_previous_netcdf(csv_files_prev):
     orig_dates = csv._data["date"].copy()
     csv._data = np.roll(csv._data, 1, axis=0)
     csv._data["date"] = orig_dates
-    # Here we will eventually want to supply the desired initial conditons
+    # Here we will eventually want to supply the desired initial conditions
     for hh in range(len(csv._data[0])):
         if hh == 0:
             continue

@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-54
+55
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-54
+55
 4
 albedo
 contrib_fraction
@@ -282,12 +282,14 @@ pkwater_ante
 pkwater_equiv
 potet
 pptmix
+pptmix_nopack
 prmx
 recharge
 salb
 slow_flow
 snowcov_area
 snowmelt
+snow_evap
 soil_moist
 soil_moist_tot
 soil_rechr
@@ -344,4 +346,4 @@ seg_upstream_inflow
 nsegmentOutBaseFileName
 1
 4
-./output/nsegment_
+./output/

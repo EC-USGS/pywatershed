@@ -242,10 +242,10 @@ class PRMSSnow(StorageUnit):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get snow pack inital values
+        """Get snow pack initial values
 
         Returns:
-            dict: inital values for named variables
+            dict: initial values for named variables
         """
 
         return {
@@ -294,7 +294,7 @@ class PRMSSnow(StorageUnit):
 
         if self.control.config["init_vars_from_file"] in [0, 2, 3]:
 
-            # The super().__init__ already set_initial_conditions using its set_inital_conditions
+            # The super().__init__ already set_initial_conditions using its set_initial_conditions
             # Below Im just following PRMS6, will reconcile later with the super (may be redundant).
             vars_init = [
                 "albedo",

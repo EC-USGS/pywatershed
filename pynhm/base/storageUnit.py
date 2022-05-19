@@ -135,20 +135,24 @@ class StorageUnit(Accessor):
         return
 
     def initialize_var(self, var_name):
+        if self.input_meta[var_name]["dimensions"][0] == "nsegment":
+            nsize = self.nsegment
+        else:
+            nsize = self.nhru
         init_vals = self.get_init_values()
         if var_name in init_vals.keys():
             init_type = type_translation[self.var_meta[var_name]["type"]]
             setattr(
                 self,
                 var_name,
-                np.full(self.nhru, init_vals[var_name], dtype=init_type),
+                np.full(nsize, init_vals[var_name], dtype=init_type),
             )
         elif self.verbose:
-            print(f"{var_name} not initialized (no inital value specified)")
+            print(f"{var_name} not initialized (no initial value specified)")
 
         return
 
-    def set_initial_conditons(self):
+    def set_initial_conditions(self):
         raise Exception("This must be overridden")
 
     def _advance_variables(self):
@@ -242,19 +246,22 @@ class StorageUnit(Accessor):
             # make working directory
             working_path = pl.Path(name)
             working_path.mkdir(parents=True, exist_ok=True)
-            for variable in self.variables:
-                nc_path = pl.Path(working_path) / f"{variable}.nc"
-                self._netcdf[variable] = NetCdfWrite(
+            for variable_name in self.variables:
+                nc_path = pl.Path(working_path) / f"{variable_name}.nc"
+                self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
-                    self.params.nhm_coordinate,
-                    [variable],
-                    self.var_meta[variable],
+                    self.params.nhm_coordinates,
+                    [variable_name],
+                    {variable_name: self.var_meta[variable_name]},
                 )
         else:
             initial_variable = self.variables[0]
             pl.Path(name).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                name, self.id, self.variables, self.var_meta
+                name,
+                self.params.nhm_coordinates,
+                self.variables,
+                self.var_meta,
             )
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]

@@ -1,4 +1,5 @@
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
+from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 
 from .atmosphere.AtmBoundaryLayer import AtmBoundaryLayer

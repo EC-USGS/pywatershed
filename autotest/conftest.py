@@ -12,7 +12,7 @@ def pytest_addoption(parser):
         help=(
             "YAML file(s) for indiv domain tests. You can pass multiples of "
             "this argument. Default value (not shown here) is "
-            "--domain_yaml=../test_data/drb_2yr/drb_2yr.yaml."
+            "--domain_yaml=../test_data/drb_2yr/drb_2yr.yaml"
         ),
     )
 

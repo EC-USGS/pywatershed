@@ -132,10 +132,10 @@ class PRMSCanopy(StorageUnit):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get canopy inital values
+        """Get canopy initial values
 
         Returns:
-            dict: inital values for named variables
+            dict: initial values for named variables
         """
 
         return {

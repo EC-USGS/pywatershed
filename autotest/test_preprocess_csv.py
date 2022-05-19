@@ -14,7 +14,8 @@ def compare_netcdf(csv, nc_name):
     ds = nc.Dataset(nc_name)
 
     np_data = csv.data
-    hrus = csv.hru_ids
+    hrus = csv.nhm_id
+    _ = csv.nhm_seg
     variables = csv.variable_names
 
     for variable in variables:

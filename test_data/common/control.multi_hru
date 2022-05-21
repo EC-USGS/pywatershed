@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-55
+56
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-55
+56
 4
 albedo
 contrib_fraction

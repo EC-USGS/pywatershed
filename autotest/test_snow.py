@@ -3,17 +3,22 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.NHMSolarGeometry import NHMSolarGeometry
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.prms5util import load_soltab_debug
 
 
 @pytest.fixture(scope="function")
-def solar_geom(domain):
-    params = PrmsParameters.load(domain["param_file"])
-    return NHMSolarGeometry(params)
+def horad_potsw(domain):
+    # get the "horizontal" potential shortwave radiation
+    (
+        _,
+        potential_sw_rad_flat,
+        _,
+    ) = load_soltab_debug(domain["prms_run_dir"] / "soltab_debug")
+    return potential_sw_rad_flat
 
 
 @pytest.fixture(scope="function")
@@ -27,7 +32,7 @@ def params(domain):
 
 
 class TestPRMSSnow:
-    def test_init(self, domain, control, params, solar_geom, tmp_path):
+    def test_init(self, domain, control, params, horad_potsw, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -75,15 +80,15 @@ class TestPRMSSnow:
         input_variables = {}
         for key in PRMSSnow.get_inputs():
             if key == "soltab_horad_potsw":
-                input_variables[key] = solar_geom["potential_sw_rad_flat"]
+                input_variables[key] = horad_potsw
             else:
                 nc_path = output_dir / f"{key}.nc"
                 input_variables[key] = nc_path
 
         snow = PRMSSnow(control, params, **input_variables)
         all_success = True
-        # for istep in range(control.n_times):
-        for istep in range(10):
+        for istep in range(control.n_times):
+            # for istep in range(10):
 
             control.advance()
             snow.advance()
@@ -93,7 +98,7 @@ class TestPRMSSnow:
             print(control.current_time)
 
             # compare along the way
-            atol = 1.0e-5
+            atol = 1.0e-3
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():
@@ -110,6 +115,14 @@ class TestPRMSSnow:
                     print(f"prms   {a1.min()}    {a1.max()}")
                     print(f"pynhm  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
+
+                    zz = abs(a2 - a1)
+                    max_diff = zz.max()
+                    wh_max_diff = np.where(zz == max_diff)
+                    print(zz[wh_max_diff])
+                    print(a1[wh_max_diff])
+                    print(a2[wh_max_diff])
+                    asdf
 
             # if istep == 15:
             #     asdf

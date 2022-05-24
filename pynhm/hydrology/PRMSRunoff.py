@@ -240,21 +240,12 @@ class PRMSRunoff(StorageUnit):
             "dprst_stor_hru": zero,
         }
 
-    def advance(self):
-        """Advance box
+    def _advance_variables(self) -> None:
+        """Advance the variables
         Returns:
             None
-
         """
-        # self.var1_stor_old = self.var1_stor
-        self._itime_step += 1
-
-        for key, value in self._input_variables_dict.items():
-            value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
-        return
+        return None
 
     def calculate(self, time_length, vectorized=False):
         """Calculate terms for a time step

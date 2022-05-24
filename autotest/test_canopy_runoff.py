@@ -6,10 +6,8 @@ import pytest
 
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
+from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.preprocess import CsvFile
-from pynhm.utils import ControlVariables
-from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
@@ -23,7 +21,7 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
-class TestPRMSRunoffDomain:
+class TestPRMSCanopyRunoffDomain:
     def test_init(self, domain, control, params, tmp_path):
         tmp_path = pl.Path(tmp_path)
 
@@ -43,6 +41,17 @@ class TestPRMSRunoffDomain:
             nc_pth = output_dir / f"{key}.nc"
             ans[key] = adapter_factory(nc_pth, variable_name=key)
 
+        # instantiate canopy
+        input_variables = {}
+        for key in PRMSCanopy.get_inputs():
+            nc_pth = output_dir / f"{key}.nc"
+            if "pkwater_equiv" in str(nc_pth):
+                nc_pth = output_dir / "pkwater_equiv_prev.nc"
+            input_variables[key] = nc_pth
+
+        canopy = PRMSCanopy(control=control, params=params, **input_variables)
+
+
         # instantiate runoff
         input_variables = {}
         for key in PRMSRunoff.get_inputs():
@@ -50,14 +59,24 @@ class TestPRMSRunoffDomain:
             if "soil_moist" in str(nc_pth):
                 nc_pth = output_dir / "soil_moist_prev.nc"
             input_variables[key] = nc_pth
-
+        input_variables["net_ppt"] = None
+        input_variables["net_rain"] = None
+        input_variables["net_snow"] = None
         runoff = PRMSRunoff(control=control, params=params, **input_variables)
+
+        # wire up output from canopy as input to runoff
+        runoff.set_input_to_adapter("net_ppt", adapter_factory(canopy.net_ppt, "net_ppt"))
+        runoff.set_input_to_adapter("net_rain", adapter_factory(canopy.net_rain, "net_rain"))
+        runoff.set_input_to_adapter("net_snow", adapter_factory(canopy.net_snow, "net_snow"))
 
         all_success = True
         for istep in range(control.n_times):
 
             control.advance()
+            canopy.advance()
             runoff.advance()
+
+            canopy.calculate(1.0)
             runoff.calculate(1.0)
 
             # advance the answer, which is being read from a netcdf file

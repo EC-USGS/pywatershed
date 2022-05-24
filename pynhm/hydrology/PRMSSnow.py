@@ -445,8 +445,8 @@ class PRMSSnow(StorageUnit):
             # TODO: rsr, do we want to reset all HRUs, what about Southern Hemisphere
             if self.control.current_dowy == 1:
                 self.pss[jj] = zero  # [inches]
-                self.iso[jj] = True  # [flag]
-                self.mso[jj] = True  # [flag]
+                self.iso[jj] = 1  # [flag]
+                self.mso[jj] = 1  # [flag]
                 self.lso[jj] = 0  # [counter]
 
             # <
@@ -1392,7 +1392,7 @@ class PRMSSnow(StorageUnit):
                 # Reset the shallow new snow flag and cumulative shallow snow variable (see below).
                 # lst = 0  # [flag]
                 self.lst[jj] = False  # [flag]
-                snsv = zero  # [inches]
+                self.snsv[jj] = zero  # [inches]
 
         # <<
         elif self.iso[jj] == 2:
@@ -1467,6 +1467,9 @@ class PRMSSnow(StorageUnit):
             # The change in albedo depends on if the precipitation is a mix, if the
             # rain is above a threshold,  or if the snow is above a threshold.
             # 4 options below (if-then, elseif, elseif, else)
+
+            if self.control._itime_step == 41:
+                asdfg
 
             if self.pptmix[jj] < one:
                 # (3.1) This is not a mixed event...
@@ -1558,6 +1561,8 @@ class PRMSSnow(StorageUnit):
                 # (1.2) Currently using the accumulation season curve (Old snow - Winter accumulation period)...
                 #       and not past the maximum curve index.
                 # Get the albedo number from the accumulation season curve.
+                # if self.control._itime_step == 41:
+                #     asdfg
                 self.albedo[jj] = acum_init[ll - 1]  # [fraction of radiation]
 
             else:
@@ -1594,6 +1599,9 @@ class PRMSSnow(StorageUnit):
             # Set flag to indicate accumulation season curve.
             self.int_alb[jj] = 1  # [flag]
 
+        if self.control._itime_step == 42:
+            asdfg
+
         # <
         return
 
@@ -1619,6 +1627,7 @@ class PRMSSnow(StorageUnit):
         swn = (
             self.swrad[jj] * (one - self.albedo[jj]) * self.rad_trncf[jj]
         )  # [cal/cm^2] or [Langleys]
+        print(f"swn: {swn}")
 
         # Set the convection-condensation for a half-day interval
         cec = (
@@ -1736,7 +1745,6 @@ class PRMSSnow(StorageUnit):
             # for the day.
             temp = (self.tmaxc[jj] + self.tavgc[jj]) * 0.5  # [degrees C]
             cals = self.snowbal(jj, niteda, cec, cst, esv, sw, temp, trd)
-
             # Track total heat flux from both night and day periods
             self.tcal[jj] = self.tcal[jj] + cals  # [cal/cm^2] or [Langleys]
 

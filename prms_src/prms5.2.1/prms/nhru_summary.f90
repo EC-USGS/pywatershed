@@ -10,8 +10,10 @@
       character(len=*), parameter :: Version_nhru_summary = '2021-08-13'
       INTEGER, SAVE :: Begin_results, Begyr, Lastyear
       INTEGER, SAVE, ALLOCATABLE :: Dailyunit(:), Nc_vars(:), Nhru_var_type(:), Nhru_var_int(:, :)
-      REAL, SAVE, ALLOCATABLE :: Nhru_var_daily(:, :)
-      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_dble(:, :)
+      ! REAL, SAVE, ALLOCATABLE :: Nhru_var_daily(:, :)
+      DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_daily(:, :)
+      ! DOUBLE PRECISION, SAVE, ALLOCATABLE :: Nhru_var_dble(:, :)
+      REAL, SAVE, ALLOCATABLE :: Nhru_var_sngle(:, :)
       CHARACTER(LEN=48), SAVE :: Output_fmt, Output_fmt2, Output_fmt3, Output_fmtint
       CHARACTER(LEN=48), SAVE :: Output_grid_fmt, Output_grid_fmtint, Output_date_fmt, Output_date_fmt3, Output_fmt3int
       INTEGER, SAVE :: Daily_flag, Double_vars, Yeardays, Monthly_flag, Integer_vars
@@ -188,10 +190,12 @@
         ENDIF
       ENDDO
       IF ( ierr==1 ) ERROR STOP ERROR_control
-      IF ( Double_vars==ACTIVE ) THEN
-        ALLOCATE ( Nhru_var_dble(Nhru, NhruOutVars) )
-        Nhru_var_dble = 0.0D0
-      ENDIF
+      ALLOCATE ( Nhru_var_sngle(Nhru, NhruOutVars) )
+      Nhru_var_sngle = 0.0D0
+      ! IF ( Double_vars==ACTIVE ) THEN
+      !   ALLOCATE ( Nhru_var_dble(Nhru, NhruOutVars) )
+      !   Nhru_var_dble = 0.0D0
+      ! ENDIF
       IF ( Integer_vars==ACTIVE ) THEN
         ALLOCATE ( Nhru_var_int(Nhru, NhruOutVars) )
         Nhru_var_int = 0
@@ -237,7 +241,7 @@
       ENDIF
       WRITE ( Output_fmt2, 9002 ) Nhru
       ALLOCATE ( Nhru_var_daily(Nhru, NhruOutVars) )
-      Nhru_var_daily = 0.0
+      Nhru_var_daily = 0.0D0
       DO jj = 1, NhruOutVars
         IF ( Daily_flag==ACTIVE ) THEN
           fileName = NhruOutBaseFileName(:numchars(NhruOutBaseFileName))//NhruOutVar_names(jj)(:Nc_vars(jj))//'.csv'
@@ -334,26 +338,40 @@
 !-----------------------------------------------------------------------
 ! need getvars for each variable (only can have short string)
       DO jj = 1, NhruOutVars
+        
         IF ( Nhru_var_type(jj)==REAL_TYPE ) THEN
-          IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'real', Nhru_var_daily(1, jj))/=0 ) &
-     &         CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
-        ELSEIF ( Nhru_var_type(jj)==DBLE_TYPE ) THEN
-          IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'double', Nhru_var_dble(1, jj))/=0 ) &
-     &         CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
+          
+          IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'real', Nhru_var_sngle(1, jj))/=0 ) &
+               CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
+
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
-            Nhru_var_daily(i, jj) = SNGL( Nhru_var_dble(i, jj) )
+            Nhru_var_daily(i, jj) =  dble(Nhru_var_sngle(i, jj))
           ENDDO
+          
+        ELSEIF ( Nhru_var_type(jj)==DBLE_TYPE ) THEN
+          IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'double', Nhru_var_daily(1, jj))/=0 ) &
+               CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
+
+          ! DO j = 1, Active_hrus
+          !   i = Hru_route_order(j)
+          !   Nhru_var_daily(i, jj) =  Nhru_var_daily(i, jj)
+          ! ENDDO
+          
         ELSEIF ( Nhru_var_type(jj)==INT_TYPE ) THEN
+          
           IF ( getvar(MODNAME, NhruOutVar_names(jj)(:Nc_vars(jj)), Nhru, 'integer', Nhru_var_int(1, jj))/=0 ) &
-     &         CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
+               CALL read_error(4, NhruOutVar_names(jj)(:Nc_vars(jj)))
+
           IF ( NhruOut_freq>DAILY ) THEN
             DO j = 1, Active_hrus
               i = Hru_route_order(j)
-              Nhru_var_daily(i, jj) = FLOAT( Nhru_var_int(i, jj) )
+              Nhru_var_daily(i, jj) = DBLE( Nhru_var_int(i, jj) )
             ENDDO
           ENDIF
+          
         ENDIF
+        
         IF ( Daily_flag==ACTIVE ) THEN
           write_date = 1
           IF ( outputSelectDatesON_OFF==ACTIVE ) THEN
@@ -439,7 +457,8 @@
         DO jj = 1, NhruOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
-            Nhru_var_yearly(i, jj) = Nhru_var_yearly(i, jj) + DBLE( Nhru_var_daily(i, jj) )
+            ! Nhru_var_yearly(i, jj) = Nhru_var_yearly(i, jj) + DBLE( Nhru_var_daily(i, jj) )
+            Nhru_var_yearly(i, jj) = Nhru_var_yearly(i, jj) + Nhru_var_daily(i, jj)
           ENDDO
         ENDDO
         RETURN
@@ -449,7 +468,8 @@
         DO jj = 1, NhruOutVars
           DO j = 1, Active_hrus
             i = Hru_route_order(j)
-            Nhru_var_monthly(i, jj) = Nhru_var_monthly(i, jj) + DBLE( Nhru_var_daily(i, jj) )
+            ! Nhru_var_monthly(i, jj) = Nhru_var_monthly(i, jj) + DBLE( Nhru_var_daily(i, jj) )
+            Nhru_var_monthly(i, jj) = Nhru_var_monthly(i, jj) + Nhru_var_daily(i, jj)
             IF ( write_month==ACTIVE ) THEN
               IF ( NhruOut_freq==MEAN_MONTHLY ) Nhru_var_monthly(i, jj) = Nhru_var_monthly(i, jj)/Monthdays
             ENDIF

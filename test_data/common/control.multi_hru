@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-56
+57
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-56
+57
 4
 albedo
 contrib_fraction
@@ -274,6 +274,7 @@ infil
 intcp_changeover
 intcp_evap
 intcp_stor
+iso
 net_ppt
 net_rain
 net_snow

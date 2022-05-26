@@ -9,9 +9,7 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..constants import HruType, epsilon64, epsilon32, inch2cm, one, zero
-
-epsilon48 = (epsilon32 + epsilon64) / 2
+from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -55,7 +53,7 @@ amlt_init = [
 ]
 
 maxalb = 15
-onethird = 1.0 / 3.0
+ONETHIRD = 1.0 / 3.0
 
 tcind = 0
 
@@ -481,7 +479,7 @@ class PRMSSnow(StorageUnit):
                 # if self.control._itime_step == 35:
                 #    asdfg
 
-            if self.pkwater_equiv[jj] < epsilon48:
+            if self.pkwater_equiv[jj] < epsilon64:
                 # No existing snowpack
                 if not self.newsnow[jj]:
                     # Skip the HRU if there is no snowpack and no new snow
@@ -1830,7 +1828,7 @@ class PRMSSnow(StorageUnit):
                     # through the time period, then the emissivity is set to the
                     # "no precipitation" value.
                     if trd > ONETHIRD:
-                        emis = emis_noppt  # [fraction of radiation]
+                        emis = self.emis_noppt[jj]  # [fraction of radiation]
 
                 # <<
                 else:

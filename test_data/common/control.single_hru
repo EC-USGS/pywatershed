@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-55
+56
 w####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-55
+56
 4
 albedo
 contrib_fraction
@@ -285,6 +285,7 @@ potet
 pptmix
 pptmix_nopack
 prmx
+pst
 recharge
 salb
 slow_flow

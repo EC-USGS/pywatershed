@@ -143,7 +143,7 @@ class StorageUnit(Accessor):
         return
 
     def initialize_var(self, var_name):
-        if self.input_meta[var_name]["dimensions"][0] == "nsegment":
+        if self.var_meta[var_name]["dimensions"][0] == "nsegment":
             nsize = self.nsegment
         else:
             nsize = self.nhru

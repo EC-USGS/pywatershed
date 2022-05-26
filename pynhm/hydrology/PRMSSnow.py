@@ -1,3 +1,5 @@
+import pdb
+
 from typing import Union
 
 import numpy as np
@@ -7,7 +9,7 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
-from ..constants import HruType, epsilon, inch2cm, one, zero
+from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -51,7 +53,11 @@ amlt_init = [
 ]
 
 maxalb = 15
-onethird = 1.0 / 3.0
+ONETHIRD = 1.0 / 3.0
+
+tcind = 0
+
+dbgind = 434
 
 
 class PRMSSnow(StorageUnit):
@@ -73,6 +79,7 @@ class PRMSSnow(StorageUnit):
         hru_intcpevap: adaptable,
         hru_ppt: adaptable,
         potet: adaptable,
+        pptmix: adaptable,
         prmx: adaptable,
         tavgc: adaptable,
         tmaxc: adaptable,
@@ -153,6 +160,7 @@ class PRMSSnow(StorageUnit):
             "net_snow",
             "orad_hru",
             "potet",
+            "pptmix",
             "prmx",
             "soltab_horad_potsw",
             "swrad",
@@ -281,6 +289,10 @@ class PRMSSnow(StorageUnit):
     def set_initial_conditions(self):
         """Initialize PRMSSnow snowpack variables."""
 
+        # Derived parameters
+        self.tmax_allsnow_c = (self.tmax_allsnow - 32.0) / 1.8
+        del self.tmax_allsnow
+
         # Deninv and denmaxinv not in variables nor in metadata but we can set them on self
         # for convenience
         self.deninv = one / self.den_init.copy()
@@ -408,14 +420,6 @@ class PRMSSnow(StorageUnit):
         wh_net_snow_gt_zero = np.where(net_snow_gt_zero)
         self.newsnow[wh_net_snow_gt_zero] = True
 
-        # pptmix
-        self.pptmix = np.zeros([self.nhru])
-        net_rain_gt_zero = self.net_rain > zero
-        wh_net_snow_gt_zero_and_net_rain_gt_zero = np.where(
-            net_rain_gt_zero & net_rain_gt_zero
-        )
-        self.pptmix[wh_net_snow_gt_zero_and_net_rain_gt_zero] = 1
-
         # default assumption
         self.pptmix_nopack[:] = False
 
@@ -435,8 +439,8 @@ class PRMSSnow(StorageUnit):
             # TODO: rsr, do we want to reset all HRUs, what about Southern Hemisphere
             if self.control.current_dowy == 1:
                 self.pss[jj] = zero  # [inches]
-                self.iso[jj] = True  # [flag]
-                self.mso[jj] = True  # [flag]
+                self.iso[jj] = 1  # [flag]
+                self.mso[jj] = 1  # [flag]
                 self.lso[jj] = 0  # [counter]
 
             # <
@@ -468,7 +472,14 @@ class PRMSSnow(StorageUnit):
                 self.mso[jj] = 2  # [flag]  # could emume this BEFORE/AFTER
 
             # <
-            if self.pkwater_equiv[jj] < epsilon:
+            if jj == dbgind:
+                print(f"self.pkwater_equiv 0 : {self.pkwater_equiv[dbgind]}")
+                print(f"self.pk_ice 0 : {self.pk_ice[dbgind]}")
+                print(f"self.tcal 0 : {self.tcal[dbgind]}")
+                if self.control._itime_step == 354:
+                    asdfg
+
+            if self.pkwater_equiv[jj] < epsilon64:
                 # No existing snowpack
                 if not self.newsnow[jj]:
                     # Skip the HRU if there is no snowpack and no new snow
@@ -491,21 +502,45 @@ class PRMSSnow(StorageUnit):
             ) or self.net_snow[jj] > zero:
                 self.ppt_to_pack(jj)
 
+            if jj == dbgind:
+                print(f"self.pkwater_equiv 1 : {self.pkwater_equiv[dbgind]}")
+                print(f"self.net_rain: {self.net_rain[dbgind]}", flush=True)
+                print(f"self.tcal 1 : {self.tcal[dbgind]}")
+
             # <
             if self.pkwater_equiv[jj] > zero:
                 # If there is still snow after precipitation
                 # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from depletion curve
                 # **********************************************************
                 self.snowcov(jj)
+                if jj == dbgind:
+                    print(
+                        f"self.pkwater_equiv 2 : {self.pkwater_equiv[dbgind]}"
+                    )
+                    print(f"self.snowcov_area: {self.snowcov_area[dbgind]}")
+                    print(f"self.tcal 2 : {self.tcal[dbgind]}")
+
+                # if self.control._itime_step == 29 and jj == dbgind:
+                #    pdb.set_trace()
 
                 # HRU STEP 3 - COMPUTE THE NEW ALBEDO
                 # **********************************************************
                 self.snalbedo(jj)
+                if jj == dbgind:
+                    print(
+                        f"self.pkwater_equiv 3 : {self.pkwater_equiv[dbgind]}"
+                    )
+                    print(f"self.tcal 3 : {self.tcal[dbgind]}")
 
                 # HRU STEP 4 - DETERMINE RADIATION FLUXES AND SNOWPACK
                 #              STATES NECESSARY FOR ENERGY BALANCE
                 # **********************************************************
                 self.step_4(jj, trd)
+                if jj == dbgind:
+                    print(
+                        f"self.pkwater_equiv 4 : {self.pkwater_equiv[dbgind]}"
+                    )
+                    print(f"self.tcal 4 : {self.tcal[dbgind]}")
 
                 #  HRU STEP 5 - CALCULATE SNOWPACK LOSS TO EVAPORATION
                 # ********************************************************
@@ -521,7 +556,7 @@ class PRMSSnow(StorageUnit):
                 # <<
                 elif self.pkwater_equiv[jj] < zero:
                     if self.verbose:
-                        if self.pkwater_equiv[jj] < (-1 * epsilon):
+                        if self.pkwater_equiv[jj] < (-1 * epsilon64):
                             print(
                                 f"snowpack issue 3, negative pkwater_equiv, "
                                 f"HRU: {jj}, value: {self.pkwater_equiv[jj]}"
@@ -531,6 +566,11 @@ class PRMSSnow(StorageUnit):
                     # just to be sure negative values are ignored
                     self.pkwater_equiv[jj] = zero
 
+                if jj == dbgind:
+                    print(
+                        f"self.pkwater_equiv 5 : {self.pkwater_equiv[dbgind]}"
+                    )
+                    print(f"self.tcal 5 : {self.tcal[dbgind]}")
                 # <
                 # HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
                 #                INCREMENT THE BASIN TOTALS
@@ -569,7 +609,7 @@ class PRMSSnow(StorageUnit):
                 # LAST check to clear out all arrays if packwater is gone
                 if self.pkwater_equiv[jj] <= zero:
                     if self.verbose:
-                        if self.pkwater_equiv[jj] < -epsilon:
+                        if self.pkwater_equiv[jj] < -epsilon64:
                             print(
                                 f"Snowpack problem, pkwater_equiv negative, HRU: {jj}, value: {self.pkwater_equiv[jj]}"
                             )
@@ -608,29 +648,25 @@ class PRMSSnow(StorageUnit):
         else:
             # Get the indices (as integers) of the depletion curve that bracket the
             # given frac_swe (next highest and next lowest).
-            idx = int(10.0 * (frac_swe + 0.2)) - 1  # [index]
-            jdx = idx - 1 - 1  # [index]
-            if idx > (11 - 1):
-                idx = 11 - 1
+            idx = int(10.0 * (frac_swe + 0.2))  # [index]
+            jdx = idx - 1  # [index]
+            if idx > (11):
+                idx = 11
             # Calculate the fraction of the distance (from the next lowest) the given
             # frac_swe is between the next highest and lowest curve values.
             dify = (frac_swe * 10.0) - float(jdx - 1)  # [fraction]
             # Calculate the difference in snow covered area represented by next
             # highest and lowest curve values.
-            difx = snarea_curve[idx] - snarea_curve[jdx]
+            difx = snarea_curve[idx - 1] - snarea_curve[jdx - 1]
             # Linearly interpolate a snow covered area between those represented by
             # the next highest and lowest curve values.
-            res = snarea_curve[jdx] + dify * difx
+            res = snarea_curve[jdx - 1] + dify * difx
 
         # <
         return res
 
     def ppt_to_pack(self, jj):
         """Add rain and/or snow to snowpack."""
-        # map from prms6 to here
-        # model_climate holds self.pkwater_equiv
-        # model_precip holds tmax_allsnow_c  ---   ???? where is this from
-
         caln = zero
         calpr = zero
         calps = zero
@@ -645,16 +681,16 @@ class PRMSSnow(StorageUnit):
             # If there is any rain, the rain temperature is halfway between the maximum
             # temperature and the allsnow temperature.
             train = (
-                self.tmaxc[jj] + self.tmax_allsnow[month_ind, jj]
+                self.tmaxc[jj] + self.tmax_allsnow_c[month_ind, jj]
             ) * 0.5  # [degrees C]
 
             # Temperatures will differ, depending on the presence of existing snowpack.
-            # should this be epsilon?
+            # should this be epsilon32?
             if self.pkwater_equiv[jj] > zero:
                 # If there is a snowpack, snow temperature is halfway between the minimum
                 # daily temperature and maximum temperature for which all precipitation is snow.
                 tsnow = (
-                    self.tminc[jj] + self.tmax_allsnow[month_ind, jj]
+                    self.tminc[jj] + self.tmax_allsnow_c[month_ind, jj]
                 ) * 0.5  # [degrees C]
 
             elif self.pkwater_equiv[jj] < zero:
@@ -668,12 +704,12 @@ class PRMSSnow(StorageUnit):
             # (2) If precipitation is all snow or all rain...
             # If there is any rain, the rain temperature is the average temperature.
             train = self.tavgc[jj]  # [degrees C]
-            if train < epsilon:
+            if train < epsilon32:
                 # If average temperature is close to freezing, the rain temperature is
                 # halfway between the maximum daily temperature and maximum temperature
                 # for which all precipitation is snow.
                 train = (
-                    self.tmaxc[jj] + self.tmax_allsnow[month_ind, jj]
+                    self.tmaxc[jj] + self.tmax_allsnow_c[month_ind, jj]
                 ) * 0.5  # [degrees C]
 
         # <<
@@ -730,7 +766,7 @@ class PRMSSnow(StorageUnit):
                     # enough, or more than enough heat in the rain to bring the snowpack
                     # to isothermal at 0 degC or not 3 options below (if-then, elseif, else).
 
-                    if abs(self.net_rain[jj] - pndz) < epsilon:
+                    if abs(self.net_rain[jj] - pndz) < epsilon32:
                         # (1.1.1) Exactly enough rain to bring pack to isothermal...
                         # Heat deficit and temperature of the snowpack go to 0.
                         self.pk_def[jj] = zero  # [cal/cm^2]
@@ -894,11 +930,11 @@ class PRMSSnow(StorageUnit):
                 -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
             )  # [degrees C]
 
-        elif abs(dif) < epsilon:
+        elif abs(dif) < epsilon32:
             # JLM: I moved this from an else at the bottom to this
             #      point in the conditional chain.
             # JLM: The test had been equality with zero, changed to
-            #      less than epsilon.
+            #      less than epsilon32.
             # (2) Just enough heat to overcome heat deficit
             # Set temperature and heat deficit to zero. the pack is "ripe"
             self.pk_temp[jj] = zero  # [degrees C]
@@ -1029,7 +1065,7 @@ class PRMSSnow(StorageUnit):
         # Loss of heat is handled differently if there is liquid water in the
         # snowpack or not.
         # 2 options below (if-then, else)
-        if self.freeh2o[jj] < epsilon:
+        if self.freeh2o[jj] < epsilon32:
             # (1) No free water exists in pack
             # Heat deficit increases because snow is colder than pack
             # (minus a negative number = plus).
@@ -1125,16 +1161,12 @@ class PRMSSnow(StorageUnit):
         # Set ai to the maximum packwater equivalent, but no higher than the
         # threshold for complete snow cover.
         self.ai[jj] = self.pst[jj]  # [inches]
-        # DEBUG:
-        # write(*,*) '   ai, pst', ai, pst
         if self.ai[jj] > self.snarea_thresh[jj]:
             self.ai[jj] = self.snarea_thresh[jj]  # [inches]
 
         # <
         # Calculate the ratio of the current packwater equivalent to the maximum
         # packwater equivalent for the given snowpack.
-        # DEBUG:
-        # write(*,*) chru, pkwater_equiv, ai, dble(self.snarea_thresh[jj])
         if self.ai[jj] == zero:
             self.frac_swe[jj] = zero
         else:
@@ -1340,7 +1372,7 @@ class PRMSSnow(StorageUnit):
         # is new snow during melt season.
 
         # 3 options below (if-then, elseif, else)
-        if self.newsnow[jj]:
+        if not self.newsnow[jj]:
             # (1) There is no new snow
 
             # If no new snow, check if there was previous new snow that
@@ -1380,7 +1412,7 @@ class PRMSSnow(StorageUnit):
                 # Reset the shallow new snow flag and cumulative shallow snow variable (see below).
                 # lst = 0  # [flag]
                 self.lst[jj] = False  # [flag]
-                snsv = zero  # [inches]
+                self.snsv[jj] = zero  # [inches]
 
         # <<
         elif self.iso[jj] == 2:
@@ -1499,7 +1531,7 @@ class PRMSSnow(StorageUnit):
                 # in accumulation season, even if the new snow is insufficient to
                 # reset albedo entirely
                 if self.slst[jj] > 5.0:
-                    slst = 5.0  # [days]
+                    self.slst[jj] = 5.0  # [days]
 
                 # <
                 # lst = 0  # [flag]
@@ -1724,6 +1756,7 @@ class PRMSSnow(StorageUnit):
             # for the day.
             temp = (self.tmaxc[jj] + self.tavgc[jj]) * 0.5  # [degrees C]
             cals = self.snowbal(jj, niteda, cec, cst, esv, sw, temp, trd)
+
             # Track total heat flux from both night and day periods
             self.tcal[jj] = self.tcal[jj] + cals  # [cal/cm^2] or [Langleys]
 
@@ -1740,7 +1773,7 @@ class PRMSSnow(StorageUnit):
         sw,
         temp,
         trd,
-    ):
+    ) -> np.ndarray:
         """Snowpack energy balance: 1st call is for night period, 2nd call for day period."""
 
         # This function should just set self.tcal instead of returning cal.
@@ -1795,7 +1828,7 @@ class PRMSSnow(StorageUnit):
                     # through the time period, then the emissivity is set to the
                     # "no precipitation" value.
                     if trd > ONETHIRD:
-                        emis = emis_noppt  # [fraction of radiation]
+                        emis = self.emis_noppt[jj]  # [fraction of radiation]
 
                 # <<
                 else:
@@ -1892,7 +1925,7 @@ class PRMSSnow(StorageUnit):
                 # the total energy balance of the snowpack. Right now cal isn't used for
                 # anything outside this subroutine, but care should be taken if it is.
         # <<
-        elif qcond < epsilon:
+        elif qcond < epsilon32:
             # (2)  There is no heat conduction, qcond = zero
             # If the pack temperature is isothermal at 0 degC, then apply any
             # incoming radiation, condensation (latent heat), and convection heat
@@ -1904,7 +1937,7 @@ class PRMSSnow(StorageUnit):
                 # true, then the code for surface temperature=0 and cal=positive number
                 # would have run and the subroutine will have terminated.
                 if cal > zero:
-                    sel.calin(cal, chru)
+                    self.calin(cal, chru)
 
         # <<<
         elif ts >= zero:
@@ -1988,7 +2021,7 @@ class PRMSSnow(StorageUnit):
         # evaporation, and if the potential evapotation is enough to completely
         # deplete the snow pack or not.
         # 3 options below (if-then, elseif, else)
-        if ez < epsilon:
+        if ez < epsilon32:
             # (1) There is no potential for evaporation...
             self.snow_evap[jj] = 0.0  # [inches]
 
@@ -2034,7 +2067,7 @@ class PRMSSnow(StorageUnit):
 
             if self.pkwater_equiv[jj] < zero:
                 if self.verbose:
-                    if self.pkwater_equiv[jj] < -epsilon:
+                    if self.pkwater_equiv[jj] < -epsilon64:
                         print(
                             f"snowpack issue, negative pkwater_equiv in snowevap: {pkwater_equiv}"
                         )
@@ -2058,7 +2091,7 @@ class PRMSSnow(StorageUnit):
 
                 if self.pkwater_equiv[jj] < zero:
                     if self.verbose:
-                        if self.pkwater_equiv[kk] < -epsilon:
+                        if self.pkwater_equiv[kk] < -epsilon64:
                             print(
                                 f"snowpack issue 2, negative pkwater_equiv in snowevap: {pkwater_equiv}"
                             )

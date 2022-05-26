@@ -13,6 +13,8 @@ one = np.ones([1])[0]
 nan = np.nan
 
 epsilon = np.finfo(zero).eps
+epsilon64 = epsilon
+epsilon32 = np.finfo(zero.astype("float32")).eps
 
 fill_value_f4 = 9.96921e36
 

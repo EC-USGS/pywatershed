@@ -1,6 +1,5 @@
 import pathlib as pl
 import warnings
-from copy import deepcopy
 from itertools import chain
 from typing import Union
 

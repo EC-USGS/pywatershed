@@ -40,6 +40,9 @@ def adapter_factory(
     ):
         """Two-D np.ndarrays that are Soltabs"""
         return AdapterTwodarraySoltab(var, variable=variable_name)
+    elif var is None:
+        """var is specified as None so return None"""
+        return None
     else:
         raise TypeError("oops you screwed up")
 

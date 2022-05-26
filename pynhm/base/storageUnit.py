@@ -165,6 +165,11 @@ class StorageUnit(Accessor):
             v[:] = value.current
         return
 
+    def set_input_to_adapter(self, input_variable_name, adapter):
+        self._input_variables_dict[input_variable_name] = adapter
+        setattr(self, input_variable_name, adapter.current)
+        return
+
     def advance(self):
         """
         Advance the storage unit in time.

@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 
 from ..base.meta import Meta, meta_netcdf_type, meta_numpy_type
-from .cbh_metadata import cbh_metadata
 
 fileish = Union[str, pl.PosixPath]
 
@@ -169,8 +168,12 @@ class CsvFile:
         # Variables
         for variable_name in self.variable_names:
             if self.meta.is_available(variable_name):
+
                 meta_dict = self.meta.find_variables(variable_name)
                 variable_type = meta_netcdf_type(meta_dict[variable_name])
+                if variable_type == "f4":
+                    variable_type = "f8"
+
                 dimension = dimensions[variable_name]
                 if "nsegment" in dimension:
                     dim_name = "nhm_seg"
@@ -178,9 +181,9 @@ class CsvFile:
                     dim_name = "nhm_id"
                 dtype = meta_numpy_type(meta_dict[variable_name])
             else:
-                variable_type = "f4"
+                variable_type = "f8"
                 dim_name = "nhm_id"
-                dtype = np.float32
+                dtype = np.float64
 
             ids = self._coordinates[dim_name]
             nids = len(ids)
@@ -266,6 +269,9 @@ class CsvFile:
                 variable_type = meta_numpy_type(
                     self.meta.find_variables(variable_name)[variable_name]
                 )
+                if variable_type == "f4":
+                    variable_type = "f8"
+
                 if (
                     "nsegment"
                     in self.meta.get_dimensions(variable_name)[variable_name]
@@ -274,7 +280,7 @@ class CsvFile:
                 else:
                     coordinate_name = "nhm_id"
             else:
-                variable_type = np.float32
+                variable_type = np.float64
                 coordinate_name = "nhm_id"
 
             # set coordinates

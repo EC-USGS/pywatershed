@@ -1,5 +1,4 @@
 import pdb
-
 from typing import Union
 
 import numpy as np
@@ -476,8 +475,6 @@ class PRMSSnow(StorageUnit):
                 print(f"self.pkwater_equiv 0 : {self.pkwater_equiv[dbgind]}")
                 print(f"self.pk_ice 0 : {self.pk_ice[dbgind]}")
                 print(f"self.tcal 0 : {self.tcal[dbgind]}")
-                if self.control._itime_step == 354:
-                    asdfg
 
             if self.pkwater_equiv[jj] < epsilon64:
                 # No existing snowpack

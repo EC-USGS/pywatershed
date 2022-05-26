@@ -91,11 +91,12 @@ class TestPRMSSnow:
             # for istep in range(10):
 
             control.advance()
-            snow.advance()
-            snow.calculate(float(istep))
 
             print("\n")
-            print(control.current_time)
+            print(f"solving time: {control.current_time}")
+
+            snow.advance()
+            snow.calculate(float(istep))
 
             # compare along the way
             atol = 1.0e-3
@@ -119,9 +120,10 @@ class TestPRMSSnow:
                     zz = abs(a2 - a1)
                     max_diff = zz.max()
                     wh_max_diff = np.where(zz == max_diff)
-                    print(zz[wh_max_diff])
-                    print(a1[wh_max_diff])
-                    print(a2[wh_max_diff])
+                    print(f"wh_max_diff: {wh_max_diff}")
+                    print(f"max diff: {zz[wh_max_diff]}")
+                    print(f"prms: {a1[wh_max_diff]}")
+                    print(f"pynhm: {a2[wh_max_diff]}")
                     asdf
 
             # if istep == 15:

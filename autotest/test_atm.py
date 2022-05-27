@@ -9,7 +9,7 @@ from pynhm.atmosphere.AtmBoundaryLayer import AtmBoundaryLayer
 from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.atmosphere.NHMSolarGeometry import NHMSolarGeometry
 from pynhm.utils.parameters import PrmsParameters
-from pynhm.utils.prms5util import load_nhru_output_csv, load_soltab_debug
+from pynhm.utils.prms5util import load_soltab_debug
 
 test_time = np.arange(
     datetime(1979, 1, 1), datetime(1979, 1, 7), timedelta(days=1)
@@ -29,19 +29,73 @@ class TestNHMSolarGeometry:
     def test_init(self, domain):
         params = PrmsParameters.load(domain["param_file"])
         solar_geom = NHMSolarGeometry(params)
-        potential_sw_rad_ans, sun_hrs_ans = load_soltab_debug(
-            domain["prms_run_dir"] / "soltab_debug"
-        )
+        (
+            potential_sw_rad_ans,
+            potential_sw_rad_flat_ans,
+            sun_hrs_ans,
+        ) = load_soltab_debug(domain["prms_run_dir"] / "soltab_debug")
 
         # check the shapes
         assert potential_sw_rad_ans.shape == solar_geom.potential_sw_rad.shape
+        assert (
+            potential_sw_rad_flat_ans.shape
+            == solar_geom.potential_sw_rad.shape
+        )
         assert sun_hrs_ans.shape == solar_geom.sun_hrs.shape
 
         # check the values
+        atol = 1e-4
+        assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=atol).all()
         assert np.isclose(
-            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=1e-03
+            potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=atol
         ).all()
-        assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=1e-03).all()
+        assert np.isclose(
+            potential_sw_rad_flat_ans,
+            solar_geom.potential_sw_rad_flat,
+            atol=atol,
+        ).all()
+
+        data_size = np.product(potential_sw_rad_ans.shape)
+        # for vv in range(3):
+        #     if vv == 0:
+        #         ans = potential_sw_rad_ans
+        #         res = solar_geom.potential_sw_rad
+        #         var = "potential_sw_rad"
+        #     elif vv == 1:
+        #         ans = potential_sw_rad_flat_ans
+        #         res = solar_geom.potential_sw_rad_flat
+        #         var = "potential_sw_rad_flat"
+        #     else:
+        #         ans = sun_hrs_ans
+        #         res = solar_geom.sun_hrs
+        #         var = "sun_hrs"
+
+        #     print(f"\nvariable: {var}")
+        #     for exp in range(9):
+        #         zz = abs(res - ans)
+        #         nn = len(np.where(zz > 10 ** (-1 * exp))[0])
+
+        #         if not (zz < 10 ** (-1 * exp)).all():
+        #             if vv == 1:
+        #                 asdf
+        #             zz_absmax = zz.max()
+        #             wh_absmax = np.where(zz == zz_absmax)
+        #             wh_absmax
+        #             zz[wh_absmax]
+        #             ans[wh_absmax]
+        #             res[wh_absmax]
+
+        #         max_pct_err = (zz / potential_sw_rad_flat_ans).max()
+        #         print(
+        #             f"exp: {exp}, nn: {nn}, frac: {nn/data_size}, "
+        #             f"max_pct_err: {max_pct_err}"
+        #         )
+
+        # zz = potential_sw_rad_ans - solar_geom.potential_sw_rad
+        # zz_absmax = abs(zz).max()
+        # wh_absmax = np.where(zz == zz_absmax)
+        # # (array([48]), array([227]))
+        # zz[wh_absmax]
 
         # debug/examine
         # ans = potential_sw_rad_ans[:, 0]

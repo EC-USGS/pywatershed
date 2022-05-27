@@ -254,7 +254,7 @@ def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
     """
     # the data are 8 characters wide, 13 per line
     # for 28 full lines and a final line of 2 (366 total)
-    width = 8
+    width = 17
     slices = [slice(ii * width, (ii + 1) * width) for ii in range(13)]
     not_data = ["", "\n"]
 
@@ -271,6 +271,10 @@ def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
                 accum_count = 0
             elif ll.startswith(" ***Soltab_potsw***"):
                 key = "potsw"
+                data_list[hru_ind][key] = []
+                accum_count = 0
+            elif ll.startswith(" ***Soltab_horad_potsw***"):
+                key = "potsw_flat"
                 data_list[hru_ind][key] = []
                 accum_count = 0
             else:
@@ -295,10 +299,12 @@ def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
             assert len(v1) == 366
 
     potential_sw_rad = np.zeros((366, n_hru))
+    potential_sw_rad_flat = np.zeros((366, n_hru))
     sun_hrs = np.zeros((366, n_hru))
 
     for hh in range(n_hru):
         potential_sw_rad[:, hh] = np.array(data_list[hh]["potsw"])
+        potential_sw_rad_flat[:, hh] = np.array(data_list[hh]["potsw_flat"])
         sun_hrs[:, hh] = np.array(data_list[hh]["sunhrs"])
 
-    return potential_sw_rad, sun_hrs
+    return potential_sw_rad, potential_sw_rad_flat, sun_hrs

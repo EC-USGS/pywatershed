@@ -31,17 +31,17 @@ from .accessor import Accessor
 class Budget(Accessor):
     def __init__(
         self,
-        inputs: dict,
-        outputs: dict,
-        storage_changes: dict,
+        inputs: list | dict,
+        outputs: list | dict,
+        storage_changes: list | dict,
         meta: dict = None,
         init_accumulations: dict = None,
         verbosity: int = 0,
     ):
         self.name = "Budget"
-        self.inputs = inputs
-        self.outputs = outputs
-        self.storage_changes = storage_changes
+        self.inputs = self.init_component(inputs)
+        self.outputs = self.init_component(outputs)
+        self.storage_changes = self.init_component(storage_changes)
         self.meta = meta
         self.verbosity = verbosity
 
@@ -55,8 +55,40 @@ class Budget(Accessor):
         return
 
     @staticmethod
+    def init_component(data: list | dict) -> dict:
+        if isinstance(data, dict):
+            return data
+        else:
+            return {dd: None for dd in data}
+
+    def set(self, data: dict):
+        """Set the data on the components after initialization
+        Args:
+            data: a dict of dicts with top level optional keys:
+            [inputs, outputs, storage_changes].
+            Each of those is a dict with var: np.ndarray, eg.
+            data = {'inputs': {'var': np.ndarray}}
+        """
+        for comp_name, comp_dict in data.items():
+            for var_name, var_data in comp_dict.items():
+                if self[comp_name][var_name] is not None:
+                    msg = (
+                        f"Component '{comp_name}' variable '{var_name}'"
+                        f"has already been set and should not be reset."
+                    )
+                    raise ValueError(msg)
+                elif var_name not in self[comp_name].keys():
+                    msg = (
+                        f"Component '{comp_name}' has no variable '{var_name}'"
+                    )
+                    raise KeyError(msg)
+                else:
+                    self[comp_name][var_name] = var_data
+
+    @staticmethod
     def from_storage_unit(storage_unit, **kwargs):
-        # assemble the meta data, which will determine the budget component variables
+        # assemble the meta data, which will determine the budget component
+        # variables
         kwargs["meta"] = {}
         kwargs["meta"]["inputs"] = storage_unit.meta._get_attr_key_val(
             "input", "var_category", "mass flux"
@@ -106,9 +138,7 @@ class Budget(Accessor):
         for component in self.components:
             self._accumulations[component] = {}
             for var in self[component].keys():
-                self._accumulations[component][var] = (
-                    self[component][var] * zero
-                )
+                self._accumulations[component][var] = zero
 
         if init_accumulations is None:
             return None
@@ -119,7 +149,7 @@ class Budget(Accessor):
             for var in self[component].keys():
                 if var in init_accumulations[component].keys():
                     self._accumulations[component][var] = init_accumulations[
-                        "component"
+                        component
                     ][var]
 
         return None

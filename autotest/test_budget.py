@@ -18,13 +18,18 @@ def test_budget():
         "stor1": np.ones([nhru]),
         "stor2": np.zeros([nhru]),
     }
+
     argz = {
         "inputs": inputs,
         "outputs": outputs,
         "storage_changes": storage_changes,
     }
 
-    budget = Budget(**argz)
+    # budget = Budget(**argz)
+    argz2 = {key: list(val.keys()) for key, val in argz.items()}
+
+    budget = Budget(**argz2)
+    budget.set(argz)
 
     assert isinstance(budget, Budget)
 
@@ -59,11 +64,12 @@ def test_budget():
             ).all()
 
     # change inputs
-    inputs["in1"] = -1 * np.ones([nhru])
-    storage_changes["stor2"] = -2 * np.ones([nhru])
+    inputs["in1"][:] = -1 * np.ones([nhru])
+    storage_changes["stor2"][:] = -2 * np.ones([nhru])
 
-    for component in budget.components:
-        assert budget[component] == argz[component]
+    for comp_name in budget.components:
+        for var_key, var_val in budget[comp_name].items():
+            assert budget[comp_name][var_key] is var_val
 
     budget.calculate()
     assert (budget._inputs_sum == 0).all()
@@ -87,7 +93,7 @@ def test_budget():
             ).all()
 
     with pytest.raises(ValueError):
-        storage_changes["stor2"] = -23 * np.ones([nhru])
+        storage_changes["stor2"][:] = -23 * np.ones([nhru])
         budget.calculate()
 
     return

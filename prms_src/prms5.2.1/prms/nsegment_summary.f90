@@ -255,17 +255,17 @@
         ENDIF
       ENDDO
 
- 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',ES10.3))')
+ 9001 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',G0))')    !jdh - modified from ES10.3
  9002 FORMAT ('("Date"',I0,'('', ''I0))')
- 9003 FORMAT ('(I4,', I0,'('','',ES10.3))')
- 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.4))')
- 9006 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.3))')
- 9007 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.2))')
- 9008 FORMAT ('(I4,', I0,'('','',F0.4))')
- 9009 FORMAT ('(I4,', I0,'('','',F0.3))')
- 9010 FORMAT ('(I4,', I0,'('','',F0.2))')
- 9011 FORMAT ('(I4,', I0,'('','',F0.5))')
- 9012 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',F0.5))')
+ 9003 FORMAT ('(I4,', I0,'('','',G0))')                  !jdh - modified from ES10.3
+ 9005 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',G0))')    !jdh - modified from F0.4
+ 9006 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',G0))')    !jdh - modified from F0.3
+ 9007 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',G0))')    !jdh - modified from F0.2
+ 9008 FORMAT ('(I4,', I0,'('','',G0))')                  !jdh - modified from F0.4
+ 9009 FORMAT ('(I4,', I0,'('','',G0))')                  !jdh - modified from F0.3
+ 9010 FORMAT ('(I4,', I0,'('','',G0))')                  !jdh - modified from F0.2 
+ 9011 FORMAT ('(I4,', I0,'('','',G0))')                  !jdh - modified from F0.5
+ 9012 FORMAT ('(I4, 2(''-'',I2.2),',I0,'('','',G0))')    !jdh - modified from F0.5
 
       END SUBROUTINE nsegment_summaryinit
 

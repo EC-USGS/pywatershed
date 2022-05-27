@@ -1,14 +1,24 @@
 import os
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 import pandas as pd
 
 from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
+from ..constants import nan, one, zero
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
 from .control import Control
+
+# These could be changed in the metadata yaml
+type_translation = {
+    "D": "float64",
+    "F": "float64",
+    "I": "int32",
+    "B": "bool",  # not used despite the popularity of "flags"
+}
 
 
 class StorageUnit(Accessor):
@@ -83,6 +93,14 @@ class StorageUnit(Accessor):
     def get_variables() -> list:
         raise Exception("This must be overridden")
 
+    @staticmethod
+    def get_restart_variables() -> list:
+        raise Exception("This must be overridden")
+
+    @staticmethod
+    def get_init_values() -> list:
+        raise Exception("This must be overridden")
+
     @property
     def parameters(self) -> list:
         return self.get_parameters()
@@ -95,28 +113,86 @@ class StorageUnit(Accessor):
     def variables(self) -> list:
         return self.get_variables()
 
-    def initialize_self_variables(self):
-        # todo: get the type from metadata
+    @property
+    def restart_variables(self) -> list:
+        return self.get_restart_variables()
+
+    @property
+    def init_values(self) -> list:
+        return self.get_init_values()
+
+    def initialize_self_variables(self, restart: bool = False):
+        # skip restart variables if restart (for speed) ? the code is below but commented.
+        # restart_variables = self.restart_variables
         for name in self.parameters:
             setattr(self, name, self.params.parameters[name])
-        for name in self.variables:
-            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
         for name in self.inputs:
-            setattr(self, name, np.zeros(self.nhru, dtype=float))  # + np.nan)
+            setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
+        for name in self.variables:
+            # if restart and (name in restart_variables):
+            #     continue
+            self.initialize_var(name)
         return
 
-    def set_initial_conditons(self):
+    def initialize_var(self, var_name):
+        if self.input_meta[var_name]["dimensions"][0] == "nsegment":
+            nsize = self.nsegment
+        else:
+            nsize = self.nhru
+        init_vals = self.get_init_values()
+        if var_name in init_vals.keys():
+            init_type = type_translation[self.var_meta[var_name]["type"]]
+            setattr(
+                self,
+                var_name,
+                np.full(nsize, init_vals[var_name], dtype=init_type),
+            )
+        elif self.verbose:
+            print(f"{var_name} not initialized (no initial value specified)")
+
+        return
+
+    def set_initial_conditions(self):
         raise Exception("This must be overridden")
+
+    def _advance_variables(self):
+        raise Exception("This must be overridden")
+
+    def _advance_inputs(self):
+        for key, value in self._input_variables_dict.items():
+            value.advance()  # (self.control.itime_step)
+            v = getattr(self, key)
+            v[:] = value.current
+        return
+
+    def set_input_to_adapter(self, input_variable_name, adapter):
+        self._input_variables_dict[input_variable_name] = adapter
+        setattr(self, input_variable_name, adapter.current)
+        return
+
+    def advance(self):
+        """
+        Advance the storage unit in time.
+
+        Returns:
+            None
+        """
+        if self._itime_step >= self.control.itime_step:
+            if self.verbose:
+                msg = f"{self.name} did not advance because it is not behind control time"
+                # warn(msg)
+                print(msg)  # can/howto make warn flush in real time?
+                # is a warning sufficient? an error
+            return
+
+        self._advance_variables()
+        self._advance_inputs()
+        self._itime_step += 1
         return
 
     def get_metadata(self):
-        # good to check as metadata is shifting but might consider taking out in long-run
-        self.var_meta = self.control.meta.get_var_subclass(self.name)
-        assert set(self.var_meta.keys()) == set(self.variables)
-
-        self.input_meta = self.control.meta.get_inputs_subclass(self.name)
-        assert set(self.input_meta.keys()) == set(self.inputs)
-
+        self.var_meta = self.control.meta.get_vars(self.variables)
+        self.input_meta = self.control.meta.get_vars(self.variables)
         self.param_meta = self.control.meta.get_params(self.parameters)
 
         # This a hack as we are mushing dims into params. time dimension
@@ -124,6 +200,7 @@ class StorageUnit(Accessor):
         # on StorageUnits
         dims = set(self.parameters).difference(set(self.param_meta.keys()))
         self.param_meta = self.control.meta.get_dims(dims)
+
         return
 
     def output_to_csv(self, pth):
@@ -163,19 +240,22 @@ class StorageUnit(Accessor):
             # make working directory
             working_path = pl.Path(name)
             working_path.mkdir(parents=True, exist_ok=True)
-            for variable in self.variables:
-                nc_path = pl.Path(working_path) / f"{variable}.nc"
-                self._netcdf[variable] = NetCdfWrite(
+            for variable_name in self.variables:
+                nc_path = pl.Path(working_path) / f"{variable_name}.nc"
+                self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
-                    self.params.nhm_coordinate,
-                    [variable],
-                    self.var_meta[variable],
+                    self.params.nhm_coordinates,
+                    [variable_name],
+                    {variable_name: self.var_meta[variable_name]},
                 )
         else:
             initial_variable = self.variables[0]
             pl.Path(name).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                name, self.id, self.variables, self.var_meta
+                name,
+                self.params.nhm_coordinates,
+                self.variables,
+                self.var_meta,
             )
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]

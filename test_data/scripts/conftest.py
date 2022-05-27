@@ -55,6 +55,9 @@ test_dirs = sorted(
 # This would change to handle other/additional schedulers
 domain_globs_schedule = ["*conus*"]
 
+# For generating timeseries of previous states
+previous_vars = ["pkwater_equiv", "soil_moist"]
+
 
 def scheduler_active():
     slurm = os.getenv("SLURM_JOB_ID") is not None
@@ -136,3 +139,11 @@ def pytest_generate_tests(metafunc):
         csv_files = collect_csv_files(domain_list, force)
         ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
         metafunc.parametrize("csv_files", csv_files, ids=ids)
+
+    if "csv_files_prev" in metafunc.fixturenames:
+        csv_files = collect_csv_files(domain_list, force)
+        csv_files = [
+            ff for ff in csv_files if ff.with_suffix("").name in previous_vars
+        ]
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
+        metafunc.parametrize("csv_files_prev", csv_files, ids=ids)

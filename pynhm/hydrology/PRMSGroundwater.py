@@ -39,12 +39,6 @@ class PRMSGroundwater(StorageUnit):
             subclass_name=self.name,
         )
 
-        # self.budget = Budget({
-        #     "gwres_flow": {self.gwres_flow, self.met['gwres_flow'], self.name}
-        #     "gwres_in",
-        #     "gwres_sink",
-        #     "gwres_stor",
-
         self._input_variables_dict = {}
         self._input_variables_dict["soil_to_gw"] = adapter_factory(
             soil_to_gw, "soil_to_gw"
@@ -113,21 +107,22 @@ class PRMSGroundwater(StorageUnit):
             "gwres_stor",
         )
 
-    def advance(self) -> None:
-        """Advance the groundwater reservoir
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get groundwater reservoir initial values
+
+        Returns:
+            dict: initial values for named variables
+        """
+        # No GW res values need initialized prior to calculation.
+        return {}
+
+    def _advance_variables(self) -> None:
+        """Advance the groundwater reservoir variables
         Returns:
             None
-
         """
         self.gwres_stor_old = self.gwres_stor
-        self._itime_step += 1
-
-        for key, value in self._input_variables_dict.items():
-            value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
-        return
 
     def calculate(self, simulation_time):
         """Calculate groundwater reservoir terms for a time step

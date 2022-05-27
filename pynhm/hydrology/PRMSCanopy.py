@@ -7,23 +7,21 @@ from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
+from ..constants import CovType, HruType, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
+# set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
-
+BARESOIL = CovType.BARESOIL.value
+GRASSES = CovType.GRASSES.value
+LAND = HruType.LAND
+LAKE = HruType.LAKE
 RAIN = 0
 SNOW = 1
-
-BARESOIL = 0
-GRASSES = 1
-
 OFF = 0
 ACTIVE = 1
-
-LAND = 1
-LAKE = 2
 
 
 class PRMSCanopy(StorageUnit):
@@ -49,8 +47,6 @@ class PRMSCanopy(StorageUnit):
             subclass_name=self.name,
         )
 
-        # self._current_time = self.control.current_time
-
         # store dependencies
         self._input_variables_dict = {}
         self._input_variables_dict["pkwater_equiv"] = adapter_factory(
@@ -72,10 +68,7 @@ class PRMSCanopy(StorageUnit):
         return
 
     def set_initial_conditions(self):
-        # Where does the initial storage come from? Document here.
-        # apparently it's just zero?
         # self.inctp_stor = self.intcp_stor_init.copy()
-        self.intcp_stor[:] = np.zeros([1])[0]
         self.intcp_stor_old = None
         return
 
@@ -118,55 +111,66 @@ class PRMSCanopy(StorageUnit):
 
     @staticmethod
     def get_variables() -> tuple:
-        """Get canopy self variables
+        """Get canopy output variables
 
         Returns:
-            variables: self variables
+            variables: output variables
 
         """
         return (
-            "intcp_stor",
+            "net_ppt",
             "net_rain",
             "net_snow",
+            "intcp_stor",
             "intcp_evap",
+            "hru_intcpstor",
+            "hru_intcpevap",
             "intcp_form",
             "intcp_transp_on",  # this is private in prms6 and is not in the metadata
             # i defined metadata for it in a very adhoc way
         )
 
-    def advance(self):
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get canopy initial values
 
-        # if self._current_time >= self.control.current_time:
-        #    return None
-        # self._current_time = self.control.current_time
+        Returns:
+            dict: initial values for named variables
+        """
 
+        return {
+            "net_rain": zero,
+            "net_snow": zero,
+            "net_ppt": zero,
+            "intcp_stor": zero,  # JLM: this is the only one that was explicitly defined
+            "intcp_evap": zero,
+            "hru_intcpstor": zero,
+            "hru_intcpevap": zero,
+            "intcp_form": 0,  # could make boolean but would have to make the RAIN/SNOW match
+            "intcp_transp_on": 0,  # could make boolean
+        }
+
+    def _advance_variables(self):
+        """Advance canopy
+        Returns:
+            None
+
+        """
         self.intcp_stor_old = self.intcp_stor
-        self._itime_step += 1
-
-        # set variables that depend on transpiration on/off setting
-        # todo: this is currently hardwired to be on
-        # if self.tranpiration_on:
-        #    self.covden = self.covden_sum
-        #    self.stor_max_rain = self.srain_intcp
-        # else:
-        #    self.covden = self.covden_win
-        #    self.stor_max_rain = self.wrain_intcp
-
-        for key, value in self._input_variables_dict.items():
-            value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
-        self.intcp_form[:] = RAIN
-        idx = np.where(self.hru_snow > 0)
-        self.intcp_form[idx] = SNOW
-
-        assert self.pkwater_equiv.shape == (self.nhru,)
-
         return
 
     def calculate(self, time_length, vectorized=False):
+        """Calculate canopy terms for a time step
+
+        Args:
+            simulation_time: current simulation time
+
+        Returns:
+            None
+
+        """
         if vectorized:
+            # todo: not implemented yet
             self.calculate_vectorized(time_length)
         else:
             self.calculate_procedural(time_length)
@@ -174,21 +178,16 @@ class PRMSCanopy(StorageUnit):
 
     def calculate_procedural(self, time_length):
 
-        # todo: verify that hru_ppt is prcp
+        # Assign short variables for input variables
         hru_ppt = self.hru_ppt
         potet = self.potet
         hru_rain = self.hru_rain
         hru_snow = self.hru_snow
-
-        net_rain = np.array(self.nhru * [0.0])
-        net_snow = np.array(self.nhru * [0.0])
-        net_ppt = np.array(self.nhru * [0.0])
-        intcp_form = np.array(self.nhru * [RAIN])
-
-        hru_type = np.array(self.nhru * [LAND])
+        intcp_form = self.intcp_form
         transp_on = self.transp_on
-        intcp_evap = np.array(self.nhru * [0.0])
-        hru_intcpstor = np.array(self.nhru * [0.0])
+
+        # set hrutype to LAND as this is only type supported in NHM
+        hru_type = np.array(self.nhru * [LAND])
 
         for i in range(self.nhru):
             harea = self.hru_area[i]
@@ -334,137 +333,14 @@ class PRMSCanopy(StorageUnit):
                     intcpevap = 0.0
                 intcpstor = intcpstor + last - intcpevap
 
+            # Store calculated values in output variables
             self.intcp_evap[i] = intcpevap
             self.intcp_stor[i] = intcpstor
-            hru_intcpstor[i] = intcpstor * cov
             self.net_rain[i] = netrain
             self.net_snow[i] = netsnow
-            net_ppt[i] = netrain + netsnow
-
-        return
-
-    def calculate_vectorized(self, time_length):
-
-        # Retrieve atmospheric forcings - rename?
-        rainfall_adj = rainfall
-        snowfall_adj = snowfall
-        potet = potet
-        prcp = prcp
-
-        # initialize calculation variables
-        net_rain = rainfall_adj.copy()
-        net_snow = snowfall_adj.copy()
-        intcp_stor = self.intcp_stor_old.copy()
-        intcp_evap = np.array(self.nhru * [0.0])
-        net_ppt = np.array(self.nhru * [0.0])
-
-        # todo: Lakes not handled; but lakes are not in NHM so probably okay
-
-        # todo: Handle changeover water going from summer to winter
-
-        # todo: Handle changeover water going from winter to summer
-
-        # update interception and net_rain
-        idx = np.where(
-            (self.cov_type != BARESOIL)
-            & (self.covden > 0)
-            & (self.cov_type > GRASSES)
-        )
-        self.update_net_precip(
-            rainfall_adj,
-            self.stor_max_rain,
-            self.covden,
-            intcp_stor,
-            net_rain,
-            idx,
-        )
-        idx = np.where(
-            (self.cov_type == GRASSES)
-            & (self.covden > 0.0)
-            & (self.pkwater_equiv < NEARZERO)
-            & (snowfall_adj < NEARZERO)
-        )
-        self.update_net_precip(
-            rainfall_adj,
-            self.stor_max_rain,
-            self.covden,
-            intcp_stor,
-            self.net_rain,
-            idx,
-        )
-
-        # Update intcp_stor and net_snow with snowfall for anything greater than grass
-        idx = np.where((self.cov_type > GRASSES) & (self.covden > 0.0))
-        self.update_net_precip(
-            snowfall_adj,
-            self.stor_max_rain,
-            self.covden,
-            intcp_stor,
-            self.net_snow,
-            idx,
-        )
-
-        # todo: Handle irrigation water?  Depends on whether or not this is part of NHM
-
-        # todo: epan_coef is supposed to be specified by month; here it is fixed to 1.0
-        epan_coef = 1.0
-
-        # # if there is precip, then shut off potet and sublimation
-        # evrn = np.where(prcp < NEARZERO, potet / epan_coef, 0.)
-        # evsn = np.where(prcp < NEARZERO, potet * self.potet_sublim, 0.)
-        # intcp_stor_save = intcp_stor.copy()
-        # depth = np.where(
-        #     self.intcp_form == SNOW,
-        #     intcp_stor - evsn,
-        #     intcp_stor - evrn,
-        # )
-        # intcp_stor = np.maximum(depth, 0.0)
-        # intcp_evap = intcp_stor_save - intcp_stor
-
-        for i in range(self.nhru):
-            intcpstor = intcp_stor[i]
-            intcpevap = 0.0
-            if intcpstor > 0.0:
-                if prcp[i] < NEARZERO:
-                    evrn = potet[i] / epan_coef
-                    evsn = potet[i] * self.potet_sublim[i]
-
-                    if self.intcp_form[i] == SNOW:
-                        z = intcpstor - evsn
-                        if z > 0:
-                            intcpstor = z
-                            intcpevap = evsn
-                        else:
-                            intcpevap = intcpstor
-                            intcpstor = 0.0
-                    else:
-                        d = intcpstor - evrn
-                        if d > 0.0:
-                            intcpstor = d
-                            intcpevap = evrn
-                        else:
-                            intcpevap = intcpstor
-                            intcpstor = 0.0
-            intcp_stor[i] = intcpstor
-            intcp_evap[i] = intcpevap
-
-        # todo: adjust intcp_evap for cover density
-        # todo: but this doesn't seem to make any sense
-        # IF ( intcpevap*cov>Potet(i) ) THEN
-        #  last = intcpevap
-        #  IF ( cov>0.0 ) THEN
-        #    intcpevap = Potet(i)/cov
-        #  ELSE
-        #    intcpevap = 0.0
-        #  ENDIF
-        #  intcpstor = intcpstor + last - intcpevap
-        # ENDIF
-
-        # accumulate into net_ppt
-        net_ppt[:] = self.net_rain + self.net_snow
-
-        self.intcp_stor[:] = intcp_stor[:]
-        hru_intcpstor = intcp_stor * self.covden
+            self.net_ppt[i] = netrain + netsnow
+            self.hru_intcpstor[i] = intcpstor * cov
+            self.hru_intcpevap[i] = intcpevap * cov
 
         return
 
@@ -488,31 +364,3 @@ class PRMSCanopy(StorageUnit):
                 net_precip[i] += (intcp_stor[i] - stor_max[i]) * covden[i]
                 intcp_stor[i] = stor_max[i]
         return
-
-
-def canopy_vectorized(
-    intcpstor,
-    hru_rain,
-    hru_snow,
-    transp_on,
-    covden_sum,
-    covden_win,
-    srain_intcp,
-    wrain_intcp,
-):
-    netrain = hru_rain
-    netsnow = hru_snow
-    if transp_on == ACTIVE:
-        cov = covden_sum
-        stor_max_rain = srain_intcp
-    else:
-        cov = covden_win
-        stor_max_rain = wrain_intcp
-    intcpform = RAIN
-    if hru_snow > 0.0:
-        intcpform = SNOW
-    intcpevap = 0.0
-    changeover = 0.0
-    extra_water = 0.0
-
-    return intcpstor, netrain, netsnow

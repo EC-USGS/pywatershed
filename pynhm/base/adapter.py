@@ -5,7 +5,17 @@ import numpy as np
 
 from pynhm.utils.netcdf_utils import NetCdfRead
 
+from ..utils.time_utils import datetime_doy
+
 fileish = Union[str, pl.Path]
+
+# these names will change and reduce with amt/geom refactor
+# could get these from SolarGeom but there are other non-soltab vars
+soltab_vars = [
+    "soltab_horad_potsw",
+    "potential_sw_rad_flat",
+    "potential_sw_rad",
+]
 
 
 def adapter_factory(
@@ -21,7 +31,18 @@ def adapter_factory(
                 start_time=start_time,
             )
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
+        """One-D np.ndarrays"""
         return AdapterOnedarray(var, variable=variable_name)
+    elif (
+        isinstance(var, np.ndarray)
+        and len(var.shape) == 2
+        and variable_name in soltab_vars
+    ):
+        """Two-D np.ndarrays that are Soltabs"""
+        return AdapterTwodarraySoltab(var, variable=variable_name)
+    elif var is None:
+        """var is specified as None so return None"""
+        return None
     else:
         raise TypeError("oops you screwed up")
 
@@ -31,6 +52,7 @@ class Adapter:
         self,
         variable: str,
     ) -> None:
+        self.name = "Adapter"
         self._variable = variable
         return None
 
@@ -49,18 +71,16 @@ class AdapterNetcdf(Adapter):
         start_time: np.datetime64 = None,
     ) -> None:
         super().__init__(variable)
+        self.name = "AdapterNetcdf"
         self._fname = fname
         self._dataset = NetCdfRead(fname)
         self._datetime = self._dataset.date_times
         if start_time is None:
             self._start_time = self._datetime[0]
-            self._itime_step = 0
         else:
             self._start_time = start_time
-            self._itime_step = np.where(self._datetime == start_time)[0]
 
         self._current_value = None
-        # JLM: current value is None on init?
 
     def advance(self):
         self._current_value = self._dataset.advance(self._variable)
@@ -78,10 +98,33 @@ class AdapterOnedarray(Adapter):
         variable,
     ) -> None:
         super().__init__(variable)
+        self.name = "AdapterOnedarray"
         self._current_value = data
         return
 
     def advance(self):
+        return None
+
+    @property
+    def current(self):
+        return self._current_value
+
+
+class AdapterTwodarraySoltab(Adapter):
+    def __init__(
+        self,
+        data: np.ndarray,
+        variable: str,
+    ) -> None:
+        super().__init__(variable)
+        self.name = "AdapterTwodarraySoltab"
+        self._data = data
+        self._current_value = None
+        return
+
+    def advance(self, datetime: np.datetime64):
+        index = datetime_doy(datetime) - 1
+        self._current_value = self._data[index]
         return None
 
     @property

@@ -12,7 +12,7 @@ def pytest_addoption(parser):
         help=(
             "YAML file(s) for indiv domain tests. You can pass multiples of "
             "this argument. Default value (not shown here) is "
-            "--domain_yaml=../test_data/drb_2yr/drb_2yr.yaml."
+            "--domain_yaml=../test_data/drb_2yr/drb_2yr.yaml"
         ),
     )
 
@@ -70,12 +70,18 @@ def pytest_generate_tests(metafunc):
 
             # Transform all relative paths in the yaml (relative to the yaml file)
             # using the rel path to the file - spare the tester from doing this.
-            for ff in ["param_file", "control_file", "cbh_nc"]:
+            for ff in [
+                "param_file",
+                "control_file",
+                "cbh_nc",
+                "prms_run_dir",
+                "prms_output_dir",
+            ]:
                 domain_dict[ff] = pathlib.Path(domain_dict[ff])
                 if not domain_dict[ff].is_absolute():
                     domain_dict[ff] = domain_dict["dir"] / domain_dict[ff]
 
-            for fd_key in ["prms_outputs", "cbh_inputs"]:
+            for fd_key in ["cbh_inputs"]:
                 domain_dict[fd_key] = {
                     key: (
                         pathlib.Path(val)

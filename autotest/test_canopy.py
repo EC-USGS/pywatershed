@@ -8,7 +8,6 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.preprocess import CsvFile
-from pynhm.utils import ControlVariables
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
@@ -66,9 +65,9 @@ def params(domain):
 class TestPRMSCanopyDomain:
     def test_init(self, domain, control, params, tmp_path):
         tmp_path = pl.Path(tmp_path)
+        output_dir = domain["prms_output_dir"]
 
         # get the answer data
-
         comparison_var_names = [
             "net_rain",
             "net_snow",
@@ -78,8 +77,6 @@ class TestPRMSCanopyDomain:
             "hru_intcpstor",
             "hru_intcpevap",
         ]
-        output_dir = domain["prms_output_dir"]
-
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"

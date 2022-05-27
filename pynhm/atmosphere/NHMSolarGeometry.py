@@ -190,6 +190,7 @@ class NHMSolarGeometry(StateAccess):
 
         # Latitude derived quantities
         x0 = np.radians(lats)
+        # errors in PRMS ingesting latitudes can be seen here (or earlier)
         x0_cos = np.cos(x0)
 
         # x1 latitude of equivalent slope
@@ -377,4 +378,5 @@ class NHMSolarGeometry(StateAccess):
                 + np.cos(dd) * np.cos(ww) * (np.sin(x + vv) - np.sin(y + vv))
             )
         )
+
         return f3

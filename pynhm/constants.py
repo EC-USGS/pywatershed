@@ -3,13 +3,22 @@ from enum import Enum
 
 import numpy as np
 
+# PRMS6 Constants module:
+# https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/misc/m_constants.f90
+
 __pynhm_root__ = pl.Path(__file__).parent
 
 zero = np.zeros([1])[0]
 one = np.ones([1])[0]
 nan = np.nan
 
+epsilon = np.finfo(zero).eps
+epsilon64 = epsilon
+epsilon32 = np.finfo(zero.astype("float32")).eps
+
 fill_value_f4 = 9.96921e36
+
+inch2cm = 2.54
 
 
 class HruType(Enum):
@@ -25,6 +34,18 @@ class CovType(Enum):
     SHRUBS = 2
     TREES = 3
     CONIFEROUS = 4
+
+
+class SoilType(Enum):
+    SAND = 1
+    LOAM = 2
+    CLAY = 3
+
+
+class ETType(Enum):
+    ET_DEFAULT = 1
+    EVAP_ONLY = 2
+    EVAP_PLUS_TRANSP = 3
 
 
 class SegmentType(Enum):

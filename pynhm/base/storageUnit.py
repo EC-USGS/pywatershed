@@ -1,12 +1,8 @@
 import os
 import pathlib as pl
-from warnings import warn
 
 import numpy as np
-import pandas as pd
 
-from ..atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-from ..constants import nan, one, zero
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
@@ -122,20 +118,32 @@ class StorageUnit(Accessor):
         return self.get_init_values()
 
     def initialize_self_variables(self, restart: bool = False):
-        # skip restart variables if restart (for speed) ? the code is below but commented.
-        # restart_variables = self.restart_variables
         for name in self.parameters:
             setattr(self, name, self.params.parameters[name])
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
+        # skip restart variables if restart (for speed) ?
+        # the code is below but commented.
+        # restart_variables = self.restart_variables
         for name in self.variables:
             # if restart and (name in restart_variables):
             #     continue
             self.initialize_var(name)
+
+        # demote any self variables to single?
+        # for vv in self.__dict__.keys():
+        # for vv in self.parameters:
+        #     if (
+        #         isinstance(self[vv], np.ndarray)
+        #         and self[vv].dtype == "float64"
+        #     ):
+        #         print(f"converting {vv} from float64 to float32")
+        #         self[vv] = self[vv].astype("float32")
+
         return
 
     def initialize_var(self, var_name):
-        if self.input_meta[var_name]["dimensions"][0] == "nsegment":
+        if self.var_meta[var_name]["dimensions"][0] == "nsegment":
             nsize = self.nsegment
         else:
             nsize = self.nhru
@@ -192,7 +200,7 @@ class StorageUnit(Accessor):
 
     def get_metadata(self):
         self.var_meta = self.control.meta.get_vars(self.variables)
-        self.input_meta = self.control.meta.get_vars(self.variables)
+        self.input_meta = self.control.meta.get_vars(self.inputs)
         self.param_meta = self.control.meta.get_params(self.parameters)
 
         # This a hack as we are mushing dims into params. time dimension
@@ -200,6 +208,17 @@ class StorageUnit(Accessor):
         # on StorageUnits
         dims = set(self.parameters).difference(set(self.param_meta.keys()))
         self.param_meta = self.control.meta.get_dims(dims)
+
+        if self.verbose:
+            from pprint import pprint
+
+            print("Metadata print out for StorageUnit subclass {self.name} :")
+            print(f"\n\nParameters ({len(self.param_meta.keys())}): {'*'* 70}")
+            pprint(self.param_meta)
+            print(f"\n\nInputs ({len(self.input_meta.keys())}): {'*'* 70}")
+            pprint(self.input_meta)
+            print(f"\n\nVariables ({len(self.var_meta.keys())}): {'*'* 70}")
+            pprint(self.var_meta)
 
         return
 

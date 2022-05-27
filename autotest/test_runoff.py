@@ -70,7 +70,9 @@ class TestPRMSRunoffDomain:
             detailed = True
             if check:
                 atol = 1.0e-5
-                success = self.check_timestep_results(runoff, istep, ans, atol, detailed)
+                success = self.check_timestep_results(
+                    runoff, istep, ans, atol, detailed
+                )
                 if not success:
                     all_success = False
                     if failfast:
@@ -105,5 +107,7 @@ class TestPRMSRunoffDomain:
                     if detailed:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
-                            print(f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}")
+                            print(
+                                f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}"
+                            )
         return all_success

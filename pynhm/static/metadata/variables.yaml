@@ -1505,6 +1505,12 @@ hru_perv:
     0: nhru
   type: F
   units: acres
+hru_perv_actet:
+  desc: Actual ET from the capillary reservoir of each HRU normalized to HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 hru_ppt:
   desc: Precipitation distributed to each HRU
   dimensions:

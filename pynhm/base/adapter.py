@@ -23,7 +23,11 @@ def adapter_factory(
     variable_name: str = None,
     start_time: np.datetime64 = None,
 ):
-    if isinstance(var, (str, pl.Path)):
+    if isinstance(var, Adapter):
+        """Adapt an adapter"""
+        return var
+    elif isinstance(var, (str, pl.Path)):
+        """Paths and strings are considered paths to netcdf files"""
         if pl.Path(var).suffix == ".nc":
             return AdapterNetcdf(
                 var,

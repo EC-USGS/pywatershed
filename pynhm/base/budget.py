@@ -1,3 +1,4 @@
+from typing import Union
 from warnings import warn
 
 import numpy as np
@@ -183,11 +184,9 @@ class Budget(Accessor):
     def _calc_balance(self):
         balance = self._inputs_sum - self._outputs_sum
         close = np.isclose(balance, self._storage_changes_sum)
-        # diff = balance, self._storage_changes_sum)
         if not close.all():
             msg = "The flux balance not equal to the change in storage"
-            print(msg)
-            # raise ValueError(msg)
+            warn(msg, UserWarning)
         return balance
 
     @property

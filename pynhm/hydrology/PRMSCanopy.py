@@ -29,7 +29,7 @@ class PRMSCanopy(StorageUnit):
         self,
         control: Control,
         params: PrmsParameters,
-        pkwater_equiv: adaptable,
+        pkwater_ante: adaptable,
         transp_on: adaptable,
         hru_ppt: adaptable,
         hru_rain: adaptable,
@@ -49,8 +49,8 @@ class PRMSCanopy(StorageUnit):
 
         # store dependencies
         self._input_variables_dict = {}
-        self._input_variables_dict["pkwater_equiv"] = adapter_factory(
-            pkwater_equiv, "pkwater_equiv"
+        self._input_variables_dict["pkwater_ante"] = adapter_factory(
+            pkwater_ante, "pkwater_ante"
         )
         self._input_variables_dict["transp_on"] = adapter_factory(
             transp_on, "transp_on"
@@ -101,7 +101,7 @@ class PRMSCanopy(StorageUnit):
 
         """
         return (
-            "pkwater_equiv",
+            "pkwater_ante",
             "transp_on",
             "hru_ppt",
             "hru_rain",
@@ -157,6 +157,7 @@ class PRMSCanopy(StorageUnit):
 
         """
         # self.intcp_stor_old = self.intcp_stor
+        self.hru_intcpevap[:] = zero
         return
 
     def calculate(self, time_length, vectorized=False):
@@ -260,9 +261,9 @@ class PRMSCanopy(StorageUnit):
                         elif self.cov_type[i] == GRASSES:
                             # if there is no snowpack and no snowfall, then apparently, grasses
                             # can intercept rain.
-                            # IF ( Pkwater_equiv(i)<DNEARZERO .AND. netsnow<NEARZERO ) THEN
+                            # IF ( pkwater_ante(i)<DNEARZERO .AND. netsnow<NEARZERO ) THEN
                             if (
-                                self.pkwater_equiv[i] < DNEARZERO
+                                self.pkwater_ante[i] < DNEARZERO
                                 and netsnow < NEARZERO
                             ):
                                 intcpstor, netrain = self.intercept(

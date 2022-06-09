@@ -432,6 +432,7 @@ class PRMSRunoff(StorageUnit):
                             self.dprst_sroff_hru[i],
                             srp,
                             sri,
+                            self.dprst_evap_hru[i],
                         ) = self.dprst_comp(
                             self.dprst_vol_clos[i],
                             self.dprst_area_clos_max[i],
@@ -1505,18 +1506,20 @@ class PRMSRunoff(StorageUnit):
                     unsatisfied_et - dprst_evap_open / self.hru_area[ihru]
                 )
                 dprst_vol_open = dprst_vol_open - dprst_evap_open
-                if dprst_area_clos > 0.0:
-                    dprst_evap_clos = min(
-                        dprst_area_clos * dprst_avail_et, dprst_vol_clos
-                    )
-                    if dprst_evap_clos / self.hru_area[ihru] > unsatisfied_et:
-                        dprst_evap_clos = unsatisfied_et * self.hru_area[ihru]
-                    if dprst_evap_clos > dprst_vol_clos:
-                        dprst_evap_clos = dprst_vol_clos
-                    dprst_vol_clos = dprst_vol_clos - dprst_evap_clos
-                dprst_evap_hru = (
-                    dprst_evap_open + dprst_evap_clos
-                ) / self.hru_area[ihru]
+
+            if dprst_area_clos > 0.0:
+                dprst_evap_clos = min(
+                    dprst_area_clos * dprst_avail_et, dprst_vol_clos
+                )
+                if dprst_evap_clos / self.hru_area[ihru] > unsatisfied_et:
+                    dprst_evap_clos = unsatisfied_et * self.hru_area[ihru]
+                if dprst_evap_clos > dprst_vol_clos:
+                    dprst_evap_clos = dprst_vol_clos
+                dprst_vol_clos = dprst_vol_clos - dprst_evap_clos
+
+            dprst_evap_hru = (
+                dprst_evap_open + dprst_evap_clos
+            ) / self.hru_area[ihru]
 
         #
         #       ! compute seepage
@@ -1636,4 +1639,5 @@ class PRMSRunoff(StorageUnit):
             dprst_sroff_hru,
             srp,
             sri,
+            dprst_evap_hru,
         )

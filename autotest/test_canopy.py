@@ -86,8 +86,6 @@ class TestPRMSCanopyDomain:
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
             nc_pth = output_dir / f"{key}.nc"
-            if "pkwater_equiv" in str(nc_pth):
-                nc_pth = output_dir / "pkwater_equiv_prev.nc"
             input_variables[key] = nc_pth
 
         cnp = PRMSCanopy(control=control, params=params, **input_variables)

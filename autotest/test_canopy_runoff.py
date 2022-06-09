@@ -1,5 +1,4 @@
 import pathlib as pl
-from datetime import datetime
 
 import numpy as np
 import pytest
@@ -45,12 +44,9 @@ class TestPRMSCanopyRunoffDomain:
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
             nc_pth = output_dir / f"{key}.nc"
-            if "pkwater_equiv" in str(nc_pth):
-                nc_pth = output_dir / "pkwater_equiv_prev.nc"
             input_variables[key] = nc_pth
 
         canopy = PRMSCanopy(control=control, params=params, **input_variables)
-
 
         # instantiate runoff
         input_variables = {}
@@ -65,9 +61,13 @@ class TestPRMSCanopyRunoffDomain:
         runoff = PRMSRunoff(control=control, params=params, **input_variables)
 
         # wire up output from canopy as input to runoff
-        runoff.set_input_to_adapter("net_ppt", adapter_factory(canopy.net_ppt, "net_ppt"))
-        runoff.set_input_to_adapter("net_rain", adapter_factory(canopy.net_rain, "net_rain"))
-        runoff.set_input_to_adapter("net_snow", adapter_factory(canopy.net_snow, "net_snow"))
+        runoff.set_input_to_adapter("net_ppt", adapter_factory(canopy.net_ppt))
+        runoff.set_input_to_adapter(
+            "net_rain", adapter_factory(canopy.net_rain)
+        )
+        runoff.set_input_to_adapter(
+            "net_snow", adapter_factory(canopy.net_snow)
+        )
 
         all_success = True
         for istep in range(control.n_times):
@@ -89,7 +89,9 @@ class TestPRMSCanopyRunoffDomain:
             detailed = True
             if check:
                 atol = 1.0e-5
-                success = self.check_timestep_results(runoff, istep, ans, atol, detailed)
+                success = self.check_timestep_results(
+                    runoff, istep, ans, atol, detailed
+                )
                 if not success:
                     all_success = False
                     if failfast:
@@ -124,5 +126,7 @@ class TestPRMSCanopyRunoffDomain:
                     if detailed:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
-                            print(f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}")
+                            print(
+                                f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}"
+                            )
         return all_success

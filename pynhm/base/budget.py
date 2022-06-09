@@ -32,9 +32,9 @@ from .accessor import Accessor
 class Budget(Accessor):
     def __init__(
         self,
-        inputs: list | dict,
-        outputs: list | dict,
-        storage_changes: list | dict,
+        inputs: Union[list, dict],
+        outputs: Union[list, dict],
+        storage_changes: Union[list, dict],
         meta: dict = None,
         init_accumulations: dict = None,
         verbosity: int = 0,
@@ -56,7 +56,7 @@ class Budget(Accessor):
         return
 
     @staticmethod
-    def init_component(data: list | dict) -> dict:
+    def init_component(data: Union[list, dict]) -> dict:
         if isinstance(data, dict):
             return data
         else:

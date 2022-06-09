@@ -92,7 +92,7 @@ def test_budget():
                 == accum_answers[component][var]
             ).all()
 
-    with pytest.raises(ValueError):
+    with pytest.warns(UserWarning):
         storage_changes["stor2"][:] = -23 * np.ones([nhru])
         budget.calculate()
 

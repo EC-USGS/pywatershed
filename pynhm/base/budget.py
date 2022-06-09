@@ -1,3 +1,4 @@
+from typing import Union
 from warnings import warn
 
 import numpy as np
@@ -31,9 +32,9 @@ from .accessor import Accessor
 class Budget(Accessor):
     def __init__(
         self,
-        inputs: list | dict,
-        outputs: list | dict,
-        storage_changes: list | dict,
+        inputs: Union[list, dict],
+        outputs: Union[list, dict],
+        storage_changes: Union[list, dict],
         meta: dict = None,
         init_accumulations: dict = None,
         verbosity: int = 0,
@@ -55,7 +56,7 @@ class Budget(Accessor):
         return
 
     @staticmethod
-    def init_component(data: list | dict) -> dict:
+    def init_component(data: Union[list, dict]) -> dict:
         if isinstance(data, dict):
             return data
         else:
@@ -183,10 +184,9 @@ class Budget(Accessor):
     def _calc_balance(self):
         balance = self._inputs_sum - self._outputs_sum
         close = np.isclose(balance, self._storage_changes_sum)
-        # diff = balance, self._storage_changes_sum)
         if not close.all():
             msg = "The flux balance not equal to the change in storage"
-            raise ValueError(msg)
+            warn(msg, UserWarning)
         return balance
 
     @property

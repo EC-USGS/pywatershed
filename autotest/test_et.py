@@ -3,9 +3,8 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import Adapter, AdapterNetcdf, adapter_factory
+from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.constants import one
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.utils.parameters import PrmsParameters
 
@@ -46,7 +45,6 @@ class TestPRMSEt:
         all_success = True
         for istep in range(control.n_times):
 
-            print(istep)
             control.advance()
             et.advance()
             et.calculate(1.0)
@@ -102,7 +100,8 @@ class TestPRMSEt:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
                             print(
-                                f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}"
+                                f"hru {i} prms {a1[i]} pynhm {a2[i]} "
+                                f"diff {diff[i]}"
                             )
                 if failfast:
                     raise (ValueError)

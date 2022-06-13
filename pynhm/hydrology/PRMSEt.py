@@ -25,6 +25,7 @@ class PRMSEt(StorageUnit):
         dprst_evap_hru: adaptable,
         perv_actet: adaptable,
         verbose: bool = False,
+        imbalance_fatal: bool = False,
     ) -> "PRMSEt":
 
         self.name = "PRMSEt"
@@ -52,7 +53,7 @@ class PRMSEt(StorageUnit):
             },
             "storage_changes": {"unused_potet": self.unused_potet},
         }
-        self.budget = Budget(**budget_terms)
+        self.budget = Budget(**budget_terms, imbalance_fatal=imbalance_fatal)
 
         return
 

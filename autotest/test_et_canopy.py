@@ -44,7 +44,9 @@ class TestPRMSEt:
                 nc_path = output_dir / f"{key}.nc"
                 et_inputs[key] = adapter_factory(nc_path, key)
 
-        et = PRMSEt(control=control, params=params, **et_inputs)
+        et = PRMSEt(
+            control=control, params=params, imbalance_fatal=True, **et_inputs
+        )
 
         # canopy
         canopy_inputs = {}

@@ -38,6 +38,7 @@ class Budget(Accessor):
         meta: dict = None,
         init_accumulations: dict = None,
         verbosity: int = 0,
+        imbalance_fatal: bool = False,
     ):
         self.name = "Budget"
         self.inputs = self.init_component(inputs)
@@ -45,6 +46,7 @@ class Budget(Accessor):
         self.storage_changes = self.init_component(storage_changes)
         self.meta = meta
         self.verbosity = verbosity
+        self.imbalance_fatal = imbalance_fatal
 
         self._inputs_sum = None
         self._outputs_sum = None
@@ -186,7 +188,10 @@ class Budget(Accessor):
         close = np.isclose(balance, self._storage_changes_sum)
         if not close.all():
             msg = "The flux balance not equal to the change in storage"
-            warn(msg, UserWarning)
+            if self.imbalance_fatal:
+                raise ValueError(msg)
+            else:
+                warn(msg, UserWarning)
         return balance
 
     @property

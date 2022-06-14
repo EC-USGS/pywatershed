@@ -26,6 +26,7 @@ class Control(Accessor):
         start_time: np.datetime64,
         end_time: np.datetime64,
         time_step: np.timedelta64,
+        init_time: np.datetime64 = None,
         config: dict = None,
         verbosity: int = 0,
         **kwargs,
@@ -56,7 +57,11 @@ class Control(Accessor):
         self._time_step = time_step
         self._n_times = int(n_times_m1) + 1
 
-        self._init_time = None  # get from control file if restart?
+        if init_time:
+            self._init_time = init_time
+        else:
+            self._init_time = self._start_time - time_step
+
         self._current_time = None
         self._previous_time = None
         self._itime_step = -1

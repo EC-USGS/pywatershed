@@ -6,7 +6,6 @@ from pynhm.base.control import Control
 
 # TODO
 # * Test restart
-# * Test reset
 # * test real case here
 # * test various time units?
 
@@ -15,6 +14,8 @@ time_dict = {
     "end_time": np.datetime64("1979-01-06T00:00:00.00"),
     "time_step": np.timedelta64(1, "D"),
 }
+
+time_dict["init_time"] = time_dict["start_time"] - time_dict["time_step"]
 
 
 @pytest.fixture(scope="function")
@@ -127,5 +128,10 @@ def test_budget(control_simple):
 
     with pytest.raises(ValueError):
         budget.calculate()
+
+    assert budget._accum_start_time == time_dict["init_time"]
+    budget.reset_accumulations()
+    assert budget._accum_start_time == control_simple.current_time
+    print(budget)
 
     return

@@ -11,7 +11,6 @@ from pynhm.base.control import Control
 
 # Todo
 # * documentation
-# * reset method
 # * units (check consistent): know about metadata and just look up names?
 
 
@@ -137,14 +136,13 @@ class Budget(Accessor):
         return self.get_components()
 
     def set_initial_accumulations(self, init_accumulations, accum_start_time):
-        self._itime_accumulated = self._itime_step
-        # init to zero
+        self._itime_accumulated = self._itime_step  # -1
+        self._time_accumulated = self._time  # None
         self._accumulations = {}
         self._accumulations_sum = {}
-        for component in self.components:
-            self._accumulations[component] = {}
-            for var in self[component].keys():
-                self._accumulations[component][var] = zero
+
+        # init to zero
+        self.reset_accumulations()
 
         if init_accumulations is None:
             self._accum_start_time = self.control.init_time
@@ -161,7 +159,15 @@ class Budget(Accessor):
                     ][var]
 
         self._sum_component_accumulations()
+        return
 
+    def reset_accumulations(self):
+        self._accum_start_time = self._time_accumulated
+        for component in self.components:
+            self._accumulations[component] = {}
+            for var in self[component].keys():
+                self._accumulations[component][var] = zero
+        self._sum_component_accumulations()
         return
 
     def advance(self):
@@ -200,6 +206,7 @@ class Budget(Accessor):
 
         self._sum_component_accumulations()
         self._itime_accumulated = self._itime_step
+        self._time_accumulated = self._time
         return
 
     def _sum_component_accumulations(self):

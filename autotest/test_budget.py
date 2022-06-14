@@ -2,9 +2,27 @@ import numpy as np
 import pytest
 
 from pynhm.base.budget import Budget
+from pynhm.base.control import Control
+
+# TODO
+# * Test restart
+# * Test reset
+# * test real case here
+# * test various time units?
+
+time_dict = {
+    "start_time": np.datetime64("1979-01-03T00:00:00.00"),
+    "end_time": np.datetime64("1979-01-06T00:00:00.00"),
+    "time_step": np.timedelta64(1, "D"),
+}
 
 
-def test_budget():
+@pytest.fixture(scope="function")
+def control_simple():
+    return Control(**time_dict)
+
+
+def test_budget(control_simple):
     nhru = 5
     inputs = {
         "in1": np.ones([nhru]),
@@ -19,23 +37,24 @@ def test_budget():
         "stor2": np.zeros([nhru]),
     }
 
-    argz = {
+    terms = {
         "inputs": inputs,
         "outputs": outputs,
         "storage_changes": storage_changes,
     }
 
-    # budget = Budget(**argz)
-    argz2 = {key: list(val.keys()) for key, val in argz.items()}
+    terms_keys = {key: list(val.keys()) for key, val in terms.items()}
 
-    budget = Budget(**argz2)
-    budget.set(argz)
+    budget = Budget(control_simple, **terms_keys, time_unit="D")
+    budget.set(terms)
 
     assert isinstance(budget, Budget)
 
     for component in budget.components:
-        assert budget[component] == argz[component]
+        assert budget[component] == terms[component]
 
+    control_simple.advance()
+    budget.advance()
     budget.calculate()
 
     assert (budget._inputs_sum == 2).all()
@@ -46,9 +65,11 @@ def test_budget():
         for var in budget[component].keys():
             assert (
                 budget.accumulations[component][var]
-                == argz[component][var] * 1
+                == terms[component][var] * 1
             ).all()
 
+    control_simple.advance()
+    budget.advance()
     budget.calculate()
 
     assert (budget._inputs_sum == 2).all()
@@ -60,7 +81,7 @@ def test_budget():
         for var in budget[component].keys():
             assert (
                 budget.accumulations[component][var]
-                == argz[component][var] * 2
+                == terms[component][var] * 2
             ).all()
 
     # change inputs
@@ -71,7 +92,12 @@ def test_budget():
         for var_key, var_val in budget[comp_name].items():
             assert budget[comp_name][var_key] is var_val
 
+    control_simple.advance()
+    budget.advance()
     budget.calculate()
+
+    print(budget)
+
     assert (budget._inputs_sum == 0).all()
     assert (budget._outputs_sum == 1).all()
     assert (budget._storage_changes_sum == -1).all()
@@ -94,6 +120,12 @@ def test_budget():
 
     with pytest.warns(UserWarning):
         storage_changes["stor2"][:] = -23 * np.ones([nhru])
+        control_simple.advance()
+        budget.advance()
+        budget.calculate()
+        print(budget)
+
+    with pytest.raises(ValueError):
         budget.calculate()
 
     return

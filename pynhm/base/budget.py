@@ -4,55 +4,58 @@ from warnings import warn
 import numpy as np
 
 from ..constants import zero
+from ..utils.formatting import pretty_print
 from .accessor import Accessor
+from pynhm.base.control import Control
 
-# # For both 1) cumulative (start_date), and 2) current time step
-# # * Individual input terms: name, units, & subclass
-# # * Individual output terms: name, units, & subclass
-# # * Sum input terms
-# # * Sum output terms
-# # In - out
-# # ? check against a reference storage?
 
-# budget needs to be able to restart?
-# should storage unit edit its own metadata to set it's subclass on each variable?
-
-# the input dictionarys are a strange stucture
-# key: {data: np.ndarray([nhru]), **metadata}
-# might consider other ways of passing the data.
-# ** should carry the data and the meta separately ** since that's what we do elsewhere
-
-# apply initial accumulations passed via e.g.
-# initial_accumulations = {
-#     "inputs": {"var": data, ...},
-#     "outputs": {"var": data, ...},
-#     "storage_changes": {"var": data, ...}, }
+# Todo
+# * documentation
+# * reset method
+# * units (check consistent): know about metadata and just look up names?
 
 
 class Budget(Accessor):
     def __init__(
         self,
+        control: Control,
         inputs: Union[list, dict],
         outputs: Union[list, dict],
         storage_changes: Union[list, dict],
         meta: dict = None,
         init_accumulations: dict = None,
-        verbosity: int = 0,
+        accum_start_time: np.datetime64 = None,
+        units: str = None,
+        time_unit: str = "s",
+        description: str = None,
+        rtol: float = 1e-5,
+        atol: float = 1e-8,
+        verbose: bool = True,
     ):
+
         self.name = "Budget"
+        self.control = control
         self.inputs = self.init_component(inputs)
         self.outputs = self.init_component(outputs)
         self.storage_changes = self.init_component(storage_changes)
         self.meta = meta
-        self.verbosity = verbosity
+        self.units = units
+        self.time_unit = time_unit
+        self.description = description
+        self.rtol = rtol
+        self.atol = atol
+        self.verbose = verbose
 
         self._inputs_sum = None
         self._outputs_sum = None
         self._storage_changes_sum = None
         self._balance = None
         self._accumulations = None
+        self._accumulations_sum = None
 
-        self.set_initial_accumulations(init_accumulations)
+        self._time = self.control.current_time
+        self._itime_step = self.control.itime_step
+        self.set_initial_accumulations(init_accumulations, accum_start_time)
         return
 
     @staticmethod
@@ -133,17 +136,21 @@ class Budget(Accessor):
     def components(self):
         return self.get_components()
 
-    def set_initial_accumulations(self, init_accumulations):
+    def set_initial_accumulations(self, init_accumulations, accum_start_time):
+        self._itime_accumulated = self._itime_step
         # init to zero
         self._accumulations = {}
+        self._accumulations_sum = {}
         for component in self.components:
             self._accumulations[component] = {}
             for var in self[component].keys():
                 self._accumulations[component][var] = zero
 
         if init_accumulations is None:
+            self._accum_start_time = self.control.init_time
             return None
 
+        self._accum_start_time = accum_start_time
         for component in self.components:
             if component not in init_accumulations.keys():
                 continue
@@ -155,10 +162,54 @@ class Budget(Accessor):
 
         return None
 
-    def accumulate(self):
+    def advance(self):
+        """Advance time (taken from storageUnit)"""
+        if self._itime_step >= self.control.itime_step:
+            if self.verbose:
+                msg = (
+                    f"{self.name} did not advance because it is "
+                    f"not behind control time"
+                )
+                print(msg)
+            return
+
+        self._itime_step = self.control.itime_step
+        self._time = self.control.current_time
+
+    def calculate(self):
+        """Accumulate for the timestep."""
+        if self._itime_accumulated >= self._itime_step:
+            raise ValueError("Can not accumulate twice per timestep")
+
+        self._inputs_sum = self._sum_inputs()
+        self._outputs_sum = self._sum_outputs()
+        self._storage_changes_sum = self._sum_storage_changes()
+        self._balance = self._calc_balance()
+
         for component in self.components:
             for var in self[component].keys():
-                self._accumulations[component][var] += self[component][var]
+                self._accumulations[component][var] += self[component][
+                    var
+                ] * self.control.time_step.astype(
+                    f"timedelta64[{self.time_unit}]"
+                ).astype(
+                    int
+                )
+
+        # sum the individual component accumulations
+        for component in self.components:
+            self._accumulations_sum[component] = None
+            for var in self[component].keys():
+                if self._accumulations_sum[component] is None:
+                    self._accumulations_sum[component] = self._accumulations[
+                        component
+                    ][var].copy()
+                else:
+                    self._accumulations_sum[component] += self._accumulations[
+                        component
+                    ][var]
+
+        self._itime_accumulated = self._itime_step
         return None
 
     @property
@@ -183,8 +234,11 @@ class Budget(Accessor):
 
     def _calc_balance(self):
         balance = self._inputs_sum - self._outputs_sum
-        close = np.isclose(balance, self._storage_changes_sum)
-        if not close.all():
+        self._zero_sum = True
+        if not np.allclose(
+            balance, self._storage_changes_sum, rtol=self.rtol, atol=self.atol
+        ):
+            self._zero_sum = False
             msg = "The flux balance not equal to the change in storage"
             warn(msg, UserWarning)
         return balance
@@ -193,10 +247,189 @@ class Budget(Accessor):
     def balance(self):
         return self._balance
 
-    def calculate(self):
-        self._inputs_sum = self._sum_inputs()
-        self._outputs_sum = self._sum_outputs()
-        self._storage_changes_sum = self._sum_storage_changes()
-        self._balance = self._calc_balance()
-        self.accumulate()
-        return None
+    def __repr__(self):
+
+        n_in = len(self.inputs)
+        n_out = len(self.outputs)
+        n_stor = len(self.storage_changes)
+        n_report = max(n_in, n_out, n_stor)
+        in_keys = list(self.inputs.keys())
+        out_keys = list(self.outputs.keys())
+        stor_keys = list(self.storage_changes.keys())
+        # these do not copy the ndarrays
+        in_vals = list(self.inputs.values())
+        out_vals = list(self.outputs.values())
+        stor_vals = list(self.storage_changes.values())
+        acc_in_vals = list(self._accumulations["inputs"].values())
+        acc_out_vals = list(self._accumulations["outputs"].values())
+        acc_stor_vals = list(self._accumulations["storage_changes"].values())
+
+        #           ': ' + value spaces
+        col_extra_colon = 2
+        col_extra_vals = 8
+        col_extra = col_extra_colon + col_extra_vals
+        in_col_key_width = max([len(kk) for kk in in_keys])
+        out_col_key_width = max([len(kk) for kk in out_keys])
+        stor_col_key_width = max([len(kk) for kk in stor_keys])
+        in_col_width = in_col_key_width + col_extra
+        out_col_width = out_col_key_width + col_extra
+        stor_col_width = stor_col_key_width + col_extra
+
+        indent_width = 9
+        indent_fill = " " * indent_width
+        in_col_fill = " " * in_col_width
+        out_col_fill = " " * out_col_width
+        stor_col_fill = " " * stor_col_width
+        sep_width = 4
+        col_sep = " " * sep_width
+        terms_width = (
+            in_col_width + out_col_width + stor_col_width + (2 * sep_width)
+        )
+        total_width = indent_width + terms_width
+
+        # volume/mass or energy
+        # budget name
+        summary = []
+        summary += ["*-" * int((total_width) / 2)]
+        summary += [
+            f"Budget {self.units} of {self.description} "
+            f"for entire model domain (spatial sum)"
+        ]
+
+        # print the model time. this is
+        summary += [f"@ time: {self._time}"]
+
+        # Timestep rates
+        summary += [""]
+        # header
+        summary += ["This timestep, rates:"]
+        summary += [
+            indent_fill
+            + "input rates".ljust(in_col_width)
+            + col_sep
+            + "output rates".ljust(out_col_width)
+            + col_sep
+            + "storage change rates".ljust(stor_col_width)
+        ]
+        separator = [
+            (indent_fill + "-" * in_col_width + col_sep)
+            + ("-" * out_col_width + col_sep)
+            + ("-" * stor_col_width)
+        ]
+        summary += separator
+
+        # terms line by line with cols: in, out, storage
+        term_data = (
+            (n_in, in_keys, in_vals, in_col_width, in_col_fill),
+            (n_out, out_keys, out_vals, out_col_width, out_col_fill),
+            (n_stor, stor_keys, stor_vals, stor_col_width, stor_col_fill),
+        )
+
+        def table_terms_col_wise():
+            "Fill terms table column wise"
+            table = []
+            for ll in range(n_report):
+                line = indent_fill
+                for n_items, keys, vals, col_width, col_fill in term_data:
+                    if ll <= n_items:
+                        line += (
+                            pretty_print(
+                                f"{keys[ll]}: {vals[ll].sum()}", col_width
+                            )
+                            + col_sep
+                        )
+                    else:
+                        line += col_fill
+
+                line += col_sep
+                table += [line]
+
+            return table
+
+        summary += table_terms_col_wise()
+
+        # balance line
+        summary += [indent_fill + "-" * terms_width]
+
+        eq_op = "="
+        if not self._zero_sum:
+            eq_op = "!=!"
+
+        term_data = (
+            ("", self._inputs_sum, in_col_width, in_col_key_width),
+            ("-", self._outputs_sum, out_col_width, out_col_key_width),
+            (
+                eq_op,
+                self._storage_changes_sum,
+                stor_col_width,
+                stor_col_key_width,
+            ),
+        )
+
+        def balance_line_col_wise():
+            bal_line = "Balance: "
+            for oper, vals_sum, col_width, col_key_width in term_data:
+                bal_line += (
+                    oper
+                    + (" " * (col_key_width + col_extra_colon - len(oper)))
+                    + pretty_print(
+                        vals_sum.sum(),
+                        col_width - col_key_width - col_extra_colon,
+                    )
+                    + col_sep
+                )
+            return bal_line
+
+        summary += [balance_line_col_wise()]
+
+        # Accumulated volumes
+        summary += [""]
+        # header
+        summary += [f"Accumulated volumes (since {self._accum_start_time}):"]
+        summary += [
+            indent_fill
+            + "input volumes".ljust(in_col_width)
+            + col_sep
+            + "output volumes".ljust(out_col_width)
+            + col_sep
+            + "storage change volumes".ljust(out_col_width)
+        ]
+        # separator
+        summary += separator
+
+        # terms line by line with cols: in, out, storage
+        term_data = (
+            (n_in, in_keys, acc_in_vals, in_col_width, in_col_fill),
+            (n_out, out_keys, acc_out_vals, out_col_width, out_col_fill),
+            (n_stor, stor_keys, acc_stor_vals, stor_col_width, stor_col_fill),
+        )
+        # fill terms column wise (abuse scope a bit)
+        summary += table_terms_col_wise()
+
+        # balance line
+        summary += [indent_fill + "-" * terms_width]
+        term_data = (
+            (
+                "",
+                self._accumulations_sum["inputs"],
+                in_col_width,
+                in_col_key_width,
+            ),
+            (
+                "-",
+                self._accumulations_sum["outputs"],
+                out_col_width,
+                out_col_key_width,
+            ),
+            (
+                eq_op,
+                self._accumulations_sum["storage_changes"],
+                stor_col_width,
+                stor_col_key_width,
+            ),
+        )
+        summary += [balance_line_col_wise()]
+
+        # conclude
+        summary += [""]
+        return "\n".join(summary)

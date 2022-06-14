@@ -134,6 +134,11 @@ class Control(Accessor):
         return self._time_step
 
     @property
+    def init_time(self):
+        """Get the simulation initialization time"""
+        return self._init_time
+
+    @property
     def start_time(self):
         """Get the simulation start time"""
         return self._start_time

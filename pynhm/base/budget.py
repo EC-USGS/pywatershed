@@ -148,7 +148,7 @@ class Budget(Accessor):
 
         if init_accumulations is None:
             self._accum_start_time = self.control.init_time
-            return None
+            return
 
         self._accum_start_time = accum_start_time
         for component in self.components:
@@ -160,7 +160,9 @@ class Budget(Accessor):
                         component
                     ][var]
 
-        return None
+        self._sum_component_accumulations()
+
+        return
 
     def advance(self):
         """Advance time (taken from storageUnit)"""
@@ -196,6 +198,11 @@ class Budget(Accessor):
                     int
                 )
 
+        self._sum_component_accumulations()
+        self._itime_accumulated = self._itime_step
+        return
+
+    def _sum_component_accumulations(self):
         # sum the individual component accumulations
         for component in self.components:
             self._accumulations_sum[component] = None
@@ -208,9 +215,7 @@ class Budget(Accessor):
                     self._accumulations_sum[component] += self._accumulations[
                         component
                     ][var]
-
-        self._itime_accumulated = self._itime_step
-        return None
+        return
 
     @property
     def accumulations(self):

@@ -2,6 +2,7 @@ from typing import Union
 
 import numpy as np
 
+from pynhm.base.budget import Budget
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
@@ -35,6 +36,7 @@ class PRMSCanopy(StorageUnit):
         hru_rain: adaptable,
         hru_snow: adaptable,
         potet: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ):
 
@@ -65,6 +67,32 @@ class PRMSCanopy(StorageUnit):
             hru_snow, "hru_snow"
         )
         self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
+
+        if budget_type is None:
+            self.budget = None
+        else:
+            budget_terms = {
+                "inputs": {
+                    "hru_rain": self.hru_rain,
+                    "hru_snow": self.hru_snow,
+                },
+                "outputs": {
+                    "net_rain": self.net_rain,
+                    "net_snow": self.net_snow,
+                    "hru_intcpevap": self.hru_intcpevap,
+                },
+                "storage_changes": {
+                    "hru_intcpstor_change": self.hru_intcpstor_change,
+                },
+            }
+            self.budget = Budget(
+                self.control,
+                **budget_terms,
+                time_unit="D",
+                description=self.name,
+                imbalance_fatal=(budget_type == "strict"),
+            )
+
         return
 
     def set_initial_conditions(self):
@@ -124,6 +152,8 @@ class PRMSCanopy(StorageUnit):
             "intcp_stor",
             "intcp_evap",
             "hru_intcpstor",
+            "hru_intcpstor_old",
+            "hru_intcpstor_change",
             "hru_intcpevap",
             "intcp_form",
             "intcp_transp_on",  # this is private in prms6 and is not in the metadata
@@ -145,6 +175,8 @@ class PRMSCanopy(StorageUnit):
             "intcp_stor": zero,  # JLM: this is the only one that was explicitly defined
             "intcp_evap": zero,
             "hru_intcpstor": zero,
+            "hru_intcpstor_old": zero,
+            "hru_intcpstor_change": zero,
             "hru_intcpevap": zero,
             "intcp_form": 0,  # could make boolean but would have to make the RAIN/SNOW match
             "intcp_transp_on": 0,  # could make boolean
@@ -157,6 +189,7 @@ class PRMSCanopy(StorageUnit):
 
         """
         # self.intcp_stor_old = self.intcp_stor
+        self.hru_intcpstor_old[:] = self.hru_intcpstor
         return
 
     def calculate(self, time_length, vectorized=False):
@@ -174,6 +207,15 @@ class PRMSCanopy(StorageUnit):
             self.calculate_vectorized(time_length)
         else:
             self.calculate_procedural(time_length)
+
+        self.hru_intcpstor_change[:] = (
+            self.hru_intcpstor - self.hru_intcpstor_old
+        )
+
+        if self.budget is not None:
+            self.budget.advance()
+            self.budget.calculate()
+
         return
 
     def calculate_procedural(self, time_length):

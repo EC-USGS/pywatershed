@@ -1487,6 +1487,18 @@ hru_intcpstor:
     0: nhru
   type: F
   units: inches
+hru_intcpstor_old:
+  desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
+hru_intcpstor_change:
+  desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 hru_lateral_flow:
   desc: Lateral flow to stream network from each HRU
   dimensions:

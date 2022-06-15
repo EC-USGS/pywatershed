@@ -46,7 +46,13 @@ def test_budget(control_simple):
 
     terms_keys = {key: list(val.keys()) for key, val in terms.items()}
 
-    budget = Budget(control_simple, **terms_keys, time_unit="D")
+    budget = Budget(
+        control_simple,
+        **terms_keys,
+        time_unit="D",
+        description="simple_test",
+        units="m*3/D",
+    )
     budget.set(terms)
 
     assert isinstance(budget, Budget)

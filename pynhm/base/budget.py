@@ -3,15 +3,16 @@ from warnings import warn
 
 import numpy as np
 
+from pynhm.base.control import Control
+
 from ..constants import zero
 from ..utils.formatting import pretty_print
 from .accessor import Accessor
-from pynhm.base.control import Control
-
 
 # Todo
 # * documentation
 # * units (check consistent): know about metadata and just look up names?
+# * get time_units / time_step from control
 
 
 class Budget(Accessor):
@@ -25,10 +26,11 @@ class Budget(Accessor):
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
         units: str = None,
-        time_unit: str = "s",
+        time_unit: str = "s",  ## get this from control
         description: str = None,
         rtol: float = 1e-5,
         atol: float = 1e-8,
+        imbalance_fatal: bool = False,
         verbose: bool = True,
     ):
 
@@ -43,6 +45,7 @@ class Budget(Accessor):
         self.description = description
         self.rtol = rtol
         self.atol = atol
+        self.imbalance_fatal = imbalance_fatal
         self.verbose = verbose
 
         self._inputs_sum = None
@@ -192,8 +195,8 @@ class Budget(Accessor):
         self._inputs_sum = self._sum_inputs()
         self._outputs_sum = self._sum_outputs()
         self._storage_changes_sum = self._sum_storage_changes()
-        self._balance = self._calc_balance()
 
+        # accumulate
         for component in self.components:
             for var in self[component].keys():
                 self._accumulations[component][var] += self[component][
@@ -205,6 +208,10 @@ class Budget(Accessor):
                 )
 
         self._sum_component_accumulations()
+
+        # check balance
+        self._balance = self._calc_balance()
+
         self._itime_accumulated = self._itime_step
         self._time_accumulated = self._time
         return
@@ -252,7 +259,11 @@ class Budget(Accessor):
         ):
             self._zero_sum = False
             msg = "The flux balance not equal to the change in storage"
-            warn(msg, UserWarning)
+            if self.imbalance_fatal:
+                raise ValueError(msg)
+            else:
+                warn(msg, UserWarning)
+
         return balance
 
     @property
@@ -268,7 +279,8 @@ class Budget(Accessor):
         in_keys = list(self.inputs.keys())
         out_keys = list(self.outputs.keys())
         stor_keys = list(self.storage_changes.keys())
-        # these do not copy the ndarrays
+
+        # the following do not copy the ndarrays
         in_vals = list(self.inputs.values())
         out_vals = list(self.outputs.values())
         stor_vals = list(self.storage_changes.values())
@@ -278,7 +290,7 @@ class Budget(Accessor):
 
         #           ': ' + value spaces
         col_extra_colon = 2
-        col_extra_vals = 8
+        col_extra_vals = 10
         col_extra = col_extra_colon + col_extra_vals
         in_col_key_width = max([len(kk) for kk in in_keys])
         out_col_key_width = max([len(kk) for kk in out_keys])
@@ -304,12 +316,12 @@ class Budget(Accessor):
         summary = []
         summary += ["*-" * int((total_width) / 2)]
         summary += [
-            f"Budget {self.units} of {self.description} "
+            f"Budget (units: {self.units}) of {self.description} "
             f"for entire model domain (spatial sum)"
         ]
 
         # print the model time. this is
-        summary += [f"@ time: {self._time}"]
+        summary += [f"@ time: {self._time} (itime_step: {self._itime_step})"]
 
         # Timestep rates
         summary += [""]
@@ -343,7 +355,7 @@ class Budget(Accessor):
             for ll in range(n_report):
                 line = indent_fill
                 for n_items, keys, vals, col_width, col_fill in term_data:
-                    if ll <= n_items:
+                    if ll <= (n_items - 1):
                         line += (
                             pretty_print(
                                 f"{keys[ll]}: {vals[ll].sum()}", col_width
@@ -351,7 +363,7 @@ class Budget(Accessor):
                             + col_sep
                         )
                     else:
-                        line += col_fill
+                        line += col_fill + col_sep
 
                 line += col_sep
                 table += [line]

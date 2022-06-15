@@ -1,5 +1,4 @@
 import pathlib as pl
-from datetime import datetime
 
 import numpy as np
 import pytest
@@ -7,8 +6,6 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.preprocess import CsvFile
-from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
@@ -43,7 +40,10 @@ class TestPRMSCanopySimple:
 
         # todo: this is testing instantiation, but not physics
         cnp = PRMSCanopy(
-            control=control, params=prms_params, **input_variables
+            control=control,
+            params=prms_params,
+            **input_variables,
+            budget_type="strict",
         )
         control.advance()
         cnp.advance()
@@ -90,13 +90,19 @@ class TestPRMSCanopyDomain:
                 nc_pth = output_dir / "pkwater_equiv_prev.nc"
             input_variables[key] = nc_pth
 
-        cnp = PRMSCanopy(control=control, params=params, **input_variables)
+        cnp = PRMSCanopy(
+            control=control,
+            params=params,
+            **input_variables,
+            budget_type="strict",
+        )
 
         all_success = True
         for istep in range(control.n_times):
             control.advance()
             cnp.advance()
             cnp.calculate(1.0)
+            # print(cnp.budget)
 
             # compare along the way
             atol = 1.0e-5

@@ -13,6 +13,7 @@ from .accessor import Accessor
 # * documentation
 # * units (check consistent): know about metadata and just look up names?
 # * get time_units / time_step from control
+# * decide on the fate of "from storage unit"
 
 
 class Budget(Accessor):
@@ -26,7 +27,7 @@ class Budget(Accessor):
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
         units: str = None,
-        time_unit: str = "s",  ## get this from control
+        time_unit: str = "s",  # TODO: get this from control
         description: str = None,
         rtol: float = 1e-5,
         atol: float = 1e-8,
@@ -40,7 +41,6 @@ class Budget(Accessor):
         self.outputs = self.init_component(outputs)
         self.storage_changes = self.init_component(storage_changes)
         self.meta = meta
-        self.units = units
         self.time_unit = time_unit
         self.description = description
         self.rtol = rtol
@@ -54,9 +54,27 @@ class Budget(Accessor):
         self._balance = None
         self._accumulations = None
         self._accumulations_sum = None
+        self._zero_sum = None
 
         self._time = self.control.current_time
         self._itime_step = self.control.itime_step
+
+        # metadata
+        all_vars = [list(self[cc].keys()) for cc in self.get_components()]
+        all_vars = [x for xs in all_vars for x in xs]
+        self.meta = self.control.meta.get_vars(all_vars)
+        if len(self.meta) == len(all_vars):
+            all_units = [val["units"] for val in self.meta.values()]
+            # check consistent units
+            if not (np.array(all_units) == all_units[0]).all():
+                msg = "Units not consistent over all terms"
+                raise ValueError(msg)
+            self.units = all_units[0]
+        else:
+            msg = f"Metadata unavailable for some Budget terms in {all_vars}"
+            warn(msg)
+            self.units = None
+
         self.set_initial_accumulations(init_accumulations, accum_start_time)
         return
 
@@ -91,39 +109,44 @@ class Budget(Accessor):
                 else:
                     self[comp_name][var_name] = var_data
 
-    @staticmethod
-    def from_storage_unit(storage_unit, **kwargs):
+    @classmethod
+    def from_storage_unit(cls, storage_unit, **kwargs):
         # assemble the meta data, which will determine the budget component
         # variables
+        components = cls.get_components()
+
+        # kwargs["control"] = storage_unit.control
         kwargs["meta"] = {}
-        kwargs["meta"]["inputs"] = storage_unit.meta._get_attr_key_val(
-            "input", "var_category", "mass flux"
-        )
-        kwargs["meta"]["outputs"] = storage_unit.meta._get_attr_key_val(
-            "var", "var_category", "mass flux"
-        )
-        kwargs["meta"][
-            "storage_changes"
-        ] = storage_unit.meta._get_attr_key_val(
-            "var", "var_category", "mass storage change"
-        )
 
-        # keep only the desried metadata for budget
-        meta_keys = Budget.get_meta_keys()
-        for component in self.components:
-            for key, val in kwargs["meta"][component].items():
-                kwargs["meta"][component][key] = {
-                    kk: vv for kk, vv in val.items() if kk in meta_keys
-                }
+        meta_obj = {
+            "inputs": ("input_meta", "mass flux"),
+            "outputs": ("var_meta", "mass flux"),
+            "storage_changes": ("var_meta", "mass storage change"),
+        }
+        for comp in components:
+            kwargs["meta"][comp] = {
+                key: val
+                for key, val in storage_unit[meta_obj[comp][0]].items()
+                if (
+                    ("var_category" in val.keys())
+                    and (val["var_category"] == meta_obj[comp][1])
+                )
+            }
 
-        for component in self.components:
+        # # keep only the desried metadata for budget ?
+        # meta_keys = Budget.get_meta_keys()
+        # for component in components:
+        #     for key, val in kwargs["meta"][component].items():
+        #         kwargs["meta"][component][key] = {
+        #             kk: vv for kk, vv in val.items() if kk in meta_keys
+        #         }
+
+        for component in components:
             kwargs[component] = {}
             for var in kwargs["meta"][component].keys():
                 kwargs[component][var] = storage_unit[var][:]
 
-        budget = Budget(**kwargs)
-        budget.storage_unit_name = storage_unit.name
-        return budget
+        return Budget(storage_unit.control, **kwargs)
 
     @staticmethod
     def get_meta_keys():
@@ -271,6 +294,13 @@ class Budget(Accessor):
         return self._balance
 
     def __repr__(self):
+
+        if self._itime_step == -1:
+            msg = (
+                f"Budget (units: {self.units}) of {self.description} "
+                f"only initialized. Check back later."
+            )
+            return msg
 
         n_in = len(self.inputs)
         n_out = len(self.outputs)

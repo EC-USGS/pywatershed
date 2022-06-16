@@ -5,9 +5,8 @@ from pynhm.base.budget import Budget
 from pynhm.base.control import Control
 
 # TODO
-# * Test restart
-# * test real case here
-# * test various time units?
+# * Test restart more robustly
+# * "Real test cases" in indvidual storage units (e.g. Canopy).
 
 time_dict = {
     "start_time": np.datetime64("1979-01-03T00:00:00.00"),

@@ -71,27 +71,37 @@ class PRMSCanopy(StorageUnit):
         if budget_type is None:
             self.budget = None
         else:
-            budget_terms = {
-                "inputs": {
-                    "hru_rain": self.hru_rain,
-                    "hru_snow": self.hru_snow,
-                },
-                "outputs": {
-                    "net_rain": self.net_rain,
-                    "net_snow": self.net_snow,
-                    "hru_intcpevap": self.hru_intcpevap,
-                },
-                "storage_changes": {
-                    "hru_intcpstor_change": self.hru_intcpstor_change,
-                },
-            }
-            self.budget = Budget(
-                self.control,
-                **budget_terms,
+
+            # use a Budget class method alternative to what is below
+            self.budget = Budget.from_storage_unit(
+                self,
                 time_unit="D",
                 description=self.name,
                 imbalance_fatal=(budget_type == "strict"),
             )
+
+            # From scratch, without the classmethod
+            # budget_terms = {
+            #     "inputs": {
+            #         "hru_rain": self.hru_rain,
+            #         "hru_snow": self.hru_snow,
+            #     },
+            #     "outputs": {
+            #         "net_rain": self.net_rain,
+            #         "net_snow": self.net_snow,
+            #         "hru_intcpevap": self.hru_intcpevap,
+            #     },
+            #     "storage_changes": {
+            #         "hru_intcpstor_change": self.hru_intcpstor_change,
+            #     },
+            # }
+            # self.budget = Budget(
+            #     self.control,
+            #     **budget_terms,
+            #     time_unit="D",
+            #     description=self.name,
+            #     imbalance_fatal=(budget_type == "strict"),
+            # )
 
         return
 

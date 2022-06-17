@@ -40,7 +40,10 @@ class TestPRMSCanopySimple:
 
         # todo: this is testing instantiation, but not physics
         cnp = PRMSCanopy(
-            control=control, params=prms_params, **input_variables
+            control=control,
+            params=prms_params,
+            **input_variables,
+            budget_type="strict",
         )
         control.advance()
         cnp.advance()
@@ -85,13 +88,19 @@ class TestPRMSCanopyDomain:
             nc_pth = output_dir / f"{key}.nc"
             input_variables[key] = nc_pth
 
-        cnp = PRMSCanopy(control=control, params=params, **input_variables)
+        cnp = PRMSCanopy(
+            control=control,
+            params=params,
+            **input_variables,
+            budget_type="strict",
+        )
 
         all_success = True
         for istep in range(control.n_times):
             control.advance()
             cnp.advance()
             cnp.calculate(1.0)
+            # print(cnp.budget)
 
             # compare along the way
             atol = 1.0e-5

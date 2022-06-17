@@ -61,12 +61,14 @@ class TestPRMSCanopyRunoffDomain:
         runoff = PRMSRunoff(control=control, params=params, **input_variables)
 
         # wire up output from canopy as input to runoff
-        runoff.set_input_to_adapter("net_ppt", adapter_factory(canopy.net_ppt))
         runoff.set_input_to_adapter(
-            "net_rain", adapter_factory(canopy.net_rain)
+            "net_ppt", adapter_factory(canopy.net_ppt, "net_ppt")
         )
         runoff.set_input_to_adapter(
-            "net_snow", adapter_factory(canopy.net_snow)
+            "net_rain", adapter_factory(canopy.net_rain, "net_rain")
+        )
+        runoff.set_input_to_adapter(
+            "net_snow", adapter_factory(canopy.net_snow, "net_snow")
         )
 
         all_success = True

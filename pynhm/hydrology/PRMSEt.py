@@ -25,7 +25,7 @@ class PRMSEt(StorageUnit):
         dprst_evap_hru: adaptable,
         perv_actet: adaptable,
         verbose: bool = False,
-        imbalance_fatal: bool = False,
+        budget_type: str = None,
     ) -> "PRMSEt":
 
         self.name = "PRMSEt"
@@ -41,19 +41,36 @@ class PRMSEt(StorageUnit):
         for ii in self.inputs:
             self._input_variables_dict[ii] = adapter_factory(locals()[ii], ii)
 
-        # budget
-        budget_terms = {
-            "inputs": {"potet": self.potet},
-            "outputs": {
-                "hru_impervevap": self.hru_impervevap,
-                "hru_intcpevap": self.hru_intcpevap,
-                "snow_evap": self.snow_evap,
-                "dprst_evap_hru": self.dprst_evap_hru,
-                "hru_perv_actet": self.hru_perv_actet,
-            },
-            "storage_changes": {"unused_potet": self.unused_potet},
-        }
-        self.budget = Budget(**budget_terms, imbalance_fatal=imbalance_fatal)
+        if budget_type is None:
+            self.budget = None
+        else:
+
+            # # use a Budget class method alternative to what is below
+            # self.budget = Budget.from_storage_unit(
+            #     self,
+            #     time_unit="D",
+            #     description=self.name,
+            #     imbalance_fatal=(budget_type == "strict"),
+            # )
+
+            # explicitatly declare
+            budget_terms = {
+                "inputs": {"potet": self.potet},
+                "outputs": {
+                    "hru_impervevap": self.hru_impervevap,
+                    "hru_intcpevap": self.hru_intcpevap,
+                    "snow_evap": self.snow_evap,
+                    "dprst_evap_hru": self.dprst_evap_hru,
+                    "hru_perv_actet": self.hru_perv_actet,
+                },
+                "storage_changes": {"unused_potet": self.unused_potet},
+            }
+            self.budget = Budget(
+                control=self.control,
+                **budget_terms,
+                description=self.name,
+                imbalance_fatal=(budget_type == "strict")
+            )
 
         return
 
@@ -145,6 +162,7 @@ class PRMSEt(StorageUnit):
     def calculate(self, simulation_time):
         """Calculate actual ET for a time step"""
         self.hru_actet[:] = self["potet"] - self.available_potet
+        self.budget.advance()
         self.budget.calculate()
         return
 

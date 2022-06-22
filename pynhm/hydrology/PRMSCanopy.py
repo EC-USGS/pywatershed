@@ -50,23 +50,29 @@ class PRMSCanopy(StorageUnit):
         )
 
         # store dependencies
+        # this could go in storage?
         self._input_variables_dict = {}
-        self._input_variables_dict["pkwater_ante"] = adapter_factory(
-            pkwater_ante, "pkwater_ante"
-        )
-        self._input_variables_dict["transp_on"] = adapter_factory(
-            transp_on, "transp_on"
-        )
-        self._input_variables_dict["hru_ppt"] = adapter_factory(
-            hru_ppt, "hru_ppt"
-        )
-        self._input_variables_dict["hru_rain"] = adapter_factory(
-            hru_rain, "hru_rain"
-        )
-        self._input_variables_dict["hru_snow"] = adapter_factory(
-            hru_snow, "hru_snow"
-        )
-        self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
+        for ii in self.inputs:
+            self._input_variables_dict[ii] = adapter_factory(
+                locals()[ii], ii, control
+            )
+
+        # self._input_variables_dict["pkwater_ante"] = adapter_factory(
+        #     pkwater_ante, "pkwater_ante"
+        # )
+        # self._input_variables_dict["transp_on"] = adapter_factory(
+        #     transp_on, "transp_on"
+        # )
+        # self._input_variables_dict["hru_ppt"] = adapter_factory(
+        #     hru_ppt, "hru_ppt"
+        # )
+        # self._input_variables_dict["hru_rain"] = adapter_factory(
+        #     hru_rain, "hru_rain"
+        # )
+        # self._input_variables_dict["hru_snow"] = adapter_factory(
+        #     hru_snow, "hru_snow"
+        # )
+        # self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
 
         if budget_type is None:
             self.budget = None

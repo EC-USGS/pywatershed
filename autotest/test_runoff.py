@@ -1,5 +1,4 @@
 import pathlib as pl
-from datetime import datetime
 
 import numpy as np
 import pytest
@@ -7,9 +6,6 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.preprocess import CsvFile
-from pynhm.utils import ControlVariables
-from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
@@ -35,6 +31,7 @@ class TestPRMSRunoffDomain:
             "hru_impervstor",
             "sroff",
             "dprst_evap_hru",
+            "hru_impervevap",
         ]
         output_dir = domain["prms_output_dir"]
 
@@ -42,7 +39,9 @@ class TestPRMSRunoffDomain:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(
+                nc_pth, variable_name=key, control=control
+            )
 
         # instantiate runoff
         input_variables = {}
@@ -52,7 +51,12 @@ class TestPRMSRunoffDomain:
                 nc_pth = output_dir / "soil_moist_prev.nc"
             input_variables[key] = nc_pth
 
-        runoff = PRMSRunoff(control=control, params=params, **input_variables)
+        runoff = PRMSRunoff(
+            control=control,
+            params=params,
+            **input_variables,
+            budget_type="strict",
+        )
 
         all_success = True
         for istep in range(control.n_times):

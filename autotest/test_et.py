@@ -28,21 +28,34 @@ class TestPRMSEt:
         et_inputs = {}
         for key in PRMSEt.get_inputs():
             nc_path = output_dir / f"{key}.nc"
-            et_inputs[key] = adapter_factory(nc_path, key)
+            et_inputs[key] = adapter_factory(nc_path, key, control)
 
         et = PRMSEt(
-            control=control, params=params, imbalance_fatal=True, **et_inputs
+            control=control,
+            params=params,
+            budget_type="strict",
+            **et_inputs,
         )
 
         # ---------------------------------
         # get the answer data
-        comparison_vars = ["hru_actet"]
+        comparison_vars = [
+            # "potet",
+            # "hru_impervevap",
+            # "hru_intcpevap",
+            # "snow_evap",
+            # "dprst_evap_hru",
+            # "perv_actet",
+            "hru_actet",
+        ]
 
         # Read PRMS output into ans for comparison with pynhm results
         ans = {}
         for key in comparison_vars:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(
+                nc_pth, variable_name=key, control=control
+            )
 
         all_success = True
         for istep in range(control.n_times):

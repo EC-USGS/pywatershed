@@ -171,11 +171,24 @@ class StorageUnit(Accessor):
             value.advance()  # (self.control.itime_step)
             v = getattr(self, key)
             v[:] = value.current
+            # JLM simplify the above to:
+            # v[key][:] = value.current
+
         return
 
     def set_input_to_adapter(self, input_variable_name, adapter):
         self._input_variables_dict[input_variable_name] = adapter
-        setattr(self, input_variable_name, adapter.current)
+        self[input_variable_name] = adapter.current
+        # this requires knowledge of budget since the adapter is being set
+        # onto self. might be ok if budget is added to this base class?
+        if (
+            hasattr(self, "budget")
+            and self.budget
+            and (input_variable_name in self.budget.outputs.keys())
+        ):
+            self.budget.outputs[input_variable_name] = self[
+                input_variable_name
+            ]
         return
 
     def advance(self):
@@ -187,7 +200,10 @@ class StorageUnit(Accessor):
         """
         if self._itime_step >= self.control.itime_step:
             if self.verbose:
-                msg = f"{self.name} did not advance because it is not behind control time"
+                msg = (
+                    f"{self.name} did not advance because "
+                    f"it is not behind control time"
+                )
                 # warn(msg)
                 print(msg)  # can/howto make warn flush in real time?
                 # is a warning sufficient? an error

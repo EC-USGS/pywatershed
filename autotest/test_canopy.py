@@ -80,7 +80,9 @@ class TestPRMSCanopyDomain:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(
+                nc_pth, variable_name=key, control=control
+            )
 
         # setup the canopy
         input_variables = {}
@@ -109,7 +111,7 @@ class TestPRMSCanopyDomain:
             for key in ans.keys():
                 a1 = ans[key].current
                 a2 = cnp[key]
-                success = np.isclose(a1, a2, atol=atol).all()
+                success = np.isclose(a2, a1, atol=atol).all()
                 if not success:
                     all_success = False
                     diff = a1 - a2

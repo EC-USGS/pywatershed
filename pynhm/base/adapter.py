@@ -3,6 +3,7 @@ from typing import Union
 
 import numpy as np
 
+from pynhm.base.control import Control
 from pynhm.utils.netcdf_utils import NetCdfRead
 
 from ..utils.time_utils import datetime_doy
@@ -21,7 +22,7 @@ soltab_vars = [
 def adapter_factory(
     var,
     variable_name: str = None,
-    start_time: np.datetime64 = None,
+    control: Control = None,
 ):
     if isinstance(var, Adapter):
         """Adapt an adapter"""
@@ -32,7 +33,7 @@ def adapter_factory(
             return AdapterNetcdf(
                 var,
                 variable=variable_name,
-                start_time=start_time,
+                control=control,
             )
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
         """One-D np.ndarrays"""
@@ -72,23 +73,27 @@ class AdapterNetcdf(Adapter):
         self,
         fname: fileish,
         variable: str,
-        start_time: np.datetime64 = None,
+        control: Control,
     ) -> None:
         super().__init__(variable)
         self.name = "AdapterNetcdf"
+
         self._fname = fname
         self._dataset = NetCdfRead(fname)
         self._datetime = self._dataset.date_times
-        if start_time is None:
-            self._start_time = self._datetime[0]
-        else:
-            self._start_time = start_time
+
+        self.control = control
+        self._start_time = self.control.start_time
 
         self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
         self._dtype = self._dataset.dataset.variables[self._variable].dtype
         self._current_value = np.full(self._nhru, np.nan, self._dtype)
 
     def advance(self):
+        # JLM: Seems like the time of the ncdf dataset or variable
+        # should be public
+        if self._dataset._itime_step[self._variable] > self.control.itime_step:
+            return
         self._current_value[:] = self._dataset.advance(self._variable)
         return None
 

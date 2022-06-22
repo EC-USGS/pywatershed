@@ -200,10 +200,7 @@ class NetCdfRead:
                 )
             return self.dataset[variable][itime_step, :]
 
-    def advance(
-        self,
-        variable: str,
-    ) -> np.ndarray:
+    def advance(self, variable: str) -> np.ndarray:
         """Get the data for a variable for the next time step
 
         Args:

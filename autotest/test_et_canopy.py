@@ -42,10 +42,11 @@ class TestPRMSEt:
                 et_inputs[key] = None
             else:
                 nc_path = output_dir / f"{key}.nc"
-                et_inputs[key] = adapter_factory(nc_path, key)
+                et_inputs[key] = adapter_factory(nc_path, key, control)
 
+        imbf = True
         et = PRMSEt(
-            control=control, params=params, imbalance_fatal=True, **et_inputs
+            control=control, params=params, budget_type="strict", **et_inputs
         )
 
         # canopy
@@ -55,9 +56,14 @@ class TestPRMSEt:
                 canopy_inputs[key] = None
             else:
                 nc_pth = output_dir / f"{key}.nc"
-                canopy_inputs[key] = nc_pth
+                canopy_inputs[key] = adapter_factory(nc_pth, key, control)
 
-        canopy = PRMSCanopy(control=control, params=params, **canopy_inputs)
+        canopy = PRMSCanopy(
+            control=control,
+            params=params,
+            budget_type="strict",
+            **canopy_inputs,
+        )
 
         # wire up shared variables
         # et
@@ -68,15 +74,14 @@ class TestPRMSEt:
         # canopy
         canopy.set_input_to_adapter("potet", adapter_factory(et.potet))
 
-        # ---------------------------------
         # get the answer data
         comparison_vars_dict = {
             "et": [
                 "hru_intcpevap",
                 "hru_actet",
+                "potet",
             ],
             "canopy": [
-                "potet",
                 "hru_intcpstor",
                 "hru_intcpevap",
             ],
@@ -87,21 +92,21 @@ class TestPRMSEt:
         for unit_name, var_names in comparison_vars_dict.items():
             for vv in var_names:
                 nc_pth = output_dir / f"{vv}.nc"
-                ans[unit_name][vv] = adapter_factory(nc_pth, variable_name=vv)
+                ans[unit_name][vv] = adapter_factory(nc_pth, vv, control)
 
         all_success = True
         for istep in range(control.n_times):
 
-            # print(istep)
-            # if istep == 2:
-            #    asdf
+            # advance
             control.advance()
-            et.advance()
             canopy.advance()
+            et.advance()
 
+            # calculate
             canopy.calculate(1.0)
             et.calculate(1.0)
 
+            # check
             # advance the answer, which is being read from a netcdf file
             for unit_name, var_names in ans.items():
                 for vv in var_names:

@@ -1134,6 +1134,18 @@ dprst_stor_hru:
     0: nhru
   type: D
   units: inches
+dprst_stor_hru_change:
+  desc: Surface-depression storage for each HRU
+  dimensions:
+    0: nhru
+  type: D
+  units: inches
+dprst_stor_hru_old:
+  desc: Surface-depression storage for each HRU
+  dimensions:
+    0: nhru
+  type: D
+  units: inches
 dprst_transfer:
   desc: Transfer flow rate from surface-depression storage for each HRU for each time
     step
@@ -1475,6 +1487,18 @@ hru_impervstor:
     0: nhru
   type: F
   units: inches
+hru_impervstor_change:
+  desc: HRU area-weighted average storage on impervious area for each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
+hru_impervstor_old:
+  desc: HRU area-weighted average storage on impervious area for each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 hru_intcpevap:
   desc: HRU area-weighted average evaporation from the canopy for each HRU
   dimensions:
@@ -1488,13 +1512,13 @@ hru_intcpstor:
     0: nhru
   type: F
   units: inches
-hru_intcpstor_old:
+hru_intcpstor_change:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
   dimensions:
     0: nhru
   type: F
   units: inches
-hru_intcpstor_change:
+hru_intcpstor_old:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
   dimensions:
     0: nhru

@@ -80,10 +80,12 @@ class AdapterNetcdf(Adapter):
         else:
             self._start_time = start_time
 
-        self._current_value = None
+        self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
+        self._dtype = self._dataset.dataset.variables[self._variable].dtype
+        self._current_value = np.full(self._nhru, np.nan, self._dtype)
 
     def advance(self):
-        self._current_value = self._dataset.advance(self._variable)
+        self._current_value[:] = self._dataset.advance(self._variable)
         return None
 
     @property

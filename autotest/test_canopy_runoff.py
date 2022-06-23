@@ -51,7 +51,6 @@ class TestPRMSCanopyRunoffDomain:
 
         canopy = PRMSCanopy(control=control, params=params, **input_variables)
 
-
         # instantiate runoff
         input_variables = {}
         for key in PRMSRunoff.get_inputs():
@@ -65,9 +64,15 @@ class TestPRMSCanopyRunoffDomain:
         runoff = PRMSRunoff(control=control, params=params, **input_variables)
 
         # wire up output from canopy as input to runoff
-        runoff.set_input_to_adapter("net_ppt", adapter_factory(canopy.net_ppt, "net_ppt"))
-        runoff.set_input_to_adapter("net_rain", adapter_factory(canopy.net_rain, "net_rain"))
-        runoff.set_input_to_adapter("net_snow", adapter_factory(canopy.net_snow, "net_snow"))
+        runoff.set_input_to_adapter(
+            "net_ppt", adapter_factory(canopy.net_ppt, "net_ppt")
+        )
+        runoff.set_input_to_adapter(
+            "net_rain", adapter_factory(canopy.net_rain, "net_rain")
+        )
+        runoff.set_input_to_adapter(
+            "net_snow", adapter_factory(canopy.net_snow, "net_snow")
+        )
 
         all_success = True
         for istep in range(control.n_times):
@@ -89,7 +94,9 @@ class TestPRMSCanopyRunoffDomain:
             detailed = True
             if check:
                 atol = 1.0e-5
-                success = self.check_timestep_results(runoff, istep, ans, atol, detailed)
+                success = self.check_timestep_results(
+                    runoff, istep, ans, atol, detailed
+                )
                 if not success:
                     all_success = False
                     if failfast:
@@ -124,5 +131,7 @@ class TestPRMSCanopyRunoffDomain:
                     if detailed:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
-                            print(f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}")
+                            print(
+                                f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}"
+                            )
         return all_success

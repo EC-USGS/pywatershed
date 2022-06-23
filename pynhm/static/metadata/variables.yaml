@@ -1481,12 +1481,26 @@ hru_intcpevap:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 hru_intcpstor:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU
   dimensions:
     0: nhru
   type: F
   units: inches
+hru_intcpstor_old:
+  desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
+hru_intcpstor_change:
+  desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
+  var_category: mass storage change
 hru_lateral_flow:
   desc: Lateral flow to stream network from each HRU
   dimensions:
@@ -1517,12 +1531,14 @@ hru_rain:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 hru_snow:
   desc: Snow distributed to each HRU
   dimensions:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 hru_sroffi:
   desc: HRU area-weighted average surface runoff from impervious areas for each HRU
   dimensions:
@@ -1856,12 +1872,14 @@ net_rain:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 net_snow:
   desc: Snow that falls through canopy for each HRU
   dimensions:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 newsnow:
   desc: Flag to indicate if new snow fell on each HRU (0=no;1=yes)
   dimensions:

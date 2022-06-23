@@ -8,7 +8,7 @@ from pynhm.utils.parameters import PrmsParameters
 from ..base.adapter import Adapter, adapter_factory
 from ..base.budget import Budget
 from ..base.control import Control
-from ..constants import HruType, zero, nan
+from ..constants import HruType, nan, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 

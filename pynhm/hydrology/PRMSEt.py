@@ -67,7 +67,7 @@ class PRMSEt(StorageUnit):
                 control=self.control,
                 **budget_terms,
                 description=self.name,
-                imbalance_fatal=(budget_type == "strict")
+                imbalance_fatal=(budget_type == "strict"),
             )
 
         return

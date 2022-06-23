@@ -1,4 +1,3 @@
-import pdb
 from typing import Union
 
 import numpy as np
@@ -6,7 +5,6 @@ import numpy as np
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
 from ..base.control import Control
 from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero
 
@@ -98,10 +96,7 @@ class PRMSSnow(StorageUnit):
             subclass_name=self.name,
         )
 
-        # Adapt every input
-        self._input_variables_dict = {}
-        for ii in self.inputs:
-            self._input_variables_dict[ii] = adapter_factory(locals()[ii], ii)
+        self.set_inputs(locals())
 
         return
 
@@ -305,8 +300,10 @@ class PRMSSnow(StorageUnit):
 
         if self.control.config["init_vars_from_file"] in [0, 2, 3]:
 
-            # The super().__init__ already set_initial_conditions using its set_initial_conditions
-            # Below Im just following PRMS6, will reconcile later with the super (may be redundant).
+            # The super().__init__ already set_initial_conditions using its
+            # set_initial_conditions
+            # Below Im just following PRMS6, will reconcile later with the
+            # super (may be redundant).
             vars_init = [
                 "albedo",
                 "iasw",

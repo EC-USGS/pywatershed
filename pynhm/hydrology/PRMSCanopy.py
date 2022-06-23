@@ -2,15 +2,15 @@ from typing import Union
 
 import numpy as np
 
-from pynhm.base.budget import Budget
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import CovType, HruType, zero
 
-adaptable = Union[str, np.ndarray, Adapter]
+# this type should be in base.adapter
+# adaptable = Union[str, np.ndarray, Adapter]
 
 # set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
@@ -41,7 +41,6 @@ class PRMSCanopy(StorageUnit):
     ):
 
         self.name = "PRMSCanopy"
-        verbose = True
         super().__init__(
             control=control,
             params=params,
@@ -49,65 +48,31 @@ class PRMSCanopy(StorageUnit):
             subclass_name=self.name,
         )
 
-        # store dependencies
-        # this could go in storage?
-        self._input_variables_dict = {}
-        for ii in self.inputs:
-            self._input_variables_dict[ii] = adapter_factory(
-                locals()[ii], ii, control
-            )
+        self.set_inputs(locals())
+        self.set_budget(budget_type)
 
-        # self._input_variables_dict["pkwater_ante"] = adapter_factory(
-        #     pkwater_ante, "pkwater_ante"
+        # From scratch, without the classmethod
+        # budget_terms = {
+        #     "inputs": {
+        #         "hru_rain": self.hru_rain,
+        #         "hru_snow": self.hru_snow,
+        #     },
+        #     "outputs": {
+        #         "net_rain": self.net_rain,
+        #         "net_snow": self.net_snow,
+        #         "hru_intcpevap": self.hru_intcpevap,
+        #     },
+        #     "storage_changes": {
+        #         "hru_intcpstor_change": self.hru_intcpstor_change,
+        #     },
+        # }
+        # self.budget = Budget(
+        #     self.control,
+        #     **budget_terms,
+        #     time_unit="D",
+        #     description=self.name,
+        #     imbalance_fatal=(budget_type == "strict"),
         # )
-        # self._input_variables_dict["transp_on"] = adapter_factory(
-        #     transp_on, "transp_on"
-        # )
-        # self._input_variables_dict["hru_ppt"] = adapter_factory(
-        #     hru_ppt, "hru_ppt"
-        # )
-        # self._input_variables_dict["hru_rain"] = adapter_factory(
-        #     hru_rain, "hru_rain"
-        # )
-        # self._input_variables_dict["hru_snow"] = adapter_factory(
-        #     hru_snow, "hru_snow"
-        # )
-        # self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
-
-        if budget_type is None:
-            self.budget = None
-        else:
-
-            # use a Budget class method alternative to what is below
-            self.budget = Budget.from_storage_unit(
-                self,
-                time_unit="D",
-                description=self.name,
-                imbalance_fatal=(budget_type == "strict"),
-            )
-
-            # From scratch, without the classmethod
-            # budget_terms = {
-            #     "inputs": {
-            #         "hru_rain": self.hru_rain,
-            #         "hru_snow": self.hru_snow,
-            #     },
-            #     "outputs": {
-            #         "net_rain": self.net_rain,
-            #         "net_snow": self.net_snow,
-            #         "hru_intcpevap": self.hru_intcpevap,
-            #     },
-            #     "storage_changes": {
-            #         "hru_intcpstor_change": self.hru_intcpstor_change,
-            #     },
-            # }
-            # self.budget = Budget(
-            #     self.control,
-            #     **budget_terms,
-            #     time_unit="D",
-            #     description=self.name,
-            #     imbalance_fatal=(budget_type == "strict"),
-            # )
 
         return
 
@@ -208,7 +173,7 @@ class PRMSCanopy(StorageUnit):
         self.hru_intcpstor_old[:] = self.hru_intcpstor
         return
 
-    def calculate(self, time_length, vectorized=False):
+    def _calculate(self, time_length, vectorized=False):
         """Calculate canopy terms for a time step
 
         Args:
@@ -227,10 +192,6 @@ class PRMSCanopy(StorageUnit):
         self.hru_intcpstor_change[:] = (
             self.hru_intcpstor - self.hru_intcpstor_old
         )
-
-        if self.budget is not None:
-            self.budget.advance()
-            self.budget.calculate()
 
         return
 

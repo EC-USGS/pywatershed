@@ -3,10 +3,14 @@ import pathlib as pl
 
 import numpy as np
 
-from ..utils.netcdf_utils import NetCdfWrite
-from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
 from .control import Control
+from ..base.adapter import adapter_factory
+from ..utils.netcdf_utils import NetCdfWrite
+from ..utils.parameters import PrmsParameters
+
+from pynhm.base.budget import Budget
+
 
 # These could be changed in the metadata yaml
 type_translation = {
@@ -43,18 +47,6 @@ class StorageUnit(Accessor):
         self.set_initial_conditions()
 
         return None
-
-    def calculate(self, simulation_time: float) -> None:
-        """Calculate storageUnit terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-
-        """
-        raise NotImplementedError("Override in child class.")
 
     def output(self) -> None:
         """Output
@@ -176,6 +168,14 @@ class StorageUnit(Accessor):
 
         return
 
+    def set_inputs(self, args):
+        self._input_variables_dict = {}
+        for ii in self.inputs:
+            self._input_variables_dict[ii] = adapter_factory(
+                args[ii], ii, args["control"]
+            )
+        return
+
     def set_input_to_adapter(self, input_variable_name, adapter):
         self._input_variables_dict[input_variable_name] = adapter
         self[input_variable_name] = adapter.current
@@ -189,6 +189,22 @@ class StorageUnit(Accessor):
             self.budget.outputs[input_variable_name] = self[
                 input_variable_name
             ]
+        return
+
+    def set_budget(self, budget_type):
+        if budget_type is None:
+            self.budget = None
+        elif budget_type in ["strict", "diagnostic"]:
+            # use a Budget class method alternative to what is below
+            self.budget = Budget.from_storage_unit(
+                self,
+                time_unit="D",
+                description=self.name,
+                imbalance_fatal=(budget_type == "strict"),
+            )
+        else:
+            raise ValueError(f"Illegal budget_type: {budget_type}")
+
         return
 
     def advance(self):
@@ -212,6 +228,24 @@ class StorageUnit(Accessor):
         self._advance_variables()
         self._advance_inputs()
         self._itime_step += 1
+        return
+
+    def calculate(self, time_length: float, **kwargs) -> None:
+        """Calculate storageUnit terms for a time step
+
+        Args:
+            simulation_time: current simulation time
+
+        Returns:
+            None
+        """
+        # self._calculate must be implemented by the subclass
+        self._calculate(time_length, *kwargs)
+
+        if self.budget is not None:
+            self.budget.advance()
+            self.budget.calculate()
+
         return
 
     def get_metadata(self):

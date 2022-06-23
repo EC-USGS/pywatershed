@@ -19,39 +19,6 @@ soltab_vars = [
 ]
 
 
-def adapter_factory(
-    var,
-    variable_name: str = None,
-    control: Control = None,
-):
-    if isinstance(var, Adapter):
-        """Adapt an adapter"""
-        return var
-    elif isinstance(var, (str, pl.Path)):
-        """Paths and strings are considered paths to netcdf files"""
-        if pl.Path(var).suffix == ".nc":
-            return AdapterNetcdf(
-                var,
-                variable=variable_name,
-                control=control,
-            )
-    elif isinstance(var, np.ndarray) and len(var.shape) == 1:
-        """One-D np.ndarrays"""
-        return AdapterOnedarray(var, variable=variable_name)
-    elif (
-        isinstance(var, np.ndarray)
-        and len(var.shape) == 2
-        and variable_name in soltab_vars
-    ):
-        """Two-D np.ndarrays that are Soltabs"""
-        return AdapterTwodarraySoltab(var, variable=variable_name)
-    elif var is None:
-        """var is specified as None so return None"""
-        return None
-    else:
-        raise TypeError("oops you screwed up")
-
-
 class Adapter:
     def __init__(
         self,
@@ -82,6 +49,8 @@ class AdapterNetcdf(Adapter):
         self._dataset = NetCdfRead(fname)
         self._datetime = self._dataset.date_times
 
+        if control is None:
+            raise ValueError(f"{self.name} requires a valid Control object.")
         self.control = control
         self._start_time = self.control.start_time
 
@@ -141,3 +110,39 @@ class AdapterTwodarraySoltab(Adapter):
     @property
     def current(self):
         return self._current_value
+
+
+adaptable = Union[str, np.ndarray, Adapter]
+
+
+def adapter_factory(
+    var: adaptable,
+    variable_name: str = None,
+    control: Control = None,
+):
+    if isinstance(var, Adapter):
+        """Adapt an adapter"""
+        return var
+    elif isinstance(var, (str, pl.Path)):
+        """Paths and strings are considered paths to netcdf files"""
+        if pl.Path(var).suffix == ".nc":
+            return AdapterNetcdf(
+                var,
+                variable=variable_name,
+                control=control,
+            )
+    elif isinstance(var, np.ndarray) and len(var.shape) == 1:
+        """One-D np.ndarrays"""
+        return AdapterOnedarray(var, variable=variable_name)
+    elif (
+        isinstance(var, np.ndarray)
+        and len(var.shape) == 2
+        and variable_name in soltab_vars
+    ):
+        """Two-D np.ndarrays that are Soltabs"""
+        return AdapterTwodarraySoltab(var, variable=variable_name)
+    elif var is None:
+        """var is specified as None so return None"""
+        return None
+    else:
+        raise TypeError("oops you screwed up")

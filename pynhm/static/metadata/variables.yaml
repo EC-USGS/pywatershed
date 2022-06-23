@@ -1097,6 +1097,7 @@ dprst_evap_hru:
     0: nhru
   type: F
   units: inches
+  var_category: mass_flux
 dprst_gain:
   desc: Transfer gain to surface-depression storage for each HRU for each time step
   dimensions:
@@ -1140,6 +1141,7 @@ dprst_stor_hru_change:
     0: nhru
   type: D
   units: inches
+  variable_category: mass storage change
 dprst_stor_hru_old:
   desc: Surface-depression storage for each HRU
   dimensions:
@@ -1481,6 +1483,7 @@ hru_impervevap:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 hru_impervstor:
   desc: HRU area-weighted average storage on impervious area for each HRU
   dimensions:
@@ -1493,6 +1496,7 @@ hru_impervstor_change:
     0: nhru
   type: F
   units: inches
+  var_category: mass storage change
 hru_impervstor_old:
   desc: HRU area-weighted average storage on impervious area for each HRU
   dimensions:
@@ -1518,13 +1522,13 @@ hru_intcpstor_change:
     0: nhru
   type: F
   units: inches
+  var_category: mass storage change
 hru_intcpstor_old:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
   dimensions:
     0: nhru
   type: F
   units: inches
-  var_category: mass storage change
 hru_lateral_flow:
   desc: Lateral flow to stream network from each HRU
   dimensions:
@@ -2372,6 +2376,7 @@ snow_evap:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 snow_free:
   desc: Fraction of snow-free surface for each HRU
   dimensions:

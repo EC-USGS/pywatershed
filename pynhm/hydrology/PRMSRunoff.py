@@ -49,7 +49,6 @@ class PRMSRunoff(StorageUnit):
         verbose: bool = False,
     ):
         self.name = "PRMSRunoff"
-        verbose = True
         super().__init__(
             control=control,
             params=params,
@@ -57,12 +56,7 @@ class PRMSRunoff(StorageUnit):
             subclass_name=self.name,
         )
 
-        # store dependencies
-        self._input_variables_dict = {}
-        for ii in self.inputs:
-            self._input_variables_dict[ii] = adapter_factory(
-                locals()[ii], ii, control
-            )
+        self.set_inputs(locals())
 
         # self._input_variables_dict["soil_moist"] = adapter_factory(
         #     soil_moist, "soil_moist"
@@ -99,6 +93,40 @@ class PRMSRunoff(StorageUnit):
         #     intcp_changeover, "intcp_changeover"
         # )
 
+        # super().set_budget(budget_type)
+        # if budget_type is None:
+        #     self.budget = None
+        # else:
+        #     budget_terms = {
+        #         "inputs": {
+        #             "net_rain": self.net_rain,
+        #             "net_snow": self.net_snow,
+        #             "snowmelt": self.snowmelt,
+        #         },
+        #         "outputs": {
+        #             "hru_sroffi": self.hru_sroffi,
+        #             "hru_sroffp": self.hru_sroffp,
+        #             "infil": self.infil,
+        #             "hru_impervevap": self.hru_impervevap,
+        #             "dprst_sroff_hru": self.dprst_sroff_hru,
+        #             "dprst_seep_hru": self.dprst_seep_hru,
+        #             "dprst_evap_hru": self.dprst_evap_hru,
+        #             # "dprst_insroff_hru": self.dprst_insroff_hru,
+        #         },
+        #         "storage_changes": {
+        #             "hru_impervstor_change": self.hru_impervstor_change,
+        #             "dprst_stor_hru_change": self.dprst_stor_hru_change,
+        #         },
+        #     }
+
+        #     self.budget = Budget(
+        #         self.control,
+        #         **budget_terms,
+        #         time_unit="D",
+        #         description=self.name,
+        #         imbalance_fatal=(budget_type == "strict"),
+        #     )
+
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
         # to be used widely
@@ -114,49 +142,6 @@ class PRMSRunoff(StorageUnit):
 
         # call the depression storage init
         self.dprst_init()
-
-        if budget_type is None:
-            self.budget = None
-        else:
-
-            # use a Budget class method alternative to what is below
-            # self.budget = Budget.from_storage_unit(
-            #     self,
-            #     time_unit="D",
-            #     description=self.name,
-            #     imbalance_fatal=(budget_type == "strict"),
-            # )
-
-            # From scratch
-            budget_terms = {
-                "inputs": {
-                    "net_rain": self.net_rain,
-                    "net_snow": self.net_snow,
-                    "snowmelt": self.snowmelt,
-                },
-                "outputs": {
-                    "hru_sroffi": self.hru_sroffi,
-                    "hru_sroffp": self.hru_sroffp,
-                    "infil": self.infil,
-                    "hru_impervevap": self.hru_impervevap,
-                    "dprst_sroff_hru": self.dprst_sroff_hru,
-                    "dprst_seep_hru": self.dprst_seep_hru,
-                    "dprst_evap_hru": self.dprst_evap_hru,
-                    # "dprst_insroff_hru": self.dprst_insroff_hru,
-                },
-                "storage_changes": {
-                    "hru_impervstor_change": self.hru_impervstor_change,
-                    "dprst_stor_hru_change": self.dprst_stor_hru_change,
-                },
-            }
-
-            self.budget = Budget(
-                self.control,
-                **budget_terms,
-                time_unit="D",
-                description=self.name,
-                imbalance_fatal=(budget_type == "strict"),
-            )
 
         return
 
@@ -325,10 +310,6 @@ class PRMSRunoff(StorageUnit):
         self.dprst_stor_hru_change[:] = (
             self.dprst_stor_hru_old - self.dprst_stor_hru
         )
-
-        if self.budget is not None:
-            self.budget.advance()
-            self.budget.calculate()
 
         return
 

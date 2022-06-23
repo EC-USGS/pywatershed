@@ -1,16 +1,20 @@
-from typing import Union
-
 import numpy as np
 
+from pynhm.base.budget import Budget
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
-from ..base.budget import Budget
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan, one, zero
 
-adaptable = Union[str, np.ndarray, Adapter]
+# THis class seems to be a sort of intermediate class that should
+# not exist in the future.
+# PRMS: solution is calculate hru_actet at the bottom of the chain, in
+#       soilzone.
+# pynhm solution: potet and hru_actet are in atmosphere. potet is an "input"
+#       and avail_potet is passed around, resulting in hru_actet at the
+#       end of each time calculation.
 
 
 class PRMSEt(StorageUnit):
@@ -36,24 +40,18 @@ class PRMSEt(StorageUnit):
             subclass_name=self.name,
         )
 
-        # Adapt every input
-        self._input_variables_dict = {}
-        for ii in self.inputs:
-            self._input_variables_dict[ii] = adapter_factory(locals()[ii], ii)
+        self.set_inputs(locals())
 
+        # Cant set the default budget for ET
+        # self.set_budget(budget_type)
+        # because the input/output conventions dont match.
+        # potet is an "input" but all the other inputs to
+        # the class are actually outputs
+
+        # explicitly declare the budget
         if budget_type is None:
             self.budget = None
         else:
-
-            # # use a Budget class method alternative to what is below
-            # self.budget = Budget.from_storage_unit(
-            #     self,
-            #     time_unit="D",
-            #     description=self.name,
-            #     imbalance_fatal=(budget_type == "strict"),
-            # )
-
-            # explicitatly declare
             budget_terms = {
                 "inputs": {"potet": self.potet},
                 "outputs": {
@@ -129,22 +127,6 @@ class PRMSEt(StorageUnit):
             "hru_actet": nan,
         }
 
-    # @staticmethod
-    # def get_et_terms() -> tuple:
-    #     """Get the indiviudal ET terms
-
-    #     Returns:
-    #         variables: variables
-
-    #     """
-    #     return (
-    #         "hru_impervevap",
-    #         "hru_intcpevap",
-    #         "snow_evap",
-    #         "dprst_evap_hru",
-    #         "hru_perv_actet",
-    #     )
-
     def set_initial_conditions(self):
         """Initialize PRMSEt variables."""
 
@@ -153,17 +135,14 @@ class PRMSEt(StorageUnit):
         self.frac_perv = one - self["hru_percent_imperv"] - self["dprst_frac"]
 
     def _advance_variables(self) -> None:
-        # for the available_potet we probably need to check that the
-        # loss components are zero at the beginning of the timestep.
-        # for vv in self.get_et_terms():
-        #    assert (self[vv] == zero).all() or np.isnan(self[vv]).all()
+        # The "change in storage" is the hruactet, which is the amount of
+        # water back to the atm. But that amount is not tracked over time,
+        # it's not really a storage
         return
 
-    def calculate(self, simulation_time):
+    def _calculate(self, simulation_time):
         """Calculate actual ET for a time step"""
         self.hru_actet[:] = self["potet"] - self.available_potet
-        self.budget.advance()
-        self.budget.calculate()
         return
 
     @property

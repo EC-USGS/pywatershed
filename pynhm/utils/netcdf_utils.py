@@ -427,7 +427,7 @@ class NetCdfCompare:
         for variable in self._compare.variables:
             base_arr = self._base.get_data(variable)
             compare_arr = self._compare.get_data(variable)
-            if not np.allclose(base_arr, compare_arr, atol=atol):
+            if not np.allclose(compare_arr, base_arr, atol=atol):
                 success = False
                 diff = np.abs(compare_arr - base_arr)
                 failures[variable] = (

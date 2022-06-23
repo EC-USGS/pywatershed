@@ -1,14 +1,11 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero
-
-adaptable = Union[str, np.ndarray, Adapter]
 
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants

@@ -30,7 +30,7 @@ class Budget(Accessor):
         time_unit: str = "D",  # TODO: get this from control
         description: str = None,
         rtol: float = 1e-5,
-        atol: float = 1e-8,
+        atol: float = 1e-5,
         imbalance_fatal: bool = False,
         verbose: bool = True,
     ):

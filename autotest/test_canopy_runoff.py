@@ -118,7 +118,7 @@ class TestPRMSCanopyRunoffDomain:
         for key in ans.keys():
             a1 = ans[key].current
             a2 = storageunit[key]
-            success = np.isclose(a1, a2, atol=atol).all()
+            success = np.isclose(a2, a1, atol=atol).all()
             if not success:
                 all_success = False
                 diff = a1 - a2

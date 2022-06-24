@@ -144,7 +144,7 @@ class Budget(Accessor):
         for component in components:
             kwargs[component] = {}
             for var in kwargs["meta"][component].keys():
-                kwargs[component][var] = storage_unit[var][:]
+                kwargs[component][var] = storage_unit[var]
 
         return Budget(storage_unit.control, **kwargs)
 

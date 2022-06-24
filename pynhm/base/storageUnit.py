@@ -160,10 +160,7 @@ class StorageUnit(Accessor):
     def _advance_inputs(self):
         for key, value in self._input_variables_dict.items():
             value.advance()  # (self.control.itime_step)
-            v = getattr(self, key)
-            v[:] = value.current
-            # JLM simplify the above to:
-            # v[key][:] = value.current
+            self[key][:] = value.current
 
         return
 

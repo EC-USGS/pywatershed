@@ -142,7 +142,7 @@ class PRMSEt(StorageUnit):
 
     def _calculate(self, simulation_time):
         """Calculate actual ET for a time step"""
-        self.hru_actet[:] = self["potet"] - self.available_potet
+        self.hru_actet[:] = self["potet"] - self["available_potet"]
         return
 
     @property

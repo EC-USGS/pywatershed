@@ -44,7 +44,6 @@ class TestPRMSEt:
                 nc_path = output_dir / f"{key}.nc"
                 et_inputs[key] = adapter_factory(nc_path, key, control)
 
-        imbf = True
         et = PRMSEt(
             control=control, params=params, budget_type="strict", **et_inputs
         )
@@ -68,7 +67,8 @@ class TestPRMSEt:
         # wire up shared variables
         # et
         et.set_input_to_adapter(
-            "hru_intcpevap", adapter_factory(canopy.hru_intcpevap)
+            "hru_intcpevap",
+            adapter_factory(canopy.hru_intcpevap),
         )
 
         # canopy
@@ -99,11 +99,12 @@ class TestPRMSEt:
 
             # advance
             control.advance()
-            et.advance()
             canopy.advance()
+            et.advance()
 
             # calculate
             canopy.calculate(1.0)
+
             et.calculate(1.0)
 
             # check

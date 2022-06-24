@@ -57,6 +57,8 @@ class AdapterNetcdf(Adapter):
         self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
         self._dtype = self._dataset.dataset.variables[self._variable].dtype
         self._current_value = np.full(self._nhru, np.nan, self._dtype)
+        # Adopting the next line requires minor changes to most tests
+        # self._current_value = control.get_var_nans(self._variable)
 
     def advance(self):
         # JLM: Seems like the time of the ncdf dataset or variable
@@ -123,6 +125,7 @@ def adapter_factory(
     if isinstance(var, Adapter):
         """Adapt an adapter"""
         return var
+
     elif isinstance(var, (str, pl.Path)):
         """Paths and strings are considered paths to netcdf files"""
         if pl.Path(var).suffix == ".nc":
@@ -131,9 +134,11 @@ def adapter_factory(
                 variable=variable_name,
                 control=control,
             )
+
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
         """One-D np.ndarrays"""
         return AdapterOnedarray(var, variable=variable_name)
+
     elif (
         isinstance(var, np.ndarray)
         and len(var.shape) == 2
@@ -141,18 +146,10 @@ def adapter_factory(
     ):
         """Two-D np.ndarrays that are Soltabs"""
         return AdapterTwodarraySoltab(var, variable=variable_name)
+
     elif var is None:
         """var is specified as None so return None"""
-        # using the variable_name, get the dimensions from metadata
-        # and their size from control
-        # this requires "params" to be available
-        # I propose adding them to control (makes sense to me,
-        # control already has config)
-        var_dims = control.meta.get_dimensions(variable_name)[variable_name]
-        var_dim_sizes = [control.params.parameters[vv] for vv in var_dims]
-        var_type = control.meta.get_numpy_types(variable_name)[variable_name]
-        # return None
-        return np.full(var_dim_sizes, np.nan, var_type)
+        return None
 
     else:
         raise TypeError("oops you screwed up")

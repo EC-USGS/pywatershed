@@ -133,14 +133,6 @@ class Budget(Accessor):
                 )
             }
 
-        # # keep only the desried metadata for budget ?
-        # meta_keys = Budget.get_meta_keys()
-        # for component in components:
-        #     for key, val in kwargs["meta"][component].items():
-        #         kwargs["meta"][component][key] = {
-        #             kk: vv for kk, vv in val.items() if kk in meta_keys
-        #         }
-
         for component in components:
             kwargs[component] = {}
             for var in kwargs["meta"][component].keys():

@@ -93,7 +93,7 @@ class PRMSRunoff(StorageUnit):
         #     intcp_changeover, "intcp_changeover"
         # )
 
-        # super().set_budget(budget_type)
+        self.set_budget(budget_type)
         # if budget_type is None:
         #     self.budget = None
         # else:

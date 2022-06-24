@@ -179,3 +179,14 @@ class Control(Accessor):
         self._current_time += self.time_step
 
         return None
+
+    def get_var_nans(self, var_name):
+        # using the variable_name, get the dimensions from metadata
+        # and their size from control
+        # this requires "params" to be available
+        # I propose adding them to control (makes sense to me,
+        # control already has config)
+        var_dims = self.meta.get_dimensions(var_name)[var_name]
+        var_dim_sizes = [self.params.parameters[vv] for vv in var_dims]
+        var_type = self.meta.get_numpy_types(var_name)[var_name]
+        return np.full(var_dim_sizes, np.nan, var_type)

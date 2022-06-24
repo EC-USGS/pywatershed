@@ -5,7 +5,7 @@ import numpy as np
 
 from pynhm.base.budget import Budget
 
-from ..base.adapter import adapter_factory
+from ..base.adapter import Adapter, adapter_factory
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
@@ -159,7 +159,7 @@ class StorageUnit(Accessor):
 
     def _advance_inputs(self):
         for key, value in self._input_variables_dict.items():
-            value.advance()  # (self.control.itime_step)
+            value.advance()
             self[key][:] = value.current
 
         return
@@ -172,26 +172,33 @@ class StorageUnit(Accessor):
             )
         return
 
-    def set_input_to_adapter(self, input_variable_name, adapter):
+    def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
+
         self._input_variables_dict[input_variable_name] = adapter
+        # can NOT use [:] on the LHS as we are relying on pointers between
+        # boxes. [:] on the LHS here means it's not a pointer and then
+        # requires that the calculation of the input happens before the
+        # advance of this storage unit. But that gives the incorrect budget
+        # for et.
         self[input_variable_name] = adapter.current
-        # this requires knowledge of budget since the adapter is being set
-        # onto self. might be ok if budget is added to this base class?
-        if (
-            hasattr(self, "budget")
-            and self.budget
-            and (input_variable_name in self.budget.outputs.keys())
-        ):
-            self.budget.outputs[input_variable_name] = self[
-                input_variable_name
-            ]
+
+        # Using a pointer between boxes means that the same pointer has to
+        # be used for the budget, so there's no way to have a preestablished
+        # pointer between storageUnit and its budget. So this stuff...
+        if self.budget is not None:
+            for comp in self.budget.components:
+                if input_variable_name in self.budget[comp].keys():
+                    # can not use [:] on the LHS?
+                    self.budget[comp][input_variable_name] = self[
+                        input_variable_name
+                    ]
+
         return
 
     def set_budget(self, budget_type):
         if budget_type is None:
             self.budget = None
         elif budget_type in ["strict", "diagnostic"]:
-            # use a Budget class method alternative to what is below
             self.budget = Budget.from_storage_unit(
                 self,
                 time_unit="D",

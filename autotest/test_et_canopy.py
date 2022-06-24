@@ -11,13 +11,13 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
+def params(domain):
+    return PrmsParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
 
 
 class TestPRMSEt:
@@ -99,8 +99,8 @@ class TestPRMSEt:
 
             # advance
             control.advance()
-            canopy.advance()
             et.advance()
+            canopy.advance()
 
             # calculate
             canopy.calculate(1.0)

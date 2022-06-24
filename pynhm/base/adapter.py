@@ -143,6 +143,16 @@ def adapter_factory(
         return AdapterTwodarraySoltab(var, variable=variable_name)
     elif var is None:
         """var is specified as None so return None"""
-        return None
+        # using the variable_name, get the dimensions from metadata
+        # and their size from control
+        # this requires "params" to be available
+        # I propose adding them to control (makes sense to me,
+        # control already has config)
+        var_dims = control.meta.get_dimensions(variable_name)[variable_name]
+        var_dim_sizes = [control.params.parameters[vv] for vv in var_dims]
+        var_type = control.meta.get_numpy_types(variable_name)[variable_name]
+        # return None
+        return np.full(var_dim_sizes, np.nan, var_type)
+
     else:
         raise TypeError("oops you screwed up")

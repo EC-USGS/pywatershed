@@ -219,3 +219,13 @@ class Meta:
             elif variable_name in self.parameters.keys():
                 variable_dict[variable_name] = self.parameters[variable_name]
         return variable_dict
+
+    def get_types(self, variables: Iterable) -> dict:
+        """Get the types for the supplied variables."""
+        vars = self.find_variables(variables)
+        return {kk: meta_type(vv) for kk, vv in vars.items()}
+
+    def get_numpy_types(self, variables: Iterable) -> dict:
+        """Get the types for the supplied variables."""
+        vars = self.find_variables(variables)
+        return {kk: meta_numpy_type(vv) for kk, vv in vars.items()}

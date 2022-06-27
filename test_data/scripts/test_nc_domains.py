@@ -12,8 +12,8 @@ def test_csv_to_netcdf(csv_files):
 def test_csv_to_previous_netcdf(csv_files_prev):
     nc_name = csv_files_prev.with_suffix("").name + "_prev.nc"
     nc_path = csv_files_prev.parent / nc_name
-    csv = CsvFile(csv_files_prev)
-    csv._get_data(variable_name=nc_path.stem)  # why so private?
+    csv = CsvFile({nc_path.stem: csv_files_prev})
+    csv._get_data()  # why so private?
     orig_dates = csv._data["date"].copy()
     csv._data = np.roll(csv._data, 1, axis=0)
     csv._data["date"] = orig_dates

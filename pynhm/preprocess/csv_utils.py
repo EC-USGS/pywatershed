@@ -9,18 +9,26 @@ import pandas as pd
 from ..base.meta import Meta, meta_netcdf_type, meta_numpy_type
 from .cbh_metadata import cbh_metadata
 
-fileish = Union[str, pl.PosixPath]
+fileish = Union[str, pl.PosixPath, dict]
 
 
 class CsvFile:
+    """CSV file object
+    path: a string, pathlib.Path or dict. The key of the dict can be used
+          to rename the variable in the recarray and upon output to Netcdf.
+          The value of the dict should be a string or a pathlib.Path. Only
+          dicts of len 1 are allowed currently.
+
+    """
+
     def __init__(
         self,
-        name: fileish = None,
+        path: fileish = None,
         convert: bool = False,
     ) -> "CsvFile":
         self.paths = {}
-        if name is not None:
-            self._add_path(name)
+        if path is not None:
+            self._add_path(path)
         self.convert = convert
         self._variables = None
         self._coordinates = None
@@ -85,7 +93,7 @@ class CsvFile:
 
     def add_path(
         self,
-        name: fileish,
+        path: fileish,
     ) -> None:
         """Add a csv output file path to the object
 
@@ -97,7 +105,7 @@ class CsvFile:
 
         """
 
-        self._add_path(name)
+        self._add_path(path)
 
     def to_dataframe(self) -> pd.DataFrame:
         """Get the csv output data as a pandas dataframe
@@ -216,19 +224,24 @@ class CsvFile:
 
     def _add_path(
         self,
-        name: (pl.Path, str),
+        path: fileish,
     ):
-        if isinstance(name, str):
-            name = pl.Path(name)
+        if isinstance(path, (str, pl.Path)):
+            path = pl.Path(path)
+            self.paths[path.stem] = path
+        elif isinstance(path, dict):
+            if len(path) > 1:
+                raise ValueError("Only dicts of len 1 allowed currently")
+            for key, val in path.items():
+                self.paths[key] = pl.Path(val)
         elif not isinstance(name, pl.Path):
             raise TypeError(f"{name} must be a string or pathlib.Path object")
-        self.paths[name.name] = name
 
     def _lazy_data_evaluation(self):
         if self._data is None:
             self._get_data()
 
-    def _get_data(self, variable_name: str = None) -> None:
+    def _get_data(self) -> None:
         """Read csv data into a single numpy recarray
 
         Returns:
@@ -241,7 +254,7 @@ class CsvFile:
         all_data = []
         ntimes = 0
         dtype = [("date", dt.datetime)]
-        for key, path in self.paths.items():
+        for variable_name, path in self.paths.items():
             if path.exists():
                 try:
                     arr = np.genfromtxt(
@@ -254,9 +267,6 @@ class CsvFile:
                 except:
                     raise IOError(f"numpy could not parse...'{path}'")
 
-            # determine variable name and add to list of variable names
-            if variable_name is None:
-                variable_name = path.stem
             if self._variables is None:
                 self._variables = [variable_name]
             else:

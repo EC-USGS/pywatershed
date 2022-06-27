@@ -1,5 +1,5 @@
-from copy import deepcopy
 import pathlib as pl
+from copy import deepcopy
 from pprint import pprint
 
 import numpy as np

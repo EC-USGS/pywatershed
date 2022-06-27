@@ -1,11 +1,11 @@
 from copy import deepcopy
 from pprint import pprint
 
+import numpy as np
+
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.utils.parameters import PrmsParameters
-
-import numpy as np
 
 
 class Model:

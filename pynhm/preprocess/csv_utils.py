@@ -228,7 +228,7 @@ class CsvFile:
         if self._data is None:
             self._get_data()
 
-    def _get_data(self) -> None:
+    def _get_data(self, variable_name: str = None) -> None:
         """Read csv data into a single numpy recarray
 
         Returns:
@@ -255,7 +255,8 @@ class CsvFile:
                     raise IOError(f"numpy could not parse...'{path}'")
 
             # determine variable name and add to list of variable names
-            variable_name = path.stem
+            if variable_name is None:
+                variable_name = path.stem
             if self._variables is None:
                 self._variables = [variable_name]
             else:

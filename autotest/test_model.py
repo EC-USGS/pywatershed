@@ -10,10 +10,11 @@ from pynhm.base.control import Control
 from pynhm.base.model import Model
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
+from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
+from pynhm.hydrology.PRMSSnow import PRMSSnow
+from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 
-# from pynhm.hydrology.PRMSSnow import PRMSSnow
-# from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 
 from pynhm.utils.parameters import PrmsParameters
 
@@ -28,20 +29,26 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+test_models = {
+    # "et": [PRMSEt],
+    # "et_canopy": [PRMSEt, PRMSCanopy],
+    # "et_canopy_runoff": [PRMSEt, PRMSCanopy, PRMSRunoff],
+    # "et_canopy_runoff_soil": [PRMSEt, PRMSCanopy, PRMSRunoff, PRMSSoilzone],
+    "canopy_snow_runoff": [
+        PRMSCanopy,
+        PRMSSnow,
+        # PRMSRunoff,
+        PRMSEt,
+        # PRMSSoilzone,
+        # PRMSGroundwater,
+    ],
+}
+
+
 @pytest.mark.parametrize(
     "components",
-    (
-        [PRMSEt],
-        [PRMSEt, PRMSCanopy],
-        [PRMSEt, PRMSCanopy, PRMSRunoff],
-        # [PRMSEt, PRMSCanopy, PRMSRunoff, PRMSSoilzone],
-    ),
-    ids=(
-        "et",
-        "et_canopy",
-        "et_canopy_runoff",
-        # "et_canopy_runoff_soilzone",
-    ),
+    test_models.values(),
+    ids=test_models.keys(),
 )
 def test_model(domain, control, params, components, tmp_path):
 
@@ -49,7 +56,7 @@ def test_model(domain, control, params, components, tmp_path):
     output_dir = domain["prms_output_dir"]
 
     # TODO: Eliminate potet and other variables from being used
-    et_can_runoff = Model(
+    model = Model(
         *components, control=control, params=params, input_dir=output_dir
     )
 
@@ -102,8 +109,8 @@ def test_model(domain, control, params, components, tmp_path):
     for istep in range(control.n_times):
 
         # print(istep)
-        et_can_runoff.advance()
-        et_can_runoff.calculate()
+        model.advance()
+        model.calculate()
 
         # advance the answer, which is being read from a netcdf file
         for unit_name, var_names in ans.items():
@@ -118,7 +125,7 @@ def test_model(domain, control, params, components, tmp_path):
             atol = 1.0e-5
             for unit_name in ans.keys():
                 success = check_timestep_results(
-                    et_can_runoff.components[unit_name],
+                    model.components[unit_name],
                     istep,
                     ans[unit_name],
                     atol,

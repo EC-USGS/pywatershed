@@ -245,6 +245,7 @@ class StorageUnit(Accessor):
         # self._calculate must be implemented by the subclass
         self._calculate(time_length, *kwargs)
 
+        # move to a timestep finalization method at some future date.
         if self.budget is not None:
             self.budget.advance()
             self.budget.calculate()

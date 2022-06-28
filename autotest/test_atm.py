@@ -45,13 +45,13 @@ class TestNHMSolarGeometry:
 
         # check the values
         atol = 1e-4
-        assert np.isclose(sun_hrs_ans, solar_geom.sun_hrs, atol=atol).all()
+        assert np.isclose(solar_geom.sun_hrs, sun_hrs_ans, atol=atol).all()
         assert np.isclose(
             potential_sw_rad_ans, solar_geom.potential_sw_rad, atol=atol
         ).all()
         assert np.isclose(
-            potential_sw_rad_flat_ans,
             solar_geom.potential_sw_rad_flat,
+            potential_sw_rad_flat_ans,
             atol=atol,
         ).all()
 
@@ -417,8 +417,8 @@ class TestNHMBoundaryLayer:
 
         for var, tol in var_tol.items():
             result = np.isclose(
-                atm_nhm_init_prms_output[var],
                 atm_nhm_init_nc[var],
+                atm_nhm_init_prms_output[var],
                 rtol=1e-121,
                 atol=tol,
             )  # Only the atol matters here
@@ -433,8 +433,8 @@ class TestNHMBoundaryLayer:
         var = "hru_ppt"
         for tt in range(3):
             result = np.isclose(
-                atm_nhm_init_prms_output.get_current_state(var),
                 atm_nhm_init_nc.get_current_state(var),
+                atm_nhm_init_prms_output.get_current_state(var),
                 rtol=1e-121,
                 atol=var_tol[var],
             )  # Only the atol matters here
@@ -442,8 +442,8 @@ class TestNHMBoundaryLayer:
 
             atm_nhm_init_nc.advance()
             result = np.isclose(
-                atm_nhm_init_prms_output.get_current_state(var),
                 atm_nhm_init_nc.get_current_state(var),
+                atm_nhm_init_prms_output.get_current_state(var),
                 rtol=1e-121,
                 atol=var_tol[var],
             )  # Only the atol matters here

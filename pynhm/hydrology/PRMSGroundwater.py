@@ -39,18 +39,20 @@ class PRMSGroundwater(StorageUnit):
             subclass_name=self.name,
         )
 
-        self._input_variables_dict = {}
-        self._input_variables_dict["soil_to_gw"] = adapter_factory(
-            soil_to_gw, "soil_to_gw"
-        )
-        self._input_variables_dict["ssr_to_gw"] = adapter_factory(
-            ssr_to_gw,
-            "ssr_to_gw",
-        )
-        self._input_variables_dict["dprst_seep_hru"] = adapter_factory(
-            dprst_seep_hru,
-            "dprst_seep_hru",
-        )
+        self.set_inputs(locals())
+
+        # self._input_variables_dict = {}
+        # self._input_variables_dict["soil_to_gw"] = adapter_factory(
+        #     soil_to_gw, "soil_to_gw"
+        # )
+        # self._input_variables_dict["ssr_to_gw"] = adapter_factory(
+        #     ssr_to_gw,
+        #     "ssr_to_gw",
+        # )
+        # self._input_variables_dict["dprst_seep_hru"] = adapter_factory(
+        #     dprst_seep_hru,
+        #     "dprst_seep_hru",
+        # )
 
         return
 

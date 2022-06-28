@@ -49,10 +49,7 @@ class PRMSSoilzone(StorageUnit):
             subclass_name=self.name,
         )
 
-        # Adapt every input
-        self._input_variables_dict = {}
-        for ii in self.inputs:
-            self._input_variables_dict[ii] = adapter_factory(locals()[ii], ii)
+        self.set_inputs(locals())
 
         return
 

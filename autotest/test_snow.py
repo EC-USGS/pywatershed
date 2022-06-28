@@ -76,7 +76,9 @@ class TestPRMSSnow:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(
+                nc_pth, variable_name=key, control=control
+            )
 
         # setup the snow
         input_variables = {}

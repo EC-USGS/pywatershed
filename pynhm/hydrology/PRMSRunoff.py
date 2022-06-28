@@ -6,8 +6,9 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter, adapter_factory
+from ..base.budget import Budget
 from ..base.control import Control
-from ..constants import HruType, zero
+from ..constants import HruType, nan, zero
 
 adaptable = Union[str, np.ndarray, Adapter]
 
@@ -44,10 +45,10 @@ class PRMSRunoff(StorageUnit):
         snowcov_area: adaptable,
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ):
         self.name = "PRMSRunoff"
-        verbose = True
         super().__init__(
             control=control,
             params=params,
@@ -55,42 +56,76 @@ class PRMSRunoff(StorageUnit):
             subclass_name=self.name,
         )
 
-        # store dependencies
-        self._input_variables_dict = {}
-        self._input_variables_dict["soil_moist"] = adapter_factory(
-            soil_moist, "soil_moist"
-        )
-        self._input_variables_dict["net_rain"] = adapter_factory(
-            net_rain, "net_rain"
-        )
-        self._input_variables_dict["net_ppt"] = adapter_factory(
-            net_ppt, "net_ppt"
-        )
-        self._input_variables_dict["net_snow"] = adapter_factory(
-            net_snow, "net_snow"
-        )
-        self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
-        self._input_variables_dict["snowmelt"] = adapter_factory(
-            snowmelt, "snowmelt"
-        )
-        self._input_variables_dict["snow_evap"] = adapter_factory(
-            snow_evap, "snow_evap"
-        )
-        self._input_variables_dict["pkwater_equiv"] = adapter_factory(
-            pkwater_equiv, "pkwater_equiv"
-        )
-        self._input_variables_dict["pptmix_nopack"] = adapter_factory(
-            pptmix_nopack, "pptmix_nopack"
-        )
-        self._input_variables_dict["snowcov_area"] = adapter_factory(
-            snowcov_area, "snowcov_area"
-        )
-        self._input_variables_dict["hru_intcpevap"] = adapter_factory(
-            hru_intcpevap, "hru_intcpevap"
-        )
-        self._input_variables_dict["intcp_changeover"] = adapter_factory(
-            intcp_changeover, "intcp_changeover"
-        )
+        self.set_inputs(locals())
+
+        # self._input_variables_dict["soil_moist"] = adapter_factory(
+        #     soil_moist, "soil_moist"
+        # )
+        # self._input_variables_dict["net_rain"] = adapter_factory(
+        #     net_rain, "net_rain"
+        # )
+        # self._input_variables_dict["net_ppt"] = adapter_factory(
+        #     net_ppt, "net_ppt"
+        # )
+        # self._input_variables_dict["net_snow"] = adapter_factory(
+        #     net_snow, "net_snow"
+        # )
+        # self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
+        # self._input_variables_dict["snowmelt"] = adapter_factory(
+        #     snowmelt, "snowmelt"
+        # )
+        # self._input_variables_dict["snow_evap"] = adapter_factory(
+        #     snow_evap, "snow_evap"
+        # )
+        # self._input_variables_dict["pkwater_equiv"] = adapter_factory(
+        #     pkwater_equiv, "pkwater_equiv"
+        # )
+        # self._input_variables_dict["pptmix_nopack"] = adapter_factory(
+        #     pptmix_nopack, "pptmix_nopack"
+        # )
+        # self._input_variables_dict["snowcov_area"] = adapter_factory(
+        #     snowcov_area, "snowcov_area"
+        # )
+        # self._input_variables_dict["hru_intcpevap"] = adapter_factory(
+        #     hru_intcpevap, "hru_intcpevap"
+        # )
+        # self._input_variables_dict["intcp_changeover"] = adapter_factory(
+        #     intcp_changeover, "intcp_changeover"
+        # )
+
+        self.set_budget(budget_type)
+        # if budget_type is None:
+        #     self.budget = None
+        # else:
+        #     budget_terms = {
+        #         "inputs": {
+        #             "net_rain": self.net_rain,
+        #             "net_snow": self.net_snow,
+        #             "snowmelt": self.snowmelt,
+        #         },
+        #         "outputs": {
+        #             "hru_sroffi": self.hru_sroffi,
+        #             "hru_sroffp": self.hru_sroffp,
+        #             "infil": self.infil,
+        #             "hru_impervevap": self.hru_impervevap,
+        #             "dprst_sroff_hru": self.dprst_sroff_hru,
+        #             "dprst_seep_hru": self.dprst_seep_hru,
+        #             "dprst_evap_hru": self.dprst_evap_hru,
+        #             # "dprst_insroff_hru": self.dprst_insroff_hru,
+        #         },
+        #         "storage_changes": {
+        #             "hru_impervstor_change": self.hru_impervstor_change,
+        #             "dprst_stor_hru_change": self.dprst_stor_hru_change,
+        #         },
+        #     }
+
+        #     self.budget = Budget(
+        #         self.control,
+        #         **budget_terms,
+        #         time_unit="D",
+        #         description=self.name,
+        #         imbalance_fatal=(budget_type == "strict"),
+        #     )
 
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
@@ -191,6 +226,8 @@ class PRMSRunoff(StorageUnit):
             "imperv_evap",
             "hru_impervevap",
             "hru_impervstor",
+            "hru_impervstor_old",
+            "hru_impervstor_change",
             "dprst_vol_frac",
             "dprst_vol_clos",
             "dprst_vol_open",
@@ -205,6 +242,8 @@ class PRMSRunoff(StorageUnit):
             "dprst_evap_hru",
             "dprst_insroff_hru",
             "dprst_stor_hru",
+            "dprst_stor_hru_old",
+            "dprst_stor_hru_change",
         )
 
     @staticmethod
@@ -224,6 +263,8 @@ class PRMSRunoff(StorageUnit):
             "imperv_evap": zero,
             "hru_impervevap": zero,
             "hru_impervstor": zero,
+            "hru_impervstor_old": zero,
+            "hru_impervstor_change": zero,
             "dprst_vol_frac": zero,
             "dprst_vol_clos": zero,
             "dprst_vol_open": zero,
@@ -238,6 +279,8 @@ class PRMSRunoff(StorageUnit):
             "dprst_evap_hru": zero,
             "dprst_insroff_hru": zero,
             "dprst_stor_hru": zero,
+            "dprst_stor_hru_old": zero,
+            "dprst_stor_hru_change": zero,
         }
 
     def _advance_variables(self) -> None:
@@ -245,6 +288,8 @@ class PRMSRunoff(StorageUnit):
         Returns:
             None
         """
+        self.hru_impervstor_old[:] = self.hru_impervstor
+        self.dprst_stor_hru_old[:] = self.dprst_stor_hru
         return None
 
     def calculate(self, time_length, vectorized=False):
@@ -258,6 +303,14 @@ class PRMSRunoff(StorageUnit):
 
         """
         self.calculate_prms_style()
+
+        self.hru_impervstor_change[:] = (
+            self.hru_impervstor_old - self.hru_impervstor
+        )
+        self.dprst_stor_hru_change[:] = (
+            self.dprst_stor_hru_old - self.dprst_stor_hru
+        )
+
         return
 
     def calculate_prms_style(self):
@@ -321,7 +374,7 @@ class PRMSRunoff(StorageUnit):
                 imperv_frac = self.hru_percent_imperv[i]
                 self.hru_sroffi[i] = 0.0
                 self.imperv_evap[i] = 0.0
-                # cdl -- not sure what this is:  Hru_impervevap(i) = 0.0
+                self.hru_impervevap[i] = 0.0
 
             avail_et = (
                 self.potet[i] - self.snow_evap[i] - self.hru_intcpevap[i]
@@ -432,6 +485,7 @@ class PRMSRunoff(StorageUnit):
                             self.dprst_sroff_hru[i],
                             srp,
                             sri,
+                            self.dprst_evap_hru[i],
                         ) = self.dprst_comp(
                             self.dprst_vol_clos[i],
                             self.dprst_area_clos_max[i],
@@ -1113,6 +1167,7 @@ class PRMSRunoff(StorageUnit):
                 self.dprst_stor_hru[i] = (
                     self.dprst_vol_open[i] + self.dprst_vol_clos[i]
                 ) / self.hru_area[i]
+                self.dprst_stor_hru_old[i] = self.dprst_stor_hru[i]
 
                 #           IF ( Dprst_vol_open_max(i)>0.0 ) Dprst_vol_open_frac(i) = SNGL( Dprst_vol_open(i)/Dprst_vol_open_max(i) )
                 if self.dprst_vol_open_max[i] > 0.0:
@@ -1505,18 +1560,20 @@ class PRMSRunoff(StorageUnit):
                     unsatisfied_et - dprst_evap_open / self.hru_area[ihru]
                 )
                 dprst_vol_open = dprst_vol_open - dprst_evap_open
-                if dprst_area_clos > 0.0:
-                    dprst_evap_clos = min(
-                        dprst_area_clos * dprst_avail_et, dprst_vol_clos
-                    )
-                    if dprst_evap_clos / self.hru_area[ihru] > unsatisfied_et:
-                        dprst_evap_clos = unsatisfied_et * self.hru_area[ihru]
-                    if dprst_evap_clos > dprst_vol_clos:
-                        dprst_evap_clos = dprst_vol_clos
-                    dprst_vol_clos = dprst_vol_clos - dprst_evap_clos
-                dprst_evap_hru = (
-                    dprst_evap_open + dprst_evap_clos
-                ) / self.hru_area[ihru]
+
+            if dprst_area_clos > 0.0:
+                dprst_evap_clos = min(
+                    dprst_area_clos * dprst_avail_et, dprst_vol_clos
+                )
+                if dprst_evap_clos / self.hru_area[ihru] > unsatisfied_et:
+                    dprst_evap_clos = unsatisfied_et * self.hru_area[ihru]
+                if dprst_evap_clos > dprst_vol_clos:
+                    dprst_evap_clos = dprst_vol_clos
+                dprst_vol_clos = dprst_vol_clos - dprst_evap_clos
+
+            dprst_evap_hru = (
+                dprst_evap_open + dprst_evap_clos
+            ) / self.hru_area[ihru]
 
         #
         #       ! compute seepage
@@ -1636,4 +1693,5 @@ class PRMSRunoff(StorageUnit):
             dprst_sroff_hru,
             srp,
             sri,
+            dprst_evap_hru,
         )

@@ -1,5 +1,4 @@
 import pathlib as pl
-from datetime import datetime
 
 import numpy as np
 import pytest
@@ -39,14 +38,14 @@ class TestPRMSCanopyRunoffDomain:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(nc_pth, variable_name=key)
+            ans[key] = adapter_factory(
+                nc_pth, variable_name=key, control=control
+            )
 
         # instantiate canopy
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
             nc_pth = output_dir / f"{key}.nc"
-            if "pkwater_equiv" in str(nc_pth):
-                nc_pth = output_dir / "pkwater_equiv_prev.nc"
             input_variables[key] = nc_pth
 
         canopy = PRMSCanopy(control=control, params=params, **input_variables)
@@ -65,13 +64,16 @@ class TestPRMSCanopyRunoffDomain:
 
         # wire up output from canopy as input to runoff
         runoff.set_input_to_adapter(
-            "net_ppt", adapter_factory(canopy.net_ppt, "net_ppt")
+            "net_ppt",
+            adapter_factory(canopy.net_ppt, "net_ppt", control=control),
         )
         runoff.set_input_to_adapter(
-            "net_rain", adapter_factory(canopy.net_rain, "net_rain")
+            "net_rain",
+            adapter_factory(canopy.net_rain, "net_rain", control=control),
         )
         runoff.set_input_to_adapter(
-            "net_snow", adapter_factory(canopy.net_snow, "net_snow")
+            "net_snow",
+            adapter_factory(canopy.net_snow, "net_snow", control=control),
         )
 
         all_success = True
@@ -116,7 +118,7 @@ class TestPRMSCanopyRunoffDomain:
         for key in ans.keys():
             a1 = ans[key].current
             a2 = storageunit[key]
-            success = np.isclose(a1, a2, atol=atol).all()
+            success = np.isclose(a2, a1, atol=atol).all()
             if not success:
                 all_success = False
                 diff = a1 - a2

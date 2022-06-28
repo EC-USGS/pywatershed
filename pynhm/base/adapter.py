@@ -3,6 +3,7 @@ from typing import Union
 
 import numpy as np
 
+from pynhm.base.control import Control
 from pynhm.utils.netcdf_utils import NetCdfRead
 
 from ..utils.time_utils import datetime_doy
@@ -16,35 +17,6 @@ soltab_vars = [
     "potential_sw_rad_flat",
     "potential_sw_rad",
 ]
-
-
-def adapter_factory(
-    var,
-    variable_name: str = None,
-    start_time: np.datetime64 = None,
-):
-    if isinstance(var, (str, pl.Path)):
-        if pl.Path(var).suffix == ".nc":
-            return AdapterNetcdf(
-                var,
-                variable=variable_name,
-                start_time=start_time,
-            )
-    elif isinstance(var, np.ndarray) and len(var.shape) == 1:
-        """One-D np.ndarrays"""
-        return AdapterOnedarray(var, variable=variable_name)
-    elif (
-        isinstance(var, np.ndarray)
-        and len(var.shape) == 2
-        and variable_name in soltab_vars
-    ):
-        """Two-D np.ndarrays that are Soltabs"""
-        return AdapterTwodarraySoltab(var, variable=variable_name)
-    elif var is None:
-        """var is specified as None so return None"""
-        return None
-    else:
-        raise TypeError("oops you screwed up")
 
 
 class Adapter:
@@ -68,23 +40,31 @@ class AdapterNetcdf(Adapter):
         self,
         fname: fileish,
         variable: str,
-        start_time: np.datetime64 = None,
+        control: Control,
     ) -> None:
         super().__init__(variable)
         self.name = "AdapterNetcdf"
+
         self._fname = fname
         self._dataset = NetCdfRead(fname)
         self._datetime = self._dataset.date_times
-        if start_time is None:
-            self._start_time = self._datetime[0]
-        else:
-            self._start_time = start_time
+
+        if control is None:
+            raise ValueError(f"{self.name} requires a valid Control object.")
+        self.control = control
+        self._start_time = self.control.start_time
 
         self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
         self._dtype = self._dataset.dataset.variables[self._variable].dtype
         self._current_value = np.full(self._nhru, np.nan, self._dtype)
+        # Adopting the next line requires minor changes to most tests
+        # self._current_value = control.get_var_nans(self._variable)
 
     def advance(self):
+        # JLM: Seems like the time of the ncdf dataset or variable
+        # should be public
+        if self._dataset._itime_step[self._variable] > self.control.itime_step:
+            return
         self._current_value[:] = self._dataset.advance(self._variable)
         return None
 
@@ -132,3 +112,44 @@ class AdapterTwodarraySoltab(Adapter):
     @property
     def current(self):
         return self._current_value
+
+
+adaptable = Union[str, np.ndarray, Adapter]
+
+
+def adapter_factory(
+    var: adaptable,
+    variable_name: str = None,
+    control: Control = None,
+):
+    if isinstance(var, Adapter):
+        """Adapt an adapter"""
+        return var
+
+    elif isinstance(var, (str, pl.Path)):
+        """Paths and strings are considered paths to netcdf files"""
+        if pl.Path(var).suffix == ".nc":
+            return AdapterNetcdf(
+                var,
+                variable=variable_name,
+                control=control,
+            )
+
+    elif isinstance(var, np.ndarray) and len(var.shape) == 1:
+        """One-D np.ndarrays"""
+        return AdapterOnedarray(var, variable=variable_name)
+
+    elif (
+        isinstance(var, np.ndarray)
+        and len(var.shape) == 2
+        and variable_name in soltab_vars
+    ):
+        """Two-D np.ndarrays that are Soltabs"""
+        return AdapterTwodarraySoltab(var, variable=variable_name)
+
+    elif var is None:
+        """var is specified as None so return None"""
+        return None
+
+    else:
+        raise TypeError("oops you screwed up")

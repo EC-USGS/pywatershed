@@ -1097,6 +1097,7 @@ dprst_evap_hru:
     0: nhru
   type: F
   units: inches
+  var_category: mass_flux
 dprst_gain:
   desc: Transfer gain to surface-depression storage for each HRU for each time step
   dimensions:
@@ -1129,6 +1130,19 @@ dprst_sroff_hru:
   type: D
   units: inches
 dprst_stor_hru:
+  desc: Surface-depression storage for each HRU
+  dimensions:
+    0: nhru
+  type: D
+  units: inches
+dprst_stor_hru_change:
+  desc: Surface-depression storage for each HRU
+  dimensions:
+    0: nhru
+  type: D
+  units: inches
+  variable_category: mass storage change
+dprst_stor_hru_old:
   desc: Surface-depression storage for each HRU
   dimensions:
     0: nhru
@@ -1469,7 +1483,21 @@ hru_impervevap:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 hru_impervstor:
+  desc: HRU area-weighted average storage on impervious area for each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
+hru_impervstor_change:
+  desc: HRU area-weighted average storage on impervious area for each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
+  var_category: mass storage change
+hru_impervstor_old:
   desc: HRU area-weighted average storage on impervious area for each HRU
   dimensions:
     0: nhru
@@ -1488,12 +1516,6 @@ hru_intcpstor:
     0: nhru
   type: F
   units: inches
-hru_intcpstor_old:
-  desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
-  dimensions:
-    0: nhru
-  type: F
-  units: inches
 hru_intcpstor_change:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
   dimensions:
@@ -1501,6 +1523,12 @@ hru_intcpstor_change:
   type: F
   units: inches
   var_category: mass storage change
+hru_intcpstor_old:
+  desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 hru_lateral_flow:
   desc: Lateral flow to stream network from each HRU
   dimensions:
@@ -1519,6 +1547,12 @@ hru_perv:
     0: nhru
   type: F
   units: acres
+hru_perv_actet:
+  desc: Actual ET from the capillary reservoir of each HRU normalized to HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 hru_ppt:
   desc: Precipitation distributed to each HRU
   dimensions:
@@ -2342,6 +2376,7 @@ snow_evap:
     0: nhru
   type: F
   units: inches
+  var_category: mass flux
 snow_free:
   desc: Fraction of snow-free surface for each HRU
   dimensions:

@@ -27,10 +27,10 @@ class Budget(Accessor):
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
         units: str = None,
-        time_unit: str = "s",  # TODO: get this from control
+        time_unit: str = "D",  # TODO: get this from control
         description: str = None,
         rtol: float = 1e-5,
-        atol: float = 1e-8,
+        atol: float = 1e-5,
         imbalance_fatal: bool = False,
         verbose: bool = True,
     ):
@@ -133,18 +133,10 @@ class Budget(Accessor):
                 )
             }
 
-        # # keep only the desried metadata for budget ?
-        # meta_keys = Budget.get_meta_keys()
-        # for component in components:
-        #     for key, val in kwargs["meta"][component].items():
-        #         kwargs["meta"][component][key] = {
-        #             kk: vv for kk, vv in val.items() if kk in meta_keys
-        #         }
-
         for component in components:
             kwargs[component] = {}
             for var in kwargs["meta"][component].keys():
-                kwargs[component][var] = storage_unit[var][:]
+                kwargs[component][var] = storage_unit[var]
 
         return Budget(storage_unit.control, **kwargs)
 
@@ -382,21 +374,30 @@ class Budget(Accessor):
         def table_terms_col_wise():
             "Fill terms table column wise"
             table = []
-            for ll in range(n_report):
-                line = indent_fill
-                for n_items, keys, vals, col_width, col_fill in term_data:
-                    if ll <= (n_items - 1):
-                        line += (
-                            pretty_print(
-                                f"{keys[ll]}: {vals[ll].sum()}", col_width
+            with np.printoptions(precision=2):
+                for ll in range(n_report):
+                    line = indent_fill
+                    for n_items, keys, vals, col_width, col_fill in term_data:
+                        if ll <= (n_items - 1):
+                            nk = len(keys[ll])
+                            # subtract ": ", "m." and "e+ee"
+                            prec_width = col_width - nk - 2 - 2 - 4
+                            vals_sum = vals[ll].sum()
+                            if vals_sum < 0:
+                                prec_width -= 1
+                            vv = np.format_float_scientific(
+                                vals_sum,
+                                precision=prec_width,
                             )
-                            + col_sep
-                        )
-                    else:
-                        line += col_fill + col_sep
+                            line += (
+                                pretty_print(f"{keys[ll]}: {vv}", col_width)
+                                + col_sep
+                            )
+                        else:
+                            line += col_fill + col_sep
 
-                line += col_sep
-                table += [line]
+                    line += col_sep
+                    table += [line]
 
             return table
 
@@ -423,11 +424,18 @@ class Budget(Accessor):
         def balance_line_col_wise():
             bal_line = "Balance: "
             for oper, vals_sum, col_width, col_key_width in term_data:
+
                 bal_line += (
                     oper
                     + (" " * (col_key_width + col_extra_colon - len(oper)))
                     + pretty_print(
-                        vals_sum.sum(),
+                        np.format_float_scientific(
+                            vals_sum.sum(),
+                            precision=col_width
+                            - col_key_width
+                            - col_extra_colon
+                            - 6,
+                        ),
                         col_width - col_key_width - col_extra_colon,
                     )
                     + col_sep

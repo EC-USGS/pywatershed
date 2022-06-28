@@ -90,18 +90,7 @@ class PRMSChannel(StorageUnit):
 
         self.name = "PRMSChannel"
 
-        self._input_variables_dict = {}
-        self._input_variables_dict["sroff"] = adapter_factory(
-            sroff,
-            "sroff",
-        )
-        self._input_variables_dict["ssres_flow"] = adapter_factory(
-            ssres_flow,
-            "ssres_flow",
-        )
-        self._input_variables_dict["gwres_flow"] = adapter_factory(
-            gwres_flow, "gwres_flow"
-        )
+        self.set_inputs(locals())
 
         # process channel data
         self._initialize_channel_data()

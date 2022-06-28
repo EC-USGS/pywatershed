@@ -3,6 +3,9 @@ import pathlib as pl
 
 import numpy as np
 
+from pynhm.base.budget import Budget
+
+from ..base.adapter import Adapter, adapter_factory
 from ..utils.netcdf_utils import NetCdfWrite
 from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
@@ -43,18 +46,6 @@ class StorageUnit(Accessor):
         self.set_initial_conditions()
 
         return None
-
-    def calculate(self, simulation_time: float) -> None:
-        """Calculate storageUnit terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-
-        """
-        raise NotImplementedError("Override in child class.")
 
     def output(self) -> None:
         """Output
@@ -168,14 +159,55 @@ class StorageUnit(Accessor):
 
     def _advance_inputs(self):
         for key, value in self._input_variables_dict.items():
-            value.advance()  # (self.control.itime_step)
-            v = getattr(self, key)
-            v[:] = value.current
+            value.advance()
+            self[key][:] = value.current
+
         return
 
-    def set_input_to_adapter(self, input_variable_name, adapter):
+    def set_inputs(self, args):
+        self._input_variables_dict = {}
+        for ii in self.inputs:
+            self._input_variables_dict[ii] = adapter_factory(
+                args[ii], ii, args["control"]
+            )
+        return
+
+    def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
+
         self._input_variables_dict[input_variable_name] = adapter
-        setattr(self, input_variable_name, adapter.current)
+        # can NOT use [:] on the LHS as we are relying on pointers between
+        # boxes. [:] on the LHS here means it's not a pointer and then
+        # requires that the calculation of the input happens before the
+        # advance of this storage unit. But that gives the incorrect budget
+        # for et.
+        self[input_variable_name] = adapter.current
+
+        # Using a pointer between boxes means that the same pointer has to
+        # be used for the budget, so there's no way to have a preestablished
+        # pointer between storageUnit and its budget. So this stuff...
+        if self.budget is not None:
+            for comp in self.budget.components:
+                if input_variable_name in self.budget[comp].keys():
+                    # can not use [:] on the LHS?
+                    self.budget[comp][input_variable_name] = self[
+                        input_variable_name
+                    ]
+
+        return
+
+    def set_budget(self, budget_type):
+        if budget_type is None:
+            self.budget = None
+        elif budget_type in ["strict", "diagnostic"]:
+            self.budget = Budget.from_storage_unit(
+                self,
+                time_unit="D",
+                description=self.name,
+                imbalance_fatal=(budget_type == "strict"),
+            )
+        else:
+            raise ValueError(f"Illegal budget_type: {budget_type}")
+
         return
 
     def advance(self):
@@ -187,7 +219,10 @@ class StorageUnit(Accessor):
         """
         if self._itime_step >= self.control.itime_step:
             if self.verbose:
-                msg = f"{self.name} did not advance because it is not behind control time"
+                msg = (
+                    f"{self.name} did not advance because "
+                    f"it is not behind control time"
+                )
                 # warn(msg)
                 print(msg)  # can/howto make warn flush in real time?
                 # is a warning sufficient? an error
@@ -196,6 +231,24 @@ class StorageUnit(Accessor):
         self._advance_variables()
         self._advance_inputs()
         self._itime_step += 1
+        return
+
+    def calculate(self, time_length: float, **kwargs) -> None:
+        """Calculate storageUnit terms for a time step
+
+        Args:
+            simulation_time: current simulation time
+
+        Returns:
+            None
+        """
+        # self._calculate must be implemented by the subclass
+        self._calculate(time_length, *kwargs)
+
+        if self.budget is not None:
+            self.budget.advance()
+            self.budget.calculate()
+
         return
 
     def get_metadata(self):

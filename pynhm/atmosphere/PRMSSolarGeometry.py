@@ -4,28 +4,27 @@ from typing import Tuple
 # from numba import jit
 import numpy as np
 
-from ..base.control import Control
-from .solar_constants import (
-    pi,
-    n_days_per_year,
-    n_days_per_year_flt,
-    eccentricy,
-    two_pi,
-    pi_12,
-    rad_day,
-    julian_days,
-    obliquity,
-    solar_declination,
-    r0,
-    r1,
-)
-from ..base.accessor import Accessor
-from ..constants import epsilon64, epsilon32, one, zero, nan
-from ..utils.parameters import PrmsParameters
-
 # would like to not subclass storageUnit but it is much simpler to do so
 from pynhm.base.storageUnit import StorageUnit
 
+from ..base.accessor import Accessor
+from ..base.control import Control
+from ..constants import epsilon32, epsilon64, nan, one, zero
+from ..utils.parameters import PrmsParameters
+from .solar_constants import (
+    eccentricy,
+    julian_days,
+    n_days_per_year,
+    n_days_per_year_flt,
+    obliquity,
+    pi,
+    pi_12,
+    r0,
+    r1,
+    rad_day,
+    solar_declination,
+    two_pi,
+)
 
 epsilon = epsilon32
 

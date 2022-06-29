@@ -1,26 +1,22 @@
 import pathlib as pl
-from pprint import pprint
 import warnings
 from itertools import chain
+from pprint import pprint
 from typing import Union
 
 import netCDF4 as nc4
-
 import numpy as np
+
+from pynhm.base.storageUnit import StorageUnit
+from pynhm.utils.netcdf_utils import NetCdfRead
 
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, one, zero
-from .solar_constants import solf
-
 from ..utils.parameters import PrmsParameters
 from ..utils.time_utils import datetime_month
-
-from pynhm.base.storageUnit import StorageUnit
 from .PRMSSolarGeometry import PRMSSolarGeometry
-
-from pynhm.utils.netcdf_utils import NetCdfRead
-
+from .solar_constants import solf
 
 fileish = Union[str, pl.Path]
 

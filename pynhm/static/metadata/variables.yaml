@@ -2542,6 +2542,13 @@ soltab_potsw:
     1: nhru
   type: D
   units: Langleys
+soltab_sunhrs:
+  desc: The number hours of potential direct sunlight
+  dimensions:
+    0: ndays
+    1: nhru
+  type: D
+  units: hours
 sroff:
   desc: Surface runoff to the stream network for each HRU
   dimensions:

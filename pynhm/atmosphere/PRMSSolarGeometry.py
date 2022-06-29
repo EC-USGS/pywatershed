@@ -1,65 +1,38 @@
-import math
 import warnings
 from typing import Tuple
 
 # from numba import jit
 import numpy as np
 
-from ..base.StateAccess import StateAccess
+from ..base.control import Control
+from .solar_constants import (
+    pi,
+    n_days_per_year,
+    n_days_per_year_flt,
+    eccentricy,
+    two_pi,
+    pi_12,
+    rad_day,
+    julian_days,
+    obliquity,
+    solar_declination,
+    r0,
+    r1,
+)
+from ..base.accessor import Accessor
+from ..constants import epsilon64, epsilon32, one, zero, nan
 from ..utils.parameters import PrmsParameters
+
+# would like to not subclass storageUnit but it is much simpler to do so
+from pynhm.base.storageUnit import StorageUnit
+
+
+epsilon = epsilon32
 
 # The solar geometry model for NHM/PRMS
 # Primary reference
 # * Appendix E of Dingman, S. L., 1994,
 #   Physical Hydrology. Englewood Cliffs, NJ: Prentice Hall, 575 p.
-
-# Lots of constants for this model
-# https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/c_solar_radiation.f90
-
-# These could be in a constants module
-zero = np.zeros(1)[0]
-one = np.ones(1)[0]
-pi = math.pi
-
-
-# This could be a util
-def epsilon(array: np.ndarray):
-    return np.finfo(array.dtype).eps
-
-
-n_days_per_year = 366
-n_days_per_year_flt = 365.242
-eccentricy = 0.01671
-two_pi = 2 * pi
-pi_12 = 12 / pi
-# JLM: only place prms6 uses 365.242 and commented value is wrong
-# rad day is ~0.0172028 not 0.00143356672
-rad_day = two_pi / n_days_per_year_flt
-
-julian_days = np.arange(n_days_per_year) + 1
-
-obliquity = 1 - (eccentricy * np.cos((julian_days - 3) * rad_day))
-
-# integer julian day values will yield local noon in the sunrise equation
-yy = (julian_days - 1) * rad_day
-yy2 = yy * 2
-yy3 = yy * 3
-solar_declination = (
-    0.006918
-    - 0.399912 * np.cos(yy)
-    + 0.070257 * np.sin(yy)
-    - 0.006758 * np.cos(yy2)
-    + 0.000907 * np.sin(yy2)
-    - 0.002697 * np.cos(yy3)
-    + 0.00148 * np.sin(yy3)
-)
-
-
-# Solar constant cal/cm2/min (r0 could also be 1.95 (Drummond, et al 1968))
-r0 = 2 * one
-# Solar constant for 60 minutes
-r1 = (60.0 * r0) / (obliquity**2)
-
 
 # Dimensions
 # The time dimension is n_days_per_year (known apriori)
@@ -75,61 +48,34 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 # def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
 #    return np.transpose(np.tile(arr, (n_hru, 1)))
 
+# trying to not subclass storageUnit
 
-# JLM metadata ?
 
-
-class NHMSolarGeometry(StateAccess):
+class PRMSSolarGeometry(StorageUnit):
     def __init__(
         self,
-        parameters: PrmsParameters,
+        control: Control,
+        params: PrmsParameters,
+        verbose: bool = False,
     ):
-        # JLM: Document. these names are bad, fix them when it's tested.
-        # JLM: It would be nice to inherit state accessors here
-        super().__init__()
-        self._potential_variables = self.variables  # until refactor
-        self.parameters = parameters
-        # JLM: This should be in the base class for handling space
-        if "nhm_id" in self.parameters.parameters.keys():
-            space_coord_name = "nhm_id"
-            space_coord = np.array(parameters.parameters["nhm_id"])
-        else:
-            space_coord_name = "hru_ind"
-            space_coord = np.array(parameters.parameters["nhru"])
-        self._coords = ["julian_day", space_coord_name]
-        self["julian_day"] = julian_days
-        self[space_coord_name] = space_coord
-        self._compute_solar_geometry()
+        """PRMS Solar Geometry."""
 
-        # Dimensions
+        self.set_inputs(locals())
+        budget_type = None
+        self.set_budget(budget_type)
+
+        super().__init__(control=control, params=params, verbose=verbose)
+        self.name = "PRMSSolarGeometry"
+
+        self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
+
+        self._compute_solar_geometry()
 
         return None
 
-    def _compute_solar_geometry(self):
-        params = self.parameters.parameters
-        n_hru = params["nhru"]
-
-        self["hru_cossl"] = np.cos(np.arctan(params["hru_slope"]))
-
-        # The potential radiation on horizontal surfce
-        self["potential_sw_rad_flat"], _ = self.compute_soltab(
-            np.zeros(n_hru),
-            np.zeros(n_hru),
-            params["hru_lat"],
-            self.compute_t,
-            self.func3,
-        )
-
-        # The potential radiaton given slope and aspect
-        self["potential_sw_rad"], self["sun_hrs"] = self.compute_soltab(
-            params["hru_slope"],
-            params["hru_aspect"],
-            params["hru_lat"],
-            self.compute_t,
-            self.func3,
-        )
-
-        return
+    @staticmethod
+    def get_inputs() -> tuple:
+        return ()
 
     @staticmethod
     def get_variables():
@@ -140,15 +86,90 @@ class NHMSolarGeometry(StateAccess):
 
         """
         return (
-            "hru_cossl",
-            "potential_sw_rad_flat",  # rename to match PRMS.
-            "potential_sw_rad",
-            "sun_hrs",
+            "soltab_horad_potsw",
+            "soltab_potsw",
+            "soltab_sunhrs",
         )
 
-    @property
-    def variables(self):
-        return self.get_variables()
+    @staticmethod
+    def get_init_values() -> dict:
+        return {
+            "soltab_horad_potsw": nan,
+            "soltab_potsw": nan,
+            "soltab_sunhrs": nan,
+        }
+
+    @staticmethod
+    def get_parameters() -> tuple:
+        return (
+            "nhru",
+            "radadj_intcp",
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+            "hru_aspect",
+        )
+
+    def set_initial_conditions(self):
+        return
+
+    def _compute_solar_geometry(self):
+        # The potential radiation on horizontal surfce
+        self._soltab_horad_potsw, _ = self.compute_soltab(
+            np.zeros(self["nhru"]),
+            np.zeros(self["nhru"]),
+            self["hru_lat"],
+            self.compute_t,
+            self.func3,
+        )
+
+        # The potential radiaton given slope and aspect
+        self._soltab_potsw, self._soltab_sunhrs = self.compute_soltab(
+            self["hru_slope"],
+            self["hru_aspect"],
+            self["hru_lat"],
+            self.compute_t,
+            self.func3,
+        )
+
+        return
+
+    def _advance_variables(self):
+        """Advance solar geometry
+
+        Returns:
+            None
+
+        """
+        return
+
+    def _calculate(self, time_length):
+        """Calculate solar_geom"
+
+        Sets the current value to the precalculated values.
+
+        Args:
+            time_length: time step length
+
+        Returns:
+            None
+
+        """
+        iday = self.control.current_doy - 1
+        self["soltab_potsw"][:] = self._soltab_potsw[iday, :]
+        self["soltab_horad_potsw"][:] = self._soltab_horad_potsw[iday, :]
+        self["soltab_sunhrs"][:] = self._soltab_sunhrs[iday, :]
+        return
 
     # @jit
     @staticmethod
@@ -165,19 +186,19 @@ class NHMSolarGeometry(StateAccess):
         Swift, 1976, equation 6.
 
         Arguments:
-          cossl: cos(atan(hru_slope)) [n_hru] ?
-          slope: slope [n_hru]
-          aspect: aspect [n_hru]
-          latitude: latitude [n_hru]
+          cossl: cos(atan(hru_slope)) [nhru] ?
+          slope: slope [nhru]
+          aspect: aspect [nhru]
+          latitude: latitude [nhru]
 
         Return Values: (solt, sunh)
           solt: Swift's potential solar radiation on a sloping surface in
             [cal/cm2/day]. Swift, 1976, equation 6.
-            Dimensions: [n_days_per_year, n_hru]
+            Dimensions: [n_days_per_year, nhru]
           sunh: The number of hours of direct sunlight
-            Dimensions: [n_days_per_year, n_hru]
+            Dimensions: [n_days_per_year, nhru]
         """
-        n_hru = len(slopes)
+        nhru = len(slopes)
 
         # Slope derived quantities
         sl = np.arctan(slopes)
@@ -199,7 +220,7 @@ class NHMSolarGeometry(StateAccess):
 
         # d1 is the denominator of equation 12, Lee, 1963
         d1 = sl_cos * x0_cos - sl_sin * np.sin(x0) * aspects_cos
-        eps_d1 = epsilon(d1)
+        eps_d1 = epsilon
         wh_d1_lt_eps = np.where(d1 < eps_d1)
         if len(wh_d1_lt_eps[0]) > 0:
             d1[wh_d1_lt_eps] = eps_d1
@@ -280,16 +301,16 @@ class NHMSolarGeometry(StateAccess):
             sunh[wh_t6_lt_t1] = (t3 - t2 + t1 - t6)[wh_t6_lt_t1] * pi_12
 
         # The first condition checked
-        wh_sl_zero = np.where(tile_space_to_time(np.abs(sl)) < epsilon(sl))
+        wh_sl_zero = np.where(tile_space_to_time(np.abs(sl)) < epsilon)
         if len(wh_sl_zero[0]):
-            solt[wh_sl_zero] = func3(np.zeros(n_hru), x0, t1, t0)[wh_sl_zero]
+            solt[wh_sl_zero] = func3(np.zeros(nhru), x0, t1, t0)[wh_sl_zero]
             sunh[wh_sl_zero] = (t1 - t0)[wh_sl_zero] * pi_12
 
-        wh_sunh_lt_zero = np.where(sunh < epsilon(sunh))
+        wh_sunh_lt_zero = np.where(sunh < epsilon)
         if len(wh_sunh_lt_zero[0]):
             sunh[wh_sunh_lt_zero] = zero
 
-        wh_solt_lt_zero = np.where(solt < epsilon(solt))
+        wh_solt_lt_zero = np.where(solt < epsilon)
         if len(wh_solt_lt_zero[0]):
             solt[wh_solt_lt_zero] = zero
             warnings.warn(
@@ -324,10 +345,10 @@ class NHMSolarGeometry(StateAccess):
 
         https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
         """
-        n_hru = len(lats)
+        nhru = len(lats)
         lats_mat = np.tile(-1 * np.tan(lats), (n_days_per_year, 1))
         sol_dec_mat = np.transpose(
-            np.tile(np.tan(solar_declination), (n_hru, 1))
+            np.tile(np.tan(solar_declination), (nhru, 1))
         )
         tx = lats_mat * sol_dec_mat
         result = np.copy(tx)
@@ -349,11 +370,11 @@ class NHMSolarGeometry(StateAccess):
         """
         This is the radian angle version of FUNC3 (eqn 6) from Swift, 1976
         or Lee, 1963 equation 5.
-        result: (R4) is potential solar radiation on the surface cal/cm2/day [n_days_per_year, n_hru]
-        v: (L2) latitude angle hour offset between actual and equivalent slope [n_hru]
-        w: (L1) latitude of the equivalent slope [n_hru]
-        x: (T3) hour angle of sunset on equivalent slope [n_days_per_year, n_hru]
-        y: (T2) hour angle of sunrise on equivalent slope [n_days_per_year, n_hru]
+        result: (R4) is potential solar radiation on the surface cal/cm2/day [n_days_per_year, nhru]
+        v: (L2) latitude angle hour offset between actual and equivalent slope [nhru]
+        w: (L1) latitude of the equivalent slope [nhru]
+        x: (T3) hour angle of sunset on equivalent slope [n_days_per_year, nhru]
+        y: (T2) hour angle of sunrise on equivalent slope [n_days_per_year, nhru]
 
         # Constants
         r1: solar constant for 60 minutes [n_days_per_year]
@@ -362,13 +383,13 @@ class NHMSolarGeometry(StateAccess):
         https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
         """
         # Must alter the dimensions of the inputs to get the outputs.
-        n_hru = len(v)
+        nhru = len(v)
         vv = np.tile(v, (n_days_per_year, 1))
         ww = np.tile(w, (n_days_per_year, 1))
         # These are known at init time, not sure they are worth saving in self
         # and passing
-        rr = np.transpose(np.tile(r1, (n_hru, 1)))
-        dd = np.transpose(np.tile(solar_declination, (n_hru, 1)))
+        rr = np.transpose(np.tile(r1, (nhru, 1)))
+        dd = np.transpose(np.tile(solar_declination, (nhru, 1)))
 
         f3 = (
             rr

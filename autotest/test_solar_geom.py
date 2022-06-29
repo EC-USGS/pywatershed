@@ -1,9 +1,7 @@
-from copy import deepcopy
 from datetime import datetime, timedelta
 
 import numpy as np
 import pytest
-import xarray as xr
 
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.control import Control
@@ -63,8 +61,6 @@ class TestPRMSSolarGeometry:
             soltab_horad_potsw_ans,
             atol=atol,
         ).all()
-
-        data_size = np.product(soltab_potsw_ans.shape)
 
         # advance/calculate the state
         sunhrs_id = id(solar_geom.soltab_sunhrs)

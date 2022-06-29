@@ -33,7 +33,7 @@ class PRMSRunoff(StorageUnit):
         self,
         control: Control,
         params: PrmsParameters,
-        soil_moist: adaptable,
+        soil_moist_prev: adaptable,
         net_rain: adaptable,
         net_ppt: adaptable,
         net_snow: adaptable,
@@ -57,41 +57,6 @@ class PRMSRunoff(StorageUnit):
         )
 
         self.set_inputs(locals())
-
-        # self._input_variables_dict["soil_moist"] = adapter_factory(
-        #     soil_moist, "soil_moist"
-        # )
-        # self._input_variables_dict["net_rain"] = adapter_factory(
-        #     net_rain, "net_rain"
-        # )
-        # self._input_variables_dict["net_ppt"] = adapter_factory(
-        #     net_ppt, "net_ppt"
-        # )
-        # self._input_variables_dict["net_snow"] = adapter_factory(
-        #     net_snow, "net_snow"
-        # )
-        # self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
-        # self._input_variables_dict["snowmelt"] = adapter_factory(
-        #     snowmelt, "snowmelt"
-        # )
-        # self._input_variables_dict["snow_evap"] = adapter_factory(
-        #     snow_evap, "snow_evap"
-        # )
-        # self._input_variables_dict["pkwater_equiv"] = adapter_factory(
-        #     pkwater_equiv, "pkwater_equiv"
-        # )
-        # self._input_variables_dict["pptmix_nopack"] = adapter_factory(
-        #     pptmix_nopack, "pptmix_nopack"
-        # )
-        # self._input_variables_dict["snowcov_area"] = adapter_factory(
-        #     snowcov_area, "snowcov_area"
-        # )
-        # self._input_variables_dict["hru_intcpevap"] = adapter_factory(
-        #     hru_intcpevap, "hru_intcpevap"
-        # )
-        # self._input_variables_dict["intcp_changeover"] = adapter_factory(
-        #     intcp_changeover, "intcp_changeover"
-        # )
 
         self.set_budget(budget_type)
         # if budget_type is None:
@@ -194,7 +159,7 @@ class PRMSRunoff(StorageUnit):
 
         """
         return (
-            "soil_moist",
+            "soil_moist_prev",
             "net_rain",
             "net_ppt",
             "net_snow",
@@ -908,7 +873,7 @@ class PRMSRunoff(StorageUnit):
         #       ENDIF
         smidx_module = True
         if smidx_module:
-            smidx = self.soil_moist[ihru] + 0.5 * ptc
+            smidx = self.soil_moist_prev[ihru] + 0.5 * ptc
             if smidx > 25.0:
                 ca_fraction = self.carea_max[ihru]
             else:
@@ -962,7 +927,7 @@ class PRMSRunoff(StorageUnit):
     #
     #       END SUBROUTINE check_capacity
     def check_capacity(self, snowinfil_max, infil, srp, ihru):
-        capacity = self.soil_moist_max[ihru] - self.soil_moist[ihru]
+        capacity = self.soil_moist_max[ihru] - self.soil_moist_prev[ihru]
         excess = infil - capacity
         if excess > snowinfil_max:
             srp = srp + excess - snowinfil_max

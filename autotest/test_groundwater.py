@@ -1,6 +1,5 @@
 import pathlib as pl
 
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils.netcdf_utils import NetCdfCompare

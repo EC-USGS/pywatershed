@@ -166,9 +166,8 @@ class PRMSSolarGeometry(StorageUnit):
 
         """
         iday = self.control.current_doy - 1
-        self["soltab_potsw"][:] = self._soltab_potsw[iday, :]
-        self["soltab_horad_potsw"][:] = self._soltab_horad_potsw[iday, :]
-        self["soltab_sunhrs"][:] = self._soltab_sunhrs[iday, :]
+        for var in self.variables:
+            self[var][:] = self[f"_{var}"][iday, :]
         return
 
     # @jit

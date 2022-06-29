@@ -1,97 +1,28 @@
 import pathlib as pl
+from pprint import pprint
 import warnings
 from itertools import chain
 from typing import Union
 
 import netCDF4 as nc4
 
-# from numba import jit
 import numpy as np
 
-from ..preprocess.cbh_utils import cbh_adjust
+from ..base.adapter import adaptable
+from ..base.control import Control
+from ..constants import inch2cm, nan, one, zero
+from .solar_constants import solf
+
 from ..utils.parameters import PrmsParameters
-from ..utils.prms5util import load_nhru_output_csv
-from .AtmBoundaryLayer import AtmBoundaryLayer
-from .NHMSolarGeometry import NHMSolarGeometry
+from ..utils.time_utils import datetime_month
+
+from pynhm.base.storageUnit import StorageUnit
+from .PRMSSolarGeometry import PRMSSolarGeometry
+
+from pynhm.utils.netcdf_utils import NetCdfRead
+
 
 fileish = Union[str, pl.Path]
-
-zero = np.zeros(1)[0]
-one = np.ones(1)[0]
-
-inch_to_cm = 2.54
-
-# https://github.com/nhm-usgs/prms/blob/92f3c470bbf10e37ee23f015f60d42f6a028cf48/src/prmslib/physics/c_solar_radiation_degday.f90#L19
-# define this somehow
-solf = np.array(
-    [
-        0.20,
-        0.35,
-        0.45,
-        0.51,
-        0.56,
-        0.59,
-        0.62,
-        0.64,
-        0.655,
-        0.67,
-        0.682,
-        0.69,
-        0.70,
-        0.71,
-        0.715,
-        0.72,
-        0.722,
-        0.724,
-        0.726,
-        0.728,
-        0.73,
-        0.734,
-        0.738,
-        0.742,
-        0.746,
-        0.75,
-    ]
-)
-
-
-parameters_swrad = [
-    "radadj_intcp",
-    "radadj_slope",
-    "tmax_index",
-    "dday_slope",
-    "dday_intcp",
-    "radmax",
-    "ppt_rad_adj",
-    "tmax_allsnow",
-    "tmax_allrain_offset",
-    "hru_slope",
-    "radj_sppt",
-    "radj_wppt",
-    "hru_lat",
-    "hru_area",
-]
-
-# JLM: the swrad parameters should be available from that module.
-
-params_required = {
-    "swrad": parameters_swrad,
-    "solar_geom": ["nhru", "hru_aspect"] + parameters_swrad,
-    "pot_et_jh": ["jh_coef", "jh_coef_hru"],
-    "adj": [
-        "nhru",
-        "tmax_cbh_adj",
-        "tmin_cbh_adj",
-        "tmax_allsnow",
-        "tmax_allrain_offset",
-        "snow_cbh_adj",
-        "rain_cbh_adj",
-        "adjmix_rain",
-    ],
-}
-
-
-# JLM: where is metadata
 
 
 # may not use this if they cant be called with jit
@@ -104,268 +35,319 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
     return np.transpose(np.tile(arr, (n_space, 1)))
 
 
-class NHMBoundaryLayer(AtmBoundaryLayer):
+class PRMSBoundaryLayer(StorageUnit):
     def __init__(
         self,
-        state_dict: dict,
-        *args,
-        parameters: PrmsParameters = None,
-        **kwargs,
+        control: Control,
+        params: PrmsParameters,
+        prcp: fileish,
+        tmax: fileish,
+        tmin: fileish,
+        budget_type: str = None,
+        verbose: bool = False,
+        netcdf_output_dir: fileish = None,
     ):
-        """The atmospheric boundary layer of the NHM model."""
-        super().__init__(*args, **kwargs)
+        """PRMS atmospheric boundary layer models
 
-        self.name = "NHMBoundaryLayer"
+        This representation uses precipitation and temperature inputs.
+        Relative humidity could be added as well."""
 
-        # Dimensions and dimension variables
-        self.spatial_id = None
-        self.spatial_id_is_nhm = None
-        # property hrus or space & nspace, time &ntime
-
-        # JLM: these names are historical, I dont love them
-        self._potential_variables = [
-            "hru_ppt",
-            "rhavg",
-            "hru_rain",
-            "hru_snow",
-            "tmax",
-            "tmaxf",
-            "tmin",
-            "tminf",
-            "swrad",
-            "potet",
-            "prcp",
-        ]
-
-        self._parameter_list = list(
-            set(
-                chain.from_iterable(
-                    [val for key, val in params_required.items()]
-                )
-            )
+        self.name = "PRMSBoundaryLayer"
+        super().__init__(
+            control=control,
+            params=params,
+            verbose=verbose,
+            subclass_name=self.name,
         )
-        if parameters is None:
-            self.parameters = parameters
-        else:
-            self.parameters = parameters.get_parameters(self._parameter_list)
 
-        self._n_states_adj = 0
-        self._allow_param_adjust = None
-        self._state_adjusted_here = False
-
-        # To be calculated (diagnostic?)
-        self.pot_et = None
-        self.pot_et_consumed = None
-
-        # These are set in super(), delete them now
-        # to be able to set
-        del self.datetime
-        del self.spatial_id
-
-        for key, val in state_dict.items():
-            self[key] = val
-
-        return
-
-    @classmethod
-    def load_prms_output(
-        cls,
-        hru_ppt: fileish = None,
-        hru_rain: fileish = None,
-        hru_snow: fileish = None,
-        tmaxf: fileish = None,
-        tminf: fileish = None,
-        swrad: fileish = None,
-        potet: fileish = None,
-        **kwargs,
-    ):
-        """Instantiate an NHM atmospheric boundary layer from NHM/PRMS
-        output csv files."""
-
-        obj = cls({}, **kwargs)
-
-        obj.prms_output_files = {
-            "hru_ppt": hru_ppt,
-            "hru_rain": hru_rain,
-            "hru_snow": hru_snow,
-            "tmaxf": tmaxf,
-            "tminf": tminf,
-            "swrad": swrad,
-            "potet": potet,
-        }
-
-        for var, var_file in obj.prms_output_files.items():
-            if var_file is None:
-                continue
-            prms_output = load_nhru_output_csv(var_file)
-            obj[var] = prms_output.to_numpy()
-            if not hasattr(obj, "datetime"):
-                obj["datetime"] = prms_output.index.to_numpy()
+        # Override self.set_inputs(locals())
+        # Get all data at all times: do all forcings up front
+        # There will be no inputs to advance
+        self._input_variables_dict = {}
+        self._datetime = None
+        for input in self.get_inputs():
+            nc_data = NetCdfRead(locals()[input])
+            self[input] = nc_data.dataset[input][:].data
+            # Get the datetimes or check against the first
+            if self._datetime is None:
+                self._datetime = nc_data._datetime
             else:
-                assert (obj["datetime"] == prms_output.index.to_numpy()).all()
+                assert (nc_data._datetime == self._datetime).all()
 
-        return obj
+        start_time_ind = np.where(self._datetime == self.control._start_time)
+        start_time_ind = start_time_ind[0]
+        if not len(start_time_ind):
+            msg = "Control start_time is not in the input data datetime"
+            raise ValueError(msg)
+        self._init_time_ind = start_time_ind[0]
 
-    @classmethod
-    def load_netcdf(
-        cls,
-        nc_file: fileish,
-        nc_read_vars: list = None,
-        **kwargs,
-    ) -> "NHMBoundaryLayer":
-        """Instantiate an NHM atmospheric boundary layer from NHM/PRMS
-        preprocessed CBH netcdf files."""
+        # atm/boundary layer has a solar geometry
+        self.solar_geom = PRMSSolarGeometry(control, params)
 
-        obj = cls({}, **kwargs)
+        # Solve all variables for all time
+        self._month_ind_12 = datetime_month(self._datetime) - 1  # (time)
+        self._month_ind_1 = np.zeros(self._datetime.shape, dtype=int)  # (time)
 
-        # netcdf handling. consolidate these?
-        obj.dataset = None
-        obj.ds_var_list = None
-        obj.ds_var_chunking = None
+        self.adjust_temperature()
+        self.adjust_precip()
+        self.calculate_sw_rad_degree_day()
+        self.calculate_potential_et_jh()
 
-        obj._file_vars = {}
-        obj._nc_read_vars = nc_read_vars
-        obj._optional_read_vars = ["rhavg", "swrad", "potet"]
-        obj._nc_file = nc_file
-        obj._open_nc_file()
-        obj._read_nc_file()
-        # obj._close_nc_file()  # JLM
+        # Budget is not for all time
+        # self.set_budget(budget_type)
+        # This is a nonstandard budget.
+        self.budget = None
+        # self.budget = {
+        #     "inputs": {"potet": self.potet},
+        #     "outputs": {"hru_actet": self.hru_actet},
+        #     "storage_changes": {"available_potet": self.available_potet},
+        # }
 
-        return obj
+        if netcdf_output_dir:
+            # write out all variables
+            # check that netcdf_output_dir is a directory
+            pass
 
-    # move this down? create helper functions? it is too long to be near top.
-    def _open_nc_file(self):
-        self.dataset = nc4.Dataset(self._nc_file, "r")
-        self.ds_var_list = list(self.dataset.variables.keys())
-        self.ds_var_chunking = {
-            vv: self.dataset.variables[vv].chunking()
-            for vv in self.ds_var_list
-        }
-        # Set dimension variables which are not chunked
-        self["datetime"] = (
-            nc4.num2date(
-                self.dataset.variables["datetime"][:],
-                units=self.dataset.variables["datetime"].units,
-                calendar=self.dataset.variables["datetime"].calendar,
-                only_use_cftime_datetimes=False,
-            )
-            .filled()
-            .astype("datetime64[s]")
-            # JLM: the global time type as in cbh_utils, define somewhere
-        )
-        spatial_id_name = (
-            "nhm_id" if "nhm_id" in self.ds_var_list else "hru_ind"
-        )
-        self.spatial_id = self.dataset.variables[spatial_id_name][:]
+        return
 
-        if self._nc_read_vars is None:
+    @staticmethod
+    def get_inputs() -> tuple:
+        return ("prcp", "tmax", "tmin")
 
-            for self_var in self._potential_variables:
-                self._file_vars[self_var] = self_var
-
-        else:
-
-            # Find the specified/requested variables to read from file.
-            for read_var in self._nc_read_vars:
-                if read_var in self._potential_variables:
-                    self._file_vars[read_var] = read_var
-                else:
-                    raise KeyError(f"{read_var} not a variable on {self.name}")
-
-            # finally reduce the state vars to what we have
-            # for state_var in deepcopy(self.variables):
-            #    if state_var not in self._file_vars.keys():
-            #        del self.__dict__[state_var]
-            #        _ = self.variables.remove(state_var)
-
-        # If it looks like we read adjusted parameters, try to block double
-        # adjustments on parameter_adjust
-        adj_set = {
+    @staticmethod
+    def get_variables() -> tuple:
+        return (
+            "tmaxf",
+            "tminf",
+            "prmx",
             "hru_ppt",
             "hru_rain",
             "hru_snow",
-            "tmaxf",
-            "tminf",
             "swrad",
             "potet",
+            # "hru_actet",
+            # "available_potet",
+        )
+
+    @staticmethod
+    def get_init_values() -> dict:
+        return {
+            "tmaxf": nan,
+            "tminf": nan,
+            "prmx": nan,
+            "hru_ppt": nan,
+            "hru_rain": nan,
+            "hru_snow": nan,
+            "swrad": nan,
+            "potet": nan,
+            # "hru_actet": zero,
+            # "available_potet": nan,
         }
-        adj_variables_present = adj_set.intersection(set(self._file_vars))
-        if len(adj_variables_present):
-            self._allow_param_adjust = False
-        else:
-            self._allow_param_adjust = True
 
+    @staticmethod
+    def get_parameters():
+        return (
+            "radadj_intcp",
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+            "nhru",
+            "hru_aspect",
+            "jh_coef",
+            "jh_coef_hru",
+            "tmax_cbh_adj",
+            "tmin_cbh_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "snow_cbh_adj",
+            "rain_cbh_adj",
+            "adjmix_rain",
+        )
+
+    def set_initial_conditions(self):
         return
 
-    def _read_nc_file(self) -> None:
-        # JLM: "front load" option vs "load as you go"
-        for self_var, file_var in self._file_vars.items():
-            # JLM: Later use chunking here to get data
-            # JLM: have to update datetime in that case?
-            if file_var not in self.dataset.variables.keys():
-                warnings.warn(f"Variable {file_var} not found in file")
-                continue
-            data = self.dataset.variables[file_var][:]
-            if data.mask:
-                msg = (
-                    "NetCDF file contains missing values "
-                    "not currently handled"
-                )
-                raise ValueError(msg)
-            self[self_var] = data.data
-        return
-
-    def _close_nc_file(self) -> None:
-        self.dataset.close()
-        return
-
-    def param_adjust(self) -> None:
-        """Adjust atmospheric variables using PRMS parameters.
-
-        Args:
-            None
+    def _advance_variables(self):
+        """Advance the PRMSBoundaryLayer
 
         Returns:
             None
+
         """
-        if not self._allow_param_adjust:
+        return
+
+    def _calculate(self, time_length):
+        """Calculate PRMSBoundaryLayer"
+
+        Sets the current value to the precalculated values.
+
+        Args:
+            time_length: time step length
+
+        Returns:
+            None
+
+        """
+        current_ind = self._init_time_ind + self._itime_step
+        for var in self.variables:
+            self[var][:] = self[f"_{var}"][current_ind, :]
+        return
+
+    def adjust_temperature(self):
+        """Input temperature adjustments using calibrated parameters."""
+
+        # throw an error if these have different shapes
+        if self["tmax_cbh_adj"].shape != self["tmin_cbh_adj"].shape:
             msg = (
-                "Parameter adjustments not permitted when any state "
-                " variables are already adjusted. \n {self._file_vars}"
+                "Not implemented: tmin/tmax cbh adj parameters "
+                "with different shapes"
+            )
+            raise NotImplementedError(msg)
+
+        if self["tmax_cbh_adj"].shape[0] == 12:
+            month_ind = self._month_ind_12
+        elif self["tmax_cbh_adj"].shape[0] == 1:
+            month_ind = self._month_ind_1
+        else:
+            msg = (
+                "Unexpected month dimension for cbh "
+                "temperature adjustment params"
             )
             raise ValueError(msg)
 
-        # construct a dict of references
-        var_dict_adj = {key: self[key] for key in self.variables}
-        var_dict_adj["datetime"] = self["datetime"]
-        # This modified var_dict_adj, which is sus
-        params = self.parameters.get_parameters(params_required["adj"])
-        _ = cbh_adjust(var_dict_adj, params)
-        self._state_adjusted_here = True
-        self._allow_param_adjust = False
-
-        for vv in var_dict_adj.keys():
-            if vv == "datetime":
-                continue
-            self[vv] = var_dict_adj[vv]
+        # (time, space) dimensions on these variables
+        self._tmaxf = np.zeros(self.tmax.shape, dtype=self.tmax.dtype)
+        self._tminf = np.zeros(self.tmin.shape, dtype=self.tmin.dtype)
+        self._tmaxf = self["tmax"] + self["tmax_cbh_adj"][month_ind]
+        self._tminf = self["tmin"] + self["tmin_cbh_adj"][month_ind]
 
         return
 
-    # JLM: make this available for preprocess with cbh
+    def adjust_precip(self):
+        """Input precipitation adjustments using calibrated parameters.
+
+        Snow/rain partitioning of total precip depends on adjusted temperature
+        in addition to depending on additonal parameters.
+        """
+
+        # throw an error shapes are inconsistent
+        shape_list = np.array(
+            [
+                self.tmax_allsnow.shape[0],
+                self.tmax_allrain_offset.shape[0],
+                self.snow_cbh_adj.shape[0],
+                self.rain_cbh_adj.shape[0],
+                self.adjmix_rain.shape[0],
+            ]
+        )
+        if not (shape_list == 12).all():
+            msg = (
+                "Not implemented: cbh precip adjustment parameters with "
+                " different shapes"
+            )
+            raise NotImplementedError(msg)
+
+        tmax_allrain = self.tmax_allsnow + self.tmax_allrain_offset
+
+        if self.tmax_allsnow.shape[0] == 12:
+            month_ind = self._month_ind_12
+        elif self.tmax_allsnow.shape[0] == 1:
+            month_ind = self._month_ind_1
+        else:
+            msg = "Unexpected month dimension for cbh precip adjustment params"
+            raise ValueError(msg)
+
+        # (time, space) dimensions
+        self._hru_ppt = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
+        self._hru_rain = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
+        self._hru_snow = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
+
+        self._prmx = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
+        # Order MATTERS in calculating the prmx mask
+        # The logic in PRMS is if(all_snow),elif(all_rain),else(mixed)
+        # so we set the mask in the reverse order
+        # Calculate the mix everywhere, then set the precip/rain/snow amounts from the conditions.
+        tdiff = self._tmaxf - self._tminf
+        self._prmx = (
+            (self._tmaxf - self.tmax_allsnow[month_ind]) / tdiff
+        ) * self.adjmix_rain[month_ind]
+        del tdiff
+
+        wh_all_snow = np.where(self._tmaxf <= self.tmax_allsnow[month_ind])
+        wh_all_rain = np.where(
+            np.logical_or(
+                self._tminf > self.tmax_allsnow[month_ind],
+                self._tmaxf >= tmax_allrain[month_ind],
+            )
+        )
+        self._prmx[wh_all_rain] = one
+        self._prmx[wh_all_snow] = zero
+
+        # Recalculate/redefine these now based on prmx instead of the temperature logic
+        wh_all_snow = np.where(self._prmx <= zero)
+        wh_all_rain = np.where(self._prmx >= one)
+
+        # Mixed case (everywhere, to be overwritten by the all-snow/rain-fall cases)
+        self._hru_ppt = self.prcp * self.snow_cbh_adj[month_ind]
+        self._hru_rain = self._prmx * self._hru_ppt
+        self._hru_snow = self._hru_ppt - self._hru_rain
+
+        # All precip is snow case
+        # The condition to be used later:
+        self._hru_ppt[wh_all_snow] = (
+            self.prcp * self.snow_cbh_adj[month_ind]
+        )[wh_all_snow]
+        self._hru_snow[wh_all_snow] = self._hru_ppt[wh_all_snow]
+        self._hru_rain[wh_all_snow] = zero
+
+        # All precip is rain case
+        # The condition to be used later:
+        self._hru_ppt[wh_all_rain] = (
+            self.prcp * self.rain_cbh_adj[month_ind]
+        )[wh_all_rain]
+        self._hru_rain[wh_all_rain] = self._hru_ppt[wh_all_rain]
+        self._hru_snow[wh_all_rain] = zero
+        return
+
     def calculate_sw_rad_degree_day(self) -> None:
         """Calculate shortwave radiation using the degree day method."""
 
-        solar_geom = NHMSolarGeometry(self.parameters)
-        params = self.parameters.get_parameters(
-            params_required["swrad"]
-        ).parameters
+        solar_params = {}
+        solar_param_names = (
+            "radadj_intcp",
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+        )
+        for name in solar_param_names:
+            solar_params[name] = self.solar_geom[name]
 
-        self["swrad"] = self._ddsolrad_run(
-            dates=self["datetime"],
-            tmax_hru=self["tmaxf"],
-            hru_ppt=self["hru_ppt"],
-            soltab_potsw=solar_geom["potential_sw_rad"],
-            **params,
+        self._swrad = self._ddsolrad_run(
+            dates=self._datetime,
+            tmax_hru=self._tmaxf,
+            hru_ppt=self._hru_ppt,
+            soltab_potsw=self.solar_geom._soltab_potsw,
+            **solar_params,
         )
 
         return
@@ -416,7 +398,6 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
             raise NotImplementedError(msg)
             is_summer = is_summer & northern_hemisphere
 
-        # JLM: could get this from solar_geom object or delete it there
         hru_cossl = tile_space_to_time(np.cos(np.arctan(hru_slope)), n_time)
 
         def monthly_to_daily(arr):
@@ -522,20 +503,17 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
 
     # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_potet_jh.f90
 
-    def calculate_potential_et_jh(
-        self,
-    ) -> None:
-        """Calculate potential evapotranspiration following Jensen and Haise (1963)."""
-        params = self.parameters.get_parameters(
-            params_required["pot_et_jh"]
-        ).parameters
+    def calculate_potential_et_jh(self) -> None:
+        """Calculate potential evapotranspiration following Jensen and Haise
+        (1963)."""
 
-        self["potet"] = self._potet_jh_run(
-            dates=self["datetime"],
-            tmax_hru=self["tmaxf"],
-            tmin_hru=self["tminf"],
-            swrad=self["swrad"],
-            **params,
+        self._potet = self._potet_jh_run(
+            dates=self._datetime,
+            tmax_hru=self._tmaxf,
+            tmin_hru=self._tminf,
+            swrad=self._swrad,
+            jh_coef=self.jh_coef,
+            jh_coef_hru=self.jh_coef_hru,
         )
 
         return
@@ -549,7 +527,7 @@ class NHMBoundaryLayer(AtmBoundaryLayer):
         month = tile_time_to_space(month, n_hru)
         tavg_f = (tmax_hru + tmin_hru) / 2.0
         tavg_c = (tavg_f - 32.0) * 5 / 9  # f_to_c
-        elh = (597.3 - (0.5653 * tavg_c)) * inch_to_cm
+        elh = (597.3 - (0.5653 * tavg_c)) * inch2cm
 
         # JLM: move this out?
         def monthly_to_daily(arr):

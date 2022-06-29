@@ -2,7 +2,6 @@ from typing import Union
 
 import numpy as np
 
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 

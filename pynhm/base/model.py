@@ -34,7 +34,7 @@ class Model:
             inputs = deepcopy(class_inputs)
             vars = deepcopy(class_vars)
             c_inputs = inputs.pop(comp)
-            c_vars = vars.pop(comp)
+            _ = vars.pop(comp)
             inputs_from[comp] = {}
             # inputs
             for input in c_inputs:
@@ -70,18 +70,22 @@ class Model:
             nc_path = input_dir / f"{name}.nc"
             file_inputs[name] = adapter_factory(nc_path, name, control=control)
 
-        # instance dict
+        # instantiate components: instance dict
         self.components = {}
         for component in self.component_order:
             component_inputs = {
                 input: None for input in class_dict[component].get_inputs()
             }
-            self.components[component] = class_dict[component](
-                control=control,
-                params=params,
-                budget_type=budget_type,
+            # This is a hack. Need to make StorageUnit a subclass of a more
+            # general model/element/component class
+            args = {
+                "control": control,
+                "params": params,
                 **component_inputs,
-            )
+            }
+            if component not in ["PRMSSolarGeometry"]:
+                args["budget_type"] = budget_type
+            self.components[component] = class_dict[component](**args)
 
         for component in self.component_order:
             print(f"{component}:")

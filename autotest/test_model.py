@@ -8,12 +8,13 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.base.model import Model
+from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
+from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.utils.parameters import PrmsParameters
 
-# from pynhm.hydrology.PRMSSnow import PRMSSnow
 # from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 
 
@@ -30,15 +31,17 @@ def params(domain):
 @pytest.mark.parametrize(
     "components",
     (
-        [PRMSEt],
-        [PRMSEt, PRMSCanopy],
-        [PRMSEt, PRMSCanopy, PRMSRunoff],
-        # [PRMSEt, PRMSCanopy, PRMSRunoff, PRMSSoilzone],
+        # [PRMSEt],
+        # [PRMSEt, PRMSCanopy],
+        # [PRMSEt, PRMSCanopy, PRMSRunoff],
+        [PRMSSolarGeometry, PRMSSnow],
+        # [PRMSSolarGeometry, PRMSEt, PRMSCanopy, PRMSSnow, PRMSRunoff],
     ),
     ids=(
-        "et",
-        "et_canopy",
-        "et_canopy_runoff",
+        # "et",
+        # "et_canopy",
+        # "et_canopy_runoff",
+        "solar_snow",
         # "et_canopy_runoff_soilzone",
     ),
 )
@@ -81,6 +84,8 @@ def test_model(domain, control, params, components, tmp_path):
             "sroff",
             "dprst_evap_hru",
         ],
+        "PRMSSolarGeometry": [],
+        "PRMSSnow": [],
     }
 
     comparison_vars_dict = {}

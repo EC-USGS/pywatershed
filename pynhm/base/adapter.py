@@ -6,17 +6,7 @@ import numpy as np
 from pynhm.base.control import Control
 from pynhm.utils.netcdf_utils import NetCdfRead
 
-from ..utils.time_utils import datetime_doy
-
 fileish = Union[str, pl.Path]
-
-# these names will change and reduce with amt/geom refactor
-# could get these from SolarGeom but there are other non-soltab vars
-soltab_vars = [
-    "soltab_horad_potsw",
-    "potential_sw_rad_flat",
-    "potential_sw_rad",
-]
 
 
 class Adapter:
@@ -33,6 +23,10 @@ class Adapter:
 
     def sanity_check(self):
         raise RuntimeError("contact code developers (sos=0); not really")
+
+    @property
+    def current(self):
+        return self._current_value
 
 
 class AdapterNetcdf(Adapter):
@@ -68,50 +62,20 @@ class AdapterNetcdf(Adapter):
         self._current_value[:] = self._dataset.advance(self._variable)
         return None
 
-    @property
-    def current(self):
-        return self._current_value
-
 
 class AdapterOnedarray(Adapter):
-    def __init__(
-        self,
-        data: np.ndarray,
-        variable,
-    ) -> None:
-        super().__init__(variable)
-        self.name = "AdapterOnedarray"
-        self._current_value = data
-        return
-
-    def advance(self):
-        return None
-
-    @property
-    def current(self):
-        return self._current_value
-
-
-class AdapterTwodarraySoltab(Adapter):
     def __init__(
         self,
         data: np.ndarray,
         variable: str,
     ) -> None:
         super().__init__(variable)
-        self.name = "AdapterTwodarraySoltab"
-        self._data = data
-        self._current_value = None
+        self.name = "AdapterOnedarray"
+        self._current_value = data
         return
 
-    def advance(self, datetime: np.datetime64):
-        index = datetime_doy(datetime) - 1
-        self._current_value = self._data[index]
+    def advance(self, *args):
         return None
-
-    @property
-    def current(self):
-        return self._current_value
 
 
 adaptable = Union[str, np.ndarray, Adapter]
@@ -137,15 +101,8 @@ def adapter_factory(
 
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
         """One-D np.ndarrays"""
+        print(f"1darray adapter: {variable_name}")
         return AdapterOnedarray(var, variable=variable_name)
-
-    elif (
-        isinstance(var, np.ndarray)
-        and len(var.shape) == 2
-        and variable_name in soltab_vars
-    ):
-        """Two-D np.ndarrays that are Soltabs"""
-        return AdapterTwodarraySoltab(var, variable=variable_name)
 
     elif var is None:
         """var is specified as None so return None"""

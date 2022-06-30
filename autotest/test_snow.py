@@ -7,19 +7,8 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.constants import epsilon32, zero
 from pynhm.hydrology.PRMSSnow import PRMSSnow
+from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.utils.parameters import PrmsParameters
-from pynhm.utils.prms5util import load_soltab_debug
-
-
-@pytest.fixture(scope="function")
-def horad_potsw(domain):
-    # get the "horizontal" potential shortwave radiation
-    (
-        _,
-        potential_sw_rad_flat,
-        _,
-    ) = load_soltab_debug(domain["prms_run_dir"] / "soltab_debug")
-    return potential_sw_rad_flat
 
 
 @pytest.fixture(scope="function")
@@ -32,9 +21,18 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
-@pytest.mark.xfail
+@pytest.fixture(scope="function")
+def solar_geom(domain, control, params):
+    solar_geom = PRMSSolarGeometry(
+        control, params, from_file=domain["prms_run_dir"] / "soltab_debug"
+    )
+    solar_geom._soltab_horad_potsw[:, :] = 45.0
+    return solar_geom
+
+
+# @pytest.mark.xfail
 class TestPRMSSnow:
-    def test_init(self, domain, control, params, horad_potsw, tmp_path):
+    def test_init(self, domain, control, params, solar_geom, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -84,23 +82,37 @@ class TestPRMSSnow:
         input_variables = {}
         for key in PRMSSnow.get_inputs():
             if key == "soltab_horad_potsw":
-                input_variables[key] = horad_potsw
+                input_variables[key] = solar_geom[key]
+                # asdf
             else:
                 nc_path = output_dir / f"{key}.nc"
                 input_variables[key] = nc_path
 
         snow = PRMSSnow(control, params, **input_variables)
+
+        # This DOES NOT WORK if done via input variables::: WHY?
+        # snow.set_input_to_adapter(
+        #     "soltab_horad_potsw",
+        #     adapter_factory(
+        #         solar_geom.soltab_horad_potsw,
+        #         "soltab_horad_potsw",
+        #         control=control,
+        #     ),
+        # )
+
         all_success = True
         iso_censor_mask = None
         for istep in range(control.n_times):
             # for istep in range(10):
 
-            control.advance()
-
             print("\n")
             print(f"solving time: {control.current_time}")
 
+            control.advance()
+            solar_geom.advance()
             snow.advance()
+
+            solar_geom.calculate(1.0)
             snow.calculate(float(istep))
 
             # compare along the way

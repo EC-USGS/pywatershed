@@ -170,6 +170,9 @@ class StorageUnit(Accessor):
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii], ii, args["control"]
             )
+            if self._input_variables_dict[ii]:
+                self[ii] = self._input_variables_dict[ii].current
+
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):

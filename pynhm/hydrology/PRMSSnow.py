@@ -82,6 +82,7 @@ class PRMSSnow(StorageUnit):
         net_rain: adaptable,
         net_snow: adaptable,
         transp_on: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ) -> "PRMSSnow":
 
@@ -94,6 +95,7 @@ class PRMSSnow(StorageUnit):
         )
 
         self.set_inputs(locals())
+        self.set_budget(budget_type)
 
         return
 
@@ -371,22 +373,6 @@ class PRMSSnow(StorageUnit):
 
     def _advance_variables(self) -> None:
         self.pkwater_ante = self.pkwater_equiv.copy()
-        return
-
-    def _advance_inputs(self) -> None:
-        """Advance the snow pack inputs
-        Returns:
-            None
-        """
-        # JLM: This method is only because adapter advances dont all take current time.
-        for key, value in self._input_variables_dict.items():
-            if key == "soltab_horad_potsw":
-                value.advance(self.control.current_time)
-            else:
-                value.advance()
-            v = getattr(self, key)
-            v[:] = value.current
-
         return
 
     def calculate(self, simulation_time):

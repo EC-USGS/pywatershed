@@ -1,19 +1,13 @@
 import pathlib as pl
-import warnings
-from itertools import chain
-from pprint import pprint
 from typing import Union
 
-import netCDF4 as nc4
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfRead
 
-from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, one, zero
-from ..utils.parameters import PrmsParameters
 from ..utils.time_utils import datetime_month
 from .PRMSSolarGeometry import PRMSSolarGeometry
 from .solar_constants import solf
@@ -35,7 +29,6 @@ class PRMSBoundaryLayer(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         prcp: fileish,
         tmax: fileish,
         tmin: fileish,
@@ -51,7 +44,6 @@ class PRMSBoundaryLayer(StorageUnit):
         self.name = "PRMSBoundaryLayer"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
             subclass_name=self.name,
         )
@@ -78,7 +70,7 @@ class PRMSBoundaryLayer(StorageUnit):
         self._init_time_ind = start_time_ind[0]
 
         # atm/boundary layer has a solar geometry
-        self.solar_geom = PRMSSolarGeometry(control, params)
+        self.solar_geom = PRMSSolarGeometry(control)
 
         # Solve all variables for all time
         self._month_ind_12 = datetime_month(self._datetime) - 1  # (time)

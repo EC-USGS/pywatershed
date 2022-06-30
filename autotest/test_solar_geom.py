@@ -23,19 +23,19 @@ test_time_steps = [atm_init_test_dict["time_step"], np.timedelta64(1, "h")]
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
+def params(domain):
+    return PrmsParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
 
 
 @pytest.mark.parametrize(
     "from_file", (True, False), ids=("from_file", "compute")
 )
-def test_solar_geom(domain, control, params, from_file):
+def test_solar_geom(domain, control, from_file):
 
     ans_file = domain["prms_run_dir"] / "soltab_debug"
     if from_file:
@@ -44,7 +44,7 @@ def test_solar_geom(domain, control, params, from_file):
         from_file = None
 
     print(from_file)
-    solar_geom = PRMSSolarGeometry(control, params, from_file=from_file)
+    solar_geom = PRMSSolarGeometry(control, from_file=from_file)
 
     # answers
     (

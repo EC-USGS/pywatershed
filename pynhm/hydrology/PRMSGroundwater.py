@@ -3,7 +3,6 @@ from typing import Union
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import Adapter
 from ..base.control import Control
@@ -15,15 +14,11 @@ class PRMSGroundwater(StorageUnit):
     """PRMS groundwater reservoir
 
     Args:
-        params: parameter object
-        atm: atmosphere object
-
     """
 
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
@@ -33,7 +28,6 @@ class PRMSGroundwater(StorageUnit):
         self.name = "PRMSGroundwater"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
             subclass_name=self.name,
         )

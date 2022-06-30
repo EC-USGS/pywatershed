@@ -11,7 +11,6 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.control import Control
 from ..constants import epsilon32, nan, one, zero
-from ..utils.parameters import PrmsParameters
 from ..utils.prms5util import load_soltab_debug
 from .solar_constants import (
     # eccentricy,
@@ -55,7 +54,6 @@ class PRMSSolarGeometry(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         verbose: bool = False,
         from_file: fileish = None,
     ):
@@ -65,7 +63,7 @@ class PRMSSolarGeometry(StorageUnit):
         budget_type = None
         self.set_budget(budget_type)
 
-        super().__init__(control=control, params=params, verbose=verbose)
+        super().__init__(control=control, verbose=verbose)
         self.name = "PRMSSolarGeometry"
 
         if from_file is None:

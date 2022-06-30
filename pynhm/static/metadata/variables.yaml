@@ -1649,6 +1649,12 @@ int_alb:
     0: nhru
   type: I
   units: none
+intcp_changeover:
+  desc: Canopy throughfall caused by canopy density change from winter to summer
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 intcp_evap:
   desc: Evaporation from the canopy for each HRU
   dimensions:

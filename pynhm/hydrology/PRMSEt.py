@@ -2,7 +2,6 @@ import numpy as np
 
 from pynhm.base.budget import Budget
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -21,7 +20,6 @@ class PRMSEt(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         potet: adaptable,
         hru_impervevap: adaptable,
         hru_intcpevap: adaptable,
@@ -35,7 +33,6 @@ class PRMSEt(StorageUnit):
         self.name = "PRMSEt"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
             subclass_name=self.name,
         )

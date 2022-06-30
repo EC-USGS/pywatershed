@@ -181,11 +181,7 @@ class Control(Accessor):
         return None
 
     def get_var_nans(self, var_name):
-        # using the variable_name, get the dimensions from metadata
-        # and their size from control
-        # this requires "params" to be available
-        # I propose adding them to control (makes sense to me,
-        # control already has config)
+        """Get an array filled with nans for a given variable"""
         var_dims = self.meta.get_dimensions(var_name)[var_name]
         var_dim_sizes = [self.params.parameters[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]

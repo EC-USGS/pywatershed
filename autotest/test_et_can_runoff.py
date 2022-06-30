@@ -12,17 +12,17 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
-@pytest.fixture(scope="function")
 def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 class TestPRMSCanopyRunoffDomain:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
 
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
@@ -79,7 +79,6 @@ class TestPRMSCanopyRunoffDomain:
 
         et = PRMSEt(
             control=control,
-            params=params,
             budget_type="strict",
             **et_inputs,
         )
@@ -96,7 +95,6 @@ class TestPRMSCanopyRunoffDomain:
 
         canopy = PRMSCanopy(
             control=control,
-            params=params,
             budget_type="strict",
             **canopy_inputs,
         )
@@ -124,7 +122,6 @@ class TestPRMSCanopyRunoffDomain:
 
         runoff = PRMSRunoff(
             control=control,
-            params=params,
             **runoff_inputs,
             budget_type="strict",
         )

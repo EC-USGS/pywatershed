@@ -7,7 +7,6 @@ from pynhm.base.budget import Budget
 
 from ..base.adapter import Adapter, adapter_factory
 from ..utils.netcdf_utils import NetCdfWrite
-from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
 from .control import Control
 
@@ -24,14 +23,13 @@ class StorageUnit(Accessor):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         verbose: bool,
         subclass_name="StorageUnit",
     ):
 
         self.name = subclass_name
         self.control = control
-        self.params = params
+        self.params = self.control.params
         self.verbose = verbose
         self._simulation_time = 0.0
 

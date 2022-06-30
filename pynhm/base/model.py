@@ -6,7 +6,6 @@ import numpy as np
 
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
 
 
 class Model:
@@ -14,14 +13,12 @@ class Model:
         self,
         *component_classes,
         control: Control,
-        params: PrmsParameters,
         input_dir: str = None,
         budget_type: str = "strict",  # also pass dict
         verbose: bool = False,
     ):
 
         self.control = control
-        self.params = params
         self.input_dir = input_dir
         self.verbose = verbose
 
@@ -55,6 +52,8 @@ class Model:
         # for now this is sufficient. when more classes exist, we can analyze
         # dependencies, might inputs_from_prev above.
         component_order_prms = [
+            "PRMSSolarGeometry",
+            "PRMSBoundaryLayer",
             "PRMSCanopy",
             "PRMSSnow",
             "PRMSRunoff",
@@ -101,7 +100,6 @@ class Model:
             # general model/element/component class
             args = {
                 "control": control,
-                "params": params,
                 **component_inputs,
             }
             if component not in ["PRMSSolarGeometry"]:

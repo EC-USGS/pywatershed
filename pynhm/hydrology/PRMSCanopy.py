@@ -1,9 +1,6 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -29,7 +26,6 @@ class PRMSCanopy(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         pkwater_ante: adaptable,
         transp_on: adaptable,
         hru_ppt: adaptable,
@@ -40,7 +36,7 @@ class PRMSCanopy(StorageUnit):
         verbose: bool = False,
     ):
 
-        super().__init__(control=control, params=params, verbose=verbose)
+        super().__init__(control=control, verbose=verbose)
         self.name = "PRMSCanopy"
 
         self.set_inputs(locals())

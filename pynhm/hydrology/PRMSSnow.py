@@ -1,7 +1,6 @@
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -58,15 +57,12 @@ class PRMSSnow(StorageUnit):
     """PRMS snow pack
 
     Args:
-        params: parameter object
-        atm: atmosphere object
 
     """
 
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         orad_hru: adaptable,
         soltab_horad_potsw: adaptable,
         swrad: adaptable,
@@ -89,7 +85,6 @@ class PRMSSnow(StorageUnit):
         self.name = "PRMSSnow"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
             subclass_name=self.name,
         )

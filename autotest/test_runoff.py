@@ -10,17 +10,17 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
-@pytest.fixture(scope="function")
 def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 class TestPRMSRunoffDomain:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
 
         # get the answer data
@@ -51,7 +51,6 @@ class TestPRMSRunoffDomain:
 
         runoff = PRMSRunoff(
             control=control,
-            params=params,
             **input_variables,
             budget_type="strict",
         )

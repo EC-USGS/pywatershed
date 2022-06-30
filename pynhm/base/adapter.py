@@ -29,6 +29,42 @@ class Adapter:
         return self._current_value
 
 
+# class AdapterSolarGeom(Adapter):
+#     def __init__(
+#         self,
+#         fname: fileish,
+#         variable: str,
+#         control: Control,
+#         params: PrmsParameters,
+#     ) -> None:
+#         super().__init__(variable)
+#         self.name = "AdapterSolarGeom"
+
+#         self._fname = fname
+#         self._solar_geom = PRMSSolarGeometry(control, params, from_file=fname)
+#         # delete unused private variables from _solar_geom
+
+#         This needs work... this is a very rough draft
+#         if control is None:
+#             raise ValueError(f"{self.name} requires a valid Control object.")
+#         self.control = control
+#         self._start_time = self.control.start_time
+
+#         self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
+#         self._dtype = self._dataset.dataset.variables[self._variable].dtype
+#         self._current_value = np.full(self._nhru, np.nan, self._dtype)
+#         # Adopting the next line requires minor changes to most tests
+#         # self._current_value = control.get_var_nans(self._variable)
+
+#     def advance(self):
+#         # JLM: Seems like the time of the ncdf dataset or variable
+#         # should be public
+#         if self._dataset._itime_step[self._variable] > self.control.itime_step:
+#             return
+#         self._current_value[:] = self._dataset.advance(self._variable)
+#         return None
+
+
 class AdapterNetcdf(Adapter):
     def __init__(
         self,
@@ -48,11 +84,7 @@ class AdapterNetcdf(Adapter):
         self.control = control
         self._start_time = self.control.start_time
 
-        self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
-        self._dtype = self._dataset.dataset.variables[self._variable].dtype
-        self._current_value = np.full(self._nhru, np.nan, self._dtype)
-        # Adopting the next line requires minor changes to most tests
-        # self._current_value = control.get_var_nans(self._variable)
+        self._current_value = control.get_var_nans(self._variable)
 
     def advance(self):
         # JLM: Seems like the time of the ncdf dataset or variable
@@ -101,7 +133,6 @@ def adapter_factory(
 
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
         """One-D np.ndarrays"""
-        print(f"1darray adapter: {variable_name}")
         return AdapterOnedarray(var, variable=variable_name)
 
     elif var is None:

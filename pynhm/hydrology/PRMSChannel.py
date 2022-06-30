@@ -5,13 +5,10 @@ import numpy as np
 from numba import jit
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import SegmentType, zero
-
-adaptable = Union[str, np.ndarray, Adapter]
 
 FT2_PER_ACRE = 43560.0
 INCHES_PER_FOOT = 12.0
@@ -63,7 +60,6 @@ class PRMSChannel(StorageUnit):
 
     Args:
         control: control object
-        params: parameter object
         sroff: surface runoff adapter object
         ssres_flow: subsurface (gravity) reservoir lateral flow adapter object
         gwres_flow: groundwater reservoir baseflow adapter object
@@ -75,7 +71,6 @@ class PRMSChannel(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         sroff: adaptable,
         ssres_flow: adaptable,
         gwres_flow: adaptable,
@@ -84,7 +79,6 @@ class PRMSChannel(StorageUnit):
 
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
         )
 

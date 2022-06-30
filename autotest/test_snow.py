@@ -12,27 +12,26 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
-@pytest.fixture(scope="function")
 def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")
-def solar_geom(domain, control, params):
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
+@pytest.fixture(scope="function")
+def solar_geom(domain, control):
     solar_geom = PRMSSolarGeometry(
-        control, params, from_file=domain["prms_run_dir"] / "soltab_debug"
+        control, from_file=domain["prms_run_dir"] / "soltab_debug"
     )
-    solar_geom._soltab_horad_potsw[:, :] = 45.0
     return solar_geom
 
 
 # @pytest.mark.xfail
 class TestPRMSSnow:
-    def test_init(self, domain, control, params, solar_geom, tmp_path):
+    def test_init(self, domain, control, solar_geom, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -83,22 +82,11 @@ class TestPRMSSnow:
         for key in PRMSSnow.get_inputs():
             if key == "soltab_horad_potsw":
                 input_variables[key] = solar_geom[key]
-                # asdf
             else:
                 nc_path = output_dir / f"{key}.nc"
                 input_variables[key] = nc_path
 
-        snow = PRMSSnow(control, params, **input_variables)
-
-        # This DOES NOT WORK if done via input variables::: WHY?
-        # snow.set_input_to_adapter(
-        #     "soltab_horad_potsw",
-        #     adapter_factory(
-        #         solar_geom.soltab_horad_potsw,
-        #         "soltab_horad_potsw",
-        #         control=control,
-        #     ),
-        # )
+        snow = PRMSSnow(control, **input_variables)
 
         all_success = True
         iso_censor_mask = None

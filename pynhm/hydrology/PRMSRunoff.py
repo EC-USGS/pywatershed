@@ -1,16 +1,10 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
-from ..base.budget import Budget
+from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, nan, zero
-
-adaptable = Union[str, np.ndarray, Adapter]
+from ..constants import HruType, zero
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -32,7 +26,6 @@ class PRMSRunoff(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         soil_moist_prev: adaptable,
         net_rain: adaptable,
         net_ppt: adaptable,
@@ -51,7 +44,6 @@ class PRMSRunoff(StorageUnit):
         self.name = "PRMSRunoff"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
             subclass_name=self.name,
         )

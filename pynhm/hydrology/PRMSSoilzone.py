@@ -3,13 +3,11 @@ from typing import Union
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import ETType, HruType, SoilType, epsilon, nan, one, zero
 
-adaptable = Union[str, np.ndarray, Adapter]
 
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
@@ -19,15 +17,11 @@ class PRMSSoilzone(StorageUnit):
     """PRMS soil zone
 
     Args:
-        params: parameter object
-        atm: atmosphere object
-
     """
 
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         dprst_evap_hru: adaptable,
         dprst_seep_hru: adaptable,
         hru_impervevap: adaptable,
@@ -45,7 +39,6 @@ class PRMSSoilzone(StorageUnit):
         self.name = "PRMSSoilzone"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
             subclass_name=self.name,
         )

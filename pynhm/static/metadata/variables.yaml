@@ -2448,6 +2448,12 @@ soil_moist_frac:
     0: nhru
   type: F
   units: decimal fraction
+soil_moist_prev:
+  desc: Previous storage of capillary reservoir for each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 soil_moist_tot:
   desc: Total soil-zone water storage (soil_moist + ssres_stor)
   dimensions:

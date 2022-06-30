@@ -3,7 +3,7 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.NHMBoundaryLayer import PRMSBoundaryLayer
+from pynhm.atmosphere.PRMSBoundaryLayer import PRMSBoundaryLayer
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.utils.parameters import PrmsParameters

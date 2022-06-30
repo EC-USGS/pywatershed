@@ -1,11 +1,16 @@
 import pathlib as pl
+import warnings
+from itertools import chain
+from pprint import pprint
 from typing import Union
 
+import netCDF4 as nc4
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfRead
 
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, one, zero
 from ..utils.parameters import PrmsParameters
@@ -74,9 +79,6 @@ class PRMSBoundaryLayer(StorageUnit):
 
         # atm/boundary layer has a solar geometry
         self.solar_geom = PRMSSolarGeometry(control, params)
-        # make the solar geom variables available
-        for var in PRMSSolarGeometry.get_variables():
-            self[var] = self.solar_geom[var]
 
         # Solve all variables for all time
         self._month_ind_12 = datetime_month(self._datetime) - 1  # (time)
@@ -537,6 +539,12 @@ class PRMSBoundaryLayer(StorageUnit):
             potet[wh_cond] = zero
 
         return potet
+
+    # def advance(self, itime_step, current_date):
+    #     self.precip_current = self.precip[itime_step]
+    #     self.pot_et_current = self.pot_et[itime_step]
+    #     self.pot_et_consumed = 0.0
+    #     self.current_date = current_date
 
     # # Track the amount of potential ET used at a given timestep
     # # JLM: is this strange to track here? I suppose not.

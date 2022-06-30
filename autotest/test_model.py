@@ -11,11 +11,10 @@ from pynhm.base.model import Model
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
+from pynhm.utils.parameters import PrmsParameters
 
 # from pynhm.hydrology.PRMSSnow import PRMSSnow
 # from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
-
-from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")

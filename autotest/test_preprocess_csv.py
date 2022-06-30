@@ -35,7 +35,7 @@ def compare_netcdf(csv, nc_name):
 
 def test_single_csv(domain):
     var = "gwres_stor"
-    csv = CsvFile(name=domain["prms_output_dir"] / f"{var}.csv")
+    csv = CsvFile(path=domain["prms_output_dir"] / f"{var}.csv")
 
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
@@ -45,7 +45,7 @@ def test_single_csv(domain):
 def test_single_csv_to_netcdf(domain):
     var = "gwres_stor"
     path = domain["prms_output_dir"] / f"{var}.csv"
-    csv = CsvFile(name=path)
+    csv = CsvFile(path=path)
 
     basedir = pl.Path(path.parent)
     nc_file = basedir / "single_variable.nc"

@@ -47,8 +47,6 @@ class TestPRMSRunoffDomain:
         input_variables = {}
         for key in PRMSRunoff.get_inputs():
             nc_pth = output_dir / f"{key}.nc"
-            if "soil_moist" in str(nc_pth):
-                nc_pth = output_dir / "soil_moist_prev.nc"
             input_variables[key] = nc_pth
 
         runoff = PRMSRunoff(

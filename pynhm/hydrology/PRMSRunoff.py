@@ -33,7 +33,7 @@ class PRMSRunoff(StorageUnit):
         self,
         control: Control,
         params: PrmsParameters,
-        soil_moist: adaptable,
+        soil_moist_prev: adaptable,
         net_rain: adaptable,
         net_ppt: adaptable,
         net_snow: adaptable,
@@ -194,7 +194,7 @@ class PRMSRunoff(StorageUnit):
 
         """
         return (
-            "soil_moist",
+            "soil_moist_prev",
             "net_rain",
             "net_ppt",
             "net_snow",
@@ -908,7 +908,7 @@ class PRMSRunoff(StorageUnit):
         #       ENDIF
         smidx_module = True
         if smidx_module:
-            smidx = self.soil_moist[ihru] + 0.5 * ptc
+            smidx = self.soil_moist_prev[ihru] + 0.5 * ptc
             if smidx > 25.0:
                 ca_fraction = self.carea_max[ihru]
             else:
@@ -962,7 +962,7 @@ class PRMSRunoff(StorageUnit):
     #
     #       END SUBROUTINE check_capacity
     def check_capacity(self, snowinfil_max, infil, srp, ihru):
-        capacity = self.soil_moist_max[ihru] - self.soil_moist[ihru]
+        capacity = self.soil_moist_max[ihru] - self.soil_moist_prev[ihru]
         excess = infil - capacity
         if excess > snowinfil_max:
             srp = srp + excess - snowinfil_max

@@ -1,5 +1,6 @@
+import pathlib as pl
 import warnings
-from typing import Tuple
+from typing import Tuple, Union
 
 # from numba import jit
 import numpy as np
@@ -7,25 +8,27 @@ import numpy as np
 # would like to not subclass storageUnit but it is much simpler to do so
 from pynhm.base.storageUnit import StorageUnit
 
-from ..base.accessor import Accessor
+
 from ..base.control import Control
-from ..constants import epsilon32, epsilon64, nan, one, zero
+from ..constants import epsilon32, nan, one, zero
 from ..utils.parameters import PrmsParameters
+from ..utils.prms5util import load_soltab_debug
 from .solar_constants import (
-    eccentricy,
-    julian_days,
+    # eccentricy,
+    # julian_days,
     n_days_per_year,
-    n_days_per_year_flt,
-    obliquity,
+    # n_days_per_year_flt,
+    # obliquity,
     pi,
     pi_12,
-    r0,
+    # r0,
     r1,
-    rad_day,
+    # rad_day,
     solar_declination,
     two_pi,
 )
 
+fileish = Union[str, pl.Path]
 epsilon = epsilon32
 
 # The solar geometry model for NHM/PRMS
@@ -37,9 +40,7 @@ epsilon = epsilon32
 # The time dimension is n_days_per_year (known apriori)
 # The spatial dimension n_hru (only known on init from parameters)
 
-# Helper functions in space time object?
 
-# may not use this if they cant be called with jit
 def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
     return np.tile(arr, (n_days_per_year, 1))
 
@@ -56,6 +57,7 @@ class PRMSSolarGeometry(StorageUnit):
         control: Control,
         params: PrmsParameters,
         verbose: bool = False,
+        from_file: fileish = None,
     ):
         """PRMS Solar Geometry."""
 
@@ -66,11 +68,18 @@ class PRMSSolarGeometry(StorageUnit):
         super().__init__(control=control, params=params, verbose=verbose)
         self.name = "PRMSSolarGeometry"
 
-        self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
+        if from_file is None:
+            self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
+            self._compute_solar_geometry()
 
-        self._compute_solar_geometry()
+        else:
+            (
+                self._soltab_potsw,
+                self._soltab_horad_potsw,
+                self._soltab_sunhrs,
+            ) = load_soltab_debug(from_file)
 
-        return None
+        return
 
     @staticmethod
     def get_inputs() -> tuple:

@@ -32,52 +32,58 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
-class TestPRMSSolarGeometry:
-    def test_init(self, domain, control, params):
-        solar_geom = PRMSSolarGeometry(control, params)
+@pytest.mark.parametrize(
+    "from_file", (True, False), ids=("from_file", "compute")
+)
+def test_solar_geom(domain, control, params, from_file):
 
-        # answers
-        (
-            soltab_potsw_ans,
-            soltab_horad_potsw_ans,
-            soltab_sunhrs_ans,
-        ) = load_soltab_debug(domain["prms_run_dir"] / "soltab_debug")
+    ans_file = domain["prms_run_dir"] / "soltab_debug"
+    if from_file:
+        from_file = ans_file
+    else:
+        from_file = None
 
-        # check the shapes
-        assert soltab_potsw_ans.shape == solar_geom._soltab_potsw.shape
-        assert soltab_horad_potsw_ans.shape == solar_geom._soltab_potsw.shape
-        assert soltab_sunhrs_ans.shape == solar_geom._soltab_sunhrs.shape
+    print(from_file)
+    solar_geom = PRMSSolarGeometry(control, params, from_file=from_file)
 
-        # check the values
-        atol = 1e-4
-        assert np.isclose(
-            solar_geom._soltab_sunhrs, soltab_sunhrs_ans, atol=atol
-        ).all()
-        assert np.isclose(
-            solar_geom._soltab_potsw, soltab_potsw_ans, atol=atol
-        ).all()
-        assert np.isclose(
-            solar_geom._soltab_horad_potsw,
-            soltab_horad_potsw_ans,
-            atol=atol,
-        ).all()
+    # answers
+    (
+        soltab_potsw_ans,
+        soltab_horad_potsw_ans,
+        soltab_sunhrs_ans,
+    ) = load_soltab_debug(ans_file)
 
-        # advance/calculate the state
-        sunhrs_id = id(solar_geom.soltab_sunhrs)
+    # check the shapes
+    assert soltab_potsw_ans.shape == solar_geom._soltab_potsw.shape
+    assert soltab_horad_potsw_ans.shape == solar_geom._soltab_potsw.shape
+    assert soltab_sunhrs_ans.shape == solar_geom._soltab_sunhrs.shape
 
-        for ii in range(4):
-            control.advance()
-            solar_geom.advance()
-            solar_geom.calculate(1.0)
-            assert np.allclose(
-                solar_geom.soltab_potsw, soltab_potsw_ans[ii, :]
-            )
-            assert np.allclose(
-                solar_geom.soltab_horad_potsw, soltab_horad_potsw_ans[ii, :]
-            )
-            assert np.allclose(
-                solar_geom.soltab_sunhrs, soltab_sunhrs_ans[ii, :]
-            )
-            assert id(solar_geom.soltab_sunhrs) == sunhrs_id
+    # check the values
+    atol = 1e-4
+    assert np.isclose(
+        solar_geom._soltab_sunhrs, soltab_sunhrs_ans, atol=atol
+    ).all()
+    assert np.isclose(
+        solar_geom._soltab_potsw, soltab_potsw_ans, atol=atol
+    ).all()
+    assert np.isclose(
+        solar_geom._soltab_horad_potsw,
+        soltab_horad_potsw_ans,
+        atol=atol,
+    ).all()
 
-        return
+    # advance/calculate the state
+    sunhrs_id = id(solar_geom.soltab_sunhrs)
+
+    for ii in range(4):
+        control.advance()
+        solar_geom.advance()
+        solar_geom.calculate(1.0)
+        assert np.allclose(solar_geom.soltab_potsw, soltab_potsw_ans[ii, :])
+        assert np.allclose(
+            solar_geom.soltab_horad_potsw, soltab_horad_potsw_ans[ii, :]
+        )
+        assert np.allclose(solar_geom.soltab_sunhrs, soltab_sunhrs_ans[ii, :])
+        assert id(solar_geom.soltab_sunhrs) == sunhrs_id
+
+    return

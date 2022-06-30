@@ -5,7 +5,7 @@ import numpy as np
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
+from ..base.adapter import Adapter
 from ..base.control import Control
 
 adaptable = Union[str, np.ndarray, Adapter]
@@ -39,20 +39,6 @@ class PRMSGroundwater(StorageUnit):
         )
 
         self.set_inputs(locals())
-
-        # self._input_variables_dict = {}
-        # self._input_variables_dict["soil_to_gw"] = adapter_factory(
-        #     soil_to_gw, "soil_to_gw"
-        # )
-        # self._input_variables_dict["ssr_to_gw"] = adapter_factory(
-        #     ssr_to_gw,
-        #     "ssr_to_gw",
-        # )
-        # self._input_variables_dict["dprst_seep_hru"] = adapter_factory(
-        #     dprst_seep_hru,
-        #     "dprst_seep_hru",
-        # )
-
         return
 
     def set_initial_conditions(self):
@@ -124,6 +110,7 @@ class PRMSGroundwater(StorageUnit):
             None
         """
         self.gwres_stor_old = self.gwres_stor
+        return
 
     def calculate(self, simulation_time):
         """Calculate groundwater reservoir terms for a time step

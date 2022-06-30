@@ -38,6 +38,7 @@ class PRMSSoilzone(StorageUnit):
         transp_on: adaptable,
         snow_evap: adaptable,
         snowcov_area: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ) -> "PRMSSoilzone":
 
@@ -50,6 +51,7 @@ class PRMSSoilzone(StorageUnit):
         )
 
         self.set_inputs(locals())
+        self.set_budget(budget_type)
 
         return
 
@@ -391,9 +393,10 @@ class PRMSSoilzone(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
+        # self.stor_old[:] = self.stor
         return
 
-    def calculate(self, simulation_time):
+    def _calculate(self, simulation_time):
         """Calculate soil zone for a time step"""
 
         # JLM: not clear we need this / for GSFlow

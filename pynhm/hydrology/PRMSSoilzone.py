@@ -36,12 +36,11 @@ class PRMSSoilzone(StorageUnit):
         verbose: bool = False,
     ) -> "PRMSSoilzone":
 
-        self.name = "PRMSSoilzone"
         super().__init__(
             control=control,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSSoilzone"
 
         self.set_inputs(locals())
         self.set_budget(budget_type)

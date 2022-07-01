@@ -41,12 +41,11 @@ class PRMSRunoff(StorageUnit):
         budget_type: str = None,
         verbose: bool = False,
     ):
-        self.name = "PRMSRunoff"
         super().__init__(
             control=control,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSRunoff"
 
         self.set_inputs(locals())
 

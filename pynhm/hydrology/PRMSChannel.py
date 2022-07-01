@@ -81,7 +81,6 @@ class PRMSChannel(StorageUnit):
             control=control,
             verbose=verbose,
         )
-
         self.name = "PRMSChannel"
 
         self.set_inputs(locals())

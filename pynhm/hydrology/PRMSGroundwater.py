@@ -25,12 +25,11 @@ class PRMSGroundwater(StorageUnit):
         verbose: bool = False,
     ) -> "PRMSGroundwater":
 
-        self.name = "PRMSGroundwater"
         super().__init__(
             control=control,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSGroundwater"
 
         self.set_inputs(locals())
         return

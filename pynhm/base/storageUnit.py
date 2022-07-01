@@ -24,10 +24,9 @@ class StorageUnit(Accessor):
         self,
         control: Control,
         verbose: bool,
-        subclass_name="StorageUnit",
     ):
 
-        self.name = subclass_name
+        self.name = "StorageUnit"
         self.control = control
         self.params = self.control.params
         self.verbose = verbose

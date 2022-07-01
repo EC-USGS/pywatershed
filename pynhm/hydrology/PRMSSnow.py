@@ -82,13 +82,11 @@ class PRMSSnow(StorageUnit):
         verbose: bool = False,
     ) -> "PRMSSnow":
 
-        self.name = "PRMSSnow"
         super().__init__(
             control=control,
             verbose=verbose,
-            subclass_name=self.name,
         )
-
+        self.name = "PRMSSnow"
         self.set_inputs(locals())
         self.set_budget(budget_type)
 

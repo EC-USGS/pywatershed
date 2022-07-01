@@ -30,12 +30,11 @@ class PRMSEt(StorageUnit):
         budget_type: str = None,
     ) -> "PRMSEt":
 
-        self.name = "PRMSEt"
         super().__init__(
             control=control,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSEt"
 
         self.set_inputs(locals())
 

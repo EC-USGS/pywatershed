@@ -29,7 +29,7 @@ def solar_geom(domain, control):
     return solar_geom
 
 
-# @pytest.mark.xfail
+@pytest.mark.xfail
 class TestPRMSSnow:
     def test_init(self, domain, control, solar_geom, tmp_path):
         tmp_path = pl.Path(tmp_path)

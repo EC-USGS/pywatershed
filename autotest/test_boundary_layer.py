@@ -22,7 +22,6 @@ def control(domain, params):
 class TestPRMSBoundaryLayer:
     def test_init(self, domain, control, tmp_path):
 
-        tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
         cbh_dir = domain["cbh_inputs"]["prcp"].parent.resolve()
 
@@ -52,6 +51,7 @@ class TestPRMSBoundaryLayer:
             control=control,
             **input_variables,
             budget_type="strict",
+            netcdf_output_dir=tmp_path,
         )
 
         all_success = True

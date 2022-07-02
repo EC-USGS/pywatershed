@@ -4,8 +4,7 @@ from typing import Union
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.netcdf_utils import NetCdfRead
-
+from pynhm.utils.netcdf_utils import NetCdfRead, NetCdfWrite
 from ..base.control import Control
 from ..constants import inch2cm, nan, one, zero
 from ..utils.time_utils import datetime_month
@@ -35,18 +34,44 @@ class PRMSBoundaryLayer(StorageUnit):
         budget_type: str = None,
         verbose: bool = False,
         netcdf_output_dir: fileish = None,
+        from_file_dir: fileish = None,
     ):
-        """PRMS atmospheric boundary layer models
+        """PRMS atmospheric boundary layer model.
 
-        This representation uses precipitation and temperature inputs.
-        Relative humidity could be added as well."""
+        This representation uses precipitation and temperature inputs. Relative
+        humidity could be added as well.
 
-        self.name = "PRMSBoundaryLayer"
+        Note that all variables are calculate for all time upon initialization.
+        This may not be tractable for large domains and long periods of time
+        and require changes. The benefits are 1) the code is vectorized and
+        fast for such a large calculation, 2) the initialization of this class
+        effectively preprocess all the inputs to the rest of the model and can
+        then be skipped in subsequent model calls (unless the parameters are
+        changing).
+
+        PRMS adjustments to temperature and precipitation are applied here to
+        the inputs. Shortwave radiation (using degree day method) and potential
+        evapotranspiration (Jensen and Haise ,1963) are also calculated.
+
+        Args:
+            control: control object
+            prcp: precipitation cbh netcdf file
+            tmax: maximum daily temperature cbh netcdf file
+            tmin: minimum daily temperature cbh netcdf file
+            budget_type: [None | "diagnostic" |  "strict"].
+            verbose: bool indicating amount of output to terminal.
+            netcdf_output_dir: an existing directory to which to write all
+                variables for all time.
+
+
+        """
+        self.netcdf_output_dir = netcdf_output_dir
+
         super().__init__(
             control=control,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSBoundaryLayer"
 
         # Override self.set_inputs(locals())
         # Get all data at all times: do all forcings up front
@@ -91,10 +116,10 @@ class PRMSBoundaryLayer(StorageUnit):
         #     "storage_changes": {"available_potet": self.available_potet},
         # }
 
-        if netcdf_output_dir:
-            # write out all variables
-            # check that netcdf_output_dir is a directory
-            pass
+        if self.netcdf_output_dir:
+            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
+            assert self.netcdf_output_dir.exists()
+            self._write_netcdf_timeseries()
 
         return
 
@@ -264,7 +289,8 @@ class PRMSBoundaryLayer(StorageUnit):
         # Order MATTERS in calculating the prmx mask
         # The logic in PRMS is if(all_snow),elif(all_rain),else(mixed)
         # so we set the mask in the reverse order
-        # Calculate the mix everywhere, then set the precip/rain/snow amounts from the conditions.
+        # Calculate the mix everywhere, then set the precip/rain/snow amounts
+        # from the conditions.
         tdiff = self._tmaxf - self._tminf
         self._prmx = (
             (self._tmaxf - self.tmax_allsnow[month_ind]) / tdiff
@@ -281,11 +307,13 @@ class PRMSBoundaryLayer(StorageUnit):
         self._prmx[wh_all_rain] = one
         self._prmx[wh_all_snow] = zero
 
-        # Recalculate/redefine these now based on prmx instead of the temperature logic
+        # Recalculate/redefine these now based on prmx instead of the
+        # temperature logic
         wh_all_snow = np.where(self._prmx <= zero)
         wh_all_rain = np.where(self._prmx >= one)
 
-        # Mixed case (everywhere, to be overwritten by the all-snow/rain-fall cases)
+        # Mixed case (everywhere, to be overwritten by the all-snow/rain-fall
+        # cases)
         self._hru_ppt = self.prcp * self.snow_cbh_adj[month_ind]
         self._hru_rain = self._prmx * self._hru_ppt
         self._hru_snow = self._hru_ppt - self._hru_rain
@@ -532,12 +560,6 @@ class PRMSBoundaryLayer(StorageUnit):
 
         return potet
 
-    # def advance(self, itime_step, current_date):
-    #     self.precip_current = self.precip[itime_step]
-    #     self.pot_et_current = self.pot_et[itime_step]
-    #     self.pot_et_consumed = 0.0
-    #     self.current_date = current_date
-
     # # Track the amount of potential ET used at a given timestep
     # # JLM: is this strange to track here? I suppose not.
     # def consume_pot_et(self, requested_et):
@@ -547,3 +569,18 @@ class PRMSBoundaryLayer(StorageUnit):
     #         et = available_et
     #     self.pot_et_consumed += et
     #     return et
+
+    def _write_netcdf_timeseries(self) -> None:
+        for var in self.variables:
+            nc_path = self.netcdf_output_dir / f"{var}.nc"
+            nc = NetCdfWrite(
+                nc_path,
+                self.params.nhm_coordinates,
+                [var],
+                {var: self.var_meta[var]},
+            )
+            nc.add_all_data(var, self[f"_{var}"], self._datetime)
+            nc.close()
+            assert nc_path.exists()
+            print(f"Wrote file: {nc_path}")
+        return

@@ -35,7 +35,7 @@ def control(domain, params):
 @pytest.mark.parametrize(
     "from_file", (True, False), ids=("from_file", "compute")
 )
-def test_solar_geom(domain, control, from_file):
+def test_solar_geom(domain, control, from_file, tmp_path):
 
     ans_file = domain["prms_run_dir"] / "soltab_debug"
     if from_file:
@@ -44,7 +44,9 @@ def test_solar_geom(domain, control, from_file):
         from_file = None
 
     print(from_file)
-    solar_geom = PRMSSolarGeometry(control, from_file=from_file)
+    solar_geom = PRMSSolarGeometry(
+        control, from_file=from_file, netcdf_output_dir=tmp_path
+    )
 
     # answers
     (

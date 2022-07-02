@@ -7,7 +7,7 @@ import numpy as np
 
 # would like to not subclass storageUnit but it is much simpler to do so
 from pynhm.base.storageUnit import StorageUnit
-
+from pynhm.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
 from ..constants import epsilon32, nan, one, zero
@@ -55,27 +55,39 @@ class PRMSSolarGeometry(StorageUnit):
         self,
         control: Control,
         verbose: bool = False,
-        from_file: fileish = None,
+        netcdf_output_dir: fileish = None,
+        from_prms_file: fileish = None,
+        from_nc_files_dir: fileish = None,
     ):
         """PRMS Solar Geometry."""
 
         self.set_inputs(locals())
         budget_type = None
         self.set_budget(budget_type)
+        self.netcdf_output_dir = netcdf_output_dir
 
         super().__init__(control=control, verbose=verbose)
         self.name = "PRMSSolarGeometry"
 
-        if from_file is None:
-            self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
-            self._compute_solar_geometry()
-
-        else:
+        if from_prms_file:
             (
                 self._soltab_potsw,
                 self._soltab_horad_potsw,
                 self._soltab_sunhrs,
-            ) = load_soltab_debug(from_file)
+            ) = load_soltab_debug(from_prms_file)
+
+        elif from_nc_files_dir:
+            raise NotImplementedError()
+
+        else:
+            # compute
+            self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
+            self._compute_solar_geometry()
+
+        if self.netcdf_output_dir:
+            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
+            assert self.netcdf_output_dir.exists()
+            self._write_netcdf_timeseries()
 
         return
 
@@ -406,3 +418,23 @@ class PRMSSolarGeometry(StorageUnit):
         )
 
         return f3
+
+    def _write_netcdf_timeseries(self) -> None:
+        for var in self.variables:
+            nc_path = self.netcdf_output_dir / f"{var}.nc"
+            nc = NetCdfWrite(
+                nc_path,
+                self.params.nhm_coordinates,
+                [var],
+                {var: self.var_meta[var]},
+            )
+            nc.add_all_data(
+                var,
+                self[f"_{var}"],
+                np.arange(366) + 1,
+                time_coord="doy",
+            )
+            nc.close()
+            assert nc_path.exists()
+            print(f"Wrote file: {nc_path}")
+        return

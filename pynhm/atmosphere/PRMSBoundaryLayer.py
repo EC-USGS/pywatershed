@@ -583,5 +583,5 @@ class PRMSBoundaryLayer(StorageUnit):
             nc.add_all_data(var, self[f"_{var}"], self._datetime)
             nc.close()
             assert nc_path.exists()
-            print(f"Wrote file: {nc_path}")
+            print(f"Wrote preprocessed forcing file: {nc_path}")
         return

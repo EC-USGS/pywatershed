@@ -149,8 +149,8 @@ def pytest_generate_tests(metafunc):
 
     if "soltab_file" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)
-        soltab_files = {
+        soltab_files = [
             pl.Path(kk) / "soltab_debug" for kk in simulations.keys()
-        }
+        ]
         ids = [ff.parent.name + ":" + ff.name for ff in soltab_files]
         metafunc.parametrize("soltab_file", soltab_files, ids=ids)

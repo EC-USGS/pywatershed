@@ -5,17 +5,15 @@ from pprint import pprint
 import numpy as np
 import pytest
 
+from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.base.model import Model
-
-from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
 from pynhm.hydrology.PRMSSnow import PRMSSnow
-
 from pynhm.utils.parameters import PrmsParameters
 
 

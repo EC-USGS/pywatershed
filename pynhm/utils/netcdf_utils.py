@@ -6,7 +6,6 @@ import numpy as np
 
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
-
 from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]

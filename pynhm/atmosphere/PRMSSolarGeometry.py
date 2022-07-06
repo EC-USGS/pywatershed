@@ -12,17 +12,11 @@ from pynhm.utils.netcdf_utils import NetCdfWrite
 from ..base.control import Control
 from ..constants import epsilon32, nan, one, zero
 from ..utils.prms5util import load_soltab_debug
-from .solar_constants import (
-    # eccentricy,
-    # julian_days,
+from .solar_constants import (  # eccentricy,; julian_days,; n_days_per_year_flt,; obliquity,; r0,; rad_day,
     n_days_per_year,
-    # n_days_per_year_flt,
-    # obliquity,
     pi,
     pi_12,
-    # r0,
     r1,
-    # rad_day,
     solar_declination,
     two_pi,
 )

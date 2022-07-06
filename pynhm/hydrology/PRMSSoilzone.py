@@ -8,7 +8,6 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import ETType, HruType, SoilType, epsilon, nan, one, zero
 
-
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
 

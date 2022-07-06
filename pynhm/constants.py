@@ -1,5 +1,5 @@
-from enum import Enum
 import pathlib as pl
+from enum import Enum
 
 import numpy as np
 

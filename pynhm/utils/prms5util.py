@@ -1,9 +1,14 @@
 import os
 import pathlib as pl
-from typing import Tuple
+from typing import Tuple, Union
 
+import netCDF4 as nc4
 import numpy as np
 import pandas as pd
+
+from ..base.accessor import Accessor
+
+fileish = Union[str, pl.Path]
 
 inch_to_meter = 0.0254
 acre_to_meter_squared = 4046.8564224
@@ -238,11 +243,107 @@ def load_wbl_output(output_data_path, convert=True, verbose=False):
     return pd.concat([v for k, v in df_dict.items()], axis=1)
 
 
+class Soltab(Accessor):
+    def __init__(
+        self,
+        soltab_file: fileish,
+        output_dir: fileish = None,
+        nhm_ids: np.ndarray = None,
+    ):
+
+        self.soltab_file = soltab_file
+        self.output_dir = output_dir
+
+        if nhm_ids is not None:
+            self.spatial_coord = nhm_ids
+            self.spatial_coord_name = "nhm_id"
+        else:
+            self.spatial_coord = None
+            self.spatial_coord_name = "hru_id"
+
+        self.variables = [
+            "soltab_potsw",
+            "soltab_horad_potsw",
+            "soltab_sunhrs",
+        ]
+
+        (
+            self.soltab_potsw,
+            self.soltab_horad_potsw,
+            self.soltab_sunhrs,
+        ) = load_soltab_debug(self.soltab_file)
+
+        if self.output_dir:
+            self.to_netcdf()
+
+        return
+
+    def to_netcdf(
+        self,
+        output_dir: fileish = None,
+        nhm_ids: np.ndarray = None,
+        zlib: bool = True,
+        complevel: int = 4,
+        chunk_sizes: dict = {"ndays": 0, "hruid": 0},
+    ):
+        # This is just different enough to make it it's own thing compared
+        # to the CSV outputs of PRMS.
+        if output_dir:
+            self.output_dir = output_dir
+
+        if nhm_ids is not None:
+            self.nhm_ids = nhm_ids
+            self.spatial_coord_name = "nhm_id"
+
+        ndays = self["soltab_potsw"].shape[0]
+        nhru = self["soltab_potsw"].shape[1]
+
+        if self.spatial_coord is None:
+            self.spatial_coord = np.arange(nhru)
+
+        variables = {}
+        for vv in self.variables:
+            out_file = self.output_dir / f"{vv}.nc"
+
+            ds = nc4.Dataset(out_file, "w", clobber=True)
+            ds.setncattr("Description", "PRMS soltab data")
+
+            # time dime and coord
+            ds.createDimension("ndays", ndays)
+            doy = ds.createVariable("doy", "i4", ("ndays",))
+            doy.units = "Day of year"
+            doy[:] = np.arange(ndays) + 1
+
+            # space dim and coord
+            ds.createDimension(self.spatial_coord_name, nhru)
+            hruid = ds.createVariable(
+                self.spatial_coord_name, "i4", (self.spatial_coord_name,)
+            )
+            hruid[:] = self.spatial_coord
+
+            variables[vv] = ds.createVariable(
+                vv,
+                "f4",
+                ("ndays", self.spatial_coord_name),
+                fill_value=nc4.default_fillvals["f4"],
+                zlib=zlib,
+                complevel=complevel,
+                chunksizes=tuple(chunk_sizes.values()),
+            )
+            variables[vv][:] = self[vv]
+            ds.close()
+            print(f"Wrote: {out_file}")
+        return
+
+
 def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
     """Load the PRMS soltab_debug output file.
 
     With `print_debug` set to 5 in the control file, PRMS 5.2.1 prings the
-    `soltab_debug` file in the run directory. This function parses it.
+    `soltab_debug` file in the run directory. This function parses it. Both the
+    PRMS 5.2.1 in pynhm and this routine have been extended to print and ingest
+    not only "soltab_potsw" but "soltab_horad_potsw" and "soltab_sunhrs" as
+    well.
 
     Args:
         file_path: a pathlib.Path object representing the file
@@ -289,9 +390,6 @@ def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
                 ]
 
     n_hru = len(data_list)
-
-    # check number of hrus (not known apriori)
-    # assert n_hru == 765  # drb
 
     # check lengths of each
     for v0 in data_list:

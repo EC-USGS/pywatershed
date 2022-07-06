@@ -3,9 +3,6 @@ from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 
-# from .atmosphere.AtmBoundaryLayer import AtmBoundaryLayer
-# from .atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
-# from .atmosphere.NHMSolarGeometry import NHMSolarGeometry
 from .base.accessor import Accessor
 from .base.control import Control
 from .base.StateAccess import StateAccess
@@ -18,6 +15,7 @@ from .utils import (
     NetCdfRead,
     NetCdfWrite,
     PrmsParameters,
+    Soltab,
 )
 from .version import __author__, __author_email__, __version__
 

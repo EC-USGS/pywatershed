@@ -7,10 +7,16 @@ import numpy as np
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
 
+from ..utils.time_utils import datetime_doy
+
 fileish = Union[str, pl.Path]
 listish = Union[list, tuple]
 arrayish = Union[list, tuple, np.ndarray]
 ATOL = np.finfo(np.float32).eps
+
+# JLM TODO: start_time: np.datetime64 = None ?
+#     Still need some mechanism for initial itime_step for datetime coordinate
+#     variables
 
 
 class NetCdfRead(Accessor):
@@ -43,19 +49,26 @@ class NetCdfRead(Accessor):
             vv: self.dataset.variables[vv].chunking()
             for vv in self.ds_var_list
         }
+
         # Set dimension variables which are not chunked
-        self._datetime = (
-            nc4.num2date(
-                self.dataset.variables["datetime"][:],
-                units=self.dataset.variables["datetime"].units,
-                calendar="standard",
-                only_use_cftime_datetimes=False,
+
+        if "datetime" in self.dataset.variables:
+            self._datetime = (
+                nc4.num2date(
+                    self.dataset.variables["datetime"][:],
+                    units=self.dataset.variables["datetime"].units,
+                    calendar="standard",
+                    only_use_cftime_datetimes=False,
+                )
+                .filled()
+                .astype("datetime64[s]")
+                # JLM: the global time type as in cbh_utils, define somewhere
             )
-            .filled()
-            .astype("datetime64[s]")
-            # JLM: the global time type as in cbh_utils, define somewhere
-        )
-        self._ntimes = self._datetime.shape[0]
+            self._ntimes = self._datetime.shape[0]
+
+        if "doy" in self.dataset.variables:
+            self._doy = self.dataset.variables["doy"][:].data
+            self._ntimes = self._doy.shape[0]
 
         spatial_id_names = []
         if "nhm_id" in self.ds_var_list:
@@ -201,7 +214,9 @@ class NetCdfRead(Accessor):
                 )
             return self.dataset[variable][itime_step, :]
 
-    def advance(self, variable: str) -> np.ndarray:
+    def advance(
+        self, variable: str, current_time: np.datetime64 = None
+    ) -> np.ndarray:
         """Get the data for a variable for the next time step
 
         Args:
@@ -212,11 +227,20 @@ class NetCdfRead(Accessor):
                 time step
 
         """
-        arr = self.get_data(
-            variable,
-            itime_step=self._itime_step[variable],
-        )
+        if "datetime" in self.dataset.variables:
+            arr = self.get_data(
+                variable,
+                itime_step=self._itime_step[variable],
+            )
+
+        if "doy" in self.dataset.variables:
+            arr = self.get_data(
+                variable,
+                itime_step=datetime_doy(current_time) - 1,
+            )
+
         self._itime_step[variable] += 1
+
         return arr
 
 
@@ -283,26 +307,31 @@ class NetCdfWrite(Accessor):
         # Time is an implied dimension in the netcdf file for most variables
         # time/datetime is necessary if an alternative time
         # dimenison does not appear in even one variable
-        alt_time_dims = set(["ndays"])
+        ndays_time_vars = [
+            "soltab_potsw",
+            "soltab_horad_potsw",
+            "soltab_sunhrs",
+        ]
 
         for var_name in variables:
-            if not alt_time_dims.intersection(variable_dimensions[var_name]):
-                # None for the len argument gives an unlimited dim
-                self.dataset.createDimension("time", None)
-                self.datetime = self.dataset.createVariable(
-                    "datetime", "f4", ("time",)
-                )
-                self.datetime.units = time_units
-                break
+            if var_name in ndays_time_vars:
+                continue
+            # None for the len argument gives an unlimited dim
+            self.dataset.createDimension("time", None)
+            self.datetime = self.dataset.createVariable(
+                "datetime", "f4", ("time",)
+            )
+            self.datetime.units = time_units
+            break
 
         # similarly, if alternative time dimenions exist.. define them
         for var_name in variables:
-            if set(["ndays"]).intersection(variable_dimensions[var_name]):
-                # None for the len argument gives an unlimited dim
-                self.dataset.createDimension("ndays", 366)
-                self.doy = self.dataset.createVariable("doy", "i4", ("ndays",))
-                self.doy.units = "Day of year"
-                break
+            if var_name not in ndays_time_vars:
+                continue
+            self.dataset.createDimension("ndays", 366)
+            self.doy = self.dataset.createVariable("doy", "i4", ("ndays",))
+            self.doy.units = "Day of year"
+            break
 
         if nhru_coordinate:
             self.dataset.createDimension("hru_id", self.nhrus)
@@ -328,7 +357,7 @@ class NetCdfWrite(Accessor):
             else:
                 spatial_coordinate = "hru_id"
 
-            if "ndays" in variable_dimensions[var_name]:
+            if var_name in ndays_time_vars:
                 time_dim = "ndays"
             else:
                 time_dim = "time"

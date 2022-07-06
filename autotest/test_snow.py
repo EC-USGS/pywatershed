@@ -7,7 +7,6 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.constants import epsilon32, zero
 from pynhm.hydrology.PRMSSnow import PRMSSnow
-from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.utils.parameters import PrmsParameters
 
 
@@ -21,17 +20,9 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-@pytest.fixture(scope="function")
-def solar_geom(domain, control):
-    solar_geom = PRMSSolarGeometry(
-        control, from_file=domain["prms_run_dir"] / "soltab_debug"
-    )
-    return solar_geom
-
-
-@pytest.mark.xfail
+# @pytest.mark.xfail
 class TestPRMSSnow:
-    def test_init(self, domain, control, solar_geom, tmp_path):
+    def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -80,11 +71,8 @@ class TestPRMSSnow:
         # setup the snow
         input_variables = {}
         for key in PRMSSnow.get_inputs():
-            if key == "soltab_horad_potsw":
-                input_variables[key] = solar_geom[key]
-            else:
-                nc_path = output_dir / f"{key}.nc"
-                input_variables[key] = nc_path
+            nc_path = output_dir / f"{key}.nc"
+            input_variables[key] = nc_path
 
         snow = PRMSSnow(control, **input_variables)
 
@@ -97,10 +85,8 @@ class TestPRMSSnow:
             print(f"solving time: {control.current_time}")
 
             control.advance()
-            solar_geom.advance()
             snow.advance()
 
-            solar_geom.calculate(1.0)
             snow.calculate(float(istep))
 
             # compare along the way
@@ -185,8 +171,8 @@ class TestPRMSSnow:
                 print(key)
                 a1 = ans[key].current
                 a2 = snow[key]
-                success = np.isclose(a1, a2, atol=atol, rtol=zero).all()
 
+                success = np.allclose(a1, a2, atol=atol, rtol=zero)
                 atol = 1e-3
                 success_prelim = np.isclose(a1, a2, atol=atol)
                 success = np.where(~censor_comp, success_prelim, True).all()

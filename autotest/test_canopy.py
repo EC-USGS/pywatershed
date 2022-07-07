@@ -17,7 +17,6 @@ class TestPRMSCanopySimple:
             "end_time": np.datetime64("1979-01-04T00:00:00.00"),
             "time_step": np.timedelta64(1, "D"),
         }
-        control = Control(**time_dict)
 
         nhru = 2
         prms_params = {
@@ -34,6 +33,8 @@ class TestPRMSCanopySimple:
         }
         prms_params = PrmsParameters(prms_params)
 
+        control = Control(**time_dict, params=prms_params)
+
         input_variables = {}
         for key in PRMSCanopy.get_inputs():
             input_variables[key] = np.ones([nhru])
@@ -41,7 +42,6 @@ class TestPRMSCanopySimple:
         # todo: this is testing instantiation, but not physics
         cnp = PRMSCanopy(
             control=control,
-            params=prms_params,
             **input_variables,
             budget_type="strict",
         )
@@ -53,17 +53,17 @@ class TestPRMSCanopySimple:
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
-@pytest.fixture(scope="function")
 def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 class TestPRMSCanopyDomain:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -92,7 +92,6 @@ class TestPRMSCanopyDomain:
 
         cnp = PRMSCanopy(
             control=control,
-            params=params,
             **input_variables,
             budget_type="strict",
         )

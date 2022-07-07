@@ -1,3 +1,4 @@
+import re
 from copy import deepcopy
 from pprint import pprint
 
@@ -5,7 +6,6 @@ import numpy as np
 
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
 
 
 class Model:
@@ -13,14 +13,12 @@ class Model:
         self,
         *component_classes,
         control: Control,
-        params: PrmsParameters,
         input_dir: str = None,
         budget_type: str = "strict",  # also pass dict
         verbose: bool = False,
     ):
 
         self.control = control
-        self.params = params
         self.input_dir = input_dir
         self.verbose = verbose
 
@@ -30,31 +28,53 @@ class Model:
 
         # Solve where inputs come from
         inputs_from = {}
+        # inputs_from_prev = {}
         for comp in class_dict.keys():
             inputs = deepcopy(class_inputs)
             vars = deepcopy(class_vars)
             c_inputs = inputs.pop(comp)
-            c_vars = vars.pop(comp)
+            _ = vars.pop(comp)
             inputs_from[comp] = {}
+            # inputs_from_prev[comp] = {}
             # inputs
             for input in c_inputs:
-                inputs_from[comp][input] = []  # could use None
+                inputs_ptr = inputs_from
+                # if re.compile(".*_(ante|prev|old)").match(input):
+                #    inputs_ptr = inputs_from_prev
+                inputs_ptr[comp][input] = []  # could use None
                 for other in inputs.keys():
                     if input in vars[other]:
-                        inputs_from[comp][input] += [other]
+                        inputs_ptr[comp][input] += [other]
                         # this should be a list of length one
                         # check?
 
         # determine component order
-        class_deps = {}
-        for k0, v0 in inputs_from.items():
-            class_deps[k0] = set([dep[0] for dep in list(v0.values()) if dep])
+        # for now this is sufficient. when more classes exist, we can analyze
+        # dependencies, might inputs_from_prev above.
+        component_order_prms = [
+            "PRMSSolarGeometry",
+            "PRMSBoundaryLayer",
+            "PRMSCanopy",
+            "PRMSSnow",
+            "PRMSRunoff",
+            "PRMSSoilzone",
+            "PRMSEt",
+            "PRMSGroundwater",
+            "PRMSChannel",
+        ]
+        self.component_order = []
+        for comp in component_order_prms:
+            if comp in class_dict.keys():
+                self.component_order += [comp]
 
-        dep_lens = {key: len(val) for key, val in class_deps.items()}
-        # this will need to be more sophisticated...
-        self.component_order = [None for dd in dep_lens.keys()]
-        for key, val in dep_lens.items():
-            self.component_order[val] = key
+        missing_components = set(self.component_order).difference(
+            set(class_dict.keys())
+        )
+        if missing_components:
+            raise ValueError(
+                f"Component {missing_components} not currently "
+                f"handled by Model class."
+            )
 
         # If inputs dont come from other components, assume they come from
         # file in input_dir
@@ -70,18 +90,21 @@ class Model:
             nc_path = input_dir / f"{name}.nc"
             file_inputs[name] = adapter_factory(nc_path, name, control=control)
 
-        # instance dict
+        # instantiate components: instance dict
         self.components = {}
         for component in self.component_order:
             component_inputs = {
                 input: None for input in class_dict[component].get_inputs()
             }
-            self.components[component] = class_dict[component](
-                control=control,
-                params=params,
-                budget_type=budget_type,
+            # This is a hack. Need to make StorageUnit a subclass of a more
+            # general model/element/component class
+            args = {
+                "control": control,
                 **component_inputs,
-            )
+            }
+            if component not in ["PRMSSolarGeometry"]:
+                args["budget_type"] = budget_type
+            self.components[component] = class_dict[component](**args)
 
         for component in self.component_order:
             print(f"{component}:")

@@ -1,9 +1,6 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -29,7 +26,6 @@ class PRMSCanopy(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         pkwater_ante: adaptable,
         transp_on: adaptable,
         hru_ppt: adaptable,
@@ -40,45 +36,14 @@ class PRMSCanopy(StorageUnit):
         verbose: bool = False,
     ):
 
+        super().__init__(control=control, verbose=verbose)
         self.name = "PRMSCanopy"
-        super().__init__(
-            control=control,
-            params=params,
-            verbose=verbose,
-            subclass_name=self.name,
-        )
 
         self.set_inputs(locals())
         self.set_budget(budget_type)
-
-        # From scratch, without the classmethod
-        # budget_terms = {
-        #     "inputs": {
-        #         "hru_rain": self.hru_rain,
-        #         "hru_snow": self.hru_snow,
-        #     },
-        #     "outputs": {
-        #         "net_rain": self.net_rain,
-        #         "net_snow": self.net_snow,
-        #         "hru_intcpevap": self.hru_intcpevap,
-        #     },
-        #     "storage_changes": {
-        #         "hru_intcpstor_change": self.hru_intcpstor_change,
-        #     },
-        # }
-        # self.budget = Budget(
-        #     self.control,
-        #     **budget_terms,
-        #     time_unit="D",
-        #     description=self.name,
-        #     imbalance_fatal=(budget_type == "strict"),
-        # )
-
         return
 
     def set_initial_conditions(self):
-        # self.inctp_stor = self.intcp_stor_init.copy()
-        # self.intcp_stor_old = None
         return
 
     @staticmethod

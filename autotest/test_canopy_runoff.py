@@ -11,17 +11,17 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
-@pytest.fixture(scope="function")
 def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 class TestPRMSCanopyRunoffDomain:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
 
         # get the answer data
@@ -48,7 +48,7 @@ class TestPRMSCanopyRunoffDomain:
             nc_pth = output_dir / f"{key}.nc"
             input_variables[key] = nc_pth
 
-        canopy = PRMSCanopy(control=control, params=params, **input_variables)
+        canopy = PRMSCanopy(control=control, **input_variables)
 
         # instantiate runoff
         input_variables = {}
@@ -60,7 +60,7 @@ class TestPRMSCanopyRunoffDomain:
         input_variables["net_ppt"] = None
         input_variables["net_rain"] = None
         input_variables["net_snow"] = None
-        runoff = PRMSRunoff(control=control, params=params, **input_variables)
+        runoff = PRMSRunoff(control=control, **input_variables)
 
         # wire up output from canopy as input to runoff
         runoff.set_input_to_adapter(

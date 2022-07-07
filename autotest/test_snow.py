@@ -8,23 +8,6 @@ from pynhm.base.control import Control
 from pynhm.constants import epsilon32, zero
 from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.utils.parameters import PrmsParameters
-from pynhm.utils.prms5util import load_soltab_debug
-
-
-@pytest.fixture(scope="function")
-def horad_potsw(domain):
-    # get the "horizontal" potential shortwave radiation
-    (
-        _,
-        potential_sw_rad_flat,
-        _,
-    ) = load_soltab_debug(domain["prms_run_dir"] / "soltab_debug")
-    return potential_sw_rad_flat
-
-
-@pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
 
 
 @pytest.fixture(scope="function")
@@ -32,9 +15,14 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 @pytest.mark.xfail
 class TestPRMSSnow:
-    def test_init(self, domain, control, params, horad_potsw, tmp_path):
+    def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -83,24 +71,22 @@ class TestPRMSSnow:
         # setup the snow
         input_variables = {}
         for key in PRMSSnow.get_inputs():
-            if key == "soltab_horad_potsw":
-                input_variables[key] = horad_potsw
-            else:
-                nc_path = output_dir / f"{key}.nc"
-                input_variables[key] = nc_path
+            nc_path = output_dir / f"{key}.nc"
+            input_variables[key] = nc_path
 
-        snow = PRMSSnow(control, params, **input_variables)
+        snow = PRMSSnow(control, **input_variables)
+
         all_success = True
         iso_censor_mask = None
         for istep in range(control.n_times):
             # for istep in range(10):
 
-            control.advance()
-
             print("\n")
             print(f"solving time: {control.current_time}")
 
+            control.advance()
             snow.advance()
+
             snow.calculate(float(istep))
 
             # compare along the way
@@ -185,8 +171,8 @@ class TestPRMSSnow:
                 print(key)
                 a1 = ans[key].current
                 a2 = snow[key]
-                success = np.isclose(a1, a2, atol=atol, rtol=zero).all()
 
+                success = np.allclose(a1, a2, atol=atol, rtol=zero)
                 atol = 1e-3
                 success_prelim = np.isclose(a1, a2, atol=atol)
                 success = np.where(~censor_comp, success_prelim, True).all()

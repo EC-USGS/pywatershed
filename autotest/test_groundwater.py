@@ -1,6 +1,5 @@
 import pathlib as pl
 
-from pynhm.atmosphere.NHMBoundaryLayer import NHMBoundaryLayer
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils.netcdf_utils import NetCdfCompare
@@ -10,10 +9,10 @@ from pynhm.utils.parameters import PrmsParameters
 class TestPRMSGroundwaterDomain:
     def test_init(self, domain, tmp_path):
         tmp_path = pl.Path(tmp_path)
-        prms_params = PrmsParameters.load(domain["param_file"])
+        params = PrmsParameters.load(domain["param_file"])
 
         # Set information from the control file
-        control = Control.load(domain["control_file"])
+        control = Control.load(domain["control_file"], params=params)
 
         # load csv files into dataframes
         output_dir = domain["prms_output_dir"]
@@ -22,7 +21,7 @@ class TestPRMSGroundwaterDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        gw = PRMSGroundwater(control, prms_params, **input_variables)
+        gw = PRMSGroundwater(control, **input_variables)
         nc_parent = tmp_path / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 

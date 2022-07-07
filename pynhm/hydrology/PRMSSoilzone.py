@@ -3,13 +3,10 @@ from typing import Union
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import ETType, HruType, SoilType, epsilon, nan, one, zero
-
-adaptable = Union[str, np.ndarray, Adapter]
 
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
@@ -19,15 +16,11 @@ class PRMSSoilzone(StorageUnit):
     """PRMS soil zone
 
     Args:
-        params: parameter object
-        atm: atmosphere object
-
     """
 
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         dprst_evap_hru: adaptable,
         dprst_seep_hru: adaptable,
         hru_impervevap: adaptable,
@@ -38,18 +31,18 @@ class PRMSSoilzone(StorageUnit):
         transp_on: adaptable,
         snow_evap: adaptable,
         snowcov_area: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ) -> "PRMSSoilzone":
 
-        self.name = "PRMSSoilzone"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSSoilzone"
 
         self.set_inputs(locals())
+        self.set_budget(budget_type)
 
         return
 
@@ -391,9 +384,10 @@ class PRMSSoilzone(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
+        # self.stor_old[:] = self.stor
         return
 
-    def calculate(self, simulation_time):
+    def _calculate(self, simulation_time):
         """Calculate soil zone for a time step"""
 
         # JLM: not clear we need this / for GSFlow

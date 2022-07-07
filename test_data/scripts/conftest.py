@@ -1,13 +1,9 @@
 import os
 import pathlib as pl
-import shutil
 import sys
 from fnmatch import fnmatch
-from time import sleep
 
 import pytest
-
-from pynhm import CsvFile
 
 
 def pytest_addoption(parser):
@@ -104,7 +100,10 @@ def collect_simulations(domain_list: list, force: bool):
         requested = set(domain_list)
         found = [pl.Path(dd).name for dd in simulations.keys()]
         requested_not_found = requested.difference(found)
-        msg = f"The following requested domains were not found: {requested_not_found}"
+        msg = (
+            f"The following requested domains were not found: "
+            f"{requested_not_found}"
+        )
         pytest.exit(msg)
 
     print("\nrun_domains.py found the following domains to run:\n")
@@ -147,3 +146,11 @@ def pytest_generate_tests(metafunc):
         ]
         ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
         metafunc.parametrize("csv_files_prev", csv_files, ids=ids)
+
+    if "soltab_file" in metafunc.fixturenames:
+        simulations = collect_simulations(domain_list, force)
+        soltab_files = [
+            pl.Path(kk) / "soltab_debug" for kk in simulations.keys()
+        ]
+        ids = [ff.parent.name + ":" + ff.name for ff in soltab_files]
+        metafunc.parametrize("soltab_file", soltab_files, ids=ids)

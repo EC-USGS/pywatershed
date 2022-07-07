@@ -20,7 +20,7 @@ def control(domain, params):
 
 
 class TestPRMSEt:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
 
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
@@ -32,7 +32,6 @@ class TestPRMSEt:
 
         et = PRMSEt(
             control=control,
-            params=params,
             budget_type="strict",
             **et_inputs,
         )

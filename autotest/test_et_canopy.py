@@ -21,7 +21,7 @@ def control(domain, params):
 
 
 class TestPRMSEt:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
 
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
@@ -44,9 +44,7 @@ class TestPRMSEt:
                 nc_path = output_dir / f"{key}.nc"
                 et_inputs[key] = adapter_factory(nc_path, key, control)
 
-        et = PRMSEt(
-            control=control, params=params, budget_type="strict", **et_inputs
-        )
+        et = PRMSEt(control=control, budget_type="strict", **et_inputs)
 
         # canopy
         canopy_inputs = {}
@@ -59,7 +57,6 @@ class TestPRMSEt:
 
         canopy = PRMSCanopy(
             control=control,
-            params=params,
             budget_type="strict",
             **canopy_inputs,
         )

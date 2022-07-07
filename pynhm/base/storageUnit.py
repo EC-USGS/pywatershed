@@ -7,7 +7,6 @@ from pynhm.base.budget import Budget
 
 from ..base.adapter import Adapter, adapter_factory
 from ..utils.netcdf_utils import NetCdfWrite
-from ..utils.parameters import PrmsParameters
 from .accessor import Accessor
 from .control import Control
 
@@ -24,14 +23,12 @@ class StorageUnit(Accessor):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         verbose: bool,
-        subclass_name="StorageUnit",
     ):
 
-        self.name = subclass_name
+        self.name = "StorageUnit"
         self.control = control
-        self.params = params
+        self.params = self.control.params
         self.verbose = verbose
         self._simulation_time = 0.0
 
@@ -170,6 +167,9 @@ class StorageUnit(Accessor):
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii], ii, args["control"]
             )
+            if self._input_variables_dict[ii]:
+                self[ii] = self._input_variables_dict[ii].current
+
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
@@ -245,6 +245,7 @@ class StorageUnit(Accessor):
         # self._calculate must be implemented by the subclass
         self._calculate(time_length, *kwargs)
 
+        # move to a timestep finalization method at some future date.
         if self.budget is not None:
             self.budget.advance()
             self.budget.calculate()

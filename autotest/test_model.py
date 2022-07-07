@@ -5,22 +5,16 @@ from pprint import pprint
 import numpy as np
 import pytest
 
+from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.base.model import Model
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
+from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-
-# from pynhm.hydrology.PRMSSnow import PRMSSnow
-# from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
-
+from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.utils.parameters import PrmsParameters
-
-
-@pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
 
 
 @pytest.fixture(scope="function")
@@ -28,34 +22,46 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
+test_models = {
+    "et": [PRMSEt],
+    "et_canopy": [PRMSEt, PRMSCanopy],
+    "et_canopy_runoff": [PRMSEt, PRMSCanopy, PRMSRunoff],
+    # "et_canopy_runoff_soil": [PRMSEt, PRMSCanopy, PRMSRunoff, PRMSSoilzone],
+    # "snow": [PRMSSnow],
+    # "solar_snow": [PRMSSolarGeometry, PRMSSnow],
+    # "canopy_snow_runoff": [
+    #    PRMSCanopy,
+    #    PRMSSnow,
+    #    PRMSRunoff,
+    #    PRMSSoilzone,
+    #    PRMSEt,
+    #    PRMSGroundwater,
+    # ],
+}
+
+
 @pytest.mark.parametrize(
     "components",
-    (
-        [PRMSEt],
-        [PRMSEt, PRMSCanopy],
-        [PRMSEt, PRMSCanopy, PRMSRunoff],
-        # [PRMSEt, PRMSCanopy, PRMSRunoff, PRMSSoilzone],
-    ),
-    ids=(
-        "et",
-        "et_canopy",
-        "et_canopy_runoff",
-        # "et_canopy_runoff_soilzone",
-    ),
+    test_models.values(),
+    ids=test_models.keys(),
 )
-def test_model(domain, control, params, components, tmp_path):
+def test_model(domain, control, components, tmp_path):
 
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
     # TODO: Eliminate potet and other variables from being used
-    et_can_runoff = Model(
-        *components, control=control, params=params, input_dir=output_dir
-    )
+    model = Model(*components, control=control, input_dir=output_dir)
 
     # ---------------------------------
     # get the answer data
     comparison_vars_dict_all = {
+        "PRMSSolarGeometry": [],
         "PRMSCanopy": [
             "net_rain",
             "net_snow",
@@ -66,6 +72,19 @@ def test_model(domain, control, params, components, tmp_path):
             "hru_intcpevap",
             "potet",
         ],
+        "PRMSSnow": [
+            "iso",
+            "pkwater_equiv",
+            "snow_evap",
+            "tcal",
+        ],
+        "PRMSRunoff": [
+            "infil",
+            "dprst_stor_hru",
+            "hru_impervstor",
+            "sroff",
+            "dprst_evap_hru",
+        ],
         "PRMSEt": [
             "potet",
             "hru_impervevap",
@@ -75,13 +94,14 @@ def test_model(domain, control, params, components, tmp_path):
             "perv_actet",
             "hru_actet",
         ],
-        "PRMSRunoff": [
-            "infil",
-            "dprst_stor_hru",
-            "hru_impervstor",
-            "sroff",
-            "dprst_evap_hru",
-        ],
+    }
+
+    atol = {
+        "PRMSSolarGeometry": 1.0e-5,
+        "PRMSCanopy": 1.0e-5,
+        "PRMSSnow": 5e-2,
+        "PRMSRunoff": 1.0e-5,
+        "PRMSEt": 1.0e-5,
     }
 
     comparison_vars_dict = {}
@@ -102,8 +122,8 @@ def test_model(domain, control, params, components, tmp_path):
     for istep in range(control.n_times):
 
         # print(istep)
-        et_can_runoff.advance()
-        et_can_runoff.calculate()
+        model.advance()
+        model.calculate()
 
         # advance the answer, which is being read from a netcdf file
         for unit_name, var_names in ans.items():
@@ -115,13 +135,12 @@ def test_model(domain, control, params, components, tmp_path):
         failfast = True
         detailed = True
         if check:
-            atol = 1.0e-5
             for unit_name in ans.keys():
                 success = check_timestep_results(
-                    et_can_runoff.components[unit_name],
+                    model.components[unit_name],
                     istep,
                     ans[unit_name],
-                    atol,
+                    atol[unit_name],
                     detailed,
                     failfast,
                 )

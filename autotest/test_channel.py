@@ -1,7 +1,5 @@
 import pathlib as pl
 
-import numpy as np
-
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.utils.netcdf_utils import NetCdfCompare
@@ -11,10 +9,10 @@ from pynhm.utils.parameters import PrmsParameters
 class TestPRMSChannelDomain:
     def test_init(self, domain, tmp_path):
         tmp_path = pl.Path(tmp_path)
-        prms_params = PrmsParameters.load(domain["param_file"])
+        params = PrmsParameters.load(domain["param_file"])
 
         # Set information from the control file
-        control = Control.load(domain["control_file"])
+        control = Control.load(domain["control_file"], params=params)
 
         # load csv files into dataframes
         output_dir = domain["prms_output_dir"]
@@ -23,7 +21,7 @@ class TestPRMSChannelDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        channel = PRMSChannel(control, prms_params, **input_variables)
+        channel = PRMSChannel(control, **input_variables)
         nc_parent = tmp_path / domain["domain_name"]
         channel.initialize_netcdf(nc_parent)
 

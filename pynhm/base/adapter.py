@@ -6,17 +6,7 @@ import numpy as np
 from pynhm.base.control import Control
 from pynhm.utils.netcdf_utils import NetCdfRead
 
-from ..utils.time_utils import datetime_doy
-
 fileish = Union[str, pl.Path]
-
-# these names will change and reduce with amt/geom refactor
-# could get these from SolarGeom but there are other non-soltab vars
-soltab_vars = [
-    "soltab_horad_potsw",
-    "potential_sw_rad_flat",
-    "potential_sw_rad",
-]
 
 
 class Adapter:
@@ -34,6 +24,10 @@ class Adapter:
     def sanity_check(self):
         raise RuntimeError("contact code developers (sos=0); not really")
 
+    @property
+    def current(self):
+        return self._current_value
+
 
 class AdapterNetcdf(Adapter):
     def __init__(
@@ -47,71 +41,36 @@ class AdapterNetcdf(Adapter):
 
         self._fname = fname
         self._dataset = NetCdfRead(fname)
-        self._datetime = self._dataset.date_times
 
-        if control is None:
-            raise ValueError(f"{self.name} requires a valid Control object.")
         self.control = control
         self._start_time = self.control.start_time
-
-        self._nhru = self._dataset.dataset.dimensions["nhm_id"].size
-        self._dtype = self._dataset.dataset.variables[self._variable].dtype
-        self._current_value = np.full(self._nhru, np.nan, self._dtype)
-        # Adopting the next line requires minor changes to most tests
-        # self._current_value = control.get_var_nans(self._variable)
+        self._current_value = control.get_var_nans(self._variable)
+        return
 
     def advance(self):
         # JLM: Seems like the time of the ncdf dataset or variable
         # should be public
         if self._dataset._itime_step[self._variable] > self.control.itime_step:
             return
-        self._current_value[:] = self._dataset.advance(self._variable)
+        self._current_value[:] = self._dataset.advance(
+            self._variable, self.control.current_time
+        )
         return None
-
-    @property
-    def current(self):
-        return self._current_value
 
 
 class AdapterOnedarray(Adapter):
     def __init__(
         self,
         data: np.ndarray,
-        variable,
+        variable: str,
     ) -> None:
         super().__init__(variable)
         self.name = "AdapterOnedarray"
         self._current_value = data
         return
 
-    def advance(self):
+    def advance(self, *args):
         return None
-
-    @property
-    def current(self):
-        return self._current_value
-
-
-class AdapterTwodarraySoltab(Adapter):
-    def __init__(
-        self,
-        data: np.ndarray,
-        variable: str,
-    ) -> None:
-        super().__init__(variable)
-        self.name = "AdapterTwodarraySoltab"
-        self._data = data
-        self._current_value = None
-        return
-
-    def advance(self, datetime: np.datetime64):
-        index = datetime_doy(datetime) - 1
-        self._current_value = self._data[index]
-        return None
-
-    @property
-    def current(self):
-        return self._current_value
 
 
 adaptable = Union[str, np.ndarray, Adapter]
@@ -138,14 +97,6 @@ def adapter_factory(
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
         """One-D np.ndarrays"""
         return AdapterOnedarray(var, variable=variable_name)
-
-    elif (
-        isinstance(var, np.ndarray)
-        and len(var.shape) == 2
-        and variable_name in soltab_vars
-    ):
-        """Two-D np.ndarrays that are Soltabs"""
-        return AdapterTwodarraySoltab(var, variable=variable_name)
 
     elif var is None:
         """var is specified as None so return None"""

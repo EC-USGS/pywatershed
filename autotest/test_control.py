@@ -13,10 +13,29 @@ time_dict = {
     "time_step": np.timedelta64(1, "D"),
 }
 
+nhru = 2
+
 
 @pytest.fixture(scope="function")
-def control_simple():
-    return Control(**time_dict)
+def params_simple():
+    prms_params = {
+        "nhru": nhru,
+        "hru_area": np.array(nhru * [1.0]),
+        "covden_sum": np.array(nhru * [0.5]),
+        "covden_win": np.array(nhru * [0.5]),
+        "srain_intcp": np.array(nhru * [1.0]),
+        "wrain_intcp": np.array(nhru * [1.0]),
+        "snow_intcp": np.array(nhru * [1.0]),
+        "epan_coef": np.array(nhru * [1.0]),
+        "potet_sublim": np.array(nhru * [1.0]),
+        "cov_type": np.array(nhru * [1]),
+    }
+    return PrmsParameters(prms_params)
+
+
+@pytest.fixture(scope="function")
+def control_simple(params_simple):
+    return Control(**time_dict, params=params_simple)
 
 
 def test_control_simple(control_simple):
@@ -64,22 +83,6 @@ def test_control_simple(control_simple):
 
 
 def test_control_advance(control_simple):
-    # stolen from simple canopy
-    nhru = 2
-    prms_params = {
-        "nhru": nhru,
-        "hru_area": np.array(nhru * [1.0]),
-        "covden_sum": np.array(nhru * [0.5]),
-        "covden_win": np.array(nhru * [0.5]),
-        "srain_intcp": np.array(nhru * [1.0]),
-        "wrain_intcp": np.array(nhru * [1.0]),
-        "snow_intcp": np.array(nhru * [1.0]),
-        "epan_coef": np.array(nhru * [1.0]),
-        "potet_sublim": np.array(nhru * [1.0]),
-        "cov_type": np.array(nhru * [1]),
-    }
-    prms_params = PrmsParameters(prms_params)
-
     # common inputs for 2 canopies
     input_variables = {}
     for key in PRMSCanopy.get_inputs():
@@ -89,7 +92,6 @@ def test_control_advance(control_simple):
     # ntimes = control.n_times
     cnp1 = PRMSCanopy(
         control=control_simple,
-        params=prms_params,
         **input_variables,
         verbose=True,
     )
@@ -97,7 +99,6 @@ def test_control_advance(control_simple):
 
     cnp2 = PRMSCanopy(
         control=control_simple,
-        params=prms_params,
         **input_variables,
         verbose=True,
     )

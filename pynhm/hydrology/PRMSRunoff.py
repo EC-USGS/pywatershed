@@ -1,16 +1,10 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.parameters import PrmsParameters
 
-from ..base.adapter import Adapter, adapter_factory
-from ..base.budget import Budget
+from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, nan, zero
-
-adaptable = Union[str, np.ndarray, Adapter]
+from ..constants import HruType, zero
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -32,7 +26,6 @@ class PRMSRunoff(StorageUnit):
     def __init__(
         self,
         control: Control,
-        params: PrmsParameters,
         soil_moist_prev: adaptable,
         net_rain: adaptable,
         net_ppt: adaptable,
@@ -48,50 +41,13 @@ class PRMSRunoff(StorageUnit):
         budget_type: str = None,
         verbose: bool = False,
     ):
-        self.name = "PRMSRunoff"
         super().__init__(
             control=control,
-            params=params,
             verbose=verbose,
-            subclass_name=self.name,
         )
+        self.name = "PRMSRunoff"
 
         self.set_inputs(locals())
-
-        # self._input_variables_dict["soil_moist"] = adapter_factory(
-        #     soil_moist, "soil_moist"
-        # )
-        # self._input_variables_dict["net_rain"] = adapter_factory(
-        #     net_rain, "net_rain"
-        # )
-        # self._input_variables_dict["net_ppt"] = adapter_factory(
-        #     net_ppt, "net_ppt"
-        # )
-        # self._input_variables_dict["net_snow"] = adapter_factory(
-        #     net_snow, "net_snow"
-        # )
-        # self._input_variables_dict["potet"] = adapter_factory(potet, "potet")
-        # self._input_variables_dict["snowmelt"] = adapter_factory(
-        #     snowmelt, "snowmelt"
-        # )
-        # self._input_variables_dict["snow_evap"] = adapter_factory(
-        #     snow_evap, "snow_evap"
-        # )
-        # self._input_variables_dict["pkwater_equiv"] = adapter_factory(
-        #     pkwater_equiv, "pkwater_equiv"
-        # )
-        # self._input_variables_dict["pptmix_nopack"] = adapter_factory(
-        #     pptmix_nopack, "pptmix_nopack"
-        # )
-        # self._input_variables_dict["snowcov_area"] = adapter_factory(
-        #     snowcov_area, "snowcov_area"
-        # )
-        # self._input_variables_dict["hru_intcpevap"] = adapter_factory(
-        #     hru_intcpevap, "hru_intcpevap"
-        # )
-        # self._input_variables_dict["intcp_changeover"] = adapter_factory(
-        #     intcp_changeover, "intcp_changeover"
-        # )
 
         self.set_budget(budget_type)
         # if budget_type is None:

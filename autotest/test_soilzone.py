@@ -10,17 +10,17 @@ from pynhm.utils.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
-
-
-@pytest.fixture(scope="function")
 def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 class TestPRMSSoilzone:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -68,7 +68,7 @@ class TestPRMSSoilzone:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        soil = PRMSSoilzone(control, params, **input_variables)
+        soil = PRMSSoilzone(control, **input_variables)
         all_success = True
         for istep in range(control.n_times):
             # for istep in range(10):

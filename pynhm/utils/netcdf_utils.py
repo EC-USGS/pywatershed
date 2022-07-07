@@ -4,15 +4,21 @@ from typing import Union
 import netCDF4 as nc4
 import numpy as np
 
+from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
+from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]
 listish = Union[list, tuple]
 arrayish = Union[list, tuple, np.ndarray]
 ATOL = np.finfo(np.float32).eps
 
+# JLM TODO: start_time: np.datetime64 = None ?
+#     Still need some mechanism for initial itime_step for datetime coordinate
+#     variables
 
-class NetCdfRead:
+
+class NetCdfRead(Accessor):
     def __init__(
         self,
         name: fileish,
@@ -42,19 +48,26 @@ class NetCdfRead:
             vv: self.dataset.variables[vv].chunking()
             for vv in self.ds_var_list
         }
+
         # Set dimension variables which are not chunked
-        self._datetime = (
-            nc4.num2date(
-                self.dataset.variables["datetime"][:],
-                units=self.dataset.variables["datetime"].units,
-                calendar="standard",
-                only_use_cftime_datetimes=False,
+
+        if "datetime" in self.dataset.variables:
+            self._datetime = (
+                nc4.num2date(
+                    self.dataset.variables["datetime"][:],
+                    units=self.dataset.variables["datetime"].units,
+                    calendar="standard",
+                    only_use_cftime_datetimes=False,
+                )
+                .filled()
+                .astype("datetime64[s]")
+                # JLM: the global time type as in cbh_utils, define somewhere
             )
-            .filled()
-            .astype("datetime64[s]")
-            # JLM: the global time type as in cbh_utils, define somewhere
-        )
-        self._ntimes = self._datetime.shape[0]
+            self._ntimes = self._datetime.shape[0]
+
+        if "doy" in self.dataset.variables:
+            self._doy = self.dataset.variables["doy"][:].data
+            self._ntimes = self._doy.shape[0]
 
         spatial_id_names = []
         if "nhm_id" in self.ds_var_list:
@@ -200,7 +213,9 @@ class NetCdfRead:
                 )
             return self.dataset[variable][itime_step, :]
 
-    def advance(self, variable: str) -> np.ndarray:
+    def advance(
+        self, variable: str, current_time: np.datetime64 = None
+    ) -> np.ndarray:
         """Get the data for a variable for the next time step
 
         Args:
@@ -211,15 +226,24 @@ class NetCdfRead:
                 time step
 
         """
-        arr = self.get_data(
-            variable,
-            itime_step=self._itime_step[variable],
-        )
+        if "datetime" in self.dataset.variables:
+            arr = self.get_data(
+                variable,
+                itime_step=self._itime_step[variable],
+            )
+
+        if "doy" in self.dataset.variables:
+            arr = self.get_data(
+                variable,
+                itime_step=datetime_doy(current_time) - 1,
+            )
+
         self._itime_step[variable] += 1
+
         return arr
 
 
-class NetCdfWrite:
+class NetCdfWrite(Accessor):
     """Output the csv output data to a netcdf file
 
     Args:
@@ -278,16 +302,40 @@ class NetCdfWrite:
             self.hru_segments = hru_segments
 
         # Dimensions
-        # None for the len argument gives an unlimited dim
-        self.dataset.createDimension("time", None)
+
+        # Time is an implied dimension in the netcdf file for most variables
+        # time/datetime is necessary if an alternative time
+        # dimenison does not appear in even one variable
+        ndays_time_vars = [
+            "soltab_potsw",
+            "soltab_horad_potsw",
+            "soltab_sunhrs",
+        ]
+
+        for var_name in variables:
+            if var_name in ndays_time_vars:
+                continue
+            # None for the len argument gives an unlimited dim
+            self.dataset.createDimension("time", None)
+            self.datetime = self.dataset.createVariable(
+                "datetime", "f4", ("time",)
+            )
+            self.datetime.units = time_units
+            break
+
+        # similarly, if alternative time dimenions exist.. define them
+        for var_name in variables:
+            if var_name not in ndays_time_vars:
+                continue
+            self.dataset.createDimension("ndays", 366)
+            self.doy = self.dataset.createVariable("doy", "i4", ("ndays",))
+            self.doy.units = "Day of year"
+            break
+
         if nhru_coordinate:
             self.dataset.createDimension("hru_id", self.nhrus)
         if nsegment_coordinate:
             self.dataset.createDimension("hru_seg", self.nsegments)
-
-        # Dim Variables
-        self.time = self.dataset.createVariable("datetime", "f4", ("time",))
-        self.time.units = time_units
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
@@ -308,10 +356,15 @@ class NetCdfWrite:
             else:
                 spatial_coordinate = "hru_id"
 
+            if var_name in ndays_time_vars:
+                time_dim = "ndays"
+            else:
+                time_dim = "time"
+
             self.variables[var_name] = self.dataset.createVariable(
                 var_name,
                 variabletype,
-                ("time", spatial_coordinate),
+                (time_dim, spatial_coordinate),
                 fill_value=nc4.default_fillvals[variabletype],
                 zlib=zlib,
                 complevel=complevel,
@@ -326,15 +379,18 @@ class NetCdfWrite:
 
     def __del__(self):
         self.close()
+        return
 
     def close(self):
         if self.dataset.isopen():
             self.dataset.close()
+            return
 
     def add_simulation_time(self, itime_step: int, simulation_time: float):
         # var = self.variables["datetime"]
         # var[itime_step] = simulation_time
-        self.time[itime_step] = simulation_time
+        self.datetime[itime_step] = simulation_time
+        return
 
     def add_data(
         self, name: str, itime_step: int, current: np.ndarray
@@ -352,8 +408,15 @@ class NetCdfWrite:
             raise KeyError(f"{name} not a valid variable name")
         var = self.variables[name]
         var[itime_step, :] = current[:]
+        return
 
-    def add_all_data(self, name: str, current: np.ndarray) -> None:
+    def add_all_data(
+        self,
+        name: str,
+        data: np.ndarray,
+        time_data: np.ndarray,
+        time_coord: str = "datetime",
+    ) -> None:
         """Add data to a NetCDF variable
 
         Args:
@@ -362,13 +425,15 @@ class NetCdfWrite:
         Returns:
 
         """
+        self[time_coord][:] = time_data
         if name not in self.variables.keys():
             raise KeyError(f"{name} not a valid variable name")
-        var = self.variables[name]
-        var[:, :] = current[:, :]
+        self.variables[name][:, :] = data[:, :]
+
+        return
 
 
-class NetCdfCompare:
+class NetCdfCompare(Accessor):
     """Compare variables in two NetCDF files
 
     Args:

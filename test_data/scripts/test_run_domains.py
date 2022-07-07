@@ -4,10 +4,7 @@
 import os
 import pathlib as pl
 import shutil
-import sys
-from fnmatch import fnmatch
 
-import pytest
 from flopy import run_model
 
 

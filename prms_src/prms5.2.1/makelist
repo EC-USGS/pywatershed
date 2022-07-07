@@ -53,7 +53,7 @@ ifeq ($(detected_OS), Windows)
 	endif
 else
 	ifeq ($(FC), gfortran)
-		OPTLEVEL = -O
+		OPTLEVEL = -O0
 		LDFLAGS = $(OPTLEVEL)
 	endif
 	ifeq ($(FC), $(filter $(FC), ifort mpiifort))
@@ -72,7 +72,7 @@ ifeq ($(detected_OS), Windows)
 	endif
 else
 	ifeq ($(FC), gfortran)
-		FFLAGS = $(OPTLEVEL) -fno-second-underscore -fallow-argument-mismatch
+		FFLAGS = $(OPTLEVEL) -g -fno-second-underscore -fallow-argument-mismatch
 	endif
 	ifeq ($(FC), $(filter $(FC), ifort mpiifort))
 		FFLAGS = -fp-model source
@@ -90,7 +90,7 @@ ifeq ($(detected_OS), Windows)
 	endif
 else
 	ifeq ($(CC), gcc)
-		CFLAGS = $(OPTLEVEL) -D$(ARC) -D_UF -Wall
+		CFLAGS = $(OPTLEVEL) -g -DDEBUG -D$(ARC) -D_UF -Wall
 	endif
 	ifeq ($(CC), $(filter $(CC), icc mpiicc))
 		CFLAGS = $(OPTLEVEL) -D$(ARC) -D_UF -Wall

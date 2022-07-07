@@ -1,0 +1,59 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "5.2.1",
+    "tasks": [
+        {
+            "label": "Build PRMS (gfortran, release)",
+            "command": "${workspaceFolder}/.vscode/build.sh",
+            "args": [
+                "gfortran",
+                "release",
+		"build"
+            ],
+            "group": "build",
+            "presentation": {
+                "clear": true
+            }
+        },
+        {
+            "label": "Rebuild PRMS (gfortran, release)",
+            "command": "${workspaceFolder}/.vscode/build.sh",
+            "args": [
+                "gfortran",
+                "release",
+                "rebuild",
+            ],
+            "group": "build",
+            "presentation": {
+                "clear": true
+            }
+        },
+        {
+            "label": "Build PRMS (gfortran, debug)",
+            "command": "${workspaceFolder}/.vscode/build.sh",
+            "args": [
+                "gfortran",
+                "debug",
+                "build",
+            ],
+            "group": "build",
+            "presentation": {
+                "clear": true
+            }
+        },
+        {
+            "label": "Rebuild PRMS (gfortran, debug)",
+            "command": "${workspaceFolder}/.vscode/build.sh",
+            "args": [
+                "gfortran",
+                "debug",
+                "rebuild",
+            ],
+            "group": "build",
+            "presentation": {
+                "clear": true
+            }
+        },
+    ]
+}

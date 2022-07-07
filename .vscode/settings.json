@@ -1,0 +1,19 @@
+{
+    "python.defaultInterpreterPath": "/Users/jamesmcc/opt/anaconda3/envs/pynhm_plus/bin/python3",
+
+    "fortran-ls.executablePath": "/Users/jamesmcc/opt/anaconda3/bin/fortls",
+    "fortran.fortls.path": "/Users/jamesmcc/opt/anaconda3/envs/git/bin/fortls",
+    "fortran-ls.hoverSignature": true,
+    "fortran-ls.lowercaseIntrinsics": true,
+    "fortran-ls.notifyInit": true,
+    "fortran-ls.variableHover": true,    
+    "fortran.linter.compiler": "gfortran",
+    "fortran.provide.hover": "fortls",
+    "fortran.provide.autocomplete": "fortls",
+    "fortran.provide.symbols": "fortls",
+    "[FortranFreeForm]": {
+        "editor.acceptSuggestionOnEnter": "off",
+    },
+
+   
+}

@@ -5,7 +5,7 @@ import netCDF4 as nc
 import numpy as np
 import pandas as pd
 
-from pynhm.preprocess import CsvFile
+from pynhm import CsvFile
 
 csv_test_vars = ["hru_ppt", "intcp_stor", "potet", "gwres_stor"]
 

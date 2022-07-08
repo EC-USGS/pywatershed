@@ -5,8 +5,6 @@ from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 
 from .base.accessor import Accessor
 from .base.control import Control
-
-from .utils.csv_utils import CsvFile
 from .utils import (
     ControlVariables,
     NetCdfCompare,
@@ -15,6 +13,7 @@ from .utils import (
     PrmsParameters,
     Soltab,
 )
+from .utils.csv_utils import CsvFile
 from .version import __author__, __author_email__, __version__
 
 __all__ = [

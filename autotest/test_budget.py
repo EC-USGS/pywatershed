@@ -22,6 +22,7 @@ def control_simple():
     return Control(**time_dict)
 
 
+@pytest.mark.filterwarnings("ignore:Metadata unavailable")
 def test_budget(control_simple):
     nhru = 5
     inputs = {

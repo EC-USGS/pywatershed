@@ -106,22 +106,27 @@ class Model:
                 args["budget_type"] = budget_type
             self.components[component] = class_dict[component](**args)
 
+        # Wire it up
+        self.component_input_from = {}
         for component in self.component_order:
-            print(f"{component}:")
+            self.component_input_from[component] = {}
             for input, frm in inputs_from[component].items():
                 if not frm:
-                    print(f"    {input}: from file")
+                    fname = file_inputs[input]._fname
+                    self.component_input_from[component][input] = fname
                     self.components[component].set_input_to_adapter(
                         input, file_inputs[input]
                     )
                 else:
-                    print(f"    {input}: from {frm}")
+                    self.component_input_from[component][input] = frm[0]
                     self.components[component].set_input_to_adapter(
                         input,
                         adapter_factory(
                             self.components[frm[0]][input], control=control
                         ),  # drop list above
                     )
+
+        return
 
     def advance(self):
         self.control.advance()

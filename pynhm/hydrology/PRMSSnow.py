@@ -54,11 +54,7 @@ dbgind = 434
 
 
 class PRMSSnow(StorageUnit):
-    """PRMS snow pack
-
-    Args:
-
-    """
+    """PRMS snow pack"""
 
     def __init__(
         self,

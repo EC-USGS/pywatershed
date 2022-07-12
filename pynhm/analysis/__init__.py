@@ -1,1 +1,1 @@
-from .model_diagrams import ModelGraph
+from .model_graph import ModelGraph

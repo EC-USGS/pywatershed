@@ -19,7 +19,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 class TestPRMSBoundaryLayer:
     def test_init(self, domain, control, tmp_path):
 
@@ -63,24 +63,34 @@ class TestPRMSBoundaryLayer:
             # print(atm.budget)
 
             # compare along the way
-            atol = 1e-3
-            rtol = 0.0
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():
                 a1 = ans[key].current
                 a2 = atm[key]
-                success = np.allclose(a2, a1, atol=atol, rtol=rtol)
-                if not success:
-                    all_success = False
+                success = np.allclose(a2, a1, atol=5e-6, rtol=0.00)
+                success_r = np.allclose(a2, a1, atol=0.00, rtol=5e-6)
+                if (not success) and (not success_r):
                     diff = a1 - a2
+                    diffratio = abs(diff / a2)
+                    if (diffratio < 1e-6).all():
+                        success = True
+                        continue
+                    all_success = False
                     diffmin = diff.min()
                     diffmax = diff.max()
+                    abs_diff = abs(diff)
+                    absdiffmax = abs_diff.max()
+                    wh_absdiffmax = np.where(absdiffmax)[0]
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
                     print(f"pynhm  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
+                    print(f"absdiffmax  {absdiffmax}")
+                    print(f"wh_absdiffmax  {wh_absdiffmax}")
+
+                    asdf
 
         atm.finalize()
 

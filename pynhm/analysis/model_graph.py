@@ -1,17 +1,26 @@
-# import networkx as nx
-# import matplotlib.pyplot as plt
-# import matplotlib.image as mpimg
-# from io import StringIO
-from IPython.display import SVG, display
-
-import pydot
 import pathlib as pl
 import tempfile
+import warnings
+
+try:
+    import pydot
+
+    has_pydot = True
+except ModuleNotFoundError:
+    has_pydot = False
+
+try:
+    from IPython.display import SVG, display
+
+    has_ipython = True
+except ModuleNotFoundError:
+    has_ipython = False
 
 
 class ModelGraph:
     def __init__(self, model, show_params: bool = False):
-        print(model.components)
+        if not has_pydot:
+            warnings.warn("pydot not available")
 
         self.graph = pydot.Dot(graph_type="digraph", rankdir="LR")
 
@@ -42,6 +51,8 @@ class ModelGraph:
 
     def SVG(self, verbose: bool = False):
         """Display an SVG in jupyter notebook (via tempfile)."""
+        if not has_ipython:
+            warnings.warn("IPython is not available")
         tmp_file = pl.Path(tempfile.NamedTemporaryFile().name)
         self.graph.write_svg(tmp_file)
         if verbose:

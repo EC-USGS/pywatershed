@@ -26,6 +26,44 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
 
 
 class PRMSBoundaryLayer(StorageUnit):
+    """PRMS atmospheric boundary layer model.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation based on
+    PRMS-IV:
+
+    Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf
+
+    This representation uses precipitation and temperature inputs. Relative
+    humidity could be added as well.
+
+    Note that all variables are calculate for all time upon initialization.
+    This may not be tractable for large domains and long periods of time
+    and require changes. The benefits are 1) the code is vectorized and
+    fast for such a large calculation, 2) the initialization of this class
+    effectively preprocess all the inputs to the rest of the model and can
+    then be skipped in subsequent model calls (unless the parameters are
+    changing).
+
+    PRMS adjustments to temperature and precipitation are applied here to
+    the inputs. Shortwave radiation (using degree day method) and potential
+    evapotranspiration (Jensen and Haise ,1963) are also calculated.
+
+    Args:
+        control: control object
+        prcp: precipitation cbh netcdf file
+        tmax: maximum daily temperature cbh netcdf file
+        tmin: minimum daily temperature cbh netcdf file
+        budget_type: [None | "diagnostic" |  "strict"].
+        verbose: bool indicating amount of output to terminal.
+        netcdf_output_dir: an existing directory to which to write all
+            variables for all time.
+
+    """
+
     def __init__(
         self,
         control: Control,
@@ -37,35 +75,6 @@ class PRMSBoundaryLayer(StorageUnit):
         netcdf_output_dir: fileish = None,
         from_file_dir: fileish = None,
     ):
-        """PRMS atmospheric boundary layer model.
-
-        This representation uses precipitation and temperature inputs. Relative
-        humidity could be added as well.
-
-        Note that all variables are calculate for all time upon initialization.
-        This may not be tractable for large domains and long periods of time
-        and require changes. The benefits are 1) the code is vectorized and
-        fast for such a large calculation, 2) the initialization of this class
-        effectively preprocess all the inputs to the rest of the model and can
-        then be skipped in subsequent model calls (unless the parameters are
-        changing).
-
-        PRMS adjustments to temperature and precipitation are applied here to
-        the inputs. Shortwave radiation (using degree day method) and potential
-        evapotranspiration (Jensen and Haise ,1963) are also calculated.
-
-        Args:
-            control: control object
-            prcp: precipitation cbh netcdf file
-            tmax: maximum daily temperature cbh netcdf file
-            tmin: minimum daily temperature cbh netcdf file
-            budget_type: [None | "diagnostic" |  "strict"].
-            verbose: bool indicating amount of output to terminal.
-            netcdf_output_dir: an existing directory to which to write all
-                variables for all time.
-
-
-        """
         self.netcdf_output_dir = netcdf_output_dir
 
         super().__init__(

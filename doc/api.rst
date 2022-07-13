@@ -8,10 +8,9 @@ Full API Listing
 ---------------------------------------
 
 
-
-.. include:: api/preprocess.rst
-
 .. include:: api/atmosphere.rst
+
+.. include:: api/hydrology.rst
 
 .. include:: api/base.rst
 

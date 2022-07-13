@@ -5,12 +5,10 @@
 Atmosphere
 ##########
 
-Models for the atmospheric interactions and forcings.
+Atmospheric forcing models.
 
 .. autosummary::
    :toctree: generated/
 
-    NHMSolarGeometry
-    AtmBoundaryLayer
-    NHMBoundaryLayer
-
+   PRMSSolarGeometry
+   PRMSBoundaryLayer

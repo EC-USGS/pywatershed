@@ -13,8 +13,8 @@ pynhm: The USGS National Hydrologic Model in python
    :caption: API Reference
 
     API Reference <api.rst>
-    Preprocess <api/preprocess>
     Atmosphere <api/atmosphere>
+    Hydrology <api/hydrology>
     Base <api/base>
     Utils <api/utils>
 

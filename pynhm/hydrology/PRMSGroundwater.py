@@ -1,13 +1,10 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
 
-from ..base.adapter import Adapter
+from ..base.adapter import adaptable
 from ..base.control import Control
-
-adaptable = Union[str, np.ndarray, Adapter]
+from ..constants import nan
 
 
 class PRMSGroundwater(StorageUnit):
@@ -91,13 +88,17 @@ class PRMSGroundwater(StorageUnit):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get groundwater reservoir initial values
+        """Get groundwater initial values
 
         Returns:
             dict: initial values for named variables
         """
-        # No GW res values need initialized prior to calculation.
-        return {}
+        return {
+            "gwres_flow": nan,
+            "gwres_in": nan,
+            "gwres_sink": nan,
+            "gwres_stor": nan,
+        }
 
     def _advance_variables(self) -> None:
         """Advance the groundwater reservoir variables

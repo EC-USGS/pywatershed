@@ -4,7 +4,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero, nan
+from ..constants import HruType, epsilon32, epsilon64, inch2cm, nan, one, zero
 
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants
@@ -54,11 +54,7 @@ dbgind = 434
 
 
 class PRMSSnow(StorageUnit):
-    """PRMS snow pack
-
-    Args:
-
-    """
+    """PRMS snow pack"""
 
     def __init__(
         self,

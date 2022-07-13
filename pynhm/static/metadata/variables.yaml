@@ -2155,6 +2155,12 @@ pref_flow_thrsh:
     0: nhru
   type: F
   units: inches
+prcp:
+  desc: Input/forcing precipitation to each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: inches
 prmx:
   desc: Fraction of rain in a mixed precipitation event for each HRU
   dimensions:
@@ -2922,6 +2928,12 @@ tmaxf:
     0: nhru
   type: F
   units: degrees Fahrenheit
+tmax:
+  desc: Input/forcing maximum air temperature to each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: degrees Fahrenheit
 tmin_hru:
   desc: Minimum air temperature distributed to each HRU
   dimensions:
@@ -2942,6 +2954,12 @@ tminc:
   units: degrees Celsius
 tminf:
   desc: Minimum air temperature distributed to each HRU
+  dimensions:
+    0: nhru
+  type: F
+  units: degrees Fahrenheit
+tmin:
+  desc: Input/forcing minimum air temperature to each HRU
   dimensions:
     0: nhru
   type: F

@@ -4,7 +4,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero
+from ..constants import HruType, epsilon32, epsilon64, inch2cm, one, zero, nan
 
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants
@@ -260,6 +260,8 @@ class PRMSSnow(StorageUnit):
             "pk_precip": zero,
             "pk_temp": zero,
             "pksv": zero,
+            "pkwater_ante": nan,
+            "pkwater_equiv": nan,
             "pptmix_nopack": False,
             "salb": zero,
             "scrv": zero,
@@ -284,8 +286,7 @@ class PRMSSnow(StorageUnit):
         self.deninv = one / self.den_init.copy()
         self.denmaxinv = one / self.den_max.copy()
 
-        self.pkwater_equiv = self.snowpack_init.copy()
-        self.pkwater_ante = None
+        self.pkwater_equiv[:] = self.snowpack_init.copy()
 
         sd = int(self.ndeplval / 11)
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
@@ -365,7 +366,7 @@ class PRMSSnow(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
-        self.pkwater_ante = self.pkwater_equiv.copy()
+        self.pkwater_ante[:] = self.pkwater_equiv.copy()
         return
 
     def calculate(self, simulation_time):

@@ -77,9 +77,12 @@ class Model:
             )
 
         # If inputs dont come from other components, assume they come from
-        # file in input_dir
+        # file in input_dir. Exception is that PRMSBoundaryLayer requires its
+        # files on init, so dont adapt these
         file_input_names = set([])
         for k0, v0 in inputs_from.items():
+            # if k0 == "PRMSBoundaryLayer":
+            #    continue
             for k1, v1 in v0.items():
                 if not v1:
                     file_input_names = file_input_names.union([k1])
@@ -93,9 +96,17 @@ class Model:
         # instantiate components: instance dict
         self.components = {}
         for component in self.component_order:
-            component_inputs = {
-                input: None for input in class_dict[component].get_inputs()
-            }
+            # PRMSBoundaryLayer requires its files on init
+            if component == "PRMSBoundaryLayer":
+                component_inputs = {
+                    input: input_dir / f"{input}.nc"
+                    for input in class_dict[component].get_inputs()
+                }
+            else:
+                component_inputs = {
+                    input: None for input in class_dict[component].get_inputs()
+                }
+
             # This is a hack. Need to make StorageUnit a subclass of a more
             # general model/element/component class
             args = {
@@ -111,6 +122,8 @@ class Model:
             for input, frm in inputs_from[component].items():
                 if not frm:
                     print(f"    {input}: from file")
+                    if component == "PRMSBoundaryLayer":
+                        continue
                     self.components[component].set_input_to_adapter(
                         input, file_inputs[input]
                     )

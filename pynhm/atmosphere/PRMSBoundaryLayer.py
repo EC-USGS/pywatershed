@@ -77,10 +77,19 @@ class PRMSBoundaryLayer(StorageUnit):
         # Override self.set_inputs(locals())
         # Get all data at all times: do all forcings up front
         # There will be no inputs to advance
+        # There is also no set_input_to_adapter(), None can not be used
+        # on init.
         self._input_variables_dict = {}
         self._datetime = None
         for input in self.get_inputs():
-            nc_data = NetCdfRead(locals()[input])
+            input_data = locals()[input]
+            if input_data is None:
+                msg = (
+                    "PRMSBoundaryLayer input files must be specified on "
+                    "initialization"
+                )
+                raise ValueError(msg)
+            nc_data = NetCdfRead(input_data)
             self[input] = nc_data.dataset[input][:].data
             # Get the datetimes or check against the first
             if self._datetime is None:

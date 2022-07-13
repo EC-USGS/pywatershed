@@ -5,6 +5,7 @@ from pprint import pprint
 import numpy as np
 import pytest
 
+from pynhm.atmosphere.PRMSBoundaryLayer import PRMSBoundaryLayer
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
@@ -14,6 +15,7 @@ from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
 from pynhm.hydrology.PRMSSnow import PRMSSnow
+from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 from pynhm.utils.parameters import PrmsParameters
 
 
@@ -28,12 +30,21 @@ def control(domain, params):
 
 
 test_models = {
-    "et": [PRMSEt],
-    "et_canopy": [PRMSEt, PRMSCanopy],
-    "et_canopy_runoff": [PRMSEt, PRMSCanopy, PRMSRunoff],
+    # "et": [PRMSEt],
+    # "et_canopy": [PRMSEt, PRMSCanopy],
+    # "et_canopy_runoff": [PRMSEt, PRMSCanopy, PRMSRunoff],
     # "et_canopy_runoff_soil": [PRMSEt, PRMSCanopy, PRMSRunoff, PRMSSoilzone],
     # "snow": [PRMSSnow],
     # "solar_snow": [PRMSSolarGeometry, PRMSSnow],
+    "atm": [
+        PRMSBoundaryLayer,
+        PRMSSolarGeometry,
+        PRMSCanopy,
+        PRMSSnow,
+        PRMSRunoff,
+        PRMSSoilzone,
+        PRMSGroundwater,
+    ],
     # "canopy_snow_runoff": [
     #    PRMSCanopy,
     #    PRMSSnow,
@@ -41,6 +52,14 @@ test_models = {
     #    PRMSSoilzone,
     #    PRMSEt,
     #    PRMSGroundwater,
+    # ],
+    # "dum": [
+    #     PRMSCanopy,
+    #     PRMSSnow,
+    #     PRMSRunoff,
+    #     PRMSSoilzone,
+    #     PRMSEt,
+    #     PRMSGroundwater,
     # ],
 }
 
@@ -55,13 +74,36 @@ def test_model(domain, control, components, tmp_path):
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
+    # setup input_dir with symlinked prms inputs and outputs
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    for ff in output_dir.resolve().glob("*.nc"):
+        (input_dir / ff.name).symlink_to(ff)
+    for ff in output_dir.parent.resolve().glob("*.nc"):
+        (input_dir / ff.name).symlink_to(ff)
+
     # TODO: Eliminate potet and other variables from being used
-    model = Model(*components, control=control, input_dir=output_dir)
+    budget_type = None
+    model = Model(
+        *components,
+        control=control,
+        input_dir=input_dir,
+        budget_type=budget_type,
+    )
 
     # ---------------------------------
     # get the answer data
     comparison_vars_dict_all = {
         "PRMSSolarGeometry": [],
+        "PRMSBoundaryLayer": [
+            "tmaxf",
+            "tminf",
+            "hru_ppt",
+            "hru_rain",
+            "hru_snow",
+            "swrad",
+            "potet",
+        ],
         "PRMSCanopy": [
             "net_rain",
             "net_snow",
@@ -94,13 +136,36 @@ def test_model(domain, control, components, tmp_path):
             "perv_actet",
             "hru_actet",
         ],
+        "PRMSSoilzone": [
+            "hru_actet",
+            "perv_actet",
+            "potet_lower",
+            "potet_rechr",
+            "recharge",
+            "slow_flow",
+            "slow_stor",
+            "soil_lower",
+            "soil_moist",
+            "soil_moist_tot",
+            "infil",
+            "soil_rechr",
+            "soil_to_gw",
+            "soil_to_ssr",
+            "ssr_to_gw",
+            "ssres_flow",
+            "ssres_in",
+            "ssres_stor",
+        ],
+        "PRMSGroundwater": [],
     }
 
     atol = {
         "PRMSSolarGeometry": 1.0e-5,
+        "PRMSBoundaryLayer": 1.0e-5,
         "PRMSCanopy": 1.0e-5,
         "PRMSSnow": 5e-2,
         "PRMSRunoff": 1.0e-5,
+        "PRMSSoilzone": 1.0e-5,
         "PRMSEt": 1.0e-5,
     }
 
@@ -113,13 +178,17 @@ def test_model(domain, control, components, tmp_path):
     ans = {key: {} for key in comparison_vars_dict.keys()}
     for unit_name, var_names in comparison_vars_dict.items():
         for vv in var_names:
-            nc_pth = output_dir / f"{vv}.nc"
+            if vv in ["tmin", "tmax", "prcp"]:
+                nc_pth = input_dir.parent / f"{vv}.nc"
+            else:
+                nc_pth = input_dir / f"{vv}.nc"
             ans[unit_name][vv] = adapter_factory(
                 nc_pth, variable_name=vv, control=control
             )
 
     all_success = True
-    for istep in range(control.n_times):
+    # for istep in range(control.n_times):
+    for istep in range(10):
 
         # print(istep)
         model.advance()

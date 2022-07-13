@@ -22,6 +22,7 @@ class PRMSGroundwater(StorageUnit):
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ) -> "PRMSGroundwater":
 
@@ -32,6 +33,7 @@ class PRMSGroundwater(StorageUnit):
         self.name = "PRMSGroundwater"
 
         self.set_inputs(locals())
+        self.set_budget(budget_type)
         return
 
     def set_initial_conditions(self):

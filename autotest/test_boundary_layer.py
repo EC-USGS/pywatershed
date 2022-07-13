@@ -19,7 +19,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-# @pytest.mark.xfail
+@pytest.mark.xfail
 class TestPRMSBoundaryLayer:
     def test_init(self, domain, control, tmp_path):
 

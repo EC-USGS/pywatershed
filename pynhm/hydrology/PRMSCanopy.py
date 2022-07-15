@@ -43,9 +43,6 @@ class PRMSCanopy(StorageUnit):
         self.set_budget(budget_type)
         return
 
-    def set_initial_conditions(self):
-        return
-
     @staticmethod
     def get_parameters() -> tuple:
         """
@@ -128,13 +125,15 @@ class PRMSCanopy(StorageUnit):
             "intcp_transp_on": 0,  # could make boolean
         }
 
+    def set_initial_conditions(self):
+        return
+
     def _advance_variables(self):
         """Advance canopy
         Returns:
             None
 
         """
-        # self.intcp_stor_old = self.intcp_stor
         self.hru_intcpstor_old[:] = self.hru_intcpstor
         return
 

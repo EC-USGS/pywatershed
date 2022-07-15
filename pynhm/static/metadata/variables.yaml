@@ -1424,6 +1424,21 @@ gwres_stor:
     0: ngw
   type: D
   units: inches
+  var_category: mass storage
+gwres_stor_change:
+  desc: Change is storage in each GWR
+  dimensions:
+    0: ngw
+  type: D
+  units: inches
+  var_category: mass storage change
+gwres_stor_old:
+  desc: Previous storage in each GWR
+  dimensions:
+    0: ngw
+  type: D
+  units: inches
+  var_category: mass storage  
 gwstor_minarea_wb:
   desc: Storage added to each GWR when storage is less than gwstor_min
   dimensions:
@@ -1492,14 +1507,14 @@ hru_impervstor:
   type: F
   units: inches
 hru_impervstor_change:
-  desc: HRU area-weighted average storage on impervious area for each HRU
+  desc: Change in HRU area-weighted average storage on impervious area for each HRU
   dimensions:
     0: nhru
   type: F
   units: inches
   var_category: mass storage change
 hru_impervstor_old:
-  desc: HRU area-weighted average storage on impervious area for each HRU
+  desc: Previous HRU area-weighted average storage on impervious area for each HRU
   dimensions:
     0: nhru
   type: F

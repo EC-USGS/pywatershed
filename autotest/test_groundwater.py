@@ -26,7 +26,15 @@ class TestPRMSGroundwaterDomain:
         gw.initialize_netcdf(nc_parent)
 
         output_compare = {}
+        vars_compare = (
+            "gwres_flow",
+            "gwres_in",
+            "gwres_sink",
+            "gwres_stor",
+        )
         for key in PRMSGroundwater.get_variables():
+            if key not in vars_compare:
+                continue
             base_nc_path = output_dir / f"{key}.nc"
             compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
             output_compare[key] = (base_nc_path, compare_nc_path)

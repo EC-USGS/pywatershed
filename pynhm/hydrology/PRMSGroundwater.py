@@ -4,7 +4,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan, zero
+from ..constants import nan
 
 
 class PRMSGroundwater(StorageUnit):

@@ -36,13 +36,13 @@ def meta_netcdf_type(meta_item: dict) -> str:
 
     """
     type_str = meta_type(meta_item)
-    if type_str == "I":
+    if type_str == "int32":
         netcdf_type_str = "i4"
-    elif type_str == "B":
+    elif type_str == "bool":
         netcdf_type_str = "i4"
-    elif type_str == "F":
+    elif type_str == "float32":
         netcdf_type_str = "f4"
-    elif type_str == "D":
+    elif type_str == "float64":
         netcdf_type_str = "f8"
     else:
         raise ValueError(f"invalid metadata type '{type_str}'")
@@ -60,14 +60,14 @@ def meta_numpy_type(meta_item: dict) -> str:
 
     """
     type_str = meta_type(meta_item)
-    if type_str == "I":
+    if type_str == "int32":
         numpy_type_str = int
-    elif type_str == "B":
+    elif type_str == "bool":
         numpy_type_str = int
-    elif type_str == "F":
+    elif type_str == "float32":
         numpy_type_str = np.float32
-    elif type_str == "D":
-        numpy_type_str = float
+    elif type_str == "float64":
+        numpy_type_str = np.float64
     else:
         raise ValueError(f"invalid metadata type '{type_str}'")
     return numpy_type_str

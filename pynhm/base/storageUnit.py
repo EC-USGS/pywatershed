@@ -10,14 +10,6 @@ from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
 from .control import Control
 
-# These could be changed in the metadata yaml
-type_translation = {
-    "D": "float64",
-    "F": "float64",
-    "I": "int32",
-    "B": "bool",  # not used despite the popularity of "flags"
-}
-
 
 class StorageUnit(Accessor):
     def __init__(
@@ -130,14 +122,14 @@ class StorageUnit(Accessor):
 
         return
 
-    def initialize_var(self, var_name):
+    def initialize_var(self, var_name: str, flt_to_dbl: bool = True):
         if self.var_meta[var_name]["dimensions"][0] == "nsegment":
             nsize = self.nsegment
         else:
             nsize = self.nhru
         init_vals = self.get_init_values()
         if var_name in init_vals.keys():
-            init_type = type_translation[self.var_meta[var_name]["type"]]
+            init_type = self.var_meta[var_name]["type"]
             setattr(
                 self,
                 var_name,

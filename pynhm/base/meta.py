@@ -63,7 +63,7 @@ def meta_numpy_type(meta_item: dict) -> str:
     if type_str == "int32":
         numpy_type_str = int
     elif type_str == "bool":
-        numpy_type_str = int
+        numpy_type_str = bool
     elif type_str == "float32":
         numpy_type_str = np.float32
     elif type_str == "float64":

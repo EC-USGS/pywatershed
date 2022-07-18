@@ -1636,7 +1636,7 @@ iasw:
     on curve and maximum (1) or is on the defined curve (0)
   dimensions:
     0: nhru
-  type: bool
+  type: int32
   units: none
 imperv_evap:
   desc: Evaporation from impervious area for each HRU
@@ -1896,7 +1896,7 @@ lst:
     the albedo curve (1) (albset_snm or albset_sna) otherwise (0)
   dimensions:
     0: nhru
-  type: bool
+  type: int32
   units: none
 lwrad_net:
   desc: Net long-wave radiation for each HRU
@@ -2109,7 +2109,7 @@ pptmix_nopack:
     present on an HRU (1), otherwise (0)
   dimensions:
     0: nhru
-  type: bool
+  type: int32
   units: none
 precip:
   desc: Precipitation at each measurement station

@@ -27,11 +27,9 @@ class ModelGraph:
         # Build the component nodes in the graph
         self.component_nodes = {}
         for component in model.component_order:
-            self.component_nodes = {
-                component: self._component_node(
-                    model.components[component], show_params=show_params
-                )
-            }
+            self.component_nodes[component] = self._component_node(
+                model.components[component], show_params=show_params
+            )
             self.graph.add_node(self.component_nodes[component])
 
         # Downward connections
@@ -72,21 +70,21 @@ class ModelGraph:
             f'    <TR><TD COLSPAN="6">{cls}</TD></TR>\n'
         )
 
-        var_colors = {
+        category_colors = {
             "inputs": "lightblue",
             "params": "orange",
             "variables": "lightgreen",
         }
 
-        show_vars = {
+        show_categories = {
             "inputs": inputs,
             "params": params,
             "variables": variables,
         }
         if not show_params:
-            _ = show_vars.pop("params")
+            _ = show_categories.pop("params")
 
-        for varset_name, varset in show_vars.items():
+        for varset_name, varset in show_categories.items():
 
             n_vars = len(varset)
             if not n_vars:
@@ -94,11 +92,11 @@ class ModelGraph:
 
             label += f"    <TR>\n"
             label += f'        <TD COLSPAN="2" ROWSPAN="{n_vars+1}"'
-            label += f'         BGCOLOR="{var_colors[varset_name]}">{varset_name}</TD>\n'
+            label += f'         BGCOLOR="{category_colors[varset_name]}">{varset_name}</TD>\n'
             label += f"    </TR>\n"
-            for ii, vv in enumerate(varset):
+            for ii, vv in enumerate(sorted(varset)):
                 label += f"    <TR>\n"
-                label += f'        <TD COLSPAN="4"  BGCOLOR="{var_colors[varset_name]}" PORT="{vv}"><FONT POINT-SIZE="9.0">{vv}</FONT></TD>'
+                label += f'        <TD COLSPAN="4"  BGCOLOR="{category_colors[varset_name]}" PORT="{vv}"><FONT POINT-SIZE="9.0">{vv}</FONT></TD>\n'
                 label += f"    </TR>\n"
 
         label += f"</TABLE>>\n"

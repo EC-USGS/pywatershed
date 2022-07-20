@@ -41,6 +41,7 @@ class TestPRMSBoundaryLayer:
             "tminc",
             "prmx",
             "pptmix",
+            "orad_hru"
         ]
         ans = {}
         for key in comparison_var_names:

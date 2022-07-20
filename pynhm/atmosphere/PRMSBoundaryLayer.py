@@ -191,6 +191,7 @@ class PRMSBoundaryLayer(StorageUnit):
             "tavgc",
             "tminc",
             "pptmix",
+            "orad_hru",
         )
 
     @staticmethod
@@ -211,7 +212,7 @@ class PRMSBoundaryLayer(StorageUnit):
             "tavgc": nan,
             "tminc": nan,
             "pptmix": nan,
-
+            "orad_hru": nan,
         }
 
     @staticmethod
@@ -435,11 +436,12 @@ class PRMSBoundaryLayer(StorageUnit):
         for name in solar_param_names:
             solar_params[name] = self.solar_geom[name]
 
-        self._swrad = self._ddsolrad_run(
+        self._swrad, self._orad_hru = self._ddsolrad_run(
             dates=self._datetime,
             tmax_hru=self._tmaxf,
             hru_ppt=self._hru_ppt,
             soltab_potsw=self.solar_geom._soltab_potsw,
+            soltab_horad_potsw=self.solar_geom._soltab_horad_potsw,
             **solar_params,
         )
 
@@ -452,6 +454,7 @@ class PRMSBoundaryLayer(StorageUnit):
         tmax_hru: np.ndarray,  # [n_time, n_hru]
         hru_ppt: np.ndarray,  # [n_time, n_hru]
         soltab_potsw: np.ndarray,  # [n_time, n_hru] ??
+        soltab_horad_potsw: np.ndarray,  # [n_time, n_hru] ??
         radadj_intcp,  # param [12, n_hru]
         radadj_slope,  # "    "
         tmax_index,
@@ -466,7 +469,7 @@ class PRMSBoundaryLayer(StorageUnit):
         radj_wppt,
         hru_lat,
         hru_area,
-    ) -> np.ndarray:  # [n_time, n_hru]
+    ) -> (np.ndarray, np.ndarray):  # [n_time, n_hru]
 
         # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation_degday.f90
         n_time, n_hru = tmax_hru.shape
@@ -592,7 +595,8 @@ class PRMSBoundaryLayer(StorageUnit):
             radadj[wh_radadj_lt_2_tenths] = 0.2
 
         swrad = doy_to_daily(soltab_potsw) * radadj / hru_cossl
-        return swrad
+        orad_hru = radadj * doy_to_daily(soltab_horad_potsw)
+        return swrad, orad_hru
 
     # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_potet_jh.f90
 

@@ -7,7 +7,7 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfRead, NetCdfWrite
 
 from ..base.control import Control
-from ..constants import inch2cm, nan, one, zero
+from ..constants import inch2cm, nan, one, zero, epsilon
 from ..utils.time_utils import datetime_month, datetime_doy
 from .PRMSSolarGeometry import PRMSSolarGeometry
 from .solar_constants import solf
@@ -187,6 +187,10 @@ class PRMSBoundaryLayer(StorageUnit):
             # "hru_actet",
             # "available_potet",
             "transp_on",
+            "tmaxc",
+            "tavgc",
+            "tminc",
+            "pptmix",
         )
 
     @staticmethod
@@ -203,6 +207,11 @@ class PRMSBoundaryLayer(StorageUnit):
             # "hru_actet": zero,
             # "available_potet": nan,
             "transp_on": 0,
+            "tmaxc": nan,
+            "tavgc": nan,
+            "tminc": nan,
+            "pptmix": nan,
+
         }
 
     @staticmethod
@@ -292,9 +301,14 @@ class PRMSBoundaryLayer(StorageUnit):
         # (time, space) dimensions on these variables
         self._tmaxf = np.zeros(self.tmax.shape, dtype=self.tmax.dtype)
         self._tminf = np.zeros(self.tmin.shape, dtype=self.tmin.dtype)
-        self._tmaxf = self["tmax"] + self["tmax_cbh_adj"][month_ind]
-        self._tminf = self["tmin"] + self["tmin_cbh_adj"][month_ind]
+        self._tmaxf = self.tmax + self.tmax_cbh_adj[month_ind]
+        self._tminf = self.tmin + self.tmin_cbh_adj[month_ind]
+        self._tminc = (self._tminf - 32.0) * (5 / 9)
+        self._tmaxc = (self._tmaxf - 32.0) * (5 / 9)
+        self._tavgc = (self._tmaxc + self._tminc) / 2.0
 
+
+        
         return
 
     def adjust_precip(self):
@@ -336,6 +350,7 @@ class PRMSBoundaryLayer(StorageUnit):
         self._hru_rain = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
         self._hru_snow = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
 
+        # prmx and pptmix
         self._prmx = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
         # Order MATTERS in calculating the prmx mask
         # The logic in PRMS is if(all_snow),elif(all_rain),else(mixed)
@@ -343,12 +358,15 @@ class PRMSBoundaryLayer(StorageUnit):
         # Calculate the mix everywhere, then set the precip/rain/snow amounts
         # from the conditions.
         tdiff = self._tmaxf - self._tminf
+        tdiff = np.where(tdiff < epsilon, 0.000100, tdiff)
         self._prmx = (
             (self._tmaxf - self.tmax_allsnow[month_ind]) / tdiff
         ) * self.adjmix_rain[month_ind]
+
+        self._prmx = np.where(self._prmx < zero, zero, self._prmx)
+        self._prmx = np.where(self._prmx > one, one, self._prmx)
         del tdiff
 
-        wh_all_snow = np.where(self._tmaxf <= self.tmax_allsnow[month_ind])
         wh_all_rain = np.where(
             np.logical_or(
                 self._tminf > self.tmax_allsnow[month_ind],
@@ -356,8 +374,16 @@ class PRMSBoundaryLayer(StorageUnit):
             )
         )
         self._prmx[wh_all_rain] = one
+        
+        wh_all_snow = np.where(self._tmaxf <= self.tmax_allsnow[month_ind])
         self._prmx[wh_all_snow] = zero
 
+        # This is in climate_hru as a condition of calling climateflow
+        # (eye roll)
+        self._prmx = np.where(self.prcp <= zero, zero, self._prmx)
+        
+        self._pptmix = np.where((self._prmx > zero) & (self._prmx < one), 1, 0)
+        
         # Recalculate/redefine these now based on prmx instead of the
         # temperature logic
         wh_all_snow = np.where(self._prmx <= zero)
@@ -576,8 +602,7 @@ class PRMSBoundaryLayer(StorageUnit):
 
         self._potet = self._potet_jh_run(
             dates=self._datetime,
-            tmax_hru=self._tmaxf,
-            tmin_hru=self._tminf,
+            tavgc=self._tavgc,
             swrad=self._swrad,
             jh_coef=self.jh_coef,
             jh_coef_hru=self.jh_coef_hru,
@@ -586,15 +611,17 @@ class PRMSBoundaryLayer(StorageUnit):
         return
 
     @staticmethod
-    def _potet_jh_run(dates, tmax_hru, tmin_hru, swrad, jh_coef, jh_coef_hru):
-        n_time, n_hru = tmax_hru.shape
+    def _potet_jh_run(dates, tavgc, swrad, jh_coef, jh_coef_hru):
+        """This code mixes celcius and fahrenheit units in its calculation"""
+
+        n_time, n_hru = tavgc.shape
 
         # The vector
         month = (dates.astype("datetime64[M]").astype(int) % 12) + 1
         month = tile_time_to_space(month, n_hru)
-        tavg_f = (tmax_hru + tmin_hru) / 2.0
-        tavg_c = (tavg_f - 32.0) * 5 / 9  # f_to_c
-        elh = (597.3 - (0.5653 * tavg_c)) * inch2cm
+        tavgf = (tavgc * 9 / 5) + 32
+        
+        elh = (597.3 - (0.5653 * tavgc)) * inch2cm
 
         # JLM: move this out?
         def monthly_to_daily(arr):
@@ -603,7 +630,7 @@ class PRMSBoundaryLayer(StorageUnit):
         jh_coef_day = monthly_to_daily(jh_coef)
         jh_coef_hru_day = tile_space_to_time(jh_coef_hru, n_time)
 
-        potet = jh_coef_day * (tavg_f - jh_coef_hru_day) * swrad / elh
+        potet = jh_coef_day * (tavgf - jh_coef_hru_day) * swrad / elh
         cond_potet_lt_zero = potet < zero
         wh_cond = np.where(cond_potet_lt_zero)
         if len(wh_cond[0]):

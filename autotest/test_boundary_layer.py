@@ -1,4 +1,5 @@
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 import pytest
@@ -19,7 +20,6 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-@pytest.mark.xfail
 class TestPRMSBoundaryLayer:
     def test_init(self, domain, control, tmp_path):
 
@@ -36,6 +36,11 @@ class TestPRMSBoundaryLayer:
             "swrad",
             "potet",
             "transp_on",
+            "tmaxc",
+            "tavgc",
+            "tminc",
+            "prmx",
+            "pptmix",
         ]
         ans = {}
         for key in comparison_var_names:
@@ -64,16 +69,24 @@ class TestPRMSBoundaryLayer:
             # print(atm.budget)
 
             # compare along the way
-            tol = 5e-6
             for key, val in ans.items():
                 val.advance()
+                
             for key in ans.keys():
                 a1 = ans[key].current
                 a2 = atm[key]
 
-                success = np.allclose(a2, a1, atol=tol, rtol=0.00)
+                tol = 5e-6
+                if key == 'swrad':
+                    tol = 5e-4
+                    warn(f"using tol = {tol} for variable {key}")
+                if key == 'tavgc':
+                    tol = 1e-5
+                    warn(f"using tol = {tol} for variable {key}")
+
+                success_a = np.allclose(a2, a1, atol=tol, rtol=0.00)
                 success_r = np.allclose(a2, a1, atol=0.00, rtol=tol)
-                if (not success) and (not success_r):
+                if (not success_a) and (not success_r):
                     diff = a2 - a1
                     diffratio = abs(diff / a2)
                     if (diffratio < 1e-6).all():
@@ -92,7 +105,7 @@ class TestPRMSBoundaryLayer:
                     print(f"diff   {diffmin}  {diffmax}")
                     print(f"absdiffmax  {absdiffmax}")
                     print(f"wh_absdiffmax  {wh_absdiffmax}")
-
+                    asdf
 
         atm.finalize()
 

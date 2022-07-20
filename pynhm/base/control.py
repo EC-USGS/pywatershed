@@ -37,7 +37,8 @@ class Control(Accessor):
         """Initialize time with data and parameters.
 
         Args:
-            start_time: this is the first time of integration NOT the restart time
+            start_time: this is the first time of integration NOT the restart
+                time
             end_time: the last integration time
             time_step: the length fo the time step
             config: a PRMS config file to read and use for contorl
@@ -131,7 +132,7 @@ class Control(Accessor):
 
     @property
     def previous_time(self):
-        """Get the previous time."""
+        """The previous time."""
         return self._previous_time
 
     @property
@@ -141,7 +142,7 @@ class Control(Accessor):
 
     @property
     def time_step(self):
-        """Get the time step."""
+        """The time step"""
         return self._time_step
 
     @property
@@ -151,21 +152,31 @@ class Control(Accessor):
 
     @property
     def start_time(self):
-        """Get the simulation start time"""
+        """The simulation start time"""
         return self._start_time
 
     @property
+    def start_doy(self):
+        """The simulation start day of year"""
+        return datetime_doy(self._start_time)
+
+    @property
+    def start_month(self):
+        """The simulation start month"""
+        return datetime_month(self._start_time)
+
+    @property
     def end_time(self):
-        """Get the simulation end time"""
+        """The simulation end time"""
         return self._end_time
 
     @property
     def n_times(self):
-        """Get the number of times"""
+        """The number of time steps"""
         return self._n_times
 
     def advance(self):
-        """Advance time."""
+        """Advance time"""
         if self._current_time == self._end_time:
             raise ValueError("End of time reached")
 

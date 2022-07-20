@@ -35,6 +35,7 @@ class TestPRMSBoundaryLayer:
             "hru_snow",
             "swrad",
             "potet",
+            "transp_on",
         ]
         ans = {}
         for key in comparison_var_names:
@@ -63,15 +64,17 @@ class TestPRMSBoundaryLayer:
             # print(atm.budget)
 
             # compare along the way
+            tol = 5e-6
             for key, val in ans.items():
                 val.advance()
             for key in ans.keys():
                 a1 = ans[key].current
                 a2 = atm[key]
-                success = np.allclose(a2, a1, atol=5e-6, rtol=0.00)
-                success_r = np.allclose(a2, a1, atol=0.00, rtol=5e-6)
+
+                success = np.allclose(a2, a1, atol=tol, rtol=0.00)
+                success_r = np.allclose(a2, a1, atol=0.00, rtol=tol)
                 if (not success) and (not success_r):
-                    diff = a1 - a2
+                    diff = a2 - a1
                     diffratio = abs(diff / a2)
                     if (diffratio < 1e-6).all():
                         success = True
@@ -81,7 +84,7 @@ class TestPRMSBoundaryLayer:
                     diffmax = diff.max()
                     abs_diff = abs(diff)
                     absdiffmax = abs_diff.max()
-                    wh_absdiffmax = np.where(absdiffmax)[0]
+                    wh_absdiffmax = np.where(abs_diff)[0]
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
@@ -89,6 +92,7 @@ class TestPRMSBoundaryLayer:
                     print(f"diff   {diffmin}  {diffmax}")
                     print(f"absdiffmax  {absdiffmax}")
                     print(f"wh_absdiffmax  {wh_absdiffmax}")
+
 
         atm.finalize()
 

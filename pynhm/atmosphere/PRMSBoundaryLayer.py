@@ -8,7 +8,7 @@ from pynhm.utils.netcdf_utils import NetCdfRead, NetCdfWrite
 
 from ..base.control import Control
 from ..constants import inch2cm, nan, one, zero
-from ..utils.time_utils import datetime_month
+from ..utils.time_utils import datetime_month, datetime_doy
 from .PRMSSolarGeometry import PRMSSolarGeometry
 from .solar_constants import solf
 
@@ -40,17 +40,36 @@ class PRMSBoundaryLayer(StorageUnit):
     This representation uses precipitation and temperature inputs. Relative
     humidity could be added as well.
 
-    Note that all variables are calculate for all time upon initialization.
-    This may not be tractable for large domains and long periods of time
-    and require changes. The benefits are 1) the code is vectorized and
-    fast for such a large calculation, 2) the initialization of this class
-    effectively preprocess all the inputs to the rest of the model and can
-    then be skipped in subsequent model calls (unless the parameters are
-    changing).
+    The boundary layer calculates and manages the following variables (given
+    by PRMSBoundaryLayer.get_variables()):
+
+        tmaxf,
+        tminf,
+        prmx,
+        hru_ppt,
+        hru_rain,
+        hru_snow,
+        swrad,
+        potet,
+        transp_on,
 
     PRMS adjustments to temperature and precipitation are applied here to
     the inputs. Shortwave radiation (using degree day method) and potential
-    evapotranspiration (Jensen and Haise ,1963) are also calculated.
+    evapotranspiration (Jensen and Haise ,1963) and a temperature based
+    transpiration flag (transp_on) are also calculated.
+
+    Note that all variables are calculate for all time upon initialization. The
+    full time version of a variable is given by the "private" version of the
+    variable which is named with a single-leading underscore (eg tmaxf for all
+    time is _tmaxf).
+
+    This full-time initialization ma not be tractable for large domains and/or
+    long periods of time and require changes to batch the processing of the
+    variables. The benefits of full-time initialization are 1) the code is
+    vectorized and fast for such a large calculation, 2) the initialization of
+    this class effectively preprocess all the inputs to the rest of the model
+    and can then be skipped in subsequent model calls (unless the parameters
+    are changing).
 
     Args:
         control: control object
@@ -114,16 +133,22 @@ class PRMSBoundaryLayer(StorageUnit):
         self._init_time_ind = start_time_ind[0]
 
         # atm/boundary layer has a solar geometry
+        # This composition is difficult to get rid of because
+        # of the dependence on solar parameters of
+        # calculate_sw_rad_degree_day
         self.solar_geom = PRMSSolarGeometry(control)
 
         # Solve all variables for all time
         self._month_ind_12 = datetime_month(self._datetime) - 1  # (time)
         self._month_ind_1 = np.zeros(self._datetime.shape, dtype=int)  # (time)
+        self._month = datetime_month(self._datetime)  # (time)
+        self._doy = datetime_doy(self._datetime)  # (time)
 
         self.adjust_temperature()
         self.adjust_precip()
         self.calculate_sw_rad_degree_day()
         self.calculate_potential_et_jh()
+        self.calculate_transp_tindex()
 
         # Budget is not for all time
         # self.set_budget(budget_type)
@@ -139,6 +164,8 @@ class PRMSBoundaryLayer(StorageUnit):
             self.netcdf_output_dir = pl.Path(netcdf_output_dir)
             assert self.netcdf_output_dir.exists()
             self._write_netcdf_timeseries()
+
+        # JLM todo: delete large variables on self for memory management
 
         return
 
@@ -159,6 +186,7 @@ class PRMSBoundaryLayer(StorageUnit):
             "potet",
             # "hru_actet",
             # "available_potet",
+            "transp_on",
         )
 
     @staticmethod
@@ -174,6 +202,7 @@ class PRMSBoundaryLayer(StorageUnit):
             "potet": nan,
             # "hru_actet": zero,
             # "available_potet": nan,
+            "transp_on": 0,
         }
 
     @staticmethod
@@ -204,6 +233,9 @@ class PRMSBoundaryLayer(StorageUnit):
             "snow_cbh_adj",
             "rain_cbh_adj",
             "adjmix_rain",
+            "transp_beg",
+            "transp_end",
+            "transp_tmax",
         )
 
     def set_initial_conditions(self):
@@ -588,6 +620,98 @@ class PRMSBoundaryLayer(StorageUnit):
     #         et = available_et
     #     self.pot_et_consumed += et
     #     return et
+
+    def calculate_transp_tindex(self):
+
+        # INIT: Process_flag==INIT
+        # transp_on inited to 0 everywhere above
+
+        # take the shape from the precip input
+        self._transp_on = np.zeros(self.prcp.shape, dtype=self.transp_on.dtype)
+
+        # candidate for worst code lines
+        if self.control.params.parameters['temp_units'] == 0:
+            transp_tmax_f = self.transp_tmax
+        else:
+            transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0
+
+        transp_check = self.transp_on.copy()
+        tmax_sum = self.transp_on.copy().astype("float64")
+        start_day = self.control.start_doy
+        start_month = self.control.start_month
+
+        months_per_year = 12
+        motmp = start_month + months_per_year
+
+        for hh in range(self.nhru):
+            if start_month == self.transp_beg[hh]:
+                # rsr, why 10? if transp_tmax < 300, should be < 10
+                if start_day > 10:
+                    self._transp_on[0, hh] = 1
+                else:
+                    transp_check[hh] = 1
+
+            elif self.transp_end[hh] > self.transp_beg[hh]:
+                if (start_month > self.transp_beg[hh]) and (
+                    start_month < self.transp_end[hh]
+                ):
+                    self._transp_on[0, hh] = 1
+            else:
+                if (start_month > self.transp_beg[hh]) or (
+                    motmp < self.transp_end[hh] + months_per_year
+                ):
+                    self._transp_on[0, hh] = 1
+
+        # vectorize
+        ntime = self._transp_on.shape[0]
+        # _transp_check = self._transp_on.copy()
+        # self._transp_beg = tile_space_to_time(self.transp_beg, ntime)
+        # self._transp_end = tile_space_to_time(self.transp_end, ntime)
+
+        # RUN: Process_flag == RUN
+        # Set switch for active transpiration period
+        for tt in range(ntime):
+            for hh in range(self.nhru):
+                if tt > 0:
+                    self._transp_on[tt, hh] = self._transp_on[tt - 1, hh]
+
+                # if tt == 2 and hh == 980:
+                #      asdf
+
+                # check for month to turn check switch on or
+                # transpiration switch off
+
+                if self._doy[tt] == 1:
+                    # check for end of period
+                    if self._month[tt] == self.transp_end[hh]:
+                        self._transp_on[tt, hh] = 0
+                        transp_check[hh] = 0
+                        tmax_sum[hh] = zero
+
+                    # <
+                    # check for month to turn transpiration switch on or off
+                    if self._month[tt] == self.transp_beg[hh]:
+                        transp_check[hh] = 1
+                        tmax_sum[hh] = zero
+
+                # <<
+                # If in checking period, then for each day
+                # sum maximum temperature until greater than temperature index
+                # parameter, at which time, turn transpiration switch on, check
+                # switch off freezing temperature assumed to be 32 degrees
+                # Fahrenheit
+                if transp_check[hh] == 1:
+                    if self._tmaxf[tt, hh] > 32.0:
+                        tmax_sum[hh] = tmax_sum[hh] + self._tmaxf[tt, hh]
+
+                    # <
+                    if tmax_sum[hh] > transp_tmax_f[hh]:
+                        self._transp_on[tt, hh] = 1
+                        transp_check[hh] = 0
+                        tmax_sum[hh] = 0.0
+
+        # <<<
+        return
 
     def _write_netcdf_timeseries(self) -> None:
         for var in self.variables:

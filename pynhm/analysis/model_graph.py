@@ -25,7 +25,8 @@ class ModelGraph:
         model: Model,
         show_params: bool = False,
         component_colors: dict = None,
-        node_penwidth: int = 5,
+        node_penwidth: int = 2,
+        default_edge_color: str = "gray50",
     ):
         if not has_pydot:
             warnings.warn("pydot not available")
@@ -34,6 +35,8 @@ class ModelGraph:
         self.show_params = show_params
         self.component_colors = component_colors
         self.node_penwidth = node_penwidth
+        self.default_edge_color = default_edge_color
+
         self.graph = None
 
         return
@@ -47,26 +50,34 @@ class ModelGraph:
             )
 
         self.graph = pydot.Dot(
-            graph_type="digraph", rankdir="LR", colorscheme="accent8"
+            graph_type="digraph",
+            engine="neato",
+            # rankdir="LR",
         )
 
         for component in self.model.component_order:
             self.graph.add_node(self.component_nodes[component])
 
-        # Downward connections
+        subs = {}
+        for ii, component in enumerate(self.model.component_order):
+            subs[component] = pydot.Subgraph(name=str(ii), rank="source")
+            subs[component].add_node(self.component_nodes[component])
+            self.graph.add_subgraph(subs[component])
+
+        # connections
+        connections = []
         for component in self.model.component_order:
             for var, frm in self.model.component_input_from[component].items():
                 if not isinstance(frm, pl.Path):
-                    self.graph.add_edge(
-                        pydot.Edge(
-                            f"{frm}:{var}",
-                            f"{component}:{var}",
-                            color=self.component_colors[frm],
-                        )
-                    )
+                    color = self.default_edge_color
+                    if self.component_colors:
+                        color = self.component_colors[frm]
+                    connections += [
+                        (f"{frm}:{var}", f"{component}:{var}", color)
+                    ]
 
-        # "Upwards" connections across time.
-        # graph.add_edge(pydot.Edge("PRMSSnow:pkwater_ante", "PRMSCanopy:pkwater_ante", color="blue"))
+        for con in connections:
+            self.graph.add_edge(pydot.Edge(con[0], con[1], color=con[2]))
 
         return
 

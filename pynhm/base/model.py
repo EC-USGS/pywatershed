@@ -81,8 +81,6 @@ class Model:
         # files on init, so dont adapt these
         file_input_names = set([])
         for k0, v0 in inputs_from.items():
-            # if k0 == "PRMSBoundaryLayer":
-            #    continue
             for k1, v1 in v0.items():
                 if not v1:
                     file_input_names = file_input_names.union([k1])

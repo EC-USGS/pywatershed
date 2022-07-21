@@ -2,6 +2,8 @@ import pathlib as pl
 import tempfile
 import warnings
 
+from ..base.model import Model
+
 try:
     import pydot
 
@@ -18,27 +20,48 @@ except ModuleNotFoundError:
 
 
 class ModelGraph:
-    def __init__(self, model, show_params: bool = False):
+    def __init__(
+        self,
+        model: Model,
+        show_params: bool = False,
+        component_colors: dict = None,
+        node_penwidth: int = 5,
+    ):
         if not has_pydot:
             warnings.warn("pydot not available")
 
-        self.graph = pydot.Dot(graph_type="digraph", rankdir="LR")
+        self.model = model
+        self.show_params = show_params
+        self.component_colors = component_colors
+        self.node_penwidth = node_penwidth
+        self.graph = None
 
+        return
+
+    def build_graph(self):
         # Build the component nodes in the graph
         self.component_nodes = {}
-        for component in model.component_order:
+        for component in self.model.component_order:
             self.component_nodes[component] = self._component_node(
-                model.components[component], show_params=show_params
+                self.model.components[component], show_params=self.show_params
             )
+
+        self.graph = pydot.Dot(
+            graph_type="digraph", rankdir="LR", colorscheme="accent8"
+        )
+
+        for component in self.model.component_order:
             self.graph.add_node(self.component_nodes[component])
 
         # Downward connections
-        for component in model.component_order:
-            for var, frm in model.component_input_from[component].items():
+        for component in self.model.component_order:
+            for var, frm in self.model.component_input_from[component].items():
                 if not isinstance(frm, pl.Path):
                     self.graph.add_edge(
                         pydot.Edge(
-                            f"{frm}:{var}", f"{component}:{var}", color="gray"
+                            f"{frm}:{var}",
+                            f"{component}:{var}",
+                            color=self.component_colors[frm],
                         )
                     )
 
@@ -49,9 +72,12 @@ class ModelGraph:
 
     def SVG(self, verbose: bool = False):
         """Display an SVG in jupyter notebook (via tempfile)."""
+
         if not has_ipython:
             warnings.warn("IPython is not available")
         tmp_file = pl.Path(tempfile.NamedTemporaryFile().name)
+        if self.graph is None:
+            self.build_graph()
         self.graph.write_svg(tmp_file)
         if verbose:
             print(f"Displaying SVG written to temp file: {tmp_file}")
@@ -106,7 +132,18 @@ class ModelGraph:
         # node = pydot.Node(label)
         # node.set_shape('plain')
         # go through a digraph instead
-        dot_string = f"digraph G {{ {cls} [shape=component label={label}] }}"
+        color_str = ""
+        if self.component_colors:
+            color_str = f"""color="{self.component_colors[cls]}" """
+
+        dot_string = (
+            f"""digraph G {{ {cls} ["""
+            f"""shape=component """
+            f"""{color_str} """
+            f"""penwidth={self.node_penwidth} """
+            f"""label={label} """
+            f"""]}}"""
+        )
         node = pydot.graph_from_dot_data(dot_string)[0].get_node(cls)[0]
 
         return node

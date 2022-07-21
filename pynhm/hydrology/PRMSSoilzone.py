@@ -87,10 +87,9 @@ class PRMSSoilzone(StorageUnit):
 
         """
         return (
-            "snowcov_area",
-            "dprst_evap_hru",  ## JLM ?? needs this stuff to calculate evap?
+            "dprst_evap_hru",  # JLM ?? needs this stuff to calculate evap?
             "dprst_seep_hru",
-            "hru_impervevap",  ## JLM ??
+            "hru_impervevap",  # JLM ??
             "hru_intcpevap",  # JLM ???
             "infil",
             # soil_moist_chg => model_runoff%soil_moist_chg, &

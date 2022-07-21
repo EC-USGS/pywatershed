@@ -1,4 +1,5 @@
 from pynhm.analysis.model_graph import ModelGraph
+from pynhm.analysis.utils.colorbrewer import ColorBrewer
 from pynhm.atmosphere.PRMSBoundaryLayer import PRMSBoundaryLayer
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.accessor import Accessor
@@ -16,9 +17,6 @@ from pynhm.hydrology.PRMSRunoff import PRMSRunoff
 from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 
-from .base.accessor import Accessor
-from .base.control import Control
-from .base.model import Model
 from .utils import (
     ControlVariables,
     NetCdfCompare,

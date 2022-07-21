@@ -134,6 +134,8 @@ class PRMSSoilzone(StorageUnit):
             "soil_lower",
             "soil_lower_ratio",
             "soil_moist",
+            "soil_moist_change",
+            "soil_moist_prev",
             "soil_moist_tot",
             "soil_rechr",
             "soil_to_gw",
@@ -189,6 +191,8 @@ class PRMSSoilzone(StorageUnit):
             "soil_lower_ratio": zero,
             "soil_lower_stor_max": nan,  # completely set later
             "soil_moist": nan,  # sm_climateflow
+            "soil_moist_change": nan,  # sm_climateflow
+            "soil_moist_prev": nan,  # sm_climateflow
             "soil_moist_tot": nan,  # completely set later
             "soil_rechr": nan,  # sm_climateflow
             "soil_to_gw": zero,
@@ -383,7 +387,7 @@ class PRMSSoilzone(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
-        # self.stor_old[:] = self.stor
+        self.soil_moist_prev[:] = self.soil_moist
         return
 
     def _calculate(self, simulation_time):
@@ -401,7 +405,7 @@ class PRMSSoilzone(StorageUnit):
 
         # <
         gwin = zero
-        update_potet = 0
+        # update_potet = 0
 
         # diagnostic state resets
         self.soil_to_gw[:] = zero
@@ -747,6 +751,8 @@ class PRMSSoilzone(StorageUnit):
 
         if self.control.config["dprst_flag"] == 1:
             self.recharge = self.recharge + self.dprst_seep_hru
+
+        self.soil_moist_change[:] = self.soil_moist - self.soil_moist_prev
 
         # <
         return

@@ -2156,7 +2156,7 @@ pref_flow_stor_change:
   type: float64
   units: inches
   var_category: mass storage change
-pref_flow_prev:
+pref_flow_stor_prev:
   desc: Previous time storage in preferential-flow reservoir for each HRU
   dimensions:
     0: nhru
@@ -2513,6 +2513,13 @@ soil_moist:
   var_category: mass storage
 soil_moist_change:
   desc: Storage of capillary reservoir for each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_moist_prev:
+  desc: Previous storage of capillary reservoir for each HRU
   dimensions:
     0: nhru
   type: float64

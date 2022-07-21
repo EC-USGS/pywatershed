@@ -76,6 +76,7 @@ class TestPRMSCanopyDomain:
             "intcp_evap",
             "hru_intcpstor",
             "hru_intcpevap",
+            "intcp_changeover",
         ]
         ans = {}
         for key in comparison_var_names:

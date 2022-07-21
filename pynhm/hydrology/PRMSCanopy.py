@@ -99,6 +99,7 @@ class PRMSCanopy(StorageUnit):
             "hru_intcpstor_change",
             "hru_intcpevap",
             "intcp_form",
+            "intcp_changeover",
             "intcp_transp_on",  # this is private in prms6 and is not in the metadata
             # i defined metadata for it in a very adhoc way
         )
@@ -120,6 +121,7 @@ class PRMSCanopy(StorageUnit):
             "hru_intcpstor": zero,
             "hru_intcpstor_old": zero,
             "hru_intcpstor_change": zero,
+            "intcp_changeover": zero,
             "hru_intcpevap": zero,
             "intcp_form": 0,  # could make boolean but would have to make the RAIN/SNOW match
             "intcp_transp_on": 0,  # could make boolean
@@ -324,6 +326,8 @@ class PRMSCanopy(StorageUnit):
             self.net_ppt[i] = netrain + netsnow
             self.hru_intcpstor[i] = intcpstor * cov
             self.hru_intcpevap[i] = intcpevap * cov
+
+            self.intcp_changeover[i] = changeover + extra_water
 
         return
 

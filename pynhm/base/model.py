@@ -153,3 +153,24 @@ class Model:
                 print(f"calculating component: {cls}")
             self.components[cls].calculate(1.0)
         return
+
+    def output(self):
+        for cls in self.component_order:
+            if self.verbose:
+                print(f"writing output for component: {cls}")
+            self.components[cls].output()
+        return
+
+    def initialize_netcdf(self, dir):
+        for cls in self.component_order:
+            if self.verbose:
+                print(f"initializing netcdf output for component: {cls}")
+            self.components[cls].initialize_netcdf(dir)
+        return
+
+    def finalize(self):
+        for cls in self.component_order:
+            if self.verbose:
+                print(f"finalizing component: {cls}")
+            self.components[cls].finalize()
+        return

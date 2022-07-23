@@ -27,6 +27,8 @@ class ModelGraph:
         component_colors: dict = None,
         node_penwidth: int = 2,
         default_edge_color: str = "gray50",
+        from_file_edge_color: str = None,
+        node_spacing=2.75,
     ):
         if not has_pydot:
             warnings.warn("pydot not available")
@@ -36,6 +38,11 @@ class ModelGraph:
         self.component_colors = component_colors
         self.node_penwidth = node_penwidth
         self.default_edge_color = default_edge_color
+        if not from_file_edge_color:
+            self.from_file_edge_color = default_edge_color
+        else:
+            self.from_file_edge_color = from_file_edge_color
+        self.node_spacing = node_spacing
 
         self.graph = None
 
@@ -43,28 +50,15 @@ class ModelGraph:
 
     def build_graph(self):
         # Build the component nodes in the graph
+        self._current_pos = self.node_spacing
         self.component_nodes = {}
         for component in self.model.component_order:
             self.component_nodes[component] = self._component_node(
                 self.model.components[component], show_params=self.show_params
             )
 
-        self.graph = pydot.Dot(
-            graph_type="digraph",
-            engine="neato",
-            # rankdir="LR",
-        )
-
-        for component in self.model.component_order:
-            self.graph.add_node(self.component_nodes[component])
-
-        subs = {}
-        for ii, component in enumerate(self.model.component_order):
-            subs[component] = pydot.Subgraph(name=str(ii), rank="source")
-            subs[component].add_node(self.component_nodes[component])
-            self.graph.add_subgraph(subs[component])
-
-        # connections
+        # Solve the connections
+        files = []
         connections = []
         for component in self.model.component_order:
             for var, frm in self.model.component_input_from[component].items():
@@ -75,6 +69,32 @@ class ModelGraph:
                     connections += [
                         (f"{frm}:{var}", f"{component}:{var}", color)
                     ]
+                else:
+                    file_name = frm.name
+                    files += [file_name]
+                    connections += [
+                        (
+                            f"Files:{file_name.split('.')[0]}",
+                            f"{component}:{var}",
+                            self.from_file_edge_color,
+                        )
+                    ]
+
+        # Build the file node, reset the position
+        self._current_pos = 0
+        self.file_node = self._file_node(files)
+
+        # build the graph
+        self.graph = pydot.Dot(
+            graph_type="digraph",
+            layout="neato",
+            splines="polyline",
+        )
+
+        self.graph.add_node(self.file_node)
+
+        for component in self.model.component_order:
+            self.graph.add_node(self.component_nodes[component])
 
         for con in connections:
             self.graph.add_edge(pydot.Edge(con[0], con[1], color=con[2]))
@@ -139,22 +159,43 @@ class ModelGraph:
         label += f"</TABLE>>\n"
         label = label
 
-        # unclear correct syntax to set node directly
-        # node = pydot.Node(label)
-        # node.set_shape('plain')
-        # go through a digraph instead
         color_str = ""
         if self.component_colors:
-            color_str = f"""color="{self.component_colors[cls]}" """
+            color_str = f'"{self.component_colors[cls]}"'
 
-        dot_string = (
-            f"""digraph G {{ {cls} ["""
-            f"""shape=component """
-            f"""{color_str} """
-            f"""penwidth={self.node_penwidth} """
-            f"""label={label} """
-            f"""]}}"""
+        node = pydot.Node(
+            cls,
+            label=label,
+            pos=f'"{self._current_pos},0!"',
+            shape="component",
+            color=color_str,
+            penwidth=f'"{self.node_penwidth}"',
         )
-        node = pydot.graph_from_dot_data(dot_string)[0].get_node(cls)[0]
+        self._current_pos += self.node_spacing
 
+        return node
+
+    def _file_node(self, files):
+        files = list(set(files))
+        label = (
+            f'<<TABLE BORDER="0" CELLBORDER=".5" CELLSPACING="0" CELLPADDING="1">\n'
+            f'    <TR><TD COLSPAN="1">Files</TD></TR>\n'
+        )
+
+        for file in files:
+            label += f"    <TR>\n"
+            label += f'        <TD COLSPAN="1"  BGCOLOR="gray50" PORT="{file.split(".")[0]}"><FONT POINT-SIZE="9.0">{file}</FONT></TD>\n'
+            label += f"    </TR>\n"
+
+        label += f"</TABLE>>\n"
+        label = label
+        node = pydot.Node(
+            "Files",
+            label=label,
+            pos=f'"{self._current_pos},0!"',
+            shape="note",
+            color=f'"{self.from_file_edge_color}"',
+            penwidth=f'"{self.node_penwidth}"',
+        )
+        self._current_pos += self.node_spacing
         return node

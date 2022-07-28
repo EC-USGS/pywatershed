@@ -1,5 +1,5 @@
 """The control class."""
-
+import datetime
 import pathlib as pl
 from typing import Union
 
@@ -109,6 +109,11 @@ class Control(Accessor):
     def current_time(self):
         """Get the current time."""
         return self._current_time
+
+    @property
+    def current_datetime(self):
+        """Get the current time as a datetime.datetime object"""
+        return self._current_time.astype(datetime.datetime)
 
     @property
     def current_year(self):

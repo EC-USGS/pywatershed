@@ -22,7 +22,6 @@ class StorageUnit(Accessor):
         self.control = control
         self.params = self.control.params
         self.verbose = verbose
-        self._simulation_time = 0.0
 
         # netcdf output variables
         self._output_netcdf = False
@@ -337,8 +336,7 @@ class StorageUnit(Accessor):
             for idx, variable in enumerate(self.variables):
                 if idx == 0 or self._separate_netcdf:
                     self._netcdf[variable].add_simulation_time(
-                        self._itime_step,
-                        self._simulation_time,
+                        self.control.itime_step, self.control.current_datetime
                     )
                 self._netcdf[variable].add_data(
                     variable,

@@ -278,7 +278,11 @@ class NetCdfWrite(Accessor):
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name
-            if "nhru" in dimension_name or "ngw" in dimension_name:
+            if (
+                "nhru" in dimension_name
+                or "ngw" in dimension_name
+                or "nssr" in dimension_name
+            ):
                 nhru_coordinate = True
             if "nsegment" in dimension_name:
                 nsegment_coordinate = True
@@ -333,18 +337,18 @@ class NetCdfWrite(Accessor):
             break
 
         if nhru_coordinate:
-            self.dataset.createDimension("hru_id", self.nhrus)
+            self.dataset.createDimension("nhm_id", self.nhrus)
         if nsegment_coordinate:
-            self.dataset.createDimension("hru_seg", self.nsegments)
+            self.dataset.createDimension("nhm_seg", self.nsegments)
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
-                "hru_id", "i4", ("hru_id")
+                "nhm_id", "i4", ("nhm_id")
             )
             self.hruid[:] = np.array(self.hru_ids, dtype=int)
         if nsegment_coordinate:
             self.segid = self.dataset.createVariable(
-                "hru_seg", "i4", ("hru_seg")
+                "nhm_seg", "i4", ("nhm_seg")
             )
             self.segid[:] = np.array(self.hru_segments, dtype=int)
 
@@ -352,9 +356,9 @@ class NetCdfWrite(Accessor):
         for var_name in variables:
             variabletype = meta_netcdf_type(var_meta[var_name])
             if "nsegment" in variable_dimensions[var_name]:
-                spatial_coordinate = "hru_seg"
+                spatial_coordinate = "nhm_seg"
             else:
-                spatial_coordinate = "hru_id"
+                spatial_coordinate = "nhm_id"
 
             if var_name in ndays_time_vars:
                 time_dim = "ndays"
@@ -387,9 +391,9 @@ class NetCdfWrite(Accessor):
             return
 
     def add_simulation_time(self, itime_step: int, simulation_time: float):
-        # var = self.variables["datetime"]
-        # var[itime_step] = simulation_time
-        self.datetime[itime_step] = simulation_time
+        self.datetime[itime_step] = nc4.date2num(
+            simulation_time, self.datetime.units
+        )
         return
 
     def add_data(

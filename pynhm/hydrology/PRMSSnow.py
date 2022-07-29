@@ -441,10 +441,10 @@ class PRMSSnow(StorageUnit):
                 self.mso[jj] = 2  # [flag]  # could emume this BEFORE/AFTER
 
             # <
-            if jj == dbgind:
-                print(f"self.pkwater_equiv 0 : {self.pkwater_equiv[dbgind]}")
-                print(f"self.pk_ice 0 : {self.pk_ice[dbgind]}")
-                print(f"self.tcal 0 : {self.tcal[dbgind]}")
+            # if jj == dbgind:
+            #     print(f"self.pkwater_equiv 0 : {self.pkwater_equiv[dbgind]}")
+            #     print(f"self.pk_ice 0 : {self.pk_ice[dbgind]}")
+            #     print(f"self.tcal 0 : {self.tcal[dbgind]}")
 
             if self.pkwater_equiv[jj] < epsilon64:
                 # No existing snowpack
@@ -469,10 +469,10 @@ class PRMSSnow(StorageUnit):
             ) or self.net_snow[jj] > zero:
                 self.ppt_to_pack(jj)
 
-            if jj == dbgind:
-                print(f"self.pkwater_equiv 1 : {self.pkwater_equiv[dbgind]}")
-                print(f"self.net_rain: {self.net_rain[dbgind]}", flush=True)
-                print(f"self.tcal 1 : {self.tcal[dbgind]}")
+            # if jj == dbgind:
+            #     print(f"self.pkwater_equiv 1 : {self.pkwater_equiv[dbgind]}")
+            #     print(f"self.net_rain: {self.net_rain[dbgind]}", flush=True)
+            #     print(f"self.tcal 1 : {self.tcal[dbgind]}")
 
             # <
             if self.pkwater_equiv[jj] > zero:
@@ -480,12 +480,12 @@ class PRMSSnow(StorageUnit):
                 # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from depletion curve
                 # **********************************************************
                 self.snowcov(jj)
-                if jj == dbgind:
-                    print(
-                        f"self.pkwater_equiv 2 : {self.pkwater_equiv[dbgind]}"
-                    )
-                    print(f"self.snowcov_area: {self.snowcov_area[dbgind]}")
-                    print(f"self.tcal 2 : {self.tcal[dbgind]}")
+                # if jj == dbgind:
+                #     print(
+                #         f"self.pkwater_equiv 2 : {self.pkwater_equiv[dbgind]}"
+                #     )
+                #     print(f"self.snowcov_area: {self.snowcov_area[dbgind]}")
+                #     print(f"self.tcal 2 : {self.tcal[dbgind]}")
 
                 # if self.control._itime_step == 29 and jj == dbgind:
                 #    pdb.set_trace()
@@ -493,21 +493,21 @@ class PRMSSnow(StorageUnit):
                 # HRU STEP 3 - COMPUTE THE NEW ALBEDO
                 # **********************************************************
                 self.snalbedo(jj)
-                if jj == dbgind:
-                    print(
-                        f"self.pkwater_equiv 3 : {self.pkwater_equiv[dbgind]}"
-                    )
-                    print(f"self.tcal 3 : {self.tcal[dbgind]}")
+                # if jj == dbgind:
+                #     print(
+                #         f"self.pkwater_equiv 3 : {self.pkwater_equiv[dbgind]}"
+                #     )
+                #     print(f"self.tcal 3 : {self.tcal[dbgind]}")
 
                 # HRU STEP 4 - DETERMINE RADIATION FLUXES AND SNOWPACK
                 #              STATES NECESSARY FOR ENERGY BALANCE
                 # **********************************************************
                 self.step_4(jj, trd)
-                if jj == dbgind:
-                    print(
-                        f"self.pkwater_equiv 4 : {self.pkwater_equiv[dbgind]}"
-                    )
-                    print(f"self.tcal 4 : {self.tcal[dbgind]}")
+                # if jj == dbgind:
+                #     print(
+                #         f"self.pkwater_equiv 4 : {self.pkwater_equiv[dbgind]}"
+                #     )
+                #     print(f"self.tcal 4 : {self.tcal[dbgind]}")
 
                 #  HRU STEP 5 - CALCULATE SNOWPACK LOSS TO EVAPORATION
                 # ********************************************************
@@ -533,11 +533,11 @@ class PRMSSnow(StorageUnit):
                     # just to be sure negative values are ignored
                     self.pkwater_equiv[jj] = zero
 
-                if jj == dbgind:
-                    print(
-                        f"self.pkwater_equiv 5 : {self.pkwater_equiv[dbgind]}"
-                    )
-                    print(f"self.tcal 5 : {self.tcal[dbgind]}")
+                # if jj == dbgind:
+                #     print(
+                #         f"self.pkwater_equiv 5 : {self.pkwater_equiv[dbgind]}"
+                #     )
+                #     print(f"self.tcal 5 : {self.tcal[dbgind]}")
                 # <
                 # HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
                 #                INCREMENT THE BASIN TOTALS

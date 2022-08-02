@@ -1,15 +1,10 @@
 import pytest
 
-from pynhm.base.meta import Meta
+from pynhm.base import meta
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 
 
-@pytest.fixture(scope="function")
-def meta():
-    return Meta()
-
-
-def test_init(meta):
+def test_init():
     # some random checks
     assert "nhru" in meta.dimensions.keys()
     assert "transp_on_dynamic" in meta.control.keys()
@@ -18,7 +13,7 @@ def test_init(meta):
     return
 
 
-def test_get_in_list(meta):
+def test_get_in_list():
     gw_vars = PRMSGroundwater.get_variables()
     gw_var_meta = meta.get_vars(gw_vars)
     assert set(gw_var_meta.keys()) == set(gw_vars)

@@ -1532,6 +1532,7 @@ hru_intcpstor:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
 hru_intcpstor_change:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
   dimensions:
@@ -2475,6 +2476,7 @@ snowmelt:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
 snsv:
   desc: Tracks the cumulative amount of new snow until there is enough to reset the
     albedo curve (albset_snm or albset_sna)

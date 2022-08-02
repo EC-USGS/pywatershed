@@ -23,7 +23,6 @@ class Budget(Accessor):
         inputs: Union[list, dict],
         outputs: Union[list, dict],
         storage_changes: Union[list, dict],
-        meta: dict = None,
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
         units: str = None,
@@ -40,7 +39,6 @@ class Budget(Accessor):
         self.inputs = self.init_component(inputs)
         self.outputs = self.init_component(outputs)
         self.storage_changes = self.init_component(storage_changes)
-        self.meta = meta
         self.time_unit = time_unit
         self.description = description
         self.rtol = rtol
@@ -116,7 +114,10 @@ class Budget(Accessor):
         components = cls.get_components()
 
         # kwargs["control"] = storage_unit.control
-        kwargs["meta"] = {}
+
+        # should this kwargs['meta'] be provided by a staticmethod on
+        # StorageUnit?
+        metadata = {}
 
         meta_obj = {
             "inputs": ("input_meta", "mass flux"),
@@ -124,7 +125,7 @@ class Budget(Accessor):
             "storage_changes": ("var_meta", "mass storage change"),
         }
         for comp in components:
-            kwargs["meta"][comp] = {
+            metadata[comp] = {
                 key: val
                 for key, val in storage_unit[meta_obj[comp][0]].items()
                 if (
@@ -135,7 +136,7 @@ class Budget(Accessor):
 
         for component in components:
             kwargs[component] = {}
-            for var in kwargs["meta"][component].keys():
+            for var in metadata[component].keys():
                 kwargs[component][var] = storage_unit[var]
 
         return Budget(storage_unit.control, **kwargs)

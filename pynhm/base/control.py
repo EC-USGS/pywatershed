@@ -7,7 +7,7 @@ import numpy as np
 
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.meta import Meta
+from ..base import meta
 from ..utils import ControlVariables
 from ..utils.time_utils import (
     datetime_dowy,
@@ -73,7 +73,7 @@ class Control(Accessor):
         self.config = config
         self.params = params
 
-        self.meta = Meta()
+        self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
 

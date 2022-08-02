@@ -6,7 +6,7 @@ from pynhm.base.accessor import Accessor
 from pynhm.base.adapter import Adapter
 from pynhm.base.budget import Budget
 from pynhm.base.control import Control
-from pynhm.base.meta import Meta
+from pynhm.base import meta
 from pynhm.base.model import Model
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy

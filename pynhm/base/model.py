@@ -11,7 +11,7 @@ from pynhm.base.control import Control
 class Model:
     def __init__(
         self,
-        *component_classes,
+        *process_classes,
         control: Control,
         input_dir: str = None,
         budget_type: str = "strict",  # also pass dict
@@ -22,7 +22,7 @@ class Model:
         self.input_dir = input_dir
         self.verbose = verbose
 
-        class_dict = {comp.__name__: comp for comp in component_classes}
+        class_dict = {comp.__name__: comp for comp in process_classes}
         class_inputs = {kk: vv.get_inputs() for kk, vv in class_dict.items()}
         class_vars = {kk: vv.get_variables() for kk, vv in class_dict.items()}
 
@@ -48,10 +48,10 @@ class Model:
                         # this should be a list of length one
                         # check?
 
-        # determine component order
+        # determine process order
         # for now this is sufficient. when more classes exist, we can analyze
         # dependencies, might inputs_from_prev above.
-        component_order_prms = [
+        process_order_prms = [
             "PRMSSolarGeometry",
             "PRMSBoundaryLayer",
             "PRMSCanopy",
@@ -62,21 +62,21 @@ class Model:
             "PRMSGroundwater",
             "PRMSChannel",
         ]
-        self.component_order = []
-        for comp in component_order_prms:
+        self.process_order = []
+        for comp in process_order_prms:
             if comp in class_dict.keys():
-                self.component_order += [comp]
+                self.process_order += [comp]
 
-        missing_components = set(self.component_order).difference(
+        missing_processes = set(self.process_order).difference(
             set(class_dict.keys())
         )
-        if missing_components:
+        if missing_processes:
             raise ValueError(
-                f"Component {missing_components} not currently "
+                f"Process {missing_processes} not currently "
                 f"handled by Model class."
             )
 
-        # If inputs dont come from other components, assume they come from
+        # If inputs dont come from other processes, assume they come from
         # file in input_dir. Exception is that PRMSBoundaryLayer requires its
         # files on init, so dont adapt these
         file_input_names = set([])
@@ -85,55 +85,55 @@ class Model:
                 if not v1:
                     file_input_names = file_input_names.union([k1])
 
-        # initiate the file inputs here rather than in the components
+        # initiate the file inputs here rather than in the processes
         file_inputs = {}
         for name in file_input_names:
             nc_path = input_dir / f"{name}.nc"
             file_inputs[name] = adapter_factory(nc_path, name, control=control)
 
-        # instantiate components: instance dict
-        self.components = {}
-        for component in self.component_order:
+        # instantiate processes: instance dict
+        self.processes = {}
+        for process in self.process_order:
             # PRMSBoundaryLayer requires its files on init
-            if component == "PRMSBoundaryLayer":
-                component_inputs = {
+            if process == "PRMSBoundaryLayer":
+                process_inputs = {
                     input: input_dir / f"{input}.nc"
-                    for input in class_dict[component].get_inputs()
+                    for input in class_dict[process].get_inputs()
                 }
             else:
-                component_inputs = {
-                    input: None for input in class_dict[component].get_inputs()
+                process_inputs = {
+                    input: None for input in class_dict[process].get_inputs()
                 }
 
             # This is a hack. Need to make StorageUnit a subclass of a more
-            # general model/element/component class
+            # general model/element/process class
             args = {
                 "control": control,
-                **component_inputs,
+                **process_inputs,
             }
-            if component not in ["PRMSSolarGeometry"]:
+            if process not in ["PRMSSolarGeometry"]:
                 args["budget_type"] = budget_type
-            self.components[component] = class_dict[component](**args)
+            self.processes[process] = class_dict[process](**args)
 
         # Wire it up
-        self.component_input_from = {}
-        for component in self.component_order:
-            self.component_input_from[component] = {}
-            for input, frm in inputs_from[component].items():
+        self.process_input_from = {}
+        for process in self.process_order:
+            self.process_input_from[process] = {}
+            for input, frm in inputs_from[process].items():
                 if not frm:
                     fname = file_inputs[input]._fname
-                    self.component_input_from[component][input] = fname
-                    if component == "PRMSBoundaryLayer":
+                    self.process_input_from[process][input] = fname
+                    if process == "PRMSBoundaryLayer":
                         continue
-                    self.components[component].set_input_to_adapter(
+                    self.processes[process].set_input_to_adapter(
                         input, file_inputs[input]
                     )
                 else:
-                    self.component_input_from[component][input] = frm[0]
-                    self.components[component].set_input_to_adapter(
+                    self.process_input_from[process][input] = frm[0]
+                    self.processes[process].set_input_to_adapter(
                         input,
                         adapter_factory(
-                            self.components[frm[0]][input], control=control
+                            self.processes[frm[0]][input], control=control
                         ),  # drop list above
                     )
 
@@ -141,36 +141,36 @@ class Model:
 
     def advance(self):
         self.control.advance()
-        for cls in self.component_order:
+        for cls in self.process_order:
             if self.verbose:
-                print(f"advancing component: {cls}")
-            self.components[cls].advance()
+                print(f"advancing process: {cls}")
+            self.processes[cls].advance()
         return
 
     def calculate(self):
-        for cls in self.component_order:
+        for cls in self.process_order:
             if self.verbose:
-                print(f"calculating component: {cls}")
-            self.components[cls].calculate(1.0)
+                print(f"calculating process: {cls}")
+            self.processes[cls].calculate(1.0)
         return
 
     def output(self):
-        for cls in self.component_order:
+        for cls in self.process_order:
             if self.verbose:
-                print(f"writing output for component: {cls}")
-            self.components[cls].output()
+                print(f"writing output for process: {cls}")
+            self.processes[cls].output()
         return
 
     def initialize_netcdf(self, dir):
-        for cls in self.component_order:
+        for cls in self.process_order:
             if self.verbose:
-                print(f"initializing netcdf output for component: {cls}")
-            self.components[cls].initialize_netcdf(dir)
+                print(f"initializing netcdf output for process: {cls}")
+            self.processes[cls].initialize_netcdf(dir)
         return
 
     def finalize(self):
-        for cls in self.component_order:
+        for cls in self.process_order:
             if self.verbose:
-                print(f"finalizing component: {cls}")
-            self.components[cls].finalize()
+                print(f"finalizing process: {cls}")
+            self.processes[cls].finalize()
         return

@@ -109,34 +109,10 @@ class Budget(Accessor):
 
     @classmethod
     def from_storage_unit(cls, storage_unit, **kwargs):
-        # assemble the meta data, which will determine the budget component
-        # variables
-        components = cls.get_components()
-
-        # kwargs["control"] = storage_unit.control
-
-        # should this kwargs['meta'] be provided by a staticmethod on
-        # StorageUnit?
-        metadata = {}
-
-        meta_obj = {
-            "inputs": ("input_meta", "mass flux"),
-            "outputs": ("var_meta", "mass flux"),
-            "storage_changes": ("var_meta", "mass storage change"),
-        }
-        for comp in components:
-            metadata[comp] = {
-                key: val
-                for key, val in storage_unit[meta_obj[comp][0]].items()
-                if (
-                    ("var_category" in val.keys())
-                    and (val["var_category"] == meta_obj[comp][1])
-                )
-            }
-
-        for component in components:
+        mass_budget_terms = storage_unit.get_mass_budget_terms()
+        for component in mass_budget_terms.keys():
             kwargs[component] = {}
-            for var in metadata[component].keys():
+            for var in mass_budget_terms[component]:
                 kwargs[component][var] = storage_unit[var]
 
         return Budget(storage_unit.control, **kwargs)

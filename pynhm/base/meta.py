@@ -113,8 +113,6 @@ def meta_dimensions(meta_item: dict) -> list:
     return list(meta_item["dimensions"].values())
 
 
-# TODO: this class is pointless since the data is always the same. it
-# could just be the module. Evenutally move that way.
 def is_available(variable_name: str) -> bool:
     """Determine if a variable is available in the meta data
 
@@ -161,23 +159,41 @@ def get_vars(var_list: Iterable) -> dict:
     return _get_meta_in_list(variables, var_list)
 
 
+# repeat this for dims, control, params as needed. or refactor to DRY.
+def filter_vars(var_list: Iterable, key, vals=None) -> dict:
+    return _filter_dict(get_vars(var_list), key, vals)
+
+
+def _filter_dict(meta_dict, key, vals=None) -> dict:
+    if not isinstance(vals, list):
+        vals = [vals]
+    result = {}
+    for name, meta in meta_dict.items():
+        if key in meta:
+            if not vals:
+                result[name] = meta
+            elif meta[key] in vals:
+                result[name] = meta
+    return result
+
+
 def get_dimensions(
-    variables: varoptions,
+    vars: varoptions,
 ) -> dict:
     """
     Get the dimensions strings for one or more variables for a specific
     metadata data type.
 
     Args:
-        variables: variable name(s)
+        vars: variable name(s)
 
     Returns:
         dimensions: dictionary with dimension strings for each variable
 
     """
-    if isinstance(variables, str):
-        variables = [variables]
-    variable_dict = find_variables(variables)
+    if isinstance(vars, str):
+        vars = [vars]
+    variable_dict = find_variables(vars)
     return {
         key: [dimension for tag, dimension in value["dimensions"].items()]
         for key, value in variable_dict.items()

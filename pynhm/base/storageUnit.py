@@ -4,6 +4,7 @@ import pathlib as pl
 import numpy as np
 
 from pynhm.base.budget import Budget
+from pynhm.base import meta
 
 from ..base.adapter import Adapter, adapter_factory
 from ..utils.netcdf_utils import NetCdfWrite
@@ -67,6 +68,28 @@ class StorageUnit(Accessor):
     @staticmethod
     def get_variables() -> list:
         raise Exception("This must be overridden")
+
+    @classmethod
+    def get_mass_budget_terms(cls) -> dict:
+        # can this be a static method?
+        mass_budget_terms = {
+            "inputs": list(
+                meta.filter_vars(
+                    cls.get_inputs(), "var_category", "mass flux"
+                ).keys()
+            ),
+            "outputs": list(
+                meta.filter_vars(
+                    cls.get_variables(), "var_category", "mass flux"
+                ).keys()
+            ),
+            "storage_changes": list(
+                meta.filter_vars(
+                    cls.get_variables(), "var_category", "mass storage change"
+                ).keys()
+            ),
+        }
+        return mass_budget_terms
 
     @staticmethod
     def get_restart_variables() -> list:

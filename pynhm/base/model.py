@@ -1,11 +1,12 @@
-import re
 from copy import deepcopy
-from pprint import pprint
-
-import numpy as np
+import math
+import pathlib as pl
+from typing import Union
 
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
+
+fileish = Union[str, pl.PosixPath]
 
 
 class Model:
@@ -139,6 +140,41 @@ class Model:
 
         return
 
+    def initialize_netcdf(self, dir):
+        for cls in self.process_order:
+            if self.verbose:
+                print(f"initializing netcdf output for process: {cls}")
+            self.processes[cls].initialize_netcdf(dir)
+        return
+
+    def run(self, netcdf_dir: fileish, finalize=True):
+
+        if netcdf_dir:
+            print("model.run(): initializing NetCDF output")
+            self.initialize_netcdf(netcdf_dir)
+
+        last_pct_comp = 0
+        print(f"model.run(): {last_pct_comp} % complete")
+
+        n_time_steps = self.control.n_times
+        for istep in range(n_time_steps):
+
+            # progress for the impatient
+            pct_complete = math.floor((istep + 1) / n_time_steps * 100)
+            if not (pct_complete % 10) and pct_complete != last_pct_comp:
+                last_pct_comp = pct_complete
+                print(f"model.run(): {pct_complete} % complete")
+
+            self.advance()
+            self.calculate()
+            self.output()
+
+        if finalize:
+            print("model.run(): finalizing")
+            self.finalize()
+
+        return
+
     def advance(self):
         self.control.advance()
         for cls in self.process_order:
@@ -159,13 +195,6 @@ class Model:
             if self.verbose:
                 print(f"writing output for process: {cls}")
             self.processes[cls].output()
-        return
-
-    def initialize_netcdf(self, dir):
-        for cls in self.process_order:
-            if self.verbose:
-                print(f"initializing netcdf output for process: {cls}")
-            self.processes[cls].initialize_netcdf(dir)
         return
 
     def finalize(self):

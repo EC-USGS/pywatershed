@@ -6,7 +6,7 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 
-from ..base import meta  # , meta_netcdf_type, meta_numpy_type
+from ..base import meta
 
 fileish = Union[str, pl.PosixPath, dict]
 
@@ -157,7 +157,7 @@ class CsvFile:
             ds.createDimension(key, len(value))
 
         # Dim Variables
-        time = ds.createVariable("datetime", "f4", ("time",))
+        time = ds.createVariable("time", "f4", ("time",))
         start_date = self._data["date"][0].strftime("%Y-%m-%d %H:%M:%S")
         time_units = f"days since {start_date}"
         time.units = time_units

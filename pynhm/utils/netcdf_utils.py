@@ -51,11 +51,11 @@ class NetCdfRead(Accessor):
 
         # Set dimension variables which are not chunked
 
-        if "datetime" in self.dataset.variables:
-            self._datetime = (
+        if "time" in self.dataset.variables:
+            self._time = (
                 nc4.num2date(
-                    self.dataset.variables["datetime"][:],
-                    units=self.dataset.variables["datetime"].units,
+                    self.dataset.variables["time"][:],
+                    units=self.dataset.variables["time"].units,
                     calendar="standard",
                     only_use_cftime_datetimes=False,
                 )
@@ -63,7 +63,7 @@ class NetCdfRead(Accessor):
                 .astype("datetime64[s]")
                 # JLM: the global time type as in cbh_utils, define somewhere
             )
-            self._ntimes = self._datetime.shape[0]
+            self._ntimes = self._time.shape[0]
 
         if "doy" in self.dataset.variables:
             self._doy = self.dataset.variables["doy"][:].data
@@ -93,7 +93,7 @@ class NetCdfRead(Accessor):
         self._variables = [
             name
             for name in self.ds_var_list
-            if name != "datetime" and name not in spatial_id_names
+            if name != "time" and name not in spatial_id_names
         ]
 
     @property
@@ -109,16 +109,16 @@ class NetCdfRead(Accessor):
         return self._ntimes
 
     @property
-    def date_times(
+    def times(
         self,
     ) -> np.ndarray:
-        """Get the datetimes in the NetCDF file
+        """Get the times in the NetCDF file
 
         Returns:
             data_times: numpy array of datetimes in the NetCDF file
 
         """
-        return self._datetime
+        return self._time
 
     @property
     def nhru(
@@ -177,7 +177,7 @@ class NetCdfRead(Accessor):
         """Get a list of variable names
 
         Returns:
-            variables: list of variable names, excluding the datetime and
+            variables: list of variable names, excluding the time and
                 nhru variables
 
         """
@@ -226,7 +226,7 @@ class NetCdfRead(Accessor):
                 time step
 
         """
-        if "datetime" in self.dataset.variables:
+        if "time" in self.dataset.variables:
             arr = self.get_data(
                 variable,
                 itime_step=self._itime_step[variable],
@@ -308,7 +308,7 @@ class NetCdfWrite(Accessor):
         # Dimensions
 
         # Time is an implied dimension in the netcdf file for most variables
-        # time/datetime is necessary if an alternative time
+        # time is necessary if an alternative time
         # dimenison does not appear in even one variable
         ndays_time_vars = [
             "soltab_potsw",
@@ -321,10 +321,8 @@ class NetCdfWrite(Accessor):
                 continue
             # None for the len argument gives an unlimited dim
             self.dataset.createDimension("time", None)
-            self.datetime = self.dataset.createVariable(
-                "datetime", "f4", ("time",)
-            )
-            self.datetime.units = time_units
+            self.time = self.dataset.createVariable("time", "f4", ("time",))
+            self.time.units = time_units
             break
 
         # similarly, if alternative time dimenions exist.. define them
@@ -391,9 +389,7 @@ class NetCdfWrite(Accessor):
             return
 
     def add_simulation_time(self, itime_step: int, simulation_time: float):
-        self.datetime[itime_step] = nc4.date2num(
-            simulation_time, self.datetime.units
-        )
+        self.time[itime_step] = nc4.date2num(simulation_time, self.time.units)
         return
 
     def add_data(
@@ -419,7 +415,7 @@ class NetCdfWrite(Accessor):
         name: str,
         data: np.ndarray,
         time_data: np.ndarray,
-        time_coord: str = "datetime",
+        time_coord: str = "time",
     ) -> None:
         """Add data to a NetCDF variable
 

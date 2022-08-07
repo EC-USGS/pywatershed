@@ -95,16 +95,9 @@ class Model:
         # instantiate processes: instance dict
         self.processes = {}
         for process in self.process_order:
-            # PRMSBoundaryLayer requires its files on init
-            if process == "PRMSBoundaryLayer":
-                process_inputs = {
-                    input: input_dir / f"{input}.nc"
-                    for input in class_dict[process].get_inputs()
-                }
-            else:
-                process_inputs = {
-                    input: None for input in class_dict[process].get_inputs()
-                }
+            process_inputs = {
+                input: None for input in class_dict[process].get_inputs()
+            }
 
             # This is a hack. Need to make StorageUnit a subclass of a more
             # general model/element/process class
@@ -124,8 +117,6 @@ class Model:
                 if not frm:
                     fname = file_inputs[input]._fname
                     self.process_input_from[process][input] = fname
-                    if process == "PRMSBoundaryLayer":
-                        continue
                     self.processes[process].set_input_to_adapter(
                         input, file_inputs[input]
                     )
@@ -142,8 +133,6 @@ class Model:
 
     def initialize_netcdf(self, dir):
         for cls in self.process_order:
-            if self.verbose:
-                print(f"initializing netcdf output for process: {cls}")
             self.processes[cls].initialize_netcdf(dir)
         return
 
@@ -178,28 +167,20 @@ class Model:
     def advance(self):
         self.control.advance()
         for cls in self.process_order:
-            if self.verbose:
-                print(f"advancing process: {cls}")
             self.processes[cls].advance()
         return
 
     def calculate(self):
         for cls in self.process_order:
-            if self.verbose:
-                print(f"calculating process: {cls}")
             self.processes[cls].calculate(1.0)
         return
 
     def output(self):
         for cls in self.process_order:
-            if self.verbose:
-                print(f"writing output for process: {cls}")
             self.processes[cls].output()
         return
 
     def finalize(self):
         for cls in self.process_order:
-            if self.verbose:
-                print(f"finalizing process: {cls}")
             self.processes[cls].finalize()
         return

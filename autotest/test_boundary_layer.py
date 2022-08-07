@@ -1,4 +1,3 @@
-import pathlib as pl
 from warnings import warn
 
 import numpy as np
@@ -41,7 +40,7 @@ class TestPRMSBoundaryLayer:
             "tminc",
             "prmx",
             "pptmix",
-            "orad_hru"
+            "orad_hru",
         ]
         ans = {}
         for key in comparison_var_names:
@@ -52,7 +51,10 @@ class TestPRMSBoundaryLayer:
 
         input_variables = {}
         for key in PRMSBoundaryLayer.get_inputs():
-            nc_pth = cbh_dir / f"{key}.nc"
+            dir = ""
+            if "soltab" in key:
+                dir = "output/"
+            nc_pth = cbh_dir / f"{dir}{key}.nc"
             input_variables[key] = nc_pth
 
         atm = PRMSBoundaryLayer(
@@ -72,16 +74,16 @@ class TestPRMSBoundaryLayer:
             # compare along the way
             for key, val in ans.items():
                 val.advance()
-                
+
             for key in ans.keys():
                 a1 = ans[key].current
-                a2 = atm[key]
+                a2 = atm[key].current
 
                 tol = 5e-6
-                if key == 'swrad':
+                if key == "swrad":
                     tol = 5e-4
                     warn(f"using tol = {tol} for variable {key}")
-                if key == 'tavgc':
+                if key == "tavgc":
                     tol = 1e-5
                     warn(f"using tol = {tol} for variable {key}")
 

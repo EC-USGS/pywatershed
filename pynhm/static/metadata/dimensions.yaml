@@ -11,7 +11,7 @@ nconsumed:
   default: 0
   desc: Number of consumptive water-use destinations
   size: 0
-ndays:
+doy:
   default: 366
   desc: Maximum number of days in a year
   size: 366

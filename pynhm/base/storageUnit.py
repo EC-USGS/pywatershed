@@ -1,5 +1,6 @@
 import os
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 
@@ -7,6 +8,7 @@ from pynhm.base.budget import Budget
 from pynhm.base import meta
 
 from ..base.adapter import Adapter, adapter_factory
+from ..base.timeseries import TimeseriesArray
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
 from .control import Control
@@ -44,6 +46,8 @@ class StorageUnit(Accessor):
 
         """
         if self._output_netcdf:
+            if self.verbose:
+                print(f"writing output for: {self.name}")
             self.__output_netcdf()
         return
 
@@ -54,6 +58,8 @@ class StorageUnit(Accessor):
             None
 
         """
+        if self.verbose:
+            print(f"finalizing: {self.name}")
         self._finalize_netcdf()
         return
 
@@ -145,21 +151,30 @@ class StorageUnit(Accessor):
         return
 
     def initialize_var(self, var_name: str, flt_to_dbl: bool = True):
-        if self.var_meta[var_name]["dimensions"][0] == "nsegment":
-            nsize = self.nsegment
-        else:
-            nsize = self.nhru
         init_vals = self.get_init_values()
-        if var_name in init_vals.keys():
-            init_type = self.var_meta[var_name]["type"]
-            setattr(
-                self,
-                var_name,
-                np.full(nsize, init_vals[var_name], dtype=init_type),
-            )
-        elif self.verbose:
-            print(f"{var_name} not initialized (no initial value specified)")
+        if var_name not in init_vals.keys():
+            if self.verbose:
+                warn(
+                    f"{var_name} not initialized (no initial value specified)"
+                )
+            return
 
+        dims = [
+            self[vv] for vv in self.var_meta[var_name]["dimensions"].values()
+        ]
+        init_type = self.var_meta[var_name]["type"]
+
+        if len(dims) == 1:
+            self[var_name] = np.full(
+                dims, init_vals[var_name], dtype=init_type
+            )
+        else:
+            self[var_name] = TimeseriesArray(
+                var_name=var_name,
+                control=self.control,
+                array=np.full(dims, init_vals[var_name], dtype=init_type),
+                time=self._time,
+            )
         return
 
     def set_initial_conditions(self):
@@ -231,6 +246,7 @@ class StorageUnit(Accessor):
         Returns:
             None
         """
+
         if self._itime_step >= self.control.itime_step:
             if self.verbose:
                 msg = (
@@ -241,6 +257,9 @@ class StorageUnit(Accessor):
                 print(msg)  # can/howto make warn flush in real time?
                 # is a warning sufficient? an error
             return
+
+        if self.verbose:
+            print(f"advancing: {self.name}")
 
         self._advance_variables()
         self._advance_inputs()
@@ -256,6 +275,9 @@ class StorageUnit(Accessor):
         Returns:
             None
         """
+        if self.verbose:
+            print(f"calculating: {self.name}")
+
         # self._calculate must be implemented by the subclass
         self._calculate(time_length, *kwargs)
 
@@ -320,6 +342,9 @@ class StorageUnit(Accessor):
             None
 
         """
+        if self.verbose:
+            print(f"initializing netcdf output for: {self.name}")
+
         self._output_netcdf = True
         self._netcdf = {}
         if separate_files:

@@ -83,7 +83,7 @@ class Control(Accessor):
         control_file: fileish,
         params: PrmsParameters = None,
         verbosity: int = 0,
-    ) -> "Time":
+    ) -> "Control":
         """Initialize a control object from a PRMS control file
 
         Args:
@@ -196,9 +196,16 @@ class Control(Accessor):
 
         return None
 
-    def get_var_nans(self, var_name):
+    def get_var_nans(self, var_name: str, drop_time_dim: bool = None):
         """Get an array filled with nans for a given variable"""
         var_dims = self.meta.get_dimensions(var_name)[var_name]
+        if drop_time_dim:
+            # This accomodates Timeseries like objects that need to init both
+            # full rank and reduced rank versions of their data
+            # this is pretty adhoc
+            check_list = ["time", "doy"]
+            if len([mm for mm in check_list if mm in var_dims[0]]):
+                del var_dims[0]
         var_dim_sizes = [self.params.parameters[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]
         return np.full(var_dim_sizes, np.nan, var_type)

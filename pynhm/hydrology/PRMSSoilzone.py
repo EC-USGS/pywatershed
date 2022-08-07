@@ -41,6 +41,7 @@ class PRMSSoilzone(StorageUnit):
         )
         self.name = "PRMSSoilzone"
 
+        budget_type = None
         self.set_inputs(locals())
         self.set_budget(budget_type)
 
@@ -56,6 +57,7 @@ class PRMSSoilzone(StorageUnit):
         """
         return (
             "nhru",
+            "nssr",
             "dprst_frac",
             "cov_type",
             "fastcoef_lin",
@@ -117,7 +119,7 @@ class PRMSSoilzone(StorageUnit):
             "cap_waterin",
             "dunnian_flow",
             "hru_actet",
-            "lakein_sz",
+            # "lakein_sz",
             "perv_actet",
             "potet_lower",
             "potet_rechr",
@@ -147,8 +149,8 @@ class PRMSSoilzone(StorageUnit):
             "ssres_stor",
             "swale_actet",
             "unused_potet",
-            "upslope_dunnianflow",
-            "upslope_interflow",
+            # "upslope_dunnianflow",
+            # "upslope_interflow",
         )
 
     @staticmethod

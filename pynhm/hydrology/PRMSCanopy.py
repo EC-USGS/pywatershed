@@ -6,9 +6,6 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import CovType, HruType, zero
 
-# this type should be in base.adapter
-# adaptable = Union[str, np.ndarray, Adapter]
-
 # set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)

@@ -17,6 +17,9 @@ ATOL = np.finfo(np.float32).eps
 #     Still need some mechanism for initial itime_step for datetime coordinate
 #     variables
 
+# JLM TODO: the implied time dimension seems like a bad idea, it should be
+#    an argument.
+
 
 class NetCdfRead(Accessor):
     def __init__(
@@ -25,6 +28,7 @@ class NetCdfRead(Accessor):
         nc_read_vars: list = None,
     ) -> "NetCdfRead":
 
+        self.name = "NetCdfRead"
         self._nc_file = name
         self._nc_read_vars = nc_read_vars
         self._open_nc_file()
@@ -66,6 +70,7 @@ class NetCdfRead(Accessor):
             self._ntimes = self._time.shape[0]
 
         if "doy" in self.dataset.variables:
+            print(self)
             self._doy = self.dataset.variables["doy"][:].data
             self._ntimes = self._doy.shape[0]
 
@@ -118,7 +123,12 @@ class NetCdfRead(Accessor):
             data_times: numpy array of datetimes in the NetCDF file
 
         """
-        return self._time
+        if hasattr(self, "_time"):
+            return self._time
+        elif hasattr(self, "_doy"):
+            return self._doy
+        else:
+            raise KeyError(f"{self.name} has neither _time nor _doy")
 
     @property
     def nhru(
@@ -310,14 +320,14 @@ class NetCdfWrite(Accessor):
         # Time is an implied dimension in the netcdf file for most variables
         # time is necessary if an alternative time
         # dimenison does not appear in even one variable
-        ndays_time_vars = [
+        doy_time_vars = [
             "soltab_potsw",
             "soltab_horad_potsw",
             "soltab_sunhrs",
         ]
 
         for var_name in variables:
-            if var_name in ndays_time_vars:
+            if var_name in doy_time_vars:
                 continue
             # None for the len argument gives an unlimited dim
             self.dataset.createDimension("time", None)
@@ -327,10 +337,10 @@ class NetCdfWrite(Accessor):
 
         # similarly, if alternative time dimenions exist.. define them
         for var_name in variables:
-            if var_name not in ndays_time_vars:
+            if var_name not in doy_time_vars:
                 continue
-            self.dataset.createDimension("ndays", 366)
-            self.doy = self.dataset.createVariable("doy", "i4", ("ndays",))
+            self.dataset.createDimension("doy", 366)
+            self.doy = self.dataset.createVariable("doy", "i4", ("doy",))
             self.doy.units = "Day of year"
             break
 
@@ -358,8 +368,8 @@ class NetCdfWrite(Accessor):
             else:
                 spatial_coordinate = "nhm_id"
 
-            if var_name in ndays_time_vars:
-                time_dim = "ndays"
+            if var_name in doy_time_vars:
+                time_dim = "doy"
             else:
                 time_dim = "time"
 

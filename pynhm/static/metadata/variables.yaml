@@ -1573,20 +1573,23 @@ hru_perv_actet:
 hru_ppt:
   desc: Precipitation distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: inches
 hru_rain:
   desc: Rain distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: inches
   var_category: mass flux
 hru_snow:
   desc: Snow distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: inches
   var_category: mass flux
@@ -1996,7 +1999,8 @@ orad:
 orad_hru:
   desc: Solar radiation on a horizontal surface for each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: Langleys
 pan_evap:
@@ -2083,7 +2087,8 @@ pkwater_equiv:
 potet:
   desc: Potential ET for each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: inches
 potet_lower:
@@ -2102,7 +2107,8 @@ pptmix:
   desc: Flag to indicate if precipitation is a mixture of rain and snow for each HRU
     (0=no;1=yes)
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: int32
   units: none
 pptmix_nopack:
@@ -2180,7 +2186,8 @@ prcp:
 prmx:
   desc: Fraction of rain in a mixed precipitation event for each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: decimal fraction
 pss:
@@ -2622,19 +2629,22 @@ soltab_horad_potsw:
   desc: Potential solar radiation on a horizontal plane for each Julian Day for each
     HRU
   dimensions:
-    0: nhru
+    0: doy
+    1: nhru
   type: float64
   units: Langleys
 soltab_potsw:
   desc: Potential solar radiation for each Julian Day for each HRU
   dimensions:
-    0: nhru
+    0: doy
+    1: nhru
   type: float64
   units: Langleys
 soltab_sunhrs:
   desc: The number of hours of potential direct sunlight
   dimensions:
-    0: nhru
+    0: doy
+    1: nhru
   type: float64
   units: hours
 sroff:
@@ -2836,7 +2846,8 @@ subinc_szstor_frac:
 subinc_tavgc:
   desc: Area-weighted average air temperature for associated HRUs to each subbasin
   dimensions:
-    0: nsub
+    0: n_time_chunk
+    1: nsub
   type: float64
   units: degrees Celsius
 subinc_tmaxc:
@@ -2869,7 +2880,8 @@ swale_actet:
 swrad:
   desc: Shortwave radiation distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: Langleys
 t_ground:
@@ -2900,7 +2912,8 @@ t_ss:
 tavgc:
   desc: Average air temperature distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: degrees Celsius
 tavgf:
@@ -2943,13 +2956,15 @@ tmax_sta:
 tmaxc:
   desc: Maximum air temperature distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: degrees Celsius
 tmaxf:
   desc: Maximum air temperature distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: degrees Fahrenheit
 tmax:
@@ -2973,13 +2988,15 @@ tmin_sta:
 tminc:
   desc: Minimum air temperature distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: degrees Celsius
 tminf:
   desc: Minimum air temperature distributed to each HRU
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: float64
   units: degrees Fahrenheit
 tmin:
@@ -3082,7 +3099,8 @@ transfer_rate:
 transp_on:
   desc: Flag indicating whether transpiration is occurring (0=no;1=yes)
   dimensions:
-    0: nhru
+    0: n_time_chunk
+    1: nhru
   type: int32
   units: none
 unused_potet:

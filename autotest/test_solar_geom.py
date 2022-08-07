@@ -55,15 +55,15 @@ def test_solar_geom(domain, control, from_prms_file, tmp_path):
 
     # check the shapes
     for vv in solar_geom.variables:
-        assert ans[vv]._dataset.dataset[vv].shape == solar_geom[f"_{vv}"].shape
+        assert ans[vv]._nc_read.dataset[vv].shape == solar_geom[vv].data.shape
 
     # check the 2D values
     atol = 1e-3
     rtol = 0.0
     for vv in solar_geom.variables:
         assert np.allclose(
-            solar_geom[f"_{vv}"],
-            ans[vv]._dataset.dataset[vv],
+            solar_geom[vv].data,
+            ans[vv]._nc_read.dataset[vv],
             atol=atol,
             rtol=rtol,
         )
@@ -79,8 +79,8 @@ def test_solar_geom(domain, control, from_prms_file, tmp_path):
         for vv in solar_geom.variables:
             ans[vv].advance()
 
-            assert solar_geom[vv].shape == ans[vv].current.shape
-            assert np.allclose(solar_geom[vv], ans[vv].current)
+            assert solar_geom[vv].current.shape == ans[vv].current.shape
+            assert np.allclose(solar_geom[vv].current, ans[vv].current)
 
         assert id(solar_geom.soltab_sunhrs) == sunhrs_id
 

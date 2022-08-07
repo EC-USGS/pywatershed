@@ -21,6 +21,9 @@
 
 from typing import Union
 
+from ...base.model import Model
+
+
 class ColorBrewer:
     def __init__(self):
         self.format = "hex"
@@ -2335,3 +2338,27 @@ palettes_by_cat = {
     "diverging": diverging,
     "qualitative": qualitative,
 }
+
+
+def nhm_component_colors(model: Model = None):
+    cb = ColorBrewer
+    palette = cb.get_palette('Accent')(8)  # the full NHM model components
+    component_colors = {
+        'PRMSSolarGeometry': palette[3],
+        'PRMSBoundaryLayer': palette[2],
+        'PRMSCanopy': palette[0],
+        'PRMSSnow': palette[1],
+        'PRMSRunoff': palette[5],
+        'PRMSSoilzone': palette[6],
+        'PRMSGroundwater': palette[7],
+        'PRMSChannel': palette[4],
+    }
+    if not model:
+        return component_colors
+    else:
+        model_components = list(model.components.keys())
+        model_component_colors =  {
+            key: val for key, val in component_colors.items()
+            if key in [cc for cc in model_components]
+        }
+        return model_component_colors

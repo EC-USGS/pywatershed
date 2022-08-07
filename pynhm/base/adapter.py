@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 
 from pynhm.base.control import Control
+from pynhm.base.timeseries import TimeseriesArray
 from pynhm.utils.netcdf_utils import NetCdfRead
 
 fileish = Union[str, pl.Path]
@@ -40,19 +41,22 @@ class AdapterNetcdf(Adapter):
         self.name = "AdapterNetcdf"
 
         self._fname = fname
-        self._dataset = NetCdfRead(fname)
+        self._nc_read = NetCdfRead(fname)
+
+        self.data = self._nc_read.dataset[self._variable][:].data
+        self.time = self._nc_read.times
 
         self.control = control
         self._start_time = self.control.start_time
-        self._current_value = control.get_var_nans(self._variable)
+        self._current_value = control.get_var_nans(
+            self._variable, drop_time_dim=True
+        )
         return
 
     def advance(self):
-        # JLM: Seems like the time of the ncdf dataset or variable
-        # should be public
-        if self._dataset._itime_step[self._variable] > self.control.itime_step:
+        if self._nc_read._itime_step[self._variable] > self.control.itime_step:
             return
-        self._current_value[:] = self._dataset.advance(
+        self._current_value[:] = self._nc_read.advance(
             self._variable, self.control.current_time
         )
         return None
@@ -95,8 +99,12 @@ def adapter_factory(
             )
 
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
-        """One-D np.ndarrays"""
+        """Adapt 1-D np.ndarrays"""
         return AdapterOnedarray(var, variable=variable_name)
+
+    elif isinstance(var, TimeseriesArray):
+        """Adapt TimeseriesArrays as is."""
+        return var
 
     elif var is None:
         """var is specified as None so return None"""

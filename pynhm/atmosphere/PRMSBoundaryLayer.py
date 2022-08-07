@@ -4,12 +4,12 @@ from typing import Union
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.netcdf_utils import NetCdfRead, NetCdfWrite
+from pynhm.utils.netcdf_utils import NetCdfWrite
 
+from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, one, zero, epsilon
 from ..utils.time_utils import datetime_month, datetime_doy
-from .PRMSSolarGeometry import PRMSSolarGeometry
 from .solar_constants import solf
 
 fileish = Union[str, pl.Path]
@@ -89,54 +89,59 @@ class PRMSBoundaryLayer(StorageUnit):
         prcp: fileish,
         tmax: fileish,
         tmin: fileish,
+        soltab_potsw: adaptable,
+        soltab_horad_potsw: adaptable,
         budget_type: str = None,
         verbose: bool = False,
         netcdf_output_dir: fileish = None,
         from_file_dir: fileish = None,
+        n_time_chunk: int = -1,
     ):
+
+        # This could be used to subclass storageUnit or Process classes to have
+        # timeseries. Solar geom bas doy dimension not actual simulation times
+
+        # Defering handling batch handling of time chunks but self.n_time_chunk
+        # is a dimension used in the metadata/variables dimensions.
+        if n_time_chunk <= 0:
+            self.n_time_chunk = control.n_times
+        else:
+            self.n_time_chunk = n_time_chunk
+
+        # Initialize full time with nans
+        self._time = np.full(self.n_time_chunk, nan, dtype="datetime64[s]")
+
         self.netcdf_output_dir = netcdf_output_dir
 
+        self.set_inputs(locals())
         super().__init__(
             control=control,
             verbose=verbose,
         )
         self.name = "PRMSBoundaryLayer"
+        self.budget = None
 
-        # Override self.set_inputs(locals())
-        # Get all data at all times: do all forcings up front
-        # There will be no inputs to advance
-        # There is also no set_input_to_adapter(), None can not be used
-        # on init.
-        self._input_variables_dict = {}
-        self._time = None
-        for input in self.get_inputs():
-            input_data = locals()[input]
-            if input_data is None:
-                msg = (
-                    "PRMSBoundaryLayer input files must be specified on "
-                    "initialization"
-                )
-                raise ValueError(msg)
-            nc_data = NetCdfRead(input_data)
-            self[input] = nc_data.dataset[input][:].data
-            # Get the datetimes or check against the first
-            if self._time is None:
-                self._time = nc_data._time
+        self._calculated = False
+
+        return
+
+    def _calculate_all_time(self):
+        # Eventually refactor to work at specific chunks of time
+        for input in ["prcp", "tmax", "tmin"]:
+            # # this is a bit of a mess: ._dataset.dataset
+            input_time = self._input_variables_dict[input]._nc_read.times
+            # dont do this...
+            # self[input][:] = ds.dataset[input][:].data
+            if np.isnan(self._time[0]):
+                self._time[:] = input_time
             else:
-                assert (nc_data._time == self._time).all()
+                assert (input_time == self._time).all()
 
-        start_time_ind = np.where(self._time == self.control._start_time)
-        start_time_ind = start_time_ind[0]
+        start_time_ind = np.where(self._time == self.control._start_time)[0]
         if not len(start_time_ind):
             msg = "Control start_time is not in the input data time"
             raise ValueError(msg)
         self._init_time_ind = start_time_ind[0]
-
-        # atm/boundary layer has a solar geometry
-        # This composition is difficult to get rid of because
-        # of the dependence on solar parameters of
-        # calculate_sw_rad_degree_day
-        self.solar_geom = PRMSSolarGeometry(control)
 
         # Solve all variables for all time
         self._month_ind_12 = datetime_month(self._time) - 1  # (time)
@@ -161,17 +166,23 @@ class PRMSBoundaryLayer(StorageUnit):
         # }
 
         if self.netcdf_output_dir:
-            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
+            self.netcdf_output_dir = pl.Path(self.netcdf_output_dir)
             assert self.netcdf_output_dir.exists()
             self._write_netcdf_timeseries()
 
         # JLM todo: delete large variables on self for memory management
-
+        self._calculated = True
         return
 
     @staticmethod
     def get_inputs() -> tuple:
-        return ("prcp", "tmax", "tmin")
+        return (
+            "prcp",
+            "tmax",
+            "tmin",
+            "soltab_potsw",
+            "soltab_horad_potsw",
+        )
 
     @staticmethod
     def get_variables() -> tuple:
@@ -246,6 +257,20 @@ class PRMSBoundaryLayer(StorageUnit):
             "transp_beg",
             "transp_end",
             "transp_tmax",
+            "radadj_intcp",  # below are solar params used by BoundaryLayer
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
         )
 
     def set_initial_conditions(self):
@@ -258,6 +283,9 @@ class PRMSBoundaryLayer(StorageUnit):
             None
 
         """
+        if not self._calculated:
+            self._calculate_all_time()
+
         return
 
     def _calculate(self, time_length):
@@ -272,9 +300,6 @@ class PRMSBoundaryLayer(StorageUnit):
             None
 
         """
-        current_ind = self._init_time_ind + self._itime_step
-        for var in self.variables:
-            self[var][:] = self[f"_{var}"][current_ind, :]
         return
 
     def adjust_temperature(self):
@@ -300,13 +325,12 @@ class PRMSBoundaryLayer(StorageUnit):
             raise ValueError(msg)
 
         # (time, space) dimensions on these variables
-        self._tmaxf = np.zeros(self.tmax.shape, dtype=self.tmax.dtype)
-        self._tminf = np.zeros(self.tmin.shape, dtype=self.tmin.dtype)
-        self._tmaxf = self.tmax + self.tmax_cbh_adj[month_ind]
-        self._tminf = self.tmin + self.tmin_cbh_adj[month_ind]
-        self._tminc = (self._tminf - 32.0) * (5 / 9)
-        self._tmaxc = (self._tmaxf - 32.0) * (5 / 9)
-        self._tavgc = (self._tmaxc + self._tminc) / 2.0
+        ivd = self._input_variables_dict
+        self.tmaxf.data[:] = ivd["tmax"].data + self.tmax_cbh_adj[month_ind]
+        self.tminf.data[:] = ivd["tmin"].data + self.tmin_cbh_adj[month_ind]
+        self.tminc.data[:] = (self["tminf"].data - 32.0) * (5 / 9)
+        self.tmaxc.data[:] = (self["tmaxf"].data - 32.0) * (5 / 9)
+        self.tavgc.data[:] = (self["tmaxc"].data + self["tminc"].data) / 2.0
 
         return
 
@@ -316,6 +340,8 @@ class PRMSBoundaryLayer(StorageUnit):
         Snow/rain partitioning of total precip depends on adjusted temperature
         in addition to depending on additonal parameters.
         """
+
+        ivd = self._input_variables_dict
 
         # throw an error shapes are inconsistent
         shape_list = np.array(
@@ -344,71 +370,70 @@ class PRMSBoundaryLayer(StorageUnit):
             msg = "Unexpected month dimension for cbh precip adjustment params"
             raise ValueError(msg)
 
-        # (time, space) dimensions
-        self._hru_ppt = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
-        self._hru_rain = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
-        self._hru_snow = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
-
-        # prmx and pptmix
-        self._prmx = np.zeros(self.prcp.shape, dtype=self.prcp.dtype)
         # Order MATTERS in calculating the prmx mask
         # The logic in PRMS is if(all_snow),elif(all_rain),else(mixed)
         # so we set the mask in the reverse order
         # Calculate the mix everywhere, then set the precip/rain/snow amounts
         # from the conditions.
-        tdiff = self._tmaxf - self._tminf
+        tdiff = self.tmaxf.data - self.tminf.data
         tdiff = np.where(tdiff < epsilon, 0.000100, tdiff)
-        self._prmx = (
-            (self._tmaxf - self.tmax_allsnow[month_ind]) / tdiff
+        self.prmx.data[:] = (
+            (self.tmaxf.data - self.tmax_allsnow[month_ind]) / tdiff
         ) * self.adjmix_rain[month_ind]
 
-        self._prmx = np.where(self._prmx < zero, zero, self._prmx)
-        self._prmx = np.where(self._prmx > one, one, self._prmx)
+        self.prmx.data[:] = np.where(
+            self.prmx.data < zero, zero, self.prmx.data
+        )
+        self.prmx.data[:] = np.where(self.prmx.data > one, one, self.prmx.data)
         del tdiff
 
         wh_all_rain = np.where(
             np.logical_or(
-                self._tminf > self.tmax_allsnow[month_ind],
-                self._tmaxf >= tmax_allrain[month_ind],
+                self.tminf.data > self.tmax_allsnow[month_ind],
+                self.tmaxf.data >= tmax_allrain[month_ind],
             )
         )
-        self._prmx[wh_all_rain] = one
+        self.prmx.data[wh_all_rain] = one
 
-        wh_all_snow = np.where(self._tmaxf <= self.tmax_allsnow[month_ind])
-        self._prmx[wh_all_snow] = zero
+        wh_all_snow = np.where(self.tmaxf.data <= self.tmax_allsnow[month_ind])
+        self.prmx.data[wh_all_snow] = zero
 
         # This is in climate_hru as a condition of calling climateflow
         # (eye roll)
-        self._prmx = np.where(self.prcp <= zero, zero, self._prmx)
+        self.prmx.data[:] = np.where(
+            ivd["prcp"].data <= zero, zero, self.prmx.data
+        )
 
-        self._pptmix = np.where((self._prmx > zero) & (self._prmx < one), 1, 0)
+        self.pptmix.data[:] = np.where(
+            (self.prmx.data > zero) & (self.prmx.data < one), 1, 0
+        )
 
         # Recalculate/redefine these now based on prmx instead of the
         # temperature logic
-        wh_all_snow = np.where(self._prmx <= zero)
-        wh_all_rain = np.where(self._prmx >= one)
+        wh_all_snow = np.where(self.prmx.data <= zero)
+        wh_all_rain = np.where(self.prmx.data >= one)
 
         # Mixed case (everywhere, to be overwritten by the all-snow/rain-fall
         # cases)
-        self._hru_ppt = self.prcp * self.snow_cbh_adj[month_ind]
-        self._hru_rain = self._prmx * self._hru_ppt
-        self._hru_snow = self._hru_ppt - self._hru_rain
+        self.hru_ppt.data[:] = ivd["prcp"].data * self.snow_cbh_adj[month_ind]
+        self.hru_rain.data[:] = self.prmx.data * self.hru_ppt.data
+        self.hru_snow.data[:] = self.hru_ppt.data - self.hru_rain.data
 
         # All precip is snow case
         # The condition to be used later:
-        self._hru_ppt[wh_all_snow] = (
-            self.prcp * self.snow_cbh_adj[month_ind]
+        self.hru_ppt.data[wh_all_snow] = (
+            ivd["prcp"].data * self.snow_cbh_adj[month_ind]
         )[wh_all_snow]
-        self._hru_snow[wh_all_snow] = self._hru_ppt[wh_all_snow]
-        self._hru_rain[wh_all_snow] = zero
+        self.hru_snow.data[wh_all_snow] = self.hru_ppt.data[wh_all_snow]
+        self.hru_rain.data[wh_all_snow] = zero
 
         # All precip is rain case
         # The condition to be used later:
-        self._hru_ppt[wh_all_rain] = (
-            self.prcp * self.rain_cbh_adj[month_ind]
+        self.hru_ppt.data[wh_all_rain] = (
+            ivd["prcp"].data * self.rain_cbh_adj[month_ind]
         )[wh_all_rain]
-        self._hru_rain[wh_all_rain] = self._hru_ppt[wh_all_rain]
-        self._hru_snow[wh_all_rain] = zero
+        self.hru_rain.data[wh_all_rain] = self.hru_ppt.data[wh_all_rain]
+        self.hru_snow.data[wh_all_rain] = zero
         return
 
     def calculate_sw_rad_degree_day(self) -> None:
@@ -432,14 +457,15 @@ class PRMSBoundaryLayer(StorageUnit):
             "hru_area",
         )
         for name in solar_param_names:
-            solar_params[name] = self.solar_geom[name]
+            solar_params[name] = self[name]
 
-        self._swrad, self._orad_hru = self._ddsolrad_run(
+        ivd = self._input_variables_dict
+        self.swrad.data[:], self.orad_hru.data[:] = self._ddsolrad_run(
             dates=self._time,
-            tmax_hru=self._tmaxf,
-            hru_ppt=self._hru_ppt,
-            soltab_potsw=self.solar_geom._soltab_potsw,
-            soltab_horad_potsw=self.solar_geom._soltab_horad_potsw,
+            tmax_hru=self.tmaxf.data,
+            hru_ppt=self.hru_ppt.data,
+            soltab_potsw=ivd["soltab_potsw"].data,
+            soltab_horad_potsw=ivd["soltab_horad_potsw"].data,
             **solar_params,
         )
 
@@ -602,10 +628,10 @@ class PRMSBoundaryLayer(StorageUnit):
         """Calculate potential evapotranspiration following Jensen and Haise
         (1963)."""
 
-        self._potet = self._potet_jh_run(
+        self.potet.data[:] = self._potet_jh_run(
             dates=self._time,
-            tavgc=self._tavgc,
-            swrad=self._swrad,
+            tavgc=self.tavgc.data,
+            swrad=self.swrad.data,
             jh_coef=self.jh_coef,
             jh_coef_hru=self.jh_coef_hru,
         )
@@ -655,17 +681,16 @@ class PRMSBoundaryLayer(StorageUnit):
         # INIT: Process_flag==INIT
         # transp_on inited to 0 everywhere above
 
-        # take the shape from the precip input
-        self._transp_on = np.zeros(self.prcp.shape, dtype=self.transp_on.dtype)
-
         # candidate for worst code lines
         if self.control.params.parameters["temp_units"] == 0:
             transp_tmax_f = self.transp_tmax
         else:
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0
 
-        transp_check = self.transp_on.copy()
-        tmax_sum = self.transp_on.copy().astype("float64")
+        transp_check = self.transp_on.current.copy()  # dim nhrus only
+        tmax_sum = self.transp_on.current.copy().astype(
+            "float64"
+        )  # dim nhrus only
         start_day = self.control.start_doy
         start_month = self.control.start_month
 
@@ -676,7 +701,7 @@ class PRMSBoundaryLayer(StorageUnit):
             if start_month == self.transp_beg[hh]:
                 # rsr, why 10? if transp_tmax < 300, should be < 10
                 if start_day > 10:
-                    self._transp_on[0, hh] = 1
+                    self.transp_on.data[0, hh] = 1
                 else:
                     transp_check[hh] = 1
 
@@ -684,16 +709,16 @@ class PRMSBoundaryLayer(StorageUnit):
                 if (start_month > self.transp_beg[hh]) and (
                     start_month < self.transp_end[hh]
                 ):
-                    self._transp_on[0, hh] = 1
+                    self.transp_on.data[0, hh] = 1
             else:
                 if (start_month > self.transp_beg[hh]) or (
                     motmp < self.transp_end[hh] + months_per_year
                 ):
-                    self._transp_on[0, hh] = 1
+                    self.transp_on.data[0, hh] = 1
 
         # vectorize
-        ntime = self._transp_on.shape[0]
-        # _transp_check = self._transp_on.copy()
+        ntime = self.transp_on.data.shape[0]
+        # _transp_check = self.transp_on.data.copy()
         # self._transp_beg = tile_space_to_time(self.transp_beg, ntime)
         # self._transp_end = tile_space_to_time(self.transp_end, ntime)
 
@@ -702,7 +727,9 @@ class PRMSBoundaryLayer(StorageUnit):
         for tt in range(ntime):
             for hh in range(self.nhru):
                 if tt > 0:
-                    self._transp_on[tt, hh] = self._transp_on[tt - 1, hh]
+                    self.transp_on.data[tt, hh] = self.transp_on.data[
+                        tt - 1, hh
+                    ]
 
                 # if tt == 2 and hh == 980:
                 #      asdf
@@ -713,7 +740,7 @@ class PRMSBoundaryLayer(StorageUnit):
                 if self._doy[tt] == 1:
                     # check for end of period
                     if self._month[tt] == self.transp_end[hh]:
-                        self._transp_on[tt, hh] = 0
+                        self.transp_on.data[tt, hh] = 0
                         transp_check[hh] = 0
                         tmax_sum[hh] = zero
 
@@ -730,12 +757,12 @@ class PRMSBoundaryLayer(StorageUnit):
                 # switch off freezing temperature assumed to be 32 degrees
                 # Fahrenheit
                 if transp_check[hh] == 1:
-                    if self._tmaxf[tt, hh] > 32.0:
-                        tmax_sum[hh] = tmax_sum[hh] + self._tmaxf[tt, hh]
+                    if self.tmaxf.data[tt, hh] > 32.0:
+                        tmax_sum[hh] = tmax_sum[hh] + self.tmaxf.data[tt, hh]
 
                     # <
                     if tmax_sum[hh] > transp_tmax_f[hh]:
-                        self._transp_on[tt, hh] = 1
+                        self.transp_on.data[tt, hh] = 1
                         transp_check[hh] = 0
                         tmax_sum[hh] = 0.0
 
@@ -751,8 +778,10 @@ class PRMSBoundaryLayer(StorageUnit):
                 [var],
                 {var: self.var_meta[var]},
             )
-            nc.add_all_data(var, self[f"_{var}"], self._time)
+            nc.add_all_data(var, self[var].data, self._time)
             nc.close()
             assert nc_path.exists()
             print(f"Wrote preprocessed forcing file: {nc_path}")
+
+        self._output_netcdf = False
         return

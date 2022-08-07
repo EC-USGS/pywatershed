@@ -4,8 +4,8 @@ from warnings import warn
 
 import numpy as np
 
-from pynhm.base.budget import Budget
 from pynhm.base import meta
+from pynhm.base.budget import Budget
 
 from ..base.adapter import Adapter, adapter_factory
 from ..base.timeseries import TimeseriesArray

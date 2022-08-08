@@ -5,9 +5,8 @@ import numpy as np
 
 from pynhm.base.control import Control
 from pynhm.base.timeseries import TimeseriesArray
+from pynhm.constants import fileish
 from pynhm.utils.netcdf_utils import NetCdfRead
-
-fileish = Union[str, pl.Path]
 
 
 class Adapter:

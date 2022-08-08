@@ -1,13 +1,12 @@
 """The control class."""
 import datetime
-import pathlib as pl
-from typing import Union
 
 import numpy as np
 
 from pynhm.utils.parameters import PrmsParameters
 
 from ..base import meta
+from ..constants import fileish
 from ..utils import ControlVariables
 from ..utils.time_utils import (
     datetime_dowy,
@@ -16,8 +15,6 @@ from ..utils.time_utils import (
     datetime_year,
 )
 from .accessor import Accessor
-
-fileish = Union[str, pl.PosixPath]
 
 
 class Control(Accessor):

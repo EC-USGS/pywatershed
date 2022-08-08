@@ -1,6 +1,6 @@
 import pathlib as pl
 import warnings
-from typing import Tuple, Union
+from typing import Tuple
 
 # from numba import jit
 import numpy as np
@@ -10,7 +10,7 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
-from ..constants import epsilon32, nan, one, zero
+from ..constants import epsilon32, fileish, nan, one, zero
 from ..utils.prms5util import load_soltab_debug
 from .solar_constants import (
     n_days_per_year,
@@ -21,7 +21,6 @@ from .solar_constants import (
     two_pi,
 )
 
-fileish = Union[str, pl.Path]
 epsilon = epsilon32
 
 doy = np.arange(366) + 1

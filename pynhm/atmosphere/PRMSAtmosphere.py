@@ -1,5 +1,4 @@
 import pathlib as pl
-from typing import Union
 
 import numpy as np
 
@@ -8,11 +7,9 @@ from pynhm.utils.netcdf_utils import NetCdfWrite
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import epsilon, inch2cm, nan, one, zero
+from ..constants import epsilon, fileish, inch2cm, nan, one, zero
 from ..utils.time_utils import datetime_doy, datetime_month
 from .solar_constants import solf
-
-fileish = Union[str, pl.Path]
 
 
 # may not use this if they cant be called with jit

@@ -1,12 +1,9 @@
 import math
-import pathlib as pl
 from copy import deepcopy
-from typing import Union
 
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-
-fileish = Union[str, pl.PosixPath]
+from pynhm.constants import fileish
 
 
 class Model:

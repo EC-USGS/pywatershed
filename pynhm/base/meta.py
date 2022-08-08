@@ -6,7 +6,6 @@ import yaml
 
 from ..constants import __pynhm_root__
 
-fileish = Union[str, pl.Path]
 varoptions = Union[str, list, tuple]
 
 """Metadata are static, there is no point in a class"""

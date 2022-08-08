@@ -1,6 +1,6 @@
 from pynhm.analysis.model_graph import ModelGraph
 from pynhm.analysis.utils.colorbrewer import ColorBrewer
-from pynhm.atmosphere.PRMSBoundaryLayer import PRMSBoundaryLayer
+from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base import meta
 from pynhm.base.accessor import Accessor

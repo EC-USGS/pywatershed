@@ -25,7 +25,7 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
     return np.transpose(np.tile(arr, (n_space, 1)))
 
 
-class PRMSBoundaryLayer(StorageUnit):
+class PRMSAtmosphere(StorageUnit):
     """PRMS atmospheric boundary layer model.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation based on
@@ -41,7 +41,7 @@ class PRMSBoundaryLayer(StorageUnit):
     humidity could be added as well.
 
     The boundary layer calculates and manages the following variables (given
-    by PRMSBoundaryLayer.get_variables()):
+    by PRMSAtmosphere.get_variables()):
 
         tmaxf,
         tminf,
@@ -118,7 +118,7 @@ class PRMSBoundaryLayer(StorageUnit):
             control=control,
             verbose=verbose,
         )
-        self.name = "PRMSBoundaryLayer"
+        self.name = "PRMSAtmosphere"
         self.budget = None
 
         self._calculated = False
@@ -257,7 +257,7 @@ class PRMSBoundaryLayer(StorageUnit):
             "transp_beg",
             "transp_end",
             "transp_tmax",
-            "radadj_intcp",  # below are solar params used by BoundaryLayer
+            "radadj_intcp",  # below are solar params used by Atmosphere
             "radadj_slope",
             "tmax_index",
             "dday_slope",
@@ -277,7 +277,7 @@ class PRMSBoundaryLayer(StorageUnit):
         return
 
     def _advance_variables(self):
-        """Advance the PRMSBoundaryLayer
+        """Advance the PRMSAtmosphere
 
         Returns:
             None
@@ -289,7 +289,7 @@ class PRMSBoundaryLayer(StorageUnit):
         return
 
     def _calculate(self, time_length):
-        """Calculate PRMSBoundaryLayer"
+        """Calculate PRMSAtmosphere"
 
         Sets the current value to the precalculated values.
 

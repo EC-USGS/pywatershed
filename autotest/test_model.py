@@ -27,7 +27,7 @@ budget_type = None
 test_models = {
     "nhm": [
         pynhm.PRMSSolarGeometry,
-        pynhm.PRMSBoundaryLayer,
+        pynhm.PRMSAtmosphere,
         pynhm.PRMSCanopy,
         pynhm.PRMSSnow,
         pynhm.PRMSRunoff,
@@ -90,7 +90,7 @@ def test_model(domain, control, processes, tmp_path):
     # get the answer data against PRMS5.2.1
     comparison_vars_dict_all = {
         "PRMSSolarGeometry": [],
-        "PRMSBoundaryLayer": [
+        "PRMSAtmosphere": [
             "tmaxf",
             "tminf",
             "hru_ppt",
@@ -171,7 +171,7 @@ def test_model(domain, control, processes, tmp_path):
 
     tol = {
         "PRMSSolarGeometry": 1.0e-5,
-        "PRMSBoundaryLayer": 1.0e-4,
+        "PRMSAtmosphere": 1.0e-4,
         "PRMSCanopy": 1.0e-5,
         "PRMSSnow": 5e-2,
         "PRMSRunoff": 1.0e-5,

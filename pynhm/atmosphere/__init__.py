@@ -1,2 +1,2 @@
-from .PRMSBoundaryLayer import PRMSBoundaryLayer
+from .PRMSAtmosphere import PRMSAtmosphere
 from .PRMSSolarGeometry import PRMSSolarGeometry

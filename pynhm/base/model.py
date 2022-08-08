@@ -54,7 +54,7 @@ class Model:
         # dependencies, might inputs_from_prev above.
         process_order_prms = [
             "PRMSSolarGeometry",
-            "PRMSBoundaryLayer",
+            "PRMSAtmosphere",
             "PRMSCanopy",
             "PRMSSnow",
             "PRMSRunoff",
@@ -78,7 +78,7 @@ class Model:
             )
 
         # If inputs dont come from other processes, assume they come from
-        # file in input_dir. Exception is that PRMSBoundaryLayer requires its
+        # file in input_dir. Exception is that PRMSAtmosphere requires its
         # files on init, so dont adapt these
         file_input_names = set([])
         for k0, v0 in inputs_from.items():

@@ -3,7 +3,7 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.PRMSBoundaryLayer import PRMSBoundaryLayer
+from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.utils.parameters import PrmsParameters
@@ -19,7 +19,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-class TestPRMSBoundaryLayer:
+class TestPRMSAtmosphere:
     def test_init(self, domain, control, tmp_path):
 
         output_dir = domain["prms_output_dir"]
@@ -50,14 +50,14 @@ class TestPRMSBoundaryLayer:
             )
 
         input_variables = {}
-        for key in PRMSBoundaryLayer.get_inputs():
+        for key in PRMSAtmosphere.get_inputs():
             dir = ""
             if "soltab" in key:
                 dir = "output/"
             nc_pth = cbh_dir / f"{dir}{key}.nc"
             input_variables[key] = nc_pth
 
-        atm = PRMSBoundaryLayer(
+        atm = PRMSAtmosphere(
             control=control,
             **input_variables,
             budget_type="strict",

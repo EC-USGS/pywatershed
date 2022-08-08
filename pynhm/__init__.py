@@ -2,13 +2,14 @@ from pynhm.analysis.model_graph import ModelGraph
 from pynhm.analysis.utils.colorbrewer import ColorBrewer
 from pynhm.atmosphere.PRMSBoundaryLayer import PRMSBoundaryLayer
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
+from pynhm.base import meta
 from pynhm.base.accessor import Accessor
 from pynhm.base.adapter import Adapter
 from pynhm.base.budget import Budget
 from pynhm.base.control import Control
-from pynhm.base import meta
 from pynhm.base.model import Model
 from pynhm.base.storageUnit import StorageUnit
+from pynhm.base.timeseries import TimeseriesArray
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.hydrology.PRMSEt import PRMSEt

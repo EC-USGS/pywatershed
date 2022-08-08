@@ -635,7 +635,6 @@ class PRMSBoundaryLayer(StorageUnit):
             jh_coef=self.jh_coef,
             jh_coef_hru=self.jh_coef_hru,
         )
-
         return
 
     @staticmethod

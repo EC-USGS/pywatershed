@@ -30,6 +30,7 @@ class PRMSGroundwater(StorageUnit):
         self.name = "PRMSGroundwater"
 
         self.set_inputs(locals())
+        budget_type = None
         self.set_budget(budget_type)
         return
 

@@ -77,10 +77,14 @@ class PRMSSolarGeometry(StorageUnit):
         self._calculated = False
 
         if self.netcdf_output_dir:
+            self._output_netcdf = True
             self._calculate_all_time()
             self.netcdf_output_dir = pl.Path(netcdf_output_dir)
             assert self.netcdf_output_dir.exists()
             self._write_netcdf_timeseries()
+
+        else:
+            self._output_netcdf = False
 
         return
 
@@ -168,6 +172,9 @@ class PRMSSolarGeometry(StorageUnit):
             None
 
         """
+        if not self._calculated:
+            self._calculate_all_time()
+            self._write_netcdf_timeseries()
         return
 
     def _calculate(self, time_length):
@@ -182,9 +189,6 @@ class PRMSSolarGeometry(StorageUnit):
             None
 
         """
-        if not self._calculated:
-            self._calculate_all_time()
-            self._write_netcdf_timeseries()
         return
 
     # @jit
@@ -419,6 +423,8 @@ class PRMSSolarGeometry(StorageUnit):
         return f3
 
     def _write_netcdf_timeseries(self) -> None:
+        if not self._output_netcdf:
+            return
         for var in self.variables:
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(

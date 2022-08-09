@@ -1,4 +1,3 @@
-from hashlib import sha256
 import pathlib as pl
 
 import numpy as np
@@ -66,25 +65,21 @@ def test_model(domain, control, processes, tmp_path):
 
     # ---------------------------------
     # Regression results from hash
-    # itimestep: process: variable: sha256
+    # itimestep: process: variable: mean
     regression_ans = {
-        9: {
-            "PRMSChannel": {
-                "seg_outflow": (
-                    "ac28ed449bd39d353e64109ef1b7297966f0932025282f801e62546bb"
-                    "f7eaae5"
-                ),
+        "drb_2yr": {
+            9: {
+                "PRMSChannel": {
+                    "seg_outflow": 1522.4549482501916,
+                },
+            },
+            99: {
+                "PRMSChannel": {
+                    "seg_outflow": 2228.410057597461,
+                },
             },
         },
-        99: {
-            "PRMSChannel": {
-                "seg_outflow": (
-                    "a711e42824db1260a491178da6e976c9c1bfc757f006ce343960d32ed"
-                    "abbbaa8"
-                ),
-            },
-        },
-    }
+    }[domain["domain_name"]]
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1
@@ -234,9 +229,9 @@ def test_model(domain, control, processes, tmp_path):
         if istep in regression_ans:
             for pp, var_ans in regression_ans[istep].items():
                 for vv, aa in var_ans.items():
-                    assert (
-                        sha256(model.processes[pp][vv].data).hexdigest() == aa
-                    )
+                    if not aa:
+                        continue
+                    assert model.processes[pp][vv].mean() == aa
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:

@@ -30,7 +30,6 @@ class PRMSGroundwater(StorageUnit):
         self.name = "PRMSGroundwater"
 
         self.set_inputs(locals())
-        budget_type = None
         self.set_budget(budget_type)
         return
 
@@ -76,7 +75,6 @@ class PRMSGroundwater(StorageUnit):
         """
         return (
             "gwres_flow",
-            "gwres_in",
             "gwres_sink",
             "gwres_stor",
             "gwres_stor_old",
@@ -92,7 +90,6 @@ class PRMSGroundwater(StorageUnit):
         """
         return {
             "gwres_flow": nan,
-            "gwres_in": nan,
             "gwres_sink": nan,
             "gwres_stor": nan,
             "gwres_stor_old": nan,
@@ -133,12 +130,11 @@ class PRMSGroundwater(StorageUnit):
         soil_to_gw_vol = self.soil_to_gw * gwarea
         ssr_to_gw_vol = self.ssr_to_gw * gwarea
         dprst_seep_hru_vol = self.dprst_seep_hru * gwarea
-        _gwres_in = soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
 
         # todo: what about route order
 
         _gwres_stor = self.gwres_stor * gwarea
-        _gwres_stor += _gwres_in
+        _gwres_stor += soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
 
         _gwres_flow = _gwres_stor * self.gwflow_coef
         _gwres_stor -= _gwres_flow
@@ -152,7 +148,6 @@ class PRMSGroundwater(StorageUnit):
         # output variables
         self.gwres_stor[:] = _gwres_stor / gwarea
         # for some stupid reason this is left in acre-inches
-        self.gwres_in[:] = _gwres_in
         self.gwres_flow[:] = _gwres_flow / gwarea
         self.gwres_sink[:] = _gwres_sink / gwarea
 

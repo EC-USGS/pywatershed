@@ -2354,7 +2354,7 @@ def nhm_component_colors(model: Model = None):
     palette = cb.get_palette("Accent")(8)  # the full NHM model components
     component_colors = {
         "PRMSSolarGeometry": palette[3],
-        "PRMSBoundaryLayer": palette[2],
+        "PRMSAtmosphere": palette[2],
         "PRMSCanopy": palette[0],
         "PRMSSnow": palette[1],
         "PRMSRunoff": palette[5],

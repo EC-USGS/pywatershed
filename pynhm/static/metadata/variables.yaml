@@ -1405,12 +1405,7 @@ gwres_flow:
     0: ngw
   type: float64
   units: inches
-gwres_in:
-  desc: Total inflow to each GWR from associated capillary and gravity reservoirs
-  dimensions:
-    0: ngw
-  type: float64
-  units: acre-inches
+  var_category: mass flux
 gwres_sink:
   desc: Outflow from GWRs to the groundwater sink; water is considered underflow or
     flow to deep aquifers and does not flow to the stream network
@@ -1418,6 +1413,7 @@ gwres_sink:
     0: ngw
   type: float64
   units: inches
+  var_category: mass flux
 gwres_stor:
   desc: Storage in each GWR
   dimensions:
@@ -2580,6 +2576,7 @@ soil_to_gw:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
 soil_to_ssr:
   desc: Portion of excess flow to the capillary reservoir that flows to the gravity
     reservoir for each HRU
@@ -2660,6 +2657,7 @@ ssr_to_gw:
     0: nssr
   type: float64
   units: inches
+  var_category: mass flux
 ssres_flow:
   desc: Interflow from gravity and preferential-flow reservoirs to the stream network
     for each HRU

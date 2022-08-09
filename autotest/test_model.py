@@ -64,24 +64,6 @@ def test_model(domain, control, processes, tmp_path):
     )
 
     # ---------------------------------
-    # Regression results from hash
-    # itimestep: process: variable: mean
-    regression_ans = {
-        "drb_2yr": {
-            9: {
-                "PRMSChannel": {
-                    "seg_outflow": 1522.4549482501916,
-                },
-            },
-            99: {
-                "PRMSChannel": {
-                    "seg_outflow": 2228.410057597461,
-                },
-            },
-        },
-    }[domain["domain_name"]]
-
-    # ---------------------------------
     # get the answer data against PRMS5.2.1
     comparison_vars_dict_all = {
         "PRMSSolarGeometry": [],
@@ -193,6 +175,29 @@ def test_model(domain, control, processes, tmp_path):
                 nc_pth, variable_name=vv, control=control
             )
 
+    # ---------------------------------
+    # itimestep: process: variable: mean
+    regression_ans = {
+        9: {
+            "PRMSChannel": {
+                "seg_outflow": {
+                    "drb_2yr": 1522.4549482501916,
+                    "hru_1": 12.611823245603686,
+                    "ucb_2yr": 1680.5250196362717,
+                },
+            },
+        },
+        99: {
+            "PRMSChannel": {
+                "seg_outflow": {
+                    "drb_2yr": 2228.410057597461,
+                    "hru_1": 22.18093424912333,
+                    "ucb_2yr": 724.1753570676741,
+                },
+            },
+        },
+    }
+
     all_success = True
     # for istep in range(control.n_times):
     for istep in range(n_time_steps):
@@ -229,9 +234,15 @@ def test_model(domain, control, processes, tmp_path):
         if istep in regression_ans:
             for pp, var_ans in regression_ans[istep].items():
                 for vv, aa in var_ans.items():
-                    if not aa:
-                        continue
-                    assert model.processes[pp][vv].mean() == aa
+                    result = model.processes[pp][vv].mean()
+                    reg_ans = aa[domain["domain_name"]]
+                    if not reg_ans:
+                        print(
+                            f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}"
+                        )
+                        all_success = False
+                    else:
+                        assert abs(result - reg_ans) < 1e-5
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:

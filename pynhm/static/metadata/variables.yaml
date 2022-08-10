@@ -1434,7 +1434,7 @@ gwres_stor_old:
     0: ngw
   type: float64
   units: inches
-  var_category: mass storage  
+  var_category: mass storage
 gwstor_minarea_wb:
   desc: Storage added to each GWR when storage is less than gwstor_min
   dimensions:
@@ -2257,6 +2257,7 @@ seg_inflow:
     0: nsegment
   type: float64
   units: cfs
+  var_category: mass flux
 seg_lateral_inflow:
   desc: Lateral inflow entering a segment
   dimensions:
@@ -2283,6 +2284,7 @@ seg_outflow:
     0: nsegment
   type: float64
   units: cfs
+  var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
   dimensions:
@@ -2316,6 +2318,13 @@ seg_ssflow:
     0: nsegment
   type: float64
   units: inches
+seg_stor_change:
+  desc: Change in segment storage
+  dimensions:
+    0: nsegment
+  type: float64
+  units: inches
+  var_category: mass storage change
 seg_upstream_inflow:
   desc: Sum of inflow from upstream segments
   dimensions:

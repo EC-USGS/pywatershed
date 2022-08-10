@@ -85,6 +85,8 @@ class PRMSChannel(StorageUnit):
         self.name = "PRMSChannel"
 
         self.set_inputs(locals())
+        # override for now until the channel budget is sorted out
+        budget_type = None
         self.set_budget(budget_type)
 
         # process channel data
@@ -275,6 +277,7 @@ class PRMSChannel(StorageUnit):
             "seg_lateral_inflow",
             "seg_upstream_inflow",
             "seg_outflow",
+            "seg_stor_change",
         )
 
     @staticmethod
@@ -288,6 +291,7 @@ class PRMSChannel(StorageUnit):
             "seg_lateral_inflow": zero,
             "seg_upstream_inflow": zero,
             "seg_outflow": zero,
+            "seg_stor_change": zero,
         }
 
     def _advance_variables(self) -> None:
@@ -299,7 +303,7 @@ class PRMSChannel(StorageUnit):
         self._seg_outflow0[:] = self.seg_outflow.copy()
         return
 
-    def calculate(self, simulation_time: float) -> None:
+    def _calculate(self, simulation_time: float) -> None:
         """Calculate channel segment terms for a time step
 
         Args:
@@ -348,6 +352,10 @@ class PRMSChannel(StorageUnit):
             self._c0,
             self._c1,
             self._c2,
+        )
+
+        self.seg_stor_change[:] = (self._seg_inflow0 - self._seg_inflow) - (
+            self._seg_outflow0 - self.seg_outflow
         )
 
         return

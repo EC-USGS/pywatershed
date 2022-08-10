@@ -135,7 +135,6 @@ def test_model(domain, control, processes, tmp_path):
             "ssr_to_gw",  # input
             "dprst_seep_hru",  # input
             "gwres_flow",
-            "gwres_in",
             "gwres_sink",
             "gwres_stor",
         ],

@@ -1,5 +1,3 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
@@ -41,7 +39,6 @@ class PRMSSoilzone(StorageUnit):
         )
         self.name = "PRMSSoilzone"
 
-        budget_type = None
         self.set_inputs(locals())
         self.set_budget(budget_type)
 
@@ -128,18 +125,26 @@ class PRMSSoilzone(StorageUnit):
             "pref_flow_infil",
             "pref_flow_max",
             "pref_flow_stor",
+            "pref_flow_stor_change",
+            "pref_flow_stor_prev",
             "pref_flow_thrsh",
             "recharge",
             "slow_flow",
             "slow_stor",
+            "slow_stor_change",
+            "slow_stor_prev",
             "snow_free",
             "soil_lower",
+            "soil_lower_change",
+            "soil_lower_prev",
             "soil_lower_ratio",
             "soil_moist",
-            "soil_moist_change",
-            "soil_moist_prev",
+            # "soil_moist_change",
+            # "soil_moist_prev",
             "soil_moist_tot",
             "soil_rechr",
+            "soil_rechr_change",
+            "soil_rechr_prev",
             "soil_to_gw",
             "soil_to_ssr",
             "soil_zone_max",
@@ -147,6 +152,8 @@ class PRMSSoilzone(StorageUnit):
             "ssres_flow",
             "ssres_in",
             "ssres_stor",
+            # "ssres_stor_change",
+            # "ssres_stor_prev",
             "swale_actet",
             "unused_potet",
             # "upslope_dunnianflow",
@@ -184,19 +191,27 @@ class PRMSSoilzone(StorageUnit):
             "pref_flow_infil": zero,
             "pref_flow_max": zero,
             "pref_flow_stor": zero,
+            "pref_flow_stor_change": nan,
+            "pref_flow_stor_prev": nan,
             "pref_flow_thrsh": zero,
             "recharge": zero,
             "slow_flow": zero,
             "slow_stor": zero,
+            "slow_stor_change": zero,
+            "slow_stor_prev": nan,
             "snow_free": nan,  # sm_soilzone
             "soil_lower": nan,  # completely set later
+            "soil_lower_change": nan,
+            "soil_lower_prev": nan,
             "soil_lower_ratio": zero,
             "soil_lower_stor_max": nan,  # completely set later
             "soil_moist": nan,  # sm_climateflow
-            "soil_moist_change": nan,  # sm_climateflow
-            "soil_moist_prev": nan,  # sm_climateflow
+            # "soil_moist_change": nan,  # sm_climateflow
+            # "soil_moist_prev": nan,  # sm_climateflow
             "soil_moist_tot": nan,  # completely set later
             "soil_rechr": nan,  # sm_climateflow
+            "soil_rechr_change": nan,  # sm_climateflow
+            "soil_rechr_prev": nan,  # sm_climateflow
             "soil_to_gw": zero,
             "soil_to_ssr": zero,
             "soil_zone_max": nan,  # this is completely later
@@ -204,6 +219,8 @@ class PRMSSoilzone(StorageUnit):
             "ssres_flow": zero,
             "ssres_in": zero,
             "ssres_stor": nan,  # sm_soilzone
+            # "ssres_stor_change": nan,
+            # "ssres_stor_prev": nan,
             "swale_actet": zero,
             "unused_potet": zero,
         }
@@ -389,7 +406,12 @@ class PRMSSoilzone(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
-        self.soil_moist_prev[:] = self.soil_moist
+        self.pref_flow_stor_prev[:] = self.pref_flow_stor
+        # self.soil_moist_prev[:] = self.soil_moist
+        self.soil_lower_prev[:] = self.soil_lower
+        self.soil_rechr_prev[:] = self.soil_rechr
+        self.slow_stor_prev[:] = self.slow_stor
+        # self.ssres_stor_prev[:] = self.ssres_stor
         return
 
     def _calculate(self, simulation_time):
@@ -400,10 +422,6 @@ class PRMSSoilzone(StorageUnit):
         #     self.soil_moist = self.soil_moist_chg
         #     self.soil_rechr = self.soil_rechr_chg
         # # <
-
-        if self.verbose:
-            self.soil_moist_ante = self.soil_moist
-            self.ssres_stor_ante = self.ssres_stor
 
         # <
         gwin = zero
@@ -754,7 +772,14 @@ class PRMSSoilzone(StorageUnit):
         if self.control.config["dprst_flag"] == 1:
             self.recharge = self.recharge + self.dprst_seep_hru
 
-        self.soil_moist_change[:] = self.soil_moist - self.soil_moist_prev
+        self.pref_flow_stor_change[:] = (
+            self.pref_flow_stor - self.pref_flow_stor_prev
+        )
+        # self.soil_moist_change[:] = self.soil_moist - self.soil_moist_prev
+        self.soil_lower_change[:] = self.soil_lower - self.soil_lower_prev
+        self.soil_rechr_change[:] = self.soil_rechr - self.soil_rechr_prev
+        self.slow_stor_change[:] = self.slow_stor - self.slow_stor_prev
+        # self.ssres_stor_change[:] = self.ssres_stor - self.ssres_stor_prev
 
         # <
         return

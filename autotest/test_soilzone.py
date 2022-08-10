@@ -43,7 +43,7 @@ class TestPRMSSoilzone:
             "soil_moist",
             "soil_moist_prev",
             "soil_moist_tot",
-            "infil",
+            # "infil", # infil is an input
             "soil_rechr",
             "soil_to_gw",
             "soil_to_ssr",
@@ -69,7 +69,7 @@ class TestPRMSSoilzone:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        soil = PRMSSoilzone(control, **input_variables)
+        soil = PRMSSoilzone(control, **input_variables, budget_type="strict")
         all_success = True
         for istep in range(control.n_times):
             # for istep in range(10):

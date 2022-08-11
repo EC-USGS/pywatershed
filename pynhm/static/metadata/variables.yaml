@@ -1314,6 +1314,21 @@ freeh2o:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+freeh2o_change:
+  desc: Change in storage of free liquid water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+freeh2o_prev:
+  desc: Previous storage of free liquid water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 gate_ht:
   desc: Height of the gate opening at each dam with a gate
   dimensions:
@@ -1434,7 +1449,7 @@ gwres_stor_old:
     0: ngw
   type: float64
   units: inches
-  var_category: mass storage  
+  var_category: mass storage
 gwstor_minarea_wb:
   desc: Storage added to each GWR when storage is less than gwstor_min
   dimensions:
@@ -1521,7 +1536,7 @@ hru_intcpevap:
     0: nhru
   type: float64
   units: inches
-  var_category: mass flux
+  # var_category: mass flux
 hru_intcpstor:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU
   dimensions:
@@ -2049,6 +2064,21 @@ pk_ice:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+pk_ice_change:
+  desc: Storage of frozen water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+pk_ice_prev:
+  desc: Storage of frozen water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 pk_precip:
   desc: Precipitation added to snowpack for each HRU
   dimensions:
@@ -2068,18 +2098,20 @@ pksv:
     0: nhru
   type: float64
   units: inches
-pkwater_ante:
-  desc: Antecedent snowpack water equivalent on each HRU
-  dimensions:
-    0: nhru
-  type: float64
-  units: inches
 pkwater_equiv:
   desc: Snowpack water equivalent on each HRU
   dimensions:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+pkwater_ante:
+  desc: Previous snowpack water equivalent on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 potet:
   desc: Potential ET for each HRU
   dimensions:

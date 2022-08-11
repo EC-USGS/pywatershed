@@ -165,6 +165,8 @@ class PRMSSnow(StorageUnit):
             "albedo",
             "frac_swe",
             "freeh2o",
+            "freeh2o_change",
+            "freeh2o_prev",
             "iasw",
             "int_alb",
             "iso",
@@ -175,6 +177,8 @@ class PRMSSnow(StorageUnit):
             "pk_den",
             "pk_depth",
             "pk_ice",
+            "pk_ice_change",
+            "pk_ice_prev",
             "pk_precip",
             "pk_temp",
             "pksv",
@@ -243,6 +247,8 @@ class PRMSSnow(StorageUnit):
             "albedo": zero,
             "frac_swe": zero,
             "freeh2o": zero,
+            "freeh2o_change": nan,
+            "freeh2o_prev": nan,
             "iasw": False,
             "int_alb": one,
             "iso": one,
@@ -253,6 +259,8 @@ class PRMSSnow(StorageUnit):
             "pk_den": zero,
             "pk_depth": zero,
             "pk_ice": zero,
+            "pk_ice_change": nan,
+            "pk_ice_prev": nan,
             "pk_precip": zero,
             "pk_temp": zero,
             "pksv": zero,
@@ -362,10 +370,12 @@ class PRMSSnow(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
-        self.pkwater_ante[:] = self.pkwater_equiv.copy()
+        self.pkwater_ante[:] = self.pkwater_equiv
+        self.freeh2o_prev[:] = self.freeh2o
+        self.pk_ice_prev[:] = self.pk_ice
         return
 
-    def calculate(self, simulation_time):
+    def _calculate(self, simulation_time):
         """Calculate snow pack terms for a time step
 
         Args:
@@ -464,6 +474,7 @@ class PRMSSnow(StorageUnit):
             #              CONTENT AND HEAT CONTENT OF SNOW PACK
             # ***********************************************************************
             # WARNING: pan - wouldn't this be pkwater_equiv > DNEARZERO?
+            # JLM: this logic should be move into ppt_to_pack
             if (
                 self.pkwater_equiv[jj] > zero and self.net_ppt[jj] > zero
             ) or self.net_snow[jj] > zero:
@@ -557,7 +568,9 @@ class PRMSSnow(StorageUnit):
                         )
                     else:
                         self.pk_den[jj] = self.den_max
-                        self.pk_depth[jj] = pkwater_equiv[jj] * self.denmaxinv
+                        self.pk_depth[jj] = (
+                            self.pkwater_equiv[jj] * self.denmaxinv
+                        )
 
                     # <
                     self.pss[jj] = self.pkwater_equiv[jj]
@@ -605,6 +618,9 @@ class PRMSSnow(StorageUnit):
                     self.frac_swe[jj] = zero
 
             # <<
+
+        self.freeh2o_change[:] = self.freeh2o - self.freeh2o_prev
+        self.pk_ice_change[:] = self.pk_ice - self.pk_ice_prev
         return
 
     @staticmethod

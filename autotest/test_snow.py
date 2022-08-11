@@ -20,7 +20,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 class TestPRMSSnow:
     def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)
@@ -74,7 +74,7 @@ class TestPRMSSnow:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        snow = PRMSSnow(control, **input_variables)
+        snow = PRMSSnow(control, **input_variables, budget_type="strict")
 
         all_success = True
         iso_censor_mask = None

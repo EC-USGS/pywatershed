@@ -135,7 +135,6 @@ def test_model(domain, control, processes, tmp_path):
             "ssr_to_gw",  # input
             "dprst_seep_hru",  # input
             "gwres_flow",
-            "gwres_in",
             "gwres_sink",
             "gwres_stor",
         ],
@@ -242,7 +241,7 @@ def test_model(domain, control, processes, tmp_path):
                         )
                         all_success = False
                     else:
-                        assert abs(result - reg_ans) < 1e-5
+                        assert (abs(result - reg_ans) / reg_ans) < 1e-5
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:

@@ -23,7 +23,7 @@ class PRMSSoilzone(StorageUnit):
         dprst_seep_hru: adaptable,
         hru_impervevap: adaptable,
         hru_intcpevap: adaptable,
-        infil: adaptable,
+        infil_hru: adaptable,  # file by /pynhm/analysis/budget_soilzone.py
         sroff: adaptable,
         potet: adaptable,
         transp_on: adaptable,
@@ -90,7 +90,7 @@ class PRMSSoilzone(StorageUnit):
             "dprst_seep_hru",
             "hru_impervevap",  # JLM ??
             "hru_intcpevap",  # JLM ???
-            "infil",
+            "infil_hru",
             # soil_moist_chg => model_runoff%soil_moist_chg, &
             # soil_rechr_chg => model_runoff%soil_rechr_chg, &
             "sroff",
@@ -99,65 +99,6 @@ class PRMSSoilzone(StorageUnit):
             "transp_on",
             "snow_evap",
             "snowcov_area",
-        )
-
-    @staticmethod
-    def get_variables() -> tuple:
-        """Get soil zone variables
-
-        Returns:
-            variables: variables
-
-        """
-        # JLM: Seems like some of these should just be internal/postprocess
-        # may not need to set all on self.
-        return (
-            "cap_infil_tot",
-            "cap_waterin",
-            "dunnian_flow",
-            "hru_actet",
-            # "lakein_sz",
-            "perv_actet",
-            "potet_lower",
-            "potet_rechr",
-            "pref_flow",
-            "pref_flow_in",
-            "pref_flow_infil",
-            "pref_flow_max",
-            "pref_flow_stor",
-            "pref_flow_stor_change",
-            "pref_flow_stor_prev",
-            "pref_flow_thrsh",
-            "recharge",
-            "slow_flow",
-            "slow_stor",
-            "slow_stor_change",
-            "slow_stor_prev",
-            "snow_free",
-            "soil_lower",
-            "soil_lower_change",
-            "soil_lower_prev",
-            "soil_lower_ratio",
-            "soil_moist",
-            # "soil_moist_change",
-            # "soil_moist_prev",
-            "soil_moist_tot",
-            "soil_rechr",
-            "soil_rechr_change",
-            "soil_rechr_prev",
-            "soil_to_gw",
-            "soil_to_ssr",
-            "soil_zone_max",
-            "ssr_to_gw",
-            "ssres_flow",
-            "ssres_in",
-            "ssres_stor",
-            # "ssres_stor_change",
-            # "ssres_stor_prev",
-            "swale_actet",
-            "unused_potet",
-            # "upslope_dunnianflow",
-            # "upslope_interflow",
         )
 
     @staticmethod
@@ -183,7 +124,9 @@ class PRMSSoilzone(StorageUnit):
             "cap_waterin": zero,
             "dunnian_flow": zero,
             "hru_actet": zero,
+            "infil": nan,
             "perv_actet": zero,
+            "perv_actet_hru": zero,
             "potet_lower": zero,
             "potet_rechr": zero,
             "pref_flow": zero,
@@ -202,15 +145,15 @@ class PRMSSoilzone(StorageUnit):
             "snow_free": nan,  # sm_soilzone
             "soil_lower": nan,  # completely set later
             "soil_lower_change": nan,
+            "soil_lower_change_hru": nan,
             "soil_lower_prev": nan,
             "soil_lower_ratio": zero,
-            "soil_lower_stor_max": nan,  # completely set later
+            "soil_lower_max": nan,  # completely set later
             "soil_moist": nan,  # sm_climateflow
-            # "soil_moist_change": nan,  # sm_climateflow
-            # "soil_moist_prev": nan,  # sm_climateflow
             "soil_moist_tot": nan,  # completely set later
             "soil_rechr": nan,  # sm_climateflow
             "soil_rechr_change": nan,  # sm_climateflow
+            "soil_rechr_change_hru": nan,  # sm_climateflow
             "soil_rechr_prev": nan,  # sm_climateflow
             "soil_to_gw": zero,
             "soil_to_ssr": zero,
@@ -219,10 +162,29 @@ class PRMSSoilzone(StorageUnit):
             "ssres_flow": zero,
             "ssres_in": zero,
             "ssres_stor": nan,  # sm_soilzone
-            # "ssres_stor_change": nan,
-            # "ssres_stor_prev": nan,
             "swale_actet": zero,
             "unused_potet": zero,
+        }
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": [
+                "infil_hru",
+            ],
+            "outputs": [
+                "perv_actet_hru",
+                "soil_to_gw",
+                "ssr_to_gw",
+                "slow_flow"
+                # "pref_flow",
+            ],
+            "storage_changes": [
+                "soil_rechr_change_hru",
+                "soil_lower_change_hru",
+                "slow_stor_change",
+                # "pref_flow_stor_change",
+            ],
         }
 
     def set_initial_conditions(self):
@@ -393,12 +355,12 @@ class PRMSSoilzone(StorageUnit):
         )
 
         self.soil_lower = self.soil_moist - self.soil_rechr
-        self.soil_lower_stor_max = self.soil_moist_max - self.soil_rechr_max
+        self.soil_lower_max = self.soil_moist_max - self.soil_rechr_max
 
-        wh_soil_lower_stor = np.where(self.soil_lower_stor_max > zero)
+        wh_soil_lower_stor = np.where(self.soil_lower_max > zero)
         self.soil_lower_ratio[wh_soil_lower_stor] = (
             self.soil_lower[wh_soil_lower_stor]
-            / self.soil_lower_stor_max[wh_soil_lower_stor]
+            / self.soil_lower_max[wh_soil_lower_stor]
         )
 
         self._gvr2pfr = np.full(self.nhru, zero, dtype=float)
@@ -407,11 +369,9 @@ class PRMSSoilzone(StorageUnit):
 
     def _advance_variables(self) -> None:
         self.pref_flow_stor_prev[:] = self.pref_flow_stor
-        # self.soil_moist_prev[:] = self.soil_moist
-        self.soil_lower_prev[:] = self.soil_lower
         self.soil_rechr_prev[:] = self.soil_rechr
+        self.soil_lower_prev[:] = self.soil_lower
         self.slow_stor_prev[:] = self.slow_stor
-        # self.ssres_stor_prev[:] = self.ssres_stor
         return
 
     def _calculate(self, simulation_time):
@@ -472,6 +432,10 @@ class PRMSSoilzone(StorageUnit):
             # note: hru_area_perv[hh] has to be > zero for infil > 0
             #       hru_frac_perv[hh] has to be > zero
             # IE capwater_maxin is just on the pervious area
+
+            #  this is a bit ridiculous until cleaned up... should only
+            # be passing HRU quantities not a mix... eventually volumes
+            self.infil = self.infil_hru / self.hru_frac_perv[hh]
             capwater_maxin = self.infil[hh]
 
             # Compute preferential flow and storage, and any dunnian flow
@@ -756,10 +720,10 @@ class PRMSSoilzone(StorageUnit):
         # <
 
         # refactor with np.where
-        wh_lower_stor_max_gt_zero = np.where(self.soil_lower_stor_max > zero)
+        wh_lower_stor_max_gt_zero = np.where(self.soil_lower_max > zero)
         self.soil_lower_ratio[wh_lower_stor_max_gt_zero] = (
             self.soil_lower[wh_lower_stor_max_gt_zero]
-            / self.soil_lower_stor_max[wh_lower_stor_max_gt_zero]
+            / self.soil_lower_max[wh_lower_stor_max_gt_zero]
         )
         # if self.control.current_time == np.datetime64("1979-03-18T00:00:00"):
         # asdf
@@ -781,6 +745,13 @@ class PRMSSoilzone(StorageUnit):
         self.slow_stor_change[:] = self.slow_stor - self.slow_stor_prev
         # self.ssres_stor_change[:] = self.ssres_stor - self.ssres_stor_prev
 
+        self.soil_lower_change_hru[:] = (
+            self.soil_lower_change * self.hru_frac_perv
+        )
+        self.soil_rechr_change_hru[:] = (
+            self.soil_rechr_change * self.hru_frac_perv
+        )
+        self.perv_actet_hru[:] = self.perv_actet * self.hru_frac_perv
         # <
         return
 

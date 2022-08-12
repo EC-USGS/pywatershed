@@ -165,44 +165,6 @@ class PRMSRunoff(StorageUnit):
         )
 
     @staticmethod
-    def get_variables() -> tuple:
-        """Get output variables
-
-        Returns:
-            variables: output variables
-
-        """
-        return (
-            "contrib_fraction",
-            "infil",
-            "sroff",
-            "hru_sroffp",
-            "hru_sroffi",
-            "imperv_stor",
-            "imperv_evap",
-            "hru_impervevap",
-            "hru_impervstor",
-            "hru_impervstor_old",
-            "hru_impervstor_change",
-            "dprst_vol_frac",
-            "dprst_vol_clos",
-            "dprst_vol_open",
-            "dprst_vol_clos_frac",
-            "dprst_vol_open_frac",
-            "dprst_area_clos",
-            "dprst_area_open",
-            "dprst_area_clos_max",
-            "dprst_area_open_max",
-            "dprst_sroff_hru",
-            "dprst_seep_hru",
-            "dprst_evap_hru",
-            "dprst_insroff_hru",
-            "dprst_stor_hru",
-            "dprst_stor_hru_old",
-            "dprst_stor_hru_change",
-        )
-
-    @staticmethod
     def get_init_values() -> dict:
         """Get initial values
 
@@ -212,6 +174,7 @@ class PRMSRunoff(StorageUnit):
         return {
             "contrib_fraction": zero,
             "infil": zero,
+            "infil_hru": zero,
             "sroff": zero,
             "hru_sroffp": zero,
             "hru_sroffi": zero,
@@ -248,7 +211,7 @@ class PRMSRunoff(StorageUnit):
         self.dprst_stor_hru_old[:] = self.dprst_stor_hru
         return None
 
-    def calculate(self, time_length, vectorized=False):
+    def _calculate(self, time_length, vectorized=False):
         """Calculate terms for a time step
 
         Args:
@@ -259,6 +222,8 @@ class PRMSRunoff(StorageUnit):
 
         """
         self.calculate_prms_style()
+
+        self.infil_hru[:] = self.infil * self.hru_frac_perv
 
         self.hru_impervstor_change[:] = (
             self.hru_impervstor_old - self.hru_impervstor

@@ -26,33 +26,25 @@ class TestPRMSSoilzone:
 
         # get the answer data
         comparison_var_names = [
-            ### "cap_infil_tot",
-            ### "cap_waterin",
-            ### "dunnian_flow",
+            "cap_infil_tot",
             "hru_actet",
-            ### "lakein_sz",
             "perv_actet",
             "potet_lower",
             "potet_rechr",
             "recharge",
             "slow_flow",
             "slow_stor",
-            ### "snow_free",
             "soil_lower",
             # "soil_lower_ratio",
             "soil_moist",
-            "soil_moist_prev",
             "soil_moist_tot",
-            # "infil", # infil is an input
             "soil_rechr",
             "soil_to_gw",
             "soil_to_ssr",
-            ### "soil_zone_max",
             "ssr_to_gw",
             "ssres_flow",
             "ssres_in",
             "ssres_stor",
-            ### "swale_actet",
             ### "unused_potet",
         ]
 

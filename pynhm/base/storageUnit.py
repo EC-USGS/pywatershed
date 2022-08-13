@@ -71,9 +71,9 @@ class StorageUnit(Accessor):
     def get_inputs() -> list:
         raise Exception("This must be overridden")
 
-    @staticmethod
-    def get_variables() -> list:
-        raise Exception("This must be overridden")
+    @classmethod
+    def get_variables(cls) -> list:
+        return list(cls.get_init_values().keys())
 
     @classmethod
     def get_mass_budget_terms(cls) -> dict:

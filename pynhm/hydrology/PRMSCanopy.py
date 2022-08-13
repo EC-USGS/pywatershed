@@ -78,30 +78,6 @@ class PRMSCanopy(StorageUnit):
         )
 
     @staticmethod
-    def get_variables() -> tuple:
-        """Get canopy output variables
-
-        Returns:
-            variables: output variables
-
-        """
-        return (
-            "net_ppt",
-            "net_rain",
-            "net_snow",
-            "intcp_stor",
-            "intcp_evap",
-            "hru_intcpstor",
-            "hru_intcpstor_old",
-            "hru_intcpstor_change",
-            "hru_intcpevap",
-            "intcp_form",
-            "intcp_changeover",
-            "intcp_transp_on",  # this is private in prms6 and is not in the metadata
-            # i defined metadata for it in a very adhoc way
-        )
-
-    @staticmethod
     def get_init_values() -> dict:
         """Get canopy initial values
 
@@ -110,18 +86,31 @@ class PRMSCanopy(StorageUnit):
         """
 
         return {
+            "net_ppt": zero,
             "net_rain": zero,
             "net_snow": zero,
-            "net_ppt": zero,
-            "intcp_stor": zero,  # JLM: this is the only one that was explicitly defined
-            "intcp_evap": zero,
-            "hru_intcpstor": zero,
-            "hru_intcpstor_old": zero,
-            "hru_intcpstor_change": zero,
             "intcp_changeover": zero,
-            "hru_intcpevap": zero,
+            "intcp_evap": zero,
             "intcp_form": 0,  # could make boolean but would have to make the RAIN/SNOW match
+            "intcp_stor": zero,
             "intcp_transp_on": 0,  # could make boolean
+            "hru_intcpevap": zero,
+            "hru_intcpstor": zero,
+            "hru_intcpstor_change": zero,
+            "hru_intcpstor_old": zero,
+        }
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": ["hru_rain", "hru_snow"],
+            "outputs": [
+                "net_rain",
+                "net_snow",
+                "hru_intcpevap",
+                "intcp_changeover",  # ?? always zero
+            ],
+            "storage_changes": ["hru_intcpstor_change"],
         }
 
     def set_initial_conditions(self):

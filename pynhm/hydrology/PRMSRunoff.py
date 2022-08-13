@@ -50,38 +50,6 @@ class PRMSRunoff(StorageUnit):
         self.set_inputs(locals())
 
         self.set_budget(budget_type)
-        # if budget_type is None:
-        #     self.budget = None
-        # else:
-        #     budget_terms = {
-        #         "inputs": {
-        #             "net_rain": self.net_rain,
-        #             "net_snow": self.net_snow,
-        #             "snowmelt": self.snowmelt,
-        #         },
-        #         "outputs": {
-        #             "hru_sroffi": self.hru_sroffi,
-        #             "hru_sroffp": self.hru_sroffp,
-        #             "infil": self.infil,
-        #             "hru_impervevap": self.hru_impervevap,
-        #             "dprst_sroff_hru": self.dprst_sroff_hru,
-        #             "dprst_seep_hru": self.dprst_seep_hru,
-        #             "dprst_evap_hru": self.dprst_evap_hru,
-        #             # "dprst_insroff_hru": self.dprst_insroff_hru,
-        #         },
-        #         "storage_changes": {
-        #             "hru_impervstor_change": self.hru_impervstor_change,
-        #             "dprst_stor_hru_change": self.dprst_stor_hru_change,
-        #         },
-        #     }
-
-        #     self.budget = Budget(
-        #         self.control,
-        #         **budget_terms,
-        #         time_unit="D",
-        #         description=self.name,
-        #         imbalance_fatal=(budget_type == "strict"),
-        #     )
 
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
@@ -165,44 +133,6 @@ class PRMSRunoff(StorageUnit):
         )
 
     @staticmethod
-    def get_variables() -> tuple:
-        """Get output variables
-
-        Returns:
-            variables: output variables
-
-        """
-        return (
-            "contrib_fraction",
-            "infil",
-            "sroff",
-            "hru_sroffp",
-            "hru_sroffi",
-            "imperv_stor",
-            "imperv_evap",
-            "hru_impervevap",
-            "hru_impervstor",
-            "hru_impervstor_old",
-            "hru_impervstor_change",
-            "dprst_vol_frac",
-            "dprst_vol_clos",
-            "dprst_vol_open",
-            "dprst_vol_clos_frac",
-            "dprst_vol_open_frac",
-            "dprst_area_clos",
-            "dprst_area_open",
-            "dprst_area_clos_max",
-            "dprst_area_open_max",
-            "dprst_sroff_hru",
-            "dprst_seep_hru",
-            "dprst_evap_hru",
-            "dprst_insroff_hru",
-            "dprst_stor_hru",
-            "dprst_stor_hru_old",
-            "dprst_stor_hru_change",
-        )
-
-    @staticmethod
     def get_init_values() -> dict:
         """Get initial values
 
@@ -212,6 +142,7 @@ class PRMSRunoff(StorageUnit):
         return {
             "contrib_fraction": zero,
             "infil": zero,
+            "infil_hru": zero,
             "sroff": zero,
             "hru_sroffp": zero,
             "hru_sroffi": zero,
@@ -239,6 +170,32 @@ class PRMSRunoff(StorageUnit):
             "dprst_stor_hru_change": zero,
         }
 
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": [
+                "net_rain",
+                "net_snow",
+                "snowmelt",
+                "intcp_changeover",
+            ],
+            "outputs": [
+                "hru_sroffi",
+                "hru_sroffp",
+                # "infil",  # depth on pervious area
+                "infil_hru",
+                "hru_impervevap",
+                "dprst_sroff_hru",
+                "dprst_seep_hru",
+                "dprst_evap_hru",
+                # "dprst_insroff_hru",
+            ],
+            "storage_changes": [
+                "hru_impervstor_change",
+                "dprst_stor_hru_change",
+            ],
+        }
+
     def _advance_variables(self) -> None:
         """Advance the variables
         Returns:
@@ -248,7 +205,7 @@ class PRMSRunoff(StorageUnit):
         self.dprst_stor_hru_old[:] = self.dprst_stor_hru
         return None
 
-    def calculate(self, time_length, vectorized=False):
+    def _calculate(self, time_length, vectorized=False):
         """Calculate terms for a time step
 
         Args:
@@ -259,6 +216,8 @@ class PRMSRunoff(StorageUnit):
 
         """
         self.calculate_prms_style()
+
+        self.infil_hru[:] = self.infil * self.hru_frac_perv
 
         self.hru_impervstor_change[:] = (
             self.hru_impervstor_old - self.hru_impervstor

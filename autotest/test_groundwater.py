@@ -28,9 +28,10 @@ class TestPRMSGroundwaterDomain:
         output_compare = {}
         vars_compare = (
             "gwres_flow",
-            "gwres_in",
             "gwres_sink",
             "gwres_stor",
+            "ssr_to_gw",
+            "soil_to_gw",
         )
         for key in PRMSGroundwater.get_variables():
             if key not in vars_compare:

@@ -102,6 +102,7 @@ class TestPRMSCanopyDomain:
             control.advance()
             cnp.advance()
             cnp.calculate(1.0)
+
             # print(cnp.budget)
 
             # compare along the way

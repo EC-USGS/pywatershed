@@ -1666,7 +1666,14 @@ imperv_stor:
   type: float64
   units: inches
 infil:
-  desc: Infiltration to the capillary and preferential-flow reservoirs for each HRU
+  desc: Infiltration to the capillary and preferential-flow reservoirs, depth on pervious area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass flux
+infil_hru:
+  desc: Infiltration to the capillary and preferential-flow reservoirs, depth on HRU area
   dimensions:
     0: nhru
   type: float64
@@ -1685,6 +1692,7 @@ intcp_changeover:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
 intcp_evap:
   desc: Evaporation from the canopy for each HRU
   dimensions:
@@ -2021,11 +2029,19 @@ pan_evap:
   type: float64
   units: inches
 perv_actet:
-  desc: Actual ET from the capillary reservoir of each HRU
+  desc: Actual ET from the capillary reservoir of each HRU, depth on pervious area
   dimensions:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
+perv_actet_hru:
+  desc: Actual ET from the capillary reservoir of each HRU, depth on HRU area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass flux
 perv_avail_et:
   desc: Unsatisfied ET available to the capillary reservoir of each HRU
   dimensions:
@@ -2159,6 +2175,7 @@ pref_flow:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
 pref_flow_in:
   desc: Infiltration and flow from gravity reservoir to the preferential-flow reservoir
   dimensions:
@@ -2528,12 +2545,36 @@ soil_lower:
   units: inches
   var_category: mass storage
 soil_lower_change:
-  desc: Storage in the lower zone of the capillary reservoir that is only available
+  desc: Change in storage in the lower zone of the capillary reservoir that is only available
+    for transpiration for each HRU, depth on pervious area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_lower_change_hru:
+  desc: Change in storage in the lower zone of the capillary reservoir that is only available
+    for transpiration for each HRU, depth on HRU area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_lower_max:
+  desc: Maximum storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU
   dimensions:
     0: nhru
   type: float64
   units: inches
+soil_lower_prev:
+  desc: Previous storage in the lower zone of the capillary reservoir that is only available
+    for transpiration for each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 soil_lower_ratio:
   desc: Water content ratio in the lower zone of the capillary reservoir for each
     HRU
@@ -2543,20 +2584,6 @@ soil_lower_ratio:
   units: decimal fraction
 soil_moist:
   desc: Storage of capillary reservoir for each HRU
-  dimensions:
-    0: nhru
-  type: float64
-  units: inches
-  var_category: mass storage
-soil_moist_change:
-  desc: Storage of capillary reservoir for each HRU
-  dimensions:
-    0: nhru
-  type: float64
-  units: inches
-  var_category: mass storage change
-soil_moist_prev:
-  desc: Previous storage of capillary reservoir for each HRU
   dimensions:
     0: nhru
   type: float64
@@ -2587,6 +2614,31 @@ soil_rechr:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+soil_rechr_change:
+  desc: Change in storage for recharge zone (upper portion) of the capillary reservoir that
+    is available for both evaporation and transpiration, depth on pervious area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_rechr_change_hru:
+  desc: Change in storage for recharge zone (upper portion) of the capillary reservoir that
+    is available for both evaporation and transpiration, depth on HRU area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_rechr_prev:
+  desc: Previous storage for recharge zone (upper portion) of the capillary reservoir that
+    is available for both evaporation and transpiration
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 soil_rechr_max:
   desc: Maximum storage for soil recharge zone (upper portion of capillary reservoir
     where losses occur as both evaporation and transpiration)

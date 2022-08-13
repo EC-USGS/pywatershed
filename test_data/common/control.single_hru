@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-69
+73
 ####
 nhruOut_freq
 1
@@ -251,9 +251,10 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-69
+73
 4
 albedo
+cap_infil_tot
 contrib_fraction
 dprst_evap_hru
 dprst_seep_hru
@@ -292,6 +293,9 @@ potet_lower
 potet_rechr
 pptmix
 pptmix_nopack
+pref_flow
+pref_flow_infil
+pref_flow_stor
 prmx
 pst
 recharge

@@ -50,38 +50,6 @@ class PRMSRunoff(StorageUnit):
         self.set_inputs(locals())
 
         self.set_budget(budget_type)
-        # if budget_type is None:
-        #     self.budget = None
-        # else:
-        #     budget_terms = {
-        #         "inputs": {
-        #             "net_rain": self.net_rain,
-        #             "net_snow": self.net_snow,
-        #             "snowmelt": self.snowmelt,
-        #         },
-        #         "outputs": {
-        #             "hru_sroffi": self.hru_sroffi,
-        #             "hru_sroffp": self.hru_sroffp,
-        #             "infil": self.infil,
-        #             "hru_impervevap": self.hru_impervevap,
-        #             "dprst_sroff_hru": self.dprst_sroff_hru,
-        #             "dprst_seep_hru": self.dprst_seep_hru,
-        #             "dprst_evap_hru": self.dprst_evap_hru,
-        #             # "dprst_insroff_hru": self.dprst_insroff_hru,
-        #         },
-        #         "storage_changes": {
-        #             "hru_impervstor_change": self.hru_impervstor_change,
-        #             "dprst_stor_hru_change": self.dprst_stor_hru_change,
-        #         },
-        #     }
-
-        #     self.budget = Budget(
-        #         self.control,
-        #         **budget_terms,
-        #         time_unit="D",
-        #         description=self.name,
-        #         imbalance_fatal=(budget_type == "strict"),
-        #     )
 
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
@@ -200,6 +168,32 @@ class PRMSRunoff(StorageUnit):
             "dprst_stor_hru": zero,
             "dprst_stor_hru_old": zero,
             "dprst_stor_hru_change": zero,
+        }
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": [
+                "net_rain",
+                "net_snow",
+                "snowmelt",
+                "intcp_changeover",
+            ],
+            "outputs": [
+                "hru_sroffi",
+                "hru_sroffp",
+                # "infil",  # depth on pervious area
+                "infil_hru",
+                "hru_impervevap",
+                "dprst_sroff_hru",
+                "dprst_seep_hru",
+                "dprst_evap_hru",
+                # "dprst_insroff_hru",
+            ],
+            "storage_changes": [
+                "hru_impervstor_change",
+                "dprst_stor_hru_change",
+            ],
         }
 
     def _advance_variables(self) -> None:

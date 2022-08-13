@@ -52,7 +52,7 @@ class TestPRMSRunoffDomain:
         runoff = PRMSRunoff(
             control=control,
             **input_variables,
-            budget_type="strict",
+            budget_type=None,
         )
 
         all_success = True

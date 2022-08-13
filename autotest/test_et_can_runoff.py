@@ -123,7 +123,7 @@ class TestPRMSCanopyRunoffDomain:
         runoff = PRMSRunoff(
             control=control,
             **runoff_inputs,
-            budget_type="strict",
+            budget_type=None,
         )
 
         # ---------------------------------

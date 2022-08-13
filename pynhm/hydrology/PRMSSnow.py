@@ -153,53 +153,62 @@ class PRMSSnow(StorageUnit):
         )
 
     @staticmethod
-    def get_variables() -> tuple:
-        """Get snow pack variables
+    def get_init_values() -> dict:
+        """Get snow pack initial values
 
         Returns:
-            variables: variables
-
+            dict: initial values for named variables
         """
-        return (
-            "ai",
-            "albedo",
-            "frac_swe",
-            "freeh2o",
-            "freeh2o_change",
-            "freeh2o_prev",
-            "iasw",
-            "int_alb",
-            "iso",
-            "lso",
-            "lst",
-            "mso",
-            "pk_def",
-            "pk_den",
-            "pk_depth",
-            "pk_ice",
-            "pk_ice_change",
-            "pk_ice_prev",
-            "pk_precip",
-            "pk_temp",
-            "pksv",
-            "pkwater_ante",
-            "pkwater_equiv",
-            "pptmix_nopack",
-            "pss",
-            "pst",
-            "salb",
-            "scrv",
-            "slst",
-            "snow_evap",
-            "snowcov_area",
-            "snowcov_areasv",
-            "snowmelt",
-            "snsv",
-            "tcal",
-            # "newsnow",  # precipitation module these are just flags
-            # "pptmix",  # precipitation module
-            # acum, amlt, deninv, denmaxinv are not worth tracking on self as in PRMS6
-        )
+
+        return {
+            "ai": zero,
+            "albedo": zero,
+            "frac_swe": zero,
+            "freeh2o": zero,
+            "freeh2o_change": nan,
+            "freeh2o_prev": nan,
+            "iasw": False,
+            "int_alb": one,
+            "iso": one,
+            "lso": zero,
+            "lst": False,
+            "mso": one,
+            "pk_def": zero,
+            "pk_den": zero,
+            "pk_depth": zero,
+            "pk_ice": zero,
+            "pk_ice_change": nan,
+            "pk_ice_prev": nan,
+            "pk_precip": zero,
+            "pk_temp": zero,
+            "pksv": zero,
+            "pkwater_ante": nan,
+            "pkwater_equiv": nan,
+            "pptmix_nopack": False,
+            "pss": nan,
+            "pst": nan,
+            "salb": zero,
+            "scrv": zero,
+            "slst": zero,
+            "snow_evap": zero,
+            "snowcov_area": zero,
+            "snowcov_areasv": zero,
+            "snowmelt": zero,
+            "snsv": zero,
+            "tcal": zero,
+            # "through_rain": nan,
+        }
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": ["net_rain", "net_snow"],
+            "outputs": [
+                "snow_evap",
+                "snowmelt",
+            ],  # "through_rain"],
+            "storage_changes": ["freeh2o_change", "pk_ice_change"],
+        }
 
     @staticmethod
     def get_restart_variables() -> tuple:
@@ -233,50 +242,6 @@ class PRMSSnow(StorageUnit):
             "snowcov_areasv",
             "snsv",
         )
-
-    @staticmethod
-    def get_init_values() -> dict:
-        """Get snow pack initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
-
-        return {
-            "ai": zero,
-            "albedo": zero,
-            "frac_swe": zero,
-            "freeh2o": zero,
-            "freeh2o_change": nan,
-            "freeh2o_prev": nan,
-            "iasw": False,
-            "int_alb": one,
-            "iso": one,
-            "lso": zero,
-            "lst": False,
-            "mso": one,
-            "pk_def": zero,
-            "pk_den": zero,
-            "pk_depth": zero,
-            "pk_ice": zero,
-            "pk_ice_change": nan,
-            "pk_ice_prev": nan,
-            "pk_precip": zero,
-            "pk_temp": zero,
-            "pksv": zero,
-            "pkwater_ante": nan,
-            "pkwater_equiv": nan,
-            "pptmix_nopack": False,
-            "salb": zero,
-            "scrv": zero,
-            "slst": zero,
-            "snow_evap": zero,
-            "snowcov_area": zero,
-            "snowcov_areasv": zero,
-            "snowmelt": zero,
-            "snsv": zero,
-            "tcal": zero,
-        }
 
     def set_initial_conditions(self):
         """Initialize PRMSSnow snowpack variables."""
@@ -462,6 +427,7 @@ class PRMSSnow(StorageUnit):
                     # Skip the HRU if there is no snowpack and no new snow
                     # Reset to be sure it is zero if snowpack melted on last timestep.
                     self.snowcov_area[jj] = zero
+                    # self.through_rain[jj] = self.net_rain[jj]
                     continue
                 else:
                     # We ahave new snow; the initial snow-covered area is complete (1)
@@ -650,6 +616,13 @@ class PRMSSnow(StorageUnit):
 
     def ppt_to_pack(self, jj):
         """Add rain and/or snow to snowpack."""
+
+        # if (
+        #     self.pkwater_equiv[jj] > zero and self.net_ppt[jj] > zero
+        # ) or self.net_snow[jj] > zero:
+        #     self.through_rain[jj] = self.net_rain[jj]
+        #     return
+
         caln = zero
         calpr = zero
         calps = zero

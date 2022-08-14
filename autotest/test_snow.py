@@ -74,7 +74,7 @@ class TestPRMSSnow:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        snow = PRMSSnow(control, **input_variables, budget_type=None)
+        snow = PRMSSnow(control, **input_variables, budget_type="diagnostic")
 
         all_success = True
         iso_censor_mask = None

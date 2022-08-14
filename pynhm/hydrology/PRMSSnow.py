@@ -184,6 +184,7 @@ class PRMSSnow(StorageUnit):
             "pksv": zero,
             "pkwater_ante": nan,
             "pkwater_equiv": nan,
+            "pkwater_equiv_change": nan,
             "pptmix_nopack": False,
             "pss": nan,
             "pst": nan,
@@ -196,7 +197,7 @@ class PRMSSnow(StorageUnit):
             "snowmelt": zero,
             "snsv": zero,
             "tcal": zero,
-            # "through_rain": nan,
+            "through_rain": nan,
         }
 
     @staticmethod
@@ -206,8 +207,17 @@ class PRMSSnow(StorageUnit):
             "outputs": [
                 "snow_evap",
                 "snowmelt",
-            ],  # "through_rain"],
-            "storage_changes": ["freeh2o_change", "pk_ice_change"],
+                "through_rain",
+            ],
+            "storage_changes": [
+                "freeh2o_change",
+                "pk_ice_change"
+                # eventaully pakwater_equiv_change should be removed
+                # entirely from the code and the metadata.
+                # But there are significant gaps between the above and
+                # pkwater_equiv
+                # "pkwater_equiv_change",
+            ],
         }
 
     @staticmethod
@@ -323,8 +333,8 @@ class PRMSSnow(StorageUnit):
                     self.frac_swe[wh_pkweq_gt_zero[ww]],
                 )
 
-            self.pss = self.pkwater_equiv.copy()
-            self.pst = self.pkwater_equiv.copy()
+            self.pss[:] = self.pkwater_equiv.copy()
+            self.pst[:] = self.pkwater_equiv.copy()
 
         else:
 
@@ -427,7 +437,6 @@ class PRMSSnow(StorageUnit):
                     # Skip the HRU if there is no snowpack and no new snow
                     # Reset to be sure it is zero if snowpack melted on last timestep.
                     self.snowcov_area[jj] = zero
-                    # self.through_rain[jj] = self.net_rain[jj]
                     continue
                 else:
                     # We ahave new snow; the initial snow-covered area is complete (1)
@@ -439,12 +448,7 @@ class PRMSSnow(StorageUnit):
             # HRU STEP 1 - DEAL WITH PRECIPITATION AND ITS EFFECT ON THE WATER
             #              CONTENT AND HEAT CONTENT OF SNOW PACK
             # ***********************************************************************
-            # WARNING: pan - wouldn't this be pkwater_equiv > DNEARZERO?
-            # JLM: this logic should be move into ppt_to_pack
-            if (
-                self.pkwater_equiv[jj] > zero and self.net_ppt[jj] > zero
-            ) or self.net_snow[jj] > zero:
-                self.ppt_to_pack(jj)
+            self.ppt_to_pack(jj)
 
             # if jj == dbgind:
             #     print(f"self.pkwater_equiv 1 : {self.pkwater_equiv[dbgind]}")
@@ -585,8 +589,16 @@ class PRMSSnow(StorageUnit):
 
             # <<
 
+        self.pkwater_equiv_change[:] = self.pkwater_equiv - self.pkwater_ante
         self.freeh2o_change[:] = self.freeh2o - self.freeh2o_prev
         self.pk_ice_change[:] = self.pk_ice - self.pk_ice_prev
+
+        wh_through = (
+            ((self.pk_ice_prev + self.freeh2o_prev) <= epsilon64)
+            & ~self.newsnow
+        ) | (self.pptmix_nopack == 1)
+        self.through_rain[:] = np.where(wh_through, self.net_rain, zero)
+
         return
 
     @staticmethod
@@ -617,11 +629,13 @@ class PRMSSnow(StorageUnit):
     def ppt_to_pack(self, jj):
         """Add rain and/or snow to snowpack."""
 
-        # if (
-        #     self.pkwater_equiv[jj] > zero and self.net_ppt[jj] > zero
-        # ) or self.net_snow[jj] > zero:
-        #     self.through_rain[jj] = self.net_rain[jj]
-        #     return
+        # WARNING: pan - wouldn't this be pkwater_equiv > DNEARZERO?
+        ppt_through = ~(
+            (self.pkwater_equiv[jj] > zero and self.net_ppt[jj] > zero)
+            or self.net_snow[jj] > zero
+        )
+        if ppt_through:
+            return
 
         caln = zero
         calpr = zero

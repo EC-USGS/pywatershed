@@ -54,7 +54,9 @@ domain_globs_schedule = ["*conus*"]
 # For generating timeseries of previous states
 previous_vars = [
     "dprst_stor_hru",
+    "freeh2o",
     "hru_impervstor",
+    "pk_ice",
     "pref_flow_stor",
     "slow_stor",
     "soil_lower",
@@ -63,7 +65,7 @@ previous_vars = [
     "ssres_stor",
 ]
 
-misc_nc_file_vars = ["infil"]
+misc_nc_file_vars = ["infil", "through_rain"]
 
 
 def scheduler_active():

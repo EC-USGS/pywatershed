@@ -2,6 +2,7 @@ import numpy as np
 
 from pynhm import CsvFile, Soltab
 from pynhm import PrmsParameters
+from pynhm.constants import epsilon64, zero
 
 import xarray as xr
 
@@ -46,6 +47,33 @@ def test_misc_netcdf(misc_nc_files_input):
 
         ds.to_netcdf(misc_nc_files_input.parent / "infil_hru.nc")
         ds.close()
+
+    if misc_nc_files_input.name == "through_rain":
+        data_dir = misc_nc_files_input.parent
+        data_vars = [
+            "net_rain",
+            "pk_ice_prev",
+            "freeh2o_prev",
+            "newsnow",
+            "pptmix_nopack",
+        ]
+        data = {}
+        for vv in data_vars:
+            data[vv] = xr.open_dataset(data_dir / f"{vv}.nc")[vv]
+        wh_through = (
+            ((data["pk_ice_prev"] + data["freeh2o_prev"]) <= epsilon64)
+            & ~(data["newsnow"] == 1)
+        ) | (data["pptmix_nopack"] == 1)
+
+        through_rain = data["net_rain"].copy()
+        through_rain[:] = np.where(wh_through, data["net_rain"], zero)
+
+        through_rain.to_dataset(name="through_rain").to_netcdf(
+            misc_nc_files_input.parent / "through_rain.nc"
+        )
+        through_rain.close()
+        for vv in data_vars:
+            data[vv].close()
 
     assert True
 

@@ -4,7 +4,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, zero
+from ..constants import HruType, nan, zero
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -36,6 +36,7 @@ class PRMSRunoff(StorageUnit):
         pkwater_equiv: adaptable,
         pptmix_nopack: adaptable,
         snowcov_area: adaptable,
+        through_rain: adaptable,
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
         budget_type: str = None,
@@ -128,6 +129,7 @@ class PRMSRunoff(StorageUnit):
             "pkwater_equiv",
             "pptmix_nopack",
             "snowcov_area",
+            "through_rain",
             "hru_intcpevap",
             "intcp_changeover",
         )
@@ -162,7 +164,7 @@ class PRMSRunoff(StorageUnit):
             "dprst_area_clos_max": zero,
             "dprst_area_open_max": zero,
             "dprst_sroff_hru": zero,
-            "dprst_seep_hru": zero,
+            "dprst_seep_hru": nan,
             "dprst_evap_hru": zero,
             "dprst_insroff_hru": zero,
             "dprst_stor_hru": zero,
@@ -174,21 +176,20 @@ class PRMSRunoff(StorageUnit):
     def get_mass_budget_terms():
         return {
             "inputs": [
-                "net_rain",
-                "net_snow",
+                # "net_rain",
+                "through_rain",
                 "snowmelt",
                 "intcp_changeover",
             ],
             "outputs": [
+                # sroff = hru_sroffi + hru_sroffp + dprst_sroff_hru
                 "hru_sroffi",
                 "hru_sroffp",
-                # "infil",  # depth on pervious area
+                "dprst_sroff_hru",
                 "infil_hru",
                 "hru_impervevap",
-                "dprst_sroff_hru",
                 "dprst_seep_hru",
                 "dprst_evap_hru",
-                # "dprst_insroff_hru",
             ],
             "storage_changes": [
                 "hru_impervstor_change",
@@ -220,15 +221,18 @@ class PRMSRunoff(StorageUnit):
         self.infil_hru[:] = self.infil * self.hru_frac_perv
 
         self.hru_impervstor_change[:] = (
-            self.hru_impervstor_old - self.hru_impervstor
+            self.hru_impervstor - self.hru_impervstor_old
         )
         self.dprst_stor_hru_change[:] = (
-            self.dprst_stor_hru_old - self.dprst_stor_hru
+            self.dprst_stor_hru - self.dprst_stor_hru_old
         )
 
         return
 
     def calculate_prms_style(self):
+
+        # move towards replacing net_rain and other variables.
+        # self.net_rain[:] = self.through_rain
 
         dprst_chk = 0
         self.infil[:] = 0.0
@@ -386,9 +390,12 @@ class PRMSRunoff(StorageUnit):
             #         ENDIF
             dprst_flag = ACTIVE  # cdl todo: hardwired
             frzen = OFF  # cdl todo: hardwired
+
             if dprst_flag == ACTIVE:
                 self.dprst_in[i] = 0.0
+                self.dprst_seep_hru[i] = zero
                 dprst_chk = OFF
+                # JLM: can this logic be moved inside dprst_comp?
                 if self.dprst_area_max[i] > 0.0:
                     dprst_chk = ACTIVE
                     if frzen == OFF:
@@ -401,6 +408,7 @@ class PRMSRunoff(StorageUnit):
                             srp,
                             sri,
                             self.dprst_evap_hru[i],
+                            self.dprst_seep_hru[i],
                         ) = self.dprst_comp(
                             self.dprst_vol_clos[i],
                             self.dprst_area_clos_max[i],
@@ -1609,4 +1617,5 @@ class PRMSRunoff(StorageUnit):
             srp,
             sri,
             dprst_evap_hru,
+            dprst_seep_hru,
         )

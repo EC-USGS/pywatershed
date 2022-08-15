@@ -53,12 +53,14 @@ domain_globs_schedule = ["*conus*"]
 
 # For generating timeseries of previous states
 previous_vars = [
-    "soil_moist",
-    "ssres_stor",
-    "soil_rechr",
-    "soil_lower",
-    "slow_stor",
+    "dprst_stor_hru",
+    "hru_impervstor",
     "pref_flow_stor",
+    "slow_stor",
+    "soil_lower",
+    "soil_moist",
+    "soil_rechr",
+    "ssres_stor",
 ]
 
 misc_nc_file_vars = ["infil"]

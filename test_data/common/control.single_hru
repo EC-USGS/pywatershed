@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-73
+76
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-73
+76
 4
 albedo
 cap_infil_tot
@@ -259,6 +259,7 @@ contrib_fraction
 dprst_evap_hru
 dprst_seep_hru
 dprst_stor_hru
+dprst_sroff_hru
 freeh2o
 gwres_flow
 gwres_in
@@ -273,6 +274,8 @@ hru_lateral_flow
 hru_ppt
 hru_rain
 hru_snow
+hru_sroffi
+hru_sroffp
 hru_storage
 infil
 intcp_changeover

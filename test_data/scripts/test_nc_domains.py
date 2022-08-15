@@ -37,10 +37,13 @@ def test_misc_netcdf(misc_nc_files_input):
         imperv_frac = params["hru_percent_imperv"]
         dprst_frac = params["dprst_frac"]
         perv_frac = 1.0 - imperv_frac - dprst_frac
-
         ds = xr.open_dataset(misc_nc_files_input.with_suffix(".nc"))
         ds = ds.rename(infil="infil_hru")
+
+        # not necessary
+        # perv_frac = np.tile(perv_frac, (ds["infil_hru"].shape[0], 1))
         ds["infil_hru"] = ds["infil_hru"] * perv_frac
+
         ds.to_netcdf(misc_nc_files_input.parent / "infil_hru.nc")
         ds.close()
 

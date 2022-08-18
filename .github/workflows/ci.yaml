@@ -128,10 +128,10 @@ jobs:
           sudo ln -s /usr/local/bin/gfortran-10 /usr/local/bin/gfortran
           which gfortran
           gfortran --version
+          cd prms_src/prms5.2.1; make; cp bin/prms ../../bin/prms_mac; cd -
 
       - name: Set environment variables
         run: |
-          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
 
       - name: Setup Python

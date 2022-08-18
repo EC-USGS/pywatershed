@@ -79,7 +79,7 @@ class TestPRMSAtmosphere:
                 a1 = ans[key].current
                 a2 = atm[key].current
 
-                tol = 5e-6
+                tol = 1e-5
                 if key == "swrad":
                     tol = 5e-4
                     warn(f"using tol = {tol} for variable {key}")

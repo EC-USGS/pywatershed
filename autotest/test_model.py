@@ -1,4 +1,5 @@
 import pathlib as pl
+import shutil
 
 import numpy as np
 import pytest
@@ -51,9 +52,9 @@ def test_model(domain, control, processes, tmp_path):
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     for ff in output_dir.resolve().glob("*.nc"):
-        (input_dir / ff.name).symlink_to(ff)
+        shutil.copy(ff, input_dir / ff.name)
     for ff in output_dir.parent.resolve().glob("*.nc"):
-        (input_dir / ff.name).symlink_to(ff)
+        shutil.copy(ff, input_dir / ff.name)
 
     # TODO: Eliminate potet and other variables from being used
     model = Model(

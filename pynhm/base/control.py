@@ -1,13 +1,12 @@
 """The control class."""
-
-import pathlib as pl
-from typing import Union
+import datetime
 
 import numpy as np
 
 from pynhm.utils.parameters import PrmsParameters
 
-from ..base.meta import Meta
+from ..base import meta
+from ..constants import fileish
 from ..utils import ControlVariables
 from ..utils.time_utils import (
     datetime_dowy,
@@ -16,8 +15,6 @@ from ..utils.time_utils import (
     datetime_year,
 )
 from .accessor import Accessor
-
-fileish = Union[str, pl.PosixPath]
 
 
 class Control(Accessor):
@@ -37,7 +34,8 @@ class Control(Accessor):
         """Initialize time with data and parameters.
 
         Args:
-            start_time: this is the first time of integration NOT the restart time
+            start_time: this is the first time of integration NOT the restart
+                time
             end_time: the last integration time
             time_step: the length fo the time step
             config: a PRMS config file to read and use for contorl
@@ -72,7 +70,7 @@ class Control(Accessor):
         self.config = config
         self.params = params
 
-        self.meta = Meta()
+        self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
 
@@ -82,7 +80,7 @@ class Control(Accessor):
         control_file: fileish,
         params: PrmsParameters = None,
         verbosity: int = 0,
-    ) -> "Time":
+    ) -> "Control":
         """Initialize a control object from a PRMS control file
 
         Args:
@@ -110,6 +108,11 @@ class Control(Accessor):
         return self._current_time
 
     @property
+    def current_datetime(self):
+        """Get the current time as a datetime.datetime object"""
+        return self._current_time.astype(datetime.datetime)
+
+    @property
     def current_year(self):
         """Get the current year."""
         return datetime_year(self._current_time)
@@ -131,7 +134,7 @@ class Control(Accessor):
 
     @property
     def previous_time(self):
-        """Get the previous time."""
+        """The previous time."""
         return self._previous_time
 
     @property
@@ -141,7 +144,7 @@ class Control(Accessor):
 
     @property
     def time_step(self):
-        """Get the time step."""
+        """The time step"""
         return self._time_step
 
     @property
@@ -151,21 +154,31 @@ class Control(Accessor):
 
     @property
     def start_time(self):
-        """Get the simulation start time"""
+        """The simulation start time"""
         return self._start_time
 
     @property
+    def start_doy(self):
+        """The simulation start day of year"""
+        return datetime_doy(self._start_time)
+
+    @property
+    def start_month(self):
+        """The simulation start month"""
+        return datetime_month(self._start_time)
+
+    @property
     def end_time(self):
-        """Get the simulation end time"""
+        """The simulation end time"""
         return self._end_time
 
     @property
     def n_times(self):
-        """Get the number of times"""
+        """The number of time steps"""
         return self._n_times
 
     def advance(self):
-        """Advance time."""
+        """Advance time"""
         if self._current_time == self._end_time:
             raise ValueError("End of time reached")
 
@@ -180,9 +193,16 @@ class Control(Accessor):
 
         return None
 
-    def get_var_nans(self, var_name):
+    def get_var_nans(self, var_name: str, drop_time_dim: bool = None):
         """Get an array filled with nans for a given variable"""
         var_dims = self.meta.get_dimensions(var_name)[var_name]
+        if drop_time_dim:
+            # This accomodates Timeseries like objects that need to init both
+            # full rank and reduced rank versions of their data
+            # this is pretty adhoc
+            check_list = ["time", "doy"]
+            if len([mm for mm in check_list if mm in var_dims[0]]):
+                del var_dims[0]
         var_dim_sizes = [self.params.parameters[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]
         return np.full(var_dim_sizes, np.nan, var_type)

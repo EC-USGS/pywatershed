@@ -1,13 +1,10 @@
-from typing import Union
-
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
 
-from ..base.adapter import Adapter
+from ..base.adapter import adaptable
 from ..base.control import Control
-
-adaptable = Union[str, np.ndarray, Adapter]
+from ..constants import nan
 
 
 class PRMSGroundwater(StorageUnit):
@@ -22,6 +19,7 @@ class PRMSGroundwater(StorageUnit):
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
+        budget_type: str = None,
         verbose: bool = False,
     ) -> "PRMSGroundwater":
 
@@ -32,12 +30,7 @@ class PRMSGroundwater(StorageUnit):
         self.name = "PRMSGroundwater"
 
         self.set_inputs(locals())
-        return
-
-    def set_initial_conditions(self):
-        # initialize groundwater reservoir storage
-        self.gwres_stor = self.gwstor_init.copy()
-        self.gwres_stor_old = self.gwstor_init.copy()
+        self.set_budget(budget_type)
         return
 
     @staticmethod
@@ -82,30 +75,42 @@ class PRMSGroundwater(StorageUnit):
         """
         return (
             "gwres_flow",
-            "gwres_in",
             "gwres_sink",
             "gwres_stor",
+            "gwres_stor_old",
+            "gwres_stor_change",
         )
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get groundwater reservoir initial values
+        """Get groundwater initial values
 
         Returns:
             dict: initial values for named variables
         """
-        # No GW res values need initialized prior to calculation.
-        return {}
+        return {
+            "gwres_flow": nan,
+            "gwres_sink": nan,
+            "gwres_stor": nan,
+            "gwres_stor_old": nan,
+            "gwres_stor_change": nan,
+        }
+
+    def set_initial_conditions(self):
+        # initialize groundwater reservoir storage
+        self.gwres_stor[:] = self.gwstor_init.copy()
+        self.gwres_stor_old[:] = self.gwstor_init.copy()
+        return
 
     def _advance_variables(self) -> None:
         """Advance the groundwater reservoir variables
         Returns:
             None
         """
-        self.gwres_stor_old = self.gwres_stor
+        self.gwres_stor_old[:] = self.gwres_stor
         return
 
-    def calculate(self, simulation_time):
+    def _calculate(self, simulation_time):
         """Calculate groundwater reservoir terms for a time step
 
         Args:
@@ -121,35 +126,31 @@ class PRMSGroundwater(StorageUnit):
         gwarea = self.hru_area
 
         # calculate volume terms
-        # gwstor_min_vol = self.gwstor_min * gwarea
-        gwres_stor = self.gwres_stor * gwarea
+        # denote volume units with leading underscore
         soil_to_gw_vol = self.soil_to_gw * gwarea
         ssr_to_gw_vol = self.ssr_to_gw * gwarea
         dprst_seep_hru_vol = self.dprst_seep_hru * gwarea
 
-        # initialize calculation variables
-        gwres_in = soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
-
         # todo: what about route order
 
-        gwres_stor += gwres_in
+        _gwres_stor = self.gwres_stor * gwarea
+        _gwres_stor += soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
 
-        gwres_flow = gwres_stor * self.gwflow_coef
+        _gwres_flow = _gwres_stor * self.gwflow_coef
+        _gwres_stor -= _gwres_flow
 
-        gwres_stor -= gwres_flow
+        _gwres_sink = _gwres_stor * self.gwsink_coef
+        idx = np.where(_gwres_sink > _gwres_stor)
+        _gwres_sink[idx] = _gwres_stor[idx]
+        _gwres_stor -= _gwres_sink
 
-        gwres_sink = gwres_stor * self.gwsink_coef
-        idx = np.where(gwres_sink > gwres_stor)
-        gwres_sink[idx] = gwres_stor[idx]
-
-        gwres_stor -= gwres_sink
-
+        # convert most units back to self variables
         # output variables
-        self.gwres_stor = gwres_stor / gwarea
-        self.gwres_in = (
-            gwres_in  # for some stupid reason this is left in acre-inches
-        )
-        self.gwres_flow = gwres_flow / gwarea
-        self.gwres_sink = gwres_sink / gwarea
+        self.gwres_stor[:] = _gwres_stor / gwarea
+        # for some stupid reason this is left in acre-inches
+        self.gwres_flow[:] = _gwres_flow / gwarea
+        self.gwres_sink[:] = _gwres_sink / gwarea
+
+        self.gwres_stor_change[:] = self.gwres_stor - self.gwres_stor_old
 
         return

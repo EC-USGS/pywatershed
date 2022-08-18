@@ -6,7 +6,7 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 
-from ..base.meta import Meta, meta_netcdf_type, meta_numpy_type
+from ..base import meta
 
 fileish = Union[str, pl.PosixPath, dict]
 
@@ -32,7 +32,7 @@ class CsvFile:
         self._variables = None
         self._coordinates = None
         self._data = None
-        self.meta = Meta()
+        self.meta = meta
 
     @property
     def nhm_id(self) -> list:
@@ -157,7 +157,7 @@ class CsvFile:
             ds.createDimension(key, len(value))
 
         # Dim Variables
-        time = ds.createVariable("datetime", "f4", ("time",))
+        time = ds.createVariable("time", "f4", ("time",))
         start_date = self._data["date"][0].strftime("%Y-%m-%d %H:%M:%S")
         time_units = f"days since {start_date}"
         time.units = time_units
@@ -177,13 +177,13 @@ class CsvFile:
         for variable_name in self.variable_names:
             if self.meta.is_available(variable_name):
                 meta_dict = self.meta.find_variables(variable_name)
-                variable_type = meta_netcdf_type(meta_dict[variable_name])
+                variable_type = meta.meta_netcdf_type(meta_dict[variable_name])
                 dimension = dimensions[variable_name]
                 if "nsegment" in dimension:
                     dim_name = "nhm_seg"
                 else:
                     dim_name = "nhm_id"
-                dtype = meta_numpy_type(meta_dict[variable_name])
+                dtype = meta.meta_numpy_type(meta_dict[variable_name])
             else:
                 variable_type = "f4"
                 dim_name = "nhm_id"
@@ -273,7 +273,7 @@ class CsvFile:
 
             # determine the variable type
             if self.meta.is_available(variable_name):
-                variable_type = meta_numpy_type(
+                variable_type = meta.meta_numpy_type(
                     self.meta.find_variables(variable_name)[variable_name]
                 )
                 if (

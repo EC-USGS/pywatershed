@@ -1,22 +1,17 @@
 import os
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 
+from pynhm.base import meta
 from pynhm.base.budget import Budget
 
 from ..base.adapter import Adapter, adapter_factory
+from ..base.timeseries import TimeseriesArray
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
 from .control import Control
-
-# These could be changed in the metadata yaml
-type_translation = {
-    "D": "float64",
-    "F": "float64",
-    "I": "int32",
-    "B": "bool",  # not used despite the popularity of "flags"
-}
 
 
 class StorageUnit(Accessor):
@@ -30,7 +25,6 @@ class StorageUnit(Accessor):
         self.control = control
         self.params = self.control.params
         self.verbose = verbose
-        self._simulation_time = 0.0
 
         # netcdf output variables
         self._output_netcdf = False
@@ -52,6 +46,8 @@ class StorageUnit(Accessor):
 
         """
         if self._output_netcdf:
+            if self.verbose:
+                print(f"writing output for: {self.name}")
             self.__output_netcdf()
         return
 
@@ -62,6 +58,8 @@ class StorageUnit(Accessor):
             None
 
         """
+        if self.verbose:
+            print(f"finalizing: {self.name}")
         self._finalize_netcdf()
         return
 
@@ -76,6 +74,28 @@ class StorageUnit(Accessor):
     @staticmethod
     def get_variables() -> list:
         raise Exception("This must be overridden")
+
+    @classmethod
+    def get_mass_budget_terms(cls) -> dict:
+        # can this be a static method?
+        mass_budget_terms = {
+            "inputs": list(
+                meta.filter_vars(
+                    cls.get_inputs(), "var_category", "mass flux"
+                ).keys()
+            ),
+            "outputs": list(
+                meta.filter_vars(
+                    cls.get_variables(), "var_category", "mass flux"
+                ).keys()
+            ),
+            "storage_changes": list(
+                meta.filter_vars(
+                    cls.get_variables(), "var_category", "mass storage change"
+                ).keys()
+            ),
+        }
+        return mass_budget_terms
 
     @staticmethod
     def get_restart_variables() -> list:
@@ -130,22 +150,31 @@ class StorageUnit(Accessor):
 
         return
 
-    def initialize_var(self, var_name):
-        if self.var_meta[var_name]["dimensions"][0] == "nsegment":
-            nsize = self.nsegment
-        else:
-            nsize = self.nhru
+    def initialize_var(self, var_name: str, flt_to_dbl: bool = True):
         init_vals = self.get_init_values()
-        if var_name in init_vals.keys():
-            init_type = type_translation[self.var_meta[var_name]["type"]]
-            setattr(
-                self,
-                var_name,
-                np.full(nsize, init_vals[var_name], dtype=init_type),
-            )
-        elif self.verbose:
-            print(f"{var_name} not initialized (no initial value specified)")
+        if var_name not in init_vals.keys():
+            if self.verbose:
+                warn(
+                    f"{var_name} not initialized (no initial value specified)"
+                )
+            return
 
+        dims = [
+            self[vv] for vv in self.var_meta[var_name]["dimensions"].values()
+        ]
+        init_type = self.var_meta[var_name]["type"]
+
+        if len(dims) == 1:
+            self[var_name] = np.full(
+                dims, init_vals[var_name], dtype=init_type
+            )
+        else:
+            self[var_name] = TimeseriesArray(
+                var_name=var_name,
+                control=self.control,
+                array=np.full(dims, init_vals[var_name], dtype=init_type),
+                time=self._time,
+            )
         return
 
     def set_initial_conditions(self):
@@ -217,6 +246,7 @@ class StorageUnit(Accessor):
         Returns:
             None
         """
+
         if self._itime_step >= self.control.itime_step:
             if self.verbose:
                 msg = (
@@ -227,6 +257,9 @@ class StorageUnit(Accessor):
                 print(msg)  # can/howto make warn flush in real time?
                 # is a warning sufficient? an error
             return
+
+        if self.verbose:
+            print(f"advancing: {self.name}")
 
         self._advance_variables()
         self._advance_inputs()
@@ -242,6 +275,9 @@ class StorageUnit(Accessor):
         Returns:
             None
         """
+        if self.verbose:
+            print(f"calculating: {self.name}")
+
         # self._calculate must be implemented by the subclass
         self._calculate(time_length, *kwargs)
 
@@ -306,6 +342,9 @@ class StorageUnit(Accessor):
             None
 
         """
+        if self.verbose:
+            print(f"initializing netcdf output for: {self.name}")
+
         self._output_netcdf = True
         self._netcdf = {}
         if separate_files:
@@ -345,8 +384,7 @@ class StorageUnit(Accessor):
             for idx, variable in enumerate(self.variables):
                 if idx == 0 or self._separate_netcdf:
                     self._netcdf[variable].add_simulation_time(
-                        self._itime_step,
-                        self._simulation_time,
+                        self.control.itime_step, self.control.current_datetime
                     )
                 self._netcdf[variable].add_data(
                     variable,

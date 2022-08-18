@@ -40,7 +40,7 @@ extensions = [
     "sphinx.ext.napoleon",
     # "nbsphinx",
     "sphinx_autosummary_accessors",
-    # "sphinx.ext.intersphinx",
+    "sphinx.ext.intersphinx",
     # "sphinx.ext.extlinks",
     # "sphinx_copybutton",
     # "sphinx.ext.mathjax",
@@ -51,7 +51,19 @@ extensions = [
 
 
 autosummary_generate = True
-autosummary_imported_members = True
+autodoc_typehints = "none"
+# autosummary_imported_members = True
+
+autodoc_default_options = {
+    "members": False,
+    # "imported-members": True,
+    # "inherited-members": True,
+    #     "undoc-members": True,
+    #     "private-members": True,  #
+    # "special-members": [],
+    "exclude-members": "__init__",
+}
+
 
 # Napoleon configurations
 napoleon_google_docstring = True
@@ -61,18 +73,9 @@ napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_preprocess_types = True
 
-autodoc_default_options = {
-    "members": True,
-    "imported-members": True,
-    "inherited-members": True,
-    #     "undoc-members": True,
-    #     "private-members": True,  #
-    #     "special-members": True,  # e.g. __special__
-}
-
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
+# templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -119,7 +122,7 @@ html_css_files = ["style.css"]
 html_theme_options = dict(
     # analytics_id=''  this is configured in rtfd.io
     # canonical_url="",
-    repository_url="https://github.com/langevin-usgs/pynhm",
+    repository_url="https://github.com/EC-USGS/pynhm",
     repository_branch="main",
     path_to_docs="doc",
     use_edit_page_button=True,

@@ -75,6 +75,7 @@ class PRMSChannel(StorageUnit):
         ssres_flow: adaptable,
         gwres_flow: adaptable,
         verbose: bool = False,
+        budget_type: str = None,
     ) -> "PRMSChannel":
 
         super().__init__(
@@ -84,6 +85,7 @@ class PRMSChannel(StorageUnit):
         self.name = "PRMSChannel"
 
         self.set_inputs(locals())
+        self.set_budget(budget_type)
 
         # process channel data
         self._initialize_channel_data()

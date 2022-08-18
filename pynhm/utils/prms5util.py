@@ -284,7 +284,7 @@ class Soltab(Accessor):
         nhm_ids: np.ndarray = None,
         zlib: bool = True,
         complevel: int = 4,
-        chunk_sizes: dict = {"ndays": 0, "hruid": 0},
+        chunk_sizes: dict = {"doy": 0, "hruid": 0},
     ):
         # This is just different enough to make it it's own thing compared
         # to the CSV outputs of PRMS.
@@ -295,7 +295,7 @@ class Soltab(Accessor):
             self.nhm_ids = nhm_ids
             self.spatial_coord_name = "nhm_id"
 
-        ndays = self["soltab_potsw"].shape[0]
+        ndoy = self["soltab_potsw"].shape[0]
         nhru = self["soltab_potsw"].shape[1]
 
         if self.spatial_coord is None:
@@ -309,10 +309,10 @@ class Soltab(Accessor):
             ds.setncattr("Description", "PRMS soltab data")
 
             # time dime and coord
-            ds.createDimension("ndays", ndays)
-            doy = ds.createVariable("doy", "i4", ("ndays",))
+            ds.createDimension("doy", ndoy)
+            doy = ds.createVariable("doy", "i4", ("doy",))
             doy.units = "Day of year"
-            doy[:] = np.arange(ndays) + 1
+            doy[:] = np.arange(ndoy) + 1
 
             # space dim and coord
             ds.createDimension(self.spatial_coord_name, nhru)
@@ -324,7 +324,7 @@ class Soltab(Accessor):
             variables[vv] = ds.createVariable(
                 vv,
                 "f4",
-                ("ndays", self.spatial_coord_name),
+                ("doy", self.spatial_coord_name),
                 fill_value=nc4.default_fillvals["f4"],
                 zlib=zlib,
                 complevel=complevel,

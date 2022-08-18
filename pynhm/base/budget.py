@@ -23,7 +23,6 @@ class Budget(Accessor):
         inputs: Union[list, dict],
         outputs: Union[list, dict],
         storage_changes: Union[list, dict],
-        meta: dict = None,
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
         units: str = None,
@@ -40,7 +39,6 @@ class Budget(Accessor):
         self.inputs = self.init_component(inputs)
         self.outputs = self.init_component(outputs)
         self.storage_changes = self.init_component(storage_changes)
-        self.meta = meta
         self.time_unit = time_unit
         self.description = description
         self.rtol = rtol
@@ -111,31 +109,10 @@ class Budget(Accessor):
 
     @classmethod
     def from_storage_unit(cls, storage_unit, **kwargs):
-        # assemble the meta data, which will determine the budget component
-        # variables
-        components = cls.get_components()
-
-        # kwargs["control"] = storage_unit.control
-        kwargs["meta"] = {}
-
-        meta_obj = {
-            "inputs": ("input_meta", "mass flux"),
-            "outputs": ("var_meta", "mass flux"),
-            "storage_changes": ("var_meta", "mass storage change"),
-        }
-        for comp in components:
-            kwargs["meta"][comp] = {
-                key: val
-                for key, val in storage_unit[meta_obj[comp][0]].items()
-                if (
-                    ("var_category" in val.keys())
-                    and (val["var_category"] == meta_obj[comp][1])
-                )
-            }
-
-        for component in components:
+        mass_budget_terms = storage_unit.get_mass_budget_terms()
+        for component in mass_budget_terms.keys():
             kwargs[component] = {}
-            for var in kwargs["meta"][component].keys():
+            for var in mass_budget_terms[component]:
                 kwargs[component][var] = storage_unit[var]
 
         return Budget(storage_unit.control, **kwargs)

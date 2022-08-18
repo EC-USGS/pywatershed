@@ -41,6 +41,7 @@ class TestPRMSSoilzone:
             "soil_lower",
             # "soil_lower_ratio",
             "soil_moist",
+            "soil_moist_prev",
             "soil_moist_tot",
             "infil",
             "soil_rechr",

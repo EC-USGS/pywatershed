@@ -148,9 +148,12 @@ class PrmsParameters:
 
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
+
         # could insert dimenion data here. going to add this one for now.
         # it's a little unclear if constants like this are parameters or not
-        data["parameter"]["parameters"]["ndays"] = 366
+        data["parameter"]["parameters"]["doy"] = 366
+        data["parameter"]["parameter_dimensions"]["doy"] = None
+
         return PrmsParameters(
             data["parameter"]["parameters"],
             data["parameter"]["parameter_dimensions"],

@@ -11,7 +11,8 @@ for cbh_file in cbh_files:
     cbh = (
         xr.open_dataset(cbh_file)
         .swap_dims({"hru": "nhm_id"})
-        .set_coords("datetime")
+        .rename(datetime="time")
+        .set_coords("time")
     )
 
     for var in vars:

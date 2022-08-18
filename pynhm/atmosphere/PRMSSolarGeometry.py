@@ -1,6 +1,6 @@
 import pathlib as pl
 import warnings
-from typing import Tuple, Union
+from typing import Tuple
 
 # from numba import jit
 import numpy as np
@@ -10,9 +10,9 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
-from ..constants import epsilon32, nan, one, zero
+from ..constants import epsilon32, fileish, nan, one, zero
 from ..utils.prms5util import load_soltab_debug
-from .solar_constants import (  # eccentricy,; julian_days,; n_days_per_year_flt,; obliquity,; r0,; rad_day,
+from .solar_constants import (
     n_days_per_year,
     pi,
     pi_12,
@@ -21,8 +21,9 @@ from .solar_constants import (  # eccentricy,; julian_days,; n_days_per_year_flt
     two_pi,
 )
 
-fileish = Union[str, pl.Path]
 epsilon = epsilon32
+
+doy = np.arange(366) + 1
 
 # The solar geometry model for NHM/PRMS
 # Primary reference
@@ -41,8 +42,6 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 # def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
 #    return np.transpose(np.tile(arr, (n_hru, 1)))
 
-# trying to not subclass storageUnit
-
 
 class PRMSSolarGeometry(StorageUnit):
     def __init__(
@@ -59,29 +58,32 @@ class PRMSSolarGeometry(StorageUnit):
         budget_type = None
         self.set_budget(budget_type)
         self.netcdf_output_dir = netcdf_output_dir
+        self._time = doy
 
         super().__init__(control=control, verbose=verbose)
         self.name = "PRMSSolarGeometry"
 
         if from_prms_file:
             (
-                self._soltab_potsw,
-                self._soltab_horad_potsw,
-                self._soltab_sunhrs,
+                self.soltab_potsw.data[:],
+                self.soltab_horad_potsw.data[:],
+                self.soltab_sunhrs.data[:],
             ) = load_soltab_debug(from_prms_file)
 
         elif from_nc_files_dir:
             raise NotImplementedError()
 
-        else:
-            # compute
-            self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
-            self._compute_solar_geometry()
+        self._calculated = False
 
         if self.netcdf_output_dir:
+            self._output_netcdf = True
+            self._calculate_all_time()
             self.netcdf_output_dir = pl.Path(netcdf_output_dir)
             assert self.netcdf_output_dir.exists()
             self._write_netcdf_timeseries()
+
+        else:
+            self._output_netcdf = False
 
         return
 
@@ -114,6 +116,7 @@ class PRMSSolarGeometry(StorageUnit):
     @staticmethod
     def get_parameters() -> tuple:
         return (
+            "doy",
             "nhru",
             "radadj_intcp",
             "radadj_slope",
@@ -135,9 +138,10 @@ class PRMSSolarGeometry(StorageUnit):
     def set_initial_conditions(self):
         return
 
-    def _compute_solar_geometry(self):
+    def _calculate_all_time(self):
+        self._hru_cossl = np.cos(np.arctan(self["hru_slope"]))
         # The potential radiation on horizontal surfce
-        self._soltab_horad_potsw, _ = self.compute_soltab(
+        self.soltab_horad_potsw.data[:], _ = self.compute_soltab(
             np.zeros(self["nhru"]),
             np.zeros(self["nhru"]),
             self["hru_lat"],
@@ -146,7 +150,10 @@ class PRMSSolarGeometry(StorageUnit):
         )
 
         # The potential radiaton given slope and aspect
-        self._soltab_potsw, self._soltab_sunhrs = self.compute_soltab(
+        (
+            self.soltab_potsw.data[:],
+            self.soltab_sunhrs.data[:],
+        ) = self.compute_soltab(
             self["hru_slope"],
             self["hru_aspect"],
             self["hru_lat"],
@@ -154,6 +161,7 @@ class PRMSSolarGeometry(StorageUnit):
             self.func3,
         )
 
+        self._calculated = True
         return
 
     def _advance_variables(self):
@@ -163,6 +171,9 @@ class PRMSSolarGeometry(StorageUnit):
             None
 
         """
+        if not self._calculated:
+            self._calculate_all_time()
+            self._write_netcdf_timeseries()
         return
 
     def _calculate(self, time_length):
@@ -177,9 +188,6 @@ class PRMSSolarGeometry(StorageUnit):
             None
 
         """
-        iday = self.control.current_doy - 1
-        for var in self.variables:
-            self[var][:] = self[f"_{var}"][iday, :]
         return
 
     # @jit
@@ -414,6 +422,8 @@ class PRMSSolarGeometry(StorageUnit):
         return f3
 
     def _write_netcdf_timeseries(self) -> None:
+        if not self._output_netcdf:
+            return
         for var in self.variables:
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
@@ -424,11 +434,26 @@ class PRMSSolarGeometry(StorageUnit):
             )
             nc.add_all_data(
                 var,
-                self[f"_{var}"],
-                np.arange(366) + 1,
+                self[var].data,
+                self._time,
                 time_coord="doy",
             )
             nc.close()
             assert nc_path.exists()
             print(f"Wrote file: {nc_path}")
+
+        self._output_netcdf = False
+        return
+
+    def initialize_netcdf(self, dir):
+        self.netcdf_output_dir = dir
+        self._output_netcdf = True
+        return
+
+    def output(self):
+        if self._output_netcdf:
+            if self.verbose:
+                print(f"writing FULL timeseries output for: {self.name}")
+            self._write_netcdf_timeseries()
+            self._output_netcdf = False
         return

@@ -36,7 +36,8 @@ class TimeseriesArray:
             time_ind = 0
 
         else:
-            if self._time_type == np.int64:
+            # Windows represents this as int32, others as int64
+            if self._time_type in [np.int32, np.int64]:
                 time_ind = self.control.current_doy - 1
 
             else:

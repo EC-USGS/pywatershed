@@ -121,6 +121,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.4.0
 
+      - name: Symlink gfortran (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # make sure gfortran is available
+          ln -s /usr/local/bin/gfortran-11 /usr/local/bin/gfortran
+          gfortran --version
+
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV

@@ -61,7 +61,7 @@ class TestPRMSSoilzone:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        soil = PRMSSoilzone(control, **input_variables, budget_type="strict")
+        soil = PRMSSoilzone(control, **input_variables, budget_type="error")
         all_success = True
         for istep in range(control.n_times):
             # for istep in range(10):

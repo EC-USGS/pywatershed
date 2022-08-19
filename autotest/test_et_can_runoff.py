@@ -79,7 +79,7 @@ class TestPRMSCanopyRunoffDomain:
 
         et = PRMSEt(
             control=control,
-            budget_type="strict",
+            budget_type="error",
             **et_inputs,
         )
 
@@ -95,7 +95,7 @@ class TestPRMSCanopyRunoffDomain:
 
         canopy = PRMSCanopy(
             control=control,
-            budget_type="strict",
+            budget_type="error",
             **canopy_inputs,
         )
 

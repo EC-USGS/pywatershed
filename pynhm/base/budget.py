@@ -30,6 +30,7 @@ class Budget(Accessor):
         description: str = None,
         rtol: float = 1e-5,
         atol: float = 1e-5,
+        basis: str = "unit",
         imbalance_fatal: bool = False,
         verbose: bool = True,
     ):
@@ -45,6 +46,7 @@ class Budget(Accessor):
         self.atol = atol
         self.imbalance_fatal = imbalance_fatal
         self.verbose = verbose
+        self.basis = basis
 
         self._inputs_sum = None
         self._outputs_sum = None
@@ -202,7 +204,10 @@ class Budget(Accessor):
         self._sum_component_accumulations()
 
         # check balance
-        self._balance = self._calc_balance()
+        if self.basis == "unit":
+            self._balance = self._calc_unit_balance()
+        elif self.basis == "global":
+            self._balance = self._calc_global_balance()
 
         self._itime_accumulated = self._itime_step
         self._time_accumulated = self._time
@@ -228,6 +233,7 @@ class Budget(Accessor):
         return self._accumulations
 
     def _sum(self, attr):
+        """Sum over the individual terms in a budget component."""
         key0 = list(self[attr].keys())[0]
         sum = self[attr][key0] * zero
         for kk, vv in self[attr].items():
@@ -243,20 +249,46 @@ class Budget(Accessor):
     def _sum_storage_changes(self):
         return self._sum("storage_changes")
 
-    def _calc_balance(self):
-        balance = self._inputs_sum - self._outputs_sum
+    def _calc_unit_balance(self):
+        unit_balance = self._inputs_sum - self._outputs_sum
         self._zero_sum = True
         if not np.allclose(
-            balance, self._storage_changes_sum, rtol=self.rtol, atol=self.atol
+            unit_balance,
+            self._storage_changes_sum,
+            rtol=self.rtol,
+            atol=self.atol,
         ):
             self._zero_sum = False
-            msg = "The flux balance not equal to the change in storage"
+            msg = (
+                "The flux unit balance not equal to the change in unit storage"
+            )
             if self.imbalance_fatal:
                 raise ValueError(msg)
             else:
                 warn(msg, UserWarning)
 
-        return balance
+        return unit_balance
+
+    def _calc_global_balance(self):
+        global_balance = self._inputs_sum.sum() - self._outputs_sum.sum()
+        self._zero_sum = True
+        if not np.allclose(
+            global_balance,
+            self._storage_changes_sum.sum(),
+            rtol=self.rtol,
+            atol=self.atol,
+        ):
+            self._zero_sum = False
+            msg = (
+                "The global flux balance not equal to the change in global "
+                "storage."
+            )
+            if self.imbalance_fatal:
+                raise ValueError(msg)
+            else:
+                warn(msg, UserWarning)
+
+        return global_balance
 
     @property
     def balance(self):

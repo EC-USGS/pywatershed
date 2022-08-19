@@ -224,18 +224,19 @@ class StorageUnit(Accessor):
 
         return
 
-    def set_budget(self, budget_type):
-        if budget_type is None:
+    def set_budget(self, behavior, basis: str = "unit"):
+        if behavior is None:
             self.budget = None
-        elif budget_type in ["strict", "diagnostic"]:
+        elif behavior in ["error", "warn"]:
             self.budget = Budget.from_storage_unit(
                 self,
                 time_unit="D",
                 description=self.name,
-                imbalance_fatal=(budget_type == "strict"),
+                imbalance_fatal=(behavior == "error"),
+                basis=basis,
             )
         else:
-            raise ValueError(f"Illegal budget_type: {budget_type}")
+            raise ValueError(f"Illegal behavior: {behavior}")
 
         return
 

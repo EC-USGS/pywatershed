@@ -43,7 +43,7 @@ class TestPRMSCanopySimple:
         cnp = PRMSCanopy(
             control=control,
             **input_variables,
-            budget_type="strict",
+            budget_type="error",
         )
         control.advance()
         cnp.advance()
@@ -94,7 +94,7 @@ class TestPRMSCanopyDomain:
         cnp = PRMSCanopy(
             control=control,
             **input_variables,
-            budget_type="strict",
+            budget_type="error",
         )
 
         all_success = True

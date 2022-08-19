@@ -21,7 +21,7 @@ class TestPRMSChannelDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        channel = PRMSChannel(control, **input_variables)
+        channel = PRMSChannel(control, **input_variables, budget_type="strict")
         nc_parent = tmp_path / domain["domain_name"]
         channel.initialize_netcdf(nc_parent)
 

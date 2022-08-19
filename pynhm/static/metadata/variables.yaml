@@ -2313,6 +2313,7 @@ seg_inflow:
     0: nsegment
   type: float64
   units: cfs
+  var_category: mass flux
 seg_lateral_inflow:
   desc: Lateral inflow entering a segment
   dimensions:
@@ -2339,6 +2340,7 @@ seg_outflow:
     0: nsegment
   type: float64
   units: cfs
+  var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
   dimensions:
@@ -2372,6 +2374,13 @@ seg_ssflow:
     0: nsegment
   type: float64
   units: inches
+seg_stor_change:
+  desc: Change in segment storage
+  dimensions:
+    0: nsegment
+  type: float64
+  units: inches
+  var_category: mass storage change
 seg_upstream_inflow:
   desc: Sum of inflow from upstream segments
   dimensions:

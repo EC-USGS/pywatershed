@@ -3,8 +3,8 @@ from typing import Union
 
 import numpy as np
 
-from .prms5_file_util import PrmsFile
 from ..constants import ft2_per_acre, inches_per_foot
+from .prms5_file_util import PrmsFile
 
 fileish = Union[str, pl.PosixPath, dict]
 listish = Union[str, list, tuple]

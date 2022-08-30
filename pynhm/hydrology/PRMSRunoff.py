@@ -145,7 +145,7 @@ class PRMSRunoff(StorageUnit):
             "contrib_fraction": zero,
             "infil": zero,
             "infil_hru": zero,
-            "sroff": zero,
+            "sroff": zero,  # todo: privatize and only make vol public
             "sroff_vol": zero,
             "hru_sroffp": zero,
             "hru_sroffi": zero,
@@ -227,6 +227,8 @@ class PRMSRunoff(StorageUnit):
         self.dprst_stor_hru_change[:] = (
             self.dprst_stor_hru - self.dprst_stor_hru_old
         )
+
+        self.sroff_vol = self.sroff * self.control.params.hru_in_to_cf
 
         return
 

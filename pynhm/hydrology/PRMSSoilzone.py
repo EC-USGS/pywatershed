@@ -159,7 +159,8 @@ class PRMSSoilzone(StorageUnit):
             "soil_to_ssr": zero,
             "soil_zone_max": nan,  # this is completely later
             "ssr_to_gw": zero,
-            "ssres_flow": zero,
+            "ssres_flow": zero,  # todo: privatize keep vol public
+            "ssres_flow_vol": nan,
             "ssres_in": zero,
             "ssres_stor": nan,  # sm_soilzone
             "swale_actet": zero,
@@ -752,7 +753,11 @@ class PRMSSoilzone(StorageUnit):
             self.soil_rechr_change * self.hru_frac_perv
         )
         self.perv_actet_hru[:] = self.perv_actet * self.hru_frac_perv
-        # <
+
+        self.ssres_flow_vol[:] = (
+            self.ssres_flow * self.control.params.hru_in_to_cf
+        )
+
         return
 
     @staticmethod

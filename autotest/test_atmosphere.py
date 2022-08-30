@@ -60,7 +60,7 @@ class TestPRMSAtmosphere:
         atm = PRMSAtmosphere(
             control=control,
             **input_variables,
-            budget_type="strict",
+            budget_type=None,
             netcdf_output_dir=tmp_path,
         )
 

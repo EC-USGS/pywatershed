@@ -20,7 +20,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-# @pytest.mark.xfail
+@pytest.mark.xfail
 class TestPRMSSnow:
     def test_init(self, domain, control, tmp_path):
         tmp_path = pl.Path(tmp_path)

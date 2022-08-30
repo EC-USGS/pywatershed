@@ -72,27 +72,7 @@ class ColorBrewer:
 
     @staticmethod
     def jupyter_palette(palette: Union[list, dict]):
-        from IPython.display import Markdown, display
-
-        if isinstance(palette, list):
-            display(
-                Markdown(
-                    "<br>".join(
-                        f'<span style="font-family: monospace">{color} <span style="color: {color}">████████</span></span>'
-                        for color in palette
-                    )
-                )
-            )
-        else:
-            display(
-                Markdown(
-                    "<br>".join(
-                        f'<span style="font-family: monospace">{key} <span style="color: {color}">████████</span></span>'
-                        for key, color in palette.items()
-                    )
-                )
-            )
-
+        jupyter_palette(palette)
         return
 
     @staticmethod
@@ -2349,10 +2329,10 @@ palettes_by_cat = {
 }
 
 
-def nhm_component_colors(model: Model = None):
+def nhm_process_colors(model: Model = None):
     cb = ColorBrewer
-    palette = cb.get_palette("Accent")(8)  # the full NHM model components
-    component_colors = {
+    palette = cb.get_palette("Accent")(8)  # the full NHM model processes
+    process_colors = {
         "PRMSSolarGeometry": palette[3],
         "PRMSAtmosphere": palette[2],
         "PRMSCanopy": palette[0],
@@ -2363,12 +2343,37 @@ def nhm_component_colors(model: Model = None):
         "PRMSChannel": palette[4],
     }
     if not model:
-        return component_colors
+        return process_colors
     else:
-        model_components = list(model.components.keys())
-        model_component_colors = {
+        model_processes = list(model.processes.keys())
+        model_process_colors = {
             key: val
-            for key, val in component_colors.items()
-            if key in [cc for cc in model_components]
+            for key, val in process_colors.items()
+            if key in [cc for cc in model_processes]
         }
-        return model_component_colors
+        return model_process_colors
+
+
+def jupyter_palette(palette: Union[list, dict]):
+    from IPython.display import Markdown, display
+
+    if isinstance(palette, list):
+        display(
+            Markdown(
+                "<br>".join(
+                    f'<span style="font-family: monospace">{color} <span style="color: {color}">████████</span></span>'
+                    for color in palette
+                )
+            )
+        )
+    else:
+        display(
+            Markdown(
+                "<br>".join(
+                    f'<span style="font-family: monospace">{key} <span style="color: {color}">████████</span></span>'
+                    for key, color in palette.items()
+                )
+            )
+        )
+
+    return

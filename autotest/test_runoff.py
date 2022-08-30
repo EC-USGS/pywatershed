@@ -54,7 +54,7 @@ class TestPRMSRunoffDomain:
         runoff = PRMSRunoff(
             control=control,
             **input_variables,
-            budget_type="warn",
+            budget_type="warn",  # intermittent errors currently
         )
 
         all_success = True

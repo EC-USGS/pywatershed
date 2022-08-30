@@ -75,6 +75,17 @@ def test_misc_netcdf(misc_nc_files_input):
         for vv in data_vars:
             data[vv].close()
 
+    if misc_nc_files_input.name in ["sroff", "ssres_flow", "gwres_flow"]:
+        data_dir = misc_nc_files_input.parent
+        domain_dir = misc_nc_files_input.parent.parent
+        params = PrmsParameters.load(domain_dir / "myparam.param")
+        var = misc_nc_files_input.name
+        ds = xr.open_dataset(data_dir / f"{var}.nc")
+        ds = ds.rename({var: f"{var}_vol"})
+        ds = ds * params.hru_in_to_cf
+        ds.to_netcdf(data_dir / f"{var}_vol.nc")
+        ds.close()
+
     assert True
 
 

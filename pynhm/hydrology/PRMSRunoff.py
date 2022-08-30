@@ -146,6 +146,7 @@ class PRMSRunoff(StorageUnit):
             "infil": zero,
             "infil_hru": zero,
             "sroff": zero,
+            "sroff_vol": zero,
             "hru_sroffp": zero,
             "hru_sroffi": zero,
             "imperv_stor": zero,

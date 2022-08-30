@@ -177,6 +177,10 @@ class Control(Accessor):
         """The number of time steps"""
         return self._n_times
 
+    @property
+    def time_step_seconds(self):
+        return self.time_step / np.timedelta64(1, "s")
+
     def advance(self):
         """Advance time"""
         if self._current_time == self._end_time:

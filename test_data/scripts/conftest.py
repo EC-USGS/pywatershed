@@ -65,7 +65,13 @@ previous_vars = [
     "ssres_stor",
 ]
 
-misc_nc_file_vars = ["infil", "through_rain"]
+misc_nc_file_vars = [
+    "infil",
+    "through_rain",
+    "sroff",
+    "ssres_flow",
+    "gwres_flow",
+]
 
 
 def scheduler_active():

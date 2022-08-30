@@ -22,6 +22,8 @@ epsilon32 = np.finfo(zero.astype("float32")).eps
 fill_value_f4 = 9.96921e36
 
 inch2cm = 2.54
+ft2_per_acre = 43560.0
+inches_per_foot = 12.0
 
 
 class HruType(Enum):

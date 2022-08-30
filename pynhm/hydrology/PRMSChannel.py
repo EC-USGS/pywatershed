@@ -124,7 +124,6 @@ class PRMSChannel(StorageUnit):
 
         """
         return (
-            # "sroff",
             "sroff_vol",
             "ssres_flow_vol",
             "gwres_flow_vol",
@@ -153,6 +152,13 @@ class PRMSChannel(StorageUnit):
             "storage_changes": ["seg_stor_change"],
         }
 
+    def get_outflow_mask(self):
+        return self._outflow_mask
+
+    @property
+    def outflow_mask(self):
+        return self._outflow_mask
+
     def set_initial_conditions(self) -> None:
         # initialize channel segment storage
         self.seg_outflow = self.segment_flow_init
@@ -160,11 +166,6 @@ class PRMSChannel(StorageUnit):
 
     def _initialize_channel_data(self) -> None:
         """Initialize internal variables from raw channel data"""
-
-        # THis will go away when the inputs are in volumes
-        self._in_to_cfs = self.control.params.hru_in_to_cfs(
-            self.control.time_step
-        )
 
         # convert prms data to zero-based
         self.hru_segment -= 1
@@ -315,14 +316,22 @@ class PRMSChannel(StorageUnit):
         self._simulation_time = simulation_time
 
         # This could vary with timestep so leave here
-        s_per_time = self.control.time_step / np.timedelta64(1, "s")
+        s_per_time = self.control.time_step_seconds
 
         # calculate lateral flow term
         self.seg_lateral_inflow[:] = 0.0
         for ihru in range(self.nhru):
             iseg = self.hru_segment[ihru]
             if iseg < 0:
+                # This is bad, selective handling of fluxes is not cool,
+                # mass is being discarded in a way that has to be coordinated
+                # with other parts of the code.
+                # This code shuold be removed evenutally.
+                self.sroff_vol[ihru] = zero
+                self.ssres_flow_vol[ihru] = zero
+                self.gwres_flow_vol[ihru] = zero
                 continue
+
             # cubicfeet to cfs
             lateral_inflow = (
                 self.sroff_vol[ihru]
@@ -332,6 +341,7 @@ class PRMSChannel(StorageUnit):
 
             self.seg_lateral_inflow[iseg] += lateral_inflow
 
+        # solve muskingum_mann routing
         (
             self.seg_upstream_inflow,
             self._seg_inflow0,
@@ -355,9 +365,10 @@ class PRMSChannel(StorageUnit):
             self._c2,
         )
 
-        self.seg_stor_change[:] = (self._seg_inflow - self._seg_inflow0) - (
-            self.seg_outflow - self._seg_outflow0
+        self.seg_stor_change[:] = (
+            self._seg_inflow - self.seg_outflow
         ) * s_per_time
+
         self.channel_outflow_vol[:] = (
             np.where(self._outflow_mask, self.seg_outflow, zero)
         ) * s_per_time
@@ -379,6 +390,7 @@ def muskingum_routing(
     c1: np.ndarray,
     c2: np.ndarray,
 ) -> Tuple[
+    np.ndarray,
     np.ndarray,
     np.ndarray,
     np.ndarray,

@@ -1009,6 +1009,13 @@ cascade_interflow:
     0: nhru
   type: float64
   units: inches
+channel_outflow_vol:
+  desc: Streamflow volume leaving the stream channel model
+  dimensions:
+    0: nsegment
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 cloud_cover_hru:
   desc: Cloud cover proportion of each HRU
   dimensions:
@@ -1420,6 +1427,13 @@ gwres_flow:
     0: ngw
   type: float64
   units: inches
+  var_category: mass flux
+gwres_flow_vol:
+  desc: Groundwater discharge volume from each GWR to the stream network
+  dimensions:
+    0: ngw
+  type: float64
+  units: cubicfeet
   var_category: mass flux
 gwres_sink:
   desc: Outflow from GWRs to the groundwater sink; water is considered underflow or
@@ -2379,7 +2393,7 @@ seg_stor_change:
   dimensions:
     0: nsegment
   type: float64
-  units: inches
+  units: cubicfeet
   var_category: mass storage change
 seg_upstream_inflow:
   desc: Sum of inflow from upstream segments
@@ -2751,6 +2765,13 @@ sroff:
   type: float64
   units: inches
   var_category: mass flux
+sroff_vol:
+  desc: Surface runoff to the stream network for each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 ssr_to_gw:
   desc: Drainage from the gravity-reservoir to the associated GWR for each HRU
   dimensions:
@@ -2765,6 +2786,13 @@ ssres_flow:
     0: nssr
   type: float64
   units: inches
+ssres_flow_vol:
+  desc: Interflow volume from gravity and preferential-flow reservoirs to the stream network
+    for each HRU
+  dimensions:
+    0: nssr
+  type: float64
+  units: cubicfeet
 ssres_in:
   desc: Inflow to the gravity and preferential-flow reservoirs for each HRU
   dimensions:

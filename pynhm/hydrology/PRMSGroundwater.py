@@ -66,23 +66,6 @@ class PRMSGroundwater(StorageUnit):
         )
 
     @staticmethod
-    def get_variables() -> tuple:
-        """Get groundwater reservoir output variables
-
-        Returns:
-            variables: output variables
-
-        """
-        return (
-            "gwres_flow",  # todo: privatize this var and keep vol public
-            "gwres_flow_vol",
-            "gwres_sink",
-            "gwres_stor",
-            "gwres_stor_old",
-            "gwres_stor_change",
-        )
-
-    @staticmethod
     def get_mass_budget_terms():
         return {
             "inputs": [

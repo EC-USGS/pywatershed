@@ -150,6 +150,7 @@ class PRMSSoilzone(StorageUnit):
             "soil_lower_ratio": zero,
             "soil_lower_max": nan,  # completely set later
             "soil_moist": nan,  # sm_climateflow
+            "soil_moist_prev": nan,  # sm_climateflow
             "soil_moist_tot": nan,  # completely set later
             "soil_rechr": nan,  # sm_climateflow
             "soil_rechr_change": nan,  # sm_climateflow
@@ -232,8 +233,12 @@ class PRMSSoilzone(StorageUnit):
         # variables
         if self.control.config["init_vars_from_file"] in [0, 2, 5]:
             # these are set in sm_climateflow
-            self.soil_moist = self.soil_moist_init_frac * self.soil_moist_max
-            self.soil_rechr = self.soil_rechr_init_frac * self.soil_rechr_max
+            self.soil_moist[:] = (
+                self.soil_moist_init_frac * self.soil_moist_max
+            )
+            self.soil_rechr[:] = (
+                self.soil_rechr_init_frac * self.soil_rechr_max
+            )
         else:
             # call ctl_data%read_restart_variable(
             #    'soil_moist', this%soil_moist)
@@ -398,6 +403,9 @@ class PRMSSoilzone(StorageUnit):
         self.potet_lower[:] = zero
 
         self.snow_free = one - self.snowcov_area
+
+        # Do this here and not in advance as this is not an individual storage
+        self.soil_moist_prev[:] = self.soil_moist
 
         # JLM: ET calculations to be removed from soilzone.
         self.hru_actet = (
@@ -740,10 +748,12 @@ class PRMSSoilzone(StorageUnit):
         self.pref_flow_stor_change[:] = (
             self.pref_flow_stor - self.pref_flow_stor_prev
         )
-        # self.soil_moist_change[:] = self.soil_moist - self.soil_moist_prev
         self.soil_lower_change[:] = self.soil_lower - self.soil_lower_prev
         self.soil_rechr_change[:] = self.soil_rechr - self.soil_rechr_prev
         self.slow_stor_change[:] = self.slow_stor - self.slow_stor_prev
+        # Apparently the following are sums of the above and not actual
+        # inddividual storage changes
+        # self.soil_moist_change[:] = self.soil_moist - self.soil_moist_prev
         # self.ssres_stor_change[:] = self.ssres_stor - self.ssres_stor_prev
 
         self.soil_lower_change_hru[:] = (

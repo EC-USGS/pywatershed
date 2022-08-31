@@ -73,7 +73,7 @@ class PRMSAtmosphere(StorageUnit):
         prcp: precipitation cbh netcdf file
         tmax: maximum daily temperature cbh netcdf file
         tmin: minimum daily temperature cbh netcdf file
-        budget_type: [None | "diagnostic" |  "strict"].
+        budget_type: [None | "warn" |  "error"].
         verbose: bool indicating amount of output to terminal.
         netcdf_output_dir: an existing directory to which to write all
             variables for all time.

@@ -1,4 +1,4 @@
-from typing import Tuple, Union
+from typing import Tuple
 
 import networkx as nx
 import numpy as np
@@ -8,11 +8,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import SegmentType, zero
-
-FT2_PER_ACRE = 43560.0
-INCHES_PER_FOOT = 12.0
-SECS_PER_HOUR = 3600.0
+from ..constants import SegmentType, nan, zero
 
 
 class PRMSChannel(StorageUnit):
@@ -60,9 +56,9 @@ class PRMSChannel(StorageUnit):
 
     Args:
         control: control object
-        sroff: surface runoff adapter object
-        ssres_flow: subsurface (gravity) reservoir lateral flow adapter object
-        gwres_flow: groundwater reservoir baseflow adapter object
+        sroff_vol: surface runoff adapter object
+        ssres_flow_vol: subsurface (gravity) reservoir lateral flow adapter object
+        gwres_flow_vol: groundwater reservoir baseflow adapter object
         verbose: verbose output boolean (default is False)
 
 
@@ -71,9 +67,9 @@ class PRMSChannel(StorageUnit):
     def __init__(
         self,
         control: Control,
-        sroff: adaptable,
-        ssres_flow: adaptable,
-        gwres_flow: adaptable,
+        sroff_vol: adaptable,
+        ssres_flow_vol: adaptable,
+        gwres_flow_vol: adaptable,
         verbose: bool = False,
         budget_type: str = None,
     ) -> "PRMSChannel":
@@ -85,24 +81,103 @@ class PRMSChannel(StorageUnit):
         self.name = "PRMSChannel"
 
         self.set_inputs(locals())
-        self.set_budget(budget_type)
+        # override for now until the channel budget is sorted out
+        self.set_budget(budget_type, basis="global")
 
         # process channel data
         self._initialize_channel_data()
 
         return
 
+    @staticmethod
+    def get_parameters() -> tuple:
+        """Get channel segment parameters
+
+        Returns:
+            parameters: input parameters
+
+        """
+        return (
+            "nhru",
+            "nsegment",
+            "hru_area",
+            "hru_segment",
+            "mann_n",
+            "seg_depth",
+            "seg_length",
+            "seg_slope",
+            "segment_type",
+            "tosegment",
+            "tosegment_nhm",
+            "x_coef",
+            "segment_flow_init",
+            "obsin_segment",
+            "obsout_segment",
+        )
+
+    @staticmethod
+    def get_inputs() -> tuple:
+        """Get channel segment input variables
+
+        Returns:
+            variables: input variables
+
+        """
+        return (
+            "sroff_vol",
+            "ssres_flow_vol",
+            "gwres_flow_vol",
+        )
+
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get channel segment initial values
+
+        Returns:
+            dict: initial values for named variables
+        """
+        return {
+            "channel_outflow_vol": nan,
+            "seg_lateral_inflow": zero,
+            "seg_upstream_inflow": zero,
+            "seg_outflow": zero,
+            "seg_stor_change": zero,
+        }
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"],
+            "outputs": ["channel_outflow_vol"],
+            "storage_changes": ["seg_stor_change"],
+        }
+
+    def get_outflow_mask(self):
+        return self._outflow_mask
+
+    @property
+    def outflow_mask(self):
+        return self._outflow_mask
+
+    def set_initial_conditions(self) -> None:
+        # initialize channel segment storage
+        self.seg_outflow = self.segment_flow_init
+        return
+
     def _initialize_channel_data(self) -> None:
         """Initialize internal variables from raw channel data"""
+
         # convert prms data to zero-based
         self.hru_segment -= 1
         self.tosegment -= 1
 
         # calculate connectivity
+        self._outflow_mask = np.full((len(self.tosegment)), False)
         connectivity = []
         for iseg in range(self.nsegment):
             tosegment = self.tosegment[iseg]
             if tosegment < 0:
+                self._outflow_mask[iseg] = True
                 continue
             connectivity.append(
                 (
@@ -203,8 +278,8 @@ class PRMSChannel(StorageUnit):
 
         # local flow variables
         self._seg_inflow = np.zeros(self.nsegment, dtype=float)
-        self._seg_inflow0 = np.zeros(self.nsegment, dtype=float)
-        self._seg_outflow0 = np.zeros(self.nsegment, dtype=float)
+        self._seg_inflow0 = np.zeros(self.nsegment, dtype=float) * nan
+        self._seg_outflow0 = np.zeros(self.nsegment, dtype=float) * nan
         self._inflow_ts = np.zeros(self.nsegment, dtype=float)
         self._outflow_ts = np.zeros(self.nsegment, dtype=float)
         self._seg_current_sum = np.zeros(self.nsegment, dtype=float)
@@ -218,88 +293,16 @@ class PRMSChannel(StorageUnit):
 
         return
 
-    def set_initial_conditions(self) -> None:
-        # initialize channel segment storage
-        self.seg_outflow = self.segment_flow_init
-        return
-
-    @staticmethod
-    def get_parameters() -> tuple:
-        """Get channel segment parameters
-
-        Returns:
-            parameters: input parameters
-
-        """
-        return (
-            "nhru",
-            "nsegment",
-            "hru_area",
-            "hru_segment",
-            "mann_n",
-            "seg_depth",
-            "seg_length",
-            "seg_slope",
-            "segment_type",
-            "tosegment",
-            "tosegment_nhm",
-            "x_coef",
-            "segment_flow_init",
-            "obsin_segment",
-            "obsout_segment",
-        )
-
-    @staticmethod
-    def get_inputs() -> tuple:
-        """Get channel segment input variables
-
-        Returns:
-            variables: input variables
-
-        """
-        return (
-            "sroff",
-            "ssres_flow",
-            "gwres_flow",
-        )
-
-    @staticmethod
-    def get_variables() -> tuple:
-        """Get channel segment output variables
-
-        Returns:
-            variables: output variables
-
-        """
-        return (
-            "seg_lateral_inflow",
-            "seg_upstream_inflow",
-            "seg_outflow",
-        )
-
-    @staticmethod
-    def get_init_values() -> dict:
-        """Get channel segment initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
-        return {
-            "seg_lateral_inflow": zero,
-            "seg_upstream_inflow": zero,
-            "seg_outflow": zero,
-        }
-
     def _advance_variables(self) -> None:
         """Advance the channel segment variables
         Returns:
             None
         """
-        self._seg_inflow0[:] = self._seg_inflow.copy()
-        self._seg_outflow0[:] = self.seg_outflow.copy()
+        self._seg_inflow0[:] = self._seg_inflow
+        self._seg_outflow0[:] = self.seg_outflow
         return
 
-    def calculate(self, simulation_time: float) -> None:
+    def _calculate(self, simulation_time: float) -> None:
         """Calculate channel segment terms for a time step
 
         Args:
@@ -312,43 +315,63 @@ class PRMSChannel(StorageUnit):
 
         self._simulation_time = simulation_time
 
-        hru_area = self.hru_area
-        time_step_seconds = self.control.time_step / np.timedelta64(1, "s")
-        in_to_cfs = hru_area * FT2_PER_ACRE
-        in_to_cfs /= INCHES_PER_FOOT
-        in_to_cfs /= time_step_seconds
+        # This could vary with timestep so leave here
+        s_per_time = self.control.time_step_seconds
 
         # calculate lateral flow term
         self.seg_lateral_inflow[:] = 0.0
         for ihru in range(self.nhru):
             iseg = self.hru_segment[ihru]
             if iseg < 0:
+                # This is bad, selective handling of fluxes is not cool,
+                # mass is being discarded in a way that has to be coordinated
+                # with other parts of the code.
+                # This code shuold be removed evenutally.
+                self.sroff_vol[ihru] = zero
+                self.ssres_flow_vol[ihru] = zero
+                self.gwres_flow_vol[ihru] = zero
                 continue
+
+            # cubicfeet to cfs
             lateral_inflow = (
-                self.sroff[ihru]
-                + self.ssres_flow[ihru]
-                + self.gwres_flow[ihru]
-            ) * in_to_cfs[ihru]
+                self.sroff_vol[ihru]
+                + self.ssres_flow_vol[ihru]
+                + self.gwres_flow_vol[ihru]
+            ) / (s_per_time)
+
             self.seg_lateral_inflow[iseg] += lateral_inflow
 
-        self.seg_upstream_inflow, self.seg_outflow = muskingum_routing(
-            self._segment_order,
-            self.tosegment,
-            self.seg_lateral_inflow,
+        # solve muskingum_mann routing
+        (
             self.seg_upstream_inflow,
-            self._seg_inflow,
             self._seg_inflow0,
+            self._seg_inflow,
+            self.seg_outflow0,
             self.seg_outflow,
-            self._seg_outflow0,
             self._inflow_ts,
             self._outflow_ts,
             self._seg_current_sum,
+        ) = muskingum_routing(
+            self._segment_order,
+            self.tosegment,
+            self.seg_lateral_inflow,
+            self._seg_inflow0,
+            self._seg_outflow0,
+            self._outflow_ts,
             self._tsi,
             self._ts,
             self._c0,
             self._c1,
             self._c2,
         )
+
+        self.seg_stor_change[:] = (
+            self._seg_inflow - self.seg_outflow
+        ) * s_per_time
+
+        self.channel_outflow_vol[:] = (
+            np.where(self._outflow_mask, self.seg_outflow, zero)
+        ) * s_per_time
 
         return
 
@@ -358,20 +381,24 @@ def muskingum_routing(
     segment_order: np.ndarray,
     to_segment: np.ndarray,
     seg_lateral_inflow: np.ndarray,
-    seg_upstream_inflow: np.ndarray,
-    seg_inflow: np.ndarray,
     seg_inflow0: np.ndarray,
-    seg_outflow: np.ndarray,
     seg_outflow0: np.ndarray,
-    inflow_ts: np.ndarray,
     outflow_ts: np.ndarray,
-    seg_current_sum: np.ndarray,
     tsi: np.ndarray,
     ts: np.ndarray,
     c0: np.ndarray,
     c1: np.ndarray,
     c2: np.ndarray,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+    np.ndarray,
+]:
     """
     Muskingum routing function that calculates the upstream inflow and
     outflow for each segment
@@ -380,14 +407,9 @@ def muskingum_routing(
         segment_order: segment routing order
         to_segment: downstream segment for each segment
         seg_lateral_inflow: segment lateral inflow
-        seg_upstream_inflow: initial segment upstream inflow (set to 0)
-        seg_inflow: segment inflow variable (internal calculations)
         seg_inflow0: previous segment inflow variable (internal calculations)
-        seg_outflow: initial segment outflow variable (set to 0)
         seg_outflow0: previous outflow variable (internal calculations)
-        inflow_ts: inflow timeseries variable (internal calculations)
         outflow_ts: outflow timeseries variable (internal calculations)
-        seg_current_sum: summation variable (internal calculations)
         tsi: integer flood wave travel time
         ts: float version of integer flood wave travel time
         c0: Muskingum c0 variable
@@ -396,31 +418,37 @@ def muskingum_routing(
 
     Returns:
         seg_upstream_inflow: inflow for each segment for the current day
+        seg_inflow0: segment inflow variable
+        seg_inflow: segment inflow variable
+        seg_outflow0: outflow for each segment for the current day
         seg_outflow: outflow for each segment for the current day
-
+        inflow_ts: inflow timeseries variable
+        outflow_ts: outflow timeseries variable (internal calculations)
+        seg_current_sum: summation variable
     """
     # initialize variables for the day
-    # seg_inflow0[:] = seg_inflow.copy()
-    # seg_outflow0[:] = seg_outflow.copy()
-    seg_inflow[:] = 0.0
-    seg_outflow[:] = 0.0
-    inflow_ts[:] = 0.0
-    seg_current_sum[:] = 0.0
+
+    seg_inflow = seg_inflow0 * zero
+    seg_outflow = seg_outflow0 * zero
+    inflow_ts = seg_inflow0 * zero
+    seg_current_sum = seg_inflow0 * zero
 
     for ihr in range(24):
-        seg_upstream_inflow[:] = 0.0
+        seg_upstream_inflow = seg_inflow * zero
 
         for jseg in segment_order:
             # current inflow to the segment is the time-weighted average
             # of the outflow of the upstream segments and the lateral HRU
             # inflow plus any gains
-            seg_current_inflow = seg_lateral_inflow[jseg]
+            seg_current_inflow = (
+                seg_lateral_inflow[jseg] + seg_upstream_inflow[jseg]
+            )
 
             # todo: evaluate if obsin_segment needs to be implemented -
             #  would be needed needed if headwater basins are not included
             #  in a simulation
+            # seg_current_inflow += seg_upstream_inflow[jseg]
 
-            seg_current_inflow += seg_upstream_inflow[jseg]
             seg_inflow[jseg] += seg_current_inflow
             inflow_ts[jseg] += seg_current_inflow
             seg_current_sum[jseg] += seg_upstream_inflow[jseg]
@@ -478,4 +506,13 @@ def muskingum_routing(
     seg_inflow /= 24.0
     seg_upstream_inflow = seg_current_sum.copy() / 24.0
 
-    return seg_upstream_inflow, seg_outflow
+    return (
+        seg_upstream_inflow,
+        seg_inflow0,
+        seg_inflow,
+        seg_outflow0,
+        seg_outflow,
+        inflow_ts,
+        outflow_ts,
+        seg_current_sum,
+    )

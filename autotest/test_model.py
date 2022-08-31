@@ -181,25 +181,28 @@ def test_model(domain, control, processes, tmp_path):
         9: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1522.4549482501916,
-                    "hru_1": 12.611823245603686,
-                    "ucb_2yr": 1680.5250196362717,
+                    "drb_2yr": 1306.7499262980173,
+                    "hru_1": 13.690165950142445,
+                    "ucb_2yr": 1694.4729153330018,
                 },
             },
         },
         99: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 2228.410057597461,
-                    "hru_1": 22.18093424912333,
-                    "ucb_2yr": 724.1753570676741,
+                    "drb_2yr": 1818.6285476625615,
+                    "hru_1": 14.70413315830374,
+                    "ucb_2yr": 710.2513423457016,
                 },
             },
         },
     }
 
     all_success = True
+    fail_prms_compare = False
+    fail_regression = False
     # for istep in range(control.n_times):
+
     for istep in range(n_time_steps):
 
         # print(istep)
@@ -228,6 +231,7 @@ def test_model(domain, control, processes, tmp_path):
                     failfast,
                 )
                 if not success:
+                    fail_prms_compare = True
                     all_success = False
 
         # Regression checking
@@ -240,13 +244,29 @@ def test_model(domain, control, processes, tmp_path):
                         print(
                             f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}"
                         )
-                        all_success = False
+                        success = False
                     else:
-                        assert abs(result - reg_ans) < 1e-5
+                        success = (abs(result - reg_ans) / abs(reg_ans)) < 1e-5
+
+                        if not success:
+                            fail_regression = True
+                            all_success = False
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:
-        raise Exception("pynhm results do not match prms results")
+        if fail_prms_compare and fail_regression:
+            msg = (
+                "pynhm results both failed regression test and comparison "
+                "with prms5.2.1"
+            )
+        elif fail_prms_compare:
+            msg = "pynhm results failed comparison with prms5.2.1"
+        elif fail_regression:
+            msg = "pynhm results failed regression"
+        else:
+            assert False, "this should not be possible"
+
+        raise Exception(msg)
 
     return
 

@@ -1009,6 +1009,13 @@ cascade_interflow:
     0: nhru
   type: float64
   units: inches
+channel_outflow_vol:
+  desc: Streamflow volume leaving the stream channel model
+  dimensions:
+    0: nsegment
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 cloud_cover_hru:
   desc: Cloud cover proportion of each HRU
   dimensions:
@@ -1314,6 +1321,21 @@ freeh2o:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+freeh2o_change:
+  desc: Change in storage of free liquid water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+freeh2o_prev:
+  desc: Previous storage of free liquid water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 gate_ht:
   desc: Height of the gate opening at each dam with a gate
   dimensions:
@@ -1406,6 +1428,13 @@ gwres_flow:
   type: float64
   units: inches
   var_category: mass flux
+gwres_flow_vol:
+  desc: Groundwater discharge volume from each GWR to the stream network
+  dimensions:
+    0: ngw
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 gwres_sink:
   desc: Outflow from GWRs to the groundwater sink; water is considered underflow or
     flow to deep aquifers and does not flow to the stream network
@@ -1434,7 +1463,7 @@ gwres_stor_old:
     0: ngw
   type: float64
   units: inches
-  var_category: mass storage  
+  var_category: mass storage
 gwstor_minarea_wb:
   desc: Storage added to each GWR when storage is less than gwstor_min
   dimensions:
@@ -1521,7 +1550,7 @@ hru_intcpevap:
     0: nhru
   type: float64
   units: inches
-  var_category: mass flux
+  # var_category: mass flux
 hru_intcpstor:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU
   dimensions:
@@ -1651,7 +1680,14 @@ imperv_stor:
   type: float64
   units: inches
 infil:
-  desc: Infiltration to the capillary and preferential-flow reservoirs for each HRU
+  desc: Infiltration to the capillary and preferential-flow reservoirs, depth on pervious area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass flux
+infil_hru:
+  desc: Infiltration to the capillary and preferential-flow reservoirs, depth on HRU area
   dimensions:
     0: nhru
   type: float64
@@ -1670,6 +1706,7 @@ intcp_changeover:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
 intcp_evap:
   desc: Evaporation from the canopy for each HRU
   dimensions:
@@ -2006,11 +2043,19 @@ pan_evap:
   type: float64
   units: inches
 perv_actet:
-  desc: Actual ET from the capillary reservoir of each HRU
+  desc: Actual ET from the capillary reservoir of each HRU, depth on pervious area
   dimensions:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
+perv_actet_hru:
+  desc: Actual ET from the capillary reservoir of each HRU, depth on HRU area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass flux
 perv_avail_et:
   desc: Unsatisfied ET available to the capillary reservoir of each HRU
   dimensions:
@@ -2049,6 +2094,21 @@ pk_ice:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+pk_ice_change:
+  desc: Storage of frozen water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+pk_ice_prev:
+  desc: Storage of frozen water in the snowpack on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 pk_precip:
   desc: Precipitation added to snowpack for each HRU
   dimensions:
@@ -2069,17 +2129,26 @@ pksv:
   type: float64
   units: inches
 pkwater_ante:
-  desc: Antecedent snowpack water equivalent on each HRU
+  desc: Previous snowpack water equivalent on each HRU
   dimensions:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
 pkwater_equiv:
   desc: Snowpack water equivalent on each HRU
   dimensions:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+pkwater_equiv_change:
+  desc: Change in snowpack water equivalent on each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 potet:
   desc: Potential ET for each HRU
   dimensions:
@@ -2127,6 +2196,7 @@ pref_flow:
     0: nhru
   type: float64
   units: inches
+  var_category: mass flux
 pref_flow_in:
   desc: Infiltration and flow from gravity reservoir to the preferential-flow reservoir
   dimensions:
@@ -2257,6 +2327,7 @@ seg_inflow:
     0: nsegment
   type: float64
   units: cfs
+  var_category: mass flux
 seg_lateral_inflow:
   desc: Lateral inflow entering a segment
   dimensions:
@@ -2283,6 +2354,7 @@ seg_outflow:
     0: nsegment
   type: float64
   units: cfs
+  var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
   dimensions:
@@ -2316,6 +2388,13 @@ seg_ssflow:
     0: nsegment
   type: float64
   units: inches
+seg_stor_change:
+  desc: Change in segment storage
+  dimensions:
+    0: nsegment
+  type: float64
+  units: cubicfeet
+  var_category: mass storage change
 seg_upstream_inflow:
   desc: Sum of inflow from upstream segments
   dimensions:
@@ -2496,12 +2575,36 @@ soil_lower:
   units: inches
   var_category: mass storage
 soil_lower_change:
-  desc: Storage in the lower zone of the capillary reservoir that is only available
+  desc: Change in storage in the lower zone of the capillary reservoir that is only available
+    for transpiration for each HRU, depth on pervious area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_lower_change_hru:
+  desc: Change in storage in the lower zone of the capillary reservoir that is only available
+    for transpiration for each HRU, depth on HRU area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_lower_max:
+  desc: Maximum storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU
   dimensions:
     0: nhru
   type: float64
   units: inches
+soil_lower_prev:
+  desc: Previous storage in the lower zone of the capillary reservoir that is only available
+    for transpiration for each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 soil_lower_ratio:
   desc: Water content ratio in the lower zone of the capillary reservoir for each
     HRU
@@ -2511,20 +2614,6 @@ soil_lower_ratio:
   units: decimal fraction
 soil_moist:
   desc: Storage of capillary reservoir for each HRU
-  dimensions:
-    0: nhru
-  type: float64
-  units: inches
-  var_category: mass storage
-soil_moist_change:
-  desc: Storage of capillary reservoir for each HRU
-  dimensions:
-    0: nhru
-  type: float64
-  units: inches
-  var_category: mass storage change
-soil_moist_prev:
-  desc: Previous storage of capillary reservoir for each HRU
   dimensions:
     0: nhru
   type: float64
@@ -2555,6 +2644,31 @@ soil_rechr:
     0: nhru
   type: float64
   units: inches
+  var_category: mass storage
+soil_rechr_change:
+  desc: Change in storage for recharge zone (upper portion) of the capillary reservoir that
+    is available for both evaporation and transpiration, depth on pervious area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_rechr_change_hru:
+  desc: Change in storage for recharge zone (upper portion) of the capillary reservoir that
+    is available for both evaporation and transpiration, depth on HRU area
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage change
+soil_rechr_prev:
+  desc: Previous storage for recharge zone (upper portion) of the capillary reservoir that
+    is available for both evaporation and transpiration
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass storage
 soil_rechr_max:
   desc: Maximum storage for soil recharge zone (upper portion of capillary reservoir
     where losses occur as both evaporation and transpiration)
@@ -2651,6 +2765,13 @@ sroff:
   type: float64
   units: inches
   var_category: mass flux
+sroff_vol:
+  desc: Surface runoff to the stream network for each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 ssr_to_gw:
   desc: Drainage from the gravity-reservoir to the associated GWR for each HRU
   dimensions:
@@ -2665,6 +2786,13 @@ ssres_flow:
     0: nssr
   type: float64
   units: inches
+ssres_flow_vol:
+  desc: Interflow volume from gravity and preferential-flow reservoirs to the stream network
+    for each HRU
+  dimensions:
+    0: nssr
+  type: float64
+  units: cubicfeet
 ssres_in:
   desc: Inflow to the gravity and preferential-flow reservoirs for each HRU
   dimensions:
@@ -2939,6 +3067,13 @@ tempc_dewpt:
     0: nhru
   type: float64
   units: degrees Celsius
+through_rain:
+  desc: Rain that passes through snow when no snow present
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass flux
 tmax_hru:
   desc: Maximum air temperature distributed to each HRU
   dimensions:

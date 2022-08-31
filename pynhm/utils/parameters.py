@@ -3,6 +3,7 @@ from typing import Union
 
 import numpy as np
 
+from ..constants import ft2_per_acre, inches_per_foot
 from .prms5_file_util import PrmsFile
 
 fileish = Union[str, pl.PosixPath, dict]
@@ -158,3 +159,13 @@ class PrmsParameters:
             data["parameter"]["parameters"],
             data["parameter"]["parameter_dimensions"],
         )
+
+    def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
+        "Derived parameter converting inches to cfs on hrus."
+        time_step_seconds = time_step / np.timedelta64(1, "s")
+        return self.hru_in_to_cf / time_step_seconds
+
+    @property
+    def hru_in_to_cf(self) -> np.ndarray:
+        "Derived parameter converting inches to cubic feet on hrus."
+        return self.parameters["hru_area"] * ft2_per_acre / (inches_per_foot)

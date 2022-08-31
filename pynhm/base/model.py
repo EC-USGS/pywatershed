@@ -12,7 +12,7 @@ class Model:
         *process_classes,
         control: Control,
         input_dir: str = None,
-        budget_type: str = "strict",  # also pass dict
+        budget_type: str = "error",  # todo: also pass dict
         verbose: bool = False,
     ):
 

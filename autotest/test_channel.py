@@ -21,7 +21,7 @@ class TestPRMSChannelDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        channel = PRMSChannel(control, **input_variables)
+        channel = PRMSChannel(control, **input_variables, budget_type="error")
         nc_parent = tmp_path / domain["domain_name"]
         channel.initialize_netcdf(nc_parent)
 
@@ -40,6 +40,9 @@ class TestPRMSChannelDomain:
         for key in PRMSChannel.get_variables():
             base_nc_path = output_dir / f"{key}.nc"
             compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
+            # PRMS does not output the storage change in the channel
+            if not base_nc_path.exists():
+                continue
             output_compare[key] = (base_nc_path, compare_nc_path)
 
         print(f"base_nc_path: {base_nc_path}")

@@ -26,7 +26,7 @@ class ModelGraph:
         show_params: bool = False,
         process_colors: dict = None,
         node_penwidth: int = 2,
-        default_edge_color: str = "gray50",
+        default_edge_color: str = "black",
         from_file_edge_color: str = None,
         node_spacing: float = 2.75,
         hide_variables: bool = True,

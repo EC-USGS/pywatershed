@@ -52,7 +52,26 @@ test_dirs = sorted(
 domain_globs_schedule = ["*conus*"]
 
 # For generating timeseries of previous states
-previous_vars = ["soil_moist"]
+previous_vars = [
+    "dprst_stor_hru",
+    "freeh2o",
+    "hru_impervstor",
+    "pk_ice",
+    "pref_flow_stor",
+    "slow_stor",
+    "soil_lower",
+    "soil_moist",
+    "soil_rechr",
+    "ssres_stor",
+]
+
+misc_nc_file_vars = [
+    "infil",
+    "through_rain",
+    "sroff",
+    "ssres_flow",
+    "gwres_flow",
+]
 
 
 def scheduler_active():
@@ -80,7 +99,8 @@ def collect_simulations(domain_list: list, force: bool):
     for test_dir in test_dirs:
 
         for pth in test_dir.iterdir():
-            # checking for prcp.cbh ensure this is a self-contained run (all files in repo)
+            # checking for prcp.cbh ensure this is a self-contained run (all
+            # files in repo)
             if (
                 (test_dir / "prcp.cbh").exists()
                 and pth.is_file()
@@ -121,6 +141,19 @@ def collect_csv_files(domain_list: list, force: bool):
     return csv_files
 
 
+def collect_misc_nc_files(domain_list: list, force: bool):
+    simulations = collect_simulations(domain_list, force)
+    sim_dirs = list(simulations.keys())
+    misc_nc_files = []
+    for var in misc_nc_file_vars:
+        for sim in sim_dirs:
+            the_file = pl.Path(sim) / f"output/{var}.nc"
+            # assert the_file.exists()
+            misc_nc_files += [the_file.with_suffix("")]
+
+    return misc_nc_files
+
+
 def pytest_generate_tests(metafunc):
     domain_list = metafunc.config.getoption("domain")
     force = metafunc.config.getoption("force")
@@ -146,6 +179,11 @@ def pytest_generate_tests(metafunc):
         ]
         ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
         metafunc.parametrize("csv_files_prev", csv_files, ids=ids)
+
+    if "misc_nc_files_input" in metafunc.fixturenames:
+        misc_nc_files = collect_misc_nc_files(domain_list, force)
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
+        metafunc.parametrize("misc_nc_files_input", misc_nc_files, ids=ids)
 
     if "soltab_file" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)

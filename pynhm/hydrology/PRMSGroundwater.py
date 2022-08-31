@@ -74,12 +74,29 @@ class PRMSGroundwater(StorageUnit):
 
         """
         return (
-            "gwres_flow",
+            "gwres_flow",  # todo: privatize this var and keep vol public
+            "gwres_flow_vol",
             "gwres_sink",
             "gwres_stor",
             "gwres_stor_old",
             "gwres_stor_change",
         )
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": [
+                "soil_to_gw",
+                "ssr_to_gw",
+                "dprst_seep_hru",
+            ],
+            "outputs": [
+                "gwres_flow",
+            ],
+            "storage_changes": [
+                "gwres_stor_change",
+            ],
+        }
 
     @staticmethod
     def get_init_values() -> dict:
@@ -90,6 +107,7 @@ class PRMSGroundwater(StorageUnit):
         """
         return {
             "gwres_flow": nan,
+            "gwres_flow_vol": nan,
             "gwres_sink": nan,
             "gwres_stor": nan,
             "gwres_stor_old": nan,
@@ -152,5 +170,8 @@ class PRMSGroundwater(StorageUnit):
         self.gwres_sink[:] = _gwres_sink / gwarea
 
         self.gwres_stor_change[:] = self.gwres_stor - self.gwres_stor_old
+        self.gwres_flow_vol[:] = (
+            self.gwres_flow * self.control.params.hru_in_to_cf
+        )
 
         return

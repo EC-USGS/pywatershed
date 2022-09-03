@@ -233,6 +233,8 @@ def test_model(domain, control, processes, tmp_path):
                 if not success:
                     fail_prms_compare = True
                     all_success = False
+                    if failfast:
+                        assert False, "PRMS comparison failfast"
 
         # Regression checking
         if istep in regression_ans:
@@ -251,6 +253,8 @@ def test_model(domain, control, processes, tmp_path):
                         if not success:
                             fail_regression = True
                             all_success = False
+                            if failfast:
+                                assert False, "Regression failffast"
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:

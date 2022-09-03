@@ -11,4 +11,4 @@ Atmospheric forcing models.
    :toctree: generated/
 
    PRMSSolarGeometry
-   PRMSBoundaryLayer
+   PRMSAtmosphere

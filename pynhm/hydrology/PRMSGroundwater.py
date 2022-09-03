@@ -8,7 +8,7 @@ from ..constants import nan
 
 
 class PRMSGroundwater(StorageUnit):
-    """PRMS groundwater reservoir
+    """PRMS groundwater reservoir.
 
     Args:
     """
@@ -29,8 +29,8 @@ class PRMSGroundwater(StorageUnit):
         )
         self.name = "PRMSGroundwater"
 
-        self.set_inputs(locals())
-        self.set_budget(budget_type)
+        self._set_inputs(locals())
+        self._set_budget(budget_type)
         return
 
     @staticmethod
@@ -114,7 +114,7 @@ class PRMSGroundwater(StorageUnit):
             "gwres_stor_change": nan,
         }
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         # initialize groundwater reservoir storage
         self.gwres_stor[:] = self.gwstor_init.copy()
         self.gwres_stor_old[:] = self.gwstor_init.copy()

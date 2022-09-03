@@ -1,0 +1,37 @@
+name: pynhm-tests
+channels:
+  - conda-forge
+  - nodefaults
+  - pyviz
+dependencies:
+  - netCDF4
+  - networkx
+  - numpy
+  - numba
+  - pandas
+  - pip
+  - pytest
+  - pytest-cov
+  - pytest-env
+  - pytest-xdist
+  - pyyaml
+  - xarray
+  - flopy
+  - cartopy
+  - geopandas
+  - geoviews
+  - holoviews
+  - hvplot
+  - bash_kernel
+  - git
+  - ipython
+  - jupyter
+  - jupyterlab
+  - nb_conda_kernels
+  - pydot
+  - pip:
+      - click != 8.1.0
+      - black
+      - isort
+      - flake8
+      - pylint

@@ -110,7 +110,7 @@ class PRMSAtmosphere(StorageUnit):
 
         self.netcdf_output_dir = netcdf_output_dir
 
-        self.set_inputs(locals())
+        self._set_inputs(locals())
         super().__init__(
             control=control,
             verbose=verbose,
@@ -270,7 +270,7 @@ class PRMSAtmosphere(StorageUnit):
             "hru_area",
         )
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         return
 
     def _advance_variables(self):

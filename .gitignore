@@ -1,6 +1,7 @@
 # python
 build/
 *.egg-info/
+*.pkl
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -32,7 +33,6 @@ prms_src/prms5.3.0/msvs/x64/Release/
 # meson build information
 prms_src/prms5.3.0/builddir/
 
-
 # prms binaries
 prms_src/prms5.2.1/bin
 prms_src/prms5.3.0/bin
@@ -56,3 +56,15 @@ autotest/temp
 
 # sphinx
 generated/
+
+# gis data
+examples/pynhm_gis
+
+# graphics
+*.pnh
+*.svg
+*.jpg
+
+# compressed/tarballs
+*.gz
+*.zip

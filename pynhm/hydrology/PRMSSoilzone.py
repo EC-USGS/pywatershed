@@ -11,7 +11,7 @@ TWOTHIRDS = 2 / 3
 
 
 class PRMSSoilzone(StorageUnit):
-    """PRMS soil zone
+    """PRMS soil zone.
 
     Args:
     """
@@ -39,8 +39,8 @@ class PRMSSoilzone(StorageUnit):
         )
         self.name = "PRMSSoilzone"
 
-        self.set_inputs(locals())
-        self.set_budget(budget_type)
+        self._set_inputs(locals())
+        self._set_budget(budget_type)
 
         return
 
@@ -188,7 +188,7 @@ class PRMSSoilzone(StorageUnit):
             ],
         }
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         """Initialize PRMSSoilzone variables."""
 
         # Derived parameters

@@ -13,7 +13,7 @@ Base classes for the modeling system.
    Accessor
    Adapter
    Control
-   Meta
+   meta
    Budget
    StorageUnit
    Model

@@ -16,7 +16,6 @@ import yaml
 
 from ..constants import __pynhm_root__
 
-
 varoptions = Union[str, list, tuple]
 
 dims_file = __pynhm_root__ / "static/metadata/dimensions.yaml"

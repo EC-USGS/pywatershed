@@ -44,6 +44,8 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 
 
 class PRMSSolarGeometry(StorageUnit):
+    """PRMS solar geometry."""
+
     def __init__(
         self,
         control: Control,
@@ -54,9 +56,9 @@ class PRMSSolarGeometry(StorageUnit):
     ):
         """PRMS Solar Geometry."""
 
-        self.set_inputs(locals())
+        self._set_inputs(locals())
         budget_type = None
-        self.set_budget(budget_type)
+        self._set_budget(budget_type)
         self.netcdf_output_dir = netcdf_output_dir
         self._time = doy
 
@@ -135,7 +137,7 @@ class PRMSSolarGeometry(StorageUnit):
             "hru_aspect",
         )
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         return
 
     def _calculate_all_time(self):

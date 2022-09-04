@@ -10,6 +10,8 @@ from pynhm.utils.netcdf_utils import NetCdfRead
 
 
 class Adapter:
+    """Adapter base class for getting data from a variety of sources."""
+
     def __init__(
         self,
         variable: str,
@@ -20,9 +22,6 @@ class Adapter:
 
     def advance(self):
         raise NotImplementedError("Must be overridden")
-
-    def sanity_check(self):
-        raise RuntimeError("contact code developers (sos=0); not really")
 
     @property
     def current(self):

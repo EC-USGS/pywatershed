@@ -20,6 +20,8 @@ ACTIVE = 1
 
 
 class PRMSCanopy(StorageUnit):
+    """PRMS canopy."""
+
     def __init__(
         self,
         control: Control,
@@ -36,8 +38,8 @@ class PRMSCanopy(StorageUnit):
         super().__init__(control=control, verbose=verbose)
         self.name = "PRMSCanopy"
 
-        self.set_inputs(locals())
-        self.set_budget(budget_type)
+        self._set_inputs(locals())
+        self._set_budget(budget_type)
         return
 
     @staticmethod
@@ -113,7 +115,7 @@ class PRMSCanopy(StorageUnit):
             "storage_changes": ["hru_intcpstor_change"],
         }
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         return
 
     def _advance_variables(self):

@@ -12,7 +12,7 @@ from ..constants import SegmentType, nan, zero
 
 
 class PRMSChannel(StorageUnit):
-    """PRMS channel flow (muskingum_mann)
+    """PRMS channel flow (muskingum_mann).
 
     The muskingum module was originally developed for the Precipitation Runoff
     Modeling System (PRMS) by Mastin and Vaccaro (2002) and developed further
@@ -80,9 +80,9 @@ class PRMSChannel(StorageUnit):
         )
         self.name = "PRMSChannel"
 
-        self.set_inputs(locals())
+        self._set_inputs(locals())
         # override for now until the channel budget is sorted out
-        self.set_budget(budget_type, basis="global")
+        self._set_budget(budget_type, basis="global")
 
         # process channel data
         self._initialize_channel_data()
@@ -159,7 +159,7 @@ class PRMSChannel(StorageUnit):
     def outflow_mask(self):
         return self._outflow_mask
 
-    def set_initial_conditions(self) -> None:
+    def _set_initial_conditions(self) -> None:
         # initialize channel segment storage
         self.seg_outflow = self.segment_flow_init
         return

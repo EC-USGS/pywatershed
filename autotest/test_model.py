@@ -181,18 +181,18 @@ def test_model(domain, control, processes, tmp_path):
         9: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1306.7499262980173,
-                    "hru_1": 13.690165950142445,
-                    "ucb_2yr": 1694.4729153330018,
+                    "drb_2yr": 1152.9343097732165,
+                    "hru_1": 13.37194463307104,
+                    "ucb_2yr": 1694.47282087809,
                 },
             },
         },
         99: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1818.6285476625615,
-                    "hru_1": 14.70413315830374,
-                    "ucb_2yr": 710.2513423457016,
+                    "drb_2yr": 1785.102361378249,
+                    "hru_1": 14.614890968139237,
+                    "ucb_2yr": 710.4918051193282,
                 },
             },
         },
@@ -233,6 +233,8 @@ def test_model(domain, control, processes, tmp_path):
                 if not success:
                     fail_prms_compare = True
                     all_success = False
+                    if failfast:
+                        assert False, "PRMS comparison failfast"
 
         # Regression checking
         if istep in regression_ans:
@@ -251,6 +253,8 @@ def test_model(domain, control, processes, tmp_path):
                         if not success:
                             fail_regression = True
                             all_success = False
+                            if failfast:
+                                assert False, "Regression failffast"
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:

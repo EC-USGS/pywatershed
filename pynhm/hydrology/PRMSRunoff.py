@@ -23,6 +23,8 @@ LAKE = HruType.LAKE.value
 
 
 class PRMSRunoff(StorageUnit):
+    """PRMS surface runoff."""
+
     def __init__(
         self,
         control: Control,
@@ -48,9 +50,9 @@ class PRMSRunoff(StorageUnit):
         )
         self.name = "PRMSRunoff"
 
-        self.set_inputs(locals())
+        self._set_inputs(locals())
 
-        self.set_budget(budget_type)
+        self._set_budget(budget_type)
 
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
@@ -70,7 +72,7 @@ class PRMSRunoff(StorageUnit):
 
         return
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         # Where does the initial storage come from? Document here.
         # apparently it's just zero?
         # self.var1_stor[:] = np.zeros([1])[0]

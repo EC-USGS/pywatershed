@@ -7,6 +7,8 @@ from pynhm.constants import fileish
 
 
 class Model:
+    """pynhmn model builder class."""
+
     def __init__(
         self,
         *process_classes,
@@ -133,7 +135,7 @@ class Model:
             self.processes[cls].initialize_netcdf(dir)
         return
 
-    def run(self, netcdf_dir: fileish, finalize=True):
+    def run(self, netcdf_dir: fileish = None, finalize: bool = True):
 
         if netcdf_dir:
             print("model.run(): initializing NetCDF output")

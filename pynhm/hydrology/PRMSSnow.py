@@ -54,7 +54,7 @@ dbgind = 434
 
 
 class PRMSSnow(StorageUnit):
-    """PRMS snow pack"""
+    """PRMS snow pack."""
 
     def __init__(
         self,
@@ -83,8 +83,8 @@ class PRMSSnow(StorageUnit):
             verbose=verbose,
         )
         self.name = "PRMSSnow"
-        self.set_inputs(locals())
-        self.set_budget(budget_type)
+        self._set_inputs(locals())
+        self._set_budget(budget_type)
 
         return
 
@@ -253,7 +253,7 @@ class PRMSSnow(StorageUnit):
             "snsv",
         )
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         """Initialize PRMSSnow snowpack variables."""
 
         # Derived parameters
@@ -294,7 +294,7 @@ class PRMSSnow(StorageUnit):
                 "snsv",
             ]
             for vv in vars_init:
-                self.initialize_var(vv)
+                self._initialize_var(vv)
 
             pkweq_gt_zero = self.pkwater_equiv > zero
             wh_pkweq_gt_zero = np.where(pkweq_gt_zero)

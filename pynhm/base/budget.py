@@ -17,6 +17,11 @@ from .accessor import Accessor
 
 
 class Budget(Accessor):
+    """Budget class for mass and energy conservation.
+
+    Currently no energy budget has been implmenented, todo.
+    """
+
     def __init__(
         self,
         control: Control,
@@ -346,10 +351,20 @@ class Budget(Accessor):
         # budget name
         summary = []
         summary += ["*-" * int((total_width) / 2)]
-        summary += [
-            f"Budget (units: {self.units}) of {self.description} "
-            f"for entire model domain (spatial sum)"
-        ]
+
+        if self.basis == "unit":
+            summary += [
+                f"Individual spatial unit budget for {self.description} "
+                f"(units: {self.units}). "
+                "Budget is checked on each spatial unit. This is summary shows"
+                "spatial sums for the entire model domain."
+            ]
+        elif self.basis == "global":
+            summary += [
+                f"Global budget of {self.description} (units: {self.units}). "
+                "Budget is checked on full domain: spatially summed fluxes "
+                "and storage changes are checked for balance."
+            ]
 
         # print the model time. this is
         summary += [f"@ time: {self._time} (itime_step: {self._itime_step})"]

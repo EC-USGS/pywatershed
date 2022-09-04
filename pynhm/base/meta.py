@@ -1,3 +1,13 @@
+"""The metadata module.
+
+Metadata for variables, parameters and dimensions are accssed by the functions
+in this module.
+
+The metadata are static (pynhm/static/metadata) so this is a module and
+not a class.
+
+"""
+
 import pathlib as pl
 from typing import Iterable, Union
 
@@ -7,9 +17,6 @@ import yaml
 from ..constants import __pynhm_root__
 
 varoptions = Union[str, list, tuple]
-
-"""Metadata are static, there is no point in a class"""
-
 
 dims_file = __pynhm_root__ / "static/metadata/dimensions.yaml"
 control_file = __pynhm_root__ / "static/metadata/control.yaml"

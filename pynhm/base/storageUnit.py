@@ -15,6 +15,70 @@ from .control import Control
 
 
 class StorageUnit(Accessor):
+    """StorageUnit base class
+
+    The StorageUnit is a base class for conserving mass and energy.
+
+    It has budgets that can optionally be established for mass an energy and
+    these can be enforced or simply diagnosed with the model run.
+
+    The  class aims to describe itself through it sstaticmethods and
+    properties.
+
+    Conventions are adopted through the use of the following
+    properties/methods:
+
+        inputs/get_inputs():
+            List the names of variables required from external sources.
+            Still working on conventions if these are to be modified but
+            the storageUnit. For an input to be successfully inicluded,
+            that variable must be defined in the metadata
+            (pynhm/static/metadata/variables.yaml).
+            Efforts should be made to not use diagnostic variables as input
+            as much as possible.
+        variables/get_variables():
+            List the names of internal public variables. If not necessary,
+            to be public, variables should be made private with a single,
+            leading underscore and not maintained in this list. For an input
+            to be successfully inicluded, that variable must be defined in the
+            metadata (pynhm/static/metadata/variables.yaml).
+            Efforts should be made not to track diagnostic variables in this
+            public variable set, as much as possible.
+        parameters/get_parameters():
+            List the names of parameters used by the subclass.
+        description:
+            Return a dictionary of with the storage unit cubclass name and its
+            metadata for all variables for each of inputs, variables, and
+            parameters.
+        get_init_values:
+            Return a dictionary of initialization values for variables.
+            Note that these may be overridden by subclass initialization
+            routines (e.g. using parameters) or by restart values. So these
+            are not "initial values", they are initialization values that
+            are set when the variable is declared from metadata in
+            _initialize_var(). Initization values should be nan as much as
+            possible.
+        mass_budget_terms/get_mass_budget_terms():
+            These terms must all in in the same units across all components of
+            the budget (inputs, outputs, storage_changes). Diagnostic variables
+            should not appear in the budget terms, only prognostic variables
+            should.
+        _advance_variables():
+            This advance should exactly specify the prognostic variables in
+            setting previous values to current values. When/if necessary to
+            keep previous diagnostic variables, those must not appear here but
+            in _calculate().
+        _calculate():
+            This method is to be overridden by the subclass. Near the end of
+            the method, the subclass should calculate its changes in mass and
+            energy storage in an obvious way. As commented for
+            mass_budget_terms, storage changes should only be tracked for
+            prognostic variables. (For example is snow_water_equiv = snow_ice +
+            snow_liquid, then storage changes for snow_ice and snow_liquid
+            should be tracked and not for snow_water_equiv).
+
+    """
+
     def __init__(
         self,
         control: Control,
@@ -32,14 +96,16 @@ class StorageUnit(Accessor):
         self._separate_netcdf = True
         self._itime_step = -1
 
-        self.get_metadata()
-        self.initialize_self_variables()
-        self.set_initial_conditions()
+        self._get_metadata()
+        self._initialize_self_variables()
+        self._set_initial_conditions()
 
         return None
 
     def output(self) -> None:
         """Output
+
+        Writes output for initalized output types.
 
         Returns:
             None
@@ -54,6 +120,8 @@ class StorageUnit(Accessor):
     def finalize(self) -> None:
         """Finalize storageUnit
 
+        Finalizes the object, including output methods.
+
         Returns:
             None
 
@@ -64,20 +132,23 @@ class StorageUnit(Accessor):
         return
 
     @staticmethod
-    def get_parameters() -> list:
+    def get_parameters() -> tuple:
+        """Get a tuple of parameter names."""
         raise Exception("This must be overridden")
 
     @staticmethod
-    def get_inputs() -> list:
+    def get_inputs() -> tuple:
+        """Get a tuple of input variable names."""
         raise Exception("This must be overridden")
 
     @classmethod
-    def get_variables(cls) -> list:
+    def get_variables(cls) -> tuple:
+        """Get a tuple of internal public variable names."""
         return list(cls.get_init_values().keys())
 
     @classmethod
     def get_mass_budget_terms(cls) -> dict:
-        # can this be a static method?
+        """Get a dictionary of variable names for mass budget terms."""
         mass_budget_terms = {
             "inputs": list(
                 meta.filter_vars(
@@ -97,35 +168,60 @@ class StorageUnit(Accessor):
         }
         return mass_budget_terms
 
+    @classmethod
+    def description(cls) -> dict:
+        """A description (all metadata) for all variables in inputs, variables,
+        and parameters."""
+        return {
+            "class_name": cls.__name__,
+            "mass_budget_terms": cls.get_mass_budget_terms(),
+            "inputs": meta.get_vars(cls.get_inputs()),
+            "variables": meta.get_vars(cls.get_variables()),
+            "parameters": meta.get_params(cls.get_parameters()),
+        }
+
     @staticmethod
     def get_restart_variables() -> list:
+        """Get a list of restart varible names."""
         raise Exception("This must be overridden")
 
     @staticmethod
-    def get_init_values() -> list:
+    def get_init_values() -> dict:
+        """Get a dictionary of initialization values for each public
+        variable."""
         raise Exception("This must be overridden")
 
     @property
-    def parameters(self) -> list:
+    def parameters(self) -> tuple:
+        """A tuple of parameter names."""
         return self.get_parameters()
 
     @property
-    def inputs(self) -> list:
+    def inputs(self) -> tuple:
+        """A tuple of input variable names."""
         return self.get_inputs()
 
     @property
-    def variables(self) -> list:
+    def variables(self) -> tuple:
+        """A tuple of public variable names."""
         return self.get_variables()
 
     @property
-    def restart_variables(self) -> list:
+    def restart_variables(self) -> tuple:
+        """A tuple of restart variable names."""
         return self.get_restart_variables()
 
     @property
-    def init_values(self) -> list:
+    def init_values(self) -> dict:
+        """A dictionary of initial values for each public variable."""
         return self.get_init_values()
 
-    def initialize_self_variables(self, restart: bool = False):
+    @property
+    def mass_budget_terms(self) -> dict:
+        """A dictionary of variable names for the mass budget terms."""
+        return self.get_mass_budget_terms()
+
+    def _initialize_self_variables(self, restart: bool = False):
         for name in self.parameters:
             setattr(self, name, self.params.parameters[name])
         for name in self.inputs:
@@ -136,7 +232,7 @@ class StorageUnit(Accessor):
         for name in self.variables:
             # if restart and (name in restart_variables):
             #     continue
-            self.initialize_var(name)
+            self._initialize_var(name)
 
         # demote any self variables to single?
         # for vv in self.__dict__.keys():
@@ -150,7 +246,12 @@ class StorageUnit(Accessor):
 
         return
 
-    def initialize_var(self, var_name: str, flt_to_dbl: bool = True):
+    def _initialize_var(self, var_name: str, flt_to_dbl: bool = True):
+        """Initialize a variable using get_init_values and metadata.
+
+        Initialized variables can be for single time or they can be a timeries
+        array object if they have a time dimension in metadata.
+        """
         init_vals = self.get_init_values()
         if var_name not in init_vals.keys():
             if self.verbose:
@@ -177,7 +278,7 @@ class StorageUnit(Accessor):
             )
         return
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         raise Exception("This must be overridden")
 
     def _advance_variables(self):
@@ -190,7 +291,7 @@ class StorageUnit(Accessor):
 
         return
 
-    def set_inputs(self, args):
+    def _set_inputs(self, args):
         self._input_variables_dict = {}
         for ii in self.inputs:
             self._input_variables_dict[ii] = adapter_factory(
@@ -224,7 +325,7 @@ class StorageUnit(Accessor):
 
         return
 
-    def set_budget(self, behavior, basis: str = "unit"):
+    def _set_budget(self, behavior, basis: str = "unit"):
         if behavior is None:
             self.budget = None
         elif behavior in ["error", "warn"]:
@@ -267,6 +368,9 @@ class StorageUnit(Accessor):
         self._itime_step += 1
         return
 
+    def _calculate(self):
+        raise Exception("This must be overridden")
+
     def calculate(self, time_length: float, **kwargs) -> None:
         """Calculate storageUnit terms for a time step
 
@@ -289,14 +393,14 @@ class StorageUnit(Accessor):
 
         return
 
-    def get_metadata(self):
+    def _get_metadata(self):
         self.var_meta = self.control.meta.get_vars(self.variables)
         self.input_meta = self.control.meta.get_vars(self.inputs)
         self.param_meta = self.control.meta.get_params(self.parameters)
 
         # This a hack as we are mushing dims into params. time dimension
-        # is also not currently handled at all. Probably need to define dimensions
-        # on StorageUnits
+        # is also not currently handled at all. Probably need to define
+        # dimensions on StorageUnits
         dims = set(self.parameters).difference(set(self.param_meta.keys()))
         self.param_meta = self.control.meta.get_dims(dims)
 

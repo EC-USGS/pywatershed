@@ -36,7 +36,7 @@ class PRMSEt(StorageUnit):
         )
         self.name = "PRMSEt"
 
-        self.set_inputs(locals())
+        self._set_inputs(locals())
 
         # Cant set the default budget for ET
         # self.set_budget(budget_type)
@@ -123,7 +123,7 @@ class PRMSEt(StorageUnit):
             "hru_actet": nan,
         }
 
-    def set_initial_conditions(self):
+    def _set_initial_conditions(self):
         """Initialize PRMSEt variables."""
 
         # Derived parameter

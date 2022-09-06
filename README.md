@@ -37,9 +37,11 @@ We suggest installing the python dependencies using conda and the following yaml
 
 More detailed installation instructions using conda can be found in `examples/00_python_virtual_env.ipynb`.
 
-There are aksi .txt equivalents that can be used for installing from pip, like so:
+There are also .txt equivalents that can be used for installing from pip, like so:
 
 ```pip install -r env_of_choice.txt```
+
+though these are not comprehensive installs as with conda. 
 
 
 Disclaimer

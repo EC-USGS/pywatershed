@@ -21,6 +21,7 @@ git
 ipython
 jupyter
 jupyterlab
+nbconvert
 nb_conda_kernels
 pydot
 click != 8.1.0

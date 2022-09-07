@@ -1,0 +1,76 @@
+name: example notebooks test
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+
+  test:
+    name: ${{ matrix.os}} py${{ matrix.python-version }}
+
+    runs-on: ${{ matrix.os }}
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+        python-version: [ "3.10"]
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2.4.0
+
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+
+      - name: Setup micromamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: examples/examples_env.yml
+          environment-name: pynhm_nb
+          cache-env: true
+          #cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
+          
+      - name: Install dependencies and this package
+        run: |
+          pip install wheel
+          pip install .
+
+      - name: Version info
+        run: |
+          pip -V
+          pip list
+
+      # - name: Run available domains with PRMS and convert csv output to NetCDF
+      #   working-directory: test_data/scripts
+      #   run: |
+      #     pytest -v -n=auto --durations=0 test_run_domains.py
+      #     pytest -v -n=auto --durations=0 test_nc_domains.py
+
+      - name: List all NetCDF files in test_data directory
+        working-directory: test_data
+        run: |
+          find . -name "*.nc"
+
+      - name: Run tests
+        working-directory: autotest_exs
+        run: pytest
+          -v
+          --durations=0
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test results for examples-${{ runner.os }}-${{ matrix.python-version }}
+          path: ./autotest_exs/pytest.xml

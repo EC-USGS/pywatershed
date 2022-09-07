@@ -41,16 +41,26 @@ jobs:
           cache-env: true
           #cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
           
+      - name: Install error reporter
+        run: |
+          python -m pip install pytest-github-actions-annotate-failures
+          
       - name: Install dependencies and this package
         run: |
-          pip install wheel
-          pip install .
+          # python -m pip install wheel
+          python -m pip install .
 
       - name: Version info
         run: |
-          pip -V
-          pip list
+          conda info -a
+          conda list
+          python -m pip -V
+          python -m pip list
 
+      - name: Import pynhm
+        run: |
+          python -c "import pynhm"
+          
       # - name: Run available domains with PRMS and convert csv output to NetCDF
       #   working-directory: test_data/scripts
       #   run: |

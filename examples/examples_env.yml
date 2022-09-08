@@ -27,6 +27,8 @@ dependencies:
   - ipython
   - jupyter
   - jupyterlab
+  - nbconvert
+  - jupyter_contrib_nbextensions
   - nb_conda_kernels
   - pydot
   - pip:

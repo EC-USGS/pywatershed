@@ -29,6 +29,13 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.4.0
 
+      - name: Download GIS files
+        working-directory: examples
+        run: |
+          curl -LO https://github.com/EC-USGS/pynhm/releases/download/v2022.0.1/pynhm_gis.zip
+          unzip pynhm_gis.zip
+
+
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
@@ -39,11 +46,11 @@ jobs:
           environment-file: examples/examples_env.yml
           environment-name: pynhm_nb
           cache-env: true
-          #cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
-          run : |
-            micromamba shell init --shell=bash --prefix=~/micromamba
-            source ~/.bashrc
-            micromamba activate pynhm_nb
+          # cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
+          # run : |
+          #   micromamba shell init --shell=bash --prefix=~/micromamba
+          #   source ~/.bashrc
+          #   micromamba activate pynhm_nb
 
       - name: Install error reporter
         run: |
@@ -71,7 +78,6 @@ jobs:
       - name: Run tests
         working-directory: autotest_exs
         run: |
-          micromamba activate pynhm_nb
           pytest -s -vv  --durations=0
 
       - name: Upload test results

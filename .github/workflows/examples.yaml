@@ -44,7 +44,7 @@ jobs:
 
       - name: Install jupyter and nbconvert
         run: |
-          python -m pip install jupyter nbconvert nbformat
+          python -m pip install jupyter nbconvert nbformat ipython
           
       - name: Install error reporter
         run: |

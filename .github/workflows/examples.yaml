@@ -41,6 +41,11 @@ jobs:
           cache-env: true
           #cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
 
+
+      - name: Install jupyter and nbconvert
+        run: |
+          python -m pip install jupyter nbconvert nbformat
+          
       - name: Install error reporter
         run: |
           python -m pip install pytest-github-actions-annotate-failures

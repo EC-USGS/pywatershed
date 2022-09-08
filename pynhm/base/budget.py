@@ -355,14 +355,14 @@ class Budget(Accessor):
         if self.basis == "unit":
             summary += [
                 f"Individual spatial unit budget for {self.description} "
-                f"(units: {self.units}). "
+                f"(units: {self.units}).\n"
                 "Budget is checked on each spatial unit. This is summary shows"
-                "spatial sums for the entire model domain."
+                "\nspatial sums for the entire model domain.\n"
             ]
         elif self.basis == "global":
             summary += [
-                f"Global budget of {self.description} (units: {self.units}). "
-                "Budget is checked on full domain: spatially summed fluxes "
+                f"Global budget of {self.description} (units: {self.units}).\n"
+                "Budget is checked on full domain: spatially summed fluxes\n"
                 "and storage changes are checked for balance."
             ]
 

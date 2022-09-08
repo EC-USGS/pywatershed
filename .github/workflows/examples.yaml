@@ -47,10 +47,6 @@ jobs:
           environment-name: pynhm_nb
           cache-env: true
           # cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
-          # run : |
-          #   micromamba shell init --shell=bash --prefix=~/micromamba
-          #   source ~/.bashrc
-          #   micromamba activate pynhm_nb
 
       - name: Install error reporter
         run: |

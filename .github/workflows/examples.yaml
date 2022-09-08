@@ -44,6 +44,7 @@ jobs:
 
       - name: Install jupyter and nbconvert
         run: |
+          micromamba activate pynhm_nb
           python -m pip install jupyter nbconvert nbformat ipython
           
       - name: Install error reporter
@@ -72,8 +73,9 @@ jobs:
 
       - name: Run tests
         working-directory: autotest_exs
-        run: python -m pytest -s -vv
-          --durations=0
+        run: |
+          micromamba activate
+          python -m pytest -s -vv  --durations=0
 
       - name: Upload test results
         if: always()

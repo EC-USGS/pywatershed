@@ -19,8 +19,8 @@ def test_notebooks(notebook):
     # Convert the notebook to a .py version of itself using jupyter nbconvert
     # this formats magics in a way that ipython can run
     cmd = [
-        "python",
-        "-m",
+        # "python",
+        # "-m",
         "jupyter",
         "nbconvert",
         "--to",

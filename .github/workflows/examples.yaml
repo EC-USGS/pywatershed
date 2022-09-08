@@ -40,11 +40,11 @@ jobs:
           environment-name: pynhm_nb
           cache-env: true
           #cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
-          
+
       - name: Install error reporter
         run: |
           python -m pip install pytest-github-actions-annotate-failures
-          
+
       - name: Install dependencies and this package
         run: |
           # python -m pip install wheel
@@ -52,15 +52,19 @@ jobs:
 
       - name: Version info
         run: |
+          echo -------
           conda info -a
+          echo -------
           conda list
+          echo -------
           python -m pip -V
+          echo -------
           python -m pip list
 
       - name: Import pynhm
         run: |
           python -c "import pynhm"
-          
+
       - name: Run tests
         working-directory: autotest_exs
         run: python -m pytest -s -vv

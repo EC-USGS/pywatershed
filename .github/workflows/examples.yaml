@@ -61,20 +61,9 @@ jobs:
         run: |
           python -c "import pynhm"
           
-      # - name: Run available domains with PRMS and convert csv output to NetCDF
-      #   working-directory: test_data/scripts
-      #   run: |
-      #     pytest -v -n=auto --durations=0 test_run_domains.py
-      #     pytest -v -n=auto --durations=0 test_nc_domains.py
-
-      # - name: List all NetCDF files in test_data directory
-      #   working-directory: test_data
-      #   run: |
-      #     find . -name "*.nc"
-
       - name: Run tests
         working-directory: autotest_exs
-        run: python -m pytest -v
+        run: python -m pytest -s -vv
           --durations=0
 
       - name: Upload test results

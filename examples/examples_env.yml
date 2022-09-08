@@ -25,9 +25,10 @@ dependencies:
   - bash_kernel
   - git
   - ipython
-  - nbconvert
   - jupyter
   - jupyterlab
+  - nbconvert
+  - jupyter_contrib_nbextensions
   - nb_conda_kernels
   - pydot
   - pip:

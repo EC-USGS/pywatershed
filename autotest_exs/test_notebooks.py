@@ -10,14 +10,16 @@ notebooks = sorted(
     pl.Path(__pynhm_root__).parent.joinpath("examples").glob("[0-9]*.ipynb")
 )
 
+notebook_ids = [nb.name for nb in notebooks]
 
-@pytest.mark.parametrize("notebook", notebooks)
+
+@pytest.mark.parametrize("notebook", notebooks, ids=notebook_ids)
 def test_notebooks(notebook):
 
     # Convert the notebook to a .py version of itself using jupyter nbconvert
     # this formats magics in a way that ipython can run
     cmd = ["jupyter", "nbconvert", "--to", "script", str(notebook)]
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.run(cmd)
     assert (
         proc.returncode == 0
     ), f"Failed to convert notebook to script: {notebook}"
@@ -29,12 +31,8 @@ def test_notebooks(notebook):
     assert ipython.exists(), f"ipython not found at: {ipython}"
 
     cmd = ["ipython", str(nb_py)]
-    proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    msg = (
-        f"Running the notebook failed with stdout: "
-        "{proc.stdout.decode('utf-8')}"
-    )
-    assert proc.returncode == 0, msg
+    proc = subprocess.run(cmd)
+    assert proc.returncode == 0, f"Running the notebook failed: {notebook}"
 
     nb_py.unlink()
     assert not nb_py.exists(), "Problem removing {nb_py}"

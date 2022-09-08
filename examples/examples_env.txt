@@ -23,6 +23,7 @@ jupyter
 jupyterlab
 nbconvert
 nb_conda_kernels
+jupyter_contrib_nbextensions
 pydot
 click != 8.1.0
 black

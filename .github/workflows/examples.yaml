@@ -17,7 +17,7 @@ jobs:
 
     defaults:
       run:
-        shell: bash
+        shell: bash -l {0}
 
     strategy:
       fail-fast: false
@@ -43,7 +43,7 @@ jobs:
           run : |
             micromamba shell init --shell=bash --prefix=~/micromamba
             source ~/.bashrc
-            micromamba activate
+            micromamba activate pynhm_nb
 
       # - name: Install jupyter and nbconvert
       #   run: |
@@ -76,6 +76,7 @@ jobs:
       - name: Run tests
         working-directory: autotest_exs
         run: |
+          micromamba activate pynhm_nb
           python -m pytest -s -vv  --durations=0
 
       - name: Upload test results

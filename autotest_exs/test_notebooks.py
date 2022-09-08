@@ -6,11 +6,6 @@ import pytest
 from pynhm.constants import __pynhm_root__
 
 # "Official" notebooks are numbered
-print(__pynhm_root__)
-print(pl.Path(__pynhm_root__).parent)
-print(pl.Path(__pynhm_root__).parent.joinpath("examples"))
-print(pl.Path(__pynhm_root__).parent.joinpath("examples").exists())
-
 notebooks = sorted(
     pl.Path(__pynhm_root__).parent.joinpath("examples").glob("[0-9]*.ipynb")
 )
@@ -23,7 +18,15 @@ def test_notebooks(notebook):
 
     # Convert the notebook to a .py version of itself using jupyter nbconvert
     # this formats magics in a way that ipython can run
-    cmd = ["jupyter", "nbconvert", "--to", "script", str(notebook)]
+    cmd = [
+        "python",
+        "-m",
+        "jupyter",
+        "nbconvert",
+        "--to",
+        "script",
+        str(notebook),
+    ]
     proc = subprocess.run(cmd)
     assert (
         proc.returncode == 0

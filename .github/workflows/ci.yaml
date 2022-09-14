@@ -121,14 +121,8 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.4.0
 
-      - name: Symlink gfortran (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # make sure gfortran is available
-          sudo ln -s /usr/local/bin/gfortran-10 /usr/local/bin/gfortran
-          which gfortran
-          gfortran --version
-          cd prms_src/prms5.2.1; make; cp bin/prms ../../bin/prms_mac; cd -
+      - name: Install gfortran
+        uses: modflowpy/install-gfortran-action@v1
 
       - name: Set environment variables
         run: |

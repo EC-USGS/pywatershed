@@ -2757,8 +2757,7 @@ soltab_sunhrs:
     0: doy
     1: nhru
   type: float64
-  # "hours of sun" prevents xarray from converting to timedelta64
-  units: hours of sun
+  units: hours
 sroff:
   desc: Surface runoff to the stream network for each HRU
   dimensions:

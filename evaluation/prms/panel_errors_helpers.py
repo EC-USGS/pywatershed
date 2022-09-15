@@ -60,8 +60,8 @@ def get_comp_ds(model: pynhm.Model, var_name: str) -> xr.Dataset:
         return None
 
     comp_ds = xr.merge([
-        xr.open_dataset(prms_file).rename({var_name: f'{var_name}_prms'}),
-        xr.open_dataset(pynhm_file).rename({var_name: f'{var_name}_pynhm'}),
+        xr.open_dataset(prms_file, decode_timedelta=False).rename({var_name: f'{var_name}_prms'}),
+        xr.open_dataset(pynhm_file, decode_timedelta=False).rename({var_name: f'{var_name}_pynhm'}),
     ])
     comp_ds.attrs['Description'] = f"Variable comparison for PRMS and pynhm"
     comp_ds.attrs[var_name] = pynhm.meta.get_vars(var_name)[var_name]

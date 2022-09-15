@@ -124,6 +124,10 @@ jobs:
       - name: Install gfortran
         uses: modflowpy/install-gfortran-action@v1
 
+      - name: Print env
+        run: |
+          env
+
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
@@ -149,6 +153,7 @@ jobs:
       - name: Run available domains with PRMS and convert csv output to NetCDF
         working-directory: test_data/scripts
         run: |
+          env
           pytest -v -n=auto --durations=0 test_run_domains.py
           pytest -v -n=auto --durations=0 test_nc_domains.py
 

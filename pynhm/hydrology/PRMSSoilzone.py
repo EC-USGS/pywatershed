@@ -124,7 +124,6 @@ class PRMSSoilzone(StorageUnit):
             "cap_waterin": zero,
             "dunnian_flow": zero,
             "hru_actet": zero,
-            "infil": nan,
             "perv_actet": zero,
             "perv_actet_hru": zero,
             "potet_lower": zero,
@@ -444,8 +443,7 @@ class PRMSSoilzone(StorageUnit):
 
             #  this is a bit ridiculous until cleaned up... should only
             # be passing HRU quantities not a mix... eventually volumes
-            self.infil = self.infil_hru / self.hru_frac_perv[hh]
-            capwater_maxin = self.infil[hh]
+            capwater_maxin = self.infil_hru[hh] / self.hru_frac_perv[hh]
 
             # Compute preferential flow and storage, and any dunnian flow
             prefflow = zero

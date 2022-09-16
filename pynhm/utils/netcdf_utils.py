@@ -1,3 +1,4 @@
+import datetime as dt
 import pathlib as pl
 from typing import Union
 
@@ -435,9 +436,23 @@ class NetCdfWrite(Accessor):
         Returns:
 
         """
-        self[time_coord][:] = time_data
         if name not in self.variables.keys():
             raise KeyError(f"{name} not a valid variable name")
+
+        if time_coord == "time":
+            start_date = (
+                time_data[0].astype(dt.datetime).strftime("%Y-%m-%d %H:%M:%S")
+            )
+            self[time_coord].units = f"days since {start_date}"
+            self[time_coord][:] = nc4.date2num(
+                time_data.astype(dt.datetime),
+                units=self[time_coord].units,
+                calendar="standard",
+            )
+        else:
+            # currently just doy
+            self[time_coord][:] = time_data
+
         self.variables[name][:, :] = data[:, :]
 
         return

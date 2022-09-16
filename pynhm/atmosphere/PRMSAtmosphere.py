@@ -120,6 +120,16 @@ class PRMSAtmosphere(StorageUnit):
 
         self._calculated = False
 
+        if self.netcdf_output_dir:
+            self._output_netcdf = True
+            self._calculate_all_time()
+            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
+            assert self.netcdf_output_dir.exists()
+            self._write_netcdf_timeseries()
+
+        else:
+            self._output_netcdf = False
+
         return
 
     def _calculate_all_time(self):
@@ -161,11 +171,6 @@ class PRMSAtmosphere(StorageUnit):
         #     "outputs": {"hru_actet": self.hru_actet},
         #     "storage_changes": {"available_potet": self.available_potet},
         # }
-
-        if self.netcdf_output_dir:
-            self.netcdf_output_dir = pl.Path(self.netcdf_output_dir)
-            assert self.netcdf_output_dir.exists()
-            self._write_netcdf_timeseries()
 
         # JLM todo: delete large variables on self for memory management
         self._calculated = True
@@ -766,6 +771,8 @@ class PRMSAtmosphere(StorageUnit):
         return
 
     def _write_netcdf_timeseries(self) -> None:
+        if not self._output_netcdf:
+            return
         for var in self.variables:
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
@@ -780,4 +787,17 @@ class PRMSAtmosphere(StorageUnit):
             print(f"Wrote preprocessed forcing file: {nc_path}")
 
         self._output_netcdf = False
+        return
+
+    def initialize_netcdf(self, dir):
+        self.netcdf_output_dir = dir
+        self._output_netcdf = True
+        return
+
+    def output(self):
+        if self._output_netcdf:
+            if self.verbose:
+                print(f"writing FULL timeseries output for: {self.name}")
+            self._write_netcdf_timeseries()
+            self._output_netcdf = False
         return

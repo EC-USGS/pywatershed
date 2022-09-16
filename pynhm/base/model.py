@@ -131,6 +131,7 @@ class Model:
         return
 
     def initialize_netcdf(self, dir):
+        self._netcdf_dir = dir
         for cls in self.process_order:
             self.processes[cls].initialize_netcdf(dir)
         return

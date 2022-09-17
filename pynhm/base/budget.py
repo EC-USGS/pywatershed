@@ -266,6 +266,7 @@ class Budget(Accessor):
             self._zero_sum = False
             msg = (
                 "The flux unit balance not equal to the change in unit storage"
+                f": {self.description}"
             )
             if self.imbalance_fatal:
                 raise ValueError(msg)
@@ -286,7 +287,7 @@ class Budget(Accessor):
             self._zero_sum = False
             msg = (
                 "The global flux balance not equal to the change in global "
-                "storage."
+                f"storage: {self.description}"
             )
             if self.imbalance_fatal:
                 raise ValueError(msg)

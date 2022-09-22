@@ -1,4 +1,4 @@
-name: example notebooks test
+name: CI example notebooks
 
 on:
   push:

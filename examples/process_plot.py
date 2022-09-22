@@ -96,7 +96,7 @@ class ProcessPlot():
 
         metadata = pynhm.meta.get_vars(var_name)[var_name]
         plt.title("Variable: {}".format(var_name))
-        plt.colorbar(mapper, shrink=0.6, label=metadata['units'])
+        plt.colorbar(mapper, ax=ax, shrink=0.6, label=metadata['units'])
         
         hru_poly = plot_polygon_collection(
             ax,

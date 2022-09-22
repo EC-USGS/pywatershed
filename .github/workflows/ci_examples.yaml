@@ -1,4 +1,4 @@
-name: example notebooks test
+name: CI example notebooks
 
 on:
   push:
@@ -75,10 +75,3 @@ jobs:
         working-directory: autotest_exs
         run: |
           pytest -s -vv  --durations=0
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: Test results for examples-${{ runner.os }}-${{ matrix.python-version }}
-          path: ./autotest_exs/pytest.xml

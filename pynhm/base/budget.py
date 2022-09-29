@@ -1,19 +1,24 @@
+from copy import deepcopy
+import pathlib as pl
 from typing import Union
 from warnings import warn
 
+import netCDF4 as nc4
 import numpy as np
 
 from pynhm.base.control import Control
 
 from ..constants import zero
 from ..utils.formatting import pretty_print
+from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
 
 # Todo
 # * documentation
-# * units (check consistent): know about metadata and just look up names?
 # * get time_units / time_step from control
 # * decide on the fate of "from storage unit"
+# * terminology: "balance" just means "storage change"
+# * terminology: what is the term for the budget dosent close/zero?
 
 
 class Budget(Accessor):
@@ -53,6 +58,7 @@ class Budget(Accessor):
         self.verbose = verbose
         self.basis = basis
 
+        self._output_netcdf = False
         self._inputs_sum = None
         self._outputs_sum = None
         self._storage_changes_sum = None
@@ -79,6 +85,27 @@ class Budget(Accessor):
             msg = f"Metadata unavailable for some Budget terms in {all_vars}"
             warn(msg)
             self.units = None
+
+        # generate metadata for derived output variables
+        self.output_vars_desc = {
+            "inputs_sum": f"Sum of input fluxes ({self.basis})",
+            "outputs_sum": f"Sum of output fluxes ({self.basis})",
+            "storage_changes_sum": f"Sum of storage changes ({self.basis})",
+            # "balance": f"Balance of fluxes and storage changes ({self.basis})",
+        }
+
+        for var, desc in self.output_vars_desc.items():
+            if var == "balance":
+                dummy_var = self.terms["outputs"][0]
+            else:
+                dummy_var = self.terms[var[0:-4]][0]
+
+            if dummy_var in self.meta.keys():
+                dummy_meta = self.meta[dummy_var]
+                self.meta[var] = deepcopy(dummy_meta)
+                self.meta[var]["desc"] = desc
+                if (var == "balance") and (self.basis == "global"):
+                    self.meta[var]["dimensions"] = {0: "one"}
 
         self.set_initial_accumulations(init_accumulations, accum_start_time)
         return
@@ -136,6 +163,22 @@ class Budget(Accessor):
     @property
     def components(self):
         return self.get_components()
+
+    @property
+    def inputs_sum(self):
+        return self._inputs_sum
+
+    @property
+    def outputs_sum(self):
+        return self._outputs_sum
+
+    @property
+    def storage_changes_sum(self):
+        return self._storage_changes_sum
+
+    @property
+    def terms(self):
+        return {comp: list(self[comp].keys()) for comp in self.components}
 
     def set_initial_accumulations(self, init_accumulations, accum_start_time):
         self._itime_accumulated = self._itime_step  # -1
@@ -520,3 +563,130 @@ class Budget(Accessor):
         # conclude
         summary += [""]
         return "\n".join(summary)
+
+    def output(self) -> None:
+        """Output to previously initialized output types.
+
+        Returns:
+            None
+
+        """
+        if self._output_netcdf:
+            self.__output_netcdf()
+        return
+
+    def initialize_netcdf(
+        self,
+        output_dir: str,
+        write_sum_vars: Union[list, bool] = True,
+        write_individual_vars: bool = False,
+    ) -> None:
+        """Initialize NetCDF output
+
+        Args:
+            output_dir: directory for NetCDF file
+
+        Returns:
+            None
+
+        """
+        self._output_netcdf = True
+        self._netcdf = {}
+        # make working directory
+        output_dir = pl.Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        nc_path = pl.Path(output_dir) / f"{self.description}_budget.nc"
+
+        # Construct a dictionary of {term: var}. If the variables are not
+        # in a term their term is None
+        if write_sum_vars is True:
+            nc_out_vars = list(self.output_vars_desc.keys())
+        elif isinstance(write_sum_vars, list):
+            nc_out_vars = [
+                var
+                for var in self.output_vars_desc.keys()
+                if var in write_sum_vars
+            ]
+        elif (write_sum_vars is False) or (write_sum_vars is None):
+            nc_out_vars = []
+        else:
+            msg = "Unexpected value of write_sum_vars: {write_sum_vars}"
+            raise ValueError(msg)
+
+        self._netcdf_output_var_dict = {}
+        if len(nc_out_vars):
+            self._netcdf_output_var_dict = {None: nc_out_vars}
+        if write_individual_vars:
+            self._netcdf_output_var_dict = {
+                None: nc_out_vars,
+                **self.terms,
+            }
+
+        if len(self._netcdf_output_var_dict) == 0:
+            msg = (
+                f"Budget for {self.description} has no requested output, "
+                "setting self._output_netcdf = False"
+            )
+            warn(msg)
+            self._output_netcdf = False
+            return
+
+        global_attrs = {
+            "Description": (
+                f"PYNHM ({self.basis}) budget for {self.description}"
+            ),
+            "Budget basis": f"{self.basis} (unit or global)",
+        }
+        for key in self.terms.keys():
+            global_attrs[key] = "[" + ", ".join(self.terms[key]) + "]"
+
+        coordinates = {"one": 0, **self.control.params.nhm_coordinates}
+
+        self._netcdf = NetCdfWrite(
+            nc_path,
+            coordinates,
+            self._netcdf_output_var_dict,
+            self.meta,
+            global_attrs=global_attrs,
+        )
+
+        # todo jlm: put terms in to metadata
+
+        return
+
+    def __output_netcdf(self) -> None:
+        """Output variable data for a time step
+
+        Returns:
+            None
+
+        """
+        if self._output_netcdf:
+
+            self._netcdf.time[self.control.itime_step] = nc4.date2num(
+                self.control.current_datetime, self._netcdf.time.units
+            )
+            for nc_group, group_vars in self._netcdf_output_var_dict.items():
+                for nc_var in group_vars:
+
+                    var_self_name = nc_var
+
+                    if nc_group is None:
+                        var_path = nc_var
+                        self._netcdf.dataset[var_path][
+                            self.control.itime_step, :
+                        ] = self[var_self_name]
+
+                    else:
+                        var_path = f"{nc_group}/{nc_var}"
+                        self._netcdf.dataset[var_path][
+                            self.control.itime_step, :
+                        ] = self[nc_group][var_self_name]
+
+        return
+
+    def _finalize_netcdf(self) -> None:
+        if self._output_netcdf:
+            self._netcdf.close()
+
+        return

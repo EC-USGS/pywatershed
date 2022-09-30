@@ -103,8 +103,6 @@ class TestPRMSCanopyDomain:
             cnp.advance()
             cnp.calculate(1.0)
 
-            # print(cnp.budget)
-
             # compare along the way
             atol = 1.0e-5
             for key, val in ans.items():

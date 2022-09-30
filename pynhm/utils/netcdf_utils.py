@@ -273,6 +273,7 @@ class NetCdfWrite(Accessor):
         coordinates: dict,
         variables: listish,
         var_meta: dict,
+        global_attrs: dict = {},
         time_units: str = "days since 1970-01-01 00:00:00",
         clobber: bool = True,
         zlib: bool = True,
@@ -280,12 +281,33 @@ class NetCdfWrite(Accessor):
         chunk_sizes: dict = {"time": 30, "hruid": 0},
     ) -> "NetCdfWrite":
 
+        if isinstance(variables, dict):
+            group_variables = []
+            for group, vars in variables.items():
+                for var_name in vars:
+                    if group is None:
+                        group_variables += [var_name]
+                    else:
+                        group_variables += [f"{group}/{var_name}"]
+
+            v2 = [
+                var_name
+                for group, vars in variables.items()
+                for var_name in vars
+            ]
+            variables = v2
+        else:
+            group_variables = variables
+
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
         self.dataset.setncattr("Description", "PYNHM output data")
+        for att_key, att_val in global_attrs.items():
+            self.dataset.setncattr(att_key, att_val)
 
         variable_dimensions = {}
         nhru_coordinate = False
         nsegment_coordinate = False
+        one_coordinate = False
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name
@@ -297,6 +319,8 @@ class NetCdfWrite(Accessor):
                 nhru_coordinate = True
             if "nsegment" in dimension_name:
                 nsegment_coordinate = True
+            if "one" in dimension_name:
+                one_coordinate = True
 
         if nhru_coordinate:
             hru_ids = coordinates["nhm_id"]
@@ -308,13 +332,16 @@ class NetCdfWrite(Accessor):
             self.hru_ids = hru_ids
 
         if nsegment_coordinate:
-            hru_segments = coordinates["nhm_seg"]
-            if isinstance(hru_segments, (list, tuple)):
-                nsegments = len(hru_segments)
-            elif isinstance(hru_segments, np.ndarray):
-                nsegments = hru_segments.shape[0]
+            segment_ids = coordinates["nhm_seg"]
+            if isinstance(segment_ids, (list, tuple)):
+                nsegments = len(segment_ids)
+            elif isinstance(segment_ids, np.ndarray):
+                nsegments = segment_ids.shape[0]
             self.nsegments = nsegments
-            self.hru_segments = hru_segments
+            self.segment_ids = segment_ids
+
+        if one_coordinate:
+            self.one_ids = coordinates["one"]
 
         # Dimensions
 
@@ -349,6 +376,8 @@ class NetCdfWrite(Accessor):
             self.dataset.createDimension("nhm_id", self.nhrus)
         if nsegment_coordinate:
             self.dataset.createDimension("nhm_seg", self.nsegments)
+        if one_coordinate:
+            self.dataset.createDimension("one", 1)
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
@@ -359,15 +388,30 @@ class NetCdfWrite(Accessor):
             self.segid = self.dataset.createVariable(
                 "nhm_seg", "i4", ("nhm_seg")
             )
-            self.segid[:] = np.array(self.hru_segments, dtype=int)
+            self.segid[:] = np.array(self.segment_ids, dtype=int)
+        if one_coordinate:
+            self.oneid = self.dataset.createVariable("one", "i4", ("one"))
+            self.oneid[:] = np.array(self.one_ids, dtype=int)
 
         self.variables = {}
-        for var_name in variables:
+        for var_name, group_var_name in zip(variables, group_variables):
             variabletype = meta_netcdf_type(var_meta[var_name])
-            if "nsegment" in variable_dimensions[var_name]:
-                spatial_coordinate = "nhm_seg"
-            else:
+            if len(
+                set(["nhru", "ngw"]).intersection(
+                    set(variable_dimensions[var_name])
+                )
+            ):
                 spatial_coordinate = "nhm_id"
+            elif "nsegment" in variable_dimensions[var_name]:
+                spatial_coordinate = "nhm_seg"
+            elif "one" in variable_dimensions[var_name]:
+                spatial_coordinate = "one"
+            else:
+                msg = (
+                    "Undefined spatial coordinate name in "
+                    f"{variable_dimensions[var_name]}"
+                )
+                raise ValueError(msg)
 
             if var_name in doy_time_vars:
                 time_dim = "doy"
@@ -375,7 +419,7 @@ class NetCdfWrite(Accessor):
                 time_dim = "time"
 
             self.variables[var_name] = self.dataset.createVariable(
-                var_name,
+                group_var_name,
                 variabletype,
                 (time_dim, spatial_coordinate),
                 fill_value=nc4.default_fillvals[variabletype],

@@ -103,7 +103,7 @@ class StorageUnit(Accessor):
         return None
 
     def output(self) -> None:
-        """Output
+        """Output data to previously initialized output types.
 
         Writes output for initalized output types.
 
@@ -115,6 +115,9 @@ class StorageUnit(Accessor):
             if self.verbose:
                 print(f"writing output for: {self.name}")
             self.__output_netcdf()
+
+        if self.budget is not None:
+            self.budget.output()
         return
 
     def finalize(self) -> None:
@@ -128,7 +131,10 @@ class StorageUnit(Accessor):
         """
         if self.verbose:
             print(f"finalizing: {self.name}")
+
         self._finalize_netcdf()
+        if self.budget is not None:
+            self.budget._finalize_netcdf()
         return
 
     @staticmethod
@@ -431,34 +437,38 @@ class StorageUnit(Accessor):
 
     def initialize_netcdf(
         self,
-        name: str,
+        output_dir: str,
         separate_files: bool = True,
+        budget_args: dict = {},
     ) -> None:
-        """Initialize
+        """Initialize NetCDF output.
 
         Args:
-            name: base directory path or NetCDF file path if separate_files
+            output_dir: base directory path or NetCDF file path if separate_files
                 is True
             separate_files: boolean indicating if storage component output
                 variables should be written to a separate file for each
                 variable
+            budget_args: a dict of argument key: values to pass to
+                initialize_netcdf on this storage unit's budget. see budget
+                object for options.
 
         Returns:
             None
 
         """
         if self.verbose:
-            print(f"initializing netcdf output for: {self.name}")
+            print(f"initializing netcdf output for: {self.output_dir}")
 
         self._output_netcdf = True
         self._netcdf = {}
         if separate_files:
             self._separate_netcdf = True
             # make working directory
-            working_path = pl.Path(name)
-            working_path.mkdir(parents=True, exist_ok=True)
+            output_dir = pl.Path(output_dir)
+            output_dir.mkdir(parents=True, exist_ok=True)
             for variable_name in self.variables:
-                nc_path = pl.Path(working_path) / f"{variable_name}.nc"
+                nc_path = pl.Path(output_dir) / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
                     self.params.nhm_coordinates,
@@ -467,19 +477,27 @@ class StorageUnit(Accessor):
                 )
         else:
             initial_variable = self.variables[0]
-            pl.Path(name).mkdir(parents=True, exist_ok=True)
+            pl.Path(output_dir).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                name,
+                output_dir,
                 self.params.nhm_coordinates,
                 self.variables,
                 self.var_meta,
             )
+            # JLM: this code seems unnecessary/overwrought
+            # we are currently not testing single file output.
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
+
+        if self.budget is not None:
+            if "output_dir" not in budget_args.keys():
+                budget_args["output_dir"] = output_dir
+            self.budget.initialize_netcdf(**budget_args)
+
         return
 
     def __output_netcdf(self) -> None:
-        """Output variable data for a time step
+        """Output variable data to NetCDF for a time step.
 
         Returns:
             None
@@ -496,9 +514,15 @@ class StorageUnit(Accessor):
                     self._itime_step,
                     getattr(self, variable),
                 )
+
         return
 
     def _finalize_netcdf(self) -> None:
+        """Finalize NetCDF output to disk.
+
+        Returns:
+            None
+        """
         if self._output_netcdf:
             for idx, variable in enumerate(self.variables):
                 self._netcdf[variable].close()

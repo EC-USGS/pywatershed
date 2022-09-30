@@ -130,10 +130,10 @@ class Model:
 
         return
 
-    def initialize_netcdf(self, dir):
+    def initialize_netcdf(self, *args, **kwargs):
         self._netcdf_dir = dir
         for cls in self.process_order:
-            self.processes[cls].initialize_netcdf(dir)
+            self.processes[cls].initialize_netcdf(*args, **kwargs)
         return
 
     def run(self, netcdf_dir: fileish = None, finalize: bool = True):

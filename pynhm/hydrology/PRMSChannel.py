@@ -205,6 +205,8 @@ class PRMSChannel(StorageUnit):
             * 60.0
             * 60.0
         )
+        # JLM: This is a bad idea and should throw an error rather than edit
+        # inputs in place during run
         self.seg_slope = np.where(
             self.seg_slope < 1e-7, 0.0001, self.seg_slope
         )  # not in prms6

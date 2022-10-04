@@ -27,6 +27,8 @@ def test_prms_run(simulations, exe):
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
 
+    # the command to run the model looks like this
+    # exe control_file -MAXDATALNLEN 60000
     success, buff = run_model(
         exe,
         control_file,

@@ -80,7 +80,7 @@ jobs:
           echo "if isort check fails update isort using"
           echo "  pip install isort --upgrade"
           echo "and run"
-          echo "  isort ./pynhm"
+          echo "  isort ./pynhm ./autotest"
           echo "and then commit the changes."
           isort --check --diff ./pynhm
 
@@ -89,17 +89,17 @@ jobs:
           echo "if black check fails update black using"
           echo "  pip install black --upgrade"
           echo "and run"
-          echo "  black ./pynhm"
+          echo "  black ./pynhm ./autotest"
           echo "and then commit the changes."
           black --check --diff ./pynhm
 
       - name: Run flake8
         run: |
-          flake8 --count --show-source --exit-zero ./pynhm
+          flake8 --count --show-source --exit-zero ./pynhm ./autotest
 
       - name: Run pylint
         run: |
-          pylint --jobs=2 --errors-only --exit-zero ./pynhm
+          pylint --jobs=2 --errors-only --exit-zero ./pynhm ./autotest
 
 
   test:

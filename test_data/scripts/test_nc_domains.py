@@ -1,7 +1,7 @@
 import numpy as np
 
 from pynhm import CsvFile, Soltab
-from pynhm import PrmsParameters
+from pynhm import PRMSParameters
 from pynhm.constants import epsilon64, zero
 
 import xarray as xr
@@ -34,7 +34,7 @@ def test_misc_netcdf(misc_nc_files_input):
 
     if misc_nc_files_input.name == "infil":
         domain_dir = misc_nc_files_input.parent.parent
-        params = PrmsParameters.load(domain_dir / "myparam.param").parameters
+        params = PRMSParameters.load(domain_dir / "myparam.param").parameters
         imperv_frac = params["hru_percent_imperv"]
         dprst_frac = params["dprst_frac"]
         perv_frac = 1.0 - imperv_frac - dprst_frac
@@ -78,7 +78,7 @@ def test_misc_netcdf(misc_nc_files_input):
     if misc_nc_files_input.name in ["sroff", "ssres_flow", "gwres_flow"]:
         data_dir = misc_nc_files_input.parent
         domain_dir = misc_nc_files_input.parent.parent
-        params = PrmsParameters.load(domain_dir / "myparam.param")
+        params = PRMSParameters.load(domain_dir / "myparam.param")
         var = misc_nc_files_input.name
         ds = xr.open_dataset(data_dir / f"{var}.nc")
         ds = ds.rename({var: f"{var}_vol"})
@@ -95,7 +95,7 @@ def test_soltab_to_netcdf(soltab_file):
     # them from the domain parameters
     domain_dir = soltab_file.parent
     # this is a hack that should probably rely on the yaml if/when this fails
-    params = PrmsParameters.load(domain_dir / "myparam.param")
+    params = PRMSParameters.load(domain_dir / "myparam.param")
     nhm_ids = params.parameters["nhm_id"]
 
     output_dir = domain_dir / "output"

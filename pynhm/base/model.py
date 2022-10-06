@@ -223,7 +223,7 @@ class Model:
 
         if netcdf_dir:
             print("model.run(): initializing NetCDF output")
-            self.initialize_netcdf(netcdf_dir)
+            self.initialize_netcdf(output_dir=netcdf_dir)
 
         last_pct_comp = 0
         print(f"model.run(): {last_pct_comp} % complete")

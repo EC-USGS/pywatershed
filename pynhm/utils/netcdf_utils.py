@@ -396,8 +396,9 @@ class NetCdfWrite(Accessor):
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
             variabletype = meta_netcdf_type(var_meta[var_name])
+            # These variables are always the same as nhru in the NHM
             if len(
-                set(["nhru", "ngw"]).intersection(
+                set(["nhru", "ngw", "nssr"]).intersection(
                     set(variable_dimensions[var_name])
                 )
             ):

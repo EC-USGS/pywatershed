@@ -6,7 +6,7 @@ import pytest
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 test_time = np.arange(
     datetime(1979, 1, 1), datetime(1979, 1, 7), timedelta(days=1)
@@ -24,7 +24,7 @@ test_time_steps = [atm_init_test_dict["time_step"], np.timedelta64(1, "h")]
 
 @pytest.fixture(scope="function")
 def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+    return PRMSParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")

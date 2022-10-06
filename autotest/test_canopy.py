@@ -6,7 +6,7 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 
 class TestPRMSCanopySimple:
@@ -31,7 +31,7 @@ class TestPRMSCanopySimple:
             "potet_sublim": np.array(nhru * [1.0]),
             "cov_type": np.array(nhru * [1]),
         }
-        prms_params = PrmsParameters(prms_params)
+        prms_params = PRMSParameters(prms_params)
 
         control = Control(**time_dict, params=prms_params)
 
@@ -54,7 +54,7 @@ class TestPRMSCanopySimple:
 
 @pytest.fixture(scope="function")
 def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+    return PRMSParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")

@@ -3,13 +3,13 @@ import pathlib as pl
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.utils.netcdf_utils import NetCdfCompare
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 
 class TestPRMSChannelDomain:
     def test_init(self, domain, tmp_path):
         tmp_path = pl.Path(tmp_path)
-        params = PrmsParameters.load(domain["param_file"])
+        params = PRMSParameters.load(domain["param_file"])
 
         # Set information from the control file
         control = Control.load(domain["control_file"], params=params)

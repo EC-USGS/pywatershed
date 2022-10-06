@@ -5,7 +5,7 @@ import pytest
 
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 time_dict = {
     "start_time": np.datetime64("1979-01-03T00:00:00.00"),
@@ -30,7 +30,7 @@ def params_simple():
         "potet_sublim": np.array(nhru * [1.0]),
         "cov_type": np.array(nhru * [1]),
     }
-    return PrmsParameters(prms_params)
+    return PRMSParameters(prms_params)
 
 
 @pytest.fixture(scope="function")

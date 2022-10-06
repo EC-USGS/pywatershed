@@ -91,15 +91,26 @@ def err_panel(
     
     data_list = [get_comp_ds(model, var) for var in var_list]
     data_ds = xr.merge([data for data in data_list if data], combine_attrs='drop_conflicts').load()
-
-    del data_list
+    #del data_list
     
-    var_name = pn.widgets.Select(groups=get_proc_var_dict(model, data_ds))
-    stat_name = pn.widgets.Select(options=list(metrics.stat_dict.keys()))
+    var_name = pn.widgets.Select(groups=get_proc_var_dict(model, data_ds), width=200, name='Variable')
+    stat_name = pn.widgets.Select(options=list(metrics.stat_dict.keys()), width=200, name="Error Statistic")
+
+    space_coord = 'nhm_id' if 'nhm_id' in data_ds.coords else 'nhm_seg'
+    space_id_sel = pn.widgets.Select(
+        options=sorted(data_ds[space_coord].values.tolist()), width=200, name="Spatial Coord ID")
+    def update_space_id_value(event):
+        #with open("hello.txt", mode="w") as file:
+        #    file.write(f"{event.new}")
+        space_coord, time_coord = get_var_info(var_name.value)
+        stat_df = get_stat_df(stat_name.value, var_name.value)
+        space_id = get_stat_location_id(stat_df, stat_name.value, event.new, space_coord)
+        space_id_sel.value = space_id
+        return
 
     pn.extension()
-    tap = hv.streams.Tap(y=0)    
-
+    tap = hv.streams.Tap(y=0)
+    
     def get_var_info(var_name):
         """Get space and time coordinate info for a variable
         Depends on: data_ds being in scope
@@ -160,51 +171,42 @@ def err_panel(
         tap.source = scatter
         return(violin * scatter)
 
-    @pn.depends(tap.param.y, stat_name, var_name)
-    def timeseries(y, stat_name, var_name):
+    @pn.depends(space_id_sel, var_name)
+    def timeseries(space_id, var_name):
         space_coord, time_coord = get_var_info(var_name)
-        stat_df = get_stat_df(stat_name, var_name)
-        space_id = get_stat_location_id(stat_df, stat_name, y, space_coord)
         ts_df = get_ts_df(var_name, space_coord, space_id)
         title = f"{space_coord} = {space_id}" 
-        return ts_df.hvplot(title=title)
+        return ts_df.hvplot(title=title, shared_axes=False)
 
 
-    @pn.depends(tap.param.y, stat_name, var_name)
-    def scatter(y, stat_name, var_name):
+    @pn.depends(space_id_sel, var_name)
+    def scatter(space_id, var_name):
         space_coord, time_coord = get_var_info(var_name)
-        stat_df = get_stat_df(stat_name, var_name)
-        space_id = get_stat_location_id(stat_df, stat_name, y, space_coord)
         ts_df = get_ts_df(var_name, space_coord, space_id)
         title = f"{space_coord} = {space_id}"
         return ts_df.hvplot.scatter(
             x=f"{var_name}_prms",
             y=f"{var_name}_pynhm",
             hover_cols=['time'],
-            title=title, width=int(fig_width/2))
+            title=title, 
+            width=int(fig_width/2), 
+            shared_axes=False)
 
 
-    @pn.depends(tap.param.y, stat_name, var_name)
-    def timeseries_diffs(y, stat_name, var_name):
+    @pn.depends(space_id_sel, var_name)
+    def timeseries_diffs(space_id, var_name):
         space_coord, time_coord = get_var_info(var_name)
-        stat_df = get_stat_df(stat_name, var_name)
-        
-        space_id = get_stat_location_id(stat_df, stat_name, y, space_coord)
         diff_df = get_diff_tol_df(
             get_ts_df(var_name, space_coord, space_id),
             var_name, tol)
-        # diff_df = diff_df[diff_df['mask']]
         diff_df = diff_df.drop(columns=['mask'])
         title = f"{space_coord} = {space_id}" 
-        return diff_df.hvplot(title=title)
+        return diff_df.hvplot(title=title, shared_axes=False)
 
 
-    @pn.depends(tap.param.y, stat_name, var_name)
-    def scatter_diffs(y, stat_name, var_name):
+    @pn.depends(space_id_sel, var_name)
+    def scatter_diffs(space_id, var_name):
         space_coord, time_coord = get_var_info(var_name)
-        stat_df = get_stat_df(stat_name, var_name)
-        
-        space_id = get_stat_location_id(stat_df, stat_name, y, space_coord)
         ts_df = get_ts_df(var_name, space_coord, space_id)
         diff_df = get_diff_tol_df(ts_df, var_name, tol)
         ts_df['diff'] = diff_df['diff']
@@ -212,14 +214,19 @@ def err_panel(
         plot_df = ts_df[diff_df['mask']]
         title = f"{space_coord} = {space_id}" 
         return plot_df.hvplot.scatter(
-        x=f"{var_name}_prms",
-        y=f"{var_name}_pynhm",
-        hover_cols=['time', 'diff', 'rel_diff'],
-        title=title, width=int(fig_width/2))
+            x=f"{var_name}_prms",
+            y=f"{var_name}_pynhm",
+            hover_cols=['time', 'diff', 'rel_diff'],
+            title=title, 
+            width=int(fig_width/2), 
+            shared_axes=False
+        )
 
+    tap.param.watch(update_space_id_value, 'y')
+    tap.param.trigger('y')
+    
     plt = pn.Column(
-        stat_name, 
-        var_name,
+        pn.Row(stat_name, var_name, space_id_sel),
         pn.Row(err_plot),
         pn.Row(timeseries, scatter),
         pn.Row(timeseries_diffs, scatter_diffs),

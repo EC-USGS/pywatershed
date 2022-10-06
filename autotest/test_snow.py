@@ -7,12 +7,12 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.constants import epsilon32, zero
 from pynhm.hydrology.PRMSSnow import PRMSSnow
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 
 @pytest.fixture(scope="function")
 def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+    return PRMSParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")

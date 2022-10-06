@@ -7,7 +7,7 @@ import xarray as xr
 import pynhm
 from pynhm.base.control import Control
 from pynhm.base.model import Model
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
@@ -16,7 +16,7 @@ from pynhm.utils.parameters import PrmsParameters
 # This probably dosent need varied over domain
 @pytest.fixture(scope="function")
 def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+    return PRMSParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")
@@ -86,7 +86,7 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
 
     check_dict = {proc: {} for proc in check_vars.keys()}
 
-    model.initialize_netcdf(tmp_dir, budget_args=budget_args)
+    model.initialize_netcdf(output_dir=tmp_dir, budget_args=budget_args)
 
     for tt in range(n_time_steps):
         model.advance()

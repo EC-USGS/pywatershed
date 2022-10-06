@@ -447,8 +447,8 @@ class PRMSSolarGeometry(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir):
-        self.netcdf_output_dir = dir
+    def initialize_netcdf(self, **kwargs):
+        self.netcdf_output_dir = kwargs["output_dir"]
         self._output_netcdf = True
         return
 

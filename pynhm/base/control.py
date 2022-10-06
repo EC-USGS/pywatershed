@@ -3,7 +3,7 @@ import datetime
 
 import numpy as np
 
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 from ..base import meta
 from ..constants import fileish
@@ -27,7 +27,7 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         config: dict = None,
-        params: PrmsParameters = None,
+        params: PRMSParameters = None,
         verbosity: int = 0,
         **kwargs,
     ):
@@ -78,7 +78,7 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        params: PrmsParameters = None,
+        params: PRMSParameters = None,
         verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file

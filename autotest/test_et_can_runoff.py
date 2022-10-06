@@ -8,12 +8,12 @@ from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.utils.parameters import PRMSParameters
 
 
 @pytest.fixture(scope="function")
 def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+    return PRMSParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")

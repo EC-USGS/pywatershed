@@ -32,6 +32,7 @@ class Model:
         control: Control,
         input_dir: str = None,
         budget_type: str = "error",  # todo: also pass dict
+        netcdf_output_dir: str = None,
         verbose: bool = False,
         find_input_files: bool = True,
     ):
@@ -148,6 +149,9 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
+        if netcdf_output_dir:
+            self.initialize_netcdf(output_dir=netcdf_output_dir)
+
         return
 
     def _find_input_files(self):
@@ -170,14 +174,31 @@ class Model:
         self._found_input_files = True
         return
 
-    def initialize_netcdf(self, *args, **kwargs):
-        """Initialize NetCDF output files for model (all processes)."""
+    def initialize_netcdf(self, **kwargs):
+        """Initialize NetCDF output files for model (all processes).
+
+        The kwargs are meant to be passed to storageUnit.initialize_netcdf
+
+        kwrgs:
+            output_dir: base directory path or NetCDF file path if separate_files
+                is True
+            separate_files: boolean indicating if storage component output
+                variables should be written to a separate file for each
+                variable
+            budget_args: a dict of argument key: values to pass to
+                initialize_netcdf on this storage unit's budget. see budget
+                object for options.
+
+        Returns:
+            None
+
+        """
         if not self._found_input_files:
             self._find_input_files()
 
-        self._netcdf_dir = dir
+        self._netcdf_dir = kwargs["output_dir"]
         for cls in self.process_order:
-            self.processes[cls].initialize_netcdf(*args, **kwargs)
+            self.processes[cls].initialize_netcdf(**kwargs)
         return
 
     def run(self, netcdf_dir: fileish = None, finalize: bool = True):

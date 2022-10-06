@@ -10,7 +10,7 @@ fileish = Union[str, pl.PosixPath, dict]
 listish = Union[str, list, tuple]
 
 
-class PrmsParameters:
+class PRMSParameters:
     """
     PRMS parameter class
 
@@ -27,41 +27,52 @@ class PrmsParameters:
         self,
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
-    ) -> "PrmsParameters":
+    ) -> "PRMSParameters":
 
         self.parameters = parameter_dict
-
-        # build dimensions from data
         if parameter_dimensions_dict is None:
-            dimensions = self.dimensions
-            parameter_dimensions_dict = {}
-            for key, value in parameter_dict.items():
-                if isinstance(value, int):
-                    parameter_dimensions_dict[key] = None
-                elif isinstance(value, np.ndarray):
-                    shape = value.shape
-                    temp_dims = []
-                    for isize in shape:
-                        found_dim = False
-                        for dim_key, dim_value in dimensions.items():
-                            if dim_value == isize:
-                                found_dim = True
-                                temp_dims.append(dim_key)
-                                break
-                        if not found_dim:
-                            temp_dims.append("unknown")
-                    parameter_dimensions_dict[key] = temp_dims
+            self.parameter_dimensions = self._parameter_dimensions()
+        else:
+            self.parameter_dimensions = parameter_dimensions_dict
 
-        self.parameter_dimensions = parameter_dimensions_dict
+        # could insert dimension data here. going to add this one for now.
+        # it's a little unclear if constants like this are parameters or not
+        self.parameters["doy"] = 366
+        self.parameter_dimensions["doy"] = None
 
-    def get_parameters(self, keys: listish) -> "PrmsParameters":
+        return
+
+    def _parameter_dimensions(self) -> dict:
+        # build dimensions from data
+        dimensions = self.dimensions
+        parameter_dimensions_dict = {}
+        for key, value in self.parameters.items():
+            if isinstance(value, int):
+                parameter_dimensions_dict[key] = None
+            elif isinstance(value, np.ndarray):
+                shape = value.shape
+                temp_dims = []
+                for isize in shape:
+                    found_dim = False
+                    for dim_key, dim_value in dimensions.items():
+                        if dim_value == isize:
+                            found_dim = True
+                            temp_dims.append(dim_key)
+                            break
+                    if not found_dim:
+                        temp_dims.append("unknown")
+                parameter_dimensions_dict[key] = temp_dims
+
+        return parameter_dimensions_dict
+
+    def get_parameters(self, keys: listish) -> "PRMSParameters":
         """Get a subset of keys in the parameter dictionary
 
         Args:
             keys: keys to retrieve from the full PRMS parameter object
 
         Returns:
-            PrmsParameters : subset of full parameter dictionary
+            PRMSParameters : subset of full parameter dictionary
                 Passed keys that do not exist in the full parameter
                 dictionary are skipped.
 
@@ -69,7 +80,7 @@ class PrmsParameters:
         if isinstance(keys, str):
             keys = [keys]
 
-        return PrmsParameters(
+        return PRMSParameters(
             {
                 key: self.parameters.get(key)
                 for key in keys
@@ -138,24 +149,18 @@ class PrmsParameters:
         }
 
     @staticmethod
-    def load(parameter_file: fileish) -> "PrmsParameters":
+    def load(parameter_file: fileish) -> "PRMSParameters":
         """Load parameters from a PRMS parameter file
 
         Args:
             parameter_file: parameter file path
 
         Returns:
-            PrmsParameters: full PRMS parameter dictionary
+            PRMSParameters: full PRMS parameter dictionary
 
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
-
-        # could insert dimenion data here. going to add this one for now.
-        # it's a little unclear if constants like this are parameters or not
-        data["parameter"]["parameters"]["doy"] = 366
-        data["parameter"]["parameter_dimensions"]["doy"] = None
-
-        return PrmsParameters(
+        return PRMSParameters(
             data["parameter"]["parameters"],
             data["parameter"]["parameter_dimensions"],
         )
@@ -169,3 +174,48 @@ class PrmsParameters:
     def hru_in_to_cf(self) -> np.ndarray:
         "Derived parameter converting inches to cubic feet on hrus."
         return self.parameters["hru_area"] * ft2_per_acre / (inches_per_foot)
+
+    def subset_to_ids(
+        self, nhm_id: np.ndarray, nhm_seg: np.ndarray
+    ) -> "PRMSParameters":
+        wh_nhm_id = np.where(np.isin(self.parameters["nhm_id"], nhm_id))
+        wh_nhm_seg = np.where(np.isin(self.parameters["nhm_seg"], nhm_seg))
+
+        n_nhm_id = len(wh_nhm_id[0])
+        n_nhm_seg = len(wh_nhm_seg[0])
+        assert n_nhm_id == len(nhm_id)
+        assert n_nhm_seg == len(nhm_seg)
+
+        n_nhm_id_orig = self.parameters["nhru"]
+        n_nhm_seg_orig = self.parameters["nsegment"]
+
+        parameters_sub = {}
+        for pkey, pval in self.parameters.items():
+            # print(f"\n{pkey}")
+            if isinstance(pval, np.ndarray):
+                shp = list(pval.shape)
+                if n_nhm_id_orig in shp:
+                    wh_shp = shp.index(n_nhm_id_orig)
+                    indices = {wh_shp: wh_nhm_id}
+                elif n_nhm_seg_orig in shp:
+                    wh_shp = shp.index(n_nhm_seg_orig)
+                    indices = {wh_shp: wh_nhm_seg}
+                else:
+                    print(pkey, shp)
+                    parameters_sub[pkey] = pval
+                    continue
+
+                subset_inds = [
+                    indices.get(dim, slice(None)) for dim in range(pval.ndim)
+                ]
+                parameters_sub[pkey] = np.squeeze(pval[subset_inds][0])
+
+            else:
+                print(pkey)
+                parameters_sub[pkey] = pval
+                continue
+
+        # return wh_nhm_id, wh_nhm_seg?
+        # override some parameters?
+
+        return PRMSParameters(parameters_sub)

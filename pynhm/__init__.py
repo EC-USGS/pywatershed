@@ -23,7 +23,7 @@ from .utils import (
     NetCdfCompare,
     NetCdfRead,
     NetCdfWrite,
-    PrmsParameters,
+    PRMSParameters,
     Soltab,
 )
 from .utils.csv_utils import CsvFile

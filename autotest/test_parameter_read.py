@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pynhm.utils import PrmsParameters
+from pynhm.utils import PRMSParameters
 from utils import assert_or_print
 
 
@@ -18,7 +18,7 @@ def test_parameter_init():
         "nsegment": 10,
         "xyz": np.arange(12 * 10, dtype=float).reshape(12, 10),
     }
-    param_obj = PrmsParameters(parameters)
+    param_obj = PRMSParameters(parameters)
 
     answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
 
@@ -29,14 +29,14 @@ def test_parameter_init():
     }
     assert_or_print(results, answers)
 
-    print(f"success initializing PrmsParameters object")
+    print(f"success initializing PRMSParameters object")
 
 
 def test_parameter_read(domain):
     parameter_file = domain["param_file"]
     print(f"parsing...'{parameter_file}'")
 
-    parameters = PrmsParameters.load(parameter_file)
+    parameters = PRMSParameters.load(parameter_file)
 
     # check dimensions
     answers = domain["test_ans"]["parameter_read"]
@@ -56,7 +56,7 @@ def test_parameter_canopy_subset(domain, canopy_parameters):
     parameter_file = domain["param_file"]
     print(f"parsing...'{parameter_file}'")
 
-    parameters = PrmsParameters.load(parameter_file)
+    parameters = PRMSParameters.load(parameter_file)
 
     canopy_subset = parameters.get_parameters(canopy_parameters)
 
@@ -76,7 +76,7 @@ def test_parameter_access(domain, canopy_parameters):
     parameter_file = domain["param_file"]
     print(f"parsing...'{parameter_file}'")
 
-    parameters = PrmsParameters.load(parameter_file)
+    parameters = PRMSParameters.load(parameter_file)
 
     assert (
         parameters.parameters["srain_intcp"] is not None

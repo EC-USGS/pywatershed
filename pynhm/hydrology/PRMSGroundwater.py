@@ -1,5 +1,6 @@
 import numpy as np
 
+import numba as nb
 from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
@@ -20,6 +21,7 @@ class PRMSGroundwater(StorageUnit):
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
         budget_type: str = None,
+        calc_method: str = None,
         verbose: bool = False,
     ) -> "PRMSGroundwater":
 
@@ -28,6 +30,8 @@ class PRMSGroundwater(StorageUnit):
             verbose=verbose,
         )
         self.name = "PRMSGroundwater"
+
+        self._calc_method = calc_method
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
@@ -124,6 +128,29 @@ class PRMSGroundwater(StorageUnit):
 
         self._simulation_time = simulation_time
 
+        if self._calc_method == "numba":
+            (
+                self.gwres_stor[:],
+                self.gwres_flow[:],
+                self.gwres_sink[:],
+                self.gwres_stor_change[:],
+                self.gwres_flow_vol[:],
+            ) = _numba_calculate(
+                self.hru_area,
+                self.soil_to_gw,
+                self.ssr_to_gw,
+                self.dprst_seep_hru,
+                self.gwres_stor,
+                self.gwflow_coef,
+                self.gwsink_coef,
+                self.gwres_stor_old,
+                self.control.params.hru_in_to_cf,
+            )
+
+        else:
+            self._python_calculate()
+
+    def _python_calculate(self):
         gwarea = self.hru_area
 
         # calculate volume terms
@@ -158,3 +185,71 @@ class PRMSGroundwater(StorageUnit):
         )
 
         return
+
+
+# @nb.jit(
+#     nb.types.UniTuple(nb.float64[:], 5)(
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#         nb.float64[:],
+#     ),
+#     parallel=False,
+#     nopython=True,
+# )
+@nb.jit(
+    "(f8[:],5)(f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:])",
+    parallel=False,
+    nopython=True,
+)
+def _numba_calculate(
+    gwarea,
+    soil_to_gw,
+    ssr_to_gw,
+    dprst_seep_hru,
+    gwres_stor,
+    gwflow_coef,
+    gwsink_coef,
+    gwres_stor_old,
+    hru_in_to_cf,
+):
+
+    soil_to_gw_vol = soil_to_gw * gwarea
+    ssr_to_gw_vol = ssr_to_gw * gwarea
+    dprst_seep_hru_vol = dprst_seep_hru * gwarea
+
+    # todo: what about route order
+
+    _gwres_stor = gwres_stor * gwarea
+    _gwres_stor += soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
+
+    _gwres_flow = _gwres_stor * gwflow_coef
+    _gwres_stor -= _gwres_flow
+
+    _gwres_sink = _gwres_stor * gwsink_coef
+    idx = np.where(_gwres_sink > _gwres_stor)
+    _gwres_sink[idx] = _gwres_stor[idx]
+    _gwres_stor -= _gwres_sink
+
+    # convert most units back to self variables
+    # output variables
+    gwres_stor = _gwres_stor / gwarea
+    # for some stupid reason this is left in acre-inches
+    gwres_flow = _gwres_flow / gwarea
+    gwres_sink = _gwres_sink / gwarea
+
+    gwres_stor_change = gwres_stor - gwres_stor_old
+    gwres_flow_vol = gwres_flow * hru_in_to_cf
+
+    return (
+        gwres_stor,
+        gwres_flow,
+        gwres_sink,
+        gwres_stor_change,
+        gwres_flow_vol,
+    )

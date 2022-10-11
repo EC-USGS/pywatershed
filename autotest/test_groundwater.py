@@ -11,7 +11,8 @@ from pynhm.utils.parameters import PrmsParameters
 @pytest.mark.parametrize(
     "calc_method",
     (None, "numba", "fortran"),
-    ids=('numpy', 'numba', 'fortran'))
+    ids=("numpy", "numba", "fortran"),
+)
 class TestPRMSGroundwaterDomain:
     def test_init(self, domain, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)

@@ -18,6 +18,8 @@ from pynhm.hydrology.PRMSRunoff import PRMSRunoff
 from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 
+from pynhm import PRMSGroundwater_f
+
 from .utils import (
     ControlVariables,
     NetCdfCompare,

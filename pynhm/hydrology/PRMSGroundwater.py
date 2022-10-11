@@ -8,7 +8,7 @@ from ..base.control import Control
 from ..constants import nan
 
 try:
-    from pynhm import prmsgroundwater_f as _fortran_calc
+    from pynhm.PRMSGroundwater_f import calc_groundwater as _fortran_calc
 
     has_prmsgroundwater_f = True
 except ModuleNotFoundError:

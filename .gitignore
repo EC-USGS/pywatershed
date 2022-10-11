@@ -68,3 +68,7 @@ examples/pynhm_gis
 # compressed/tarballs
 *.gz
 *.zip
+
+
+# f2y detritus
+*module.c

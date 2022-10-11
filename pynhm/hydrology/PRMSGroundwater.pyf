@@ -3,7 +3,7 @@
 
 python module PRMSGroundwater_f
     interface
-        subroutine prmsgroundwater_f(nn,gwarea,soil_to_gw,ssr_to_gw,dprst_seep_hru,gwres_stor,gwflow_coef,gwsink_coef,gwres_stor_old,hru_in_to_cf,gwres_flow,gwres_sink,gwres_stor_change,gwres_flow_vol) ! in PRMSGroundwater.f90
+        subroutine calc_groundwater(nn,gwarea,soil_to_gw,ssr_to_gw,dprst_seep_hru,gwres_stor,gwflow_coef,gwsink_coef,gwres_stor_old,hru_in_to_cf,gwres_flow,gwres_sink,gwres_stor_change,gwres_flow_vol) ! in PRMSGroundwater.f90
           integer, optional,intent(in),check(len(gwarea)>=nn),depend(gwarea) :: nn=len(gwarea)
             real(kind=8) dimension(nn),intent(in) :: gwarea
             real(kind=8) dimension(nn),intent(in) :: soil_to_gw
@@ -18,7 +18,7 @@ python module PRMSGroundwater_f
             real(kind=8) dimension(nn),intent(out) :: gwres_sink
             real(kind=8) dimension(nn),intent(out) :: gwres_stor_change
             real(kind=8) dimension(nn),intent(out) :: gwres_flow_vol
-        end subroutine prmsgroundwater_f
+        end subroutine calc_groundwater
     end interface
 end python module PRMSGroundwater_f
     

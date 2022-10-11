@@ -8,7 +8,7 @@ from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
-@pytest.mark.parametrize("calc_method", (None, "numba"))
+@pytest.mark.parametrize("calc_method", (None, "numba", "fortran"))
 class TestPRMSGroundwaterDomain:
     def test_init(self, domain, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)

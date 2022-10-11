@@ -1,11 +1,19 @@
 import numpy as np
 
 import numba as nb
+
 from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan
+
+try:
+    from .PRMSGroundwater_f import prmsgroundwater_f as _fortran_calc
+
+    has_PRMSGroundwater_f = True
+except ModuleNotFoundError:
+    has_PRMSGroundwater_f = False
 
 
 class PRMSGroundwater(StorageUnit):
@@ -147,6 +155,25 @@ class PRMSGroundwater(StorageUnit):
                 self.control.params.hru_in_to_cf,
             )
 
+        elif self._calc_method == "fortran":
+
+            (
+                self.gwres_flow[:],
+                self.gwres_sink[:],
+                self.gwres_stor_change[:],
+                self.gwres_flow_vol[:],
+            ) = _fortran_calc(
+                self.hru_area,
+                self.soil_to_gw,
+                self.ssr_to_gw,
+                self.dprst_seep_hru,
+                self.gwres_stor[:],
+                self.gwflow_coef,
+                self.gwsink_coef,
+                self.gwres_stor_old,
+                self.control.params.hru_in_to_cf,
+            )
+
         else:
             self._python_calculate()
 
@@ -187,23 +214,18 @@ class PRMSGroundwater(StorageUnit):
         return
 
 
-# @nb.jit(
-#     nb.types.UniTuple(nb.float64[:], 5)(
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#         nb.float64[:],
-#     ),
-#     parallel=False,
-#     nopython=True,
-# )
 @nb.jit(
-    "(f8[:],5)(f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:],f8[:])",
+    nb.types.UniTuple(nb.float64[:], 5)(
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+        nb.float64[:],
+    ),
     parallel=False,
     nopython=True,
 )

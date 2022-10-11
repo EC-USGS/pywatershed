@@ -1,4 +1,3 @@
-from pynhm import PRMSGroundwater_f
 from pynhm.analysis.model_graph import ModelGraph
 from pynhm.analysis.utils.colorbrewer import ColorBrewer
 from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
@@ -19,6 +18,7 @@ from pynhm.hydrology.PRMSRunoff import PRMSRunoff
 from pynhm.hydrology.PRMSSnow import PRMSSnow
 from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 
+from . import PRMSGroundwater_f
 from .utils import (
     ControlVariables,
     NetCdfCompare,

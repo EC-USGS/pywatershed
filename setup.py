@@ -13,4 +13,4 @@ config.add_extension(
 )
 # add more f2py extensions here
 
-setup(**config.todict())
+setup(**config.todict(), packages=setuptools.find_packages())

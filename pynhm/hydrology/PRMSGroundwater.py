@@ -1,6 +1,5 @@
-import numpy as np
-
 import numba as nb
+import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
 
@@ -9,9 +8,9 @@ from ..base.control import Control
 from ..constants import nan
 
 try:
-    from .PRMSGroundwater_f import prmsgroundwater_f as _fortran_calc
+    from pynhm import prmsgroundwater_f as _fortran_calc
 
-    has_PRMSGroundwater_f = True
+    has_prmsgroundwater_f = True
 except ModuleNotFoundError:
     has_PRMSGroundwater_f = False
 

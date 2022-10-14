@@ -3,8 +3,9 @@ from typing import Union
 
 import netCDF4 as nc4
 import numpy as np
+import pynhm
 
-from ..constants import ft2_per_acre, inches_per_foot
+from ..constants import ft2_per_acre, inches_per_foot, ndoy, nmonth
 from .prms5_file_util import PrmsFile
 
 fileish = Union[str, pl.PosixPath, dict]
@@ -33,6 +34,8 @@ class PrmsParameters:
         self.parameters = parameter_dict
 
         # build dimensions from data
+        # todo: this could be done from metadata. probably fewer lines of code
+        #       and would ensure consistency
         if parameter_dimensions_dict is None:
             dimensions = self.dimensions
             parameter_dimensions_dict = {}
@@ -156,7 +159,7 @@ class PrmsParameters:
 
         # could insert dimenion data here. going to add this one for now.
         # it's a little unclear if constants like this are parameters or not
-        data["parameter"]["parameters"]["ndoy"] = 366
+        data["parameter"]["parameters"]["ndoy"] = ndoy
         data["parameter"]["parameter_dimensions"]["ndoy"] = None
         data["parameter"]["parameters"]["nmonth"] = 12
         data["parameter"]["parameter_dimensions"]["nmonth"] = None
@@ -190,6 +193,13 @@ class PrmsParameters:
 
         param_dict = {**param_dict, **scalar_params}
         param_dict_dimensions = {**param_dict_dimensions, **scalar_param_dims}
+
+        ds_attrs = ds.__dict__
+        if ("nhm_process" in ds_attrs) and (
+            ds_attrs["nhm_process"] == "PRMSSolarGeometry"
+        ):
+            param_dict["ndoy"] = ndoy
+            param_dict_dimensions["ndoy"] = None
 
         return PrmsParameters(param_dict, param_dict_dimensions)
 

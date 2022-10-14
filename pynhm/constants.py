@@ -25,6 +25,9 @@ inch2cm = 2.54
 ft2_per_acre = 43560.0
 inches_per_foot = 12.0
 
+ndoy = 366
+nmonth = 12
+
 
 class HruType(Enum):
     INACTIVE = 0

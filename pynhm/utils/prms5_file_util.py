@@ -8,6 +8,15 @@ import numpy as np
 fileish = Union[str, pl.PosixPath]
 
 
+def rename_dims(dim_name):
+    if dim_name == "nmonths":
+        return "nmonth"
+    elif dim_name == "one":
+        return "scalar"
+    else:
+        return dim_name
+
+
 class PrmsDataType(Enum):
     INTEGER = 1
     FLOAT = 2
@@ -151,7 +160,7 @@ class PrmsFile:
                 break
             else:
                 for key, value in dim_temp.items():
-                    dimensions_dict[key] = value
+                    dimensions_dict[rename_dims(key)] = value
 
         # read parameter data
         self.file_object.seek(parameters_start)
@@ -315,7 +324,7 @@ class PrmsFile:
             dim_names = []
             dims = []
             for idx in range(num_dims):
-                dim_name = self._get_line().split()[0]
+                dim_name = rename_dims(self._get_line().split()[0])
                 dim_names.append(dim_name)
                 dims.append(self.dimensions[dim_name])
             # if len(dims) == 1:

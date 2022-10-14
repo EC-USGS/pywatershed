@@ -2740,21 +2740,21 @@ soltab_horad_potsw:
   desc: Potential solar radiation on a horizontal plane for each Julian Day for each
     HRU
   dimensions:
-    0: doy
+    0: ndoy
     1: nhru
   type: float64
   units: Langleys
 soltab_potsw:
   desc: Potential solar radiation for each Julian Day for each HRU
   dimensions:
-    0: doy
+    0: ndoy
     1: nhru
   type: float64
   units: Langleys
 soltab_sunhrs:
   desc: The number of hours of potential direct sunlight
   dimensions:
-    0: doy
+    0: ndoy
     1: nhru
   type: float64
   units: hours

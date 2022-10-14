@@ -4,10 +4,9 @@ from warnings import warn
 
 import numpy as np
 
-from pynhm.base import meta
-from pynhm.base.budget import Budget
-
+from ..base import meta
 from ..base.adapter import Adapter, adapter_factory
+from ..base.budget import Budget
 from ..base.timeseries import TimeseriesArray
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor

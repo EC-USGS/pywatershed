@@ -98,8 +98,8 @@ class PRMSSnow(StorageUnit):
         """
         return (
             "nhru",
+            "nmonth",
             "ndeplval",
-            "nmonths",
             "cov_type",
             "covden_win",
             "covden_sum",

@@ -231,6 +231,7 @@ class PRMSAtmosphere(StorageUnit):
     @staticmethod
     def get_parameters():
         return (
+            "nmonth",
             "radadj_intcp",
             "radadj_slope",
             "tmax_index",
@@ -315,7 +316,7 @@ class PRMSAtmosphere(StorageUnit):
             )
             raise NotImplementedError(msg)
 
-        if self["tmax_cbh_adj"].shape[0] == 12:
+        if self["tmax_cbh_adj"].shape[0] == self.nmonth:
             month_ind = self._month_ind_12
         elif self["tmax_cbh_adj"].shape[0] == 1:
             month_ind = self._month_ind_1
@@ -355,7 +356,7 @@ class PRMSAtmosphere(StorageUnit):
                 self.adjmix_rain.shape[0],
             ]
         )
-        if not (shape_list == 12).all():
+        if not (shape_list == self.nmonth).all():
             msg = (
                 "Not implemented: cbh precip adjustment parameters with "
                 " different shapes"
@@ -364,7 +365,7 @@ class PRMSAtmosphere(StorageUnit):
 
         tmax_allrain = self.tmax_allsnow + self.tmax_allrain_offset
 
-        if self.tmax_allsnow.shape[0] == 12:
+        if self.tmax_allsnow.shape[0] == self.nmonth:
             month_ind = self._month_ind_12
         elif self.tmax_allsnow.shape[0] == 1:
             month_ind = self._month_ind_1
@@ -469,6 +470,7 @@ class PRMSAtmosphere(StorageUnit):
             soltab_potsw=ivd["soltab_potsw"].data,
             soltab_horad_potsw=ivd["soltab_horad_potsw"].data,
             **solar_params,
+            nmonth=self.nmonth,
         )
 
         return
@@ -495,6 +497,7 @@ class PRMSAtmosphere(StorageUnit):
         radj_wppt,
         hru_lat,
         hru_area,
+        nmonth,
     ) -> (np.ndarray, np.ndarray):  # [n_time, n_hru]
 
         # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation_degday.f90
@@ -505,7 +508,7 @@ class PRMSAtmosphere(StorageUnit):
             "timedelta64[h]"
         ).astype(int) / 24 + 1
         doy = tile_time_to_space(doy, n_hru).astype(int)
-        month = (dates.astype("datetime64[M]").astype(int) % 12) + 1
+        month = (dates.astype("datetime64[M]").astype(int) % nmonth) + 1
         month = tile_time_to_space(month, n_hru)
 
         # is_summer
@@ -636,17 +639,18 @@ class PRMSAtmosphere(StorageUnit):
             swrad=self.swrad.data,
             jh_coef=self.jh_coef,
             jh_coef_hru=self.jh_coef_hru,
+            nmonth=self.nmonth,
         )
         return
 
     @staticmethod
-    def _potet_jh_run(dates, tavgc, swrad, jh_coef, jh_coef_hru):
+    def _potet_jh_run(dates, tavgc, swrad, jh_coef, jh_coef_hru, nmonth):
         """This code mixes celcius and fahrenheit units in its calculation"""
 
         n_time, n_hru = tavgc.shape
 
         # The vector
-        month = (dates.astype("datetime64[M]").astype(int) % 12) + 1
+        month = (dates.astype("datetime64[M]").astype(int) % nmonth) + 1
         month = tile_time_to_space(month, n_hru)
         tavgf = (tavgc * 9 / 5) + 32
 
@@ -695,8 +699,7 @@ class PRMSAtmosphere(StorageUnit):
         start_day = self.control.start_doy
         start_month = self.control.start_month
 
-        months_per_year = 12
-        motmp = start_month + months_per_year
+        motmp = start_month + self.nmonth
 
         for hh in range(self.nhru):
             if start_month == self.transp_beg[hh]:
@@ -713,7 +716,7 @@ class PRMSAtmosphere(StorageUnit):
                     self.transp_on.data[0, hh] = 1
             else:
                 if (start_month > self.transp_beg[hh]) or (
-                    motmp < self.transp_end[hh] + months_per_year
+                    motmp < self.transp_end[hh] + self.nmonth
                 ):
                     self.transp_on.data[0, hh] = 1
 

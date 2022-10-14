@@ -3,11 +3,10 @@ import datetime
 
 import numpy as np
 
-from pynhm.utils.parameters import PrmsParameters
-
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
+from ..utils.parameters import PrmsParameters
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,

@@ -1,6 +1,7 @@
 import pathlib as pl
 from typing import Union
 
+import netCDF4 as nc4
 import numpy as np
 
 from ..constants import ft2_per_acre, inches_per_foot
@@ -48,9 +49,12 @@ class PrmsParameters:
                                 found_dim = True
                                 temp_dims.append(dim_key)
                                 break
+                        if isize == 1:
+                            found_dim = True
+                            temp_dims.append("scalar")
                         if not found_dim:
                             temp_dims.append("unknown")
-                    parameter_dimensions_dict[key] = temp_dims
+                    parameter_dimensions_dict[key] = tuple(temp_dims)
 
         self.parameter_dimensions = parameter_dimensions_dict
 
@@ -152,13 +156,42 @@ class PrmsParameters:
 
         # could insert dimenion data here. going to add this one for now.
         # it's a little unclear if constants like this are parameters or not
-        data["parameter"]["parameters"]["doy"] = 366
-        data["parameter"]["parameter_dimensions"]["doy"] = None
+        data["parameter"]["parameters"]["ndoy"] = 366
+        data["parameter"]["parameter_dimensions"]["ndoy"] = None
+        data["parameter"]["parameters"]["nmonth"] = 12
+        data["parameter"]["parameter_dimensions"]["nmonth"] = None
 
         return PrmsParameters(
             data["parameter"]["parameters"],
             data["parameter"]["parameter_dimensions"],
         )
+
+    @staticmethod
+    def from_nc_file(parameter_nc_file: fileish) -> "PRMSParameters":
+        """Load parameters from a PRMS parameter file
+
+        Args:
+            parameter_file: parameter file path
+
+        Returns:
+            PrmsParameters: full PRMS parameter dictionary
+
+        """
+        ds = nc4.Dataset(parameter_nc_file)
+        param_dict = {kk: vv[:].data for kk, vv in ds.variables.items()}
+        param_dict_dimensions = {
+            kk: vv.dimensions for kk, vv in ds.variables.items()
+        }
+
+        scalar_params = {
+            kk: len(vv) for kk, vv in ds.dimensions.items() if kk != "scalar"
+        }
+        scalar_param_dims = {kk: None for kk in scalar_params.keys()}
+
+        param_dict = {**param_dict, **scalar_params}
+        param_dict_dimensions = {**param_dict_dimensions, **scalar_param_dims}
+
+        return PrmsParameters(param_dict, param_dict_dimensions)
 
     def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
         "Derived parameter converting inches to cfs on hrus."

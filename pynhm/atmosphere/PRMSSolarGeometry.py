@@ -118,17 +118,8 @@ class PRMSSolarGeometry(StorageUnit):
     @staticmethod
     def get_parameters() -> tuple:
         return (
-            "doy",
             "nhru",
-            "radadj_intcp",
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
+            "ndoy",
             "hru_slope",
             "radj_sppt",
             "radj_wppt",

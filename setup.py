@@ -4,7 +4,7 @@ import setuptools  # noqa
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup
 
-pynhm_fortran = os.getenv("PYNHM_FORTRAN")
+pynhm_fortran = str(os.getenv("PYNHM_FORTRAN"))
 if pynhm_fortran.lower() == "false":
     pynhm_fortran = False
 else:

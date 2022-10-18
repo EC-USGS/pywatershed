@@ -7,7 +7,6 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan
 
-
 try:
     from ..PRMSGroundwater_f import calc_groundwater as _fortran_calc
 

@@ -7,11 +7,9 @@ import pytest
 import pynhm
 from pynhm.base.control import Control
 from pynhm.base.timeseries import TimeseriesArray
-from pynhm.constants import __pynhm_root__
 from pynhm.utils import separate_domain_params_to_ncdf
 from pynhm.utils.parameters import PrmsParameters
 
-test_data_dir = pl.Path(__pynhm_root__).parent / "test_data"
 
 n_time_steps = 10
 budget_type = None
@@ -51,8 +49,7 @@ def test_param_sep(domain, control, processes, tmp_path):
     tmp_path = pl.Path(tmp_path)
 
     domain_name = domain["domain_name"]
-    dom_dir = test_data_dir / domain_name
-    prms_param_file = dom_dir / "myparam.param"
+    prms_param_file = domain["param_file"]
 
     out_dir = tmp_path / f"{domain_name}"
     if not out_dir.exists():

@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Tuple, Union
 
 import numpy as np
+
 import pynhm
 
 from ..base import meta

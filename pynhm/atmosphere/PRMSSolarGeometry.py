@@ -12,14 +12,7 @@ from pynhm.utils.netcdf_utils import NetCdfWrite
 from ..base.control import Control
 from ..constants import epsilon32, fileish, nan, one, zero
 from ..utils.prms5util import load_soltab_debug
-from .solar_constants import (
-    ndoy,
-    pi,
-    pi_12,
-    r1,
-    solar_declination,
-    two_pi,
-)
+from .solar_constants import ndoy, pi, pi_12, r1, solar_declination, two_pi
 
 epsilon = epsilon32
 

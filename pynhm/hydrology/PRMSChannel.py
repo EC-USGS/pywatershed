@@ -99,6 +99,8 @@ class PRMSChannel(StorageUnit):
         """
         return (
             "nhru",
+            "nssr",
+            "ngw",
             "nsegment",
             "hru_area",
             "hru_segment",

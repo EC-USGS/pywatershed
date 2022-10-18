@@ -86,7 +86,7 @@ class StorageUnit(Accessor):
 
         self.name = "StorageUnit"
         self.control = control
-        self.params = self.control.params
+        self.params = self.control.params.subset(process=type(self))
         self.verbose = verbose
 
         # netcdf output variables
@@ -228,7 +228,11 @@ class StorageUnit(Accessor):
 
     def _initialize_self_variables(self, restart: bool = False):
         for name in self.parameters:
-            setattr(self, name, self.params.parameters[name])
+            setattr(
+                self,
+                name,
+                self.params.get_parameters(name, process=self)[name],
+            )
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
         # skip restart variables if restart (for speed) ?

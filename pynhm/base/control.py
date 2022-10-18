@@ -206,6 +206,8 @@ class Control(Accessor):
             check_list = ["time", "doy"]
             if len([mm for mm in check_list if mm in var_dims[0]]):
                 del var_dims[0]
-        var_dim_sizes = [self.params.parameters[vv] for vv in var_dims]
+
+        var_dim_sizes = self.params.get_parameters(var_dims)
+        var_dim_shape = [var_dim_sizes[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]
-        return np.full(var_dim_sizes, np.nan, var_type)
+        return np.full(var_dim_shape, np.nan, var_type)

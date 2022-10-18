@@ -274,6 +274,7 @@ class PRMSAtmosphere(StorageUnit):
             "radj_wppt",
             "hru_lat",
             "hru_area",
+            "temp_units",
         )
 
     def _set_initial_conditions(self):
@@ -687,7 +688,7 @@ class PRMSAtmosphere(StorageUnit):
         # transp_on inited to 0 everywhere above
 
         # candidate for worst code lines
-        if self.control.params.parameters["temp_units"] == 0:
+        if self.control.params.get_parameters("temp_units")["temp_units"] == 0:
             transp_tmax_f = self.transp_tmax
         else:
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0

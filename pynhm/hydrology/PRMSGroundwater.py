@@ -44,6 +44,7 @@ class PRMSGroundwater(StorageUnit):
         return (
             "nhru",
             "ngw",
+            "nssr",
             "hru_area",
             "gwflow_coef",
             "gwsink_coef",

@@ -4,7 +4,9 @@ from typing import Union
 
 import numpy as np
 
+# Typing constants
 fileish = Union[str, pl.Path]
+listish = Union[str, list, tuple]
 
 # PRMS6 Constants module:
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/misc/m_constants.f90

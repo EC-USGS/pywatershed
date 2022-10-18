@@ -1,15 +1,16 @@
-import pathlib as pl
-from typing import Union
+from copy import deepcopy
 
 import netCDF4 as nc4
 import numpy as np
-import pynhm
 
-from ..constants import ft2_per_acre, inches_per_foot, ndoy, nmonth
+from ..constants import (
+    ft2_per_acre,
+    inches_per_foot,
+    ndoy,
+    fileish,
+    listish,
+)
 from .prms5_file_util import PrmsFile
-
-fileish = Union[str, pl.PosixPath, dict]
-listish = Union[str, list, tuple]
 
 
 class PrmsParameters:
@@ -19,9 +20,19 @@ class PrmsParameters:
     Parameters
     ----------
     parameter_dict : dict
-        parameters dictionary
+        parameters dictionary: either structure
+          * param: value
+          * process: {param: value ... }
+        where the later is a parameter dictionary grouped by process.
+        The keys for process should be either the class itself, class.name, or
+        type(class.__name__).
     parameter_dimensions_dict : dict
-        parameters dimensions dictionary
+        parameters dimensions dictionary with a structure mirring the parameter
+        dict as described above but with shape tuples in place of parameter
+        value data.
+
+    Returns:
+        PrmsParameter object
 
     """
 
@@ -32,11 +43,15 @@ class PrmsParameters:
     ) -> "PrmsParameters":
 
         self.parameters = parameter_dict
+        self._params_sep_procs = all(
+            [isinstance(pp, dict) for pp in self.parameters.values()]
+        )
 
         # build dimensions from data
         # todo: this could be done from metadata. probably fewer lines of code
         #       and would ensure consistency
         if parameter_dimensions_dict is None:
+            # todo: handle self._params_sep_procs
             dimensions = self.dimensions
             parameter_dimensions_dict = {}
             for key, value in parameter_dict.items():
@@ -61,33 +76,98 @@ class PrmsParameters:
 
         self.parameter_dimensions = parameter_dimensions_dict
 
-    def get_parameters(self, keys: listish) -> "PrmsParameters":
+    def subset(
+        self, keys: listish = None, process: str = None
+    ) -> "PrmsParameters":
+        """Get a parameter object subset to passed keys and processes"""
+
+        if (process is not None) and (keys is None):
+            if not self._params_sep_procs:
+                return PrmsParameters(
+                    parameter_dict=deepcopy(self.parameters),
+                    parameter_dimensions_dict=deepcopy(
+                        self.parameter_dimensions
+                    ),
+                )
+            return PrmsParameters(
+                parameter_dict=deepcopy(self.parameters[process]),
+                parameter_dimensions_dict=deepcopy(
+                    self.parameter_dimensions[process]
+                ),
+            )
+
+        elif (process is None) and (keys is not None):
+            if not self._params_sep_procs:
+                return PrmsParameters(
+                    parameter_dict={
+                        kk: self.parameters[kk]
+                        for kk in keys
+                        if kk in self.parameters.keys()
+                    },
+                    parameter_dimensions_dict={
+                        kk: self.parameter_dimensions[kk]
+                        for kk in keys
+                        if kk in self.parameter_dimensions.keys()
+                    },
+                )
+            else:
+                raise NotImplementedError
+            pass
+
+        else:
+            # This is still a work in progress
+            raise NotImplementedError
+
+    def get_parameters(
+        self, keys: listish, process: str = None, dims: bool = False
+    ) -> dict:
         """Get a subset of keys in the parameter dictionary
 
         Args:
             keys: keys to retrieve from the full PRMS parameter object
+            process: return a single process (all keys)
+            dims: return dims instead of values (default is False)
 
         Returns:
-            PrmsParameters : subset of full parameter dictionary
-                Passed keys that do not exist in the full parameter
-                dictionary are skipped.
+            dict: containing requested key:val pairs
 
         """
         if isinstance(keys, str):
             keys = [keys]
 
-        return PrmsParameters(
-            {
-                key: self.parameters.get(key)
-                for key in keys
-                if key in self.parameters.keys()
-            },
-            {
-                key: self.parameter_dimensions.get(key)
-                for key in keys
-                if key in self.parameter_dimensions.keys()
-            },
-        )
+        if self._params_sep_procs:
+            # If a parameter dict, get the values from any dict entry
+            # there should never be a param with different values
+            return_params = {}
+            for proc_key in self.parameters.keys():
+                if (process is not None) and (proc_key != type(process)):
+                    continue
+                # only allow a single process and do not return a process key
+                var_keys = self.parameters[proc_key].keys()
+                for key in keys:
+                    if key in var_keys:
+                        if dims:
+                            return_params[key] = self.parameters_dimensions[
+                                proc_key
+                            ][key]
+                        else:
+                            return_params[key] = self.parameters[proc_key][key]
+
+            return return_params
+
+        else:
+            if dims:
+                return {
+                    key: self.parameter_dimensions.get(key)
+                    for key in keys
+                    if key in self.parameter_dimensions.keys()
+                }
+            else:
+                return {
+                    key: self.parameters.get(key)
+                    for key in keys
+                    if key in self.parameters.keys()
+                }
 
     @property
     def dimensions(self) -> dict:
@@ -170,38 +250,59 @@ class PrmsParameters:
         )
 
     @staticmethod
-    def from_nc_file(parameter_nc_file: fileish) -> "PRMSParameters":
-        """Load parameters from a PRMS parameter file
+    def _from_nc_file(parameter_nc_file) -> dict:
+        import importlib
 
-        Args:
-            parameter_file: parameter file path
-
-        Returns:
-            PrmsParameters: full PRMS parameter dictionary
-
-        """
         ds = nc4.Dataset(parameter_nc_file)
+        attrs = ds.__dict__
+        process_name = attrs["nhm_process"]
+        process = importlib.import_module("pynhm").__dict__[process_name]
+        proc_params = process.get_parameters()
+
         param_dict = {kk: vv[:].data for kk, vv in ds.variables.items()}
         param_dict_dimensions = {
             kk: vv.dimensions for kk, vv in ds.variables.items()
         }
 
-        scalar_params = {
+        dimension_params = {
             kk: len(vv) for kk, vv in ds.dimensions.items() if kk != "scalar"
         }
-        scalar_param_dims = {kk: None for kk in scalar_params.keys()}
+        dimension_params_dims = {kk: None for kk in dimension_params.keys()}
 
-        param_dict = {**param_dict, **scalar_params}
-        param_dict_dimensions = {**param_dict_dimensions, **scalar_param_dims}
+        param_dict = {**param_dict, **dimension_params}
+        param_dict_dimensions = {
+            **param_dict_dimensions,
+            **dimension_params_dims,
+        }
 
-        ds_attrs = ds.__dict__
-        if ("nhm_process" in ds_attrs) and (
-            ds_attrs["nhm_process"] == "PRMSSolarGeometry"
-        ):
-            param_dict["ndoy"] = ndoy
-            param_dict_dimensions["ndoy"] = None
+        # Additional scalar parameters are in the golbal attributes
+        neglected_params = list(set(proc_params).difference(param_dict.keys()))
+        for nn in neglected_params:
+            param_dict[nn] = ds.__dict__[nn]
+            param_dict_dimensions[nn] = None
 
-        return PrmsParameters(param_dict, param_dict_dimensions)
+        return {"parameters": param_dict, "dimensions": param_dict_dimensions}
+
+    @staticmethod
+    def from_nc_files(proc_param_nc_file_dict: dict) -> "PrmsParameters":
+        """Load parameters from a PRMS parameter file
+
+        Args:
+            proc_param_nc_file_dict: dict of proc: param_nc_file pairs
+            for all processes in the model
+
+        Returns:
+            param_dict: A dictionary containing PRMSParameters objects for
+            each process.
+
+        """
+        param_dim = {
+            proc: PrmsParameters._from_nc_file(file)
+            for proc, file in proc_param_nc_file_dict.items()
+        }
+        parameters = {key: val["parameters"] for key, val in param_dim.items()}
+        dims = {key: val["dimensions"] for key, val in param_dim.items()}
+        return PrmsParameters(parameters, dims)
 
     def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
         "Derived parameter converting inches to cfs on hrus."
@@ -211,4 +312,8 @@ class PrmsParameters:
     @property
     def hru_in_to_cf(self) -> np.ndarray:
         "Derived parameter converting inches to cubic feet on hrus."
-        return self.parameters["hru_area"] * ft2_per_acre / (inches_per_foot)
+        return (
+            self.get_parameters("hru_area")["hru_area"]
+            * ft2_per_acre
+            / (inches_per_foot)
+        )

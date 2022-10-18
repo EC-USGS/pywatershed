@@ -7,8 +7,9 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan
 
+
 try:
-    from pynhm.PRMSGroundwater_f import calc_groundwater as _fortran_calc
+    from ..PRMSGroundwater_f import calc_groundwater as _fortran_calc
 
     has_prmsgroundwater_f = True
 except ModuleNotFoundError:
@@ -157,6 +158,7 @@ class PRMSGroundwater(StorageUnit):
         elif self._calc_method == "fortran":
 
             (
+                self.gwres_stor[:],
                 self.gwres_flow[:],
                 self.gwres_sink[:],
                 self.gwres_stor_change[:],
@@ -166,7 +168,7 @@ class PRMSGroundwater(StorageUnit):
                 self.soil_to_gw,
                 self.ssr_to_gw,
                 self.dprst_seep_hru,
-                self.gwres_stor[:],
+                self.gwres_stor,
                 self.gwflow_coef,
                 self.gwsink_coef,
                 self.gwres_stor_old,

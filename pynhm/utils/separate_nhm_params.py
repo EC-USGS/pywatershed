@@ -1,5 +1,4 @@
 import numpy as np
-import xarray as xr
 
 import pynhm
 
@@ -36,6 +35,7 @@ def separate_domain_params_to_ncdf(
     out_dir: fileish,
     process_list=None,
 ):
+    import xarray as xr
 
     nhm_processes = [
         pynhm.PRMSSolarGeometry,

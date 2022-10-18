@@ -11,7 +11,7 @@ nconsumed:
   default: 0
   desc: Number of consumptive water-use destinations
   size: 0
-doy:
+ndoy:
   default: 366
   desc: Maximum number of days in a year
   size: 366
@@ -64,7 +64,7 @@ nlapse:
   default: 0
   desc: Number of lapse rates in X, Y, and Z directions
   size: 0
-nmonths:
+nmonth:
   default: 12
   desc: Number of months in a year
   size: 12
@@ -116,7 +116,7 @@ nwind:
   default: 0
   desc: Number of wind-speed measurement stations
   size: 0
-one:
+scalar:
   default: 1
   desc: Dimension of scalar parameters and variables
   size: 1

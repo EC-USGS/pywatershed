@@ -180,7 +180,12 @@ class Model:
             self.processes[cls].initialize_netcdf(*args, **kwargs)
         return
 
-    def run(self, netcdf_dir: fileish = None, finalize: bool = True):
+    def run(
+        self,
+        netcdf_dir: fileish = None,
+        finalize: bool = True,
+        n_time_steps: int = None,
+    ):
         """Run the model.
 
         Running the model wraps:
@@ -207,7 +212,8 @@ class Model:
         last_pct_comp = 0
         print(f"model.run(): {last_pct_comp} % complete")
 
-        n_time_steps = self.control.n_times
+        if not n_time_steps:
+            n_time_steps = self.control.n_times
         for istep in range(n_time_steps):
 
             # progress for the impatient

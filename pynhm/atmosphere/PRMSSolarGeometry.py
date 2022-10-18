@@ -12,18 +12,11 @@ from pynhm.utils.netcdf_utils import NetCdfWrite
 from ..base.control import Control
 from ..constants import epsilon32, fileish, nan, one, zero
 from ..utils.prms5util import load_soltab_debug
-from .solar_constants import (
-    n_days_per_year,
-    pi,
-    pi_12,
-    r1,
-    solar_declination,
-    two_pi,
-)
+from .solar_constants import ndoy, pi, pi_12, r1, solar_declination, two_pi
 
 epsilon = epsilon32
 
-doy = np.arange(366) + 1
+doy = np.arange(ndoy) + 1
 
 # The solar geometry model for NHM/PRMS
 # Primary reference
@@ -31,12 +24,12 @@ doy = np.arange(366) + 1
 #   Physical Hydrology. Englewood Cliffs, NJ: Prentice Hall, 575 p.
 
 # Dimensions
-# The time dimension is n_days_per_year (known apriori)
+# The cyclic time dimension is ndoy (known apriori)
 # The spatial dimension n_hru (only known on init from parameters)
 
 
 def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
-    return np.tile(arr, (n_days_per_year, 1))
+    return np.tile(arr, (ndoy, 1))
 
 
 # def tile_time_to_space(arr: np.ndarray, n_hru) -> np.ndarray:
@@ -55,6 +48,9 @@ class PRMSSolarGeometry(StorageUnit):
         from_nc_files_dir: fileish = None,
     ):
         """PRMS Solar Geometry."""
+
+        # This is a singular case of having a constant parameter dimensions
+        self.ndoy = doy
 
         self._set_inputs(locals())
         budget_type = None
@@ -118,17 +114,8 @@ class PRMSSolarGeometry(StorageUnit):
     @staticmethod
     def get_parameters() -> tuple:
         return (
-            "doy",
             "nhru",
-            "radadj_intcp",
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
+            "ndoy",
             "hru_slope",
             "radj_sppt",
             "radj_wppt",
@@ -215,9 +202,9 @@ class PRMSSolarGeometry(StorageUnit):
         Return Values: (solt, sunh)
           solt: Swift's potential solar radiation on a sloping surface in
             [cal/cm2/day]. Swift, 1976, equation 6.
-            Dimensions: [n_days_per_year, nhru]
+            Dimensions: [ndoy, nhru]
           sunh: The number of hours of direct sunlight
-            Dimensions: [n_days_per_year, nhru]
+            Dimensions: [ndoy, nhru]
         """
         nhru = len(slopes)
 
@@ -367,7 +354,7 @@ class PRMSSolarGeometry(StorageUnit):
         https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
         """
         nhru = len(lats)
-        lats_mat = np.tile(-1 * np.tan(lats), (n_days_per_year, 1))
+        lats_mat = np.tile(-1 * np.tan(lats), (ndoy, 1))
         sol_dec_mat = np.transpose(
             np.tile(np.tan(solar_declination), (nhru, 1))
         )
@@ -391,22 +378,22 @@ class PRMSSolarGeometry(StorageUnit):
         """
         This is the radian angle version of FUNC3 (eqn 6) from Swift, 1976
         or Lee, 1963 equation 5.
-        result: (R4) is potential solar radiation on the surface cal/cm2/day [n_days_per_year, nhru]
+        result: (R4) is potential solar radiation on the surface cal/cm2/day [ndoy, nhru]
         v: (L2) latitude angle hour offset between actual and equivalent slope [nhru]
         w: (L1) latitude of the equivalent slope [nhru]
-        x: (T3) hour angle of sunset on equivalent slope [n_days_per_year, nhru]
-        y: (T2) hour angle of sunrise on equivalent slope [n_days_per_year, nhru]
+        x: (T3) hour angle of sunset on equivalent slope [ndoy, nhru]
+        y: (T2) hour angle of sunrise on equivalent slope [ndoy, nhru]
 
         # Constants
-        r1: solar constant for 60 minutes [n_days_per_year]
-        solar_declination: declination of sun [n_days_per_year]
+        r1: solar constant for 60 minutes [ndoy]
+        solar_declination: declination of sun [ndoy]
 
         https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
         """
         # Must alter the dimensions of the inputs to get the outputs.
         nhru = len(v)
-        vv = np.tile(v, (n_days_per_year, 1))
-        ww = np.tile(w, (n_days_per_year, 1))
+        vv = np.tile(v, (ndoy, 1))
+        ww = np.tile(w, (ndoy, 1))
         # These are known at init time, not sure they are worth saving in self
         # and passing
         rr = np.transpose(np.tile(r1, (nhru, 1)))

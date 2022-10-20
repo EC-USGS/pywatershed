@@ -62,8 +62,13 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
+@pytest.mark.parametrize(
+    "calc_method",
+    (None, "numba"),
+    ids=("numpy", "numba"),
+)
 class TestPRMSCanopyDomain:
-    def test_init(self, domain, control, tmp_path):
+    def test_init(self, domain, control, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -95,6 +100,7 @@ class TestPRMSCanopyDomain:
             control=control,
             **input_variables,
             budget_type="error",
+            calc_method=calc_method,
         )
 
         all_success = True

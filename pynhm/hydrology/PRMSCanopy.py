@@ -141,21 +141,21 @@ class PRMSCanopy(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.jit(nopython=True)(
+                self._calculate_numba = nb.njit(fastmath=True)(
                     self._calculate_procedural
                 )
-                self._intercept_numba = nb.jit(nopython=True)(self._intercept)
+                self._intercept_numba = nb.njit(fastmath=True)(self._intercept)
 
             (
-                self.intcp_evap,
-                self.intcp_stor,
-                self.net_rain,
-                self.net_snow,
-                self.net_ppt,
-                self.hru_intcpstor,
-                self.hru_intcpevap,
-                self.intcp_changeover,
-                self.intcp_transp_on,
+                self.intcp_evap[:],
+                self.intcp_stor[:],
+                self.net_rain[:],
+                self.net_snow[:],
+                self.net_ppt[:],
+                self.hru_intcpstor[:],
+                self.hru_intcpevap[:],
+                self.intcp_changeover[:],
+                self.intcp_transp_on[:],
             ) = self._calculate_numba(
                 self.cov_type,
                 self.covden_sum,
@@ -188,15 +188,15 @@ class PRMSCanopy(StorageUnit):
         elif self._calc_method.lower() in ["none", "numpy"]:
 
             (
-                self.intcp_evap,
-                self.intcp_stor,
-                self.net_rain,
-                self.net_snow,
-                self.net_ppt,
-                self.hru_intcpstor,
-                self.hru_intcpevap,
-                self.intcp_changeover,
-                self.intcp_transp_on,
+                self.intcp_evap[:],
+                self.intcp_stor[:],
+                self.net_rain[:],
+                self.net_snow[:],
+                self.net_ppt[:],
+                self.hru_intcpstor[:],
+                self.hru_intcpevap[:],
+                self.intcp_changeover[:],
+                self.intcp_transp_on[:],
             ) = self._calculate_procedural(
                 self.cov_type,
                 self.covden_sum,

@@ -1,4 +1,3 @@
-import numba as nb
 import numpy as np
 
 from ..base.adapter import adaptable
@@ -32,11 +31,14 @@ class PRMSCanopy(StorageUnit):
         hru_snow: adaptable,
         potet: adaptable,
         budget_type: str = None,
+        calc_method: str = None,
         verbose: bool = False,
     ):
 
         super().__init__(control=control, verbose=verbose)
         self.name = "PRMSCanopy"
+
+        self._calc_method = str(calc_method)
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
@@ -125,7 +127,7 @@ class PRMSCanopy(StorageUnit):
         self.hru_intcpstor_old[:] = self.hru_intcpstor
         return
 
-    def _calculate(self, time_length, vectorized=False):
+    def _calculate(self, time_length):
         """Calculate canopy terms for a time step
 
         Args:
@@ -135,10 +137,55 @@ class PRMSCanopy(StorageUnit):
             None
 
         """
-        if vectorized:
-            # todo: not implemented yet
-            self.calculate_vectorized(time_length)
-        else:
+        if self._calc_method.lower() == "numba":
+            import numba as nb
+
+            if not hasattr(self, "_calculate_numba"):
+                self._calculate_numba = nb.jit(nopython=True)(
+                    self._calculate_procedural
+                )
+                self._intercept_numba = nb.jit(nopython=True)(self._intercept)
+
+            (
+                self.intcp_evap,
+                self.intcp_stor,
+                self.net_rain,
+                self.net_snow,
+                self.net_ppt,
+                self.hru_intcpstor,
+                self.hru_intcpevap,
+                self.intcp_changeover,
+                self.intcp_transp_on,
+            ) = self._calculate_numba(
+                self.cov_type,
+                self.covden_sum,
+                self.covden_win,
+                self.hru_intcpstor,
+                self.hru_intcpevap,
+                self.hru_ppt,
+                self.hru_rain,
+                self.hru_snow,
+                self.intcp_changeover,
+                self.intcp_evap,
+                self.intcp_form,
+                self.intcp_stor,
+                self.intcp_transp_on,
+                self.net_ppt,
+                self.net_rain,
+                self.net_snow,
+                self.nhru,
+                self.pkwater_ante,
+                self.potet,
+                self.potet_sublim,
+                self.snow_intcp,
+                self.srain_intcp,
+                self.transp_on,
+                self.wrain_intcp,
+                time_length,
+                self._intercept_numba,
+            )
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
 
             (
                 self.intcp_evap,
@@ -179,6 +226,10 @@ class PRMSCanopy(StorageUnit):
                 self._intercept,
             )
 
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
         self.hru_intcpstor_change[:] = (
             self.hru_intcpstor - self.hru_intcpstor_old
         )
@@ -186,7 +237,6 @@ class PRMSCanopy(StorageUnit):
         return
 
     @staticmethod
-    @nb.jit(nopython=True)
     def _calculate_procedural(
         cov_type,
         covden_sum,
@@ -394,7 +444,6 @@ class PRMSCanopy(StorageUnit):
         )
 
     @staticmethod
-    @nb.jit(nopython=True)
     def _intercept(precip, stor_max, cov, intcp_stor, net_precip):
         net_precip = precip * (1.0 - cov)
         intcp_stor = intcp_stor + precip

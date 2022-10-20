@@ -10,8 +10,8 @@ NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
 BARESOIL = CovType.BARESOIL.value
 GRASSES = CovType.GRASSES.value
-LAND = HruType.LAND
-LAKE = HruType.LAKE
+LAND = HruType.LAND.value
+LAKE = HruType.LAKE.value
 RAIN = 0
 SNOW = 1
 OFF = 0
@@ -42,6 +42,10 @@ class PRMSCanopy(StorageUnit):
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
+
+        #
+        self._hru_type = np.array(self.nhru * [LAND])
+
         return
 
     @staticmethod
@@ -141,10 +145,68 @@ class PRMSCanopy(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.njit(fastmath=True)(
-                    self._calculate_procedural
-                )
-                self._intercept_numba = nb.njit(fastmath=True)(self._intercept)
+                # self._intercept_numba = nb.njit(
+                #     nb.types.Tuple(
+                #         (
+                #             nb.float64[:],  # intcp_stor
+                #             nb.float64[:],  # net_precip
+                #         )
+                #     )(
+                #         nb.float64[:],  # precip
+                #         nb.float64[:],  # stor_max
+                #         nb.float64[:],  # cov
+                #         nb.float64[:],  # intcp_stor
+                #         nb.float64[:],  # net_precip
+                #     ),
+                #     fastmath=True,
+                # )(self._intercept)
+                self._intercept_numba = nb.njit()(self._intercept)
+
+                # self._calculate_numba = nb.njit(
+                #     nb.types.Tuple(
+                #         (
+                #             nb.float64[:],  # intcp_evap
+                #             nb.float64[:],  # intcp_stor
+                #             nb.float64[:],  # net_rain
+                #             nb.float64[:],  # net_snow
+                #             nb.float64[:],  # net_ppt
+                #             nb.float64[:],  # hru_intcpstor
+                #             nb.float64[:],  # hru_intcpevap
+                #             nb.float64[:],  # intcp_changeover
+                #             nb.int32[:],  # intcp_transp_on
+                #         )
+                #     )(
+                #         nb.int64[:],  # cov_type
+                #         nb.float64[:],  # covden_sum
+                #         nb.float64[:],  # covden_win
+                #         nb.float64[:],  # hru_intcpstor
+                #         nb.float64[:],  # hru_intcpevap
+                #         nb.float64[:],  # hru_ppt
+                #         nb.float64[:],  # hru_rain
+                #         nb.float64[:],  # hru_snow
+                #         nb.float64[:],  # intcp_changeover
+                #         nb.float64[:],  # intcp_evap
+                #         nb.int32[:],  # intcp_form
+                #         nb.float64[:],  # intcp_stor
+                #         nb.int32[:],  # intcp_transp_on
+                #         nb.float64[:],  # net_ppt
+                #         nb.float64[:],  # net_rain
+                #         nb.float64[:],  # net_snow
+                #         nb.int32[:],  # np.int32(self.nhru)
+                #         nb.float64[:],  # self.pkwater_ante
+                #         nb.float64[:],  # potet
+                #         nb.float64[:],  # potet_sublim
+                #         nb.float64[:],  # snow_intcp
+                #         nb.float64[:],  # srain_intcp
+                #         nb.float64[:],  # transp_on
+                #         nb.float64[:],  # wrain_intcp
+                #         nb.float64[:],  # np.float64(time_length),
+                #         nb.int64[:],  # self._hru_type
+                #         nb.typeof(self._intercept_numba),  # function.
+                #     ),
+                #     fastmath=True,
+                # )(self._calculate_procedural)
+                self._calculate_numba = nb.njit()(self._calculate_procedural)
 
             (
                 self.intcp_evap[:],
@@ -182,6 +244,17 @@ class PRMSCanopy(StorageUnit):
                 self.transp_on,
                 self.wrain_intcp,
                 time_length,
+                self._hru_type,
+                NEARZERO,
+                DNEARZERO,
+                BARESOIL,
+                GRASSES,
+                LAND,
+                LAKE,
+                RAIN,
+                SNOW,
+                OFF,
+                ACTIVE,
                 self._intercept_numba,
             )
 
@@ -223,6 +296,17 @@ class PRMSCanopy(StorageUnit):
                 self.transp_on,
                 self.wrain_intcp,
                 time_length,
+                self._hru_type,
+                NEARZERO,
+                DNEARZERO,
+                BARESOIL,
+                GRASSES,
+                LAND,
+                LAKE,
+                RAIN,
+                SNOW,
+                OFF,
+                ACTIVE,
                 self._intercept,
             )
 
@@ -263,6 +347,17 @@ class PRMSCanopy(StorageUnit):
         transp_on,
         wrain_intcp,
         time_length,
+        hru_type,
+        NEARZERO,
+        DNEARZERO,
+        BARESOIL,
+        GRASSES,
+        LAND,
+        LAKE,
+        RAIN,
+        SNOW,
+        OFF,
+        ACTIVE,
         intercept,
     ):
 
@@ -275,7 +370,6 @@ class PRMSCanopy(StorageUnit):
         transp_on = transp_on
 
         # set hrutype to LAND as this is only type supported in NHM
-        hru_type = np.array(nhru * [LAND])
 
         for i in range(nhru):
             netrain = hru_rain[i]

@@ -3,10 +3,10 @@ from typing import Union
 
 import numpy as np
 
-from pynhm.base.control import Control
-from pynhm.base.timeseries import TimeseriesArray
-from pynhm.constants import fileish
-from pynhm.utils.netcdf_utils import NetCdfRead
+from ..base.control import Control
+from ..base.timeseries import TimeseriesArray
+from ..constants import fileish
+from ..utils.netcdf_utils import NetCdfRead
 
 
 class Adapter:

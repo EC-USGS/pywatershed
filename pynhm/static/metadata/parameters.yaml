@@ -19,8 +19,8 @@ adjmix_rain:
   default: 1.0
   desc: Adjustment factor for rain in a rain/snow mix
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) factor to adjust rain proportion in a mixed
     rain/snow event
   maximum: 3.0
@@ -36,7 +36,7 @@ albedo:
   default: 0.1
   desc: Short-wave solar radiation reflected by streams
   dimensions:
-    0: one
+    0: scalar
   help: Short-wave solar radiation reflected by streams
   maximum: 1.0
   minimum: 0.0
@@ -48,7 +48,7 @@ albset_rna:
   default: 0.8
   desc: Albedo reset - rain, accumulation stage
   dimensions:
-    0: one
+    0: scalar
   help: Fraction of rain in a mixed precipitation event above which the snow albedo
     is not reset; applied during the snowpack accumulation stage
   maximum: 1.0
@@ -61,7 +61,7 @@ albset_rnm:
   default: 0.6
   desc: Albedo reset - rain,  melt stage
   dimensions:
-    0: one
+    0: scalar
   help: Fraction of rain in a mixed precipitation event above which the snow albedo
     is not reset; applied during the snowpack melt stage
   maximum: 1.0
@@ -74,7 +74,7 @@ albset_sna:
   default: 0.05
   desc: Albedo reset - snow, accumulation stage
   dimensions:
-    0: one
+    0: scalar
   help: Minimum snowfall, in water equivalent, needed to reset snow albedo during
     the snowpack accumulation stage
   maximum: 1.0
@@ -87,7 +87,7 @@ albset_snm:
   default: 0.2
   desc: Albedo reset - snow, melt stage
   dimensions:
-    0: one
+    0: scalar
   help: Minimum snowfall, in water equivalent, needed to reset snow albedo during
     the snowpack melt stage
   maximum: 1.0
@@ -136,7 +136,7 @@ basin_solsta:
   default: 0
   desc: Index of main solar radiation station
   dimensions:
-    0: one
+    0: scalar
   help: Index of solar radiation station used to compute basin radiation values, used
     when dimension nsol>0
   maximum: nsol
@@ -151,7 +151,7 @@ basin_tsta:
   default: 0
   desc: Index of main temperature station
   dimensions:
-    0: one
+    0: scalar
   help: Index of temperature station used to compute basin temperature values
   maximum: ntemp
   minimum: bounded
@@ -193,7 +193,7 @@ cascade_flg:
   default: 0
   desc: Flag to indicate cascade type (0=allow many to many; 1=force one to one)
   dimensions:
-    0: one
+    0: scalar
   help: Flag to indicate cascade type (0=allow many to many; 1=force one to one)
   maximum: 1
   minimum: 0
@@ -205,7 +205,7 @@ cascade_tol:
   default: 5.0
   desc: Cascade area below which a cascade link is ignored
   dimensions:
-    0: one
+    0: scalar
   help: Cascade area below which a cascade link is ignored
   maximum: 99.0
   minimum: 0.0
@@ -217,8 +217,8 @@ ccov_intcp:
   default: 1.83
   desc: Intercept in temperature cloud cover relationship
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) intercept in cloud-cover relationship
   maximum: 5.0
   minimum: 0.0
@@ -230,8 +230,8 @@ ccov_slope:
   default: -0.13
   desc: Slope in temperature cloud cover relationship
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) coefficient in cloud-cover relationship
   maximum: -0.01
   minimum: -0.5
@@ -243,8 +243,8 @@ cecn_coef:
   default: 5.0
   desc: Monthly convection condensation energy coefficient for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) convection condensation energy coefficient for
     each HRU
   maximum: 20.0
@@ -257,7 +257,7 @@ circle_switch:
   default: 1
   desc: Switch to check for circles
   dimensions:
-    0: one
+    0: scalar
   help: Switch to check for circles (0=no check; 1=check)
   maximum: 1
   minimum: 0
@@ -306,8 +306,8 @@ crad_coef:
   default: 0.4
   desc: Coefficient in cloud cover-solar radiation relationship
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Coefficient(B) in Thompson(1976) equation; varies by region, contour map of
     values in reference
   maximum: 0.7
@@ -320,8 +320,8 @@ crad_exp:
   default: 0.61
   desc: Exponent in cloud cover-solar radiation relationship
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Exponent(P) in Thompson(1976) equation
   maximum: 0.8
   minimum: 0.2
@@ -333,8 +333,8 @@ crop_coef:
   default: 1.0
   desc: Crop coefficient for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) crop coefficient for each HRU
   maximum: 2.0
   minimum: 0.0
@@ -347,8 +347,8 @@ dday_intcp:
   default: -40.0
   desc: Intercept in temperature degree-day relationship
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) intercept in degree-day equation for each HRU
   maximum: 10.0
   minimum: -60.0
@@ -360,8 +360,8 @@ dday_slope:
   default: 0.4
   desc: Slope in temperature degree-day relationship
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) slope in degree-day equation for each HRU
   maximum: 1.4
   minimum: 0.1
@@ -373,7 +373,7 @@ den_init:
   default: 0.1
   desc: Initial density of new-fallen snow
   dimensions:
-    0: one
+    0: scalar
   help: Initial density of new-fallen snow
   maximum: 0.5
   minimum: 0.01
@@ -385,7 +385,7 @@ den_max:
   default: 0.6
   desc: Average maximum snowpack density
   dimensions:
-    0: one
+    0: scalar
   help: Average maximum snowpack density
   maximum: 0.8
   minimum: 0.1
@@ -397,7 +397,7 @@ dist_max:
   default: 1000000000.0
   desc: Maximum distance from HRU to include a climate station
   dimensions:
-    0: one
+    0: scalar
   help: Maximum distance from an HRU to a measurement station for use in calcuations
   maximum: 1.0E9
   minimum: 0.0
@@ -539,7 +539,7 @@ elev_units:
   default: 0
   desc: Elevation units flag
   dimensions:
-    0: one
+    0: scalar
   help: Flag to indicate the units of the elevation values (0=feet; 1=meters)
   maximum: 1
   minimum: 0
@@ -576,8 +576,8 @@ epan_coef:
   default: 1.0
   desc: Evaporation pan coefficient
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) evaporation pan coefficient for each HRU
   maximum: 3.0
   minimum: 0.01
@@ -779,7 +779,7 @@ gwflow_coef:
   default: 0.015
   desc: Groundwater routing coefficient
   dimensions:
-    0: nhru
+    0: ngw
   help: Linear coefficient in the equation to compute groundwater discharge for each
     GWR
   maximum: 0.5
@@ -792,7 +792,7 @@ gwsink_coef:
   default: 0.0
   desc: Groundwater sink coefficient
   dimensions:
-    0: nhru
+    0: ngw
   help: Linear coefficient in the equation to compute outflow to the groundwater sink
     for each GWR
   maximum: 1.0
@@ -805,7 +805,7 @@ gwstor_init:
   default: 2.0
   desc: Initial storage in each GWR
   dimensions:
-    0: nhru
+    0: ngw
   help: Storage in each GWR at the beginning of a simulation
   maximum: 50.0
   minimum: 0.0
@@ -817,7 +817,7 @@ gwstor_min:
   default: 0.0
   desc: Minimum storage in each GWR
   dimensions:
-    0: nhru
+    0: ngw
   help: Minimum storage in each GWR to ensure storage is greater than specified value
     to account for inflow from deep aquifers or injection wells with the water source
     outside the basin
@@ -831,8 +831,8 @@ hamon_coef:
   default: 0.0055
   desc: Monthly air temperature coefficient - Hamon
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) air temperature coefficient used in Hamon potential
     ET computations for each HRU
   maximum: 0.008
@@ -1203,8 +1203,8 @@ hs_krs:
   default: 0.0135
   desc: Potential ET adjustment factor - Hargreaves-Samani
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor used in Hargreaves-Samani
     potential ET computations for each HRU
   maximum: 0.24
@@ -1217,8 +1217,8 @@ humidity_percent:
   default: 0.0
   desc: Monthy humidity for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthy humidity for each HRU
   maximum: 100.0
   minimum: 0.0
@@ -1264,8 +1264,8 @@ jh_coef:
   default: 0.014
   desc: Monthly air temperature coefficient for each HRU - Jensen-Haise
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) air temperature coefficient used in Jensen-Haise
     potential ET computations for each HRU
   maximum: 1.5
@@ -1316,7 +1316,7 @@ lake_evap_adj:
   default: 1.0
   desc: Monthly potet factor to adjust potet on lakes
   dimensions:
-    0: nmonths
+    0: nmonth
     1: nlake
   help: Monthly (January to December) adjustment factor for potential ET for each
     lake
@@ -1457,7 +1457,7 @@ lapsemax_max:
   default: 2.0
   desc: Monthly maximum lapse rate for maximum temperature
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly (January to December) maximum lapse rate to constrain lowest maximum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
     measurement stations
@@ -1471,7 +1471,7 @@ lapsemax_min:
   default: -6.5
   desc: Monthly minimum lapse rate for maximum temperature
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly (January to December) maximum lapse rate to constrain lowest minimum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
     measurement stations
@@ -1485,7 +1485,7 @@ lapsemin_max:
   default: 3.0
   desc: Monthly maximum lapse rate for minimum temperature
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly (January to December) minimum lapse rate to constrain lowest maximum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
     measurement stations
@@ -1499,7 +1499,7 @@ lapsemin_min:
   default: -4.0
   desc: Monthly minimum lapse rate for minimum temperature
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly (January to December) minimum lapse rate to constrain lowest minimum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
     measurement stations
@@ -1514,7 +1514,7 @@ lat_temp_adj:
   desc: Correction factor to adjust the bias of the temperature of the lateral inflow
   dimensions:
     0: nsegment
-    1: nmonths
+    1: nmonth
   help: Correction factor to adjust the bias of the temperature of the lateral inflow
   maximum: 5.0
   minimum: -5.0
@@ -1540,7 +1540,7 @@ mapvars_freq:
   default: 0
   desc: Mapped results frequency
   dimensions:
-    0: one
+    0: scalar
   help: Flag to specify the output frequency (0=none; 1=monthly; 2=yearly; 3=total;
     4=monthly and yearly; 5=monthly, yearly, and total; 6=weekly; 7=daily)
   maximum: 7
@@ -1553,7 +1553,7 @@ mapvars_units:
   default: 0
   desc: Flag to specify the output units of mapped results
   dimensions:
-    0: one
+    0: scalar
   help: Flag to specify the output units of mapped results (0=units of the variable;
     1=inches to feet; 2=inches to centimeters; 3=inches to meters; as states or fluxes)
   maximum: 3
@@ -1567,7 +1567,7 @@ max_missing:
   desc: Maximum number of consecutive missing values allowed for any air-temperature-measurement
     station; 0=unlimited
   dimensions:
-    0: one
+    0: scalar
   help: Maximum number of consecutive missing values allowed for any air-temperature-measurement
     station; missing value set to last valid value; 0=unlimited
   maximum: 10
@@ -1580,7 +1580,7 @@ max_psta:
   default: 0
   desc: Maximum number of precipitation stations to distribute to an HRU
   dimensions:
-    0: one
+    0: scalar
   help: Maximum number of precipitation measurement stations to distribute to an HRU
   maximum: nrain
   minimum: bounded
@@ -1593,7 +1593,7 @@ max_tsta:
   desc: Maximum number of temperature stations to use for distributing temperature
     to any HRU
   dimensions:
-    0: one
+    0: scalar
   help: Maximum number of air-temperature measurement stations to use for distributing
     temperature to any HRU
   maximum: ntemp
@@ -1606,7 +1606,7 @@ maxday_prec:
   default: 15.0
   desc: Maximum daily precipitation for any weather site
   dimensions:
-    0: one
+    0: scalar
   help: Maximum measured precipitation value above which precipitation is assumed
     to be in error
   maximum: 20.0
@@ -1619,7 +1619,7 @@ maxiter_sntemp:
   default: 1000
   desc: Maximum number of Newton-Raphson iterations to compute stream temperature
   dimensions:
-    0: one
+    0: scalar
   help: Maximum number of Newton-Raphson iterations to compute stream temperature
   maximum: 2000
   minimum: 10
@@ -1657,7 +1657,7 @@ melt_temp:
   default: 1.5
   desc: Temperature at which snowmelt enters a stream
   dimensions:
-    0: one
+    0: scalar
   help: Temperature at which snowmelt enters a stream
   maximum: 10.0
   minimum: 0.0
@@ -1669,7 +1669,7 @@ monmax:
   default: 100.0
   desc: Daily maximum temperature
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly maximum air temperature to constrain lowest minimum measured air temperatures
     for bad values based on historical temperature for all measurement stations
   maximum: 115.0
@@ -1682,7 +1682,7 @@ monmin:
   default: -60.0
   desc: Daily minimum temperature
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly minimum air temperature to constrain lowest minimum measured air temperatures
     for bad values based on historical temperature for all measurement stations
   maximum: 65.0
@@ -1695,7 +1695,7 @@ ncol:
   default: 1
   desc: Number of columns for each row of the mapped results
   dimensions:
-    0: one
+    0: scalar
   help: Number of columns for each row of the mapped results
   maximum: 50000
   minimum: 1
@@ -1830,7 +1830,7 @@ outlet_sta:
   default: 0
   desc: Index of measurement station to use for basin outlet
   dimensions:
-    0: one
+    0: scalar
   help: Index of measured streamflow station corresponding to the basin outlet
   maximum: nobs
   minimum: bounded
@@ -1843,7 +1843,7 @@ padj_rn:
   desc: Rain adjustment factor, by month for each precipitation station
   dimensions:
     0: nrain
-    1: nmonths
+    1: nmonth
   help: Monthly (January to December) factor to adjust precipitation lapse rate computed
     between station hru_psta and station hru_plaps; positive factors are mutiplied
     times the lapse rate and negative factors are made positive and substituted for
@@ -1859,7 +1859,7 @@ padj_sn:
   desc: Snow adjustment factor, by month for each precipitation station
   dimensions:
     0: nrain
-    1: nmonths
+    1: nmonth
   help: Monthly (January to December) factor to adjust precipitation lapse rate computed
     between station hru_psta and station hru_plaps; positive factors are mutiplied
     times the lapse rate and negative factors are made positive and substituted for
@@ -1935,8 +1935,8 @@ pm_d_coef:
   default: 0.34
   desc: Penman-Monteith coefficient
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) Penman-Monteith potential ET D wind-speed coefficient
     for each HRU
   maximum: 0.45
@@ -1950,8 +1950,8 @@ pm_n_coef:
   default: 900.0
   desc: Penman-Monteith coefficient
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) Penman-Monteith potential ET N temperauture
     coefficient for each HRU
   maximum: 950.0
@@ -1966,7 +1966,7 @@ pmn_mo:
   desc: Mean monthly precipitation for each lapse precipitation station
   dimensions:
     0: nrain
-    1: nmonths
+    1: nmonth
   help: Mean monthly (January to December) precipitation for each lapse precipitation
     measurement station
   maximum: 100.0
@@ -2016,8 +2016,8 @@ potet_cbh_adj:
   default: 1.0
   desc: Potential ET adjustment factor, by month for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor to potential evapotranspiration
     specified in CBH Files for each HRU
   maximum: 1.5
@@ -2043,8 +2043,8 @@ ppt_rad_adj:
   default: 0.02
   desc: Radiation reduced if HRU precipitation above this value
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly minimum precipitation, if HRU precipitation exceeds this value, radiation
     is multiplied by radj_sppt or radj_wppt adjustment factor
   maximum: 0.5
@@ -2059,7 +2059,7 @@ precip_units:
   default: 0
   desc: Units for measured precipitation
   dimensions:
-    0: one
+    0: scalar
   help: Units for measured precipitation (0=inches; 1=mm)
   maximum: 1
   minimum: 0
@@ -2086,7 +2086,7 @@ print_freq:
   default: 3
   desc: Frequency for the output frequency
   dimensions:
-    0: one
+    0: scalar
   help: Flag to select the output frequency; for combinations, add index numbers,
     e.g., daily plus yearly = 10; yearly plus total = 3 (0=none; 1=run totals; 2=yearly;
     4=monthly; 8=daily; or additive combinations)
@@ -2100,7 +2100,7 @@ print_type:
   default: 1
   desc: Type of output written to output file
   dimensions:
-    0: one
+    0: scalar
   help: Flag to select the type of results written to the output file (0=measured
     and simulated flow only; 1=water balance table; 2=detailed output)
   maximum: 2
@@ -2128,7 +2128,7 @@ psta_mon:
   desc: Monthly precipitation for each of the nrain precipitation measurement stations
   dimensions:
     0: nrain
-    1: nmonths
+    1: nmonth
   help: Monthly (January to December) factor to precipitation at each measured station
     to adjust precipitation distributed to each HRU to account for differences in
     elevation, and so forth
@@ -2168,8 +2168,8 @@ pt_alpha:
   default: 1.26
   desc: Potential ET adjustment factor - Priestly-Taylor
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor used in Priestly-Taylor potential
     ET computations for each HRU
   maximum: 2.0
@@ -2182,7 +2182,7 @@ rad_conv:
   default: 1.0
   desc: Conversion factor to Langleys for measured solar radiation
   dimensions:
-    0: one
+    0: scalar
   help: Conversion factor to Langleys for measured solar radiation
   maximum: 100.0
   minimum: 0.1
@@ -2209,8 +2209,8 @@ radadj_intcp:
   default: 1.0
   desc: Intercept in air temperature range adjustment to degree-day equation
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) intercept in air temperature range adjustment
     to degree-day equation for each HRU
   maximum: 1.0
@@ -2223,8 +2223,8 @@ radadj_slope:
   default: 0.0
   desc: Slope in air temperature range adjustment to degree-day equation
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) slope in air temperature range adjustment to
     degree-day equation for each HRU
   maximum: 1.0
@@ -2267,8 +2267,8 @@ radmax:
   default: 0.8
   desc: Maximum fraction of potential solar radiation
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) maximum fraction of the potential solar radiation
     that may reach the ground due to haze, dust, smog, and so forth, for each HRU
   maximum: 1.0
@@ -2283,8 +2283,8 @@ rain_adj:
   default: 1.0
   desc: Monthly rain adjustment factor for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) factor to adjust measured precipitation on each
     HRU to account for differences in elevation, and so forth
   maximum: 2.5
@@ -2297,8 +2297,8 @@ rain_cbh_adj:
   default: 1.0
   desc: Rain adjustment factor, by month for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor to measured precipitation
     determined to be rain on each HRU to account for differences in elevation, and
     so forth
@@ -2312,7 +2312,7 @@ rain_code:
   default: 2
   desc: Flag indicating rule for precipitation station use
   dimensions:
-    0: nmonths
+    0: nmonth
   help: Monthly (January to December) flag indicating rule for precipitation measurement
     station use (1=only precipitation if the regression stations have precipitation;
     2=only precipitation if any station in the basin has precipitation; 3=precipitation
@@ -2328,8 +2328,8 @@ rain_mon:
   default: 1.0
   desc: Rain adjustment factor, by month for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) factor to rain on each HRU to adjust precipitation
     distributed to each HRU to account for differences in elevation, and so forth
   maximum: 50.0
@@ -2411,7 +2411,7 @@ runoff_units:
   default: 0
   desc: Measured streamflow units
   dimensions:
-    0: one
+    0: scalar
   help: Measured streamflow units (0=cfs; 1=cms)
   maximum: 1
   minimum: 0
@@ -2476,7 +2476,7 @@ seg_humidity:
   desc: Mean monthly humidity for each segment
   dimensions:
     0: nsegment
-    1: nmonths
+    1: nmonth
   help: Mean monthly humidity for each segment, used when values not input in CBH
     file
   maximum: 1.0
@@ -2634,7 +2634,7 @@ settle_const:
   default: 0.1
   desc: Snowpack settlement time constant
   dimensions:
-    0: one
+    0: scalar
   help: Snowpack settlement time constant
   maximum: 0.5
   minimum: 0.01
@@ -2724,8 +2724,8 @@ snow_adj:
   default: 1.0
   desc: Monthly snow adjustment factor for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) factor to adjust measured precipitation on each
     HRU to account for differences in elevation, and so forth
   maximum: 2.5
@@ -2738,8 +2738,8 @@ snow_cbh_adj:
   default: 1.0
   desc: Snow adjustment factor, by month for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor to measured precipitation
     determined to be snow on each HRU to account for differences in elevation, and
     so forth
@@ -2765,8 +2765,8 @@ snow_mon:
   default: 1.0
   desc: Rain adjustment factor, by month for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) factor to snow on each HRU to adjust precipitation
     distributed to each HRU to account for differences in elevation, and so forth
   maximum: 50.0
@@ -2972,7 +2972,7 @@ ssr2gw_exp:
   default: 1.0
   desc: Coefficient to route water from subsurface to groundwater
   dimensions:
-    0: nhru
+    0: nssr
   help: Non-linear coefficient in equation used to route water from the gravity reservoir
     to the GWR for each HRU
   maximum: 3.0
@@ -2985,7 +2985,7 @@ ssr2gw_rate:
   default: 0.1
   desc: Coefficient to route water from gravity reservoir to GWR
   dimensions:
-    0: nhru
+    0: nssr
   help: Linear coefficient in equation used to route water from the gravity reservoir
     to the GWR for each HRU
   maximum: 1.0
@@ -2999,7 +2999,7 @@ ssstor_init_frac:
   desc: Initial fraction of available water in the gravity plus preferential-flow
     reservoirs
   dimensions:
-    0: nhru
+    0: nssr
   help: Initial fraction of available water in the gravity plus preferential-flow
     reservoirs (fraction of sat_threshold) for each HRU
   maximum: 1.0
@@ -3130,7 +3130,7 @@ temp_units:
   default: 0
   desc: Units flag for measured temperature
   dimensions:
-    0: one
+    0: scalar
   help: Flag to indicate the units of measured air-temperature values (0=Fahrenheit;
     1=Celsius)
   maximum: 1
@@ -3146,8 +3146,8 @@ tmax_adj:
   default: 0.0
   desc: HRU maximum temperature adjustment
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Adjustment to maximum temperature for each HRU, estimated on the basis of
     slope and aspect
   maximum: 10.0
@@ -3164,8 +3164,8 @@ tmax_allrain_offset:
   default: 1.0
   desc: Precipitation is rain if HRU max temperature >= tmax_allsnow + this value
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) maximum air temperature when precipitation is
     assumed to be rain; if HRU air temperature is greater than or equal to tmax_allsnow
     plus this value, precipitation is rain
@@ -3183,8 +3183,8 @@ tmax_allsnow:
   default: 32.0
   desc: Maximum temperature when precipitation is all snow
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Maximum air temperature when precipitation is assumed to be snow; if HRU air
     temperature is less than or equal to this value, precipitation is snow
   maximum: 40.0
@@ -3201,8 +3201,8 @@ tmax_cbh_adj:
   default: 0.0
   desc: Monthly maximum temperature adjustment factor for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor to maximum air temperature
     for each HRU, estimated on the basis of slope and aspect
   maximum: 10.0
@@ -3215,8 +3215,8 @@ tmax_index:
   default: 50.0
   desc: Monthly index temperature
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) index temperature used to determine precipitation
     adjustments to solar radiation for each HRU
   maximum: 110.0
@@ -3229,8 +3229,8 @@ tmax_lapse:
   default: 3.0
   desc: Monthly maximum temperature lapse rate for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) values representing the change in maximum air
     temperature per 1000 elev_units of elevation change for each HRU
   maximum: 20.0
@@ -3243,8 +3243,8 @@ tmin_adj:
   default: 0.0
   desc: HRU minimum temperature adjustment
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Adjustment to minimum temperature for each HRU, estimated on the basis of
     slope and aspect
   maximum: 10.0
@@ -3261,8 +3261,8 @@ tmin_cbh_adj:
   default: 0.0
   desc: Monthly minimum temperature adjustment factor for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) adjustment factor to minimum air temperature
     for each HRU, estimated on the basis of slope and aspect
   maximum: 10.0
@@ -3275,8 +3275,8 @@ tmin_lapse:
   default: 3.0
   desc: Monthly minimum temperature lapse rate for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly (January to December) values representing the change in minimum air
     temperture per 1000 elev_units of elevation change for each HRU
   maximum: 20.0
@@ -3397,8 +3397,8 @@ tstorm_mo:
   default: 0
   desc: Set to 1 if thunderstorms prevalent during month for each HRU
   dimensions:
-    0: nhru
-    1: nmonths
+    0: nmonth
+    1: nhru
   help: Monthly flag (January to December) for prevalent storm type for each HRU (0=frontal
     storms; 1=convective storms)
   maximum: 1

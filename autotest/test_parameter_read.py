@@ -29,7 +29,7 @@ def test_parameter_init():
     }
     assert_or_print(results, answers)
 
-    print(f"success initializing PrmsParameters object")
+    print("success initializing PrmsParameters object")
 
 
 def test_parameter_read(domain):
@@ -58,10 +58,10 @@ def test_parameter_canopy_subset(domain, canopy_parameters):
 
     parameters = PrmsParameters.load(parameter_file)
 
-    canopy_subset = parameters.get_parameters(canopy_parameters)
+    canopy_subset = parameters.subset(canopy_parameters)
 
-    with pytest.raises(AttributeError):
-        v = canopy_subset.parameters.unknown
+    with pytest.raises(KeyError):
+        v = canopy_subset.parameters["unknown"]
 
     for key in canopy_parameters:
         if key != "unknown":

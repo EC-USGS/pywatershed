@@ -1,9 +1,8 @@
 import numpy as np
 
-from pynhm.base.storageUnit import StorageUnit
-
 from ..base.adapter import adaptable
 from ..base.control import Control
+from ..base.storageUnit import StorageUnit
 from ..constants import CovType, HruType, zero
 
 # set constants (may need .value for enum to be used in > comparisons)
@@ -57,7 +56,6 @@ class PRMSCanopy(StorageUnit):
             "srain_intcp",
             "wrain_intcp",
             "snow_intcp",
-            "epan_coef",
             "potet_sublim",
             "snow_intcp",
         )

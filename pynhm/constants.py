@@ -4,7 +4,9 @@ from typing import Union
 
 import numpy as np
 
+# Typing constants
 fileish = Union[str, pl.Path]
+listish = Union[str, list, tuple]
 
 # PRMS6 Constants module:
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/misc/m_constants.f90
@@ -24,6 +26,9 @@ fill_value_f4 = 9.96921e36
 inch2cm = 2.54
 ft2_per_acre = 43560.0
 inches_per_foot = 12.0
+
+ndoy = 366
+nmonth = 12
 
 
 class HruType(Enum):

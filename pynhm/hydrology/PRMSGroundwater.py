@@ -7,7 +7,7 @@ from ..base.control import Control
 from ..constants import nan
 
 try:
-    from ..PRMSGroundwater_f import calc_groundwater as _fortran_calc
+    from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
 
     has_prmsgroundwater_f = True
 except ModuleNotFoundError:
@@ -179,7 +179,7 @@ class PRMSGroundwater(StorageUnit):
                 self.gwres_sink[:],
                 self.gwres_stor_change[:],
                 self.gwres_flow_vol[:],
-            ) = _fortran_calc(
+            ) = _calculate_fortran(
                 self.hru_area,
                 self.soil_to_gw,
                 self.ssr_to_gw,

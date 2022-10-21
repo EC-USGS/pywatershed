@@ -1,5 +1,5 @@
 pure subroutine calc_groundwater( &
-    nn, &  ! in
+    nhru, &  ! in
     gwarea, &  ! in
     soil_to_gw, &  ! in
     ssr_to_gw, &   ! in
@@ -17,18 +17,18 @@ pure subroutine calc_groundwater( &
 )
 
     implicit none
-    integer, intent(in) :: nn
-    real(kind=8), intent(in), dimension(nn) :: &
+    integer(kind=4), intent(in) :: nhru
+    real(kind=8), intent(in), dimension(nhru) :: &
         gwarea, soil_to_gw, ssr_to_gw, dprst_seep_hru, &
         gwflow_coef, gwsink_coef, gwres_stor_old, hru_in_to_cf, &
         gwres_stor_in
-    real(kind=8), intent(out), dimension(nn) :: &
+    real(kind=8), intent(out), dimension(nhru) :: &
         gwres_flow, gwres_sink, &
         gwres_stor_change, gwres_flow_vol, &
         gwres_stor_out
 
     ! local
-    real(kind=8), dimension(nn) :: &
+    real(kind=8), dimension(nhru) :: &
         l_gwres_stor, l_gwres_flow, l_gwres_sink, &
         soil_to_gw_vol, ssr_to_gw_vol, dprst_seep_hru_vol
 

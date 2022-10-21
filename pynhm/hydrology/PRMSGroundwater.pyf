@@ -3,22 +3,22 @@
 
 python module PRMSGroundwater_f
     interface
-        subroutine calc_groundwater(nn,gwarea,soil_to_gw,ssr_to_gw,dprst_seep_hru,gwres_stor_in,gwflow_coef,gwsink_coef,gwres_stor_old,hru_in_to_cf,gwres_stor_out,gwres_flow,gwres_sink,gwres_stor_change,gwres_flow_vol) ! in PRMSGroundwater.f90
-          integer, optional,intent(in),check(len(gwarea)>=nn),depend(gwarea) :: nn=len(gwarea)
-            real(kind=8) dimension(nn),intent(in) :: gwarea
-            real(kind=8) dimension(nn),intent(in) :: soil_to_gw
-            real(kind=8) dimension(nn),intent(in) :: ssr_to_gw
-            real(kind=8) dimension(nn),intent(in) :: dprst_seep_hru
-            real(kind=8) dimension(nn),intent(in) :: gwres_stor_in
-            real(kind=8) dimension(nn),intent(in) :: gwflow_coef
-            real(kind=8) dimension(nn),intent(in) :: gwsink_coef
-            real(kind=8) dimension(nn),intent(in) :: gwres_stor_old
-            real(kind=8) dimension(nn),intent(in) :: hru_in_to_cf
-            real(kind=8) dimension(nn),intent(out) :: gwres_stor_out
-            real(kind=8) dimension(nn),intent(out) :: gwres_flow
-            real(kind=8) dimension(nn),intent(out) :: gwres_sink
-            real(kind=8) dimension(nn),intent(out) :: gwres_stor_change
-            real(kind=8) dimension(nn),intent(out) :: gwres_flow_vol
+        subroutine calc_groundwater(nhru,gwarea,soil_to_gw,ssr_to_gw,dprst_seep_hru,gwres_stor_in,gwflow_coef,gwsink_coef,gwres_stor_old,hru_in_to_cf,gwres_stor_out,gwres_flow,gwres_sink,gwres_stor_change,gwres_flow_vol) ! in PRMSGroundwater.f90
+            integer, optional,intent(in),check(len(gwarea)>=nhru),depend(gwarea) :: nhru=len(gwarea)
+            real(kind=8) dimension(nhru),intent(in) :: gwarea
+            real(kind=8) dimension(nhru),intent(in) :: soil_to_gw
+            real(kind=8) dimension(nhru),intent(in) :: ssr_to_gw
+            real(kind=8) dimension(nhru),intent(in) :: dprst_seep_hru
+            real(kind=8) dimension(nhru),intent(in) :: gwres_stor_in
+            real(kind=8) dimension(nhru),intent(in) :: gwflow_coef
+            real(kind=8) dimension(nhru),intent(in) :: gwsink_coef
+            real(kind=8) dimension(nhru),intent(in) :: gwres_stor_old
+            real(kind=8) dimension(nhru),intent(in) :: hru_in_to_cf
+            real(kind=8) dimension(nhru),intent(out) :: gwres_stor_out
+            real(kind=8) dimension(nhru),intent(out) :: gwres_flow
+            real(kind=8) dimension(nhru),intent(out) :: gwres_sink
+            real(kind=8) dimension(nhru),intent(out) :: gwres_stor_change
+            real(kind=8) dimension(nhru),intent(out) :: gwres_flow_vol
         end subroutine calc_groundwater
     end interface
 end python module PRMSGroundwater_f

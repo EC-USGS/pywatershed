@@ -124,11 +124,11 @@ jobs:
       - name: Install gfortran
         uses: modflowpy/install-gfortran-action@v1
 
-      - name: Print env and locate libgfortran.5.dylib
-        if: runner.os == 'macOS'
-        run: |
-          env
-          locate libgfortran.5.dylib
+      # - name: Print env and locate libgfortran.5.dylib
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     env
+      #     locate libgfortran.5.dylib
 
       - name: Set environment variables
         run: |
@@ -155,7 +155,6 @@ jobs:
       - name: Run available domains with PRMS and convert csv output to NetCDF
         working-directory: test_data/scripts
         run: |
-          locate libgfortran.5.dylib
           pytest -v -n=auto --durations=0 test_run_domains.py
           pytest -v -n=auto --durations=0 test_nc_domains.py
 

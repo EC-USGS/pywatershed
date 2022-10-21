@@ -1,5 +1,5 @@
-from numba import prange
 import numpy as np
+from numba import prange
 
 from ..base.adapter import adaptable
 from ..base.control import Control

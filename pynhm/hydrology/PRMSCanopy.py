@@ -1,9 +1,19 @@
+from numba import prange
 import numpy as np
 
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..base.storageUnit import StorageUnit
 from ..constants import CovType, HruType, zero
+
+try:
+    from ..PRMSCanopy_f import canopy
+
+    _calculate_fortran = canopy.calc_canopy
+    has_prmscanopy_f = True
+except ModuleNotFoundError:
+    has_prmscanopy_f = False
+
 
 # set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
@@ -43,7 +53,7 @@ class PRMSCanopy(StorageUnit):
         self._set_inputs(locals())
         self._set_budget(budget_type)
 
-        #
+        # set hrutype to LAND as this is only type supported in NHM
         self._hru_type = np.array(self.nhru * [LAND])
 
         return
@@ -145,6 +155,14 @@ class PRMSCanopy(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
+
+                # JLM: note. I gave up on specifying signatures because it
+                #      appears impossible/undocumented how to specify the type
+                #      of a passed function. The work is not in vain as then
+                #      types will be required for f90. The signatures remain
+                #      here commented for that reason and in case we can get it
+                #      to work in the future.
+
                 # self._intercept_numba = nb.njit(
                 #     nb.types.Tuple(
                 #         (
@@ -160,7 +178,7 @@ class PRMSCanopy(StorageUnit):
                 #     ),
                 #     fastmath=True,
                 # )(self._intercept)
-                self._intercept_numba = nb.njit()(self._intercept)
+                self._intercept_numba = nb.njit(fastmath=True)(self._intercept)
 
                 # self._calculate_numba = nb.njit(
                 #     nb.types.Tuple(
@@ -176,6 +194,7 @@ class PRMSCanopy(StorageUnit):
                 #             nb.int32[:],  # intcp_transp_on
                 #         )
                 #     )(
+                #         nb.int32,  # np.int32(self.nhru)
                 #         nb.int64[:],  # cov_type
                 #         nb.float64[:],  # covden_sum
                 #         nb.float64[:],  # covden_win
@@ -192,7 +211,6 @@ class PRMSCanopy(StorageUnit):
                 #         nb.float64[:],  # net_ppt
                 #         nb.float64[:],  # net_rain
                 #         nb.float64[:],  # net_snow
-                #         nb.int32[:],  # np.int32(self.nhru)
                 #         nb.float64[:],  # self.pkwater_ante
                 #         nb.float64[:],  # potet
                 #         nb.float64[:],  # potet_sublim
@@ -200,13 +218,26 @@ class PRMSCanopy(StorageUnit):
                 #         nb.float64[:],  # srain_intcp
                 #         nb.float64[:],  # transp_on
                 #         nb.float64[:],  # wrain_intcp
-                #         nb.float64[:],  # np.float64(time_length),
+                #         nb.float64,  # np.float64(time_length),
                 #         nb.int64[:],  # self._hru_type
+                #         nb.float64,  # NEARZERO
+                #         nb.float64,  # DNEARZERO,
+                #         nb.int32,  # BARESOIL,
+                #         nb.int32,  # GRASSES,
+                #         nb.int32,  # LAND,
+                #         nb.int32,  # LAKE,
+                #         nb.int32,  # RAIN,
+                #         nb.int32,  # SNOW,
+                #         nb.int32,  # OFF,
+                #         nb.int32,  # ACTIVE,
                 #         nb.typeof(self._intercept_numba),  # function.
                 #     ),
                 #     fastmath=True,
                 # )(self._calculate_procedural)
-                self._calculate_numba = nb.njit()(self._calculate_procedural)
+                # this is slower parallelized
+                self._calculate_numba = nb.njit(parallel=False, fastmath=True)(
+                    self._calculate_procedural
+                )
 
             (
                 self.intcp_evap[:],
@@ -219,6 +250,7 @@ class PRMSCanopy(StorageUnit):
                 self.intcp_changeover[:],
                 self.intcp_transp_on[:],
             ) = self._calculate_numba(
+                np.int32(self.nhru),
                 self.cov_type,
                 self.covden_sum,
                 self.covden_win,
@@ -235,7 +267,6 @@ class PRMSCanopy(StorageUnit):
                 self.net_ppt,
                 self.net_rain,
                 self.net_snow,
-                self.nhru,
                 self.pkwater_ante,
                 self.potet,
                 self.potet_sublim,
@@ -245,16 +276,16 @@ class PRMSCanopy(StorageUnit):
                 self.wrain_intcp,
                 time_length,
                 self._hru_type,
-                NEARZERO,
-                DNEARZERO,
-                BARESOIL,
-                GRASSES,
-                LAND,
-                LAKE,
-                RAIN,
-                SNOW,
-                OFF,
-                ACTIVE,
+                np.float64(NEARZERO),
+                np.float64(DNEARZERO),
+                np.int32(BARESOIL),
+                np.int32(GRASSES),
+                np.int32(LAND),
+                np.int32(LAKE),
+                np.int32(RAIN),
+                np.int32(SNOW),
+                np.int32(OFF),
+                np.int32(ACTIVE),
                 self._intercept_numba,
             )
 
@@ -271,6 +302,7 @@ class PRMSCanopy(StorageUnit):
                 self.intcp_changeover[:],
                 self.intcp_transp_on[:],
             ) = self._calculate_procedural(
+                self.nhru,
                 self.cov_type,
                 self.covden_sum,
                 self.covden_win,
@@ -287,7 +319,6 @@ class PRMSCanopy(StorageUnit):
                 self.net_ppt,
                 self.net_rain,
                 self.net_snow,
-                self.nhru,
                 self.pkwater_ante,
                 self.potet,
                 self.potet_sublim,
@@ -310,6 +341,56 @@ class PRMSCanopy(StorageUnit):
                 self._intercept,
             )
 
+        elif self._calc_method.lower() == "fortran":
+
+            (
+                self.intcp_evap[:],
+                self.intcp_stor[:],
+                self.net_rain[:],
+                self.net_snow[:],
+                self.net_ppt[:],
+                self.hru_intcpstor[:],
+                self.hru_intcpevap[:],
+                self.intcp_changeover[:],
+                self.intcp_transp_on[:],
+            ) = _calculate_fortran(
+                self.cov_type,
+                self.covden_sum,
+                self.covden_win,
+                self.hru_intcpstor,
+                self.hru_intcpevap,
+                self.hru_ppt,
+                self.hru_rain,
+                self.hru_snow,
+                self.intcp_changeover,
+                self.intcp_evap,
+                self.intcp_form,
+                self.intcp_stor,
+                self.intcp_transp_on,
+                self.net_ppt,
+                self.net_rain,
+                self.net_snow,
+                self.pkwater_ante,
+                self.potet,
+                self.potet_sublim,
+                self.snow_intcp,
+                self.srain_intcp,
+                self.transp_on,
+                self.wrain_intcp,
+                time_length,
+                self._hru_type,
+                np.float64(NEARZERO),
+                np.float64(DNEARZERO),
+                np.int32(BARESOIL),
+                np.int32(GRASSES),
+                np.int32(LAND),
+                np.int32(LAKE),
+                np.int32(RAIN),
+                np.int32(SNOW),
+                np.int32(OFF),
+                np.int32(ACTIVE),
+            )
+
         else:
             msg = f"Invalid calc_method={self._calc_method} for {self.name}"
             raise ValueError(msg)
@@ -322,6 +403,7 @@ class PRMSCanopy(StorageUnit):
 
     @staticmethod
     def _calculate_procedural(
+        nhru,
         cov_type,
         covden_sum,
         covden_win,
@@ -338,7 +420,6 @@ class PRMSCanopy(StorageUnit):
         net_ppt,
         net_rain,
         net_snow,
-        nhru,
         pkwater_ante,
         potet,
         potet_sublim,
@@ -361,17 +442,13 @@ class PRMSCanopy(StorageUnit):
         intercept,
     ):
 
-        # Assign short variables for input variables
-        hru_ppt = hru_ppt
-        potet = potet
-        hru_rain = hru_rain
-        hru_snow = hru_snow
-        intcp_form = intcp_form
-        transp_on = transp_on
-
-        # set hrutype to LAND as this is only type supported in NHM
-
-        for i in range(nhru):
+        # TODO: would be nice to alphabetize the arguments
+        #       probably while keeping constants at the end.
+        #       intcp_form and intcp_transp_on also do not appear to be
+        #       actual inputs
+        #       Keep the f90 call signature consistent with the args in
+        #       python/numba.
+        for i in prange(nhru):
             netrain = hru_rain[i]
             netsnow = hru_snow[i]
 

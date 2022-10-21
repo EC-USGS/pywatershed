@@ -20,6 +20,13 @@ if pynhm_fortran:
             "pynhm/hydrology/PRMSGroundwater.f90",
         ],
     )
+    config.add_extension(
+        "PRMSCanopy_f",
+        sources=[
+            "pynhm/hydrology/PRMSCanopy.pyf",
+            "pynhm/hydrology/PRMSCanopy.f90",
+        ],
+    )
     # add more f2py extensions here
 
 setup(**config.todict(), packages=setuptools.find_packages())

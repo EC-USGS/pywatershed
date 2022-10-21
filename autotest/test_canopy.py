@@ -64,8 +64,7 @@ def control(domain, params):
 
 @pytest.mark.parametrize(
     "calc_method",
-    (None, "numba"),
-    ids=("numpy", "numba"),
+    ("numpy", "numba", "fortran"),
 )
 class TestPRMSCanopyDomain:
     def test_init(self, domain, control, tmp_path, calc_method):

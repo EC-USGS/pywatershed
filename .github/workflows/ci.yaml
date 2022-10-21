@@ -122,29 +122,7 @@ jobs:
         uses: actions/checkout@v2.4.0
 
       - name: Install gfortran
-        if: runner.os != 'macOS'
         uses: modflowpy/install-gfortran-action@v1
-
-      - name: Symlink to gfortran (MacOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          # sudo ln -fs /usr/local/bin/gfortran-12 /usr/local/bin/gfortran
-          # sudo ln -fs /usr/local/bin/gcc-12 /usr/local/bin/gcc
-          # sudo ln -fs /usr/local/bin/g++-12 /usr/local/bin/g++
-          # mkdir -p /usr/local/opt/gcc/lib/gcc
-          # sudo ln -fs /usr/local/opt/gcc/lib/gcc/12 /usr/local/opt/gcc/lib/gcc/11
-          
-          sudo ln -fs /usr/local/bin/gfortran-12 /usr/local/bin/gfortran   
-          sudo ln -fs /usr/local/bin/gcc-12 /usr/local/bin/gcc
-          sudo ln -fs /usr/local/bin/g++-12 /usr/local/bin/g++
-          sudo ln -fs /usr/local/opt/gcc/lib/gcc/12 /usr/local/opt/gcc/lib/gcc/11
-
-      # - name: Print env and locate libgfortran.5.dylib
-      #   if: runner.os == 'macOS'
-      #   run: |
-      #     env
-      #     locate libgfortran.5.dylib
 
       - name: Set environment variables
         run: |
@@ -155,7 +133,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-
 
       - name: Install dependencies and this package
         run: |

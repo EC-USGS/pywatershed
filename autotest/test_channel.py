@@ -1,13 +1,19 @@
 import pathlib as pl
 
+import pytest
+
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSChannel import PRMSChannel
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 
+@pytest.mark.parametrize(
+    "calc_method",
+    ("numpy", "numba"),
+)
 class TestPRMSChannelDomain:
-    def test_init(self, domain, tmp_path):
+    def test_init(self, domain, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)
         params = PrmsParameters.load(domain["param_file"])
 
@@ -21,7 +27,12 @@ class TestPRMSChannelDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        channel = PRMSChannel(control, **input_variables, budget_type="error")
+        channel = PRMSChannel(
+            control,
+            **input_variables,
+            budget_type="error",
+            calc_method=calc_method,
+        )
         nc_parent = tmp_path / domain["domain_name"]
         channel.initialize_netcdf(nc_parent)
 

@@ -9,6 +9,13 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import SegmentType, nan, zero
 
+try:
+    from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran
+
+    has_prmschannel_f = True
+except ModuleNotFoundError:
+    has_prmschannel_f = False
+
 
 class PRMSChannel(StorageUnit):
     """PRMS channel flow (muskingum_mann).
@@ -286,12 +293,11 @@ class PRMSChannel(StorageUnit):
         # local flow variables
         self._seg_inflow = np.zeros(self.nsegment, dtype=float)
         self._seg_inflow0 = np.zeros(self.nsegment, dtype=float) * nan
-        self._seg_outflow0 = np.zeros(self.nsegment, dtype=float) * nan
         self._inflow_ts = np.zeros(self.nsegment, dtype=float)
         self._outflow_ts = np.zeros(self.nsegment, dtype=float)
         self._seg_current_sum = np.zeros(self.nsegment, dtype=float)
 
-        # initialize internal sef_inflow variable
+        # initialize internal self_inflow variable
         for iseg in range(self.nsegment):
             jseg = self.tosegment[iseg]
             if jseg < 0:
@@ -306,7 +312,6 @@ class PRMSChannel(StorageUnit):
             None
         """
         self._seg_inflow0[:] = self._seg_inflow
-        self._seg_outflow0[:] = self.seg_outflow
         return
 
     def _calculate(self, simulation_time: float) -> None:
@@ -355,12 +360,11 @@ class PRMSChannel(StorageUnit):
 
             if not hasattr(self, "_muskingum_mann_numba"):
                 self._muskingum_mann_numba = nb.njit(
-                    nb.types.UniTuple(nb.float64[:], 8)(
+                    nb.types.UniTuple(nb.float64[:], 7)(
                         nb.int64[:],  # _segment_order
                         nb.int64[:],  # tosegment
                         nb.float64[:],  # seg_lateral_inflow
                         nb.float64[:],  # _seg_inflow0
-                        nb.float64[:],  # _seg_outflow0
                         nb.float64[:],  # _outflow_ts
                         nb.int64[:],  # _tsi
                         nb.float64[:],  # _ts
@@ -368,23 +372,22 @@ class PRMSChannel(StorageUnit):
                         nb.float64[:],  # _c1
                         nb.float64[:],  # _c2
                     ),
+                    fastmath=True,
                 )(self._muskingum_mann_numpy)
 
             (
-                self.seg_upstream_inflow,
-                self._seg_inflow0,  # ? necessary
-                self._seg_inflow,
-                self.seg_outflow0,  # ? necessary
-                self.seg_outflow,
-                self._inflow_ts,
-                self._outflow_ts,
-                self._seg_current_sum,
+                self.seg_upstream_inflow[:],
+                self._seg_inflow0[:],
+                self._seg_inflow[:],
+                self.seg_outflow[:],
+                self._inflow_ts[:],
+                self._outflow_ts[:],
+                self._seg_current_sum[:],
             ) = self._muskingum_mann_numba(
                 self._segment_order,
                 self.tosegment,
                 self.seg_lateral_inflow,
                 self._seg_inflow0,
-                self._seg_outflow0,
                 self._outflow_ts,
                 self._tsi,
                 self._ts,
@@ -394,22 +397,41 @@ class PRMSChannel(StorageUnit):
             )
 
         elif self._calc_method.lower() in ["none", "numpy"]:
-
             (
-                self.seg_upstream_inflow,
-                self._seg_inflow0,
-                self._seg_inflow,
-                self.seg_outflow0,
-                self.seg_outflow,
-                self._inflow_ts,
-                self._outflow_ts,
-                self._seg_current_sum,
+                self.seg_upstream_inflow[:],
+                self._seg_inflow0[:],
+                self._seg_inflow[:],
+                self.seg_outflow[:],
+                self._inflow_ts[:],
+                self._outflow_ts[:],
+                self._seg_current_sum[:],
             ) = self._muskingum_mann_numpy(
                 self._segment_order,
                 self.tosegment,
                 self.seg_lateral_inflow,
                 self._seg_inflow0,
-                self._seg_outflow0,
+                self._outflow_ts,
+                self._tsi,
+                self._ts,
+                self._c0,
+                self._c1,
+                self._c2,
+            )
+
+        elif self._calc_method.lower() == "fortran":
+            (
+                self.seg_upstream_inflow[:],
+                self._seg_inflow0[:],
+                self._seg_inflow[:],
+                self.seg_outflow[:],
+                self._inflow_ts[:],
+                self._outflow_ts[:],
+                self._seg_current_sum[:],
+            ) = _calculate_fortran(
+                self._segment_order,
+                self.tosegment,
+                self.seg_lateral_inflow,
+                self._seg_inflow0,
                 self._outflow_ts,
                 self._tsi,
                 self._ts,
@@ -438,7 +460,6 @@ class PRMSChannel(StorageUnit):
         to_segment: np.ndarray,
         seg_lateral_inflow: np.ndarray,
         seg_inflow0: np.ndarray,
-        seg_outflow0: np.ndarray,
         outflow_ts: np.ndarray,
         tsi: np.ndarray,
         ts: np.ndarray,
@@ -446,7 +467,6 @@ class PRMSChannel(StorageUnit):
         c1: np.ndarray,
         c2: np.ndarray,
     ) -> Tuple[
-        np.ndarray,
         np.ndarray,
         np.ndarray,
         np.ndarray,
@@ -464,7 +484,6 @@ class PRMSChannel(StorageUnit):
             to_segment: downstream segment for each segment
             seg_lateral_inflow: segment lateral inflow
             seg_inflow0: previous segment inflow variable (internal calculations)
-            seg_outflow0: previous outflow variable (internal calculations)
             outflow_ts: outflow timeseries variable (internal calculations)
             tsi: integer flood wave travel time
             ts: float version of integer flood wave travel time
@@ -476,7 +495,6 @@ class PRMSChannel(StorageUnit):
             seg_upstream_inflow: inflow for each segment for the current day
             seg_inflow0: segment inflow variable
             seg_inflow: segment inflow variable
-            seg_outflow0: outflow for each segment for the current day
             seg_outflow: outflow for each segment for the current day
             inflow_ts: inflow timeseries variable
             outflow_ts: outflow timeseries variable (internal calculations)
@@ -485,7 +503,8 @@ class PRMSChannel(StorageUnit):
         # initialize variables for the day
 
         seg_inflow = seg_inflow0 * zero
-        seg_outflow = seg_outflow0 * zero
+        seg_outflow = seg_inflow0 * zero
+        seg_outflow0 = seg_inflow0 * zero
         inflow_ts = seg_inflow0 * zero
         seg_current_sum = seg_inflow0 * zero
 
@@ -566,7 +585,6 @@ class PRMSChannel(StorageUnit):
             seg_upstream_inflow,
             seg_inflow0,
             seg_inflow,
-            seg_outflow0,
             seg_outflow,
             inflow_ts,
             outflow_ts,

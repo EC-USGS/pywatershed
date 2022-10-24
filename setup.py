@@ -1,4 +1,5 @@
 import os
+import pathlib as pl
 import setuptools  # noqa
 
 from numpy.distutils.misc_util import Configuration
@@ -13,20 +14,18 @@ else:
 config = Configuration("pynhm")
 
 if pynhm_fortran:
-    config.add_extension(
-        "PRMSGroundwater_f",
-        sources=[
-            "pynhm/hydrology/PRMSGroundwater.pyf",
-            "pynhm/hydrology/PRMSGroundwater.f90",
-        ],
-    )
-    config.add_extension(
-        "PRMSCanopy_f",
-        sources=[
-            "pynhm/hydrology/PRMSCanopy.pyf",
-            "pynhm/hydrology/PRMSCanopy.f90",
-        ],
-    )
-    # add more f2py extensions here
+    source_dir_names = {
+        "hydrology": ["PRMSGroundwater", "PRMSCanopy", "PRMSChannel"]
+    }
+    for dir, names in source_dir_names.items():
+        for name in names:
+            config.add_extension(
+                f"{name}_f",
+                sources=[
+                    f"pynhm/{dir}/{name}.pyf",
+                    f"pynhm/{dir}/{name}.f90",
+                ],
+            )
+
 
 setup(**config.todict(), packages=setuptools.find_packages())

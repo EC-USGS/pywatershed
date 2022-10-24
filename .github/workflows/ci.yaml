@@ -19,12 +19,11 @@ jobs:
 
     steps:
 
-      # check out repo
       - name: Checkout repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
 
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -54,14 +53,13 @@ jobs:
     defaults:
       run:
         shell: bash
-
     steps:
-      # check out repo
+
       - name: Checkout repo
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v3
 
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
@@ -101,16 +99,12 @@ jobs:
         run: |
           pylint --jobs=2 --errors-only --exit-zero ./pynhm ./autotest
 
-
   test:
     name: ${{ matrix.os}} py${{ matrix.python-version }}
-
     runs-on: ${{ matrix.os }}
-
     defaults:
       run:
         shell: bash
-
     strategy:
       fail-fast: false
       matrix:
@@ -118,18 +112,22 @@ jobs:
         python-version: [ "3.8", "3.9" ]  #, "3.10"]
 
     steps:
+
       - name: Checkout repo
-        uses: actions/checkout@v2.4.0
-
-      - name: Install gfortran
-        uses: modflowpy/install-gfortran-action@v1
-
+        uses: actions/checkout@v3
+      
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
 
+      - name: Setup gfortran
+        uses: awvwgk/setup-fortran@main
+        with:
+          compiler: gcc
+          version: 11
+
       - name: Setup Python
-        uses: actions/setup-python@v2.2.2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64

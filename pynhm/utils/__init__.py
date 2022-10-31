@@ -1,5 +1,6 @@
 from .control import ControlVariables
 from .csv_utils import CsvFile
+from .dis_hru import DisHru
 from .netcdf_utils import NetCdfCompare, NetCdfRead, NetCdfWrite
 from .parameters import PrmsParameters
 from .prms5_file_util import PrmsFile

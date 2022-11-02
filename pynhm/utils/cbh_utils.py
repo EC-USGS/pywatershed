@@ -1,0 +1,354 @@
+import math
+import pathlib as pl
+from datetime import datetime
+from typing import Union
+
+import netCDF4 as nc4
+import numpy as np
+import pandas as pd
+
+from ..utils.parameters import PrmsParameters
+from ..base import meta
+
+zero = np.zeros((1))[0]
+one = np.ones((1))[0]
+
+# Compound types
+file_type = Union[str, pl.Path]
+fileish = Union[str, pl.Path, dict]
+
+nc4_to_np_types = {
+    "i4": "int32",
+    "i8": "int64",
+    "f4": "float32",
+    "f8": "float64",
+}
+np_to_nc4_types = {val: key for key, val in nc4_to_np_types.items()}
+
+created_line = "Created "
+written_line = "Written "
+hash_line = "##############"
+hash_line_official = "########################################"
+
+
+def _cbh_file_to_df(
+    the_file: file_type, params: PrmsParameters = None
+) -> pd.DataFrame:
+    # Only take cbh files that contain single variables
+    # JLM: this can be substantially simplified as
+    # we are only reading NHM CBH files now.
+    # Revisit with hru1.yaml
+
+    meta_lines = []
+    with open(the_file, "r") as file_open:
+        wh_hash_line = -1
+        the_line = ""
+        while hash_line not in the_line:
+            wh_hash_line += 1
+            the_line = file_open.readline()
+            if (
+                ("//" not in the_line)
+                and (created_line not in the_line)
+                and (written_line not in the_line)
+                and (hash_line not in the_line)
+            ):
+                meta_lines += [the_line.strip()]
+
+    col_names = []
+    var_count_dict = {}
+    line = meta_lines[-1]
+    key, count = line.split(" ")
+    count = int(count)
+    zs = math.ceil(math.log(count, 10))
+    if (params is None) or ("nhm_id" not in params.parameters):
+        col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
+    else:
+        col_names = np.char.add(
+            np.array([key]), params.parameters["nhm_id"].astype(str)
+        ).tolist()
+    var_count_dict[key] = count
+
+    if len(var_count_dict) > 1:
+        msg = f"cbh input files should contain only one variable each: {the_file}"
+        raise ValueError(msg)
+
+    dtypes = (["str"] * 6) + (["float64"] * len(col_names))
+    date_cols = ["Y", "m", "d", "H", "M", "S"]
+    col_names = date_cols + col_names
+    assert len(dtypes) == len(col_names)
+    dtype_dict = dict(zip(col_names, dtypes))
+    assert len(dtype_dict) == len(col_names)
+
+    # Some files erroneously specify the number of columns
+    # catch that here
+    data = pd.read_csv(
+        the_file,
+        nrows=1,
+        # names=col_names,  # dont specify names
+        header=None,  # dont use default header from first line
+        index_col=False,
+        skiprows=wh_hash_line + 1,
+        delim_whitespace=True,
+        dtype=dtype_dict,
+    )
+    msg = f"Number of actual data columns does not match metadata info: {meta_lines}"
+    assert len(data.columns) == len(col_names), msg
+    # JLM: is the above sufficient?
+
+    data = pd.read_csv(
+        the_file,
+        names=col_names,
+        index_col=False,
+        skiprows=wh_hash_line + 1,
+        delim_whitespace=True,
+        dtype=dtype_dict,
+    )
+
+    data["date"] = pd.to_datetime(
+        data.Y + "-" + data.m.str.zfill(2) + "-" + data.d.str.zfill(2)
+    )
+    # JLM TODO: Set datetime resolution to hours? or mins. Could do days but might look forward a bit.
+    data = data.drop(columns=set(date_cols))
+    data = data.set_index("date")
+
+    return data
+
+
+def _cbh_files_to_df(
+    file_dict: dict, params: PrmsParameters = None
+) -> pd.DataFrame:
+    dfs = [_cbh_file_to_df(val, params) for val in file_dict.values()]
+    return pd.concat(dfs, axis=1)
+
+
+def cbh_files_to_df(
+    files: fileish, params: PrmsParameters = None
+) -> pd.DataFrame:
+    if isinstance(files, (str, pl.Path)):
+        df = _cbh_file_to_df(files, params)
+    elif isinstance(files, (dict)):
+        df = _cbh_files_to_df(files, params)
+    else:
+        raise ValueError(
+            f'"files" argument of type {type(files)} not accepted.'
+        )
+    return df
+
+
+def _col_name_split(string: str) -> tuple:
+    char_list = list(string)
+    wh_digit = [ii for ii in range(len(char_list)) if char_list[ii].isdigit()]
+    return string[: wh_digit[0]], string[wh_digit[0] :]
+
+
+def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
+    # Convert to a multi-index? For getting to a dict of np arrays
+    # This might go elsewhere
+    col_name_tuples = [_col_name_split(kk) for kk, vv in df.iteritems()]
+    df.columns = pd.MultiIndex.from_tuples(col_name_tuples)
+    var_names = df.columns.unique(level=0)
+    np_dict = {}
+    np_dict["datetime"] = df.index.to_numpy(copy=True).astype("datetime64[s]")
+    spatial_ids = df.loc[:, var_names[0]].columns.values
+    if spatial_ids[0] == "000":
+        np_dict["hru_ind"] = spatial_ids
+    else:
+        np_dict["nhm_id"] = spatial_ids
+    for vv in var_names:
+        np_dict[vv] = df[vv].to_numpy(copy=True)
+    return np_dict
+
+
+def cbh_n_hru(np_dict: dict) -> int:
+    odd_shapes = ["datetime", "hru_ind", "nhm_id"]
+    shapes = [
+        var.shape for key, var in np_dict.items() if key not in odd_shapes
+    ]
+    for ss in shapes:
+        assert shapes[0] == ss
+    return shapes[0][1]
+
+
+def cbh_n_time(np_dict: dict) -> int:
+    return np_dict["datetime"].shape[0]
+
+
+def cbh_files_to_np_dict(files: fileish, params: PrmsParameters) -> dict:
+    np_dict = cbh_df_to_np_dict(cbh_files_to_df(files, params))
+    return np_dict
+
+
+def _cbh_to_netcdf(
+    np_dict: dict,
+    filename: fileish,
+    clobber: bool = True,
+    output_vars: list = None,
+    zlib: bool = True,
+    complevel: int = 4,
+    global_atts: dict = {},
+    chunk_sizes={"time": 30, "hru": 0},
+    time_units="days since 1979-01-01 00:00:00",
+    time_calendar="standard",
+) -> None:
+    # Default time chunk is for a read pattern of ~monthly at a time.
+
+    ds = nc4.Dataset(filename, "w", clobber=clobber)
+    ds.setncattr("Description", "Climate by HRU")
+    for key, val in global_atts.items():
+        ds.setncattr(key, val)
+
+    # Dimensions
+    # None for the len argument gives an unlimited dim
+    ds.createDimension("time", None)  # cbh_n_time(np_dict))
+    ds.createDimension("hru", cbh_n_hru(np_dict))
+
+    # Dim Variables
+    time = ds.createVariable("datetime", "f4", ("time",))
+
+    time[:] = nc4.date2num(np_dict["datetime"].astype(datetime), time_units)
+    time.units = time_units
+    # time.calendar = time_calendar
+
+    hru_name = "hru_ind" if "hru_ind" in np_dict.keys() else "nhm_id"
+    hruid = ds.createVariable(
+        hru_name, meta.get_types(hru_name)[hru_name], ("hru")
+    )
+    hru_meta_dict = {
+        "hru_ind": {
+            "type": "i4",
+            "desc": "Hydrologic Response Unit (HRU) index",
+            "cf_role": "timeseries_id",
+        },
+        "nhm_id": {
+            "type": "i4",
+            "desc": "NHM Hydrologic Response Unit (HRU) ID",
+            "cf_role": "timeseries_id",
+        },
+    }
+
+    for att, val in hru_meta_dict[hru_name].items():
+        hruid.setncattr(att, val)
+    hruid[:] = np_dict[hru_name]
+
+    # Variables
+    var_list = set(np_dict.keys()).difference(
+        {"datetime", "hru_ind", "nhm_id"}
+    )
+    if output_vars is not None:
+        var_list = [var for var in var_list if var in output_vars]
+
+    for vv in var_list:
+        vv_meta = meta.get_vars(vv)[vv]
+        vv_type = vv_meta["type"]
+        var = ds.createVariable(
+            vv,
+            vv_type,
+            ("time", "hru"),
+            fill_value=nc4.default_fillvals[np_to_nc4_types[vv_type]],
+            zlib=zlib,
+            complevel=complevel,
+            chunksizes=tuple(chunk_sizes.values()),
+        )
+        for att, val in vv_meta.items():
+            if att in ["_FillValue", "type", "dimensions"]:
+                continue
+            var.setncattr(att, val)
+        ds.variables[vv][:, :] = np_dict[vv]
+
+    ds.close()
+    print(f"Wrote netcdf file: {filename}")
+    return
+
+
+def cbh_files_to_netcdf(
+    input_files_dict: dict, params: PrmsParameters, nc_file: fileish, **kwargs
+) -> None:
+    return _cbh_to_netcdf(
+        cbh_files_to_np_dict(input_files_dict, params), nc_file, **kwargs
+    )
+
+
+# fill_value_f4 = 9.96921e36
+
+# cbh_metadata = {
+#     "datetime": {
+#         "type": "f4",
+#         "long_name": "time",
+#         "standard_name": "time",
+#         "calendar": "standard",  # Depends, revisit
+#         "units": "days since 1979-01-01 00:00:00",  # Depends, may not be correct
+#     },
+#     "hru_ind": {
+#         "type": "i4",
+#         "long_name": "Hydrologic Response Unit (HRU) index",
+#         "cf_role": "timeseries_id",
+#     },
+#     "nhm_id": {
+#         "type": "i4",
+#         "long_name": "NHM Hydrologic Response Unit (HRU) ID",
+#         "cf_role": "timeseries_id",
+#     },
+#     "tmax": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "Maximum daily air temperature",
+#         "units": "degree_fahrenheit",
+#         "standard_name": "maximum_daily_air_temperature",
+#     },
+#     "tmaxf": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "Maximum daily air temperature from parameter adjustments",
+#         "units": "degree_fahrenheit",
+#         "standard_name": "maximum_daily_air_temperature",
+#     },
+#     "tmin": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "Minimum daily air temperature",
+#         "units": "degree_fahrenheit",
+#         "standard_name": "minimum_daily_air_temperature",
+#     },
+#     "tminf": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "Minimum daily air temperature from parameter adjustments",
+#         "units": "degree_fahrenheit",
+#         "standard_name": "minimum_daily_air_temperature",
+#     },
+#     "prcp": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "daily total precipitation",
+#         "units": "in",
+#         "standard_name": "daily_total_precipitation",
+#     },
+#     "hru_ppt": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "daily total precipitation from parameter adjustments",
+#         "units": "in",
+#         "standard_name": "daily_total_precipitation",
+#     },
+#     "hru_rain": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "daily rainfall from parameter adjustments",
+#         "units": "in",
+#         "standard_name": "daily_rainfall",
+#     },
+#     "rhavg": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "Daily mean relative humidity",
+#         "units": "percent",
+#         "standard_name": "rhavg",
+#     },
+#     "hru_snow": {
+#         "type": "f4",
+#         "_FillValue": fill_value_f4,
+#         "long_name": "daily snowfall from parameter adjustments",
+#         "units": "in",
+#         "standard_name": "daily_snowfall",
+#     },
+# }

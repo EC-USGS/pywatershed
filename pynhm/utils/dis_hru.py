@@ -118,6 +118,18 @@ class DisHru:
         **kwargs,
     ):
 
+        # read the parameter file: currently just for HRU areas
+        self._param_file = param_file
+        self.params = params
+        if (param_file is not None) and (params is not None):
+            msg = "Can only specify one of param_file or params"
+            raise ValueError(msg)
+        elif (param_file is None) and (params is None):
+            msg = "Must specify (exactly) one of param_file or params"
+            raise ValueError(msg)
+        elif param_file:
+            self.params = PrmsParameters.load(param_file)
+
         # which of these are @properties ?
 
         # OPTIONS block
@@ -136,19 +148,6 @@ class DisHru:
         self.top = 2  # 2 m? why not
         self.bot = 0
         self.area = self.params.parameters["hru_area"] * acres_to_m2
-
-        # read the parameter file: currently just for HRU areas
-        self._param_file = param_file
-        self.params = params
-        if (param_file is not None) and (params is not None):
-            msg = "Can only specify one of param_file or params"
-            raise ValueError(msg)
-        elif (param_file is None) and (params is None):
-            msg = "Must specify (exactly) one of param_file or params"
-            raise ValueError(msg)
-        elif param_file:
-            params = PrmsParameters.load(param_file)
-
         # optional: idomain
 
         # CONNECTIONDATA block

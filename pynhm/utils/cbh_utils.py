@@ -7,8 +7,8 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 
-from ..utils.parameters import PrmsParameters
 from ..base import meta
+from ..utils.parameters import PrmsParameters
 
 zero = np.zeros((1))[0]
 one = np.ones((1))[0]
@@ -57,8 +57,9 @@ def _cbh_file_to_df(
     col_names = []
     var_count_dict = {}
     line = meta_lines[-1]
-    key, count = line.split(" ")
-    count = int(count)
+    line_split = line.split(" ")
+    key = line_split[0]
+    count = int(line_split[-1])
     zs = math.ceil(math.log(count, 10))
     if (params is None) or ("nhm_id" not in params.parameters):
         col_names += [f"{key}{str(ii).zfill(zs)}" for ii in range(count)]
@@ -148,8 +149,10 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
     df.columns = pd.MultiIndex.from_tuples(col_name_tuples)
     var_names = df.columns.unique(level=0)
     np_dict = {}
-    np_dict["datetime"] = df.index.to_numpy(copy=True).astype("datetime64[s]")
-    spatial_ids = df.loc[:, var_names[0]].columns.values
+    np_dict["time"] = df.index.to_numpy(copy=True).astype("datetime64[s]")
+    spatial_ids = (
+        df.loc[:, var_names[0]].columns.values.astype(float).astype(int)
+    )
     if spatial_ids[0] == "000":
         np_dict["hru_ind"] = spatial_ids
     else:
@@ -160,7 +163,7 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
 
 
 def cbh_n_hru(np_dict: dict) -> int:
-    odd_shapes = ["datetime", "hru_ind", "nhm_id"]
+    odd_shapes = ["time", "hru_ind", "nhm_id"]
     shapes = [
         var.shape for key, var in np_dict.items() if key not in odd_shapes
     ]
@@ -170,7 +173,7 @@ def cbh_n_hru(np_dict: dict) -> int:
 
 
 def cbh_n_time(np_dict: dict) -> int:
-    return np_dict["datetime"].shape[0]
+    return np_dict["time"].shape[0]
 
 
 def cbh_files_to_np_dict(files: fileish, params: PrmsParameters) -> dict:
@@ -186,6 +189,7 @@ def _cbh_to_netcdf(
     zlib: bool = True,
     complevel: int = 4,
     global_atts: dict = {},
+    rename_vars={"precip": "prcp", "tminf": "tmin", "tmaxf": "tmax"},
     chunk_sizes={"time": 30, "hru": 0},
     time_units="days since 1979-01-01 00:00:00",
     time_calendar="standard",
@@ -203,9 +207,9 @@ def _cbh_to_netcdf(
     ds.createDimension("hru", cbh_n_hru(np_dict))
 
     # Dim Variables
-    time = ds.createVariable("datetime", "f4", ("time",))
+    time = ds.createVariable("time", "f4", ("time",))
 
-    time[:] = nc4.date2num(np_dict["datetime"].astype(datetime), time_units)
+    time[:] = nc4.date2num(np_dict["time"].astype(datetime), time_units)
     time.units = time_units
     # time.calendar = time_calendar
 
@@ -231,17 +235,18 @@ def _cbh_to_netcdf(
     hruid[:] = np_dict[hru_name]
 
     # Variables
-    var_list = set(np_dict.keys()).difference(
-        {"datetime", "hru_ind", "nhm_id"}
-    )
+    var_list = set(np_dict.keys()).difference({"time", "hru_ind", "nhm_id"})
     if output_vars is not None:
         var_list = [var for var in var_list if var in output_vars]
 
     for vv in var_list:
         vv_meta = meta.get_vars(vv)[vv]
         vv_type = vv_meta["type"]
+        var_name_out = vv
+        if vv in rename_vars.keys():
+            var_name_out = rename_vars[vv]
         var = ds.createVariable(
-            vv,
+            var_name_out,
             vv_type,
             ("time", "hru"),
             fill_value=nc4.default_fillvals[np_to_nc4_types[vv_type]],
@@ -253,7 +258,7 @@ def _cbh_to_netcdf(
             if att in ["_FillValue", "type", "dimensions"]:
                 continue
             var.setncattr(att, val)
-        ds.variables[vv][:, :] = np_dict[vv]
+        ds.variables[var_name_out][:, :] = np_dict[vv]
 
     ds.close()
     print(f"Wrote netcdf file: {filename}")
@@ -266,89 +271,3 @@ def cbh_files_to_netcdf(
     return _cbh_to_netcdf(
         cbh_files_to_np_dict(input_files_dict, params), nc_file, **kwargs
     )
-
-
-# fill_value_f4 = 9.96921e36
-
-# cbh_metadata = {
-#     "datetime": {
-#         "type": "f4",
-#         "long_name": "time",
-#         "standard_name": "time",
-#         "calendar": "standard",  # Depends, revisit
-#         "units": "days since 1979-01-01 00:00:00",  # Depends, may not be correct
-#     },
-#     "hru_ind": {
-#         "type": "i4",
-#         "long_name": "Hydrologic Response Unit (HRU) index",
-#         "cf_role": "timeseries_id",
-#     },
-#     "nhm_id": {
-#         "type": "i4",
-#         "long_name": "NHM Hydrologic Response Unit (HRU) ID",
-#         "cf_role": "timeseries_id",
-#     },
-#     "tmax": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "Maximum daily air temperature",
-#         "units": "degree_fahrenheit",
-#         "standard_name": "maximum_daily_air_temperature",
-#     },
-#     "tmaxf": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "Maximum daily air temperature from parameter adjustments",
-#         "units": "degree_fahrenheit",
-#         "standard_name": "maximum_daily_air_temperature",
-#     },
-#     "tmin": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "Minimum daily air temperature",
-#         "units": "degree_fahrenheit",
-#         "standard_name": "minimum_daily_air_temperature",
-#     },
-#     "tminf": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "Minimum daily air temperature from parameter adjustments",
-#         "units": "degree_fahrenheit",
-#         "standard_name": "minimum_daily_air_temperature",
-#     },
-#     "prcp": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "daily total precipitation",
-#         "units": "in",
-#         "standard_name": "daily_total_precipitation",
-#     },
-#     "hru_ppt": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "daily total precipitation from parameter adjustments",
-#         "units": "in",
-#         "standard_name": "daily_total_precipitation",
-#     },
-#     "hru_rain": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "daily rainfall from parameter adjustments",
-#         "units": "in",
-#         "standard_name": "daily_rainfall",
-#     },
-#     "rhavg": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "Daily mean relative humidity",
-#         "units": "percent",
-#         "standard_name": "rhavg",
-#     },
-#     "hru_snow": {
-#         "type": "f4",
-#         "_FillValue": fill_value_f4,
-#         "long_name": "daily snowfall from parameter adjustments",
-#         "units": "in",
-#         "standard_name": "daily_snowfall",
-#     },
-# }

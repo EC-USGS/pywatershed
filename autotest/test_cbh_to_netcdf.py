@@ -4,11 +4,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pynhm.utils.cbh_utils import (
-    cbh_files_to_df,
-    cbh_files_to_netcdf,
-)
 from pynhm.utils import PrmsParameters
+from pynhm.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
 from utils import assert_or_print
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
@@ -38,7 +35,7 @@ answer_key = {
             "rhavg": 62.738591579267386,
             "tmax": 60.26121597238987,
             "tmin": 40.00686281662687,
-            "datetime": 315532800.0,
+            "time": 315532800.0,
         },
     },
     "hru_1": {
@@ -50,7 +47,7 @@ answer_key = {
             "prcp": 0.13502103505843072,
             "tmax": 61.986048747913195,
             "tmin": 42.78456761268781,
-            "datetime": 930873600.0,
+            "time": 930873600.0,
         },
     },
     "ucb_2yr": {
@@ -63,7 +60,7 @@ answer_key = {
             "rhavg": 50.87569199962628,
             "tmax": 56.74147989347377,
             "tmin": 28.555185342801856,
-            "datetime": 315532800.0,
+            "time": 315532800.0,
         },
     },
 }
@@ -92,7 +89,7 @@ def test_cbh_files_to_netcdf(domain, params, tmp_path):
     results_ds = xr.open_dataset(nc_file)
     results = {}
     for var in answers.keys():
-        if var == "datetime":
+        if var == "time":
             results[var] = (
                 results_ds[var]
                 .values.astype("datetime64[s]")

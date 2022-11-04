@@ -397,7 +397,7 @@ class NetCdfWrite(Accessor):
         for var_name, group_var_name in zip(variables, group_variables):
             variabletype = meta_netcdf_type(var_meta[var_name])
             if len(
-                set(["nhru", "ngw"]).intersection(
+                set(["nhru", "ngw", "nssr"]).intersection(
                     set(variable_dimensions[var_name])
                 )
             ):

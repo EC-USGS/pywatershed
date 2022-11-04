@@ -2275,6 +2275,12 @@ rain_day:
     0: one
   type: int32
   units: none
+rhavg:
+  desc: Input/forcing daily mean relative humidity to each HRU
+  dimensions:
+    0: nhru
+  type: float64
+  units: percent
 recharge:
   desc: Recharge to the associated GWR as sum of soil_to_gw and ssr_to_gw for each
     HRU

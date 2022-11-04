@@ -99,13 +99,16 @@ class NetCdfRead(Accessor):
             if self._start_time is None:
                 self._start_index = 0
             else:
-                self._start_index = np.where(self._time == self._start_time)
+                wh_start = np.where(self._time == self._start_time)
+                self._start_index = wh_start[0][0]
 
             if self._end_time is None:
                 self._end_index = self._time.shape[0] - 1
             else:
-                self._end_index = np.where(self._time == self._end_time)
+                wh_end = np.where(self._time == self._end_time)
+                self._end_index = wh_end[0][0]
 
+            self._time = self._time[self._start_index : (self._end_index + 1)]
             self._ntimes = self._end_index - self._start_index + 1
 
             # time batching
@@ -132,8 +135,8 @@ class NetCdfRead(Accessor):
         if "doy" in self.dataset.variables:
             self._doy = self.dataset.variables["doy"][:].data
             self._ntimes = self._doy.shape[0]
-            # JLM: havent specifically verified this case,
-            # I think these variables are already read in their entirety
+            self._start_index = 0
+            self._end_index = 365
 
         spatial_id_names = []
         if "nhm_id" in self.ds_var_list:
@@ -256,6 +259,9 @@ class NetCdfRead(Accessor):
         """
         return self._variables
 
+    def all_time(self, variable):
+        return self.get_data(variable)
+
     def get_data(
         self,
         variable: str,
@@ -278,7 +284,9 @@ class NetCdfRead(Accessor):
             )
 
         if itime_step is None:
-            return self.dataset[variable][:, :]
+            return self.dataset[variable][
+                self._start_index : (self._end_index + 1), :
+            ]
 
         else:
             if itime_step >= self._ntimes:
@@ -292,6 +300,11 @@ class NetCdfRead(Accessor):
                 batch_index = itime_step % self._load_n_times
                 if batch_index == 0:
                     ith_batch = itime_step // self._load_n_times
+                    # print(
+                    #     f"load batch "
+                    #     f"#{ith_batch}/{self._load_n_time_batches-1}: "
+                    #     f"{variable}"
+                    # )
                     start_ind = self._start_index + (
                         ith_batch * self._load_n_times
                     )

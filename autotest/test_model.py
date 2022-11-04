@@ -10,17 +10,6 @@ from pynhm.base.control import Control
 from pynhm.base.model import Model
 from pynhm.utils.parameters import PrmsParameters
 
-
-@pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
-
-
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
-
-
 compare_to_prms521 = False
 n_time_steps = 101
 budget_type = None
@@ -36,6 +25,24 @@ test_models = {
         pynhm.PRMSChannel,
     ],
 }
+
+
+@pytest.fixture(scope="function")
+def params(domain):
+    return PrmsParameters.load(domain["param_file"])
+
+
+@pytest.fixture(scope="function")
+def control(domain, params):
+    control = Control.load(domain["control_file"], params=params)
+    # should probably provide methods for changing the time
+    # doing this allows proper exercise of load_n_time_batches
+    # which splits based on control._n_times
+    control._n_times = n_time_steps
+    control._end_time = (
+        control._start_time + (control._n_times - 1) * control._time_step
+    )
+    return control
 
 
 @pytest.mark.parametrize(
@@ -62,6 +69,7 @@ def test_model(domain, control, processes, tmp_path):
         control=control,
         input_dir=input_dir,
         budget_type=budget_type,
+        load_n_time_batches=3,
     )
 
     # ---------------------------------
@@ -152,7 +160,7 @@ def test_model(domain, control, processes, tmp_path):
         "PRMSCanopy": 1.0e-5,
         "PRMSSnow": 5e-2,
         "PRMSRunoff": 1.0e-5,
-        "PRMSSoilzone": 1.0e-4,  ##
+        "PRMSSoilzone": 1.0e-4,  #
         "PRMSGroundwater": 1.0e-2,
         "PRMSEt": 1.0e-5,
         "PRMSChannel": 1.0e-5,
@@ -201,11 +209,8 @@ def test_model(domain, control, processes, tmp_path):
     all_success = True
     fail_prms_compare = False
     fail_regression = False
-    # for istep in range(control.n_times):
+    for istep in range(control.n_times):
 
-    for istep in range(n_time_steps):
-
-        # print(istep)
         model.advance()
         model.calculate()
 

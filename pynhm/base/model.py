@@ -149,7 +149,9 @@ class Model:
                     self.processes[process].set_input_to_adapter(
                         input,
                         adapter_factory(
-                            self.processes[frm[0]][input], control=control
+                            self.processes[frm[0]][input],
+                            control=control,
+                            load_n_time_batches=self._load_n_time_batches,
                         ),  # drop list above
                     )
 
@@ -164,7 +166,10 @@ class Model:
         for name in self.file_input_names:
             nc_path = self.input_dir / f"{name}.nc"
             file_inputs[name] = adapter_factory(
-                nc_path, name, control=self.control
+                nc_path,
+                name,
+                control=self.control,
+                load_n_time_batches=self._load_n_time_batches,
             )
         for process in self.process_order:
             self.process_input_from[process] = {}

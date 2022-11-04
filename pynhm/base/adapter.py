@@ -40,15 +40,19 @@ class AdapterNetcdf(Adapter):
         self.name = "AdapterNetcdf"
 
         self._fname = fname
-        self._nc_read = NetCdfRead(
-            fname, load_n_time_batches=load_n_time_batches
-        )
-
-        self.data = self._nc_read.dataset[self._variable][:].data
-        self.time = self._nc_read.times
-
         self.control = control
         self._start_time = self.control.start_time
+        self._end_time = self.control.end_time
+
+        self._nc_read = NetCdfRead(
+            fname,
+            start_time=self._start_time,
+            end_time=self._end_time,
+            load_n_time_batches=load_n_time_batches,
+        )
+
+        self.time = self._nc_read.times
+
         self._current_value = control.get_var_nans(
             self._variable, drop_time_dim=True
         )
@@ -61,6 +65,11 @@ class AdapterNetcdf(Adapter):
             self._variable, self.control.current_time
         )
         return None
+
+    @property
+    def data(self):
+        # TODO JLM: seems like we'd want to cache this data if we invoke once
+        return self._nc_read.all_time(self._variable)
 
 
 class AdapterOnedarray(Adapter):

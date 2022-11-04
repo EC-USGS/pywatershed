@@ -262,9 +262,16 @@ class PRMSSnow(StorageUnit):
         self.tmax_allsnow_c = (self.tmax_allsnow - 32.0) / 1.8
         del self.tmax_allsnow
 
-        # Deninv and denmaxinv not in variables nor in metadata but we can set them on self
-        # for convenience
-        self.deninv = one / self.den_init.copy()
+        # Deninv and denmaxinv not in variables nor in metadata but we can set
+        # them on self for convenience
+        if (self.den_init.shape == ()) or (
+            self.den_init.shape[0] != self.nhru
+        ):
+            den_init = np.ones(self.nhru, dtype=np.float64) * self.den_init
+        else:
+            den_init = self.den_init
+
+        self.deninv = one / den_init
         self.denmaxinv = one / self.den_max.copy()
 
         self.pkwater_equiv[:] = self.snowpack_init.copy()
@@ -1629,7 +1636,9 @@ class PRMSSnow(StorageUnit):
         # The snow depth depends on the previous snow pack water equivalent plus
         # the current net snow.
         self.pss[jj] = self.pss[jj] + self.net_snow[jj]  # [inches]
-        dpt_before_settle = self.pk_depth[jj] + self.net_snow[jj] * self.deninv
+        dpt_before_settle = (
+            self.pk_depth[jj] + self.net_snow[jj] * self.deninv[jj]
+        )
         dpt1 = dpt_before_settle + self.settle_const * (
             (self.pss[jj] * self.denmaxinv) - dpt_before_settle
         )

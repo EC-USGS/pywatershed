@@ -43,9 +43,14 @@ class PRMSCanopy(StorageUnit):
         budget_type: str = None,
         calc_method: str = None,
         verbose: bool = False,
-    ):
+        load_n_time_batches: int = 1,
+    ) -> "PRMSCanopy":
 
-        super().__init__(control=control, verbose=verbose)
+        super().__init__(
+            control=control,
+            verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
+        )
         self.name = "PRMSCanopy"
 
         self._calc_method = str(calc_method)

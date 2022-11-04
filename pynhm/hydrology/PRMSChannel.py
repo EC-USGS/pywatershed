@@ -80,11 +80,13 @@ class PRMSChannel(StorageUnit):
         verbose: bool = False,
         calc_method: str = None,
         budget_type: str = None,
+        load_n_time_batches: int = 1,
     ) -> "PRMSChannel":
 
         super().__init__(
             control=control,
             verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSChannel"
 

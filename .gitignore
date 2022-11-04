@@ -72,3 +72,5 @@ examples/pynhm_gis
 
 # f2y detritus
 *module.c
+PRMS*.so
+*f2pywrappers*.f*

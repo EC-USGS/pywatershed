@@ -24,6 +24,12 @@ class Model:
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
+        load_n_time_batches: integer number of times the input data should
+           be loaded from file. Deafult is 1 or just once. If input data are
+           large in space, time, or total number of variables then increasing
+           this number can help reduce memory usage at the expense of reduced
+           performance due to more frequent IO.
+
     """
 
     def __init__(
@@ -34,11 +40,13 @@ class Model:
         budget_type: str = "error",  # todo: also pass dict
         verbose: bool = False,
         find_input_files: bool = True,
+        load_n_time_batches: int = 1,
     ):
 
         self.control = control
         self.input_dir = input_dir
         self.verbose = verbose
+        self._load_n_time_batches = load_n_time_batches
 
         class_dict = {comp.__name__: comp for comp in process_classes}
         class_inputs = {kk: vv.get_inputs() for kk, vv in class_dict.items()}
@@ -121,6 +129,7 @@ class Model:
             args = {
                 "control": control,
                 **process_inputs,
+                "load_n_time_batches": self._load_n_time_batches,
             }
             if process not in ["PRMSSolarGeometry"]:
                 args["budget_type"] = budget_type

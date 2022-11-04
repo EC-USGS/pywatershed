@@ -76,11 +76,13 @@ class PRMSSnow(StorageUnit):
         transp_on: adaptable,
         budget_type: str = None,
         verbose: bool = False,
+        load_n_time_batches: int = 1,
     ) -> "PRMSSnow":
 
         super().__init__(
             control=control,
             verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSSnow"
         self._set_inputs(locals())

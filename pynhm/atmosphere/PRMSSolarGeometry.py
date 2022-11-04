@@ -46,19 +46,23 @@ class PRMSSolarGeometry(StorageUnit):
         netcdf_output_dir: fileish = None,
         from_prms_file: fileish = None,
         from_nc_files_dir: fileish = None,
+        load_n_time_batches: int = 1,
     ):
-        """PRMS Solar Geometry."""
 
         # This is a singular case of having a constant parameter dimensions
         self.ndoy = doy
 
-        self._set_inputs(locals())
         budget_type = None
         self._set_budget(budget_type)
         self.netcdf_output_dir = netcdf_output_dir
         self._time = doy
 
-        super().__init__(control=control, verbose=verbose)
+        super().__init__(
+            control=control,
+            verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
+        )
+        self._set_inputs(locals())
         self.name = "PRMSSolarGeometry"
 
         if from_prms_file:

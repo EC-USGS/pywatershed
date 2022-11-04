@@ -34,12 +34,15 @@ class AdapterNetcdf(Adapter):
         fname: fileish,
         variable: str,
         control: Control,
+        load_n_time_batches: int = 1,
     ) -> None:
         super().__init__(variable)
         self.name = "AdapterNetcdf"
 
         self._fname = fname
-        self._nc_read = NetCdfRead(fname)
+        self._nc_read = NetCdfRead(
+            fname, load_n_time_batches=load_n_time_batches
+        )
 
         self.data = self._nc_read.dataset[self._variable][:].data
         self.time = self._nc_read.times
@@ -82,6 +85,7 @@ def adapter_factory(
     var: adaptable,
     variable_name: str = None,
     control: Control = None,
+    load_n_time_batches: int = 1,
 ):
     if isinstance(var, Adapter):
         """Adapt an adapter"""
@@ -94,6 +98,7 @@ def adapter_factory(
                 var,
                 variable=variable_name,
                 control=control,
+                load_n_time_batches=load_n_time_batches,
             )
 
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:

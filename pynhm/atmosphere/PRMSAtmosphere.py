@@ -93,6 +93,7 @@ class PRMSAtmosphere(StorageUnit):
         netcdf_output_dir: fileish = None,
         from_file_dir: fileish = None,
         n_time_chunk: int = -1,
+        load_n_time_batches: int = 1,
     ):
 
         # This could be used to subclass storageUnit or Process classes to have
@@ -110,11 +111,13 @@ class PRMSAtmosphere(StorageUnit):
 
         self.netcdf_output_dir = netcdf_output_dir
 
-        self._set_inputs(locals())
         super().__init__(
             control=control,
             verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
         )
+        self._set_inputs(locals())
+
         self.name = "PRMSAtmosphere"
         self.budget = None
 

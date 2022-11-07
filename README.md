@@ -24,7 +24,7 @@ test_data/  Data used for automated testing
 
 
 Requirements and Python Environments
-==========
+====================================
 Git and python 3.8 - 3.10 are required. 
 
 We suggest installing the python dependencies using conda and the following yaml files. 
@@ -43,6 +43,20 @@ There are also .txt equivalents that can be used for installing from pip, like s
 
 though these are not comprehensive installs as with conda. 
 
+
+Compiled Code: Fortran
+=============
+The numpy extension F2PY is used to provide compiled versions of core calculation codes to boost performance. F2PY is documented (within numpy)[https://numpy.org/doc/stable/f2py/index.html]. This repository is configured to compile on install. This may not always be successful and may depend on your local environment. Currently, compilation often requires
+
+`export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"`
+
+on MacOS. Please report compilation issues.
+
+To turn off compilation of fortran source on install, prior to `pip install .` set the environment variable
+
+`export PYNHM_FORTRAN=False`
+
+where the value on the right side is not case sensitive. This may break tests of fortran source, but will allow the rest of the package to be installed.
 
 Disclaimer
 ==========

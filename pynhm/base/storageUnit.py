@@ -76,18 +76,26 @@ class StorageUnit(Accessor):
             snow_liquid, then storage changes for snow_ice and snow_liquid
             should be tracked and not for snow_water_equiv).
 
+        Args:
+          control: a Control object
+          verbose: boolean controling the amount of information printed
+          load_n_time_batches: integer number of times the input data should
+            be loaded from file. Deafult is 1 or just once. If input data are
+            large in space, time, or total number of variables then increasing
+            this number can help reduce memory usage at the expense of reduced
+            performance due to more frequent IO.
+
     """
 
     def __init__(
-        self,
-        control: Control,
-        verbose: bool,
+        self, control: Control, verbose: bool, load_n_time_batches: int = 1
     ):
 
         self.name = "StorageUnit"
         self.control = control
         self.params = self.control.params.subset(process=type(self))
         self.verbose = verbose
+        self._load_n_time_batches = load_n_time_batches
 
         # netcdf output variables
         self._output_netcdf = False
@@ -304,7 +312,10 @@ class StorageUnit(Accessor):
         self._input_variables_dict = {}
         for ii in self.inputs:
             self._input_variables_dict[ii] = adapter_factory(
-                args[ii], ii, args["control"]
+                args[ii],
+                ii,
+                args["control"],
+                load_n_time_batches=self._load_n_time_batches,
             )
             if self._input_variables_dict[ii]:
                 self[ii] = self._input_variables_dict[ii].current

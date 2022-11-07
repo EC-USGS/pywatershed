@@ -6,6 +6,13 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan
 
+try:
+    from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
+
+    has_prmsgroundwater_f = True
+except ModuleNotFoundError:
+    has_PRMSGroundwater_f = False
+
 
 class PRMSGroundwater(StorageUnit):
     """PRMS groundwater reservoir.
@@ -20,14 +27,19 @@ class PRMSGroundwater(StorageUnit):
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
         budget_type: str = None,
+        calc_method: str = None,
         verbose: bool = False,
+        load_n_time_batches: int = 1,
     ) -> "PRMSGroundwater":
 
         super().__init__(
             control=control,
             verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSGroundwater"
+
+        self._calc_method = str(calc_method)
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
@@ -125,37 +137,129 @@ class PRMSGroundwater(StorageUnit):
 
         self._simulation_time = simulation_time
 
-        gwarea = self.hru_area
+        if self._calc_method.lower() == "numba":
+            import numba as nb
 
-        # calculate volume terms
-        # denote volume units with leading underscore
-        soil_to_gw_vol = self.soil_to_gw * gwarea
-        ssr_to_gw_vol = self.ssr_to_gw * gwarea
-        dprst_seep_hru_vol = self.dprst_seep_hru * gwarea
+            if not hasattr(self, "_calculate_numba"):
+                self._calculate_numba = nb.jit(
+                    nb.types.UniTuple(nb.float64[:], 5)(
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                        nb.float64[:],
+                    ),
+                    nopython=True,
+                )(self._calculate_numpy)
+
+            (
+                self.gwres_stor[:],
+                self.gwres_flow[:],
+                self.gwres_sink[:],
+                self.gwres_stor_change[:],
+                self.gwres_flow_vol[:],
+            ) = self._calculate_numba(
+                self.hru_area,
+                self.soil_to_gw,
+                self.ssr_to_gw,
+                self.dprst_seep_hru,
+                self.gwres_stor,
+                self.gwflow_coef,
+                self.gwsink_coef,
+                self.gwres_stor_old,
+                self.control.params.hru_in_to_cf,
+            )
+
+        elif self._calc_method.lower() == "fortran":
+            (
+                self.gwres_stor[:],
+                self.gwres_flow[:],
+                self.gwres_sink[:],
+                self.gwres_stor_change[:],
+                self.gwres_flow_vol[:],
+            ) = _calculate_fortran(
+                self.hru_area,
+                self.soil_to_gw,
+                self.ssr_to_gw,
+                self.dprst_seep_hru,
+                self.gwres_stor,
+                self.gwflow_coef,
+                self.gwsink_coef,
+                self.gwres_stor_old,
+                self.control.params.hru_in_to_cf,
+            )
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+            (
+                self.gwres_stor[:],
+                self.gwres_flow[:],
+                self.gwres_sink[:],
+                self.gwres_stor_change[:],
+                self.gwres_flow_vol[:],
+            ) = self._calculate_numpy(
+                self.hru_area,
+                self.soil_to_gw,
+                self.ssr_to_gw,
+                self.dprst_seep_hru,
+                self.gwres_stor,
+                self.gwflow_coef,
+                self.gwsink_coef,
+                self.gwres_stor_old,
+                self.control.params.hru_in_to_cf,
+            )
+
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
+    @staticmethod
+    def _calculate_numpy(
+        gwarea,
+        soil_to_gw,
+        ssr_to_gw,
+        dprst_seep_hru,
+        gwres_stor,
+        gwflow_coef,
+        gwsink_coef,
+        gwres_stor_old,
+        hru_in_to_cf,
+    ):
+
+        soil_to_gw_vol = soil_to_gw * gwarea
+        ssr_to_gw_vol = ssr_to_gw * gwarea
+        dprst_seep_hru_vol = dprst_seep_hru * gwarea
 
         # todo: what about route order
 
-        _gwres_stor = self.gwres_stor * gwarea
+        _gwres_stor = gwres_stor * gwarea
         _gwres_stor += soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
 
-        _gwres_flow = _gwres_stor * self.gwflow_coef
+        _gwres_flow = _gwres_stor * gwflow_coef
         _gwres_stor -= _gwres_flow
 
-        _gwres_sink = _gwres_stor * self.gwsink_coef
+        _gwres_sink = _gwres_stor * gwsink_coef
         idx = np.where(_gwres_sink > _gwres_stor)
         _gwres_sink[idx] = _gwres_stor[idx]
         _gwres_stor -= _gwres_sink
 
         # convert most units back to self variables
         # output variables
-        self.gwres_stor[:] = _gwres_stor / gwarea
+        gwres_stor = _gwres_stor / gwarea
         # for some stupid reason this is left in acre-inches
-        self.gwres_flow[:] = _gwres_flow / gwarea
-        self.gwres_sink[:] = _gwres_sink / gwarea
+        gwres_flow = _gwres_flow / gwarea
+        gwres_sink = _gwres_sink / gwarea
 
-        self.gwres_stor_change[:] = self.gwres_stor - self.gwres_stor_old
-        self.gwres_flow_vol[:] = (
-            self.gwres_flow * self.control.params.hru_in_to_cf
+        gwres_stor_change = gwres_stor - gwres_stor_old
+        gwres_flow_vol = gwres_flow * hru_in_to_cf
+
+        return (
+            gwres_stor,
+            gwres_flow,
+            gwres_sink,
+            gwres_stor_change,
+            gwres_flow_vol,
         )
-
-        return

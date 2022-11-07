@@ -1,5 +1,6 @@
 import datetime as dt
 import pathlib as pl
+from math import ceil
 from typing import Union
 
 import netCDF4 as nc4
@@ -14,24 +15,56 @@ listish = Union[list, tuple]
 arrayish = Union[list, tuple, np.ndarray]
 ATOL = np.finfo(np.float32).eps
 
-# JLM TODO: start_time: np.datetime64 = None ?
-#     Still need some mechanism for initial itime_step for datetime coordinate
-#     variables
-
 # JLM TODO: the implied time dimension seems like a bad idea, it should be
 #    an argument.
 
 
 class NetCdfRead(Accessor):
+    """NetCDF file reader (for input/forcing data)
+
+    Args:
+      name: the netcdf file path to open
+      start_time: optional np.datetime64 which is the start of the simulation
+      end_time: optional np.datetime64 which is the end of the simulation
+      nc_read_vars: a subset of available variables to read from the file
+      load_n_times: optional integer for the length of time to load into memory
+        from file see load_n_time_batches for more details. default is None. A
+        value of -1 gives the same result as load_n_time_batches = 1.
+      load_n_time_batches: optional integer for the number to batches (time
+        partitions) of the input data to use. Default value is 1 whic loads all
+        the input data on the first time advance. This may not work well for
+        domains large in space and/or time as it will require large amounts of
+        memory. These load options exist to optimize IO patterns against memory
+        usage: specify EXACTLY ONE of load_n_times or load_ntime_batches,
+        whichever is more convenient for you. If both _load_times and
+        _load_n_time_batches are None, then no time batching is used. This has
+        proven an inefficient pattern. The time batching is not implemented for
+        DOY (cyclic) variables, only for variables with time dimension "time".
+    """
+
     def __init__(
         self,
         name: fileish,
+        start_time: np.datetime64 = None,
+        end_time: np.datetime64 = None,
         nc_read_vars: list = None,
+        load_n_times: int = None,
+        load_n_time_batches: int = 1,
     ) -> "NetCdfRead":
 
         self.name = "NetCdfRead"
         self._nc_file = name
         self._nc_read_vars = nc_read_vars
+        self._start_time = start_time
+        self._end_time = end_time
+
+        if (load_n_times is not None) and (load_n_time_batches is not None):
+            msg = "Can only specify one of load_n_times or load_ntime_batches"
+            raise ValueError(msg)
+
+        self._load_n_times = load_n_times
+        self._load_n_time_batches = load_n_time_batches
+
         self._open_nc_file()
         self._itime_step = {}
         for variable in self.variables:
@@ -49,12 +82,6 @@ class NetCdfRead(Accessor):
         self.ds_var_list = list(self.dataset.variables.keys())
         if self._nc_read_vars is None:
             self._nc_read_vars = self.ds_var_list
-        self.ds_var_chunking = {
-            vv: self.dataset.variables[vv].chunking()
-            for vv in self.ds_var_list
-        }
-
-        # Set dimension variables which are not chunked
 
         if "time" in self.dataset.variables:
             self._time = (
@@ -68,12 +95,48 @@ class NetCdfRead(Accessor):
                 .astype("datetime64[s]")
                 # JLM: the global time type as in cbh_utils, define somewhere
             )
-            self._ntimes = self._time.shape[0]
+
+            if self._start_time is None:
+                self._start_index = 0
+            else:
+                wh_start = np.where(self._time == self._start_time)
+                self._start_index = wh_start[0][0]
+
+            if self._end_time is None:
+                self._end_index = self._time.shape[0] - 1
+            else:
+                wh_end = np.where(self._time == self._end_time)
+                self._end_index = wh_end[0][0]
+
+            self._time = self._time[self._start_index : (self._end_index + 1)]
+            self._ntimes = self._end_index - self._start_index + 1
+
+            # time batching
+            # data are actually loaded in get_data
+            if self._load_n_time_batches is not None:
+                # use ceil because we want exactly the requested # of batches
+                self._load_n_times = ceil(
+                    self._ntimes / self._load_n_time_batches
+                )
+                self._data_loaded = {}
+
+            elif self._load_n_times is not None:
+                # Use ceil to account for the remainder batch
+                if self._load_n_times == -1:
+                    self._load_n_times = self._ntimes
+                self._load_time_batches = ceil(
+                    self._ntimes / self._load_n_times
+                )
+                self._data_loaded = {}
+
+            # Note that if neither _load variables is specified, then no time
+            # batching is used
 
         if "doy" in self.dataset.variables:
-            print(self)
             self._doy = self.dataset.variables["doy"][:].data
             self._ntimes = self._doy.shape[0]
+            self._start_index = 0
+            self._end_index = 365
 
         spatial_id_names = []
         if "nhm_id" in self.ds_var_list:
@@ -101,6 +164,8 @@ class NetCdfRead(Accessor):
             for name in self.ds_var_list
             if name != "time" and name not in spatial_id_names
         ]
+
+        return
 
     @property
     def ntimes(
@@ -194,6 +259,9 @@ class NetCdfRead(Accessor):
         """
         return self._variables
 
+    def all_time(self, variable):
+        return self.get_data(variable)
+
     def get_data(
         self,
         variable: str,
@@ -214,15 +282,42 @@ class NetCdfRead(Accessor):
             raise ValueError(
                 f"'{variable}' not in list of available variables"
             )
+
         if itime_step is None:
-            return self.dataset[variable][:, :]
+            return self.dataset[variable][
+                self._start_index : (self._end_index + 1), :
+            ]
+
         else:
             if itime_step >= self._ntimes:
                 raise ValueError(
                     f"requested time step {itime_step} but only "
                     + f"{self._ntimes} time steps are available."
                 )
-            return self.dataset[variable][itime_step, :]
+
+            if hasattr(self, "_data_loaded"):
+                # load when needed, at the beginning of each batch
+                batch_index = itime_step % self._load_n_times
+                if batch_index == 0:
+                    ith_batch = itime_step // self._load_n_times
+                    # print(
+                    #     f"load batch "
+                    #     f"#{ith_batch}/{self._load_n_time_batches-1}: "
+                    #     f"{variable}"
+                    # )
+                    start_ind = self._start_index + (
+                        ith_batch * self._load_n_times
+                    )
+                    end_ind = start_ind + self._load_n_times
+                    self._data_loaded[variable] = self.dataset[variable][
+                        start_ind:end_ind, :
+                    ]
+
+                return self._data_loaded[variable][batch_index, :]
+
+            else:
+                # no time batching
+                return self.dataset[variable][itime_step, :]
 
     def advance(
         self, variable: str, current_time: np.datetime64 = None

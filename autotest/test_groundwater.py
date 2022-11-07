@@ -1,13 +1,22 @@
 import pathlib as pl
+import platform
+
+import pytest
 
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
+if platform.system() == "Windows":
+    calc_methods = ("numpy", "numba")
+else:
+    calc_methods = ("numpy", "numba", "fortran")
 
+
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSGroundwaterDomain:
-    def test_init(self, domain, tmp_path):
+    def test_init(self, domain, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)
         params = PrmsParameters.load(domain["param_file"])
 
@@ -21,7 +30,12 @@ class TestPRMSGroundwaterDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        gw = PRMSGroundwater(control, **input_variables, budget_type="error")
+        gw = PRMSGroundwater(
+            control,
+            **input_variables,
+            budget_type="error",
+            calc_method=calc_method,
+        )
         nc_parent = tmp_path / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
 

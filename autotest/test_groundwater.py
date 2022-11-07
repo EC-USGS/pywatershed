@@ -1,4 +1,5 @@
 import pathlib as pl
+import platform
 
 import pytest
 
@@ -7,12 +8,13 @@ from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
+if platform.system() == "Windows":
+    calc_methods = ("numpy", "numba")
+else:
+    calc_methods = ("numpy", "numba", "fortran")
 
-@pytest.mark.parametrize(
-    "calc_method",
-    (None, "numba", "fortran"),
-    ids=("numpy", "numba", "fortran"),
-)
+
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSGroundwaterDomain:
     def test_init(self, domain, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)

@@ -1,4 +1,5 @@
 import pathlib as pl
+import platform
 
 import pytest
 
@@ -9,11 +10,13 @@ from pynhm.utils.parameters import PrmsParameters
 
 fail_fast = False
 
+if platform.system() == "Windows":
+    calc_methods = ("numpy", "numba")
+else:
+    calc_methods = ("numpy", "numba", "fortran")
 
-@pytest.mark.parametrize(
-    "calc_method",
-    ("numpy", "numba", "fortran"),
-)
+
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSChannelDomain:
     def test_init(self, domain, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)

@@ -1,3 +1,4 @@
+import platform
 from typing import Tuple
 
 import networkx as nx
@@ -361,21 +362,41 @@ class PRMSChannel(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_muskingum_mann_numba"):
-                self._muskingum_mann_numba = nb.njit(
-                    nb.types.UniTuple(nb.float64[:], 7)(
-                        nb.int64[:],  # _segment_order
-                        nb.int64[:],  # tosegment
-                        nb.float64[:],  # seg_lateral_inflow
-                        nb.float64[:],  # _seg_inflow0
-                        nb.float64[:],  # _outflow_ts
-                        nb.int64[:],  # _tsi
-                        nb.float64[:],  # _ts
-                        nb.float64[:],  # _c0
-                        nb.float64[:],  # _c1
-                        nb.float64[:],  # _c2
-                    ),
-                    fastmath=True,
-                )(self._muskingum_mann_numpy)
+
+                # This is annoying that long integers on windows are 32bit
+                if platform.system() == "Windows":
+                    self._muskingum_mann_numba = nb.njit(
+                        nb.types.UniTuple(nb.float64[:], 7)(
+                            nb.int32[:],  # _segment_order
+                            nb.int32[:],  # tosegment
+                            nb.float64[:],  # seg_lateral_inflow
+                            nb.float64[:],  # _seg_inflow0
+                            nb.float64[:],  # _outflow_ts
+                            nb.int32[:],  # _tsi
+                            nb.float64[:],  # _ts
+                            nb.float64[:],  # _c0
+                            nb.float64[:],  # _c1
+                            nb.float64[:],  # _c2
+                        ),
+                        fastmath=True,
+                    )(self._muskingum_mann_numpy)
+
+                else:
+                    self._muskingum_mann_numba = nb.njit(
+                        nb.types.UniTuple(nb.float64[:], 7)(
+                            nb.int64[:],  # _segment_order
+                            nb.int64[:],  # tosegment
+                            nb.float64[:],  # seg_lateral_inflow
+                            nb.float64[:],  # _seg_inflow0
+                            nb.float64[:],  # _outflow_ts
+                            nb.int64[:],  # _tsi
+                            nb.float64[:],  # _ts
+                            nb.float64[:],  # _c0
+                            nb.float64[:],  # _c1
+                            nb.float64[:],  # _c2
+                        ),
+                        fastmath=True,
+                    )(self._muskingum_mann_numpy)
 
             (
                 self.seg_upstream_inflow[:],

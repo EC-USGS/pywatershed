@@ -1,4 +1,5 @@
 import pathlib as pl
+import platform
 
 import numpy as np
 import pytest
@@ -7,6 +8,11 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.utils.parameters import PrmsParameters
+
+if platform.system() == "Windows":
+    calc_methods = ("numpy", "numba")
+else:
+    calc_methods = ("numpy", "numba", "fortran")
 
 
 class TestPRMSCanopySimple:
@@ -62,10 +68,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-@pytest.mark.parametrize(
-    "calc_method",
-    ("numpy", "numba", "fortran"),
-)
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSCanopyDomain:
     def test_init(self, domain, control, tmp_path, calc_method):
         tmp_path = pl.Path(tmp_path)

@@ -1,3 +1,4 @@
+import numba as nb
 import numpy as np
 
 from pynhm.base.storageUnit import StorageUnit
@@ -42,15 +43,19 @@ class PRMSRunoff(StorageUnit):
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
         budget_type: str = None,
+        calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSRunoff":
+
         super().__init__(
             control=control,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSRunoff"
+
+        self._calc_method = str(calc_method)
 
         self._set_inputs(locals())
 
@@ -221,8 +226,16 @@ class PRMSRunoff(StorageUnit):
             None
 
         """
-        self.calculate_prms_style()
+        if self._calc_method.lower() == "numba":
+            import numba as nb
 
+            # if not hasattr(self, "_calculate_numba"):
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+
+            self.calculate_prms_style()
+
+        # <
         self.infil_hru[:] = self.infil * self.hru_frac_perv
 
         self.hru_impervstor_change[:] = (
@@ -454,6 +467,7 @@ class PRMSRunoff(StorageUnit):
         return imperv_stor, imperv_evap
 
     @staticmethod
+    @nb.njit
     def compute_infil(
         contrib_fraction,
         soil_moist_prev,
@@ -935,6 +949,7 @@ class PRMSRunoff(StorageUnit):
         )
 
 
+@nb.njit
 def perv_comp(
     soil_moist_prev,
     carea_max,
@@ -965,6 +980,7 @@ def perv_comp(
     return infil, srp, ca_fraction
 
 
+@nb.njit
 def check_capacity(soil_moist_prev, soil_moist_max, snowinfil_max, infil, srp):
     """
     Fill soil to soil_moist_max, if more than capacity restrict

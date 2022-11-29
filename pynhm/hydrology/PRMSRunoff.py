@@ -245,24 +245,16 @@ class PRMSRunoff(StorageUnit):
         self.infil[:] = 0.0
         for k in range(self.nhru):
 
+            # TODO: remove duplicated vars
+            # TODO: move setting constants outside the loop.
+
             # cdl i = Hru_route_order(k)
             i = k
             ihru = i
 
-            hruarea = self.hru_area[i]
-            # hruarea_dble = hruarea  # unused
-
-            upslope = 0.0
-
-            # cdl if cascade_flag > CASCADE_OFF:
-            if False:
-                upslope = None  # Upslope_hortonian(i)
-            ihru = i
             runoff = 0.0
-            glcrmltb = 0.0
-            isglacier = 0
-            active_glacier = -1
 
+            hruarea = self.hru_area[i]
             perv_area = self.hru_perv[i]
             perv_frac = self.hru_frac_perv[i]
             srp = 0.0
@@ -282,7 +274,20 @@ class PRMSRunoff(StorageUnit):
             )
             availh2o = self.intcp_changeover[i] + self.net_rain[i]
 
-            sri, srp, self.imperv_stor[i], self.infil[i] = self.compute_infil(
+            (
+                sri,
+                srp,
+                self.imperv_stor[i],
+                self.infil[i],
+                self.contrib_fraction[i],
+            ) = self.compute_infil(
+                self.contrib_fraction[i],
+                self.soil_moist_prev[i],
+                self.soil_moist_max[i],
+                self.carea_max[i],
+                self.smidx_coef[i],
+                self.smidx_exp[i],
+                self.pptmix_nopack[i],
                 self.net_rain[i],
                 self.net_ppt[i],
                 self.imperv_stor[i],
@@ -297,7 +302,6 @@ class PRMSRunoff(StorageUnit):
                 hruarea_imperv,
                 sri,
                 srp,
-                ihru,
             )
 
             dprst_flag = ACTIVE  # cdl todo: hardwired
@@ -357,7 +361,7 @@ class PRMSRunoff(StorageUnit):
 
             # <
             # cdl -- the guts of this was implemented in the python code below
-            # !******Compute evaporation from impervious area
+            # Compute evaporation from impervious area
             if hruarea_imperv > 0.0:
                 if self.imperv_stor[i] > 0.0:
                     self.imperv_stor[i], self.imperv_evap[i] = self.imperv_et(
@@ -449,8 +453,15 @@ class PRMSRunoff(StorageUnit):
             imperv_stor = imperv_stor - imperv_evap
         return imperv_stor, imperv_evap
 
+    @staticmethod
     def compute_infil(
-        self,
+        contrib_fraction,
+        soil_moist_prev,
+        soil_moist_max,
+        carea_max,
+        smidx_coef,
+        smidx_exp,
+        pptmix_nopack,
         net_rain,
         net_ppt,
         imperv_stor,
@@ -465,7 +476,6 @@ class PRMSRunoff(StorageUnit):
         hruarea_imperv,
         sri,
         srp,
-        ihru,
     ):
 
         isglacier = False  # todo -- hardwired
@@ -483,11 +493,11 @@ class PRMSRunoff(StorageUnit):
             avail_water = avail_water + intcp_changeover
             infil = infil + intcp_changeover
             if hru_flag == 1:
-                infil, srp, self.contrib_fraction[ihru] = self.perv_comp(
-                    self.soil_moist_prev[ihru],
-                    self.carea_max[ihru],
-                    self.smidx_coef[ihru],
-                    self.smidx_exp[ihru],
+                infil, srp, contrib_fraction = perv_comp(
+                    soil_moist_prev,
+                    carea_max,
+                    smidx_coef,
+                    smidx_exp,
                     intcp_changeover,
                     intcp_changeover,
                     infil,
@@ -497,15 +507,15 @@ class PRMSRunoff(StorageUnit):
         # if rain/snow event with no antecedent snowpack,
         # compute the runoff from the rain first and then proceed with the
         # snowmelt computations
-        if self.pptmix_nopack[ihru] == ACTIVE:
+        if pptmix_nopack == ACTIVE:
             avail_water = avail_water + net_rain
             infil = infil + net_rain
             if hru_flag == 1:
-                infil, srp, self.contrib_fraction[ihru] = self.perv_comp(
-                    self.soil_moist_prev[ihru],
-                    self.carea_max[ihru],
-                    self.smidx_coef[ihru],
-                    self.smidx_exp[ihru],
+                infil, srp, contrib_fraction = perv_comp(
+                    soil_moist_prev,
+                    carea_max,
+                    smidx_coef,
+                    smidx_exp,
                     net_rain,
                     net_rain,
                     infil,
@@ -525,20 +535,20 @@ class PRMSRunoff(StorageUnit):
             if hru_flag == 1:
                 if pkwater_equiv > 0.0 or net_ppt - net_snow < NEARZERO:
                     # Pervious area computations
-                    infil, srp = self.check_capacity(
-                        self.soil_moist_prev[ihru],
-                        self.soil_moist_max[ihru],
+                    infil, srp = check_capacity(
+                        soil_moist_prev,
+                        soil_moist_max,
                         snowinfil_max,
                         infil,
                         srp,
                     )
                 else:
                     # Snowmelt occurred and depleted the snowpack
-                    infil, srp, self.contrib_fraction[ihru] = self.perv_comp(
-                        self.soil_moist_prev[ihru],
-                        self.carea_max[ihru],
-                        self.smidx_coef[ihru],
-                        self.smidx_exp[ihru],
+                    infil, srp, contrib_fraction = perv_comp(
+                        soil_moist_prev,
+                        carea_max,
+                        smidx_coef,
+                        smidx_exp,
                         snowmelt,
                         net_ppt,
                         infil,
@@ -552,11 +562,11 @@ class PRMSRunoff(StorageUnit):
                 avail_water = avail_water + net_rain
                 infil = infil + net_rain
                 if hru_flag == 1:
-                    infil, srp, self.contrib_fraction[ihru] = self.perv_comp(
-                        self.soil_moist_prev[ihru],
-                        self.carea_max[ihru],
-                        self.smidx_coef[ihru],
-                        self.smidx_exp[ihru],
+                    infil, srp, contrib_fraction = perv_comp(
+                        soil_moist_prev,
+                        carea_max,
+                        smidx_coef,
+                        smidx_exp,
                         net_rain,
                         net_rain,
                         infil,
@@ -568,9 +578,9 @@ class PRMSRunoff(StorageUnit):
         # on a snowfree surface.
         elif infil > 0.0:
             if hru_flag == 1:
-                infil, srp = self.check_capacity(
-                    self.soil_moist_prev[ihru],
-                    self.soil_moist_max[ihru],
+                infil, srp = check_capacity(
+                    soil_moist_prev,
+                    soil_moist_max,
                     snowinfil_max,
                     infil,
                     srp,
@@ -583,52 +593,7 @@ class PRMSRunoff(StorageUnit):
                     sri = imperv_stor - imperv_stor_max
                     imperv_stor = imperv_stor_max
 
-        return sri, srp, imperv_stor, infil
-
-    @staticmethod
-    def perv_comp(
-        soil_moist_prev,
-        carea_max,
-        smidx_coef,
-        smidx_exp,
-        pptp,
-        ptc,
-        infil,
-        srp,
-    ):
-        """Pervious area computations."""
-        smidx_module = True
-        if smidx_module:
-            smidx = soil_moist_prev + 0.5 * ptc
-            if smidx > 25.0:
-                ca_fraction = carea_max
-            else:
-                ca_fraction = smidx_coef * 10.0 ** (smidx_exp * smidx)
-        else:
-            raise Exception("you did a bad thing...")
-
-        if ca_fraction > carea_max:
-            ca_fraction = carea_max
-        srpp = ca_fraction * pptp
-        infil = infil - srpp
-        srp = srp + srpp
-
-        return infil, srp, ca_fraction
-
-    @staticmethod
-    def check_capacity(
-        soil_moist_prev, soil_moist_max, snowinfil_max, infil, srp
-    ):
-        """
-        Fill soil to soil_moist_max, if more than capacity restrict
-        infiltration by snowinfil_max, with excess added to runoff
-        """
-        capacity = soil_moist_max - soil_moist_prev
-        excess = infil - capacity
-        if excess > snowinfil_max:
-            srp = srp + excess - snowinfil_max
-            infil = snowinfil_max + capacity
-        return infil, srp
+        return sri, srp, imperv_stor, infil, contrib_fraction
 
     def dprst_init(self):
         for j in range(self.nhru):
@@ -968,3 +933,46 @@ class PRMSRunoff(StorageUnit):
             dprst_evap_hru,
             dprst_seep_hru,
         )
+
+
+def perv_comp(
+    soil_moist_prev,
+    carea_max,
+    smidx_coef,
+    smidx_exp,
+    pptp,
+    ptc,
+    infil,
+    srp,
+):
+    """Pervious area computations."""
+    smidx_module = True
+    if smidx_module:
+        smidx = soil_moist_prev + 0.5 * ptc
+        if smidx > 25.0:
+            ca_fraction = carea_max
+        else:
+            ca_fraction = smidx_coef * 10.0 ** (smidx_exp * smidx)
+    else:
+        raise Exception("you did a bad thing...")
+
+    if ca_fraction > carea_max:
+        ca_fraction = carea_max
+    srpp = ca_fraction * pptp
+    infil = infil - srpp
+    srp = srp + srpp
+
+    return infil, srp, ca_fraction
+
+
+def check_capacity(soil_moist_prev, soil_moist_max, snowinfil_max, infil, srp):
+    """
+    Fill soil to soil_moist_max, if more than capacity restrict
+    infiltration by snowinfil_max, with excess added to runoff
+    """
+    capacity = soil_moist_max - soil_moist_prev
+    excess = infil - capacity
+    if excess > snowinfil_max:
+        srp = srp + excess - snowinfil_max
+        infil = snowinfil_max + capacity
+    return infil, srp

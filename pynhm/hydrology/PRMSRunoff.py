@@ -61,6 +61,14 @@ class PRMSRunoff(StorageUnit):
 
         self._set_budget(budget_type)
 
+        return
+
+    def _set_initial_conditions(self):
+        # Where does the initial storage come from? Document here.
+        # apparently it's just zero?
+        # self.var1_stor[:] = np.zeros([1])[0]
+        # self.var1_stor_old = None
+
         # cdl -- todo:
         # this variable is calculated and stored by PRMS but does not seem
         # to be used widely
@@ -77,13 +85,6 @@ class PRMSRunoff(StorageUnit):
         # call the depression storage init
         self.dprst_init()
 
-        return
-
-    def _set_initial_conditions(self):
-        # Where does the initial storage come from? Document here.
-        # apparently it's just zero?
-        # self.var1_stor[:] = np.zeros([1])[0]
-        # self.var1_stor_old = None
         return
 
     @staticmethod
@@ -315,6 +316,8 @@ class PRMSRunoff(StorageUnit):
                 hruarea_imperv,
                 sri,
                 srp,
+                self.check_capacity,
+                self.perv_comp,
             )
 
             dprst_flag = ACTIVE  # cdl todo: hardwired
@@ -455,19 +458,6 @@ class PRMSRunoff(StorageUnit):
         return
 
     @staticmethod
-    def imperv_et(imperv_stor, potet, imperv_evap, sca, avail_et, imperv_frac):
-        if sca < 1.0:
-            if potet < imperv_stor:
-                imperv_evap = potet * (1.0 - sca)
-            else:
-                imperv_evap = imperv_stor * (1.0 - sca)
-            if imperv_evap * imperv_frac > avail_et:
-                imperv_evap = avail_et / imperv_frac
-            imperv_stor = imperv_stor - imperv_evap
-        return imperv_stor, imperv_evap
-
-    @staticmethod
-    @nb.njit
     def compute_infil(
         contrib_fraction,
         soil_moist_prev,
@@ -490,6 +480,8 @@ class PRMSRunoff(StorageUnit):
         hruarea_imperv,
         sri,
         srp,
+        check_capacity,
+        perv_comp,
     ):
 
         isglacier = False  # todo -- hardwired
@@ -948,47 +940,59 @@ class PRMSRunoff(StorageUnit):
             dprst_seep_hru,
         )
 
-
-@nb.njit
-def perv_comp(
-    soil_moist_prev,
-    carea_max,
-    smidx_coef,
-    smidx_exp,
-    pptp,
-    ptc,
-    infil,
-    srp,
-):
-    """Pervious area computations."""
-    smidx_module = True
-    if smidx_module:
-        smidx = soil_moist_prev + 0.5 * ptc
-        if smidx > 25.0:
-            ca_fraction = carea_max
+    @staticmethod
+    def perv_comp(
+        soil_moist_prev,
+        carea_max,
+        smidx_coef,
+        smidx_exp,
+        pptp,
+        ptc,
+        infil,
+        srp,
+    ):
+        """Pervious area computations."""
+        smidx_module = True
+        if smidx_module:
+            smidx = soil_moist_prev + 0.5 * ptc
+            if smidx > 25.0:
+                ca_fraction = carea_max
+            else:
+                ca_fraction = smidx_coef * 10.0 ** (smidx_exp * smidx)
         else:
-            ca_fraction = smidx_coef * 10.0 ** (smidx_exp * smidx)
-    else:
-        raise Exception("you did a bad thing...")
+            raise Exception("you did a bad thing...")
 
-    if ca_fraction > carea_max:
-        ca_fraction = carea_max
-    srpp = ca_fraction * pptp
-    infil = infil - srpp
-    srp = srp + srpp
+        if ca_fraction > carea_max:
+            ca_fraction = carea_max
+        srpp = ca_fraction * pptp
+        infil = infil - srpp
+        srp = srp + srpp
 
-    return infil, srp, ca_fraction
+        return infil, srp, ca_fraction
 
+    @staticmethod
+    def check_capacity(
+        soil_moist_prev, soil_moist_max, snowinfil_max, infil, srp
+    ):
+        """
+        Fill soil to soil_moist_max, if more than capacity restrict
+        infiltration by snowinfil_max, with excess added to runoff
+        """
+        capacity = soil_moist_max - soil_moist_prev
+        excess = infil - capacity
+        if excess > snowinfil_max:
+            srp = srp + excess - snowinfil_max
+            infil = snowinfil_max + capacity
+        return infil, srp
 
-@nb.njit
-def check_capacity(soil_moist_prev, soil_moist_max, snowinfil_max, infil, srp):
-    """
-    Fill soil to soil_moist_max, if more than capacity restrict
-    infiltration by snowinfil_max, with excess added to runoff
-    """
-    capacity = soil_moist_max - soil_moist_prev
-    excess = infil - capacity
-    if excess > snowinfil_max:
-        srp = srp + excess - snowinfil_max
-        infil = snowinfil_max + capacity
-    return infil, srp
+    @staticmethod
+    def imperv_et(imperv_stor, potet, imperv_evap, sca, avail_et, imperv_frac):
+        if sca < 1.0:
+            if potet < imperv_stor:
+                imperv_evap = potet * (1.0 - sca)
+            else:
+                imperv_evap = imperv_stor * (1.0 - sca)
+            if imperv_evap * imperv_frac > avail_et:
+                imperv_evap = avail_et / imperv_frac
+            imperv_stor = imperv_stor - imperv_evap
+        return imperv_stor, imperv_evap

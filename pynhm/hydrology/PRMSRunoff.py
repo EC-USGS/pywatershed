@@ -488,47 +488,44 @@ class PRMSRunoff(StorageUnit):
                             self.dprst_vol_frac[i],
                             self.dprst_stor_hru[i],
                         ) = self.dprst_comp(
-                            self.dprst_vol_clos[i],
-                            self.dprst_area_clos_max[i],
-                            self.dprst_area_clos[i],
-                            self.dprst_vol_open_max[i],
-                            self.dprst_vol_open[i],
-                            self.dprst_area_open_max[i],
-                            self.dprst_area_open[i],
-                            self.dprst_sroff_hru[i],
-                            self.dprst_seep_hru[i],
-                            self.sro_to_dprst_perv[i],
-                            self.sro_to_dprst_imperv[i],
-                            self.dprst_evap_hru[i],
-                            # new
-                            self.pptmix_nopack[i],
-                            self.snowmelt[i],
-                            self.pkwater_equiv[i],
-                            self.net_snow[i],
-                            self.hru_area[i],
-                            self.dprst_insroff_hru[i],
-                            self.dprst_frac_open[i],
-                            self.dprst_frac_clos[i],
-                            self.va_open_exp[i],
-                            self.dprst_vol_clos_max[i],
-                            self.dprst_vol_clos_frac[i],
-                            self.va_clos_exp[i],
-                            self.potet[i],
-                            self.snowcov_area[i],
-                            self.dprst_et_coef[i],
-                            self.dprst_seep_rate_open[i],
-                            self.dprst_vol_thres_open[i],
-                            self.dprst_flow_coef[i],
-                            self.dprst_seep_rate_clos[i],
-                            # endnew
-                            avail_et,
-                            availh2o,
-                            self.dprst_in[i],
-                            ihru,
-                            srp,
-                            sri,
-                            imperv_frac,
-                            perv_frac,
+                            dprst_vol_clos=self.dprst_vol_clos[i],
+                            dprst_area_clos_max=self.dprst_area_clos_max[i],
+                            dprst_area_clos=self.dprst_area_clos[i],
+                            dprst_vol_open_max=self.dprst_vol_open_max[i],
+                            dprst_vol_open=self.dprst_vol_open[i],
+                            dprst_area_open_max=self.dprst_area_open_max[i],
+                            dprst_area_open=self.dprst_area_open[i],
+                            dprst_sroff_hru=self.dprst_sroff_hru[i],
+                            dprst_seep_hru=self.dprst_seep_hru[i],
+                            sro_to_dprst_perv=self.sro_to_dprst_perv[i],
+                            sro_to_dprst_imperv=self.sro_to_dprst_imperv[i],
+                            dprst_evap_hru=self.dprst_evap_hru[i],
+                            pptmix_nopack=self.pptmix_nopack[i],
+                            snowmelt=self.snowmelt[i],
+                            pkwater_equiv=self.pkwater_equiv[i],
+                            net_snow=self.net_snow[i],
+                            hru_area=self.hru_area[i],
+                            dprst_insroff_hru=self.dprst_insroff_hru[i],
+                            dprst_frac_open=self.dprst_frac_open[i],
+                            dprst_frac_clos=self.dprst_frac_clos[i],
+                            va_open_exp=self.va_open_exp[i],
+                            dprst_vol_clos_max=self.dprst_vol_clos_max[i],
+                            dprst_vol_clos_frac=self.dprst_vol_clos_frac[i],
+                            va_clos_exp=self.va_clos_exp[i],
+                            potet=self.potet[i],
+                            snowcov_area=self.snowcov_area[i],
+                            dprst_et_coef=self.dprst_et_coef[i],
+                            dprst_seep_rate_open=self.dprst_seep_rate_open[i],
+                            dprst_vol_thres_open=self.dprst_vol_thres_open[i],
+                            dprst_flow_coef=self.dprst_flow_coef[i],
+                            dprst_seep_rate_clos=self.dprst_seep_rate_clos[i],
+                            avail_et=avail_et,
+                            net_rain=self.net_rain[i],
+                            dprst_in=self.dprst_in[i],
+                            srp=srp,
+                            sri=sri,
+                            imperv_frac=imperv_frac,
+                            perv_frac=perv_frac,
                         )
                         runoff = runoff + self.dprst_sroff_hru[i] * hruarea
 
@@ -726,8 +723,8 @@ class PRMSRunoff(StorageUnit):
 
         return sri, srp, imperv_stor, infil, contrib_fraction
 
+    @staticmethod
     def dprst_comp(
-        self,
         dprst_vol_clos,
         dprst_area_clos_max,
         dprst_area_clos,
@@ -740,7 +737,6 @@ class PRMSRunoff(StorageUnit):
         sro_to_dprst_perv,
         sro_to_dprst_imperv,
         dprst_evap_hru,
-        # new
         pptmix_nopack,
         snowmelt,
         pkwater_equiv,
@@ -760,11 +756,9 @@ class PRMSRunoff(StorageUnit):
         dprst_vol_thres_open,
         dprst_flow_coef,
         dprst_seep_rate_clos,
-        # endnew
         avail_et,
         net_rain,
         dprst_in,
-        ihru,
         srp,
         sri,
         imperv_frac,
@@ -943,7 +937,7 @@ class PRMSRunoff(StorageUnit):
         avail_et = avail_et - dprst_evap_hru
         if dprst_vol_open_max > 0.0:
             dprst_vol_open_frac = dprst_vol_open / dprst_vol_open_max
-        if self.dprst_vol_clos_max[ihru] > 0.0:
+        if dprst_vol_clos_max > 0.0:
             dprst_vol_clos_frac = dprst_vol_clos / dprst_vol_clos_max
         if dprst_vol_open_max + dprst_vol_clos_max > 0.0:
             dprst_vol_frac = (dprst_vol_open + dprst_vol_clos) / (

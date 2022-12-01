@@ -208,6 +208,147 @@ class PRMSRunoff(StorageUnit):
             ],
         }
 
+    def basin_init(self):
+        """
+        This is trying to replicate the prms basin_init function that
+        calculates some of the variables needed here by runoff.  This should
+        probably go somewhere else at some point as I suspect other components
+        may need similar information.
+        """
+        dprst_flag = ACTIVE
+        self.hru_perv = np.zeros(self.nhru, float)
+        self.hru_frac_perv = np.zeros(self.nhru, float)
+        self.hru_imperv = np.zeros(self.nhru, float)
+        self.dprst_area_max = np.zeros(self.nhru, float)
+        for k in range(self.nhru):
+            i = k
+            harea = self.hru_area[k]
+            perv_area = harea
+            if self.hru_percent_imperv[k] > 0.0:
+                self.hru_imperv[i] = self.hru_percent_imperv[i] * harea
+                perv_area = perv_area - self.hru_imperv[i]
+
+            if dprst_flag == ACTIVE:
+                self.dprst_area_max[i] = self.dprst_frac[i] * harea
+                if self.dprst_area_max[i] > 0.0:
+                    self.dprst_area_open_max[i] = (
+                        self.dprst_area_max[i] * self.dprst_frac_open[i]
+                    )
+                    self.dprst_frac_clos[i] = 1.0 - self.dprst_frac_open[i]
+                    self.dprst_area_clos_max[i] = (
+                        self.dprst_area_max[i] - self.dprst_area_open_max[i]
+                    )
+                    if self.dprst_area_clos_max[i] > 0.0:
+                        dprst_clos_flag = ACTIVE
+                        # cdl -- todo: above variable should be stored to self?
+                    if self.dprst_area_open_max[i] > 0.0:
+                        dprst_open_flag = ACTIVE
+                        # cdl -- todo: above variable should be stored to self?
+                    perv_area = perv_area - self.dprst_area_max[i]
+
+            self.hru_perv[i] = perv_area
+            self.hru_frac_perv[i] = perv_area / harea
+        return
+
+    def dprst_init(self):
+        for j in range(self.nhru):
+            i = j
+            if self.dprst_frac[i] > 0.0:
+
+                if self.dprst_depth_avg[i] == 0.0:
+                    raise Exception(
+                        f"dprst_fac > and dprst_depth_avg == 0 for HRU {i}"
+                    )
+
+                # calculate open and closed volumes (acre-inches) of depression
+                # storage by HRU
+                # Dprst_area_open_max is the maximum open depression area
+                # (acres) that can generate surface runoff:
+                dprst_clos_flag = ACTIVE
+                if dprst_clos_flag == ACTIVE:
+                    self.dprst_vol_clos_max[i] = (
+                        self.dprst_area_clos_max[i] * self.dprst_depth_avg[i]
+                    )
+                dprst_open_flag = ACTIVE
+                if dprst_open_flag == ACTIVE:
+                    self.dprst_vol_open_max[i] = (
+                        self.dprst_area_open_max[i] * self.dprst_depth_avg[i]
+                    )
+
+                # calculate the initial open and closed depression storage
+                # volume:
+                dprst_open_flag = ACTIVE
+                if dprst_open_flag == ACTIVE:
+                    self.dprst_vol_open[i] = (
+                        self.dprst_frac_init[i] * self.dprst_vol_open_max[i]
+                    )
+                dprst_clos_flag = ACTIVE
+                if dprst_clos_flag == ACTIVE:
+                    self.dprst_vol_clos[i] = (
+                        self.dprst_frac_init[i] * self.dprst_vol_clos_max[i]
+                    )
+
+                # threshold volume is calculated as the % of maximum open
+                # depression storage above which flow occurs *  total open
+                # depression storage volume
+                self.dprst_vol_thres_open[i] = (
+                    self.op_flow_thres[i] * self.dprst_vol_open_max[i]
+                )
+                if self.dprst_vol_open[i] > 0.0:
+                    open_vol_r = (
+                        self.dprst_vol_open[i] / self.dprst_vol_open_max[i]
+                    )
+                    if open_vol_r < NEARZERO:
+                        frac_op_ar = 0.0
+                    elif open_vol_r > 1.0:
+                        frac_op_ar = 1.0
+                    else:
+                        frac_op_ar = np.exp(
+                            self.va_open_exp[i] * np.log(open_vol_r)
+                        )
+                    self.dprst_area_open[i] = (
+                        self.dprst_area_open_max[i] * frac_op_ar
+                    )
+                    if self.dprst_area_open[i] > self.dprst_area_open_max[i]:
+                        self.dprst_area_open[i] = self.dprst_area_open_max[i]
+
+                # Closed depression surface area for each HRU:
+                if self.dprst_vol_clos[i] > 0.0:
+                    clos_vol_r = (
+                        self.dprst_vol_clos[i] / self.dprst_vol_clos_max[i]
+                    )
+                    if clos_vol_r < NEARZERO:
+                        frac_cl_ar = 0.0
+                    elif clos_vol_r > 1.0:
+                        frac_cl_ar = 1.0
+                    else:
+                        frac_cl_ar = np.exp(
+                            self.va_clos_exp[i] * np.log(clos_vol_r)
+                        )
+                    self.dprst_area_clos[i] = (
+                        self.dprst_area_clos_max[i] * frac_cl_ar
+                    )
+                    if self.dprst_area_clos[i] > self.dprst_area_clos_max[i]:
+                        self.dprst_area_clos[i] = self.dprst_area_clos_max[i]
+
+                #
+                # calculate basin open and closed depression storage volumes
+                self.dprst_stor_hru[i] = (
+                    self.dprst_vol_open[i] + self.dprst_vol_clos[i]
+                ) / self.hru_area[i]
+                self.dprst_stor_hru_old[i] = self.dprst_stor_hru[i]
+
+                if (
+                    self.dprst_vol_open_max[i] + self.dprst_vol_clos_max[i]
+                    > 0.0
+                ):
+                    self.dprst_vol_frac[i] = (
+                        self.dprst_vol_open[i] + self.dprst_vol_clos[i]
+                    ) / (
+                        self.dprst_vol_open_max[i] + self.dprst_vol_clos_max[i]
+                    )
+        return
+
     def _advance_variables(self) -> None:
         """Advance the variables
         Returns:
@@ -415,48 +556,6 @@ class PRMSRunoff(StorageUnit):
         # <
         return
 
-    def basin_init(self):
-        """
-        This is trying to replicate the prms basin_init function that
-        calculates some of the variables needed here by runoff.  This should
-        probably go somewhere else at some point as I suspect other components
-        may need similar information.
-        """
-        dprst_flag = ACTIVE
-        self.hru_perv = np.zeros(self.nhru, float)
-        self.hru_frac_perv = np.zeros(self.nhru, float)
-        self.hru_imperv = np.zeros(self.nhru, float)
-        self.dprst_area_max = np.zeros(self.nhru, float)
-        for k in range(self.nhru):
-            i = k
-            harea = self.hru_area[k]
-            perv_area = harea
-            if self.hru_percent_imperv[k] > 0.0:
-                self.hru_imperv[i] = self.hru_percent_imperv[i] * harea
-                perv_area = perv_area - self.hru_imperv[i]
-
-            if dprst_flag == ACTIVE:
-                self.dprst_area_max[i] = self.dprst_frac[i] * harea
-                if self.dprst_area_max[i] > 0.0:
-                    self.dprst_area_open_max[i] = (
-                        self.dprst_area_max[i] * self.dprst_frac_open[i]
-                    )
-                    self.dprst_frac_clos[i] = 1.0 - self.dprst_frac_open[i]
-                    self.dprst_area_clos_max[i] = (
-                        self.dprst_area_max[i] - self.dprst_area_open_max[i]
-                    )
-                    if self.dprst_area_clos_max[i] > 0.0:
-                        dprst_clos_flag = ACTIVE
-                        # cdl -- todo: above variable should be stored to self?
-                    if self.dprst_area_open_max[i] > 0.0:
-                        dprst_open_flag = ACTIVE
-                        # cdl -- todo: above variable should be stored to self?
-                    perv_area = perv_area - self.dprst_area_max[i]
-
-            self.hru_perv[i] = perv_area
-            self.hru_frac_perv[i] = perv_area / harea
-        return
-
     @staticmethod
     def compute_infil(
         contrib_fraction,
@@ -600,105 +699,6 @@ class PRMSRunoff(StorageUnit):
                     imperv_stor = imperv_stor_max
 
         return sri, srp, imperv_stor, infil, contrib_fraction
-
-    def dprst_init(self):
-        for j in range(self.nhru):
-            i = j
-            if self.dprst_frac[i] > 0.0:
-
-                if self.dprst_depth_avg[i] == 0.0:
-                    raise Exception(
-                        f"dprst_fac > and dprst_depth_avg == 0 for HRU {i}"
-                    )
-
-                # calculate open and closed volumes (acre-inches) of depression
-                # storage by HRU
-                # Dprst_area_open_max is the maximum open depression area
-                # (acres) that can generate surface runoff:
-                dprst_clos_flag = ACTIVE
-                if dprst_clos_flag == ACTIVE:
-                    self.dprst_vol_clos_max[i] = (
-                        self.dprst_area_clos_max[i] * self.dprst_depth_avg[i]
-                    )
-                dprst_open_flag = ACTIVE
-                if dprst_open_flag == ACTIVE:
-                    self.dprst_vol_open_max[i] = (
-                        self.dprst_area_open_max[i] * self.dprst_depth_avg[i]
-                    )
-
-                # calculate the initial open and closed depression storage
-                # volume:
-                dprst_open_flag = ACTIVE
-                if dprst_open_flag == ACTIVE:
-                    self.dprst_vol_open[i] = (
-                        self.dprst_frac_init[i] * self.dprst_vol_open_max[i]
-                    )
-                dprst_clos_flag = ACTIVE
-                if dprst_clos_flag == ACTIVE:
-                    self.dprst_vol_clos[i] = (
-                        self.dprst_frac_init[i] * self.dprst_vol_clos_max[i]
-                    )
-
-                # threshold volume is calculated as the % of maximum open
-                # depression storage above which flow occurs *  total open
-                # depression storage volume
-                self.dprst_vol_thres_open[i] = (
-                    self.op_flow_thres[i] * self.dprst_vol_open_max[i]
-                )
-                if self.dprst_vol_open[i] > 0.0:
-                    open_vol_r = (
-                        self.dprst_vol_open[i] / self.dprst_vol_open_max[i]
-                    )
-                    if open_vol_r < NEARZERO:
-                        frac_op_ar = 0.0
-                    elif open_vol_r > 1.0:
-                        frac_op_ar = 1.0
-                    else:
-                        frac_op_ar = np.exp(
-                            self.va_open_exp[i] * np.log(open_vol_r)
-                        )
-                    self.dprst_area_open[i] = (
-                        self.dprst_area_open_max[i] * frac_op_ar
-                    )
-                    if self.dprst_area_open[i] > self.dprst_area_open_max[i]:
-                        self.dprst_area_open[i] = self.dprst_area_open_max[i]
-
-                # Closed depression surface area for each HRU:
-                if self.dprst_vol_clos[i] > 0.0:
-                    clos_vol_r = (
-                        self.dprst_vol_clos[i] / self.dprst_vol_clos_max[i]
-                    )
-                    if clos_vol_r < NEARZERO:
-                        frac_cl_ar = 0.0
-                    elif clos_vol_r > 1.0:
-                        frac_cl_ar = 1.0
-                    else:
-                        frac_cl_ar = np.exp(
-                            self.va_clos_exp[i] * np.log(clos_vol_r)
-                        )
-                    self.dprst_area_clos[i] = (
-                        self.dprst_area_clos_max[i] * frac_cl_ar
-                    )
-                    if self.dprst_area_clos[i] > self.dprst_area_clos_max[i]:
-                        self.dprst_area_clos[i] = self.dprst_area_clos_max[i]
-
-                #
-                # calculate basin open and closed depression storage volumes
-                self.dprst_stor_hru[i] = (
-                    self.dprst_vol_open[i] + self.dprst_vol_clos[i]
-                ) / self.hru_area[i]
-                self.dprst_stor_hru_old[i] = self.dprst_stor_hru[i]
-
-                if (
-                    self.dprst_vol_open_max[i] + self.dprst_vol_clos_max[i]
-                    > 0.0
-                ):
-                    self.dprst_vol_frac[i] = (
-                        self.dprst_vol_open[i] + self.dprst_vol_clos[i]
-                    ) / (
-                        self.dprst_vol_open_max[i] + self.dprst_vol_clos_max[i]
-                    )
-        return
 
     def dprst_comp(
         self,

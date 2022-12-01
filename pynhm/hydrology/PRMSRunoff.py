@@ -482,6 +482,11 @@ class PRMSRunoff(StorageUnit):
                             sri,
                             self.dprst_evap_hru[i],
                             self.dprst_seep_hru[i],
+                            self.dprst_insroff_hru[i],
+                            self.dprst_vol_open_frac[i],
+                            self.dprst_vol_clos_frac[i],
+                            self.dprst_vol_frac[i],
+                            self.dprst_stor_hru[i],
                         ) = self.dprst_comp(
                             self.dprst_vol_clos[i],
                             self.dprst_area_clos_max[i],
@@ -495,6 +500,27 @@ class PRMSRunoff(StorageUnit):
                             self.sro_to_dprst_perv[i],
                             self.sro_to_dprst_imperv[i],
                             self.dprst_evap_hru[i],
+                            # new
+                            self.pptmix_nopack[i],
+                            self.snowmelt[i],
+                            self.pkwater_equiv[i],
+                            self.net_snow[i],
+                            self.hru_area[i],
+                            self.dprst_insroff_hru[i],
+                            self.dprst_frac_open[i],
+                            self.dprst_frac_clos[i],
+                            self.va_open_exp[i],
+                            self.dprst_vol_clos_max[i],
+                            self.dprst_vol_clos_frac[i],
+                            self.va_clos_exp[i],
+                            self.potet[i],
+                            self.snowcov_area[i],
+                            self.dprst_et_coef[i],
+                            self.dprst_seep_rate_open[i],
+                            self.dprst_vol_thres_open[i],
+                            self.dprst_flow_coef[i],
+                            self.dprst_seep_rate_clos[i],
+                            # endnew
                             avail_et,
                             availh2o,
                             self.dprst_in[i],
@@ -714,6 +740,27 @@ class PRMSRunoff(StorageUnit):
         sro_to_dprst_perv,
         sro_to_dprst_imperv,
         dprst_evap_hru,
+        # new
+        pptmix_nopack,
+        snowmelt,
+        pkwater_equiv,
+        net_snow,
+        hru_area,
+        dprst_insroff_hru,
+        dprst_frac_open,
+        dprst_frac_clos,
+        va_open_exp,
+        dprst_vol_clos_max,
+        dprst_vol_clos_frac,
+        va_clos_exp,
+        potet,
+        snowcov_area,
+        dprst_et_coef,
+        dprst_seep_rate_open,
+        dprst_vol_thres_open,
+        dprst_flow_coef,
+        dprst_seep_rate_clos,
+        # endnew
         avail_et,
         net_rain,
         dprst_in,
@@ -730,7 +777,7 @@ class PRMSRunoff(StorageUnit):
         else:
             inflow = 0.0
 
-        if self.pptmix_nopack[ihru]:
+        if pptmix_nopack:
             inflow = inflow + net_rain
 
         # I f precipitation on snowpack all water available to the surface is
@@ -739,15 +786,15 @@ class PRMSRunoff(StorageUnit):
         # of snowpack.
         # If rain/snow mix with no antecedent snowpack, compute snowmelt
         # portion of runoff.
-        if self.snowmelt[ihru]:
-            inflow = inflow + self.snowmelt[ihru]
+        if snowmelt:
+            inflow = inflow + snowmelt
 
         # !******There was no snowmelt but a snowpack may exist.  If there is
         # !******no snowpack then check for rain on a snowfree HRU.
-        elif self.pkwater_equiv[ihru] < DNEARZERO:
+        elif pkwater_equiv < DNEARZERO:
             # !      If no snowmelt and no snowpack but there was net snow then
             # !      snowpack was small and was lost to sublimation.
-            if self.net_snow[ihru] < NEARZERO and net_rain > 0.0:
+            if net_snow < NEARZERO and net_rain > 0.0:
                 inflow = inflow + net_rain
 
         dprst_add_water_use = OFF
@@ -763,20 +810,20 @@ class PRMSRunoff(StorageUnit):
             tmp1 = inflow * dprst_area_clos_max
             dprst_vol_clos = dprst_vol_clos + tmp1
             dprst_in = dprst_in + tmp1
-        dprst_in = dprst_in / self.hru_area[ihru]
+        dprst_in = dprst_in / hru_area
 
         # add any pervious surface runoff fraction to depressions
         dprst_srp = 0.0
         dprst_sri = 0.0
         if srp > 0.0:
-            tmp = srp * perv_frac * sro_to_dprst_perv * self.hru_area[ihru]
+            tmp = srp * perv_frac * sro_to_dprst_perv * hru_area
             if dprst_area_open_max > 0.0:
-                dprst_srp_open = tmp * self.dprst_frac_open[ihru]
-                dprst_srp = dprst_srp_open / self.hru_area[ihru]
+                dprst_srp_open = tmp * dprst_frac_open
+                dprst_srp = dprst_srp_open / hru_area
                 dprst_vol_open = dprst_vol_open + dprst_srp_open
             if dprst_area_clos_max > 0.0:
-                dprst_srp_clos = tmp * self.dprst_frac_clos[ihru]
-                dprst_srp = dprst_srp + dprst_srp_clos / self.hru_area[ihru]
+                dprst_srp_clos = tmp * dprst_frac_clos
+                dprst_srp = dprst_srp + dprst_srp_clos / hru_area
                 dprst_vol_clos = dprst_vol_clos + dprst_srp_clos
             srp = srp - dprst_srp / perv_frac
             if srp < 0.0:
@@ -784,20 +831,20 @@ class PRMSRunoff(StorageUnit):
                     srp = 0.0
 
         if sri > 0.0:
-            tmp = sri * imperv_frac * sro_to_dprst_imperv * self.hru_area[ihru]
+            tmp = sri * imperv_frac * sro_to_dprst_imperv * hru_area
             if dprst_area_open_max > 0.0:
-                dprst_sri_open = tmp * self.dprst_frac_open[ihru]
-                dprst_sri = dprst_sri_open / self.hru_area[ihru]
+                dprst_sri_open = tmp * dprst_frac_open
+                dprst_sri = dprst_sri_open / hru_area
                 dprst_vol_open = dprst_vol_open + dprst_sri_open
             if dprst_area_clos_max > 0.0:
-                dprst_sri_clos = tmp * self.dprst_frac_clos[ihru]
-                dprst_sri = dprst_sri + dprst_sri_clos / self.hru_area[ihru]
+                dprst_sri_clos = tmp * dprst_frac_clos
+                dprst_sri = dprst_sri + dprst_sri_clos / hru_area
                 dprst_vol_clos = dprst_vol_clos + dprst_sri_clos
             sri = sri - dprst_sri / imperv_frac
             if sri < 0.0:
                 if sri < -NEARZERO:
                     sri = 0.0
-            self.dprst_insroff_hru[ihru] = dprst_srp + dprst_sri
+            dprst_insroff_hru = dprst_srp + dprst_sri
 
         dprst_area_open = 0.0
         if dprst_vol_open > 0.0:
@@ -807,9 +854,7 @@ class PRMSRunoff(StorageUnit):
             elif open_vol_r > 1.0:
                 frac_op_ar = 1.0
             else:
-                frac_op_ar = np.exp(
-                    self.va_open_exp[ihru] * np.log(open_vol_r)
-                )
+                frac_op_ar = np.exp(va_open_exp * np.log(open_vol_r))
             dprst_area_open = dprst_area_open_max * frac_op_ar
             if dprst_area_open > dprst_area_open_max:
                 dprst_area_open = dprst_area_open_max
@@ -817,15 +862,13 @@ class PRMSRunoff(StorageUnit):
         if dprst_area_clos_max > 0.0:
             dprst_area_clos = 0.0
             if dprst_vol_clos > 0.0:
-                clos_vol_r = dprst_vol_clos / self.dprst_vol_clos_max[ihru]
+                clos_vol_r = dprst_vol_clos / dprst_vol_clos_max
                 if clos_vol_r < NEARZERO:
                     frac_cl_ar = 0.0
                 elif clos_vol_r > 1.0:
                     frac_cl_ar = 1.0
                 else:
-                    frac_cl_ar = np.exp(
-                        self.va_clos_exp[ihru] * np.log(clos_vol_r)
-                    )
+                    frac_cl_ar = np.exp(va_clos_exp * np.log(clos_vol_r))
                 dprst_area_clos = dprst_area_clos_max * frac_cl_ar
                 if dprst_area_clos > dprst_area_clos_max:
                     dprst_area_clos = dprst_area_clos_max
@@ -836,11 +879,7 @@ class PRMSRunoff(StorageUnit):
         # evaporate water from depressions based on snowcov_area
         # dprst_evap_open & dprst_evap_clos = inches-acres on the HRU
         unsatisfied_et = avail_et
-        dprst_avail_et = (
-            self.potet[ihru]
-            * (1.0 - self.snowcov_area[ihru])
-            * self.dprst_et_coef[ihru]
-        )
+        dprst_avail_et = potet * (1.0 - snowcov_area) * dprst_et_coef
         dprst_evap_hru = 0.0
         if dprst_avail_et > 0.0:
             dprst_evap_open = 0.0
@@ -849,38 +888,34 @@ class PRMSRunoff(StorageUnit):
                 dprst_evap_open = min(
                     dprst_area_open * dprst_avail_et, dprst_vol_open
                 )
-                if dprst_evap_open / self.hru_area[ihru] > unsatisfied_et:
-                    dprst_evap_open = unsatisfied_et * self.hru_area[ihru]
+                if dprst_evap_open / hru_area > unsatisfied_et:
+                    dprst_evap_open = unsatisfied_et * hru_area
                 if dprst_evap_open > dprst_vol_open:
                     dprst_evap_open = dprst_vol_open
-                unsatisfied_et = (
-                    unsatisfied_et - dprst_evap_open / self.hru_area[ihru]
-                )
+                unsatisfied_et = unsatisfied_et - dprst_evap_open / hru_area
                 dprst_vol_open = dprst_vol_open - dprst_evap_open
 
             if dprst_area_clos > 0.0:
                 dprst_evap_clos = min(
                     dprst_area_clos * dprst_avail_et, dprst_vol_clos
                 )
-                if dprst_evap_clos / self.hru_area[ihru] > unsatisfied_et:
-                    dprst_evap_clos = unsatisfied_et * self.hru_area[ihru]
+                if dprst_evap_clos / hru_area > unsatisfied_et:
+                    dprst_evap_clos = unsatisfied_et * hru_area
                 if dprst_evap_clos > dprst_vol_clos:
                     dprst_evap_clos = dprst_vol_clos
                 dprst_vol_clos = dprst_vol_clos - dprst_evap_clos
 
-            dprst_evap_hru = (
-                dprst_evap_open + dprst_evap_clos
-            ) / self.hru_area[ihru]
+            dprst_evap_hru = (dprst_evap_open + dprst_evap_clos) / hru_area
 
         # compute seepage
         dprst_seep_hru = 0.0
         if dprst_vol_open > 0.0:
-            seep_open = dprst_vol_open * self.dprst_seep_rate_open[ihru]
+            seep_open = dprst_vol_open * dprst_seep_rate_open
             dprst_vol_open = dprst_vol_open - seep_open
             if dprst_vol_open < 0.0:
                 seep_open = seep_open + dprst_vol_open
                 dprst_vol_open = 0.0
-            dprst_seep_hru = seep_open / self.hru_area[ihru]
+            dprst_seep_hru = seep_open / hru_area
 
         # compute open surface runoff
         dprst_sroff_hru = 0.0
@@ -888,45 +923,33 @@ class PRMSRunoff(StorageUnit):
             dprst_sroff_hru = max(0.0, dprst_vol_open - dprst_vol_open_max)
             dprst_sroff_hru = dprst_sroff_hru + max(
                 0.0,
-                (
-                    dprst_vol_open
-                    - dprst_sroff_hru
-                    - self.dprst_vol_thres_open[ihru]
-                )
-                * self.dprst_flow_coef[ihru],
+                (dprst_vol_open - dprst_sroff_hru - dprst_vol_thres_open)
+                * dprst_flow_coef,
             )
             dprst_vol_open = dprst_vol_open - dprst_sroff_hru
-            dprst_sroff_hru = dprst_sroff_hru / self.hru_area[ihru]
+            dprst_sroff_hru = dprst_sroff_hru / hru_area
             if dprst_vol_open < 0.0:
                 dprst_vol_open = 0.0
 
         if dprst_area_clos_max > 0.0:
             if dprst_area_clos > NEARZERO:
-                seep_clos = dprst_vol_clos * self.dprst_seep_rate_clos[ihru]
+                seep_clos = dprst_vol_clos * dprst_seep_rate_clos
                 dprst_vol_clos = dprst_vol_clos - seep_clos
                 if dprst_vol_clos < 0.0:
                     seep_clos = seep_clos + dprst_vol_clos
                     dprst_vol_clos = 0.0
-                dprst_seep_hru = (
-                    dprst_seep_hru + seep_clos / self.hru_area[ihru]
-                )
+                dprst_seep_hru = dprst_seep_hru + seep_clos / hru_area
 
         avail_et = avail_et - dprst_evap_hru
         if dprst_vol_open_max > 0.0:
-            self.dprst_vol_open_frac[ihru] = (
-                dprst_vol_open / dprst_vol_open_max
-            )
+            dprst_vol_open_frac = dprst_vol_open / dprst_vol_open_max
         if self.dprst_vol_clos_max[ihru] > 0.0:
-            self.dprst_vol_clos_frac[ihru] = (
-                dprst_vol_clos / self.dprst_vol_clos_max[ihru]
+            dprst_vol_clos_frac = dprst_vol_clos / dprst_vol_clos_max
+        if dprst_vol_open_max + dprst_vol_clos_max > 0.0:
+            dprst_vol_frac = (dprst_vol_open + dprst_vol_clos) / (
+                dprst_vol_open_max + dprst_vol_clos_max
             )
-        if dprst_vol_open_max + self.dprst_vol_clos_max[ihru] > 0.0:
-            self.dprst_vol_frac[ihru] = (dprst_vol_open + dprst_vol_clos) / (
-                dprst_vol_open_max + self.dprst_vol_clos_max[ihru]
-            )
-        self.dprst_stor_hru[ihru] = (
-            dprst_vol_open + dprst_vol_clos
-        ) / self.hru_area[ihru]
+        dprst_stor_hru = (dprst_vol_open + dprst_vol_clos) / hru_area
 
         return (
             dprst_in,
@@ -938,6 +961,11 @@ class PRMSRunoff(StorageUnit):
             sri,
             dprst_evap_hru,
             dprst_seep_hru,
+            dprst_insroff_hru,
+            dprst_vol_open_frac,
+            dprst_vol_clos_frac,
+            dprst_vol_frac,
+            dprst_stor_hru,
         )
 
     @staticmethod

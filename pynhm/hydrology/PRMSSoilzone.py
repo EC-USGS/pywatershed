@@ -446,7 +446,6 @@ class PRMSSoilzone(StorageUnit):
             potet_lower=self.potet_lower,
             potet_rechr=self.potet_rechr,
             pref_flow=self.pref_flow,
-            # self.pref_flow_den,
             pref_flow_in=self.pref_flow_in,
             # self.pref_flow_infil,
             # self.pref_flow_max,
@@ -639,7 +638,7 @@ class PRMSSoilzone(StorageUnit):
             #         #                 preferential-flow (eqn 1-121)
             #         # pref_flow for whole HRU but capwater is pervious area
             #         # calculations on pervious area
-            #         pref_flow_maxin = capwater_maxin * self.pref_flow_den[hh]
+            #         pref_flow_maxin = capwater_maxin * pref_flow_den[hh]
 
             #         # PRMSIV Step 3: no cascades and already normalized to
             #         #                pervious area. (eqn 1-124)

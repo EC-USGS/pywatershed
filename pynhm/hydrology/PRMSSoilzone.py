@@ -419,8 +419,8 @@ class PRMSSoilzone(StorageUnit):
             self.ssres_flow_vol[:],
             self.ssres_in[:],
             self.ssres_stor[:],
-            # self.swale_actet[:],
-            # self.unused_potet[:],
+            self.swale_actet[:],
+            self.unused_potet[:],
         ) = self._calculate_numpy(
             self=self,
             # self._grav_dunnian_flow,
@@ -507,9 +507,9 @@ class PRMSSoilzone(StorageUnit):
             ssres_stor=self.ssres_stor,
             # self.ssres_stor_change,
             # self.ssres_stor_prev,
-            # self.swale_actet,
+            swale_actet=self.swale_actet,
             # self.transp_on,
-            # self.unused_potet,
+            unused_potet=self.unused_potet,
         )
         return
 
@@ -550,8 +550,8 @@ class PRMSSoilzone(StorageUnit):
         ssres_flow_vol,
         ssres_in,
         ssres_stor,
-        # .swale_actet,
-        # .unused_potet,
+        swale_actet,
+        unused_potet,
     ):
 
         """Calculate soil zone for a time step"""
@@ -855,7 +855,7 @@ class PRMSSoilzone(StorageUnit):
             else:
                 # For swales
                 availh2o = slow_stor[hh] - self.sat_threshold[hh]
-                self.swale_actet[hh] = zero
+                swale_actet[hh] = zero
 
                 if availh2o > zero:
                     # If ponding, as storage > sat_threshold
@@ -863,9 +863,9 @@ class PRMSSoilzone(StorageUnit):
 
                     if unsatisfied_et > zero:
                         availh2o = min(availh2o, unsatisfied_et)
-                        self.swale_actet[hh] = availh2o
-                        hru_actet[hh] = hru_actet[hh] + self.swale_actet[hh]
-                        slow_stor[hh] = slow_stor[hh] - self.swale_actet[hh]
+                        swale_actet[hh] = availh2o
+                        hru_actet[hh] = hru_actet[hh] + swale_actet[hh]
+                        slow_stor[hh] = slow_stor[hh] - swale_actet[hh]
                     # <
 
                 # <
@@ -874,7 +874,7 @@ class PRMSSoilzone(StorageUnit):
             # <
             ssres_in[hh] = soil_to_ssr[hh] + self.pref_flow_infil[hh] + gwin
             self._grav_dunnian_flow[hh] = dunnianflw_gvr
-            self.unused_potet[hh] = self.potet[hh] - hru_actet[hh]
+            unused_potet[hh] = self.potet[hh] - hru_actet[hh]
 
         # <
         # Could mo move the remaining code to _calculate
@@ -943,8 +943,8 @@ class PRMSSoilzone(StorageUnit):
             ssres_flow_vol,
             ssres_in,
             ssres_stor,
-            # .swale_actet,
-            # .unused_potet,
+            swale_actet,
+            unused_potet,
         )
 
     @staticmethod

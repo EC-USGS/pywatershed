@@ -397,7 +397,6 @@ class PRMSSoilzone(StorageUnit):
             self.soil_moist_prev[:],
             self.hru_actet[:],
             self.cap_infil_tot[:],
-            # new
             self.slow_stor[:],
             self.pref_flow_in[:],
             self.pref_flow_stor[:],
@@ -407,6 +406,12 @@ class PRMSSoilzone(StorageUnit):
             self.perv_actet_hru[:],
             self.pref_flow[:],
             self.pref_flow_stor_change[:],
+            # new
+            self.recharge[:],
+            # self.slow_stor_change[:],
+            # self.soil_lower_change[:],
+            # self.soil_lower_change_hru[:],
+            # self.soil_lower_ratio[:],
         ) = self._calculate_numpy(
             self=self,
             # self._grav_dunnian_flow,
@@ -449,7 +454,7 @@ class PRMSSoilzone(StorageUnit):
             pref_flow_stor_change=self.pref_flow_stor_change,
             # self.pref_flow_stor_prev,
             # self.pref_flow_thrsh,
-            # self.recharge,
+            recharge=self.recharge,
             # self.sat_threshold,
             slow_flow=self.slow_flow,
             slow_stor=self.slow_stor,
@@ -524,6 +529,7 @@ class PRMSSoilzone(StorageUnit):
         perv_actet_hru,
         pref_flow,
         pref_flow_stor_change,
+        recharge,
     ):
 
         """Calculate soil zone for a time step"""
@@ -862,10 +868,10 @@ class PRMSSoilzone(StorageUnit):
         # asdf
 
         self.soil_moist_tot = self.ssres_stor + soil_moist * self.hru_frac_perv
-        self.recharge = soil_to_gw + ssr_to_gw
+        recharge = soil_to_gw + ssr_to_gw
 
         if self.control.config["dprst_flag"] == 1:
-            self.recharge = self.recharge + self.dprst_seep_hru
+            recharge = recharge + self.dprst_seep_hru
 
         pref_flow_stor_change[:] = pref_flow_stor - self.pref_flow_stor_prev
         self.soil_lower_change[:] = soil_lower - self.soil_lower_prev
@@ -909,6 +915,7 @@ class PRMSSoilzone(StorageUnit):
             perv_actet_hru,
             pref_flow,
             pref_flow_stor_change,
+            recharge,
         )
 
     @staticmethod

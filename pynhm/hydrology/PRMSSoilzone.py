@@ -251,10 +251,6 @@ class PRMSSoilzone(StorageUnit):
         # which is a bit odd in that it might be contrary to the users
         # expectations. Move this parameter business to __init__
 
-        # Do these need set on self or added to variables?
-        self._grav_dunnian_flow = np.full(self.nhru, zero, "float64")
-        self._pfr_dunnian_flow = np.full(self.nhru, zero, "float64")
-
         # ssres_stor
         if self.control.config["init_vars_from_file"] in [0, 2, 5]:
             self.ssres_stor = self.ssstor_init_frac * self.sat_threshold
@@ -370,8 +366,6 @@ class PRMSSoilzone(StorageUnit):
             / self.soil_lower_max[wh_soil_lower_stor]
         )
 
-        # self._gvr2pfr = np.full(self.nhru, zero, dtype=float)
-
         return
 
     def _advance_variables(self) -> None:
@@ -423,11 +417,8 @@ class PRMSSoilzone(StorageUnit):
             self.unused_potet[:],
         ) = self._calculate_numpy(
             self=self,
-            # self._grav_dunnian_flow,
-            # self._gvr2pfr,
-            # self._pfr_dunnian_flow,
-            # self._pref_flow_flag,
-            # self._soil2gw_flag,
+            _pref_flow_flag=self._pref_flow_flag,
+            _soil2gw_flag=self._soil2gw_flag,
             cap_infil_tot=self.cap_infil_tot,
             cap_waterin=self.cap_waterin,
             # self.compute_gwflow,
@@ -516,6 +507,8 @@ class PRMSSoilzone(StorageUnit):
     @staticmethod
     def _calculate_numpy(
         self,
+        _pref_flow_flag,
+        _soil2gw_flag,
         cap_infil_tot,
         cap_waterin,
         hru_actet,
@@ -676,7 +669,7 @@ class PRMSSoilzone(StorageUnit):
                     soil_to_gw[hh],
                     soil_to_ssr[hh],
                 ) = self.compute_soilmoist(
-                    self._soil2gw_flag[hh],
+                    _soil2gw_flag[hh],
                     self.hru_frac_perv[hh],
                     self.soil_moist_max[hh],
                     self.soil_rechr_max[hh],
@@ -772,7 +765,7 @@ class PRMSSoilzone(StorageUnit):
             #      variables less.
 
             # Compute contribution to Dunnian flow from PFR, if any
-            if self._pref_flow_flag[hh]:
+            if _pref_flow_flag[hh]:
                 # PRMSIV eqn 1-135 (? - value of topfr is not obvious)
                 availh2o = pref_flow_stor[hh] + topfr
                 dunnianflw_gvr = max(zero, availh2o - self.pref_flow_max[hh])
@@ -842,7 +835,7 @@ class PRMSSoilzone(StorageUnit):
                 # Treat pref_flow as interflow
                 ssres_flow[hh] = slow_flow[hh]
 
-                if self._pref_flow_flag[hh]:
+                if _pref_flow_flag[hh]:
                     pref_flow[hh] = prefflow
                     ssres_flow[hh] = ssres_flow[hh] + prefflow
 
@@ -873,7 +866,6 @@ class PRMSSoilzone(StorageUnit):
 
             # <
             ssres_in[hh] = soil_to_ssr[hh] + self.pref_flow_infil[hh] + gwin
-            self._grav_dunnian_flow[hh] = dunnianflw_gvr
             unused_potet[hh] = self.potet[hh] - hru_actet[hh]
 
         # <

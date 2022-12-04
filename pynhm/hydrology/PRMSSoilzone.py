@@ -403,6 +403,10 @@ class PRMSSoilzone(StorageUnit):
             self.pref_flow_stor[:],
             self.perv_actet[:],
             self.soil_lower[:],
+            self.dunnian_flow[:],
+            self.perv_actet_hru[:],
+            self.pref_flow[:],
+            self.pref_flow_stor_change[:],
         ) = self._calculate_numpy(
             self=self,
             # self._grav_dunnian_flow,
@@ -422,7 +426,7 @@ class PRMSSoilzone(StorageUnit):
             # self.cov_type,
             # self.dprst_evap_hru,
             # self.dprst_seep_hru,
-            # self.dunnian_flow,
+            dunnian_flow=self.dunnian_flow,
             # self.fastcoef_lin,
             # self.fastcoef_sq,
             hru_actet=self.hru_actet,
@@ -432,17 +436,17 @@ class PRMSSoilzone(StorageUnit):
             # self.hru_type,
             # self.infil_hru,
             perv_actet=self.perv_actet,
-            # self.perv_actet_hru,
+            perv_actet_hru=self.perv_actet_hru,
             # self.potet,
             potet_lower=self.potet_lower,
             potet_rechr=self.potet_rechr,
-            # self.pref_flow,
+            pref_flow=self.pref_flow,
             # self.pref_flow_den,
             pref_flow_in=self.pref_flow_in,
             # self.pref_flow_infil,
             # self.pref_flow_max,
             pref_flow_stor=self.pref_flow_stor,
-            # self.pref_flow_stor_change,
+            pref_flow_stor_change=self.pref_flow_stor_change,
             # self.pref_flow_stor_prev,
             # self.pref_flow_thrsh,
             # self.recharge,
@@ -516,6 +520,10 @@ class PRMSSoilzone(StorageUnit):
         pref_flow_stor,
         perv_actet,
         soil_lower,
+        dunnian_flow,
+        perv_actet_hru,
+        pref_flow,
+        pref_flow_stor_change,
     ):
 
         """Calculate soil zone for a time step"""
@@ -801,19 +809,19 @@ class PRMSSoilzone(StorageUnit):
                 # interflow = slow_flow[hh] + prefflow
 
                 dunnianflw = dunnianflw_gvr + dunnianflw_pfr
-                self.dunnian_flow[hh] = dunnianflw
+                dunnian_flow[hh] = dunnianflw
 
                 # Treat pref_flow as interflow
                 ssres_flow[hh] = slow_flow[hh]
 
                 if self._pref_flow_flag[hh]:
-                    self.pref_flow[hh] = prefflow
+                    pref_flow[hh] = prefflow
                     ssres_flow[hh] = ssres_flow[hh] + prefflow
 
                 # <
                 # Treat dunnianflw as surface runoff to streams
                 # WARNING: PAN This is modifying sroff from the srunoff module
-                self.sroff[hh] = self.sroff[hh] + self.dunnian_flow[hh]
+                self.sroff[hh] = self.sroff[hh] + dunnian_flow[hh]
                 self.ssres_stor[hh] = slow_stor[hh] + pref_flow_stor[hh]
 
             else:
@@ -859,9 +867,7 @@ class PRMSSoilzone(StorageUnit):
         if self.control.config["dprst_flag"] == 1:
             self.recharge = self.recharge + self.dprst_seep_hru
 
-        self.pref_flow_stor_change[:] = (
-            pref_flow_stor - self.pref_flow_stor_prev
-        )
+        pref_flow_stor_change[:] = pref_flow_stor - self.pref_flow_stor_prev
         self.soil_lower_change[:] = soil_lower - self.soil_lower_prev
         self.soil_rechr_change[:] = soil_rechr - self.soil_rechr_prev
         self.slow_stor_change[:] = slow_stor - self.slow_stor_prev
@@ -876,7 +882,7 @@ class PRMSSoilzone(StorageUnit):
         self.soil_rechr_change_hru[:] = (
             self.soil_rechr_change * self.hru_frac_perv
         )
-        self.perv_actet_hru[:] = perv_actet * self.hru_frac_perv
+        perv_actet_hru[:] = perv_actet * self.hru_frac_perv
 
         self.ssres_flow_vol[:] = ssres_flow * self.control.params.hru_in_to_cf
 
@@ -899,6 +905,10 @@ class PRMSSoilzone(StorageUnit):
             pref_flow_stor,
             perv_actet,
             soil_lower,
+            dunnian_flow,
+            perv_actet_hru,
+            pref_flow,
+            pref_flow_stor_change,
         )
 
     @staticmethod

@@ -425,18 +425,18 @@ class PRMSSoilzone(StorageUnit):
             compute_interflow=self.compute_interflow,
             compute_soilmoist=self.compute_soilmoist,
             compute_szactet=self.compute_szactet,
-            # self.control.config["dprst_flag"],
-            # self.control.current_time,
-            # self.control.params.hru_in_to_cf,
-            # self.cov_type,
-            # self.dprst_evap_hru,
-            # self.dprst_seep_hru,
+            cov_type=self.cov_type,
+            current_time=self.control.current_time,
+            dprst_evap_hru=self.dprst_evap_hru,
+            dprst_flag=self.control.config["dprst_flag"],
+            dprst_seep_hru=self.dprst_seep_hru,
             dunnian_flow=self.dunnian_flow,
-            # self.fastcoef_lin,
-            # self.fastcoef_sq,
+            fastcoef_lin=self.fastcoef_lin,
+            fastcoef_sq=self.fastcoef_sq,
             hru_actet=self.hru_actet,
-            # self.hru_frac_perv,
+            hru_frac_perv=self.hru_frac_perv,
             # self.hru_impervevap,
+            hru_in_to_cf=self.control.params.hru_in_to_cf,
             # self.hru_intcpevap,
             # self.hru_type,
             # self.infil_hru,
@@ -515,7 +515,13 @@ class PRMSSoilzone(StorageUnit):
         compute_interflow,
         compute_soilmoist,
         compute_szactet,
+        cov_type,
+        current_time,
+        dprst_evap_hru,
+        dprst_flag,
+        dprst_seep_hru,
         hru_actet,
+        hru_in_to_cf,
         potet_lower,
         potet_rechr,
         slow_flow,
@@ -532,6 +538,8 @@ class PRMSSoilzone(StorageUnit):
         perv_actet,
         soil_lower,
         dunnian_flow,
+        fastcoef_lin,
+        fastcoef_sq,
         perv_actet_hru,
         pref_flow,
         pref_flow_stor_change,
@@ -582,8 +590,8 @@ class PRMSSoilzone(StorageUnit):
 
         # This is obnoxious. i guess this should be an
         # optional input? should default to zero?
-        if self.control.config["dprst_flag"] == 1:
-            hru_actet = hru_actet + self.dprst_evap_hru
+        if dprst_flag == 1:
+            hru_actet = hru_actet + dprst_evap_hru
 
         # <
         for hh in range(self.nhru):
@@ -787,8 +795,8 @@ class PRMSSoilzone(StorageUnit):
 
                 if pref_flow_stor[hh] > zero:
                     compute_interflow(
-                        self.fastcoef_lin[hh],
-                        self.fastcoef_sq[hh],
+                        fastcoef_lin[hh],
+                        fastcoef_sq[hh],
                         pref_flow_in[hh],
                         pref_flow_stor[hh],
                         prefflow,
@@ -812,7 +820,7 @@ class PRMSSoilzone(StorageUnit):
                     pervactet,
                 ) = compute_szactet(
                     self.transp_on[hh],
-                    self.cov_type[hh],
+                    cov_type[hh],
                     self.soil_type[hh],
                     self.soil_moist_max[hh],
                     self.soil_rechr_max[hh],
@@ -880,14 +888,14 @@ class PRMSSoilzone(StorageUnit):
             soil_lower[wh_lower_stor_max_gt_zero]
             / self.soil_lower_max[wh_lower_stor_max_gt_zero]
         )
-        # if self.control.current_time == np.datetime64("1979-03-18T00:00:00"):
+        # if current_time == np.datetime64("1979-03-18T00:00:00"):
         # asdf
 
         soil_moist_tot = ssres_stor + soil_moist * self.hru_frac_perv
         recharge = soil_to_gw + ssr_to_gw
 
-        if self.control.config["dprst_flag"] == 1:
-            recharge = recharge + self.dprst_seep_hru
+        if dprst_flag == 1:
+            recharge = recharge + dprst_seep_hru
 
         pref_flow_stor_change[:] = pref_flow_stor - self.pref_flow_stor_prev
         soil_lower_change[:] = soil_lower - self.soil_lower_prev
@@ -902,7 +910,7 @@ class PRMSSoilzone(StorageUnit):
         soil_rechr_change_hru[:] = soil_rechr_change * self.hru_frac_perv
         perv_actet_hru[:] = perv_actet * self.hru_frac_perv
 
-        ssres_flow_vol[:] = ssres_flow * self.control.params.hru_in_to_cf
+        ssres_flow_vol[:] = ssres_flow * hru_in_to_cf
 
         return (
             soil_to_gw,

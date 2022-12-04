@@ -408,7 +408,6 @@ class PRMSSoilzone(StorageUnit):
             self.soil_rechr_change[:],
             self.soil_rechr_change_hru[:],
             self.sroff[:],
-            # new
             self.ssres_flow_vol[:],
             self.ssres_in[:],
             self.ssres_stor[:],
@@ -463,12 +462,12 @@ class PRMSSoilzone(StorageUnit):
             slowcoef_sq=self.slowcoef_sq,
             snow_evap=self.snow_evap,
             snowcov_area=self.snowcov_area,
-            # self.soil2gw_max,
+            soil2gw_max=self.soil2gw_max,
             soil_lower=self.soil_lower,
             soil_lower_change=self.soil_lower_change,
             soil_lower_change_hru=self.soil_lower_change_hru,
-            # self.soil_lower_max,
-            # self.soil_lower_prev,
+            soil_lower_max=self.soil_lower_max,
+            soil_lower_prev=self.soil_lower_prev,
             soil_lower_ratio=self.soil_lower_ratio,
             soil_moist=self.soil_moist,
             # self.soil_moist_change,
@@ -559,9 +558,12 @@ class PRMSSoilzone(StorageUnit):
         slowcoef_sq,
         snow_evap,
         snowcov_area,
+        soil2gw_max,
         soil_lower,
         soil_lower_change,
         soil_lower_change_hru,
+        soil_lower_max,
+        soil_lower_prev,
         soil_lower_ratio,
         soil_moist_tot,
         soil_rechr_change,
@@ -700,7 +702,7 @@ class PRMSSoilzone(StorageUnit):
                     hru_frac_perv[hh],
                     self.soil_moist_max[hh],
                     self.soil_rechr_max[hh],
-                    self.soil2gw_max[hh],
+                    soil2gw_max[hh],
                     cap_waterin[hh],
                     soil_moist[hh],
                     soil_rechr[hh],
@@ -898,10 +900,10 @@ class PRMSSoilzone(StorageUnit):
         # <
         # Could mo move the remaining code to _calculate
         # refactor with np.where
-        wh_lower_stor_max_gt_zero = np.where(self.soil_lower_max > zero)
+        wh_lower_stor_max_gt_zero = np.where(soil_lower_max > zero)
         soil_lower_ratio[wh_lower_stor_max_gt_zero] = (
             soil_lower[wh_lower_stor_max_gt_zero]
-            / self.soil_lower_max[wh_lower_stor_max_gt_zero]
+            / soil_lower_max[wh_lower_stor_max_gt_zero]
         )
         # if current_time == np.datetime64("1979-03-18T00:00:00"):
         # asdf
@@ -913,7 +915,7 @@ class PRMSSoilzone(StorageUnit):
             recharge = recharge + dprst_seep_hru
 
         pref_flow_stor_change[:] = pref_flow_stor - pref_flow_stor_prev
-        soil_lower_change[:] = soil_lower - self.soil_lower_prev
+        soil_lower_change[:] = soil_lower - soil_lower_prev
         soil_rechr_change[:] = soil_rechr - self.soil_rechr_prev
         slow_stor_change[:] = slow_stor - slow_stor_prev
         # Apparently the following are sums of the above and not actual

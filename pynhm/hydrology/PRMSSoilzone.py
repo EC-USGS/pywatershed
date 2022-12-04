@@ -421,10 +421,10 @@ class PRMSSoilzone(StorageUnit):
             _soil2gw_flag=self._soil2gw_flag,
             cap_infil_tot=self.cap_infil_tot,
             cap_waterin=self.cap_waterin,
-            # self.compute_gwflow,
-            # self.compute_interflow,
-            # self.compute_soilmoist,
-            # self.compute_szactet,
+            compute_gwflow=self.compute_gwflow,
+            compute_interflow=self.compute_interflow,
+            compute_soilmoist=self.compute_soilmoist,
+            compute_szactet=self.compute_szactet,
             # self.control.config["dprst_flag"],
             # self.control.current_time,
             # self.control.params.hru_in_to_cf,
@@ -511,6 +511,10 @@ class PRMSSoilzone(StorageUnit):
         _soil2gw_flag,
         cap_infil_tot,
         cap_waterin,
+        compute_gwflow,
+        compute_interflow,
+        compute_soilmoist,
+        compute_szactet,
         hru_actet,
         potet_lower,
         potet_rechr,
@@ -668,7 +672,7 @@ class PRMSSoilzone(StorageUnit):
                     soil_rechr[hh],
                     soil_to_gw[hh],
                     soil_to_ssr[hh],
-                ) = self.compute_soilmoist(
+                ) = compute_soilmoist(
                     _soil2gw_flag[hh],
                     self.hru_frac_perv[hh],
                     self.soil_moist_max[hh],
@@ -738,7 +742,7 @@ class PRMSSoilzone(StorageUnit):
                 # PRMSIV Step 9
                 # Compute slow contribution to interflow, if any
                 if slow_stor[hh] > epsilon:
-                    (slow_stor[hh], slow_flow[hh],) = self.compute_interflow(
+                    (slow_stor[hh], slow_flow[hh],) = compute_interflow(
                         self.slowcoef_lin[hh],
                         self.slowcoef_sq[hh],
                         ssresin,
@@ -752,7 +756,7 @@ class PRMSSoilzone(StorageUnit):
 
             # <
             if (slow_stor[hh] > epsilon) and (self.ssr2gw_rate[hh] > zero):
-                (ssr_to_gw[hh], slow_stor[hh],) = self.compute_gwflow(
+                (ssr_to_gw[hh], slow_stor[hh],) = compute_gwflow(
                     self.ssr2gw_rate[hh],
                     self.ssr2gw_exp[hh],
                     slow_stor[hh],
@@ -782,7 +786,7 @@ class PRMSSoilzone(StorageUnit):
                 pref_flow_stor[hh] = pref_flow_stor[hh] + topfr
 
                 if pref_flow_stor[hh] > zero:
-                    self.compute_interflow(
+                    compute_interflow(
                         self.fastcoef_lin[hh],
                         self.fastcoef_sq[hh],
                         pref_flow_in[hh],
@@ -806,7 +810,7 @@ class PRMSSoilzone(StorageUnit):
                     potet_rechr[hh],
                     potet_lower[hh],
                     pervactet,
-                ) = self.compute_szactet(
+                ) = compute_szactet(
                     self.transp_on[hh],
                     self.cov_type[hh],
                     self.soil_type[hh],

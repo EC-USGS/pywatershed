@@ -578,9 +578,9 @@ class PRMSSoilzone(StorageUnit):
         """Calculate soil zone for a time step"""
 
         # JLM: not clear we need this / for GSFlow
-        # if self.srunoff_updated_soil:
-        #     self.soil_moist = soil_moist_change
-        #     self.soil_rechr = soil_rechr_change
+        # if srunoff_updated_soil:
+        #     soil_moist = soil_moist_change
+        #     soil_rechr = soil_rechr_change
         # # <
 
         # <
@@ -640,7 +640,7 @@ class PRMSSoilzone(StorageUnit):
 
             # Compute preferential flow and storage, and any dunnian flow
             prefflow = zero
-            # if self._pref_flow_flag[hh]:
+            # if _pref_flow_flag[hh]:
             #     pref_flow_infil[hh] = zero
             #     pref_flow_maxin = zero
 
@@ -676,7 +676,7 @@ class PRMSSoilzone(StorageUnit):
             #         pref_flow_infil[hh] = pref_flow_maxin - dunnianflw_pfr
 
             #     # <
-            #     self._pfr_dunnian_flow[hh] = dunnianflw_pfr
+            #     _pfr_dunnian_flow[hh] = dunnianflw_pfr
 
             # <
             # whole HRU
@@ -730,16 +730,16 @@ class PRMSSoilzone(StorageUnit):
                 # topfr = max(
                 #    zero,
                 #    slow_stor[hh]
-                #    + self.soil_to_ssr[hh]
+                #    + soil_to_ssr[hh]
                 #    - pref_flow_thrsh[hh],
                 # )
 
                 # PRMSIV eqn 1-134: ssres_in gvr_maxin - gvr_excess
                 ssresin = soil_to_ssr[hh] - topfr
-                # ssresin = self.soil_to_ssr[hh] - max(
+                # ssresin = soil_to_ssr[hh] - max(
                 #     zero,
                 #     slow_stor[hh]
-                #     + self.soil_to_ssr[hh]
+                #     + soil_to_ssr[hh]
                 #     - pref_flow_thrsh[hh],
                 # )
 
@@ -749,11 +749,11 @@ class PRMSSoilzone(StorageUnit):
                 # slow_stor[hh] = max(
                 #     zero,
                 #     slow_stor[hh]
-                #     + self.soil_to_ssr[hh]
+                #     + soil_to_ssr[hh]
                 #     - max(
                 #         zero,
                 #         slow_stor[hh]
-                #         + self.soil_to_ssr[hh]
+                #         + soil_to_ssr[hh]
                 #         - pref_flow_thrsh[hh],
                 #     ),
                 # )
@@ -822,7 +822,6 @@ class PRMSSoilzone(StorageUnit):
                 dunnianflw_gvr = topfr  # ?? is this right
 
             # <
-            # self._gvr2pfr[hh] = topfr
             pervactet = zero
 
             # Compute actual evapotranspiration
@@ -840,7 +839,7 @@ class PRMSSoilzone(StorageUnit):
                     soil_type[hh],
                     soil_moist_max[hh],
                     soil_rechr_max[hh],
-                    self._snow_free[hh],
+                    _snow_free[hh],
                     soil_moist[hh],
                     soil_rechr[hh],
                     avail_potet,
@@ -919,7 +918,7 @@ class PRMSSoilzone(StorageUnit):
         slow_stor_change[:] = slow_stor - slow_stor_prev
         # Apparently the following are sums of the above and not actual
         # inddividual storage changes
-        # soil_moist_change[:] = self.soil_moist - soil_moist_prev
+        # soil_moist_change[:] = soil_moist - soil_moist_prev
         # ssres_stor_change[:] = ssres_stor - ssres_stor_prev
 
         soil_lower_change_hru[:] = soil_lower_change * hru_frac_perv

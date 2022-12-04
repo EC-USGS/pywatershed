@@ -412,7 +412,6 @@ class PRMSSoilzone(StorageUnit):
             self.swale_actet[:],
             self.unused_potet[:],
         ) = self._calculate_numpy(
-            self=self,
             _pref_flow_flag=self._pref_flow_flag,
             _snow_free=self._snow_free,
             _soil2gw_flag=self._soil2gw_flag,
@@ -437,6 +436,7 @@ class PRMSSoilzone(StorageUnit):
             hru_intcpevap=self.hru_intcpevap,
             hru_type=self.hru_type,
             infil_hru=self.infil_hru,
+            nhru=self.nhru,
             perv_actet=self.perv_actet,
             perv_actet_hru=self.perv_actet_hru,
             potet=self.potet,
@@ -495,7 +495,6 @@ class PRMSSoilzone(StorageUnit):
 
     @staticmethod
     def _calculate_numpy(
-        self,
         _pref_flow_flag,
         _snow_free,
         _soil2gw_flag,
@@ -520,6 +519,7 @@ class PRMSSoilzone(StorageUnit):
         hru_intcpevap,
         hru_type,
         infil_hru,
+        nhru,
         potet,
         potet_lower,
         potet_rechr,
@@ -610,7 +610,7 @@ class PRMSSoilzone(StorageUnit):
             hru_actet = hru_actet + dprst_evap_hru
 
         # <
-        for hh in range(self.nhru):
+        for hh in range(nhru):
 
             dunnianflw = zero
             dunnianflw_pfr = zero

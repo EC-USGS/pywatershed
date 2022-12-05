@@ -508,7 +508,26 @@ class PRMSSnow(StorageUnit):
                     if (not self.transp_on[jj]) or (
                         self.transp_on[jj] and self.cov_type[jj] < 2
                     ):
-                        self.snowevap(jj)
+                        (
+                            self.freeh2o[jj],
+                            self.pk_def[jj],
+                            self.pk_ice[jj],
+                            self.pk_temp[jj],
+                            self.pkwater_equiv[jj],
+                            self.snow_evap[jj],
+                        ) = self._calc_snowevap(
+                            self.freeh2o[jj],
+                            self.hru_intcpevap[jj],
+                            self.pk_def[jj],
+                            self.pk_ice[jj],
+                            self.pk_temp[jj],
+                            self.pkwater_equiv[jj],
+                            self.potet[jj],
+                            self.potet_sublim[jj],
+                            self.snow_evap[jj],
+                            self.snowcov_area[jj],
+                            self.verbose,
+                        )
 
                 # <<
                 elif self.pkwater_equiv[jj] < zero:
@@ -1985,104 +2004,168 @@ class PRMSSnow(StorageUnit):
         # or we can just set tcal directly on self instread of returning it
         return cal
 
-    def snowevap(self, jj):
+    @staticmethod
+    def _calc_snowevap(
+        freeh2o,
+        hru_intcpevap,
+        pk_def,
+        pk_ice,
+        pk_temp,
+        pkwater_equiv,
+        potet,
+        potet_sublim,
+        snow_evap,
+        snowcov_area,
+        verbose,
+    ):
         # Local Variables
         # avail_et:
-        # cal:  Amount of heat deficit that is removed by sublimating ice [cal/cm^2]
+        # cal:  Amount of heat deficit that is removed by sublimating ice
+        # [cal/cm^2]
         # ez: Amount of evaporation affecting the snowpack [inches]
 
         # The amount of evaporation affecting the snowpack is the total
-        # evaporation potential minus the evaporation from the interception storage.
-        ez = (
-            self.potet_sublim[jj] * self.potet[jj] * self.snowcov_area[jj]
-            - self.hru_intcpevap[jj]
-        )  # [inches]
+        # evaporation potential minus the evaporation from the interception
+        # storage.
+        ez = potet_sublim * potet * snowcov_area - hru_intcpevap  # [inches]
 
-        # The effects of evaporation depend on whether there is any potential for
-        # evaporation, and if the potential evapotation is enough to completely
-        # deplete the snow pack or not.
+        # The effects of evaporation depend on whether there is any potential
+        # for evaporation, and if the potential evapotation is enough to
+        # completely deplete the snow pack or not.
         # 3 options below (if-then, elseif, else)
         if ez < epsilon32:
             # (1) There is no potential for evaporation...
-            self.snow_evap[jj] = 0.0  # [inches]
+            snow_evap = 0.0  # [inches]
 
-        elif ez >= self.pkwater_equiv[jj]:
-            # (2) Enough potential evaporation to entirely deplete the snowpack...
-            # Set the evaporation to the pack water equivalent and set all snowpack
+        elif ez >= pkwater_equiv:
+            # (2) Enough potential evaporation to entirely deplete the
+            # snowpack...
+            # Set the evaporation to the pack water equivalent and set all
+            # snowpack
             # variables to no-snowpack values.
-            self.snow_evap[jj] = self.pkwater_equiv[jj]  # [inches]
-            self.pkwater_equiv[jj] = zero  # [inches]
-            self.pk_ice[jj] = zero  # [inches]
-            self.pk_def[jj] = zero  # [cal/cm^2]
-            self.freeh2o[jj] = zero  # [inches]
-            self.pk_temp[jj] = zero  # [degrees C]
+            snow_evap = pkwater_equiv  # [inches]
+
+            snow_evap = pkwater_equiv  # [inches]
+            pkwater_equiv = zero  # [inches]
+            pk_ice = zero  # [inches]
+            pk_def = zero  # [cal/cm^2]
+            freeh2o = zero  # [inches]
+            pk_temp = zero  # [degrees C]
 
         else:
             # (3) Potential evaporation only partially depletes snowpack...
-            # Evaporation depletes the amount of ice in the snowpack (sublimation).
-            self.pk_ice[jj] = self.pk_ice[jj] - ez
-            # Change the pack conditions according to whether there is any ice left
-            # in the snowpack.
-            if self.pk_ice[jj] < zero:
+            # Evaporation depletes the amount of ice in the snowpack
+            # (sublimation).
+            pk_ice = pk_ice - ez
+            # Change the pack conditions according to whether there is any
+            # ice left in the snowpack.
+            if pk_ice < zero:
                 # RAPCOMMENT - CHANGED TO CHECK FOR NEGATIVE PACK ICE
-                #              If all pack ice is removed, then there cannot be a
-                #              heat deficit.
-                self.pk_ice[jj] = zero
-                self.pk_def[jj] = zero
-                self.pk_temp[jj] = zero
+                # If all pack ice is removed, then there cannot be a heat
+                # deficit.
+                pk_ice = zero
+                pk_def = zero
+                pk_temp = zero
             else:
                 # Calculate the amount of heat deficit that is removed by the
-                # sublimating ice. Note that this only changes the heat deficit if the
-                # pack temperature is less than 0 degC.
-                cal = self.pk_temp[jj] * ez * 1.27
-                self.pk_def[jj] = self.pk_def[jj] + cal
+                # sublimating ice. Note that this only changes the heat
+                # deficit if the pack temperature is less than 0 degC.
+                cal = pk_temp * ez * 1.27
+                pk_def = pk_def + cal
 
             # <
             # Remove the evaporated water from the pack water equivalent.
-            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] - ez
-            self.snow_evap[jj] = ez
+            pkwater_equiv = pkwater_equiv - ez
+            snow_evap = ez
 
         # <
-        if self.snow_evap[jj] < zero:
-            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] - snow_evap
+        if snow_evap < zero:
+            pkwater_equiv = pkwater_equiv - snow_evap
 
-            if self.pkwater_equiv[jj] < zero:
-                if self.verbose:
-                    if self.pkwater_equiv[jj] < -epsilon64:
+            if pkwater_equiv < zero:
+                if verbose:
+                    if pkwater_equiv < -epsilon64:
                         print(
-                            f"snowpack issue, negative pkwater_equiv in snowevap: {pkwater_equiv}"
+                            "snowpack issue, negative pkwater_equiv in "
+                            f"snowevap: {pkwater_equiv}"
                         )
 
                     #  <
-                    self.pkwater_equiv[jj] = zero
+                    pkwater_equiv = zero
 
             # <<
-            self.snow_evap[jj] = zero
+            snow_evap = zero
 
         # <
-        avail_et = self.potet[jj] - self.hru_intcpevap[jj] - self.snow_evap[jj]
+        avail_et = potet - hru_intcpevap - snow_evap
         if avail_et < zero:
-            self.snow_evap[jj] = self.snow_evap[jj] + avail_et
-            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] - avail_et
+            snow_evap = snow_evap + avail_et
+            pkwater_equiv = pkwater_equiv - avail_et
 
-            if self.snow_evap[jj] < zero:
-                self.pkwater_equiv[jj] = (
-                    self.pkwater_equiv[jj] - self.snow_evap[jj]
-                )
+            if snow_evap < zero:
+                pkwater_equiv = pkwater_equiv - snow_evap
 
-                if self.pkwater_equiv[jj] < zero:
-                    if self.verbose:
-                        if self.pkwater_equiv[kk] < -epsilon64:
+                if pkwater_equiv < zero:
+                    if verbose:
+                        if pkwater_equiv < -epsilon64:
                             print(
-                                f"snowpack issue 2, negative pkwater_equiv in snowevap: {pkwater_equiv}"
+                                "snowpack issue 2, negative pkwater_equiv in "
+                                f"snowevap: {pkwater_equiv}"
                             )
 
                     # <<
                     # To be sure negative snowpack is ignored
-                    self.pkwater_equiv[jj] = zero
+                    pkwater_equiv = zero
 
                 # <
                 snow_evap = zero
 
         # <<
-        return
+        return (
+            freeh2o,
+            pk_def,
+            pk_ice,
+            pk_temp,
+            pkwater_equiv,
+            snow_evap,
+        )
+
+    @staticmethod
+    def set_snow_zero():
+        pkwater_equiv = zero
+        pk_depth = zero
+        pss = zero
+        snsv = zero
+        lst = False
+        pst = zero
+        iasw = False
+        albedo = zero
+        pk_den = zero
+        snowcov_area = zero
+        pk_def = zero
+        pk_temp = zero
+        pk_ice = zero
+        freeh2o = zero
+        snowcov_areasv = zero
+        ai = zero
+        frac_swe = zero
+
+        return (
+            pkwater_equiv,
+            pk_depth,
+            pss,
+            snsv,
+            lst,
+            pst,
+            iasw,
+            albedo,
+            pk_den,
+            snowcov_area,
+            pk_def,
+            pk_temp,
+            pk_ice,
+            freeh2o,
+            snowcov_areasv,
+            ai,
+            frac_swe,
+        )

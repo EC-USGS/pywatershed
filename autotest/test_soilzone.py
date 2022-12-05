@@ -8,6 +8,11 @@ from pynhm.base.control import Control
 from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 from pynhm.utils.parameters import PrmsParameters
 
+calc_methods = (
+    "numpy",
+    "numba",
+)
+
 
 @pytest.fixture(scope="function")
 def params(domain):
@@ -19,8 +24,9 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSSoilzone:
-    def test_init(self, domain, control, tmp_path):
+    def test_init(self, domain, control, calc_method, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -62,7 +68,12 @@ class TestPRMSSoilzone:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        soil = PRMSSoilzone(control, **input_variables, budget_type="error")
+        soil = PRMSSoilzone(
+            control=control,
+            **input_variables,
+            budget_type="error",
+            calc_method=calc_method,
+        )
         all_success = True
         for istep in range(control.n_times):
             # for istep in range(10):

@@ -8,6 +8,8 @@ from pynhm.base.control import Control
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
 from pynhm.utils.parameters import PrmsParameters
 
+calc_methods = ("numpy", "numba")
+
 
 @pytest.fixture(scope="function")
 def params(domain):
@@ -19,8 +21,9 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSRunoffDomain:
-    def test_init(self, domain, control, tmp_path):
+    def test_init(self, domain, control, calc_method, tmp_path):
         tmp_path = pl.Path(tmp_path)
 
         # get the answer data
@@ -53,6 +56,7 @@ class TestPRMSRunoffDomain:
 
         runoff = PRMSRunoff(
             control=control,
+            calc_method=calc_method,
             **input_variables,
             budget_type="warn",  # intermittent errors currently
         )

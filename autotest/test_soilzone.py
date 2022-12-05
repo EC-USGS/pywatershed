@@ -8,10 +8,7 @@ from pynhm.base.control import Control
 from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
 from pynhm.utils.parameters import PrmsParameters
 
-calc_methods = (
-    "numpy",
-    "numba",
-)
+calc_methods = ("numpy", "numba")
 
 
 @pytest.fixture(scope="function")

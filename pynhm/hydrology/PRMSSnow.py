@@ -469,7 +469,34 @@ class PRMSSnow(StorageUnit):
                 # If there is still snow after precipitation
                 # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from depletion curve
                 # **********************************************************
-                self.snowcov(jj)
+                (
+                    self.ai[jj],
+                    self.frac_swe[jj],
+                    self.iasw[jj],
+                    self.pksv[jj],
+                    self.pst[jj],
+                    self.scrv[jj],
+                    self.snowcov_area[jj],
+                    self.snowcov_areasv[jj],
+                ) = self._calc_snowcov(
+                    ai=self.ai[jj],
+                    frac_swe=self.frac_swe[jj],
+                    hru_deplcrv=self.hru_deplcrv[jj],
+                    iasw=self.iasw[jj],
+                    net_snow=self.net_snow[jj],
+                    newsnow=self.newsnow[jj],
+                    pksv=self.pksv[jj],
+                    pkwater_equiv=self.pkwater_equiv[jj],
+                    pst=self.pst[jj],
+                    sca_deplcrv=self.sca_deplcrv,
+                    scrv=self.scrv[jj],
+                    snarea_curve=self.snarea_curve_2d[
+                        self.hru_deplcrv[jj] - 1, :
+                    ],
+                    snarea_thresh=self.snarea_thresh[jj],
+                    snowcov_area=self.snowcov_area[jj],
+                    snowcov_areasv=self.snowcov_areasv[jj],
+                )
                 # if jj == dbgind:
                 #     print(
                 #         f"self.pkwater_equiv 2 : {self.pkwater_equiv[dbgind]}"
@@ -712,21 +739,23 @@ class PRMSSnow(StorageUnit):
         """Interpolate along snow covered area depletion curve"""
         if frac_swe > one:
             res = snarea_curve[-1]
+
         else:
-            # Get the indices (as integers) of the depletion curve that bracket the
-            # given frac_swe (next highest and next lowest).
+            # Get the indices (as integers) of the depletion curve that
+            # bracket the given frac_swe (next highest and next lowest).
             idx = int(10.0 * (frac_swe + 0.2))  # [index]
             jdx = idx - 1  # [index]
             if idx > (11):
                 idx = 11
-            # Calculate the fraction of the distance (from the next lowest) the given
-            # frac_swe is between the next highest and lowest curve values.
+            # Calculate the fraction of the distance (from the next lowest)
+            # the given frac_swe is between the next highest and lowest curve
+            # values.
             dify = (frac_swe * 10.0) - float(jdx - 1)  # [fraction]
             # Calculate the difference in snow covered area represented by next
             # highest and lowest curve values.
             difx = snarea_curve[idx - 1] - snarea_curve[jdx - 1]
-            # Linearly interpolate a snow covered area between those represented by
-            # the next highest and lowest curve values.
+            # Linearly interpolate a snow covered area between those
+            # represented by the next highest and lowest curve values.
             res = snarea_curve[jdx - 1] + dify * difx
 
         # <
@@ -1320,7 +1349,24 @@ class PRMSSnow(StorageUnit):
             pkwater_equiv,
         )
 
-    def snowcov(self, jj):
+    @staticmethod
+    def _calc_snowcov(
+        ai,
+        frac_swe,
+        hru_deplcrv,
+        iasw,
+        net_snow,
+        newsnow,
+        pksv,
+        pkwater_equiv,
+        pst,
+        sca_deplcrv,
+        scrv,
+        snarea_curve,
+        snarea_thresh,
+        snowcov_area,
+        snowcov_areasv,
+    ):
         """Compute snow-covered area"""
 
         # Local Variables: all doubles
@@ -1338,86 +1384,85 @@ class PRMSSnow(StorageUnit):
 
         # JLM: why is the portion of new snow (3/4) used in the depletion curve
         #      not a parameter? Or it at least seems like it would be related
-        #      to self.hru_delpcrv[jj] (lower values for higher curves)
+        #      to hru_delpcrv (lower values for higher curves)
 
-        snowcov_area_ante = self.snowcov_area[jj]
+        snowcov_area_ante = snowcov_area
 
         # Reset snowcover area to the maximum
         # JLM: dont do this, it's not clear in multiple places. just save the
         # max as a local variable and use that.
-        self.snowcov_area[jj] = self.snarea_curve_2d[
-            self.hru_deplcrv[jj] - 1, 11 - 1
-        ]  # [fraction of area]
+        snowcov_area = snarea_curve[11 - 1]  # [fraction of area]
 
         # Track the maximum pack water equivalent for the current snow pack.
-        if self.pkwater_equiv[jj] > self.pst[jj]:
-            self.pst[jj] = self.pkwater_equiv[jj]  # [inches]
+        if pkwater_equiv > pst:
+            pst = pkwater_equiv  # [inches]
 
         # <
         # Set ai to the maximum packwater equivalent, but no higher than the
         # threshold for complete snow cover.
-        self.ai[jj] = self.pst[jj]  # [inches]
-        if self.ai[jj] > self.snarea_thresh[jj]:
-            self.ai[jj] = self.snarea_thresh[jj]  # [inches]
+        ai = pst  # [inches]
+        if ai > snarea_thresh:
+            ai = snarea_thresh  # [inches]
 
         # <
-        # Calculate the ratio of the current packwater equivalent to the maximum
-        # packwater equivalent for the given snowpack.
-        if self.ai[jj] == zero:
-            self.frac_swe[jj] = zero
+        # Calculate the ratio of the current packwater equivalent to the
+        # maximum packwater equivalent for the given snowpack.
+        if ai == zero:
+            frac_swe = zero
         else:
-            self.frac_swe[jj] = (
-                self.pkwater_equiv[jj] / self.ai[jj]
-            )  # [fraction]
+            frac_swe = pkwater_equiv / ai  # [fraction]
 
         # <
         # There are 3 potential conditions for the snow area curve:
-        # A. snow is accumulating and the pack is currently at its maximum level.
-        # B. snow is depleting and the area is determined by the snow area curve.
-        # C. new snow has occured on a depleting pack, temporarily resetting to 100% cover.
-        # For case (C), the snow covered area is linearly interpolated between 100%
-        # and the snow covered area before the new snow.
-        # In general, 1/4 of the new snow has to melt before the snow covered area
-        # goes below 100%, and then the remaining 3/4 has to melt to return to the
+        # A. snow is accumulating and the pack is currently at its maximum
+        # level.
+        # B. snow is depleting and the area is determined by the snow area
+        # curve.
+        # C. new snow has occured on a depleting pack, temporarily resetting
+        # to 100% cover.
+        # For case (C), the snow covered area is linearly interpolated between
+        # 100% and the snow covered area before the new snow. In general, 1/4
+        # of the new snow has to melt before the snow covered area goes below
+        # 100%, and then the remaining 3/4 has to melt to return to the
         # previous snow covered area.
 
-        # First, the code decides whether snow is accumulating (A) or not (B/C).
+        # First, the code decides whether snow is accumulating (A) or not (B/C)
         # 2 options below (if-then, else)
-        if self.pkwater_equiv[jj] >= self.ai[jj]:
+        if pkwater_equiv >= ai:
             # (1) The pack water equivalent is at the maximum
-            # Stay on the snow area curve (it will be at the maximum because the pack
-            # water equivalent is equal to ai and it can't be higher).
+            # Stay on the snow area curve (it will be at the maximum because
+            # the pack water equivalent is equal to ai and it can't be higher).
             # iasw = 0
-            self.iasw[jj] = False
+            iasw = False
 
         else:
             # (2) The pack water equivalent is less than the maximum
-            # If the snowpack isn't accumulating to a new maximum, it is either on the
-            # curve (condition B above) or being interpolated between the previous
-            # place on the curve and 100% (condition C above).
+            # If the snowpack isn't accumulating to a new maximum, it is either
+            # on the curve (condition B above) or being interpolated between
+            # the previous place on the curve and 100% (condition C above).
             # 2 options below (if-then, elseif)
 
-            if self.newsnow[jj]:
+            if newsnow:
                 # (2.1) There was new snow...
-                # New snow will always reset the snow cover to 100%. However, different
-                # states change depending  on whether the previous snow area condition
-                # was on the curve or being interpolated between the curve and 100%.
+                # New snow will always reset the snow cover to 100%. However,
+                # different states change depending  on whether the previous
+                # snow area condition was on the curve or being interpolated
+                # between the curve and 100%.
                 # 2 options below (if-then, else)
                 # if (iasw > 0) then
 
-                if self.iasw[jj]:
+                if iasw:
                     # (2.1.1) The snow area is being interpolated between 100%
                     #         and a previous location on the curve...
-                    # The location on the interpolated line is based on how much of the
-                    # new snow has melted.  Because the first 1/4 of the new snow doesn't
-                    # matter, it has to keep track of the current snow pack plus 3/4 of
-                    # the new snow.
-                    self.scrv[jj] = self.scrv[jj] + (
-                        0.75 * self.net_snow[jj]
-                    )  # [inches]
-                    # scrv = pkwater_equiv - (0.25D0*dble(net_snow))) # [inches]
-                    # RAPCOMMENT - CHANGED TO INCREMENT THE SCRV VALUE if ALREADY
-                    #             INTERPOLATING BETWEEN CURVE AND 100%
+                    # The location on the interpolated line is based on how
+                    # much of the new snow has melted.  Because the first 1/4
+                    # of the new snow doesn't matter, it has to keep track of
+                    # the current snow pack plus 3/4 of the new snow.
+                    scrv = scrv + (0.75 * net_snow)  # [inches]
+
+                    # scrv = pkwater_equiv - (0.25D0*dble(net_snow)))# [inches]
+                    # RAPCOMMENT - CHANGED TO INCREMENT THE SCRV VALUE if
+                    # ALREADY INTERPOLATING BETWEEN CURVE AND 100%
                     # JLM: why NOT use pkwater_equiv on the RHS? it makes scrv
                     # appear prognostic and the logic is complicated enough
                     # to be uncertain if it is/should be drifting from
@@ -1425,127 +1470,164 @@ class PRMSSnow(StorageUnit):
 
                 else:
                     # (2.1.2) The current snow area is on the curve...
-                    # If switching from the snow area curve to interpolation between the
-                    # curve and 100%, the current state of the snow pack has to be saved
-                    # so that the interpolation can continue until back to the original
-                    # conditions.
-                    # First, set the flag to indicate interpolation between 100% and the
-                    # previous area should be done.
+                    # If switching from the snow area curve to interpolation
+                    # between the curve and 100%, the current state of the
+                    # snow pack has to be saved so that the interpolation can
+                    # continue until back to the original conditions.
+                    # First, set the flag to indicate interpolation between
+                    # 100% and the previous area should be done.
                     # iasw = 1  # [flag]
-                    self.iasw[jj] = True  # [flag]
+                    iasw = True  # [flag]
 
-                    # Save the current snow covered area (before the new net snow).
-                    self.snowcov_areasv[
-                        jj
-                    ] = snowcov_area_ante  # [inches] PAN: this is [fraction]
+                    # Save the current snow covered area (before the new net
+                    # snow).
+                    snowcov_areasv = snowcov_area_ante  # [inches]
+                    # PAN: this is [fraction]
 
-                    # Save the current pack water equivalent (before the new net snow).
-                    self.pksv[jj] = (
-                        self.pkwater_equiv[jj] - self.net_snow[jj]
-                    )  # [inches]
+                    # Save the current pack water equivalent (before the new
+                    # net snow).
+                    pksv = pkwater_equiv - net_snow  # [inches]
 
-                    # The location on the interpolated line is based on how much of the
-                    # new snow has melted.  Because the first 1/4 of the new snow doesn't
-                    # matter, it has to keep track of the current snow pack plus 3/4 of
-                    # the new snow.
-                    self.scrv[jj] = self.pkwater_equiv[jj] - (
-                        0.25 * self.net_snow[jj]
-                    )  # [inches]
+                    # The location on the interpolated line is based on how
+                    # much of the new snow has melted.  Because the first 1/4
+                    # of the new snow doesn't matter, it has to keep track of
+                    # the current snow pack plus 3/4 of the new snow.
+                    scrv = pkwater_equiv - (0.25 * net_snow)  # [inches]
 
                 # <
-                # The subroutine terminates here because the snow covered area always
-                # starts at 100% if there is any new snow (no need to reset it from the
-                # maximum value set at the beginning of the subroutine).
-                return
+                # The subroutine terminates here because the snow covered area
+                # always starts at 100% if there is any new snow (no need to
+                # reset it from the maximum value set at the beginning of the
+                # subroutine).
+                return (
+                    ai,
+                    frac_swe,
+                    iasw,
+                    pksv,
+                    pst,
+                    scrv,
+                    snowcov_area,
+                    snowcov_areasv,
+                )
 
             # <
-            elif self.iasw[jj]:
-                # (2.2) There was no new snow, but the snow covered area is currently
-                #       being interpolated between 100% from a previous new snow and the
-                #       snow covered area before that previous new snow...
+            elif iasw:
+                # (2.2) There was no new snow, but the snow covered area is
+                # currently being interpolated between 100% from a previous
+                # new snow and the snow covered area before that previous new
+                # snow...
                 # JLM: not handling the case of no newsnow but being ON the
                 #      curve is not great, apparently it's just what happens
                 #      after all conditions
 
-                # If the first 1/4 of the previous new snow has not melted yet, then the
-                # snow covered area is still 100% and the subroutine can terminate.
-                if self.pkwater_equiv[jj] > self.scrv[jj]:
-                    return
+                # If the first 1/4 of the previous new snow has not melted
+                # yet, then the snow covered area is still 100% and the
+                # subroutine can terminate.
+                if pkwater_equiv > scrv:
+                    return (
+                        ai,
+                        frac_swe,
+                        iasw,
+                        pksv,
+                        pst,
+                        scrv,
+                        snowcov_area,
+                        snowcov_areasv,
+                    )
 
                 # <
-                # At this point, the program is almost sure it is interpolating between
-                # the previous snow covered area and 100%, but it is possible that
-                # enough snow has melted to return to the snow covered area curve instead.
+                # At this point, the program is almost sure it is interpolating
+                # between the previous snow covered area and 100%, but it is
+                # possible that enough snow has melted to return to the snow
+                # covered area curve instead.
                 # 2 options below (if-then, else)
-                if self.pkwater_equiv[jj] >= self.pksv[jj]:
+                if pkwater_equiv >= pksv:
 
-                    # (2.2.1) The snow pack still has a larger water equivalent than before
-                    #         the previous new snow.  I.e., new snow has not melted back to
-                    #         original area...
+                    # (2.2.1) The snow pack still has a larger water equivalent
+                    # than before
+                    # the previous new snow.  I.e., new snow has not melted
+                    # back to original area...
+                    # Do the interpolation between 100% and the snow covered
+                    # area before the previous new snow.
 
-                    # Do the interpolation between 100% and the snow covered area before
-                    # the previous new snow.
-
-                    # Calculate the difference between the maximum snow covered area
-                    # (remember that snowcov_area is always set to the maximum value at
-                    # this point) and the snow covered area before the last new snow.
-                    # JLM: use snowcov_frac_max instead of relying on the max being
-                    #      temporarily set on the variable for clarity
+                    # Calculate the difference between the maximum snow
+                    # covered area (remember that snowcov_area is always set
+                    # to the maximum value at this point) and the snow covered
+                    # area before the last new snow.
+                    # JLM: use snowcov_frac_max instead of relying on the max
+                    #      being temporarily set on the variable for clarity
                     # JLM: difx and dify are misleading, use better names
                     #      i'd assume x is swe/pkwater_equiv and y is
                     #      the associate sca, but apparently they are just
                     #      dummy names
-                    difx = self.snowcov_area[jj] - self.snowcov_areasv[jj]
+                    difx = snowcov_area - snowcov_areasv
 
-                    # Calculate the difference between the water equivalent before the
-                    # last new snow and the previous water equivalent plus 3/4 of the last
-                    # new snow. In effect, get the value of 3/4 of the previous new snow.
-                    dify = self.scrv[jj] - self.pksv[jj]  # [inches]   #gl1098
+                    # Calculate the difference between the water equivalent
+                    # before the last new snow and the previous water
+                    # equivalent plus 3/4 of the last new snow. In effect, get
+                    # the value of 3/4 of the previous new snow.
+                    dify = scrv - pksv  # [inches]   #gl1098
 
-                    # If 3/4 of the previous new snow is significantly different from
-                    # zero, then calculate the ratio of the unmelted amount of previous
-                    # new snow in the snow pack to the value of 3/4 of previous new snow.
-                    # In effect, this is the fraction of the previous new snow that
-                    # determines the current interpolation of snow covered area.
+                    # If 3/4 of the previous new snow is significantly
+                    # different from zero, then calculate the ratio of the
+                    # unmelted amount of previous new snow in the snow pack to
+                    # the value of 3/4 of previous new snow. In effect, this is
+                    # the fraction of the previous new snow that determines the
+                    # current interpolation of snow covered area.
                     fracy = zero  # [fraction]   #gl1098
                     if dify > zero:
-                        fracy = (
-                            self.pkwater_equiv[jj] - self.pksv[jj]
-                        ) / dify  # [fraction]
+                        fracy = (pkwater_equiv - pksv) / dify  # [fraction]
 
                     # <
                     # Linearly interpolate the new snow covered area.
-                    self.snowcov_area[jj] = (
-                        self.snowcov_areasv[jj] + fracy * difx
+                    snowcov_area = (
+                        snowcov_areasv + fracy * difx
                     )  # [fraction of area]
 
                     # Terminate the subroutine.
-                    return
+                    return (
+                        ai,
+                        frac_swe,
+                        iasw,
+                        pksv,
+                        pst,
+                        scrv,
+                        snowcov_area,
+                        snowcov_areasv,
+                    )
 
                 else:
-                    # (2.2.2) The snow pack has returned to the snow water equivalent before
-                    #         the previous new snow. I.e. back to original area before new snow.
+                    # (2.2.2) The snow pack has returned to the snow water
+                    # equivalent before the previous new snow. I.e. back to
+                    # original area before new snow.
 
                     # Reset the flag to use the snow area curve
                     # iasw = 0  # [flag]
-                    self.iasw[jj] = False  # [flag]
+                    iasw = False  # [flag]
 
             # <<
-            # If this subroutine is still running at this point, then the program
-            # knows that the snow covered area needs to be adjusted according to the
-            # snow covered area curve.  So at this point it must interpolate between
-            # points on the snow covered area curve (not the same as interpolating
-            # between 100% and the previous spot on the snow area depletion curve).
+            # If this subroutine is still running at this point, then the
+            # program knows that the snow covered area needs to be adjusted
+            # according to the snow covered area curve.  So at this point it
+            # must interpolate between points on the snow covered area curve
+            # (not the same as interpolating between 100% and the previous spot
+            # on the snow area depletion curve).
             # JLM: better to just call this explicitly above, with each regime
             #      and make a case for no new snow and not interpolating?
             #      could also make this a function...
-            self.snowcov_area[jj] = self.sca_deplcrv(
-                self.snarea_curve_2d[self.hru_deplcrv[jj] - 1, :],
-                self.frac_swe[jj],
-            )
+            snowcov_area = sca_deplcrv(snarea_curve, frac_swe)
 
         # <
-        return
+        return (
+            ai,
+            frac_swe,
+            iasw,
+            pksv,
+            pst,
+            scrv,
+            snowcov_area,
+            snowcov_areasv,
+        )
 
     @staticmethod
     def snalbedo(

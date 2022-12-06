@@ -457,7 +457,51 @@ class PRMSSnow(StorageUnit):
             # HRU STEP 1 - DEAL WITH PRECIPITATION AND ITS EFFECT ON THE WATER
             #              CONTENT AND HEAT CONTENT OF SNOW PACK
             # ***********************************************************************
-            self.ppt_to_pack(jj)
+            month_ind = self.control.current_month - 1
+
+            (
+                self.freeh2o[jj],
+                self.iasw[jj],
+                self.pk_def[jj],
+                self.pk_den[jj],
+                self.pk_depth[jj],
+                self.pk_ice[jj],
+                self.pk_precip[jj],
+                self.pk_temp[jj],
+                self.pkwater_equiv[jj],
+                self.pptmix_nopack[jj],
+                self.pss[jj],
+                self.pst[jj],
+                self.snowmelt[jj],
+            ) = self._calc_ppt_to_pack(
+                calc_calin=self._calc_calin,
+                calc_caloss=self._calc_caloss,
+                den_max=self.den_max,
+                denmaxinv=self.denmaxinv,
+                freeh2o=self.freeh2o[jj],
+                freeh2o_cap=self.freeh2o_cap[jj],
+                iasw=self.iasw[jj],
+                net_ppt=self.net_ppt[jj],
+                net_rain=self.net_rain[jj],
+                net_snow=self.net_snow[jj],
+                pk_def=self.pk_def[jj],
+                pk_den=self.pk_den[jj],
+                pk_depth=self.pk_depth[jj],
+                pk_ice=self.pk_ice[jj],
+                pk_precip=self.pk_precip[jj],
+                pk_temp=self.pk_temp[jj],
+                pkwater_equiv=self.pkwater_equiv[jj],
+                pptmix=self.pptmix[jj],
+                pptmix_nopack=self.pptmix_nopack[jj],
+                pss=self.pss[jj],
+                pst=self.pst[jj],
+                snowcov_area=self.snowcov_area[jj],
+                snowmelt=self.snowmelt[jj],
+                tavgc=self.tavgc[jj],
+                tmax_allsnow_c_current=self.tmax_allsnow_c[month_ind, jj],
+                tmaxc=self.tmaxc[jj],
+                tminc=self.tminc[jj],
+            )
 
             # if jj == dbgind:
             #     print(f"self.pkwater_equiv 1 : {self.pkwater_equiv[dbgind]}")
@@ -761,61 +805,97 @@ class PRMSSnow(StorageUnit):
         # <
         return res
 
-    def ppt_to_pack(self, jj):
+    @staticmethod
+    def _calc_ppt_to_pack(
+        calc_calin,
+        calc_caloss,
+        den_max,
+        denmaxinv,
+        freeh2o,
+        freeh2o_cap,
+        iasw,
+        net_ppt,
+        net_rain,
+        net_snow,
+        pk_def,
+        pk_den,
+        pk_depth,
+        pk_ice,
+        pk_precip,
+        pk_temp,
+        pkwater_equiv,
+        pptmix,
+        pptmix_nopack,
+        pss,
+        pst,
+        snowcov_area,
+        snowmelt,
+        tavgc,
+        tmax_allsnow_c_current,
+        tmaxc,
+        tminc,
+    ):
         """Add rain and/or snow to snowpack."""
 
         # WARNING: pan - wouldn't this be pkwater_equiv > DNEARZERO?
         ppt_through = ~(
-            (self.pkwater_equiv[jj] > zero and self.net_ppt[jj] > zero)
-            or self.net_snow[jj] > zero
+            (pkwater_equiv > zero and net_ppt > zero) or net_snow > zero
         )
         if ppt_through:
-            return
+            return (
+                freeh2o,
+                iasw,
+                pk_def,
+                pk_den,
+                pk_depth,
+                pk_ice,
+                pk_precip,
+                pk_temp,
+                pkwater_equiv,
+                pptmix_nopack,
+                pss,
+                pst,
+                snowmelt,
+            )
 
         caln = zero
         calpr = zero
         calps = zero
         pndz = zero
 
-        month_ind = self.control.current_month - 1
+        tsnow = tavgc  # [degrees C]
 
-        tsnow = self.tavgc[jj]  # [degrees C]
-
-        if self.pptmix[jj] == 1:
+        if pptmix == 1:
             # (1) If precipitation is mixed...
-            # If there is any rain, the rain temperature is halfway between the maximum
-            # temperature and the allsnow temperature.
-            train = (
-                self.tmaxc[jj] + self.tmax_allsnow_c[month_ind, jj]
-            ) * 0.5  # [degrees C]
+            # If there is any rain, the rain temperature is halfway between
+            # the maximum temperature and the allsnow temperature.
+            train = (tmaxc + tmax_allsnow_c_current) * 0.5  # [degrees C]
 
-            # Temperatures will differ, depending on the presence of existing snowpack.
-            # should this be epsilon32?
-            if self.pkwater_equiv[jj] > zero:
-                # If there is a snowpack, snow temperature is halfway between the minimum
-                # daily temperature and maximum temperature for which all precipitation is snow.
-                tsnow = (
-                    self.tminc[jj] + self.tmax_allsnow_c[month_ind, jj]
-                ) * 0.5  # [degrees C]
+            # Temperatures will differ, depending on the presence of existing
+            # snowpack. should this be epsilon32?
+            if pkwater_equiv > zero:
+                # If there is a snowpack, snow temperature is halfway between
+                # the minimum daily temperature and maximum temperature for
+                # which all precipitation is snow.
+                tsnow = (tminc + tmax_allsnow_c_current) * 0.5  # [degrees C]
 
-            elif self.pkwater_equiv[jj] < zero:
-                # If no existing snowpack, snow temperature is the average temperature for the day.
-                self.pkwater_equiv[
-                    jj
-                ] = zero  # To be sure negative snowpack is ignored
+            elif pkwater_equiv < zero:
+                # If no existing snowpack, snow temperature is the average
+                # temperature for the day.
+                pkwater_equiv = zero  # To be sure negative snowpack is ignored
 
         # <<
         else:
             # (2) If precipitation is all snow or all rain...
-            # If there is any rain, the rain temperature is the average temperature.
-            train = self.tavgc[jj]  # [degrees C]
+            # If there is any rain, the rain temperature is the average
+            # temperature.
+            train = tavgc  # [degrees C]
             if train < epsilon32:
-                # If average temperature is close to freezing, the rain temperature is
-                # halfway between the maximum daily temperature and maximum temperature
+                # If average temperature is close to freezing, the rain
+                # temperature is halfway between the maximum daily temperature
+                # and maximum temperature
                 # for which all precipitation is snow.
-                train = (
-                    self.tmaxc[jj] + self.tmax_allsnow_c[month_ind, jj]
-                ) * 0.5  # [degrees C]
+                train = (tmaxc + tmax_allsnow_c_current) * 0.5  # [degrees C]
 
         # <<
         if train < zero:
@@ -825,259 +905,284 @@ class PRMSSnow(StorageUnit):
 
         # Leavesley comments...
         # If snowpack already exists, add rain first, then add snow.  If no
-        # antecedent snowpack, rain is already taken care of, so start snowpack with
-        # snow.  This subroutine assumes that in a mixed event, the rain will be
-        # first and turn to snow as the temperature drops.
-
-        # Rain can only add to the snowpack if a previous snowpack exists, so rain
-        # or a mixed event is processed differently when a snowpack exists.
+        # antecedent snowpack, rain is already taken care of, so start snowpack
+        # with snow.  This subroutine assumes that in a mixed event, the rain
+        # will be first and turn to snow as the temperature drops.
+        # Rain can only add to the snowpack if a previous snowpack exists, so
+        # rain or a mixed event is processed differently when a snowpack
+        # exists.
         # 2 options below (if-then, elseif)
 
-        if self.pkwater_equiv[jj] > zero:
+        if pkwater_equiv > zero:
             # (1) There is net rain on an existing snowpack...
 
-            if self.net_rain[jj] > zero:
-                # Add rain water to pack (rain on snow) and increment the precipitation
-                # on the snowpack by the rain water.
-                self.pkwater_equiv[jj] = (
-                    self.pkwater_equiv[jj] + self.net_rain[jj]
-                )  # [inches]
-                self.pk_precip[jj] = (
-                    self.pk_precip[jj] + self.net_rain[jj]
-                )  # [inches]
+            if net_rain > zero:
+                # Add rain water to pack (rain on snow) and increment the
+                # precipitation on the snowpack by the rain water.
+                pkwater_equiv = pkwater_equiv + net_rain  # [inches]
+                pk_precip = pk_precip + net_rain  # [inches]
 
-                # Incoming rain water carries heat that must be added to the snowpack.
-                # This heat could both warm the snowpack and melt snow. Handling of this
-                # heat depends on the current thermal condition of the snowpack.
+                # Incoming rain water carries heat that must be added to the
+                # snowpack. This heat could both warm the snowpack and melt
+                # snow. Handling of this heat depends on the current thermal
+                # condition of the snowpack.
                 # 2 options below (if-then, else)
 
-                # (1.1) If the snowpack is colder than freezing it has a heat deficit
-                # (requires heat to be brought to isothermal at 0 degC)...
-                if self.pk_def[jj] > zero:
-                    # Calculate the number of calories given up per inch of rain when
-                    # cooling it from the current rain temperature to 0 deg C and then
-                    # freezing it (liquid to solid state latent heat).
-                    # This calculation assumes a volume of an inch of rain over a square cm of area
-                    # 80 cal come from freezing 1 cm3 at 0 C (latent heat of fusion is 80 cal/cm^3),
-                    # 1 cal from cooling 1cm3 for every degree C (specific heat of water is 1 cal/(cm^3 degC)),
-                    # convert from 1 cm depth over 1 square cm to 1 inch depth over 1 square cm (INCH2CM = 2.54 cm/in)
+                # (1.1) If the snowpack is colder than freezing it has a heat
+                # deficit (requires heat to be brought to isothermal at 0
+                # degC)...
+                if pk_def > zero:
+                    # Calculate the number of calories given up per inch of
+                    # rain when cooling it from the current rain temperature
+                    # to 0 deg C and then freezing it (liquid to solid state
+                    # latent heat). This calculation assumes a volume of an
+                    # inch of rain over a square cm of area 80 cal come from
+                    # freezing 1 cm3 at 0 C (latent heat of fusion is 80
+                    # cal/cm^3), 1 cal from cooling 1cm3 for every degree C
+                    # (specific heat of water is 1 cal/(cm^3 degC)), convert
+                    # from 1 cm depth over 1 square cm to 1 inch depth over 1
+                    # square cm (INCH2CM = 2.54 cm/in)
                     caln = (80.000 + train) * inch2cm  # [cal / (in cm^2)]
 
-                    # Calculate the amount of rain in inches (at the current rain temperature)
-                    # needed to bring the snowpack to isothermal at 0.
-                    pndz = self.pk_def[jj] / caln  # [inches]
+                    # Calculate the amount of rain in inches (at the current
+                    # rain temperature) needed to bring the snowpack to
+                    # isothermal at 0.
+                    pndz = pk_def / caln  # [inches]
 
-                    # The effect of rain on the snowpack depends on if there is not enough,
-                    # enough, or more than enough heat in the rain to bring the snowpack
-                    # to isothermal at 0 degC or not 3 options below (if-then, elseif, else).
+                    # The effect of rain on the snowpack depends on if there
+                    # is not enough, enough, or more than enough heat in the
+                    # rain to bring the snowpack to isothermal at 0 degC or
+                    # not 3 options below (if-then, elseif, else).
 
-                    if abs(self.net_rain[jj] - pndz) < epsilon32:
-                        # (1.1.1) Exactly enough rain to bring pack to isothermal...
+                    if abs(net_rain - pndz) < epsilon32:
+                        # (1.1.1) Exactly enough rain to bring pack to
+                        # isothermal...
                         # Heat deficit and temperature of the snowpack go to 0.
-                        self.pk_def[jj] = zero  # [cal/cm^2]
-                        self.pk_temp[jj] = zero  # [degrees C]
+                        pk_def = zero  # [cal/cm^2]
+                        pk_temp = zero  # [degrees C]
 
-                        # In the process of giving up its heat, all the net rain freezes and
-                        # becomes pack ice.
-                        self.pk_ice[jj] = (
-                            self.pk_ice[jj] + self.net_rain[jj]
-                        )  # [inches]
+                        # In the process of giving up its heat, all the net
+                        # rain freezes and becomes pack ice.
+                        pk_ice = pk_ice + net_rain  # [inches]
 
-                    elif self.net_rain[jj] < pndz:
-                        # (1.1.2) Rain not sufficient to bring pack to isothermal...
-                        # The snowpack heat deficit decreases by the heat provided by rain
-                        # and a new snowpack temperature is calculated.
-                        # 1.27 is the specific heat of ice (0.5 cal/(cm^3 degC))
-                        # times the conversion of cm to inches (2.54 cm/in)
-                        self.pk_def[jj] = self.pk_def[jj] - (
-                            caln * self.net_rain[jj]
-                        )  # [cal/(in cm^3)]
-                        self.pk_temp[jj] = (
-                            -1
-                            * self.pk_def[jj]
-                            / (self.pkwater_equiv[jj] * 1.27)
-                        )
+                    elif net_rain < pndz:
+                        # (1.1.2) Rain not sufficient to bring pack to
+                        # isothermal... The snowpack heat deficit decreases
+                        # by the heat provided by rain and a new snowpack
+                        # temperature is calculated. 1.27 is the specific heat
+                        # of ice (0.5 cal/(cm^3 degC)) times the conversion of
+                        # cm to inches (2.54 cm/in)
+                        pk_def = pk_def - (caln * net_rain)  # [cal/(in cm^3)]
+                        pk_temp = -1 * pk_def / (pkwater_equiv * 1.27)
 
                         # All the net rain freezes and becomes pack ice
-                        self.pk_ice[jj] = self.pk_ice[jj] + self.net_rain[jj]
+                        pk_ice = pk_ice + net_rain
 
                     else:
-                        # (1.1.3) Rain in excess of amount required to bring pack to isothermal...
-                        # Heat deficit and temperature of the snowpack go to 0.
-                        self.pk_def[jj] = zero
-                        self.pk_temp[jj] = zero
-                        # The portion of net rain that brings the snowpack to isothermal freezes.
-                        self.pk_ice[jj] = self.pk_ice[jj] + pndz
+                        # (1.1.3) Rain in excess of amount required to bring
+                        # pack to isothermal... Heat deficit and temperature
+                        # of the snowpack go to 0.
+                        pk_def = zero
+                        pk_temp = zero
+                        # The portion of net rain that brings the snowpack to
+                        # isothermal freezes.
+                        pk_ice = pk_ice + pndz
 
-                        # The rest of the net rain becomes free water in the snowpack.
-                        # Note that there cannot be previous freeh2o because the snowpack
-                        # had a heat deficit (all water was ice) before this condition was reached.
-                        self.freeh2o[jj] = self.net_rain[jj] - pndz
+                        # The rest of the net rain becomes free water in the
+                        # snowpack.
+                        # Note that there cannot be previous freeh2o because
+                        # the snowpack had a heat deficit (all water was ice)
+                        # before this condition was reached.
+                        freeh2o = net_rain - pndz
 
-                        # Calculate the excess heat per area added by the portion of rain
-                        # that does not bring the snowpack to isothermal (using specific heat of water)
+                        # Calculate the excess heat per area added by the
+                        # portion of rain that does not bring the snowpack to
+                        # isothermal (using specific heat of water)
                         calpr = (
-                            train * (self.net_rain[jj] - pndz) * inch2cm
+                            train * (net_rain - pndz) * inch2cm
                         )  # [cal/cm^2]
 
-                        # Add the new heat to the snow pack (the heat in this excess rain
-                        # will melt some of the pack ice when the water cools to 0 degC).
+                        # Add the new heat to the snow pack (the heat in this
+                        # excess rain will melt some of the pack ice when the
+                        # water cools to 0 degC).
 
                         # if (chru == 5):
-                        #     print *, ' ', pkwater_equiv[jj], month, train, calpr, pndz, net_rain[jj], net_snow[jj]
+                        #     print *, ' ', pkwater_equiv, month, train,
+                        #     calpr, pndz, net_rain, net_snow
 
                         # endif
 
                         (
-                            self.freeh2o[jj],
-                            self.iasw[jj],
-                            self.pk_def[jj],
-                            self.pk_den[jj],
-                            self.pk_ice[jj],
-                            self.pk_depth[jj],
-                            self.pk_temp[jj],
-                            self.pss[jj],
-                            self.pst[jj],
-                            self.snowmelt[jj],
-                            self.pkwater_equiv[jj],
-                        ) = self._calc_calin(
+                            freeh2o,
+                            iasw,
+                            pk_def,
+                            pk_den,
+                            pk_ice,
+                            pk_depth,
+                            pk_temp,
+                            pss,
+                            pst,
+                            snowmelt,
+                            pkwater_equiv,
+                        ) = calc_calin(
                             cal=calpr,
-                            den_max=self.den_max,
-                            denmaxinv=self.denmaxinv,
-                            freeh2o=self.freeh2o[jj],
-                            freeh2o_cap=self.freeh2o_cap[jj],
-                            iasw=self.iasw[jj],
-                            pk_def=self.pk_def[jj],
-                            pk_den=self.pk_den[jj],
-                            pk_depth=self.pk_depth[jj],
-                            pk_ice=self.pk_ice[jj],
-                            pk_temp=self.pk_temp[jj],
-                            pkwater_equiv=self.pkwater_equiv[jj],
-                            pss=self.pss[jj],
-                            pst=self.pst[jj],
-                            snowcov_area=self.snowcov_area[jj],
-                            snowmelt=self.snowmelt[jj],
+                            den_max=den_max,
+                            denmaxinv=denmaxinv,
+                            freeh2o=freeh2o,
+                            freeh2o_cap=freeh2o_cap,
+                            iasw=iasw,
+                            pk_def=pk_def,
+                            pk_den=pk_den,
+                            pk_depth=pk_depth,
+                            pk_ice=pk_ice,
+                            pk_temp=pk_temp,
+                            pkwater_equiv=pkwater_equiv,
+                            pss=pss,
+                            pst=pst,
+                            snowcov_area=snowcov_area,
+                            snowmelt=snowmelt,
                         )
                         # if (chru == 5):
-                        #     print *, '*', pkwater_equiv[jj]
+                        #     print *, '*', pkwater_equiv
                         # endif
 
                 # <<
                 else:
-                    # (1.2) Rain on snowpack that is isothermal at 0 degC (no heat deficit)...
-                    # All net rain is added to free water in the snowpack.
-                    self.freeh2o[jj] = self.freeh2o[jj] + self.net_rain[jj]
+                    # (1.2) Rain on snowpack that is isothermal at 0 degC (no
+                    # heat deficit)... All net rain is added to free water in
+                    # the snowpack.
+                    freeh2o = freeh2o + net_rain
 
-                    # Calculate the heat per area added by the rain (using specific heat of water).
-                    calpr = train * self.net_rain[jj] * inch2cm  # [cal/cm^2]
+                    # Calculate the heat per area added by the rain (using
+                    # specific heat of water).
+                    calpr = train * net_rain * inch2cm  # [cal/cm^2]
 
-                    # Add the new heat to the snow pack (the heat in rain will melt some
-                    # of the pack ice when the water cools to 0 degC).
+                    # Add the new heat to the snow pack (the heat in rain will
+                    # melt some of the pack ice when the water cools to 0
+                    # degC).
                     (
-                        self.freeh2o[jj],
-                        self.iasw[jj],
-                        self.pk_def[jj],
-                        self.pk_den[jj],
-                        self.pk_ice[jj],
-                        self.pk_depth[jj],
-                        self.pk_temp[jj],
-                        self.pss[jj],
-                        self.pst[jj],
-                        self.snowmelt[jj],
-                        self.pkwater_equiv[jj],
-                    ) = self._calc_calin(
+                        freeh2o,
+                        iasw,
+                        pk_def,
+                        pk_den,
+                        pk_ice,
+                        pk_depth,
+                        pk_temp,
+                        pss,
+                        pst,
+                        snowmelt,
+                        pkwater_equiv,
+                    ) = calc_calin(
                         cal=calpr,
-                        den_max=self.den_max,
-                        denmaxinv=self.denmaxinv,
-                        freeh2o=self.freeh2o[jj],
-                        freeh2o_cap=self.freeh2o_cap[jj],
-                        iasw=self.iasw[jj],
-                        pk_def=self.pk_def[jj],
-                        pk_den=self.pk_den[jj],
-                        pk_depth=self.pk_depth[jj],
-                        pk_ice=self.pk_ice[jj],
-                        pk_temp=self.pk_temp[jj],
-                        pkwater_equiv=self.pkwater_equiv[jj],
-                        pss=self.pss[jj],
-                        pst=self.pst[jj],
-                        snowcov_area=self.snowcov_area[jj],
-                        snowmelt=self.snowmelt[jj],
+                        den_max=den_max,
+                        denmaxinv=denmaxinv,
+                        freeh2o=freeh2o,
+                        freeh2o_cap=freeh2o_cap,
+                        iasw=iasw,
+                        pk_def=pk_def,
+                        pk_den=pk_den,
+                        pk_depth=pk_depth,
+                        pk_ice=pk_ice,
+                        pk_temp=pk_temp,
+                        pkwater_equiv=pkwater_equiv,
+                        pss=pss,
+                        pst=pst,
+                        snowcov_area=snowcov_area,
+                        snowmelt=snowmelt,
                     )
 
         # <<<
-        elif self.net_rain[jj] > zero:
-            # (2) If there is net rain but no snowpack, set flag for a mix on no snowpack.
+        elif net_rain > zero:
+            # (2) If there is net rain but no snowpack, set flag for a mix on
+            # no snowpack.
 
             # Be careful with the code here.
             # If this subroutine is called when there is an all-rain day on no
-            # existing snowpack (currently, it will not), then the flag here will be
-            # set inappropriately.
-            self.pptmix_nopack[jj] = True  # [flag]
+            # existing snowpack (currently, it will not), then the flag here
+            # will be set inappropriately.
+            pptmix_nopack = True  # [flag]
 
         # <
-        # At this point, the subroutine has handled all conditions where there is
-        # net rain, so if there is net snow (doesn't matter if there is a pack or not)...
-        if self.net_snow[jj] > zero:
+        # At this point, the subroutine has handled all conditions where there
+        # is net rain, so if there is net snow (doesn't matter if there is a
+        # pack or not)...
+        if net_snow > zero:
             # Add the new snow to the pack water equivalent, precip, and ice
-            self.pkwater_equiv[jj] = self.pkwater_equiv[jj] + self.net_snow[jj]
-            self.pk_precip[jj] = self.pk_precip[jj] + self.net_snow[jj]
-            self.pk_ice[jj] = self.pk_ice[jj] + self.net_snow[jj]
+            pkwater_equiv = pkwater_equiv + net_snow
+            pk_precip = pk_precip + net_snow
+            pk_ice = pk_ice + net_snow
 
-            # The temperature of the new snow will determine its effect on snowpack heat deficit
+            # The temperature of the new snow will determine its effect on
+            # snowpack heat deficit
             # 2 options below (if-then, else)
             if tsnow >= zero:
                 # (1) if the new snow is at least 0 degC...
-
-                # Incoming snow does not change the overall heat content of the snowpack.
-                # However, the temperature will change, because the total heat content
-                # of the snowpack will be "spread out" among more snow.  Calculate the
-                # snow pack temperature from the heat deficit, specific heat of snow,
-                # and the new total snowpack water content.
-                self.pk_temp[jj] = (
-                    -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
-                )  # [degrees C]
-                # JLM: i dont see where pk_def is set if there was not existing snowpk
+                # Incoming snow does not change the overall heat content of the
+                # snowpack. However, the temperature will change, because the
+                # total heat content of the snowpack will be "spread out"
+                # among more snow.  Calculate the snow pack temperature from
+                # the heat deficit, specific heat of snow, and the new total
+                # snowpack water content.
+                pk_temp = -1 * pk_def / (pkwater_equiv * 1.27)  # [degrees C]
+                # JLM: i dont see where pk_def is set if there was not existing
+                # snowpk
 
             # <
             else:
                 # (2) If the new snow is colder than 0 degC...
-                # Calculate the amount of heat the new snow will absorb if warming it
-                # to 0C (negative number). This is the negative of the heat deficit of
-                # the new snow.
-                calps = tsnow * self.net_snow[jj] * 1.27  # [cal/cm^2]
+                # Calculate the amount of heat the new snow will absorb if
+                # warming it to 0C (negative number). This is the negative of
+                # the heat deficit of the new snow.
+                calps = tsnow * net_snow * 1.27  # [cal/cm^2]
 
                 # The heat to warm the new snow can come from different sources
                 # depending on the state of the snowpack.
                 # 2 options below (if-then, else)
-                if self.freeh2o[jj] > zero:
-                    # (2.1) If there is free water in the pack (at least some of it is going to freeze)...
+                if freeh2o > zero:
+                    # (2.1) If there is free water in the pack (at least some
+                    # of it is going to freeze)...
                     (
-                        self.freeh2o[jj],
-                        self.pk_def[jj],
-                        self.pk_ice[jj],
-                        self.pk_temp[jj],
-                        self.pkwater_equiv[jj],
-                    ) = self._calc_caloss(
+                        freeh2o,
+                        pk_def,
+                        pk_ice,
+                        pk_temp,
+                        pkwater_equiv,
+                    ) = calc_caloss(
                         cal=calps,
-                        freeh2o=self.freeh2o[jj],
-                        pk_def=self.pk_def[jj],
-                        pk_ice=self.pk_ice[jj],
-                        pk_temp=self.pk_temp[jj],
-                        pkwater_equiv=self.pkwater_equiv[jj],
+                        freeh2o=freeh2o,
+                        pk_def=pk_def,
+                        pk_ice=pk_ice,
+                        pk_temp=pk_temp,
+                        pkwater_equiv=pkwater_equiv,
                     )
 
                 else:
-                    # (2.2) If there is no free water (snow pack has a heat deficit greater
-                    #       than or equal to 0)...
-                    # Heat deficit increases because snow is colder than pack (minus a
-                    # negative number = plus) and calculate the new pack temperature.
-                    self.pk_def[jj] = self.pk_def[jj] - calps  # [cal/cm^2]
-                    self.pk_temp[jj] = (
-                        -1 * self.pk_def[jj] / (self.pkwater_equiv[jj] * 1.27)
+                    # (2.2) If there is no free water (snow pack has a heat
+                    # deficit greater than or equal to 0)... Heat deficit
+                    # increases because snow is colder than pack (minus a
+                    # negative number = plus) and calculate the new pack
+                    # temperature.
+                    pk_def = pk_def - calps  # [cal/cm^2]
+                    pk_temp = (
+                        -1 * pk_def / (pkwater_equiv * 1.27)
                     )  # [degrees C]
 
         # <<<
-        return
+        return (
+            freeh2o,
+            iasw,
+            pk_def,
+            pk_den,
+            pk_depth,
+            pk_ice,
+            pk_precip,
+            pk_temp,
+            pkwater_equiv,
+            pptmix_nopack,
+            pss,
+            pst,
+            snowmelt,
+        )
 
     @staticmethod
     def _calc_calin(
@@ -1098,7 +1203,8 @@ class PRMSSnow(StorageUnit):
         snowcov_area,
         snowmelt,
     ):
-        """Compute changes in snowpack when a net gain in heat energy has occurred."""
+        """Compute changes in snowpack when a net gain in heat energy has
+        occurred."""
 
         # Local Variables: all doubles
         # apk_ice: Pack-ice per area [inches]
@@ -1168,7 +1274,7 @@ class PRMSSnow(StorageUnit):
                 apk_ice = pk_ice / snowcov_area  # [inches]
             else:
                 # print *, 'snowcov_area really small, melt all ice',
-                # snowcov_area, ' pmlt:', pmlt, ' dif:', dif, ' pk_ice:', pk_ice
+                # snowcov_area,' pmlt:',pmlt,' dif:',dif,' pk_ice:',pk_ice
                 apk_ice = zero
 
             # <
@@ -1177,8 +1283,8 @@ class PRMSSnow(StorageUnit):
             # 2 options below (if-then, else)
 
             if pmlt > apk_ice:
-                # (3.1) Heat applied to snow covered area is sufficient to melt all the
-                #       ice in that snow pack.
+                # (3.1) Heat applied to snow covered area is sufficient to
+                # melt all the ice in that snow pack.
                 # All pack water equivalent becomes meltwater.
                 snowmelt = snowmelt + pkwater_equiv  # [inches]
                 pkwater_equiv = zero  # [inches]
@@ -1305,8 +1411,8 @@ class PRMSSnow(StorageUnit):
             # 2 options below (if-then, else)
             if dif > zero:
                 # (2) Only part of free water freezes
-                # The calories absorbed by the new snow freezes some of the free water
-                # (increase in ice, decrease in free water).
+                # The calories absorbed by the new snow freezes some of the
+                # free water (increase in ice, decrease in free water).
                 pk_ice = pk_ice + (-cal / 203.2)  # [inches]
                 freeh2o = freeh2o - (-cal / 203.2)  # [inches]
                 return (
@@ -2525,8 +2631,8 @@ class PRMSSnow(StorageUnit):
             pkt = -ts * (pkwater_equiv * 1.27)  # [cal/cm^2] or [Langleys]
             pks = pk_def - pkt  # [cal/cm^2] or [Langleys]
 
-            # Determine if the conducted heat is enough to shift the pack to the
-            # deficit relative to the surface temperature.
+            # Determine if the conducted heat is enough to shift the pack to
+            # the deficit relative to the surface temperature.
             pk_defsub = pks - qcond  # [cal/cm^2] or [Langleys]
 
             # The effect of incoming conducted heat depends on whether it is

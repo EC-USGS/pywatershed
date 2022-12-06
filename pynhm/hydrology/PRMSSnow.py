@@ -1,4 +1,5 @@
 import numpy as np
+from numba import prange
 
 from pynhm.base.storageUnit import StorageUnit
 
@@ -75,6 +76,7 @@ class PRMSSnow(StorageUnit):
         net_snow: adaptable,
         transp_on: adaptable,
         budget_type: str = None,
+        calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSSnow":
@@ -85,6 +87,9 @@ class PRMSSnow(StorageUnit):
             load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSSnow"
+
+        self._calc_method = str(calc_method)
+
         self._set_inputs(locals())
         self._set_budget(budget_type)
 
@@ -175,6 +180,7 @@ class PRMSSnow(StorageUnit):
             "lso": zero,
             "lst": False,
             "mso": one,
+            "newsnow": False,
             "pk_def": zero,
             "pk_den": zero,
             "pk_depth": zero,
@@ -360,6 +366,404 @@ class PRMSSnow(StorageUnit):
         return
 
     def _calculate(self, simulation_time):
+        """Calculate canopy terms for a time step
+
+        Args:
+            simulation_time: current simulation time
+
+        Returns:
+            None
+
+        """
+        if self._calc_method.lower() == "numba":
+            import numba as nb
+
+            if not hasattr(self, "_calculate_numba"):
+                fns = [
+                    "_calc_calin",
+                    "_calc_caloss",
+                    "_calc_ppt_to_pack",
+                    "_calc_snowbal",
+                    "_calc_snowcov",
+                    "_calc_snowevap",
+                    "_calc_step_4",
+                ]
+                for fn in fns:
+                    setattr(
+                        self,
+                        f"{fn}_numba",
+                        nb.njit(fastmath=True)(getattr(self, fn)),
+                    )
+
+            # <
+            (
+                self.ai[:],
+                self.albedo[:],
+                self.frac_swe[:],
+                self.freeh2o[:],
+                self.freeh2o_change[:],
+                self.iasw[:],
+                self.int_alb[:],
+                self.iso[:],
+                self.lso[:],
+                self.lst[:],
+                self.mso[:],
+                self.newsnow[:],
+                self.pk_def[:],
+                self.pk_den[:],
+                self.pk_depth[:],
+                self.pk_ice[:],
+                self.pk_ice_change[:],
+                self.pk_precip[:],
+                self.pk_temp[:],
+                self.pksv[:],
+                self.pkwater_equiv[:],
+                self.pkwater_equiv_change[:],
+                self.pptmix_nopack[:],
+                self.pss[:],
+                self.pst[:],
+                self.salb[:],
+                self.scrv[:],
+                self.slst[:],
+                self.snow_evap[:],
+                self.snowcov_area[:],
+                self.snowcov_areasv[:],
+                self.snowmelt[:],
+                self.snsv[:],
+                self.tcal[:],
+                self.through_rain[:],
+            ) = self._calculate_numba(
+                ai=self.ai,
+                albedo=self.albedo,
+                albset_rna=self.albset_rna,
+                albset_rnm=self.albset_rnm,
+                albset_sna=self.albset_sna,
+                albset_snm=self.albset_snm,
+                calc_calin=self._calc_calin_numba,
+                calc_caloss=self._calc_caloss_numba,
+                calc_ppt_to_pack=self._calc_ppt_to_pack_numba,
+                calc_snowbal=self._calc_snowbal_numba,
+                calc_snowcov=self._calc_snowcov_numba,
+                calc_snowevap=self._calc_snowevap_numba,
+                calc_step_4=self._calc_step_4_numba,
+                cecn_coef=self.cecn_coef,
+                cov_type=self.cov_type,
+                covden_sum=self.covden_sum,
+                covden_win=self.covden_win,
+                current_dowy=self.current_dowy,
+                current_doy=self.current_doy,
+                current_month=self.current_month,
+                den_max=self.den_max,
+                deninv=self.deninv,
+                denmaxinv=self.denmaxinv,
+                emis_noppt=self.emis_noppt,
+                frac_swe=self.frac_swe,
+                freeh2o=self.freeh2o,
+                freeh2o_cap=self.freeh2o_cap,
+                freeh2o_change=self.freeh2o_change,
+                freeh2o_prev=self.freeh2o_prev,
+                hru_deplcrv=self.hru_deplcrv,
+                hru_intcpevap=self.hru_intcpevap,
+                hru_ppt=self.hru_ppt,
+                hru_type=self.hru_type,
+                iasw=self.iasw,
+                int_alb=self.int_alb,
+                iso=self.iso,
+                itime_step=self.control.itime_step,
+                lso=self.lso,
+                lst=self.lst,
+                melt_force=self.melt_force,
+                melt_look=self.melt_look,
+                mso=self.mso,
+                net_ppt=self.net_ppt,
+                net_rain=self.net_rain,
+                net_snow=self.net_snow,
+                newsnow=self.newsnow,
+                nhru=self.nhru,
+                orad_hru=self.orad_hru,
+                pk_def=self.pk_def,
+                pk_den=self.pk_den,
+                pk_depth=self.pk_depth,
+                pk_ice=self.pk_ice,
+                pk_ice_change=self.pk_ice_change,
+                pk_ice_prev=self.pk_ice_prev,
+                pk_precip=self.pk_precip,
+                pk_temp=self.pk_temp,
+                pksv=self.pksv,
+                pkwater_ante=self.pkwater_ante,
+                pkwater_equiv=self.pkwater_equiv,
+                pkwater_equiv_change=self.pkwater_equiv_change,
+                potet=self.potet,
+                potet_sublim=self.potet_sublim,
+                pptmix=self.pptmix,
+                pptmix_nopack=self.pptmix_nopack,
+                prmx=self.prmx,
+                pss=self.pss,
+                pst=self.pst,
+                rad_trncf=self.rad_trncf,
+                salb=self.salb,
+                sca_deplcrv=self.sca_deplcrv,
+                scrv=self.scrv,
+                settle_const=self.settle_const,
+                simulation_time=simulation_time,
+                slst=self.slst,
+                snalbedo=self.snalbedo,
+                snarea_curve_2d=self.snarea_curve_2d,
+                snarea_thresh=self.snarea_thresh,
+                snow_evap=self.snow_evap,
+                snowcov_area=self.snowcov_area,
+                snowcov_areasv=self.snowcov_areasv,
+                snowmelt=self.snowmelt,
+                snsv=self.snsv,
+                soltab_horad_potsw=self.soltab_horad_potsw,
+                swrad=self.swrad,
+                tavgc=self.tavgc,
+                tcal=self.tcal,
+                through_rain=self.through_rain,
+                tmax_allsnow_c=self.tmax_allsnow_c,
+                tmaxc=self.tmaxc,
+                tminc=self.tminc,
+                transp_on=self.transp_on,
+                tstorm_mo=self.tstorm_mo,
+                verbose=self.verbose,
+            )
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+
+            (
+                self.ai[:],
+                self.albedo[:],
+                self.frac_swe[:],
+                self.freeh2o[:],
+                self.freeh2o_change[:],
+                self.iasw[:],
+                self.int_alb[:],
+                self.iso[:],
+                self.lso[:],
+                self.lst[:],
+                self.mso[:],
+                self.newsnow[:],
+                self.pk_def[:],
+                self.pk_den[:],
+                self.pk_depth[:],
+                self.pk_ice[:],
+                self.pk_ice_change[:],
+                self.pk_precip[:],
+                self.pk_temp[:],
+                self.pksv[:],
+                self.pkwater_equiv[:],
+                self.pkwater_equiv_change[:],
+                self.pptmix_nopack[:],
+                self.pss[:],
+                self.pst[:],
+                self.salb[:],
+                self.scrv[:],
+                self.slst[:],
+                self.snow_evap[:],
+                self.snowcov_area[:],
+                self.snowcov_areasv[:],
+                self.snowmelt[:],
+                self.snsv[:],
+                self.tcal[:],
+                self.through_rain[:],
+            ) = self._calculate_numpy(
+                ai=self.ai,
+                albedo=self.albedo,
+                albset_rna=self.albset_rna,
+                albset_rnm=self.albset_rnm,
+                albset_sna=self.albset_sna,
+                albset_snm=self.albset_snm,
+                calc_calin=self._calc_calin,
+                calc_caloss=self._calc_caloss,
+                calc_ppt_to_pack=self._calc_ppt_to_pack,
+                calc_snowbal=self._calc_snowbal,
+                calc_snowcov=self._calc_snowcov,
+                calc_snowevap=self._calc_snowevap,
+                calc_step_4=self._calc_step_4,
+                cecn_coef=self.cecn_coef,
+                cov_type=self.cov_type,
+                covden_sum=self.covden_sum,
+                covden_win=self.covden_win,
+                current_dowy=self.control.current_dowy,
+                current_doy=self.control.current_doy,
+                current_month=self.control.current_month,
+                den_max=self.den_max,
+                deninv=self.deninv,
+                denmaxinv=self.denmaxinv,
+                emis_noppt=self.emis_noppt,
+                frac_swe=self.frac_swe,
+                freeh2o=self.freeh2o,
+                freeh2o_cap=self.freeh2o_cap,
+                freeh2o_change=self.freeh2o_change,
+                freeh2o_prev=self.freeh2o_prev,
+                hru_deplcrv=self.hru_deplcrv,
+                hru_intcpevap=self.hru_intcpevap,
+                hru_ppt=self.hru_ppt,
+                hru_type=self.hru_type,
+                iasw=self.iasw,
+                int_alb=self.int_alb,
+                iso=self.iso,
+                itime_step=self.control.itime_step,
+                lso=self.lso,
+                lst=self.lst,
+                melt_force=self.melt_force,
+                melt_look=self.melt_look,
+                mso=self.mso,
+                net_ppt=self.net_ppt,
+                net_rain=self.net_rain,
+                net_snow=self.net_snow,
+                newsnow=self.newsnow,
+                nhru=self.nhru,
+                orad_hru=self.orad_hru,
+                pk_def=self.pk_def,
+                pk_den=self.pk_den,
+                pk_depth=self.pk_depth,
+                pk_ice=self.pk_ice,
+                pk_ice_change=self.pk_ice_change,
+                pk_ice_prev=self.pk_ice_prev,
+                pk_precip=self.pk_precip,
+                pk_temp=self.pk_temp,
+                pksv=self.pksv,
+                pkwater_ante=self.pkwater_ante,
+                pkwater_equiv=self.pkwater_equiv,
+                pkwater_equiv_change=self.pkwater_equiv_change,
+                potet=self.potet,
+                potet_sublim=self.potet_sublim,
+                pptmix=self.pptmix,
+                pptmix_nopack=self.pptmix_nopack,
+                prmx=self.prmx,
+                pss=self.pss,
+                pst=self.pst,
+                rad_trncf=self.rad_trncf,
+                salb=self.salb,
+                sca_deplcrv=self.sca_deplcrv,
+                scrv=self.scrv,
+                settle_const=self.settle_const,
+                simulation_time=simulation_time,
+                slst=self.slst,
+                snalbedo=self.snalbedo,
+                snarea_curve_2d=self.snarea_curve_2d,
+                snarea_thresh=self.snarea_thresh,
+                snow_evap=self.snow_evap,
+                snowcov_area=self.snowcov_area,
+                snowcov_areasv=self.snowcov_areasv,
+                snowmelt=self.snowmelt,
+                snsv=self.snsv,
+                soltab_horad_potsw=self.soltab_horad_potsw,
+                swrad=self.swrad,
+                tavgc=self.tavgc,
+                tcal=self.tcal,
+                through_rain=self.through_rain,
+                tmax_allsnow_c=self.tmax_allsnow_c,
+                tmaxc=self.tmaxc,
+                tminc=self.tminc,
+                transp_on=self.transp_on,
+                tstorm_mo=self.tstorm_mo,
+                verbose=self.verbose,
+            )
+
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
+        return
+
+    @staticmethod
+    def _calculate_numpy(
+        ai,
+        albedo,
+        albset_rna,
+        albset_rnm,
+        albset_sna,
+        albset_snm,
+        calc_calin,
+        calc_caloss,
+        calc_ppt_to_pack,
+        calc_snowbal,
+        calc_snowcov,
+        calc_snowevap,
+        calc_step_4,
+        cecn_coef,
+        cov_type,
+        covden_sum,
+        covden_win,
+        current_dowy,
+        current_doy,
+        current_month,
+        den_max,
+        deninv,
+        denmaxinv,
+        emis_noppt,
+        frac_swe,
+        freeh2o,
+        freeh2o_cap,
+        freeh2o_change,
+        freeh2o_prev,
+        hru_deplcrv,
+        hru_intcpevap,
+        hru_ppt,
+        hru_type,
+        iasw,
+        int_alb,
+        iso,
+        itime_step,
+        lso,
+        lst,
+        melt_force,
+        melt_look,
+        mso,
+        net_ppt,
+        net_rain,
+        net_snow,
+        newsnow,
+        nhru,
+        orad_hru,
+        pk_def,
+        pk_den,
+        pk_depth,
+        pk_ice,
+        pk_ice_change,
+        pk_ice_prev,
+        pk_precip,
+        pk_temp,
+        pksv,
+        pkwater_ante,
+        pkwater_equiv,
+        pkwater_equiv_change,
+        potet,
+        potet_sublim,
+        pptmix,
+        pptmix_nopack,
+        prmx,
+        pss,
+        pst,
+        rad_trncf,
+        salb,
+        sca_deplcrv,
+        scrv,
+        settle_const,
+        simulation_time,
+        slst,
+        snalbedo,
+        snarea_curve_2d,
+        snarea_thresh,
+        snow_evap,
+        snowcov_area,
+        snowcov_areasv,
+        snowmelt,
+        snsv,
+        soltab_horad_potsw,
+        swrad,
+        tavgc,
+        tcal,
+        through_rain,
+        tmax_allsnow_c,
+        tmaxc,
+        tminc,
+        transp_on,
+        tstorm_mo,
+        verbose,
+    ):
         """Calculate snow pack terms for a time step
 
         Args:
@@ -369,414 +773,437 @@ class PRMSSnow(StorageUnit):
             None
         """
 
-        self._simulation_time = simulation_time
+        canopy_covden = covden_win
+        wh_transp_on = np.where(transp_on)
+        canopy_covden[wh_transp_on] = covden_sum[wh_transp_on]
 
-        self.canopy_covden = self.covden_win
-        wh_transp_on = np.where(self.transp_on)
-        self.canopy_covden[wh_transp_on] = self.covden_sum[wh_transp_on]
-
-        cals = zero  # JLM this is unnecessary.
+        # cals = zero  # JLM this is unnecessary.
 
         # newsnow
-        self.newsnow = np.full([self.nhru], False, dtype=bool)
-        net_snow_gt_zero = self.net_snow > zero
+        newsnow[:] = False
+        net_snow_gt_zero = net_snow > zero
         wh_net_snow_gt_zero = np.where(net_snow_gt_zero)
-        self.newsnow[wh_net_snow_gt_zero] = True
+        newsnow[wh_net_snow_gt_zero] = True
 
         # default assumption
-        self.pptmix_nopack[:] = False
+        pptmix_nopack[:] = False
 
-        for jj in range(self.nhru):
+        for jj in prange(nhru):
 
-            if self.hru_type[jj] == HruType.LAKE:
+            if hru_type[jj] == HruType.LAKE:
                 continue
 
             # <
-            trd = self.orad_hru[jj] / self.soltab_horad_potsw[jj]
+            trd = orad_hru[jj] / soltab_horad_potsw[jj]
 
             # If it's the first julian day of the water year, several
             # variables need to be reset:
             # - reset the previous snow water eqivalent plus new snow to 0
-            # - reset flags to indicate it is not melt season or potetential melt season
-            # - reset the counter for the number of days a snowpack is at 0 deg Celsius
-            # TODO: rsr, do we want to reset all HRUs, what about Southern Hemisphere
-            if self.control.current_dowy == 1:
-                self.pss[jj] = zero  # [inches]
-                self.iso[jj] = 1  # [flag]
-                self.mso[jj] = 1  # [flag]
-                self.lso[jj] = 0  # [counter]
+            # - reset flags to indicate it is not melt season or potetential
+            # melt season
+            # - reset the counter for the number of days a snowpack is at 0
+            # deg Celsius
+            # TODO: rsr, do we want to reset all HRUs, what about Southern
+            # Hemisphere
+            if current_dowy == 1:
+                pss[jj] = zero  # [inches]
+                iso[jj] = 1  # [flag]
+                mso[jj] = 1  # [flag]
+                lso[jj] = 0  # [counter]
 
             # <
-            # HRU SET-UP - SET DEFAULT VALUES AND/OR BASE CONDITIONS FOR THIS TIME PERIOD
+            # HRU SET-UP - SET DEFAULT VALUES AND/OR BASE CONDITIONS FOR THIS
+            # TIME PERIOD
             # **************************************************************
 
             # By default, the precipitation added to snowpack, snowmelt,
             # and snow evaporation are 0.
             # JLM: this could happen outside the loop
-            self.pk_precip[jj] = zero  # [inches]
-            self.snowmelt[jj] = zero  # [inches]
-            self.snow_evap[jj] = zero  # [inches]
-            self.frac_swe[jj] = zero
-            self.ai[jj] = zero
-            self.tcal[jj] = zero
+            pk_precip[jj] = zero  # [inches]
+            snowmelt[jj] = zero  # [inches]
+            snow_evap[jj] = zero  # [inches]
+            frac_swe[jj] = zero
+            ai[jj] = zero
+            tcal[jj] = zero
 
-            # If the day of the water year is beyond the forced melt day indicated by
-            # the parameter, then set the flag indicating melt season
+            # If the day of the water year is beyond the forced melt day
+            # indicated by the parameter, then set the flag indicating melt
+            # season
             # TODO: rsr, need to rethink this at some point
-            if self.control.current_doy == self.melt_force[jj]:
-                self.iso[jj] = 2  # [flag]  # JLM: why not use enumerator here?
+            if current_doy == melt_force[jj]:
+                iso[jj] = 2  # [flag]  # JLM: why not use enumerator here?
 
             # <
-            # If the day of the water year is beyond the first day to look for melt
-            # season indicated by the parameter, then set the flag indicating to watch
-            # for melt season.
+            # If the day of the water year is beyond the first day to look for
+            # melt season indicated by the parameter, then set the flag
+            # indicating to watch for melt season.
             # TODO: rsr, need to rethink this at some point
-            if self.control.current_doy == self.melt_look[jj]:
-                self.mso[jj] = 2  # [flag]  # could emume this BEFORE/AFTER
+            if current_doy == melt_look[jj]:
+                mso[jj] = 2  # [flag]  # could emume this BEFORE/AFTER
 
             # <
             # if jj == dbgind:
-            #     print(f"self.pkwater_equiv 0 : {self.pkwater_equiv[dbgind]}")
-            #     print(f"self.pk_ice 0 : {self.pk_ice[dbgind]}")
-            #     print(f"self.tcal 0 : {self.tcal[dbgind]}")
+            #     print(f"pkwater_equiv 0 : {pkwater_equiv[dbgind]}")
+            #     print(f"pk_ice 0 : {pk_ice[dbgind]}")
+            #     print(f"tcal 0 : {tcal[dbgind]}")
 
-            if self.pkwater_equiv[jj] < epsilon64:
+            if pkwater_equiv[jj] < epsilon64:
                 # No existing snowpack
-                if not self.newsnow[jj]:
+                if not newsnow[jj]:
                     # Skip the HRU if there is no snowpack and no new snow
-                    # Reset to be sure it is zero if snowpack melted on last timestep.
-                    self.snowcov_area[jj] = zero
+                    # Reset to be sure it is zero if snowpack melted on last
+                    # timestep.
+                    snowcov_area[jj] = zero
                     continue
                 else:
-                    # We ahave new snow; the initial snow-covered area is complete (1)
-                    # JLM: why set this here? just for the case of no existing snow?
-                    # This might be removable.
-                    self.snowcov_area[jj] = one  # [fraction of area]
+                    # We ahave new snow; the initial snow-covered area is
+                    # complete (1)
+                    # JLM: why set this here? just for the case of no existing
+                    # snow? This might be removable.
+                    snowcov_area[jj] = one  # [fraction of area]
 
             # <<
             # HRU STEP 1 - DEAL WITH PRECIPITATION AND ITS EFFECT ON THE WATER
             #              CONTENT AND HEAT CONTENT OF SNOW PACK
-            # ***********************************************************************
-            month_ind = self.control.current_month - 1
+            # ****************************************************************
+            month_ind = current_month - 1
 
             (
-                self.freeh2o[jj],
-                self.iasw[jj],
-                self.pk_def[jj],
-                self.pk_den[jj],
-                self.pk_depth[jj],
-                self.pk_ice[jj],
-                self.pk_precip[jj],
-                self.pk_temp[jj],
-                self.pkwater_equiv[jj],
-                self.pptmix_nopack[jj],
-                self.pss[jj],
-                self.pst[jj],
-                self.snowmelt[jj],
-            ) = self._calc_ppt_to_pack(
-                calc_calin=self._calc_calin,
-                calc_caloss=self._calc_caloss,
-                den_max=self.den_max,
-                denmaxinv=self.denmaxinv,
-                freeh2o=self.freeh2o[jj],
-                freeh2o_cap=self.freeh2o_cap[jj],
-                iasw=self.iasw[jj],
-                net_ppt=self.net_ppt[jj],
-                net_rain=self.net_rain[jj],
-                net_snow=self.net_snow[jj],
-                pk_def=self.pk_def[jj],
-                pk_den=self.pk_den[jj],
-                pk_depth=self.pk_depth[jj],
-                pk_ice=self.pk_ice[jj],
-                pk_precip=self.pk_precip[jj],
-                pk_temp=self.pk_temp[jj],
-                pkwater_equiv=self.pkwater_equiv[jj],
-                pptmix=self.pptmix[jj],
-                pptmix_nopack=self.pptmix_nopack[jj],
-                pss=self.pss[jj],
-                pst=self.pst[jj],
-                snowcov_area=self.snowcov_area[jj],
-                snowmelt=self.snowmelt[jj],
-                tavgc=self.tavgc[jj],
-                tmax_allsnow_c_current=self.tmax_allsnow_c[month_ind, jj],
-                tmaxc=self.tmaxc[jj],
-                tminc=self.tminc[jj],
+                freeh2o[jj],
+                iasw[jj],
+                pk_def[jj],
+                pk_den[jj],
+                pk_depth[jj],
+                pk_ice[jj],
+                pk_precip[jj],
+                pk_temp[jj],
+                pkwater_equiv[jj],
+                pptmix_nopack[jj],
+                pss[jj],
+                pst[jj],
+                snowmelt[jj],
+            ) = calc_ppt_to_pack(
+                calc_calin=calc_calin,
+                calc_caloss=calc_caloss,
+                den_max=den_max,
+                denmaxinv=denmaxinv,
+                freeh2o=freeh2o[jj],
+                freeh2o_cap=freeh2o_cap[jj],
+                iasw=iasw[jj],
+                net_ppt=net_ppt[jj],
+                net_rain=net_rain[jj],
+                net_snow=net_snow[jj],
+                pk_def=pk_def[jj],
+                pk_den=pk_den[jj],
+                pk_depth=pk_depth[jj],
+                pk_ice=pk_ice[jj],
+                pk_precip=pk_precip[jj],
+                pk_temp=pk_temp[jj],
+                pkwater_equiv=pkwater_equiv[jj],
+                pptmix=pptmix[jj],
+                pptmix_nopack=pptmix_nopack[jj],
+                pss=pss[jj],
+                pst=pst[jj],
+                snowcov_area=snowcov_area[jj],
+                snowmelt=snowmelt[jj],
+                tavgc=tavgc[jj],
+                tmax_allsnow_c_current=tmax_allsnow_c[month_ind, jj],
+                tmaxc=tmaxc[jj],
+                tminc=tminc[jj],
             )
 
             # if jj == dbgind:
-            #     print(f"self.pkwater_equiv 1 : {self.pkwater_equiv[dbgind]}")
-            #     print(f"self.net_rain: {self.net_rain[dbgind]}", flush=True)
-            #     print(f"self.tcal 1 : {self.tcal[dbgind]}")
+            #     print(f"pkwater_equiv 1 : {pkwater_equiv[dbgind]}")
+            #     print(f"net_rain: {net_rain[dbgind]}", flush=True)
+            #     print(f"tcal 1 : {tcal[dbgind]}")
 
             # <
-            if self.pkwater_equiv[jj] > zero:
+            if pkwater_equiv[jj] > zero:
                 # If there is still snow after precipitation
-                # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from depletion curve
+                # HRU STEP 2 - CALCULATE THE NEW SNOW COVERED AREA from
+                # depletion curve
                 # **********************************************************
-                (
-                    self.ai[jj],
-                    self.frac_swe[jj],
-                    self.iasw[jj],
-                    self.pksv[jj],
-                    self.pst[jj],
-                    self.scrv[jj],
-                    self.snowcov_area[jj],
-                    self.snowcov_areasv[jj],
-                ) = self._calc_snowcov(
-                    ai=self.ai[jj],
-                    frac_swe=self.frac_swe[jj],
-                    hru_deplcrv=self.hru_deplcrv[jj],
-                    iasw=self.iasw[jj],
-                    net_snow=self.net_snow[jj],
-                    newsnow=self.newsnow[jj],
-                    pksv=self.pksv[jj],
-                    pkwater_equiv=self.pkwater_equiv[jj],
-                    pst=self.pst[jj],
-                    sca_deplcrv=self.sca_deplcrv,
-                    scrv=self.scrv[jj],
-                    snarea_curve=self.snarea_curve_2d[
-                        self.hru_deplcrv[jj] - 1, :
-                    ],
-                    snarea_thresh=self.snarea_thresh[jj],
-                    snowcov_area=self.snowcov_area[jj],
-                    snowcov_areasv=self.snowcov_areasv[jj],
-                )
-                # if jj == dbgind:
-                #     print(
-                #         f"self.pkwater_equiv 2 : {self.pkwater_equiv[dbgind]}"
-                #     )
-                #     print(f"self.snowcov_area: {self.snowcov_area[dbgind]}")
-                #     print(f"self.tcal 2 : {self.tcal[dbgind]}")
 
-                # if self.control._itime_step == 29 and jj == dbgind:
+                (
+                    ai[jj],
+                    frac_swe[jj],
+                    iasw[jj],
+                    pksv[jj],
+                    pst[jj],
+                    scrv[jj],
+                    snowcov_area[jj],
+                    snowcov_areasv[jj],
+                ) = calc_snowcov(
+                    ai=ai[jj],
+                    frac_swe=frac_swe[jj],
+                    hru_deplcrv=hru_deplcrv[jj],
+                    iasw=iasw[jj],
+                    net_snow=net_snow[jj],
+                    newsnow=newsnow[jj],
+                    pksv=pksv[jj],
+                    pkwater_equiv=pkwater_equiv[jj],
+                    pst=pst[jj],
+                    sca_deplcrv=sca_deplcrv,
+                    scrv=scrv[jj],
+                    snarea_curve=snarea_curve_2d[hru_deplcrv[jj] - 1, :],
+                    snarea_thresh=snarea_thresh[jj],
+                    snowcov_area=snowcov_area[jj],
+                    snowcov_areasv=snowcov_areasv[jj],
+                )
+
+                # debugging control
+                # if control._itime_step == 29 and jj == dbgind:
                 #    pdb.set_trace()
 
                 # HRU STEP 3 - COMPUTE THE NEW ALBEDO
                 # **********************************************************
                 (
-                    self.albedo[jj],
-                    self.int_alb[jj],
-                    self.lst[jj],
-                    self.salb[jj],
-                    self.slst[jj],
-                    self.snsv[jj],
-                ) = self.snalbedo(
-                    albedo=self.albedo[jj],
-                    albset_rna=self.albset_rna,
-                    albset_rnm=self.albset_rnm,
-                    albset_sna=self.albset_sna,
-                    albset_snm=self.albset_snm,
-                    int_alb=self.int_alb[jj],
-                    iso=self.iso[jj],
-                    lst=self.lst[jj],
-                    net_snow=self.net_snow[jj],
-                    newsnow=self.newsnow[jj],
-                    pptmix=self.pptmix[jj],
-                    prmx=self.prmx[jj],
-                    salb=self.salb[jj],
-                    slst=self.slst[jj],
-                    snsv=self.snsv[jj],
+                    albedo[jj],
+                    int_alb[jj],
+                    lst[jj],
+                    salb[jj],
+                    slst[jj],
+                    snsv[jj],
+                ) = snalbedo(
+                    albedo=albedo[jj],
+                    albset_rna=albset_rna,
+                    albset_rnm=albset_rnm,
+                    albset_sna=albset_sna,
+                    albset_snm=albset_snm,
+                    int_alb=int_alb[jj],
+                    iso=iso[jj],
+                    lst=lst[jj],
+                    net_snow=net_snow[jj],
+                    newsnow=newsnow[jj],
+                    pptmix=pptmix[jj],
+                    prmx=prmx[jj],
+                    salb=salb[jj],
+                    slst=slst[jj],
+                    snsv=snsv[jj],
                 )
                 # if jj == dbgind:
                 #     print(
-                #         f"self.pkwater_equiv 3 : {self.pkwater_equiv[dbgind]}"
+                #         f"pkwater_equiv 3 : {pkwater_equiv[dbgind]}"
                 #     )
-                #     print(f"self.tcal 3 : {self.tcal[dbgind]}")
+                #     print(f"tcal 3 : {tcal[dbgind]}")
 
                 # HRU STEP 4 - DETERMINE RADIATION FLUXES AND SNOWPACK
                 #              STATES NECESSARY FOR ENERGY BALANCE
                 # **********************************************************
                 (
-                    self.freeh2o[jj],
-                    self.iso[jj],
-                    self.lso[jj],
-                    self.pk_def[jj],
-                    self.pk_den[jj],
-                    self.pk_depth[jj],
-                    self.pk_ice[jj],
-                    self.pk_temp[jj],
-                    self.pkwater_equiv[jj],
-                    self.pss[jj],
-                    self.tcal[jj],
-                ) = self.step_4(
+                    freeh2o[jj],
+                    iso[jj],
+                    lso[jj],
+                    pk_def[jj],
+                    pk_den[jj],
+                    pk_depth[jj],
+                    pk_ice[jj],
+                    pk_temp[jj],
+                    pkwater_equiv[jj],
+                    pss[jj],
+                    tcal[jj],
+                ) = calc_step_4(
                     trd,
-                    calc_calin=self._calc_calin,
-                    calc_caloss=self._calc_caloss,
-                    calc_snowbal=self._calc_snowbal,
-                    canopy_covden=self.canopy_covden[jj],
-                    albedo=self.albedo[jj],
-                    cecn_coef=self.cecn_coef[
-                        self.control.current_month - 1, jj
-                    ],
-                    cov_type=self.cov_type[jj],
-                    deninv=self.deninv[jj],
-                    den_max=self.den_max,
-                    denmaxinv=self.denmaxinv,
-                    emis_noppt=self.emis_noppt[jj],
-                    freeh2o=self.freeh2o[jj],
-                    freeh2o_cap=self.freeh2o_cap[jj],
-                    hru_ppt=self.hru_ppt[jj],
-                    iasw=self.iasw[jj],
-                    iso=self.iso[jj],
-                    lso=self.lso[jj],
-                    mso=self.mso[jj],
-                    net_snow=self.net_snow[jj],
-                    pk_def=self.pk_def[jj],
-                    pk_den=self.pk_den[jj],
-                    pk_depth=self.pk_depth[jj],
-                    pk_ice=self.pk_ice[jj],
-                    pk_temp=self.pk_temp[jj],
-                    pkwater_equiv=self.pkwater_equiv[jj],
-                    pss=self.pss[jj],
-                    pst=self.pst[jj],
-                    rad_trncf=self.rad_trncf[jj],
-                    settle_const=self.settle_const,
-                    snowcov_area=self.snowcov_area[jj],
-                    snowmelt=self.snowmelt[jj],
-                    swrad=self.swrad[jj],
-                    tavgc=self.tavgc[jj],
-                    tcal=self.tcal[jj],
-                    tmaxc=self.tmaxc[jj],
-                    tminc=self.tminc[jj],
-                    tstorm_mo=self.tstorm_mo[
-                        self.control.current_month - 1, jj
-                    ],
+                    calc_calin=calc_calin,
+                    calc_caloss=calc_caloss,
+                    calc_snowbal=calc_snowbal,
+                    canopy_covden=canopy_covden[jj],
+                    albedo=albedo[jj],
+                    cecn_coef=cecn_coef[current_month - 1, jj],
+                    cov_type=cov_type[jj],
+                    deninv=deninv[jj],
+                    den_max=den_max,
+                    denmaxinv=denmaxinv,
+                    emis_noppt=emis_noppt[jj],
+                    freeh2o=freeh2o[jj],
+                    freeh2o_cap=freeh2o_cap[jj],
+                    hru_ppt=hru_ppt[jj],
+                    iasw=iasw[jj],
+                    iso=iso[jj],
+                    lso=lso[jj],
+                    mso=mso[jj],
+                    net_snow=net_snow[jj],
+                    pk_def=pk_def[jj],
+                    pk_den=pk_den[jj],
+                    pk_depth=pk_depth[jj],
+                    pk_ice=pk_ice[jj],
+                    pk_temp=pk_temp[jj],
+                    pkwater_equiv=pkwater_equiv[jj],
+                    pss=pss[jj],
+                    pst=pst[jj],
+                    rad_trncf=rad_trncf[jj],
+                    settle_const=settle_const,
+                    snowcov_area=snowcov_area[jj],
+                    snowmelt=snowmelt[jj],
+                    swrad=swrad[jj],
+                    tavgc=tavgc[jj],
+                    tcal=tcal[jj],
+                    tmaxc=tmaxc[jj],
+                    tminc=tminc[jj],
+                    tstorm_mo=tstorm_mo[current_month - 1, jj],
                 )
                 # if jj == dbgind:
                 #     print(
-                #         f"self.pkwater_equiv 4 : {self.pkwater_equiv[dbgind]}"
+                #         f"pkwater_equiv 4 : {pkwater_equiv[dbgind]}"
                 #     )
-                #     print(f"self.tcal 4 : {self.tcal[dbgind]}")
+                #     print(f"tcal 4 : {tcal[dbgind]}")
 
                 #  HRU STEP 5 - CALCULATE SNOWPACK LOSS TO EVAPORATION
                 # ********************************************************
-                if self.pkwater_equiv[jj] > zero:
-                    # Snow can evaporate when transpiration is not occuring or when
-                    # transpiration is occuring with cover types of bare soil or grass.
-                    # if (transp_on[jj] == 0 .or. (transp_on[jj] == 1 .and. cov_type[jj] < 2):
-                    if (not self.transp_on[jj]) or (
-                        self.transp_on[jj] and self.cov_type[jj] < 2
+                if pkwater_equiv[jj] > zero:
+                    # Snow can evaporate when transpiration is not occuring or
+                    # when transpiration is occuring with cover types of bare
+                    # soil or grass.
+                    if (not transp_on[jj]) or (
+                        transp_on[jj] and cov_type[jj] < 2
                     ):
                         (
-                            self.freeh2o[jj],
-                            self.pk_def[jj],
-                            self.pk_ice[jj],
-                            self.pk_temp[jj],
-                            self.pkwater_equiv[jj],
-                            self.snow_evap[jj],
-                        ) = self._calc_snowevap(
-                            freeh2o=self.freeh2o[jj],
-                            hru_intcpevap=self.hru_intcpevap[jj],
-                            pk_def=self.pk_def[jj],
-                            pk_ice=self.pk_ice[jj],
-                            pk_temp=self.pk_temp[jj],
-                            pkwater_equiv=self.pkwater_equiv[jj],
-                            potet=self.potet[jj],
-                            potet_sublim=self.potet_sublim[jj],
-                            snow_evap=self.snow_evap[jj],
-                            snowcov_area=self.snowcov_area[jj],
-                            verbose=self.verbose,
+                            freeh2o[jj],
+                            pk_def[jj],
+                            pk_ice[jj],
+                            pk_temp[jj],
+                            pkwater_equiv[jj],
+                            snow_evap[jj],
+                        ) = calc_snowevap(
+                            freeh2o=freeh2o[jj],
+                            hru_intcpevap=hru_intcpevap[jj],
+                            pk_def=pk_def[jj],
+                            pk_ice=pk_ice[jj],
+                            pk_temp=pk_temp[jj],
+                            pkwater_equiv=pkwater_equiv[jj],
+                            potet=potet[jj],
+                            potet_sublim=potet_sublim[jj],
+                            snow_evap=snow_evap[jj],
+                            snowcov_area=snowcov_area[jj],
+                            verbose=verbose,
                         )
 
                 # <<
-                elif self.pkwater_equiv[jj] < zero:
-                    if self.verbose:
-                        if self.pkwater_equiv[jj] < (-1 * epsilon64):
+                elif pkwater_equiv[jj] < zero:
+                    if verbose:
+                        if pkwater_equiv[jj] < (-1 * epsilon64):
                             print(
                                 f"snowpack issue 3, negative pkwater_equiv, "
-                                f"HRU: {jj}, value: {self.pkwater_equiv[jj]}"
+                                f"HRU: {jj}, value: {pkwater_equiv[jj]}"
                             )
 
                     # <<
                     # just to be sure negative values are ignored
-                    self.pkwater_equiv[jj] = zero
+                    pkwater_equiv[jj] = zero
 
-                # if jj == dbgind:
-                #     print(
-                #         f"self.pkwater_equiv 5 : {self.pkwater_equiv[dbgind]}"
-                #     )
-                #     print(f"self.tcal 5 : {self.tcal[dbgind]}")
-                # <
                 # HRU CLEAN-UP - ADJUST FINAL HRU SNOWPACK STATES AND
                 #                INCREMENT THE BASIN TOTALS
                 # *********************************************************
 
-                # Final state of the snowpack depends on whether it still exists after
-                # all the processing above.
+                # Final state of the snowpack depends on whether it still
+                # exists after all the processing above.
                 # 2 options below (if-then, else)
 
-                if self.pkwater_equiv[jj] > zero:
+                if pkwater_equiv[jj] > zero:
                     # (1) Snow pack still exists
                     # Snowpack still exists
 
-                    if self.pk_den[jj] > zero:
-                        self.pk_depth[jj] = (
-                            self.pkwater_equiv[jj] / self.pk_den[jj]
-                        )
+                    if pk_den[jj] > zero:
+                        pk_depth[jj] = pkwater_equiv[jj] / pk_den[jj]
                     else:
-                        self.pk_den[jj] = self.den_max
-                        self.pk_depth[jj] = (
-                            self.pkwater_equiv[jj] * self.denmaxinv
-                        )
+                        pk_den[jj] = den_max
+                        pk_depth[jj] = pkwater_equiv[jj] * denmaxinv
 
                     # <
-                    self.pss[jj] = self.pkwater_equiv[jj]
+                    pss[jj] = pkwater_equiv[jj]
 
-                    # If it is during the melt period and snowfall was insufficient to
-                    # reset albedo, then reduce the cumulative new snow by the amount
-                    # melted during the period (but don't let it be negative).
-                    # if (self.lst[jj] > 0:
-                    if self.lst[jj]:
-                        self.snsv[jj] = self.snsv[jj] - self.snowmelt[jj]
+                    # If it is during the melt period and snowfall was
+                    # insufficient to reset albedo, then reduce the cumulative
+                    # new snow by the amount melted during the period (but
+                    # don't let it be negative).
+                    if lst[jj]:
+                        snsv[jj] = snsv[jj] - snowmelt[jj]
 
-                        if self.snsv[jj] < zero:
-                            self.snsv[jj] = zero
+                        if snsv[jj] < zero:
+                            snsv[jj] = zero
 
-                # <<<<
-                # LAST check to clear out all arrays if packwater is gone
-                if self.pkwater_equiv[jj] <= zero:
-                    if self.verbose:
-                        if self.pkwater_equiv[jj] < -epsilon64:
-                            print(
-                                f"Snowpack problem, pkwater_equiv negative, HRU: {jj}, value: {self.pkwater_equiv[jj]}"
-                            )
+            # <<<<
+            # LAST check to clear out all arrays if packwater is gone
+            if pkwater_equiv[jj] <= zero:
+                if verbose:
+                    if pkwater_equiv[jj] < -epsilon64:
+                        print(
+                            "Snowpack problem, pkwater_equiv negative, "
+                            f"HRU: {jj}, value: {pkwater_equiv[jj]}"
+                        )
 
-                    # <<
-                    self.pkwater_equiv[
-                        jj
-                    ] = zero  # just to be sure negative values are ignored
+                # <<
+                pkwater_equiv[
+                    jj
+                ] = zero  # just to be sure negative values are ignored
 
-                    # Snowpack has been completely depleted, reset all states to no-snowpack values
-                    self.pk_depth[jj] = zero
-                    self.pss[jj] = zero
-                    self.snsv[jj] = zero
-                    self.lst[jj] = False
-                    self.pst[jj] = zero
-                    self.iasw[jj] = False
-                    self.albedo[jj] = zero
-                    self.pk_den[jj] = zero
-                    self.snowcov_area[jj] = zero
-                    self.pk_def[jj] = zero
-                    self.pk_temp[jj] = zero
-                    self.pk_ice[jj] = zero
-                    self.freeh2o[jj] = zero
-                    self.snowcov_areasv[jj] = zero  # rsr, not in original code
-                    self.ai[jj] = zero
-                    self.frac_swe[jj] = zero
+                # Snowpack has been completely depleted, reset all states
+                # to no-snowpack values
+                pk_depth[jj] = zero
+                pss[jj] = zero
+                snsv[jj] = zero
+                lst[jj] = False
+                pst[jj] = zero
+                iasw[jj] = False
+                albedo[jj] = zero
+                pk_den[jj] = zero
+                snowcov_area[jj] = zero
+                pk_def[jj] = zero
+                pk_temp[jj] = zero
+                pk_ice[jj] = zero
+                freeh2o[jj] = zero
+                snowcov_areasv[jj] = zero  # rsr, not in original code
+                ai[jj] = zero
+                frac_swe[jj] = zero
 
-            # <<
+        # <<
 
-        self.pkwater_equiv_change[:] = self.pkwater_equiv - self.pkwater_ante
-        self.freeh2o_change[:] = self.freeh2o - self.freeh2o_prev
-        self.pk_ice_change[:] = self.pk_ice - self.pk_ice_prev
+        pkwater_equiv_change[:] = pkwater_equiv - pkwater_ante
+        freeh2o_change[:] = freeh2o - freeh2o_prev
+        pk_ice_change[:] = pk_ice - pk_ice_prev
 
         wh_through = (
-            ((self.pk_ice_prev + self.freeh2o_prev) <= epsilon64)
-            & ~self.newsnow
-        ) | (self.pptmix_nopack == 1)
-        self.through_rain[:] = np.where(wh_through, self.net_rain, zero)
+            ((pk_ice_prev + freeh2o_prev) <= epsilon64) & ~newsnow
+        ) | (pptmix_nopack == 1)
+        through_rain[:] = np.where(wh_through, net_rain, zero)
 
-        return
+        return (
+            ai,
+            albedo,
+            frac_swe,
+            freeh2o,
+            freeh2o_change,
+            iasw,
+            int_alb,
+            iso,
+            lso,
+            lst,
+            mso,
+            newsnow,
+            pk_def,
+            pk_den,
+            pk_depth,
+            pk_ice,
+            pk_ice_change,
+            pk_precip,
+            pk_temp,
+            pksv,
+            pkwater_equiv,
+            pkwater_equiv_change,
+            pptmix_nopack,
+            pss,
+            pst,
+            salb,
+            scrv,
+            slst,
+            snow_evap,
+            snowcov_area,
+            snowcov_areasv,
+            snowmelt,
+            snsv,
+            tcal,
+            through_rain,
+        )
 
     @staticmethod
     def sca_deplcrv(snarea_curve: np.ndarray, frac_swe: float) -> float:
@@ -2040,7 +2467,7 @@ class PRMSSnow(StorageUnit):
         )
 
     @staticmethod
-    def step_4(
+    def _calc_step_4(
         trd,
         calc_calin,
         calc_caloss,

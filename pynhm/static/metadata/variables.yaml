@@ -1665,7 +1665,7 @@ iasw:
     on curve and maximum (1) or is on the defined curve (0)
   dimensions:
     0: nhru
-  type: int32
+  type: bool
   units: none
 imperv_evap:
   desc: Evaporation from impervious area for each HRU

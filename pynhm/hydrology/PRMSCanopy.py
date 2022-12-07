@@ -244,6 +244,7 @@ class PRMSCanopy(StorageUnit):
                     self._calculate_procedural
                 )
 
+            # <
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -400,6 +401,7 @@ class PRMSCanopy(StorageUnit):
             msg = f"Invalid calc_method={self._calc_method} for {self.name}"
             raise ValueError(msg)
 
+        # <
         self.hru_intcpstor_change[:] = (
             self.hru_intcpstor - self.hru_intcpstor_old
         )

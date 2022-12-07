@@ -10,41 +10,45 @@ from ..constants import HruType, epsilon32, epsilon64, inch2cm, nan, one, zero
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants
 # These should probably be in the parameters?
-acum_init = [
-    0.80,
-    0.77,
-    0.75,
-    0.72,
-    0.70,
-    0.69,
-    0.68,
-    0.67,
-    0.66,
-    0.65,
-    0.64,
-    0.63,
-    0.62,
-    0.61,
-    0.60,
-]
+acum_init = np.array(
+    [
+        0.80,
+        0.77,
+        0.75,
+        0.72,
+        0.70,
+        0.69,
+        0.68,
+        0.67,
+        0.66,
+        0.65,
+        0.64,
+        0.63,
+        0.62,
+        0.61,
+        0.60,
+    ]
+)
 
-amlt_init = [
-    0.72,
-    0.65,
-    0.60,
-    0.58,
-    0.56,
-    0.54,
-    0.52,
-    0.50,
-    0.48,
-    0.46,
-    0.44,
-    0.43,
-    0.42,
-    0.41,
-    0.40,
-]
+amlt_init = np.array(
+    [
+        0.72,
+        0.65,
+        0.60,
+        0.58,
+        0.56,
+        0.54,
+        0.52,
+        0.50,
+        0.48,
+        0.46,
+        0.44,
+        0.43,
+        0.42,
+        0.41,
+        0.40,
+    ]
+)
 
 maxalb = 15
 ONETHIRD = 1.0 / 3.0
@@ -273,12 +277,22 @@ class PRMSSnow(StorageUnit):
         if (self.den_init.shape == ()) or (
             self.den_init.shape[0] != self.nhru
         ):
+            # this one dosent get used later
             den_init = np.ones(self.nhru, dtype=np.float64) * self.den_init
+            # but this one does
+
         else:
             den_init = self.den_init
 
+        if len(self.den_max) == 1:
+            self.den_max = np.ones(self.nhru, dtype=np.float64) * self.den_max
+        if len(self.settle_const) == 1:
+            self.settle_const = (
+                np.ones(self.nhru, dtype=np.float64) * self.settle_const
+            )
+
         self.deninv = one / den_init
-        self.denmaxinv = one / self.den_max.copy()
+        self.denmaxinv = one / self.den_max
 
         self.pkwater_equiv[:] = self.snowpack_init.copy()
 
@@ -379,10 +393,15 @@ class PRMSSnow(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
+                self._calculate_numba = nb.njit(fastmath=True)(
+                    self._calculate_numpy
+                )
                 fns = [
                     "_calc_calin",
                     "_calc_caloss",
                     "_calc_ppt_to_pack",
+                    "_calc_sca_deplcrv",
+                    "_calc_snalbedo",
                     "_calc_snowbal",
                     "_calc_snowcov",
                     "_calc_snowevap",
@@ -433,15 +452,19 @@ class PRMSSnow(StorageUnit):
                 self.tcal[:],
                 self.through_rain[:],
             ) = self._calculate_numba(
+                acum_init=acum_init,
                 ai=self.ai,
                 albedo=self.albedo,
                 albset_rna=self.albset_rna,
                 albset_rnm=self.albset_rnm,
                 albset_sna=self.albset_sna,
                 albset_snm=self.albset_snm,
+                amlt_init=amlt_init,
                 calc_calin=self._calc_calin_numba,
                 calc_caloss=self._calc_caloss_numba,
                 calc_ppt_to_pack=self._calc_ppt_to_pack_numba,
+                calc_sca_deplcrv=self._calc_sca_deplcrv_numba,
+                calc_snalbedo=self._calc_snalbedo_numba,
                 calc_snowbal=self._calc_snowbal_numba,
                 calc_snowcov=self._calc_snowcov_numba,
                 calc_snowevap=self._calc_snowevap_numba,
@@ -450,9 +473,9 @@ class PRMSSnow(StorageUnit):
                 cov_type=self.cov_type,
                 covden_sum=self.covden_sum,
                 covden_win=self.covden_win,
-                current_dowy=self.current_dowy,
-                current_doy=self.current_doy,
-                current_month=self.current_month,
+                current_dowy=self.control.current_dowy,
+                current_doy=self.control.current_doy,
+                current_month=self.control.current_month,
                 den_max=self.den_max,
                 deninv=self.deninv,
                 denmaxinv=self.denmaxinv,
@@ -502,12 +525,10 @@ class PRMSSnow(StorageUnit):
                 pst=self.pst,
                 rad_trncf=self.rad_trncf,
                 salb=self.salb,
-                sca_deplcrv=self.sca_deplcrv,
                 scrv=self.scrv,
                 settle_const=self.settle_const,
                 simulation_time=simulation_time,
                 slst=self.slst,
-                snalbedo=self.snalbedo,
                 snarea_curve_2d=self.snarea_curve_2d,
                 snarea_thresh=self.snarea_thresh,
                 snow_evap=self.snow_evap,
@@ -567,15 +588,19 @@ class PRMSSnow(StorageUnit):
                 self.tcal[:],
                 self.through_rain[:],
             ) = self._calculate_numpy(
+                acum_init=acum_init,
                 ai=self.ai,
                 albedo=self.albedo,
                 albset_rna=self.albset_rna,
                 albset_rnm=self.albset_rnm,
                 albset_sna=self.albset_sna,
                 albset_snm=self.albset_snm,
+                amlt_init=amlt_init,
                 calc_calin=self._calc_calin,
                 calc_caloss=self._calc_caloss,
                 calc_ppt_to_pack=self._calc_ppt_to_pack,
+                calc_sca_deplcrv=self._calc_sca_deplcrv,
+                calc_snalbedo=self._calc_snalbedo,
                 calc_snowbal=self._calc_snowbal,
                 calc_snowcov=self._calc_snowcov,
                 calc_snowevap=self._calc_snowevap,
@@ -636,12 +661,10 @@ class PRMSSnow(StorageUnit):
                 pst=self.pst,
                 rad_trncf=self.rad_trncf,
                 salb=self.salb,
-                sca_deplcrv=self.sca_deplcrv,
                 scrv=self.scrv,
                 settle_const=self.settle_const,
                 simulation_time=simulation_time,
                 slst=self.slst,
-                snalbedo=self.snalbedo,
                 snarea_curve_2d=self.snarea_curve_2d,
                 snarea_thresh=self.snarea_thresh,
                 snow_evap=self.snow_evap,
@@ -670,15 +693,19 @@ class PRMSSnow(StorageUnit):
 
     @staticmethod
     def _calculate_numpy(
+        acum_init,
         ai,
         albedo,
         albset_rna,
         albset_rnm,
         albset_sna,
         albset_snm,
+        amlt_init,
         calc_calin,
         calc_caloss,
         calc_ppt_to_pack,
+        calc_snalbedo,
+        calc_sca_deplcrv,
         calc_snowbal,
         calc_snowcov,
         calc_snowevap,
@@ -739,12 +766,10 @@ class PRMSSnow(StorageUnit):
         pst,
         rad_trncf,
         salb,
-        sca_deplcrv,
         scrv,
         settle_const,
         simulation_time,
         slst,
-        snalbedo,
         snarea_curve_2d,
         snarea_thresh,
         snow_evap,
@@ -790,7 +815,7 @@ class PRMSSnow(StorageUnit):
 
         for jj in prange(nhru):
 
-            if hru_type[jj] == HruType.LAKE:
+            if hru_type[jj] == HruType.LAKE.value:
                 continue
 
             # <
@@ -885,8 +910,8 @@ class PRMSSnow(StorageUnit):
             ) = calc_ppt_to_pack(
                 calc_calin=calc_calin,
                 calc_caloss=calc_caloss,
-                den_max=den_max,
-                denmaxinv=denmaxinv,
+                den_max=den_max[jj],
+                denmaxinv=denmaxinv[jj],
                 freeh2o=freeh2o[jj],
                 freeh2o_cap=freeh2o_cap[jj],
                 iasw=iasw[jj],
@@ -943,7 +968,7 @@ class PRMSSnow(StorageUnit):
                     pksv=pksv[jj],
                     pkwater_equiv=pkwater_equiv[jj],
                     pst=pst[jj],
-                    sca_deplcrv=sca_deplcrv,
+                    calc_sca_deplcrv=calc_sca_deplcrv,
                     scrv=scrv[jj],
                     snarea_curve=snarea_curve_2d[hru_deplcrv[jj] - 1, :],
                     snarea_thresh=snarea_thresh[jj],
@@ -964,12 +989,14 @@ class PRMSSnow(StorageUnit):
                     salb[jj],
                     slst[jj],
                     snsv[jj],
-                ) = snalbedo(
+                ) = calc_snalbedo(
+                    acum_init=acum_init,
                     albedo=albedo[jj],
                     albset_rna=albset_rna,
                     albset_rnm=albset_rnm,
                     albset_sna=albset_sna,
                     albset_snm=albset_snm,
+                    amlt_init=amlt_init,
                     int_alb=int_alb[jj],
                     iso=iso[jj],
                     lst=lst[jj],
@@ -1012,8 +1039,8 @@ class PRMSSnow(StorageUnit):
                     cecn_coef=cecn_coef[current_month - 1, jj],
                     cov_type=cov_type[jj],
                     deninv=deninv[jj],
-                    den_max=den_max,
-                    denmaxinv=denmaxinv,
+                    den_max=den_max[jj],
+                    denmaxinv=denmaxinv[jj],
                     emis_noppt=emis_noppt[jj],
                     freeh2o=freeh2o[jj],
                     freeh2o_cap=freeh2o_cap[jj],
@@ -1032,7 +1059,7 @@ class PRMSSnow(StorageUnit):
                     pss=pss[jj],
                     pst=pst[jj],
                     rad_trncf=rad_trncf[jj],
-                    settle_const=settle_const,
+                    settle_const=settle_const[jj],
                     snowcov_area=snowcov_area[jj],
                     snowmelt=snowmelt[jj],
                     swrad=swrad[jj],
@@ -1080,12 +1107,12 @@ class PRMSSnow(StorageUnit):
 
                 # <<
                 elif pkwater_equiv[jj] < zero:
-                    if verbose:
-                        if pkwater_equiv[jj] < (-1 * epsilon64):
-                            print(
-                                f"snowpack issue 3, negative pkwater_equiv, "
-                                f"HRU: {jj}, value: {pkwater_equiv[jj]}"
-                            )
+                    # if verbose:
+                    #     if pkwater_equiv[jj] < (-1 * epsilon64):
+                    #         print(
+                    #             f"snowpack issue 3, negative pkwater_equiv, "
+                    #             f"HRU: {jj}, value: {pkwater_equiv[jj]}"
+                    #         )
 
                     # <<
                     # just to be sure negative values are ignored
@@ -1106,8 +1133,8 @@ class PRMSSnow(StorageUnit):
                     if pk_den[jj] > zero:
                         pk_depth[jj] = pkwater_equiv[jj] / pk_den[jj]
                     else:
-                        pk_den[jj] = den_max
-                        pk_depth[jj] = pkwater_equiv[jj] * denmaxinv
+                        pk_den[jj] = den_max[jj]
+                        pk_depth[jj] = pkwater_equiv[jj] * denmaxinv[jj]
 
                     # <
                     pss[jj] = pkwater_equiv[jj]
@@ -1125,17 +1152,16 @@ class PRMSSnow(StorageUnit):
             # <<<<
             # LAST check to clear out all arrays if packwater is gone
             if pkwater_equiv[jj] <= zero:
-                if verbose:
-                    if pkwater_equiv[jj] < -epsilon64:
-                        print(
-                            "Snowpack problem, pkwater_equiv negative, "
-                            f"HRU: {jj}, value: {pkwater_equiv[jj]}"
-                        )
+                # if verbose:
+                #     if pkwater_equiv[jj] < -epsilon64:
+                #         print(
+                #             "Snowpack problem, pkwater_equiv negative, "
+                #             f"HRU: {jj}, value: {pkwater_equiv[jj]}"
+                #         )
+                # # <<
 
-                # <<
-                pkwater_equiv[
-                    jj
-                ] = zero  # just to be sure negative values are ignored
+                # just to be sure negative values are ignored
+                pkwater_equiv[jj] = zero
 
                 # Snowpack has been completely depleted, reset all states
                 # to no-snowpack values
@@ -1206,7 +1232,7 @@ class PRMSSnow(StorageUnit):
         )
 
     @staticmethod
-    def sca_deplcrv(snarea_curve: np.ndarray, frac_swe: float) -> float:
+    def _calc_sca_deplcrv(snarea_curve: np.ndarray, frac_swe: float) -> float:
         """Interpolate along snow covered area depletion curve"""
         if frac_swe > one:
             res = snarea_curve[-1]
@@ -1469,9 +1495,6 @@ class PRMSSnow(StorageUnit):
                             snowcov_area=snowcov_area,
                             snowmelt=snowmelt,
                         )
-                        # if (chru == 5):
-                        #     print *, '*', pkwater_equiv
-                        # endif
 
                 # <<
                 else:
@@ -1885,6 +1908,7 @@ class PRMSSnow(StorageUnit):
     @staticmethod
     def _calc_snowcov(
         ai,
+        calc_sca_deplcrv,
         frac_swe,
         hru_deplcrv,
         iasw,
@@ -1893,7 +1917,6 @@ class PRMSSnow(StorageUnit):
         pksv,
         pkwater_equiv,
         pst,
-        sca_deplcrv,
         scrv,
         snarea_curve,
         snarea_thresh,
@@ -2148,7 +2171,7 @@ class PRMSSnow(StorageUnit):
             # JLM: better to just call this explicitly above, with each regime
             #      and make a case for no new snow and not interpolating?
             #      could also make this a function...
-            snowcov_area = sca_deplcrv(snarea_curve, frac_swe)
+            snowcov_area = calc_sca_deplcrv(snarea_curve, frac_swe)
 
         # <
         return (
@@ -2163,12 +2186,14 @@ class PRMSSnow(StorageUnit):
         )
 
     @staticmethod
-    def snalbedo(
+    def _calc_snalbedo(
+        acum_init,
         albedo,
         albset_rna,
         albset_rnm,
         albset_sna,
         albset_snm,
+        amlt_init,
         int_alb,
         iso,
         lst,
@@ -3173,17 +3198,17 @@ class PRMSSnow(StorageUnit):
             pkwater_equiv = pkwater_equiv - snow_evap
 
             if pkwater_equiv < zero:
-                if verbose:
-                    if pkwater_equiv < -epsilon64:
-                        print(
-                            "snowpack issue, negative pkwater_equiv in "
-                            f"snowevap: {pkwater_equiv}"
-                        )
+                # if verbose:
+                #     if pkwater_equiv < -epsilon64:
+                #         print(
+                #             "snowpack issue, negative pkwater_equiv in "
+                #             f"snowevap: {pkwater_equiv}"
+                #         )
+                # #  <<
 
-                    #  <
-                    pkwater_equiv = zero
+                pkwater_equiv = zero
 
-            # <<
+            # <
             snow_evap = zero
 
         # <
@@ -3196,14 +3221,14 @@ class PRMSSnow(StorageUnit):
                 pkwater_equiv = pkwater_equiv - snow_evap
 
                 if pkwater_equiv < zero:
-                    if verbose:
-                        if pkwater_equiv < -epsilon64:
-                            print(
-                                "snowpack issue 2, negative pkwater_equiv in "
-                                f"snowevap: {pkwater_equiv}"
-                            )
+                    # if verbose:
+                    #     if pkwater_equiv < -epsilon64:
+                    #         print(
+                    #             "snowpack issue 2, negative pkwater_equiv in "
+                    #             f"snowevap: {pkwater_equiv}"
+                    #         )
+                    # # <<
 
-                    # <<
                     # To be sure negative snowpack is ignored
                     pkwater_equiv = zero
 

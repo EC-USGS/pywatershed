@@ -5,7 +5,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, nan, zero
+from ..constants import HruType, nan, numba_num_threads, zero
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -371,7 +371,17 @@ class PRMSRunoff(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.njit(self._calculate_numpy)
+                numba_msg = f"{self.name} using numba "
+                nb_parallel = (numba_num_threads is not None) and (
+                    numba_num_threads > 1
+                )
+                if nb_parallel:
+                    numba_msg += f"with {numba_num_threads} threads"
+                print(numba_msg, flush=True)
+
+                self._calculate_numba = nb.njit(
+                    self._calculate_numpy, parallel=nb_parallel
+                )
                 self.check_capacity_numba = nb.jit(self.check_capacity)
                 self.perv_comp_numba = nb.jit(self.perv_comp)
                 self.compute_infil_numba = nb.jit(self.compute_infil)

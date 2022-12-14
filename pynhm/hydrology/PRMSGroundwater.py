@@ -1,4 +1,5 @@
 import numpy as np
+from numba import prange
 
 from pynhm.base.storageUnit import StorageUnit
 
@@ -141,7 +142,7 @@ class PRMSGroundwater(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.jit(
+                self._calculate_numba = nb.njit(
                     nb.types.UniTuple(nb.float64[:], 5)(
                         nb.float64[:],
                         nb.float64[:],
@@ -153,7 +154,7 @@ class PRMSGroundwater(StorageUnit):
                         nb.float64[:],
                         nb.float64[:],
                     ),
-                    nopython=True,
+                    parallel=False,
                 )(self._calculate_numpy)
 
             (

@@ -1,8 +1,17 @@
+import os
+
 import pathlib as pl
 from enum import Enum
 from typing import Union
 
 import numpy as np
+
+# Environment variables
+numba_num_threads = os.getenv("NUMBA_NUM_THREADS")
+if numba_num_threads is None:
+    numba_num_threads = 0
+else:
+    numba_num_threads = int(numba_num_threads)
 
 # Typing constants
 fileish = Union[str, pl.Path]

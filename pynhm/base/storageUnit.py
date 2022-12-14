@@ -454,6 +454,7 @@ class StorageUnit(Accessor):
         output_dir: str,
         separate_files: bool = True,
         budget_args: dict = {},
+        output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
 
@@ -476,12 +477,17 @@ class StorageUnit(Accessor):
 
         self._output_netcdf = True
         self._netcdf = {}
+        self._output_vars = output_vars
         if separate_files:
             self._separate_netcdf = True
             # make working directory
             output_dir = pl.Path(output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
             for variable_name in self.variables:
+                if (self._output_vars is not None) and (
+                    variable_name not in self._output_vars
+                ):
+                    continue
                 nc_path = pl.Path(output_dir) / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
@@ -518,8 +524,14 @@ class StorageUnit(Accessor):
 
         """
         if self._output_netcdf:
-            for idx, variable in enumerate(self.variables):
-                if idx == 0 or self._separate_netcdf:
+            time_added = False
+            for variable in self.variables:
+                if (self._output_vars is not None) and (
+                    variable not in self._output_vars
+                ):
+                    continue
+                if not time_added or self._separate_netcdf:
+                    time_added = True
                     self._netcdf[variable].add_simulation_time(
                         self.control.itime_step, self.control.current_datetime
                     )
@@ -539,6 +551,11 @@ class StorageUnit(Accessor):
         """
         if self._output_netcdf:
             for idx, variable in enumerate(self.variables):
+                if (self._output_vars is not None) and (
+                    variable not in self._output_vars
+                ):
+                    continue
+
                 self._netcdf[variable].close()
                 if not self._separate_netcdf:
                     break

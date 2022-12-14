@@ -4,7 +4,7 @@ from numba import prange
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..base.storageUnit import StorageUnit
-from ..constants import CovType, HruType, zero
+from ..constants import CovType, HruType, numba_num_threads, zero
 
 try:
     from ..PRMSCanopy_f import canopy
@@ -160,6 +160,13 @@ class PRMSCanopy(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
+                numba_msg = f"{self.name} using numba "
+                nb_parallel = (numba_num_threads is not None) and (
+                    numba_num_threads > 1
+                )
+                if nb_parallel:
+                    numba_msg += f"with {numba_num_threads} threads"
+                print(numba_msg, flush=True)
 
                 # JLM: note. I gave up on specifying signatures because it
                 #      appears impossible/undocumented how to specify the type
@@ -239,10 +246,9 @@ class PRMSCanopy(StorageUnit):
                 #     ),
                 #     fastmath=True,
                 # )(self._calculate_procedural)
-                # this is slower parallelized
-                self._calculate_numba = nb.njit(parallel=False, fastmath=True)(
-                    self._calculate_procedural
-                )
+                self._calculate_numba = nb.njit(
+                    fastmath=True, parallel=nb_parallel
+                )(self._calculate_procedural)
 
             # <
             (

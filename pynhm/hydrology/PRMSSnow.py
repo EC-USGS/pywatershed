@@ -16,7 +16,6 @@ from ..constants import (
     zero,
 )
 
-
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants
 # These should probably be in the parameters?

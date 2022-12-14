@@ -61,7 +61,7 @@ generated/
 examples/pynhm_gis
 
 # graphics
-*.pnh
+*.png
 *.svg
 *.jpg
 

@@ -1,10 +1,20 @@
 import numpy as np
+from numba import prange
 
 from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import ETType, HruType, SoilType, epsilon, nan, one, zero
+from ..constants import (
+    ETType,
+    HruType,
+    SoilType,
+    epsilon,
+    nan,
+    numba_num_threads,
+    one,
+    zero,
+)
 
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
@@ -381,9 +391,17 @@ class PRMSSoilzone(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.njit(fastmath=True)(
-                    self._calculate_numpy
+                numba_msg = f"{self.name} using numba "
+                nb_parallel = (numba_num_threads is not None) and (
+                    numba_num_threads > 1
                 )
+                if nb_parallel:
+                    numba_msg += f"with {numba_num_threads} threads"
+                print(numba_msg, flush=True)
+
+                self._calculate_numba = nb.njit(
+                    fastmath=True, parallel=nb_parallel
+                )(self._calculate_numpy)
                 self._compute_gwflow_numba = nb.njit(fastmath=True)(
                     self._compute_gwflow
                 )
@@ -759,7 +777,7 @@ class PRMSSoilzone(StorageUnit):
             hru_actet = hru_actet + dprst_evap_hru
 
         # <
-        for hh in range(nhru):
+        for hh in prange(nhru):
 
             dunnianflw = zero
             dunnianflw_pfr = zero

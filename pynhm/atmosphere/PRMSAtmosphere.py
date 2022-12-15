@@ -91,6 +91,7 @@ class PRMSAtmosphere(StorageUnit):
         budget_type: str = None,
         verbose: bool = False,
         netcdf_output_dir: fileish = None,
+        netcdf_output_vars: list = None,
         from_file_dir: fileish = None,
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
@@ -124,10 +125,10 @@ class PRMSAtmosphere(StorageUnit):
         self._calculated = False
 
         if self.netcdf_output_dir:
-            self._output_netcdf = True
+            self.initialize_netcdf(
+                dir=pl.Path(netcdf_output_dir), output_vars=netcdf_output_vars
+            )
             self._calculate_all_time()
-            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
-            assert self.netcdf_output_dir.exists()
             self._write_netcdf_timeseries()
 
         else:
@@ -781,6 +782,11 @@ class PRMSAtmosphere(StorageUnit):
         if not self._output_netcdf:
             return
         for var in self.variables:
+            if (self._output_vars is not None) and (
+                var not in self._output_vars
+            ):
+                continue
+
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
                 nc_path,
@@ -796,9 +802,11 @@ class PRMSAtmosphere(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir):
+    def initialize_netcdf(self, dir, output_vars: list = None):
         self.netcdf_output_dir = dir
+        assert self.netcdf_output_dir.exists()
         self._output_netcdf = True
+        self._output_vars = output_vars
         return
 
     def output(self):

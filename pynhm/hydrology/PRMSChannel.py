@@ -379,6 +379,7 @@ class PRMSChannel(StorageUnit):
                             nb.float64[:],  # _c2
                         ),
                         fastmath=True,
+                        parallel=False,
                     )(self._muskingum_mann_numpy)
 
                 else:

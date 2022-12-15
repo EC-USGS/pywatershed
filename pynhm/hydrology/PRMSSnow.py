@@ -5,7 +5,16 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, epsilon32, epsilon64, inch2cm, nan, one, zero
+from ..constants import (
+    HruType,
+    epsilon32,
+    epsilon64,
+    inch2cm,
+    nan,
+    numba_num_threads,
+    one,
+    zero,
+)
 
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants
@@ -368,7 +377,8 @@ class PRMSSnow(StorageUnit):
         else:
 
             raise RuntimeError("Snow restart capability not implemented")
-            # JLM: a list of restart variables dosent shed light on what states actually have memory.
+            # JLM: a list of restart variables dosent shed light on what states
+            # actually have memory.
             # JLM: could there be a diagnostic part of the advance?
 
         return
@@ -393,9 +403,17 @@ class PRMSSnow(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.njit(fastmath=True)(
-                    self._calculate_numpy
+                numba_msg = f"{self.name} using numba "
+                nb_parallel = (numba_num_threads is not None) and (
+                    numba_num_threads > 1
                 )
+                if nb_parallel:
+                    numba_msg += f"with {numba_num_threads} threads"
+                print(numba_msg, flush=True)
+
+                self._calculate_numba = nb.njit(
+                    fastmath=True, parallel=nb_parallel
+                )(self._calculate_numpy)
                 fns = [
                     "_calc_calin",
                     "_calc_caloss",

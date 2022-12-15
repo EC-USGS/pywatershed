@@ -38,6 +38,7 @@ class Model:
         control: Control,
         input_dir: str = None,
         budget_type: str = "error",  # todo: also pass dict
+        calc_method: str = "numpy",
         verbose: bool = False,
         find_input_files: bool = True,
         load_n_time_batches: int = 1,
@@ -133,6 +134,8 @@ class Model:
             }
             if process not in ["PRMSSolarGeometry"]:
                 args["budget_type"] = budget_type
+            if process not in ["PRMSSolarGeometry", "PRMSAtmosphere"]:
+                args["calc_method"] = calc_method
             self.processes[process] = class_dict[process](**args)
 
         # Wire it up
@@ -199,6 +202,7 @@ class Model:
         netcdf_dir: fileish = None,
         finalize: bool = True,
         n_time_steps: int = None,
+        output_vars: list = None,
     ):
         """Run the model.
 
@@ -215,13 +219,15 @@ class Model:
                netcdf and outputs at each timestep).
             finalize: option to not finalize at the end of the time loop.
                Default is to finalize.
+            n_time_steps: the number of timesteps to run
+            output_vars: the vars to output to the netcdf_dir
         """
         if not self._found_input_files:
             self._find_input_files()
 
         if netcdf_dir:
             print("model.run(): initializing NetCDF output")
-            self.initialize_netcdf(netcdf_dir)
+            self.initialize_netcdf(netcdf_dir, output_vars=output_vars)
 
         last_pct_comp = 0
         print(f"model.run(): {last_pct_comp} % complete")

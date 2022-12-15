@@ -418,6 +418,11 @@ class PRMSSolarGeometry(StorageUnit):
         if not self._output_netcdf:
             return
         for var in self.variables:
+            if (self._output_vars is not None) and (
+                var not in self._output_vars
+            ):
+                continue
+
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
                 nc_path,
@@ -438,9 +443,10 @@ class PRMSSolarGeometry(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir):
+    def initialize_netcdf(self, dir, output_vars: list = None):
         self.netcdf_output_dir = dir
         self._output_netcdf = True
+        self._output_vars = output_vars
         return
 
     def output(self):

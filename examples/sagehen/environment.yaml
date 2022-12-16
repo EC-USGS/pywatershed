@@ -1,0 +1,30 @@
+name: pyprms
+channels:
+  - conda-forge
+  - csdms-stack
+dependencies:
+  - python =3
+  - pymt >=1.1
+  - coretran
+  - pip
+  - prms
+  - prms_surface
+  - prms_soil
+  - prms_groundwater
+  - prms_streamflow
+  - pymt_prms_surface
+  - pymt_prms_soil
+  - pymt_prms_groundwater
+  - pymt_prms_streamflow
+  - pytest
+  - bmi-tester
+  - netCDF4
+  - notebook
+  - numpy
+  - pandas
+  - geopandas
+  - descartes
+  - flopy
+  - jupyterlab
+  - pip:
+    - modflowapi

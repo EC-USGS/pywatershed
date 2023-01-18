@@ -55,16 +55,16 @@ class PRMSAtmosphere(StorageUnit):
     evapotranspiration (Jensen and Haise ,1963) and a temperature based
     transpiration flag (transp_on) are also calculated.
 
-    Note that all variables are calculated for all time upon initialization and 
+    Note that all variables are calculated for all time upon initialization and
     that all calculated variables are written to netcdf (when netcdf output is
     requested) prior to the first model advance. This is effectively a complete
     preprocessing of the input CBH files to the fields the model actually uses
-    on initialization. If you just want to preprocess these variables, see 
-    `this notebook <https://github.com/EC-USGS/pynhm/tree/main/examples/preprocess_cbh_adj.ipynb>`_. 
+    on initialization. If you just want to preprocess these variables, see
+    `this notebook <https://github.com/EC-USGS/pynhm/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
 
 
-    The full time version of a variable is given by the "private" version of 
-    the variable which is named with a single-leading underscore (eg tmaxf for 
+    The full time version of a variable is given by the "private" version of
+    the variable which is named with a single-leading underscore (eg tmaxf for
     all time is _tmaxf).
 
     This full-time initialization ma not be tractable for large domains and/or
@@ -83,7 +83,7 @@ class PRMSAtmosphere(StorageUnit):
         soltab_potsw: potential shortwave radiation special format file. Only
             the versions of PRMS 5.2.1 shipped with pynhm output soltab in this
             format
-        soltab_horad_potsw: this is the potential shortwave on the horizontal 
+        soltab_horad_potsw: this is the potential shortwave on the horizontal
             plane at each HRU. See soltab_potsw comment on file format.
         budget_type: [None | "warn" |  "error"].
         verbose: bool indicating amount of output to terminal.

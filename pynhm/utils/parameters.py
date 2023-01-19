@@ -2,11 +2,34 @@ from copy import deepcopy
 
 import netCDF4 as nc4
 import numpy as np
+import json
 
 from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from .prms5_file_util import PrmsFile
 
+       
+class JSONParameterEncoder(json.JSONEncoder):
+    """
+    Simple encoder to cast numpy objects to json-friendly formats
+    """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(JSONParameterEncoder, self).default(obj)
 
+def _json_load(json_filename):
+        pars = json.load(open(json_filename))
+        # need to convert lists to numpy arrays 
+        for k,v in pars.items():
+            if isinstance(v, list):
+                pars[k] = np.array(v)
+        return pars
+    
 class PrmsParameters:
     """
     PRMS parameter class
@@ -217,6 +240,38 @@ class PrmsParameters:
             "nhm_id": self.nhm_hru_coordinate,
             "nhm_seg": self.nhm_segment_coordinate,
         }
+
+    def parameters_to_json(self, json_filename):
+        """write the parameters dictionary out to a json file
+        """
+        json.dump(self.parameters, 
+                  open(json_filename, 'w'), 
+                  indent=4, 
+                  cls=JSONParameterEncoder)
+
+    def update_parameters_from_json(self, json_filename):
+        """read the parameters dictionary from a json file
+        """
+        pars = _json_load(json_filename)
+        self.parameters = pars
+    
+    @staticmethod
+    def load_from_json(json_filename: fileish) -> "PrmsParameters":
+        """Load parameters from a json file
+
+        Args:
+            : json file path
+
+        Returns:
+            PrmsParameters: full PRMS parameter dictionary
+
+        """        
+        pars = _json_load(json_filename)
+        return PrmsParameters(
+            pars
+        )
+
+
 
     @staticmethod
     def load(parameter_file: fileish) -> "PrmsParameters":

@@ -4,6 +4,7 @@ from copy import deepcopy
 import netCDF4 as nc4
 import numpy as np
 
+from ..base import meta
 from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from .prms5_file_util import PrmsFile
 
@@ -68,13 +69,22 @@ class PrmsParameters:
         )
 
         # build dimensions from data
-        # todo: this could be done from metadata. probably fewer lines of code
-        #       and would ensure consistency
         if parameter_dimensions_dict is None:
             # todo: handle self._params_sep_procs
-            dimensions = self.dimensions
             parameter_dimensions_dict = {}
             for key, value in parameter_dict.items():
+                param_dim_names = meta.get_params(key)
+                if len(param_dim_names):
+                    param_dim_names = list(
+                        param_dim_names[key]["dimensions"].values()
+                    )
+                else:
+                    param_dim_names = [key]
+
+                param_dims = {
+                    kk: self.dimensions[kk] for kk in param_dim_names
+                }
+
                 if isinstance(value, int):
                     parameter_dimensions_dict[key] = None
                 elif isinstance(value, np.ndarray):
@@ -82,12 +92,13 @@ class PrmsParameters:
                     temp_dims = []
                     for isize in shape:
                         found_dim = False
-                        for dim_key, dim_value in dimensions.items():
+                        for dim_key, dim_value in param_dims.items():
                             if dim_value == isize:
                                 found_dim = True
                                 temp_dims.append(dim_key)
                                 break
-                        if isize == 1:
+
+                        if isize == 1 and not found_dim:
                             found_dim = True
                             temp_dims.append("scalar")
                         if not found_dim:
@@ -252,11 +263,6 @@ class PrmsParameters:
             indent=4,
             cls=JSONParameterEncoder,
         )
-
-    def update_parameters_from_json(self, json_filename):
-        """read the parameters dictionary from a json file"""
-        pars = _json_load(json_filename)
-        self.parameters = pars
 
     @staticmethod
     def load_from_json(json_filename: fileish) -> "PrmsParameters":

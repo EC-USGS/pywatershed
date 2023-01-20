@@ -25,9 +25,7 @@ def test_parameter_init():
     answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
 
     results = {
-        key: val
-        for key, val in param_obj.parameters.items()
-        if key in answers.keys()
+        key: val for key, val in param_obj.parameters.items() if key in answers.keys()
     }
     assert_or_print(results, answers)
 
@@ -43,14 +41,11 @@ def test_parameter_read(domain):
     # check dimensions
     answers = domain["test_ans"]["parameter_read"]
     results = {
-        key: val
-        for key, val in parameters.parameters.items()
-        if key in answers.keys()
+        key: val for key, val in parameters.parameters.items() if key in answers.keys()
     }
     assert_or_print(results, answers, print_ans=domain["print_ans"])
 
     print(f"success parsing...'{parameter_file}'")
-
     return
 
 
@@ -103,22 +98,20 @@ def test_parameter_json(domain, tmp_path):
     parameter_file = domain["param_file"]
     parameters = PrmsParameters.load(parameter_file)
 
-    json_file = pl.Path(tmp_path) / 'params.json'
+    json_file = pl.Path(tmp_path) / "params.json"
     parameters.parameters_to_json(json_file)
     assert json_file.exists()
-    
+
     params_from_json = PrmsParameters.load_from_json(json_file)
 
     param_obj_keys = params_from_json.__dict__.keys()
     assert sorted(param_obj_keys) == sorted(parameters.__dict__.keys())
 
     for kk in param_obj_keys:
-        vv_result = params_from_json.__dict__['parameter_dimensions']
-        vv_ans = parameters.__dict__['parameter_dimensions']
+        vv_result = params_from_json.__dict__["parameter_dimensions"]
+        vv_ans = parameters.__dict__["parameter_dimensions"]
         assert len(vv_result) == len(vv_ans)
         for kk1 in vv_result.keys():
             assert vv_result[kk1] == vv_ans[kk1]
-    
 
     return
-    

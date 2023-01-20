@@ -1,3 +1,5 @@
+import pathlib as pl
+
 import numpy as np
 import pytest
 
@@ -91,3 +93,32 @@ def test_parameter_access(domain, canopy_parameters):
 
     with pytest.raises(KeyError):
         del parameters.parameters["srain_intcp"]
+
+
+def test_parameter_json(domain, tmp_path):
+    # read a myparams.param file to a parameter object,
+    # write it to json,
+    # read the json back in
+    # check that the read json gives an identical parameter object.
+    parameter_file = domain["param_file"]
+    parameters = PrmsParameters.load(parameter_file)
+
+    json_file = pl.Path(tmp_path) / 'params.json'
+    parameters.parameters_to_json(json_file)
+    assert json_file.exists()
+    
+    params_from_json = PrmsParameters.load_from_json(json_file)
+
+    param_obj_keys = params_from_json.__dict__.keys()
+    assert sorted(param_obj_keys) == sorted(parameters.__dict__.keys())
+
+    for kk in param_obj_keys:
+        vv_result = params_from_json.__dict__['parameter_dimensions']
+        vv_ans = parameters.__dict__['parameter_dimensions']
+        assert len(vv_result) == len(vv_ans)
+        for kk1 in vv_result.keys():
+            assert vv_result[kk1] == vv_ans[kk1]
+    
+
+    return
+    

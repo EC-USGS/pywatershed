@@ -145,7 +145,7 @@ def _col_name_split(string: str) -> tuple:
 def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
     # Convert to a multi-index? For getting to a dict of np arrays
     # This might go elsewhere
-    col_name_tuples = [_col_name_split(kk) for kk, vv in df.iteritems()]
+    col_name_tuples = [_col_name_split(kk) for kk, vv in df.items()]
     df.columns = pd.MultiIndex.from_tuples(col_name_tuples)
     var_names = df.columns.unique(level=0)
     np_dict = {}

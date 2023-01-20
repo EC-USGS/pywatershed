@@ -6,6 +6,7 @@ channels:
 dependencies:
   - black
   - isort
+  - jinja2<3.1
   - flake8
   - pylint
   - networkx

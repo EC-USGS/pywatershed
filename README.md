@@ -6,10 +6,10 @@
 
 Purpose
 =========
-The purpose of this repository is to refactor and redesign the PRMS modeling system to modernize it and to move towards a unification with 
-MODFLOW 6. 
+The purpose of this repository is to refactor and redesign the PRMS modeling system to modernize it and to move towards a unification with
+MODFLOW 6.
 
-The following motivations are taken from our [AGU poster from December 2022](https://agu2022fallmeeting-agu.ipostersessions.com/default.aspx?s=05-E1-C6-40-DF-0D-4D-C7-4E-DE-D2-61-02-05-8F-0A) 
+The following motivations are taken from our [AGU poster from December 2022](https://agu2022fallmeeting-agu.ipostersessions.com/default.aspx?s=05-E1-C6-40-DF-0D-4D-C7-4E-DE-D2-61-02-05-8F-0A)
 which provide additional details on the mostivations, status, and directions of this project as of that time.
 
 
@@ -40,7 +40,7 @@ The contents of directories at this level is described. Therein you may discover
 ```
 .github/    Github actions for deploying continuous integration (CI)
 autotest/   pynhm package testing using pytest
-bin/        PRMS executables distributed 
+bin/        PRMS executables distributed
 ci/         Python environments for CI
 doc/        Package/code documentation source code
 examples/   How to use the package, mostly jupyter notebooks
@@ -54,9 +54,9 @@ test_data/  Data used for automated testing
 
 Requirements and Python Environments
 ====================================
-Git and python 3.8 - 3.10 are required. 
+Git and python 3.8 - 3.10 are required.
 
-We suggest installing the python dependencies using conda and the following yaml files. 
+We suggest installing the python dependencies using conda and the following yaml files.
 
 * Minimal: ci/requirements/environment.yml
 * Documentation: ci/requirements/doc.yml
@@ -70,7 +70,7 @@ There are also .txt equivalents that can be used for installing from pip, like s
 
 ```pip install -r env_of_choice.txt```
 
-though these are not comprehensive installs as with conda. 
+though these are not comprehensive installs as with conda.
 
 
 Compiled Code: Fortran
@@ -82,7 +82,7 @@ The numpy extension F2PY is used to provide compiled versions of core calculatio
 on MacOS. You can also specify the C and Fortran compilers through environment variables, for example:
 
 ```
-export CC=/usr/local/bin/gcc 
+export CC=/usr/local/bin/gcc
 export FC=/usr/local/bin/gfortran
 ```
 
@@ -105,4 +105,3 @@ This software is in the public domain because it contains materials that origina
 
 Although this software program has been used by the USGS, no warranty, expressed or implied, is made by the USGS or the U.S. Government as to the accuracy and functioning of the program and related program material nor shall the fact of distribution constitute any such warranty, and no responsibility is assumed by the USGS in connection therewith.
 This software is provided "AS IS."
-

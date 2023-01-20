@@ -21,6 +21,10 @@ class Model:
         input_dir: A directory to search for input files.
         budget_type: None, "warn", or "error".
         verbose: Boolean.
+          calc_method: Choice of available computational backend (where
+          available): None and "numpy" are default, "numba" gives numba (env
+          variables can control its behavior), and "fortran" uses compiled
+          fortran if available.
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.

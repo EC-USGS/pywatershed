@@ -25,7 +25,9 @@ def test_parameter_init():
     answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
 
     results = {
-        key: val for key, val in param_obj.parameters.items() if key in answers.keys()
+        key: val
+        for key, val in param_obj.parameters.items()
+        if key in answers.keys()
     }
     assert_or_print(results, answers)
 
@@ -41,7 +43,9 @@ def test_parameter_read(domain):
     # check dimensions
     answers = domain["test_ans"]["parameter_read"]
     results = {
-        key: val for key, val in parameters.parameters.items() if key in answers.keys()
+        key: val
+        for key, val in parameters.parameters.items()
+        if key in answers.keys()
     }
     assert_or_print(results, answers, print_ans=domain["print_ans"])
 

@@ -9,6 +9,20 @@ from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from .prms5_file_util import PrmsFile
 
 
+def _add_implied_parameters(params, param_dims):
+    """Add implied parameters and dims that dont come from file
+
+    Returns:
+        updated input arguments
+    """
+    params["ndoy"] = ndoy
+    param_dims["ndoy"] = None
+    params["nmonth"] = 12
+    param_dims["nmonth"] = None
+
+    return params, param_dims
+
+
 class JSONParameterEncoder(json.JSONEncoder):
     """
     Simple encoder to cast numpy objects to json-friendly formats
@@ -81,9 +95,14 @@ class PrmsParameters:
                 else:
                     param_dim_names = [key]
 
-                param_dims = {
-                    kk: self.dimensions[kk] for kk in param_dim_names
-                }
+                common_params = set(param_dim_names) & set(
+                    self.dimensions.keys()
+                )
+                if not len(common_params):
+                    parameter_dimensions_dict[key] = tuple(["unknown"])
+                    continue
+
+                param_dims = {kk: self.dimensions[kk] for kk in common_params}
 
                 if isinstance(value, int):
                     parameter_dimensions_dict[key] = None
@@ -101,8 +120,7 @@ class PrmsParameters:
                         if isize == 1 and not found_dim:
                             found_dim = True
                             temp_dims.append("scalar")
-                        if not found_dim:
-                            temp_dims.append("unknown")
+
                     parameter_dimensions_dict[key] = tuple(temp_dims)
 
         self.parameter_dimensions = parameter_dimensions_dict
@@ -264,6 +282,8 @@ class PrmsParameters:
             cls=JSONParameterEncoder,
         )
 
+        return
+
     @staticmethod
     def load_from_json(json_filename: fileish) -> "PrmsParameters":
         """Load parameters from a json file
@@ -276,7 +296,16 @@ class PrmsParameters:
 
         """
         pars = _json_load(json_filename)
-        return PrmsParameters(pars)
+        params = PrmsParameters(pars)
+
+        (
+            params.parameters,
+            paramsparameter_dimensions,
+        ) = _add_implied_parameters(
+            params.parameters, params.parameter_dimensions
+        )
+
+        return params
 
     @staticmethod
     def load(parameter_file: fileish) -> "PrmsParameters":
@@ -291,12 +320,13 @@ class PrmsParameters:
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
 
-        # could insert dimenion data here. going to add this one for now.
-        # it's a little unclear if constants like this are parameters or not
-        data["parameter"]["parameters"]["ndoy"] = ndoy
-        data["parameter"]["parameter_dimensions"]["ndoy"] = None
-        data["parameter"]["parameters"]["nmonth"] = 12
-        data["parameter"]["parameter_dimensions"]["nmonth"] = None
+        (
+            data["parameter"]["parameters"],
+            data["parameter"]["parameter_dimensions"],
+        ) = _add_implied_parameters(
+            data["parameter"]["parameters"],
+            data["parameter"]["parameter_dimensions"],
+        )
 
         return PrmsParameters(
             data["parameter"]["parameters"],

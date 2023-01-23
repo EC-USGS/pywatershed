@@ -1,10 +1,51 @@
+import json
 from copy import deepcopy
 
 import netCDF4 as nc4
 import numpy as np
 
+from ..base import meta
 from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from .prms5_file_util import PrmsFile
+
+
+def _add_implied_parameters(params, param_dims):
+    """Add implied parameters and dims that dont come from file
+
+    Returns:
+        updated input arguments
+    """
+    params["ndoy"] = ndoy
+    param_dims["ndoy"] = None
+    params["nmonth"] = 12
+    param_dims["nmonth"] = None
+
+    return params, param_dims
+
+
+class JSONParameterEncoder(json.JSONEncoder):
+    """
+    Simple encoder to cast numpy objects to json-friendly formats
+    """
+
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        else:
+            return super(JSONParameterEncoder, self).default(obj)
+
+
+def _json_load(json_filename):
+    pars = json.load(open(json_filename))
+    # need to convert lists to numpy arrays
+    for k, v in pars.items():
+        if isinstance(v, list):
+            pars[k] = np.array(v)
+    return pars
 
 
 class PrmsParameters:
@@ -42,13 +83,27 @@ class PrmsParameters:
         )
 
         # build dimensions from data
-        # todo: this could be done from metadata. probably fewer lines of code
-        #       and would ensure consistency
         if parameter_dimensions_dict is None:
             # todo: handle self._params_sep_procs
-            dimensions = self.dimensions
             parameter_dimensions_dict = {}
             for key, value in parameter_dict.items():
+                param_dim_names = meta.get_params(key)
+                if len(param_dim_names):
+                    param_dim_names = list(
+                        param_dim_names[key]["dimensions"].values()
+                    )
+                else:
+                    param_dim_names = [key]
+
+                common_params = set(param_dim_names) & set(
+                    self.dimensions.keys()
+                )
+                if not len(common_params):
+                    parameter_dimensions_dict[key] = tuple(["unknown"])
+                    continue
+
+                param_dims = {kk: self.dimensions[kk] for kk in common_params}
+
                 if isinstance(value, int):
                     parameter_dimensions_dict[key] = None
                 elif isinstance(value, np.ndarray):
@@ -56,16 +111,16 @@ class PrmsParameters:
                     temp_dims = []
                     for isize in shape:
                         found_dim = False
-                        for dim_key, dim_value in dimensions.items():
+                        for dim_key, dim_value in param_dims.items():
                             if dim_value == isize:
                                 found_dim = True
                                 temp_dims.append(dim_key)
                                 break
-                        if isize == 1:
+
+                        if isize == 1 and not found_dim:
                             found_dim = True
                             temp_dims.append("scalar")
-                        if not found_dim:
-                            temp_dims.append("unknown")
+
                     parameter_dimensions_dict[key] = tuple(temp_dims)
 
         self.parameter_dimensions = parameter_dimensions_dict
@@ -218,6 +273,40 @@ class PrmsParameters:
             "nhm_seg": self.nhm_segment_coordinate,
         }
 
+    def parameters_to_json(self, json_filename):
+        """write the parameters dictionary out to a json file"""
+        json.dump(
+            self.parameters,
+            open(json_filename, "w"),
+            indent=4,
+            cls=JSONParameterEncoder,
+        )
+
+        return
+
+    @staticmethod
+    def load_from_json(json_filename: fileish) -> "PrmsParameters":
+        """Load parameters from a json file
+
+        Args:
+            : json file path
+
+        Returns:
+            PrmsParameters: full PRMS parameter dictionary
+
+        """
+        pars = _json_load(json_filename)
+        params = PrmsParameters(pars)
+
+        (
+            params.parameters,
+            paramsparameter_dimensions,
+        ) = _add_implied_parameters(
+            params.parameters, params.parameter_dimensions
+        )
+
+        return params
+
     @staticmethod
     def load(parameter_file: fileish) -> "PrmsParameters":
         """Load parameters from a PRMS parameter file
@@ -231,12 +320,13 @@ class PrmsParameters:
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
 
-        # could insert dimenion data here. going to add this one for now.
-        # it's a little unclear if constants like this are parameters or not
-        data["parameter"]["parameters"]["ndoy"] = ndoy
-        data["parameter"]["parameter_dimensions"]["ndoy"] = None
-        data["parameter"]["parameters"]["nmonth"] = 12
-        data["parameter"]["parameter_dimensions"]["nmonth"] = None
+        (
+            data["parameter"]["parameters"],
+            data["parameter"]["parameter_dimensions"],
+        ) = _add_implied_parameters(
+            data["parameter"]["parameters"],
+            data["parameter"]["parameter_dimensions"],
+        )
 
         return PrmsParameters(
             data["parameter"]["parameters"],

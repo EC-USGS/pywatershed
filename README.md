@@ -2,7 +2,8 @@
 [![ci-badge](https://github.com/ec-usgs/pynhm/workflows/CI/badge.svg?branch=main)](https://github.com/ec-usgs/pynhm/actions?query=workflow%3ACI)
 [![codecov-badge](https://codecov.io/gh/ec-usgs/pynhm/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pynhm)
 [![Documentation Status](https://readthedocs.org/projects/pynhm/badge/?version=latest)](https://pynhm.readthedocs.io/en/latest/?badge=latest)
-<img src="https://raw.githubusercontent.com/ec-usgs/pynhm/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">
+
+[//]: # (<img src="https://raw.githubusercontent.com/ec-usgs/pynhm/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">)
 
 Purpose
 =========
@@ -10,7 +11,7 @@ The purpose of this repository is to refactor and redesign the PRMS modeling sys
 MODFLOW 6.
 
 The following motivations are taken from our [AGU poster from December 2022](https://agu2022fallmeeting-agu.ipostersessions.com/default.aspx?s=05-E1-C6-40-DF-0D-4D-C7-4E-DE-D2-61-02-05-8F-0A)
-which provide additional details on the mostivations, status, and directions of this project as of that time.
+which provides additional details on motivations, project status, and current directions of this project as of approximately January 2023.
 
 
 Project goals of the USGS Enterprise Capacity (EC) include:

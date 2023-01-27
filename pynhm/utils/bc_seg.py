@@ -28,6 +28,8 @@
 #    are the units, what is the variable name? What are the dimension names of
 #    the input variable?
 
+import xarray as xr
+
 from ..constants import fileish
 from .parameters import PrmsParameters
 from .mf6_file_writer import mf6_file_writer
@@ -48,7 +50,7 @@ bc_struct = {
     "dimensions": {
         "maxbound": "scalar",
     },
-    "period": {},
+    # "period": {}, these should be added by the available data?
 }
 
 
@@ -66,6 +68,11 @@ class BcSeg:
       params: a PrmsParameters object (already loaded from file)
       length_units: only meters accepted for now (default)
       output_file: the output file to write.
+      print_input: bool option for option block in output
+      print_flows: bool option for option block in output
+      save_flows: bool option for option block in output
+      var_name: the name of the varible to use in a netcdf file with more than
+        a single data variable.
 
     TODOS:
         Do we manage unit conversions? Will mandate meters for now
@@ -112,14 +119,43 @@ class BcSeg:
         elif param_file:
             self.params = PrmsParameters.load(param_file)
 
-        self.maxbound = self.params.parameters["nsegment"]
+        # self.maxbound = self.params.parameters["nsegment"]
+        self.maxbound = self.params.parameters["nhru"]
 
         # OPTIONS BLOCK
-        # Get kwargs for these? default to false.
         opts = bc_struct["options"]
         for kk, vv in opts.items():
             if kk in kwargs.keys():
                 setattr(self, kk, True)
+
+        # Period data;
+        # what is the number of periods?
+        data_ds = xr.open_dataset(netcdf_bc_file).load()
+        # do parameter segment ids match the nhm_ids
+        assert (data_ds.nhm_id == self.params.parameters["nhm_id"]).all()
+
+        if len(data_ds.data_vars.keys()) == 1:
+            self.var_name = list(data_ds.data_vars.keys())[0]
+        else:
+            if "var_name" in kwargs.keys():
+                self.var_name = getattr(kwargs, "var_name")
+            else:
+                raise ValueError(
+                    "More than one data variables in netcdf file and var_name"
+                    "not supplied"
+                )
+
+        for iperiod, time in enumerate(data_ds.time):
+            bc_list = []
+            for iloc, nhm_id in enumerate(data_ds.nhm_id):
+                bc_list.append(
+                    [
+                        iloc,
+                        data_ds[self.var_name][iperiod, iloc].values.tolist(),
+                    ]
+                )
+            bc_struct[f"period {iperiod}"] = bc_list
+            adsf
 
         return
 

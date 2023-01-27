@@ -1,3 +1,4 @@
+from .bc_seg import BcSeg
 from .control import ControlVariables
 from .csv_utils import CsvFile
 from .dis_hru import DisHru

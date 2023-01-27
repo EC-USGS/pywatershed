@@ -44,6 +44,9 @@ wbal.msgs
 soltab_debug
 output/
 
+# mf6 input files
+*disu_example_file*
+
 # emacs
 *~
 

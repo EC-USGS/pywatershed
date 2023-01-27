@@ -9,6 +9,7 @@ import numpy as np
 
 
 from ..constants import fileish
+from .mf6_file_writer import mf6_file_writer
 from .parameters import PrmsParameters
 
 acres_to_m2 = 4046.8564224
@@ -81,7 +82,7 @@ class DisHru:
       param_file: The filepath to the domain parameters.
       params: a PrmsParameters object (already loaded from file)
       hru_shapefile: a shapefile for HRUS - NOT currently used
-      length_units: only meters accepted for no (default)
+      length_units: only meters accepted for now (default)
       disu_file: the output file to write.
 
     TODOS:
@@ -92,19 +93,19 @@ class DisHru:
     Examples
     --------
 
-    >>> import pathlib as pl
-    >>> from pynhm.utils import DisHru
-    >>> from pynhm.utils.dis_hru import acres_to_m2
+    # Ex 1. similar to autotest/test_dis_hru.py
+    import pathlib as pl
 
-    >>> shape_file = (
-    >>>     "/Users/jamesmcc/usgs/data/pynhm/20220209_gm_delaware_river"
-    >>>     "/GIS_simple/HRU_subset.shp")
-    >>> param_file = (
-    >>>     "/Users/jamesmcc/usgs/pynhm/test_data/drb_2yr/myparam.param"
-    >>> disu_file = pl.Path(".") / "disu_example_file.mf6"
-    >>> dis = DisHru(
-    >>>     param_file=param_file, hru_shapefile=shape_file,
-    >>>     disu_file=disu_file)
+    from pynhm.constants import __pynhm_root__
+    from pynhm.utils import DisHru
+
+    # not used
+    # shape_file = (
+    #     "/Users/jamesmcc/usgs/data/pynhm/20220209_gm_delaware_river"
+    #     "/GIS_simple/HRU_subset.shp")
+    param_file = (__pynhm_root__ / "../test_data/drb_2yr/myparam.param")
+    disu_file = pl.Path(".") / "disu_example_file.mf6"
+    dis = DisHru(param_file=param_file, disu_file=disu_file)
 
     """
 
@@ -192,65 +193,21 @@ class DisHru:
 
         return
 
-    def write(self, disu_file: fileish = None):
-        if disu_file:
-            self.disu_file = disu_file
-        elif not self.disu_file:
-            msg = "no output file specified"
-            raise ValueError(msg)
+    def write(self, out_file: fileish = None):
+        if out_file:
+            self.disu_file = out_file
 
-        # open file in context manager
-        with open(self.disu_file, "w") as outfile:
-            for block, fields in disu_struct.items():
-                wrote_block = False
-                for field, type in fields.items():
-
-                    if hasattr(self, field):
-                        if not wrote_block:
-                            wrote_block = True
-                            outfile.write(f"BEGIN {block.upper()}\n")
-
-                        val = getattr(self, field)
-                        if isinstance(val, np.ndarray):
-                            if len(val.shape):
-                                val_type = "vector"
-                            else:
-                                val_type = "scalar"
-                        else:
-                            val_type = "scalar"
-
-                        if (type == "scalar") and (val_type == "scalar"):
-                            outfile.write(f"{idt}{field.upper()} {val}\n")
-
-                        elif (type == "vector") and (val_type == "scalar"):
-                            outfile.write(
-                                f"{idt}{field.upper()}\n"
-                                f"{idt * 2}CONSTANT {val}\n"
-                            )
-
-                        elif (type == "vector") and (val_type == "vector"):
-                            val_repr = (
-                                str(val)
-                                .replace("\n", "")
-                                .replace("[", "")
-                                .replace("]", "")
-                                .lstrip()
-                            )
-                            outfile.write(
-                                f"{idt}{field.upper()}\n"
-                                f"{idt * 2}{val_repr}\n"
-                            )
-                        else:
-                            msg = (
-                                "unhandled combo of expected and actual types"
-                            )
-                            raise ValueError(msg)
-
-                    elif field in required:
-                        msg = "Required disu field not found: {field}"
-                        raise ValueError(msg)
-
-                if wrote_block:
-                    outfile.write(f"END {block.upper()}\n\n")
+        if self.disu_file:
+            mf6_file_writer(
+                self,
+                file_struct=disu_struct,
+                required=required,
+                output_file=self.disu_file,
+            )
+        else:
+            print(
+                "No output file (self.disu_file)  has been set for this "
+                "DisHru object, no output written."
+            )
 
         return

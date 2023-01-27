@@ -29,6 +29,11 @@ def mf6_file_writer(
     with open(output_file, "w") as outfile:
         for block, fields in file_struct.items():
             wrote_block = False
+
+            if block in required:
+                wrote_block = True
+                outfile.write(f"BEGIN {block.upper()}\n")
+
             for field, type in fields.items():
 
                 if hasattr(selfish, field):
@@ -38,7 +43,9 @@ def mf6_file_writer(
 
                     val = getattr(selfish, field)
                     # handle None?
-                    if isinstance(val, np.ndarray):
+                    if val is None:
+                        val_type = None
+                    elif isinstance(val, np.ndarray):
                         if len(val.shape):
                             val_type = "vector"
                         else:
@@ -46,7 +53,10 @@ def mf6_file_writer(
                     else:
                         val_type = "scalar"
 
-                    if (type == "scalar") and (val_type == "scalar"):
+                    if type is None:
+                        outfile.write(f"{idt}{field.upper()}\n")
+
+                    elif (type == "scalar") and (val_type == "scalar"):
                         outfile.write(f"{idt}{field.upper()} {val}\n")
 
                     elif (type == "vector") and (val_type == "scalar"):

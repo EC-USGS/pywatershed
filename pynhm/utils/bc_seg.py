@@ -27,7 +27,6 @@
 # 3. Can metadata be included in the file (e.g. with comments)? E.G. what
 #    are the units, what is the variable name? What are the dimension names of
 #    the input variable?
-
 import xarray as xr
 
 from ..constants import fileish
@@ -50,7 +49,9 @@ bc_struct = {
     "dimensions": {
         "maxbound": "scalar",
     },
-    # "period": {}, these should be added by the available data?
+    "periods": {
+        "period": "DataArray",
+    },
 }
 
 
@@ -145,17 +146,7 @@ class BcSeg:
                     "not supplied"
                 )
 
-        for iperiod, time in enumerate(data_ds.time):
-            bc_list = []
-            for iloc, nhm_id in enumerate(data_ds.nhm_id):
-                bc_list.append(
-                    [
-                        iloc,
-                        data_ds[self.var_name][iperiod, iloc].values.tolist(),
-                    ]
-                )
-            bc_struct[f"period {iperiod}"] = bc_list
-            adsf
+        self.period = data_ds[self.var_name]
 
         return
 

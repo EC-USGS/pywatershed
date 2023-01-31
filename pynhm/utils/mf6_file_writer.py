@@ -1,6 +1,13 @@
 from ..constants import fileish
 
 import numpy as np
+import pandas as pd
+import xarray as xr
+
+
+skip_blocks = [
+    "periods",
+]
 
 
 def mf6_file_writer(
@@ -34,15 +41,18 @@ def mf6_file_writer(
                 wrote_block = True
                 outfile.write(f"BEGIN {block.upper()}\n")
 
-            for field, type in fields.items():
+            for field, ftype in fields.items():
 
                 if hasattr(selfish, field):
-                    if not wrote_block:
+                    if not wrote_block and (block not in skip_blocks):
                         wrote_block = True
                         outfile.write(f"BEGIN {block.upper()}\n")
 
+                    # Some times the value is not the type requested
+                    # for the field output
+                    # I suppose thse could be handled in transformations
+                    # on self
                     val = getattr(selfish, field)
-                    # handle None?
                     if val is None:
                         val_type = None
                     elif isinstance(val, np.ndarray):
@@ -50,22 +60,24 @@ def mf6_file_writer(
                             val_type = "vector"
                         else:
                             val_type = "scalar"
+                    elif isinstance(val, xr.DataArray):
+                        val_type = "DataArray"
                     else:
                         val_type = "scalar"
 
-                    if type is None:
+                    if ftype is None:
                         outfile.write(f"{idt}{field.upper()}\n")
 
-                    elif (type == "scalar") and (val_type == "scalar"):
+                    elif (ftype == "scalar") and (val_type == "scalar"):
                         outfile.write(f"{idt}{field.upper()} {val}\n")
 
-                    elif (type == "vector") and (val_type == "scalar"):
+                    elif (ftype == "vector") and (val_type == "scalar"):
                         outfile.write(
                             f"{idt}{field.upper()}\n"
                             f"{idt * 2}CONSTANT {val}\n"
                         )
 
-                    elif (type == "vector") and (val_type == "vector"):
+                    elif (ftype == "vector") and (val_type == "vector"):
                         val_repr = (
                             str(val)
                             .replace("\n", "")
@@ -76,6 +88,30 @@ def mf6_file_writer(
                         outfile.write(
                             f"{idt}{field.upper()}\n" f"{idt * 2}{val_repr}\n"
                         )
+
+                    elif ftype == "DataArray" and block == "periods":
+                        # Period data
+                        loc_ind1 = (
+                            np.arange(len(val.nhm_id), dtype="int64") + 1
+                        )  # 1-based
+                        for ii, tt in enumerate(val.time):
+                            period_slice = val[ii, :].values
+                            df = pd.DataFrame(
+                                {"loc_ind": loc_ind1, "val": period_slice}
+                            )
+                            loc_vals_str = df.to_csv(
+                                index=False, header=False, sep=" "
+                            )
+                            time = str(val.time.values[ii])
+                            outfile.write(f"BEGIN period {ii+1}  # {time}\n")
+                            outfile.write(
+                                idt
+                                + loc_vals_str.replace("\n", f"\n{idt}")[
+                                    0 : -(len(idt))
+                                ]
+                            )
+                            outfile.write(f"END period {ii+1}\n\n")
+
                     else:
                         msg = "unhandled combo of expected and actual types"
                         raise ValueError(msg)

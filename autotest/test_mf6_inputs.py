@@ -40,7 +40,7 @@ def test_bc_seg(tmp_path):
     with open(out_file, "rb") as ff:
         md5sum_result = hashlib.md5(ff.read()).hexdigest()
 
-    md5sum_answer = "1d8f5a220c4619fa6cdecbb49c189bf5"
+    md5sum_answer = "808382240973b425b5cbe9b1ce72684d"
     assert md5sum_result == md5sum_answer
 
     return

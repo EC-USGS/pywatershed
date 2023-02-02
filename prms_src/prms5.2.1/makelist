@@ -1,3 +1,6 @@
+# To select/pass compilers on command line, for example
+# make FC=ifort CC=icc
+# ensuring these are in your $PATH.
 
 # determine OS
 ifeq ($(OS), Windows_NT)

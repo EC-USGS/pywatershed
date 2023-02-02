@@ -55,7 +55,14 @@ test_data/  Data used for automated testing
 
 Requirements and Python Environments
 ====================================
-Git and python 3.8 - 3.10 are required.
+*Git* is helpful (but not strictly required).
+
+Generally *gcc* and *gfortran* are required to run PRMS to generate test data and if
+you want fortran backends to certain process models. On a *Mac with an M1 chip*,
+PRMS currently only compiles with intel's oneapi icc and ifort (while the pynhm fortran
+backends for certain process models compiles with gfortran and gcc.) 
+
+*Python >= 3.8* is required.
 
 We suggest installing the python dependencies using conda and the following yaml files.
 

@@ -1,5 +1,5 @@
-click!= 8.1.0
-black
+click != 8.1.0
+black < 23.1.0
 isort
 flake8
 pylint

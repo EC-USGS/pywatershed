@@ -18,7 +18,7 @@ dependencies:
   - flopy
   - pip:
       - click != 8.1.0
-      - black
+      - black < 23.1.0
       - isort
       - flake8
       - pylint

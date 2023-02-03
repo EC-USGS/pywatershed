@@ -70,7 +70,7 @@ disu_struct = {
 }
 
 
-class DisHru:
+class DisSeg:
     """Write the HRU spatial discretization (no cascades) to an MF6 disu file
 
     The MF6 IO descrption can be found here
@@ -140,11 +140,12 @@ class DisHru:
         # optional: NOGRB, xorigin, yorigin, angrot, vertical_offset_tolerance
 
         # DIMENSIONS block
-        self.nodes = len(self.params.parameters["nhm_id"])
+        self.nodes = len(self.params.parameters["nhm_seg"])
         self.nja = self.nodes
         # optional: nvert
 
         # GRIDDATA block
+        asdf
         self.top = 2  # 2 m? why not
         self.bot = 0
         self.area = self.params.parameters["hru_area"] * acres_to_m2

@@ -1,6 +1,6 @@
 import hashlib
 
-from pynhm.utils import DisHru, BcSeg
+from pynhm.utils import BcSeg, DisHru, DisSeg
 from pynhm.constants import __pynhm_root__
 
 # not currently in repo or being used but might be good to add
@@ -16,6 +16,7 @@ def test_dis_hru(tmp_path):
     out_file = tmp_path / "dis_hru"
     dis.write(out_file)
     assert out_file.exists()
+    print(out_file)
 
     # a lightweight regression test to make sure we are aware of changes.
     with open(out_file, "rb") as ff:
@@ -23,6 +24,22 @@ def test_dis_hru(tmp_path):
 
     md5sum_answer = "eedac6070a6073b793c3c27d5a11c9f9"
     assert md5sum_result == md5sum_answer
+
+    return
+
+
+def test_dis_seg(tmp_path):
+    dis = DisSeg(param_file=param_file)  # , hru_shapefile=shape_file)
+    out_file = tmp_path / "dis_seg"
+    dis.write(out_file)
+    assert out_file.exists()
+
+    # a lightweight regression test to make sure we are aware of changes.
+    with open(out_file, "rb") as ff:
+        md5sum_result = hashlib.md5(ff.read()).hexdigest()
+
+    # md5sum_answer = "eedac6070a6073b793c3c27d5a11c9f9"
+    # assert md5sum_result == md5sum_answer
 
     return
 

@@ -8,6 +8,7 @@ import numpy as np
 import pynhm
 
 from ..base import meta
+from ..constants import epsilon32, epsilon64
 
 fileish = Union[str, pl.PosixPath]
 
@@ -71,6 +72,7 @@ class PrmsFile:
         self,
         file_path: fileish,
         file_type: str = None,
+        check_param_precision: bool = False,
     ) -> "PrmsFile":
         self.file_path = file_path
         self.file_type = file_type
@@ -80,6 +82,7 @@ class PrmsFile:
         self.eof = None
         self.set_file_type(file_type)
         self.dimensions = None
+        self.check_param_precision = check_param_precision
 
     def set_file_type(
         self,
@@ -217,12 +220,30 @@ class PrmsFile:
         for key, value in parameter_dimensions_dict.items():
             parameter_dimensions_full_dict[key] = value
 
+        if self.check_param_precision:
+            # This is to see where double precision parameters in python
+            # retain significantly more (more than the smallest single
+            # precision float) precision than do single precision reads
+            # in PRMS.
+            for key, val in parameters_full_dict.items():
+                param_type = meta.find_variables(key)[key]["type"]
+                if param_type == "F":
+                    epsilon = epsilon32
+                else:
+                    continue
+
+                abs_diff = abs(val - val.astype(np.float32))
+                condition = abs_diff < epsilon
+                msg = (
+                    f"Parameter {key} does not pass precision check with its "
+                    f"max error being {abs_diff.max()}"
+                )
+                assert condition.all(), msg
+
         (
             parameters_full_dict,
             parameter_dimensions_full_dict,
-        ) = expand_scalar_to_dims(
-            parameters_full_dict, parameter_dimensions_full_dict
-        )
+        ) = expand_scalar_to_dims(parameters_full_dict, parameter_dimensions_full_dict)
 
         return parameters_full_dict, parameter_dimensions_full_dict
 

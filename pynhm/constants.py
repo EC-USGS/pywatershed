@@ -25,9 +25,9 @@ zero = np.zeros([1])[0]
 one = np.ones([1])[0]
 nan = np.nan
 
-epsilon = np.finfo(zero).eps
-epsilon64 = epsilon
-epsilon32 = np.finfo(zero.astype("float32")).eps
+epsilon64 = np.finfo(np.float64).eps
+epsilon32 = np.finfo(np.float32).eps
+epsilon = epsilon64
 
 fill_value_f4 = 9.96921e36
 

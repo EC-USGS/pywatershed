@@ -89,15 +89,11 @@ class PrmsParameters:
             for key, value in parameter_dict.items():
                 param_dim_names = meta.get_params(key)
                 if len(param_dim_names):
-                    param_dim_names = list(
-                        param_dim_names[key]["dimensions"].values()
-                    )
+                    param_dim_names = list(param_dim_names[key]["dimensions"].values())
                 else:
                     param_dim_names = [key]
 
-                common_params = set(param_dim_names) & set(
-                    self.dimensions.keys()
-                )
+                common_params = set(param_dim_names) & set(self.dimensions.keys())
                 if not len(common_params):
                     parameter_dimensions_dict[key] = tuple(["unknown"])
                     continue
@@ -125,24 +121,18 @@ class PrmsParameters:
 
         self.parameter_dimensions = parameter_dimensions_dict
 
-    def subset(
-        self, keys: listish = None, process: str = None
-    ) -> "PrmsParameters":
+    def subset(self, keys: listish = None, process: str = None) -> "PrmsParameters":
         """Get a parameter object subset to passed keys and processes"""
 
         if (process is not None) and (keys is None):
             if not self._params_sep_procs:
                 return PrmsParameters(
                     parameter_dict=deepcopy(self.parameters),
-                    parameter_dimensions_dict=deepcopy(
-                        self.parameter_dimensions
-                    ),
+                    parameter_dimensions_dict=deepcopy(self.parameter_dimensions),
                 )
             return PrmsParameters(
                 parameter_dict=deepcopy(self.parameters[process]),
-                parameter_dimensions_dict=deepcopy(
-                    self.parameter_dimensions[process]
-                ),
+                parameter_dimensions_dict=deepcopy(self.parameter_dimensions[process]),
             )
 
         elif (process is None) and (keys is not None):
@@ -196,9 +186,9 @@ class PrmsParameters:
                 for key in keys:
                     if key in var_keys:
                         if dims:
-                            return_params[key] = self.parameters_dimensions[
-                                proc_key
-                            ][key]
+                            return_params[key] = self.parameters_dimensions[proc_key][
+                                key
+                            ]
                         else:
                             return_params[key] = self.parameters[proc_key][key]
 
@@ -301,9 +291,7 @@ class PrmsParameters:
         (
             params.parameters,
             paramsparameter_dimensions,
-        ) = _add_implied_parameters(
-            params.parameters, params.parameter_dimensions
-        )
+        ) = _add_implied_parameters(params.parameters, params.parameter_dimensions)
 
         return params
 
@@ -344,9 +332,7 @@ class PrmsParameters:
         proc_params = process.get_parameters()
 
         param_dict = {kk: vv[:].data for kk, vv in ds.variables.items()}
-        param_dict_dimensions = {
-            kk: vv.dimensions for kk, vv in ds.variables.items()
-        }
+        param_dict_dimensions = {kk: vv.dimensions for kk, vv in ds.variables.items()}
 
         dimension_params = {
             kk: len(vv) for kk, vv in ds.dimensions.items() if kk != "scalar"

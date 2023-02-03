@@ -243,7 +243,9 @@ class PrmsFile:
         (
             parameters_full_dict,
             parameter_dimensions_full_dict,
-        ) = expand_scalar_to_dims(parameters_full_dict, parameter_dimensions_full_dict)
+        ) = expand_scalar_to_dims(
+            parameters_full_dict, parameter_dimensions_full_dict
+        )
 
         return parameters_full_dict, parameter_dimensions_full_dict
 

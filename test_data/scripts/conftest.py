@@ -69,10 +69,14 @@ previous_vars = [
 
 misc_nc_file_vars = [
     "infil",
-    "through_rain",
     "sroff",
     "ssres_flow",
     "gwres_flow",
+]
+
+
+final_nc_file_vars = [
+    "through_rain",
 ]
 
 
@@ -140,11 +144,11 @@ def collect_csv_files(domain_list: list, force: bool):
     return csv_files
 
 
-def collect_misc_nc_files(domain_list: list, force: bool):
+def collect_misc_nc_files(domain_list: list, var_list: list, force: bool):
     simulations = collect_simulations(domain_list, force)
     sim_dirs = list(simulations.keys())
     misc_nc_files = []
-    for var in misc_nc_file_vars:
+    for var in var_list:
         for sim in sim_dirs:
             the_file = pl.Path(sim) / f"output/{var}.nc"
             # assert the_file.exists()
@@ -177,9 +181,14 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("csv_files_prev", csv_files, ids=ids)
 
     if "misc_nc_files_input" in metafunc.fixturenames:
-        misc_nc_files = collect_misc_nc_files(domain_list, force)
+        misc_nc_files = collect_misc_nc_files(domain_list, misc_nc_file_vars, force)
         ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
         metafunc.parametrize("misc_nc_files_input", misc_nc_files, ids=ids)
+
+    if "misc_nc_final_input" in metafunc.fixturenames:
+        misc_nc_files = collect_misc_nc_files(domain_list, final_nc_file_vars, force)
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
+        metafunc.parametrize("misc_nc_final_input", misc_nc_files, ids=ids)
 
     if "soltab_file" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)

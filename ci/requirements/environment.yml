@@ -12,6 +12,7 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-env
+  - pytest-order
   - pytest-xdist
   - pyyaml
   - xarray

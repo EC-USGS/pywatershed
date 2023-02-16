@@ -4,16 +4,15 @@ import platform
 import pytest
 
 from pynhm.base.control import Control
-from pynhm.hydrology.PRMSChannel import PRMSChannel
+from pynhm.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
 fail_fast = False
 
-if platform.system() == "Windows":
-    calc_methods = ("numpy", "numba")
-else:
-    calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
+if has_prmschannel_f:
+    calc_methods += ("fortran",)
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)

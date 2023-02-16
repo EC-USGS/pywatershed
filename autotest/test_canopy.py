@@ -6,13 +6,12 @@ import pytest
 
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.hydrology.PRMSCanopy import PRMSCanopy
+from pynhm.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
 from pynhm.utils.parameters import PrmsParameters
 
-if platform.system() == "Windows":
-    calc_methods = ("numpy", "numba")
-else:
-    calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
+if has_prmscanopy_f:
+    calc_methods += ("fortran",)
 
 
 class TestPRMSCanopySimple:

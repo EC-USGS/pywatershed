@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
-
 from pynhm.base.control import Control
 from pynhm.utils.parameters import PrmsParameters
 

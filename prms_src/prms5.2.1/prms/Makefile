@@ -1,6 +1,17 @@
 # PRMS V makefile
 
-include ../makelist
+# Choose if all floats should be promoted to doubles
+ifeq (, $(DBL_PREC))
+     include ../makelist
+else ifeq ($(DBL_PREC), false)
+     include ../makelist
+else ifeq ($(DBL_PREC), true)
+     include ../makelist_double_precision
+else
+     $(error      Argument DBL_PREC must be "true" or "false")
+endif
+
+
 TARGET 	= ../$(BINDIR)/prms
 
 ####################################################

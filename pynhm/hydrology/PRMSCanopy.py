@@ -11,9 +11,8 @@ try:
 
     _calculate_fortran = canopy.calc_canopy
     has_prmscanopy_f = True
-except ModuleNotFoundError:
+except ImportError:
     has_prmscanopy_f = False
-
 
 # set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6

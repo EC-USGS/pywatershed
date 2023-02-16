@@ -4,14 +4,16 @@ import platform
 import pytest
 
 from pynhm.base.control import Control
-from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
+from pynhm.hydrology.PRMSGroundwater import (
+    PRMSGroundwater,
+    has_prmsgroundwater_f,
+)
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import PrmsParameters
 
-if platform.system() == "Windows":
-    calc_methods = ("numpy", "numba")
-else:
-    calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
+if has_prmsgroundwater_f:
+    calc_methods += ("fortran",)
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)

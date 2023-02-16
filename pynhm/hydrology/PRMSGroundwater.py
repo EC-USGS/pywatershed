@@ -11,8 +11,8 @@ try:
     from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
 
     has_prmsgroundwater_f = True
-except ModuleNotFoundError:
-    has_PRMSGroundwater_f = False
+except ImportError:
+    has_prmsgroundwater_f = False
 
 
 class PRMSGroundwater(StorageUnit):

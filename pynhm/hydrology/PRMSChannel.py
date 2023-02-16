@@ -14,7 +14,7 @@ try:
     from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran
 
     has_prmschannel_f = True
-except ModuleNotFoundError:
+except ImportError:
     has_prmschannel_f = False
 
 

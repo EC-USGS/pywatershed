@@ -1,4 +1,4 @@
-# This is a standard, mixed precision build
+# This is a non-standard PRMS build with all floats as double precision
 
 # determine OS
 ifeq ($(OS), Windows_NT)
@@ -38,7 +38,7 @@ endif
 $(info    ----------------)
 $(info    FC is $(FC))
 $(info    FC is $(CC))
-$(info    DBL_PREC is false)
+$(info    DBL_PREC is true)
 $(info    ----------------)
 $(info    )
 
@@ -74,16 +74,18 @@ endif
 # Define the Fortran compile flags
 ##########################################################
 # set the fortran flags
+# FFLTDBL is fortran floats to double: promote all floats to 64bit
+# This is a shortcut to alleviate errors when parsing parameter inputs in soltab.
 ifeq ($(detected_OS), Windows)
 	ifeq ($(FC), gfortran)
 		FFLAGS = $(OPTLEVEL) -fno-second-underscore -fallow-argument-mismatch
 	endif
 else
 	ifeq ($(FC), gfortran)
-		FFLAGS = $(OPTLEVEL) -fno-second-underscore -fallow-argument-mismatch
+		FFLAGS = -freal-4-real-8 $(OPTLEVEL) -fno-second-underscore -fallow-argument-mismatch
 	endif
 	ifeq ($(FC), $(filter $(FC), ifort mpiifort))
-		FFLAGS = -fp-model source
+	     	FFLAGS = -real-size 64 -fp-model source
 	endif
 endif
 
@@ -92,16 +94,19 @@ endif
 # -D_UF defines UNIX naming conventions for mixed language compilation.
 ##########################################################
 # set the C flags
+# CFLTDBL is C floats to double: promote all floats to 64bit
+# This is a shortcut to alleviate errors when parsing parameter inputs in soltab.
+
 ifeq ($(detected_OS), Windows)
 	ifeq ($(CC), gcc)
 		CFLAGS = $(OPTLEVEL) -D$(ARC) -D_UF -Wall
 	endif
 else
 	ifeq ($(CC), gcc)
-		CFLAGS = $(OPTLEVEL) -D$(ARC) -D_UF -Wall
+		CFLAGS = -Dfloat=double $(OPTLEVEL) -D$(ARC) -D_UF -Wall
 	endif
 	ifeq ($(CC), $(filter $(CC), icc mpiicc))
-		CFLAGS = $(OPTLEVEL) -D$(ARC) -D_UF -Wall
+		CFLAGS = $(OPTLEVEL) -Dfloat=double -D$(ARC) -D_UF -Wall
 	endif
 endif
 

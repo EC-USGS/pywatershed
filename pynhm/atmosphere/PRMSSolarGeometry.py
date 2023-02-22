@@ -2,7 +2,6 @@ import pathlib as pl
 import warnings
 from typing import Tuple
 
-# from numba import jit
 import numpy as np
 
 # would like to not subclass storageUnit but it is much simpler to do so
@@ -322,7 +321,7 @@ class PRMSSolarGeometry(StorageUnit):
         if len(wh_sunh_lt_zero[0]):
             sunh[wh_sunh_lt_zero] = zero
 
-        wh_solt_lt_zero = np.where(solt < epsilon)
+        wh_solt_lt_zero = np.where(solt < zero)
         if len(wh_solt_lt_zero[0]):
             solt[wh_solt_lt_zero] = zero
             warnings.warn(
@@ -333,7 +332,6 @@ class PRMSSolarGeometry(StorageUnit):
 
         return solt, sunh
 
-    # @jit
     @staticmethod
     def compute_t(
         lats: np.ndarray, solar_declination: np.ndarray
@@ -363,15 +361,20 @@ class PRMSSolarGeometry(StorageUnit):
             np.tile(np.tan(solar_declination), (nhru, 1))
         )
         tx = lats_mat * sol_dec_mat
-        result = np.copy(tx)
-        result[np.where((tx >= (-1 * one)) & (tx <= one))] = np.arccos(
-            tx[np.where((tx >= (-1 * one)) & (tx <= one))]
-        )
+        # result = np.copy(tx)
+        # result[np.where((tx >= (-1 * one)) & (tx <= one))] = np.arccos(
+        #    tx[np.where((tx >= (-1 * one)) & (tx <= one))]
+        # )
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", r"invalid value encountered in arccos"
+            )
+            result = np.arccos(np.copy(tx))
+
         result[np.where(tx < (-1 * one))] = pi
         result[np.where(tx > one)] = zero
         return result
 
-    # @jit
     @staticmethod
     def func3(
         v: np.ndarray,
@@ -417,12 +420,8 @@ class PRMSSolarGeometry(StorageUnit):
     def _write_netcdf_timeseries(self) -> None:
         if not self._output_netcdf:
             return
-        for var in self.variables:
-            if (self._output_vars is not None) and (
-                var not in self._output_vars
-            ):
-                continue
 
+        for var in self.variables:
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
                 nc_path,
@@ -443,10 +442,9 @@ class PRMSSolarGeometry(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir, output_vars: list = None):
+    def initialize_netcdf(self, dir):
         self.netcdf_output_dir = dir
         self._output_netcdf = True
-        self._output_vars = output_vars
         return
 
     def output(self):

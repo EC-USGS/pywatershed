@@ -7,11 +7,13 @@
 
 Purpose
 =========
-The purpose of this repository is to refactor and redesign the PRMS modeling system to modernize it and to move towards a unification with
-MODFLOW 6.
+The purpose of this repository is to refactor and redesign the PRMS modeling
+system to modernize it and to
+move towards a unification with MODFLOW 6.
 
 The following motivations are taken from our [AGU poster from December 2022](https://agu2022fallmeeting-agu.ipostersessions.com/default.aspx?s=05-E1-C6-40-DF-0D-4D-C7-4E-DE-D2-61-02-05-8F-0A)
-which provides additional details on motivations, project status, and current directions of this project as of approximately January 2023.
+which provides additional details on motivations, project status, and current
+directions of this project as of approximately January 2023.
 
 
 Project goals of the USGS Enterprise Capacity (EC) include:
@@ -34,24 +36,6 @@ Prototype an EC watershed model: "pynhm"
   * Transition prototype watershed model to compiled EC code
 
 
-Overview
-==========
-The contents of directories at this level is described. Therein you may discover another README.md for more information.
-
-```
-.github/    Github actions for deploying continuous integration (CI)
-autotest/   pynhm package testing using pytest
-bin/        PRMS executables distributed
-ci/         Python environments for CI
-doc/        Package/code documentation source code
-examples/   How to use the package, mostly jupyter notebooks
-prms_src/   PRMS source used for generating executables in bin/
-pynhm/      Package source
-reference/  Ancillary materials for development
-resources/  Static stuff like images
-test_data/  Data used for automated testing
-```
-
 Installation and Python Environments
 =====================================
 To install the software (without running tests) you will need *Python >= 3.8*.
@@ -69,7 +53,7 @@ but this is not guaranteed.
 
 Once the environment is established,
 
-`cd pynhn; pip install .`
+`cd pynhm; pip install .`
 
 will install the package. If you would like to compile the fortran compuational kernels for
 certain physical process representations, you'll need a fortran compiler and you will run
@@ -115,7 +99,7 @@ though these are not comprehensive installs as with conda.
 Once the python envionment and dependencies are established, pynhm is installed for development with the
 following command
 
-`cd pynhn; pip install -e .`
+`cd pynhm; pip install -e .`
 
 The numpy extension F2PY is used to provide fortran compiled kernels of core calculations to boost
 performance. F2PY is documented (within numpy)[https://numpy.org/doc/stable/f2py/index.html]. This
@@ -151,6 +135,7 @@ pytest -v -n=8
 
 All tests should pass, XPASS, or XFAIL. XFAIL is an expected failure.
 
+
 Contributing
 ============
 We welcome community development! Please file Issues and/or Pull Requests in the appropriate places on github. The continuous
@@ -158,6 +143,26 @@ integration (CI) procedure is the first gate keeper for new code contribution. T
 `.github/workflows/ci.yaml`. This includes running the formatting and linting packages `isort`, `black`, and
 `flake8` in addition to generating the test data and running the tests in `autotest/`. New codes need new tests so they can
 be verified moving ahead in time.
+
+
+Overview or repository contents
+==========
+The contents of directories at this level is described. Therein you may discover another README.md for more information.
+
+```
+.github/    Github actions for deploying continuous integration (CI)
+autotest/   pynhm package testing using pytest
+bin/        PRMS executables distributed
+ci/         Python environments for CI
+doc/        Package/code documentation source code
+examples/   How to use the package, mostly jupyter notebooks
+prms_src/   PRMS source used for generating executables in bin/
+pynhm/      Package source
+reference/  Ancillary materials for development
+resources/  Static stuff like images
+test_data/  Data used for automated testing
+```
+
 
 Disclaimer
 ==========

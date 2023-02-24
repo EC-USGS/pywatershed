@@ -9,12 +9,9 @@ from numpy.distutils.core import setup
 pynhm_fortran = str(os.getenv("PYNHM_FORTRAN"))
 if pynhm_fortran.lower() == "true":
     pynhm_fortran = True
-
-    if platform.system() == "Windows":
-        pynhm_fortran = False
-        warnings.warn(
-            "Fortran source compilation not enabled on Windows", Warning
-        )
+    # if platform.system() == "Windows":
+    # pynhm_fortran = False
+    # warnings.warn("Fortran source compilation not enabled on Windows", Warning)
 
 else:
     pynhm_fortran = False

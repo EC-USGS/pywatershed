@@ -119,6 +119,8 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+          echo "PYNHM_FORTRAN=true" >> $GITHUB_ENV
+          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
 
       - name: Setup gfortran
         uses: awvwgk/setup-fortran@main

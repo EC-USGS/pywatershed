@@ -25,9 +25,9 @@ Goals for EC Watershed Modeling:
 
 Prototype an EC watershed model: "pynhm"
   * Redesign PRMS quickly in python
-  * Couple to MF6 via BMI/XMI interface (Hughes et al, 2021; Hutton et al, 2020) 
-  * Establish a prototyping ground for EC codes that couples to the compiled framework: low cost proof of concepts (at the price of potentially less computational performance) 
-  * Enable process representation hypothesis testing 
+  * Couple to MF6 via BMI/XMI interface (Hughes et al, 2021; Hutton et al, 2020)
+  * Establish a prototyping ground for EC codes that couples to the compiled framework: low cost proof of concepts (at the price of potentially less computational performance)
+  * Enable process representation hypothesis testing
   * Use cutting-edge techniques and technologies to improve models
   * Machine learning, automatic differentiation
   * Adress challenges of modeling across space and time scales
@@ -52,25 +52,57 @@ resources/  Static stuff like images
 test_data/  Data used for automated testing
 ```
 
+Installation and Python Environments
+=====================================
+To install the software (without running tests) you will need *Python >= 3.8*.
 
-Requirements and Python Environments
+We recommend installing the python package dependencies using anaconda or miniconda. Generally
+most users will likely want to create the `pynhm_nb` conda environment by running.
+
+```conda env create -f examples/examples_env.yml```
+
+One could also do
+
+```pip install -r examples/exampes_env.txt```
+
+but this is not guaranteed.
+
+Once the environment is established,
+
+`cd pynhn; pip install .`
+
+will install the package. If you would like to compile the fortran compuational kernels for
+certain physical process representations, you'll need a fortran compiler and you will run
+
+`export PYNHM_FORTRAN=true; cd pynhm;  pip install .`
+
+See Developer Requirements below for more details.
+
+
+Developer Requirements and Python Environments
 ====================================
 *Git* is helpful (but not strictly required).
+Both C and Fortran compilers are required. We are currently using gnu (gcc, gfortran) 11 and 12
+as well as intel (icc, ifort) 2021 on Windows, Linux, and MacOS (including Apple Silicon). Both of
+these are freely obtainable but the installation process varies widely. We are looking for
+a conda-based approach to this problem, but currently do not have a solution. Generally *gcc* and
+*gfortran* are recommended. On *Apple Silicon*, the PRMS source code  currently
+only compiles with intel while the fortran kernels in pynhm only compile with gnu.
 
-Generally *gcc* and *gfortran* are required to run PRMS to generate test data and if
-you want fortran backends to certain process models. On a *Mac with an M1 chip*,
-PRMS currently only compiles with intel's oneapi icc and ifort (while the pynhm fortran
-backends for certain process models compiles with gfortran and gcc.) 
+*Python >= 3.8* is required. Three different python environments are specified within the repository.
+These are:
 
-*Python >= 3.8* is required.
+* Minimal (for developing/testing), 'pynhm': ci/requirements/environment.yml
+* Notebooks (~= minimal + jupyter), 'pynhm_nb': examples/examples_env.yml
+* Documentation (only if you want to build the documentation), 'pynhm-docs': ci/requirements/doc.yml
 
-We suggest installing the python dependencies using conda and the following yaml files.
-
-* Minimal: ci/requirements/environment.yml
-* Documentation: ci/requirements/doc.yml
-* Notebooks: examples/examples_env.yml
+We recommend (because we test it in CI) using anacoda or miniconda to establish these environments
+with the following commands
 
 ```conda env create -f env_of_choice.yml```
+
+which will create the environment with "name" specified on the first line of the file, given before the path
+to the file above.
 
 More detailed installation instructions using conda can be found in `examples/00_python_virtual_env.ipynb`.
 
@@ -80,27 +112,52 @@ There are also .txt equivalents that can be used for installing from pip, like s
 
 though these are not comprehensive installs as with conda.
 
+Once the python envionment and dependencies are established, pynhm is installed for development with the
+following command
 
-Compiled Code: Fortran
-=============
-The numpy extension F2PY is used to provide compiled versions of core calculation codes to boost performance. F2PY is documented (within numpy)[https://numpy.org/doc/stable/f2py/index.html]. This repository is configured to compile on install. This may not always be successful and may depend on your local environment. Currently, compilation often requires
+`cd pynhn; pip install -e .`
 
-`export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"`
-
-on MacOS. You can also specify the C and Fortran compilers through environment variables, for example:
+The numpy extension F2PY is used to provide fortran compiled kernels of core calculations to boost
+performance. F2PY is documented (within numpy)[https://numpy.org/doc/stable/f2py/index.html]. This
+repository is configured to compile on install. This may not always be successful and may depend
+on your local environment. Currently, we have not established this compilation procedure for Windows.
+On linux and MacOS, compilation of fortran kernels on package installation is achieved by the following
+code:
 
 ```
-export CC=/usr/local/bin/gcc
-export FC=/usr/local/bin/gfortran
+export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"
+export CC=path/to/gcc  # for example
+export FC=path/to/gfortran  # for example
+export PYNHM_FORTRAN=true
+cd path/to/pynhm
+pip install -e .
 ```
 
-where you supply the appropriate paths on the right hand sides of each. Given the above, compilation is generally successful when running `pip install -e .` in the top level of the repository. Please report compilation issues.
+To run the tests of the repository, we first need to generate the test data. This consists of running PRMS
+and then converting the output to netcdf:
 
-To turn off compilation of fortran source on install, prior to `pip install .` set the environment variable
+```
+cd path/to/pynhm/test_data/scripts
+pytest -v -n=4 test_run_domains.py
+pytest -v -n=8 test_nc_domains.py
+```
 
-`export PYNHM_FORTRAN=False`
+Finally, run the tests themselves,
 
-where the value on the right side is not case sensitive. This may break tests of fortran source, but will allow the rest of the package to be installed.
+```
+cd path/to/pynhm/autotest
+pytest -v -n=8
+```
+
+All tests should pass, XPASS, or XFAIL. XFAIL is an expected failure.
+
+Contributing
+============
+We welcome community development! Please file Issues and/or Pull Requests in the appropriate places on github. The continuous
+integration (CI) procedure is the first gate keeper for new code contribution. The CI procdure is defined by
+`.github/workflows/ci.yaml`. This includes running the formatting and linting packages `isort`, `black`, and
+`flake8` in addition to generating the test data and running the tests in `autotest/`. New codes need new tests so they can
+be verified moving ahead in time.
 
 Disclaimer
 ==========

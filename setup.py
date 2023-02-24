@@ -1,19 +1,24 @@
 import os
-import pathlib as pl
 import platform
 import setuptools  # noqa
+import warnings
 
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup
 
 pynhm_fortran = str(os.getenv("PYNHM_FORTRAN"))
-if pynhm_fortran.lower() == "false":
-    pynhm_fortran = False
-else:
+if pynhm_fortran.lower() == "true":
     pynhm_fortran = True
 
-if platform.system() == "Windows":
+    if platform.system() == "Windows":
+        pynhm_fortran = False
+        warnings.warn(
+            "Fortran source compilation not enabled on Windows", Warning
+        )
+
+else:
     pynhm_fortran = False
+
 
 config = Configuration("pynhm")
 

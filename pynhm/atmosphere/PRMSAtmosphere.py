@@ -55,10 +55,17 @@ class PRMSAtmosphere(StorageUnit):
     evapotranspiration (Jensen and Haise ,1963) and a temperature based
     transpiration flag (transp_on) are also calculated.
 
-    Note that all variables are calculate for all time upon initialization. The
-    full time version of a variable is given by the "private" version of the
-    variable which is named with a single-leading underscore (eg tmaxf for all
-    time is _tmaxf).
+    Note that all variables are calculated for all time upon initialization and
+    that all calculated variables are written to netcdf (when netcdf output is
+    requested) prior to the first model advance. This is effectively a complete
+    preprocessing of the input CBH files to the fields the model actually uses
+    on initialization. If you just want to preprocess these variables, see
+    `this notebook <https://github.com/EC-USGS/pynhm/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
+
+
+    The full time version of a variable is given by the "private" version of
+    the variable which is named with a single-leading underscore (eg tmaxf for
+    all time is _tmaxf).
 
     This full-time initialization ma not be tractable for large domains and/or
     long periods of time and require changes to batch the processing of the
@@ -73,10 +80,18 @@ class PRMSAtmosphere(StorageUnit):
         prcp: precipitation cbh netcdf file
         tmax: maximum daily temperature cbh netcdf file
         tmin: minimum daily temperature cbh netcdf file
+        soltab_potsw: potential shortwave radiation special format file. Only
+            the versions of PRMS 5.2.1 shipped with pynhm output soltab in this
+            format
+        soltab_horad_potsw: this is the potential shortwave on the horizontal
+            plane at each HRU. See soltab_potsw comment on file format.
         budget_type: [None | "warn" |  "error"].
         verbose: bool indicating amount of output to terminal.
         netcdf_output_dir: an existing directory to which to write all
             variables for all time.
+        netcdf_output_vars: a list or subset of variables to output to netcdf
+        n_time_chunk: int = -1,
+        load_n_time_batches: int = 1,
 
     """
 
@@ -91,8 +106,10 @@ class PRMSAtmosphere(StorageUnit):
         budget_type: str = None,
         verbose: bool = False,
         netcdf_output_dir: fileish = None,
-        from_file_dir: fileish = None,
+        netcdf_output_vars: list = None,
+        # from_file_dir: fileish = None,
         n_time_chunk: int = -1,
+        load_n_time_batches: int = 1,
     ):
 
         # This could be used to subclass storageUnit or Process classes to have
@@ -100,6 +117,7 @@ class PRMSAtmosphere(StorageUnit):
 
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
+        # TODO: make time chunking options work (esp with output)
         if n_time_chunk <= 0:
             self.n_time_chunk = control.n_times
         else:
@@ -110,21 +128,23 @@ class PRMSAtmosphere(StorageUnit):
 
         self.netcdf_output_dir = netcdf_output_dir
 
-        self._set_inputs(locals())
         super().__init__(
             control=control,
             verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
         )
+        self._set_inputs(locals())
+
         self.name = "PRMSAtmosphere"
         self.budget = None
 
         self._calculated = False
 
         if self.netcdf_output_dir:
-            self._output_netcdf = True
+            self.initialize_netcdf(
+                dir=pl.Path(netcdf_output_dir), output_vars=netcdf_output_vars
+            )
             self._calculate_all_time()
-            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
-            assert self.netcdf_output_dir.exists()
             self._write_netcdf_timeseries()
 
         else:
@@ -778,6 +798,11 @@ class PRMSAtmosphere(StorageUnit):
         if not self._output_netcdf:
             return
         for var in self.variables:
+            if (self._output_vars is not None) and (
+                var not in self._output_vars
+            ):
+                continue
+
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
                 nc_path,
@@ -793,9 +818,11 @@ class PRMSAtmosphere(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir):
+    def initialize_netcdf(self, dir, output_vars: list = None):
         self.netcdf_output_dir = dir
+        assert self.netcdf_output_dir.exists()
         self._output_netcdf = True
+        self._output_vars = output_vars
         return
 
     def output(self):

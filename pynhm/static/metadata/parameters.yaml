@@ -2055,6 +2055,17 @@ ppt_rad_adj:
   - solar_radiation_hru
   type: F
   units: inches
+ppt_zero_thresh:
+  default: 0.000
+  desc: The zero threshold for precipitation
+  dimensions:
+    0: scalar
+  help: The minimum/zero threhold for precipitation
+  maximum: 0.0
+  minimum: 0.0
+  modules:
+  type: F
+  units: inches
 precip_units:
   default: 0
   desc: Units for measured precipitation
@@ -2446,6 +2457,18 @@ sat_threshold:
   - convert_params
   type: F
   units: inches
+seg_cum_area:
+  default: NaN
+  desc: Segment cumulative area
+  dimensions:
+    0: nsegment
+  help: Ssegment cumulative area
+  maximum: NaN
+  minimum: 0.00
+  model: PRMS
+  modules:
+  type: F
+  units: unknown
 seg_depth:
   default: 1.0
   desc: Depth of bankfull water in segment
@@ -3009,6 +3032,17 @@ ssstor_init_frac:
   - convert_params
   type: F
   units: decimal fraction
+stream_tave_init:
+  default: NaN
+  desc: Cold-start stream average stream temperature
+  dimensions:
+    0: scalar
+  help: Cold-start stream average stream temperature
+  maximum: unbounded
+  minimum: unbounded
+  modules:
+  type: F
+  units: unknown
 subbasin_down:
   default: 0
   desc: Downstream subbasin for each subbasin
@@ -3496,6 +3530,18 @@ vdwmx:
     0: nsegment
   help: Maximum west bank vegetation density for each segment
   maximum: 1.0
+  minimum: 0.0
+  modules:
+  - stream_temp
+  type: F
+  units: decimal fraction
+vdwmn:
+  default: 0.0
+  desc: Minimum west bank vegetation density
+  dimensions:
+    0: nsegment
+  help: Minimum west bank vegetation density for each segment
+  maximum: 0.0
   minimum: 0.0
   modules:
   - stream_temp

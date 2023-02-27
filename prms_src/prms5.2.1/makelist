@@ -1,3 +1,4 @@
+# This is a standard, mixed precision build
 
 # determine OS
 ifeq ($(OS), Windows_NT)
@@ -33,6 +34,13 @@ ifneq ($(origin CC), "command line")
 		CC = gcc
 	endif
 endif
+
+$(info    ----------------)
+$(info    FC is $(FC))
+$(info    FC is $(CC))
+$(info    DBL_PREC is false)
+$(info    ----------------)
+$(info    )
 
 #-------------------------------------------------------------------
 #-------------------------------------------------------------------

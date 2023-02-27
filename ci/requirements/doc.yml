@@ -1,4 +1,4 @@
-name: nynhm-docs
+name: pynhm-docs
 channels:
   # Don't change to pkgs/main, as it causes random timeouts in readthedocs
   - conda-forge
@@ -6,6 +6,7 @@ channels:
 dependencies:
   - black
   - isort
+  - jinja2<3.1
   - flake8
   - pylint
   - networkx

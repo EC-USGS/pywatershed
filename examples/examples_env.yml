@@ -13,6 +13,7 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-env
+  - pytest-order
   - pytest-xdist
   - pyyaml
   - xarray
@@ -31,6 +32,7 @@ dependencies:
   - jupyter_contrib_nbextensions
   - nb_conda_kernels
   - pydot
+  - shapely<2.0.0
   - pip:
       - click != 8.1.0
       - black

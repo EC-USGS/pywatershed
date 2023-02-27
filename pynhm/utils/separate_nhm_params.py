@@ -8,7 +8,11 @@ from ..utils import PrmsParameters
 
 # these are prarameters that are provided as scalars which we will
 # force expand to their full dimensions
-params_expand_scalar_to_dims = {"obsout_segment": "nsegment"}
+params_expand_scalar_to_dims = {
+    "obsout_segment": "nsegment",
+    "seg_humidity": "nsegment",
+    "width_m": "nsegment",
+}
 
 var_meta_to_attrs = [
     "default",

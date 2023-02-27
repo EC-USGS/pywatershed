@@ -21,9 +21,19 @@ class Model:
         input_dir: A directory to search for input files.
         budget_type: None, "warn", or "error".
         verbose: Boolean.
+          calc_method: Choice of available computational backend (where
+          available): None and "numpy" are default, "numba" gives numba (env
+          variables can control its behavior), and "fortran" uses compiled
+          fortran if available.
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
+        load_n_time_batches: integer number of times the input data should
+           be loaded from file. Deafult is 1 or just once. If input data are
+           large in space, time, or total number of variables then increasing
+           this number can help reduce memory usage at the expense of reduced
+           performance due to more frequent IO.
+
     """
 
     def __init__(
@@ -32,13 +42,16 @@ class Model:
         control: Control,
         input_dir: str = None,
         budget_type: str = "error",  # todo: also pass dict
+        calc_method: str = "numpy",
         verbose: bool = False,
         find_input_files: bool = True,
+        load_n_time_batches: int = 1,
     ):
 
         self.control = control
         self.input_dir = input_dir
         self.verbose = verbose
+        self._load_n_time_batches = load_n_time_batches
 
         class_dict = {comp.__name__: comp for comp in process_classes}
         class_inputs = {kk: vv.get_inputs() for kk, vv in class_dict.items()}
@@ -121,9 +134,12 @@ class Model:
             args = {
                 "control": control,
                 **process_inputs,
+                "load_n_time_batches": self._load_n_time_batches,
             }
             if process not in ["PRMSSolarGeometry"]:
                 args["budget_type"] = budget_type
+            if process not in ["PRMSSolarGeometry", "PRMSAtmosphere"]:
+                args["calc_method"] = calc_method
             self.processes[process] = class_dict[process](**args)
 
         # Wire it up
@@ -140,7 +156,9 @@ class Model:
                     self.processes[process].set_input_to_adapter(
                         input,
                         adapter_factory(
-                            self.processes[frm[0]][input], control=control
+                            self.processes[frm[0]][input],
+                            control=control,
+                            load_n_time_batches=self._load_n_time_batches,
                         ),  # drop list above
                     )
 
@@ -155,7 +173,10 @@ class Model:
         for name in self.file_input_names:
             nc_path = self.input_dir / f"{name}.nc"
             file_inputs[name] = adapter_factory(
-                nc_path, name, control=self.control
+                nc_path,
+                name,
+                control=self.control,
+                load_n_time_batches=self._load_n_time_batches,
             )
         for process in self.process_order:
             self.process_input_from[process] = {}
@@ -185,6 +206,7 @@ class Model:
         netcdf_dir: fileish = None,
         finalize: bool = True,
         n_time_steps: int = None,
+        output_vars: list = None,
     ):
         """Run the model.
 
@@ -201,13 +223,15 @@ class Model:
                netcdf and outputs at each timestep).
             finalize: option to not finalize at the end of the time loop.
                Default is to finalize.
+            n_time_steps: the number of timesteps to run
+            output_vars: the vars to output to the netcdf_dir
         """
         if not self._found_input_files:
             self._find_input_files()
 
         if netcdf_dir:
             print("model.run(): initializing NetCDF output")
-            self.initialize_netcdf(netcdf_dir)
+            self.initialize_netcdf(netcdf_dir, output_vars=output_vars)
 
         last_pct_comp = 0
         print(f"model.run(): {last_pct_comp} % complete")

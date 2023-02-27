@@ -20,9 +20,13 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
+calc_methods = ("numpy", "numba")
+
+
 @pytest.mark.xfail
+@pytest.mark.parametrize("calc_method", calc_methods)
 class TestPRMSSnow:
-    def test_init(self, domain, control, tmp_path):
+    def test_init(self, domain, control, calc_method, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -74,7 +78,12 @@ class TestPRMSSnow:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
-        snow = PRMSSnow(control, **input_variables, budget_type="warn")
+        snow = PRMSSnow(
+            control,
+            **input_variables,
+            budget_type="warn",
+            calc_method=calc_method,
+        )
 
         all_success = True
         iso_censor_mask = None

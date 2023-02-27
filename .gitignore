@@ -62,12 +62,19 @@ generated/
 
 # gis data
 examples/pynhm_gis
+examples/model_loop_custom_output
 
 # graphics
-*.pnh
+*.png
 *.svg
 *.jpg
 
 # compressed/tarballs
 *.gz
 *.zip
+
+
+# f2y detritus
+*module.c
+PRMS*.so
+*f2pywrappers*.f*

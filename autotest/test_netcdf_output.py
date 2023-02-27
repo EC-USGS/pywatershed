@@ -86,7 +86,17 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
 
     check_dict = {proc: {} for proc in check_vars.keys()}
 
-    model.initialize_netcdf(tmp_dir, budget_args=budget_args)
+    # test outputting specific vars by only using check_vars
+    output_vars = [
+        item for sublist in list(check_vars.values()) for item in sublist
+    ]
+    output_vars = None
+
+    model.initialize_netcdf(
+        tmp_dir,
+        budget_args=budget_args,
+        output_vars=output_vars,
+    )
 
     for tt in range(n_time_steps):
         model.advance()

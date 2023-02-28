@@ -1,0 +1,43 @@
+name: pynhmf6nb
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - appdirs
+  - filelock
+  - flaky
+  - fprettify
+  - jupytext
+  - matplotlib
+  - meson!=0.63.0
+  - netCDF4
+  - networkx
+  - ninja
+  - numpy
+  - numba
+  - pandas
+  - pip
+  - pip:
+      - click != 8.1.0
+      - black < 23.1.0
+      - isort
+      - flake8
+      - pylint
+      - git+https://github.com/modflowpy/flopy.git
+      - git+https://github.com/modflowpy/pymake.git
+      - git+https://github.com/MODFLOW-USGS/modflowapi.git
+      - modflow-devtools
+  - pytest
+  - pytest-cases
+  - pytest-cov
+  - pytest-dotenv
+  - pytest-env
+  - pytest-order
+  - pytest-xdist
+  - pyyaml
+  - xarray
+  - flopy
+
+
+
+      

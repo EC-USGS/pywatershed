@@ -76,14 +76,17 @@ class MMRToMF6:
         # intial flows over ride from file?
         length_units="meters",
         time_units="seconds",
+        start_time: np.datetime64 = None,
+        end_time: np.datetime64 = None,
+        time_zone="UTC",
         **kwargs,
     ):
 
         units = pint.UnitRegistry(system="mks")
         # these are not really optional at the moment, but hope to make so soon
         # making the system definition using input units.
-        length_units = "meters"
-        time_units = "seconds"
+        self.length_units = "meters"
+        self.time_units = "seconds"
         # per MF6, it appears that units must be plural? does it matter?
         def conv_units(var: pint.Quantity):
             return var.to_base_units().magnitude
@@ -142,17 +145,30 @@ class MMRToMF6:
 
         # TDIS
         # time requires control file
-        timestep = self.control.time_step_seconds * units("seconds")
+
+        self.start_time = start_time
+        self.end_time = end_time
+        if start_time is None:
+            self.start_time = self.control.start_time
+        if end_time is None:
+            self.end_time = self.control.end_time
+
+        self.nper = (
+            int((self.end_time - self.start_time) / self.control.time_step) + 1
+        )
+
+        timestep_s = self.control.time_step_seconds * units("seconds")
         # convert to output units in the output data structure
-        perlen = timestep.to_base_units().magnitude  # not reused, ok2convert
+        perlen = timestep_s.to_base_units().magnitude  # not reused, ok2convert
+
         if hasattr(self, "control"):
-            nper = self.control._n_times
-            tdis_rc = [(perlen, 1, 1.0) for ispd in range(nper)]
+            tdis_rc = [(perlen, 1, 1.0) for ispd in range(self.nper)]
             _ = flopy.mf6.ModflowTdis(
                 sim,
                 pname="tdis",
-                time_units=time_units,
-                nper=nper,
+                time_units=self.time_units,
+                start_date_time=str(self.start_time) + time_zone,
+                nper=self.nper,
                 perioddata=tdis_rc,
             )
 
@@ -237,6 +253,17 @@ class MMRToMF6:
         else:
             segment_order = [0]
 
+        # if the domain contains links with no upstream or
+        # downstream reaches, we just throw these back at the
+        # top of the order since networkx wont handle such nonsense
+        wh_mask_set = set(np.where(outflow_mask)[0])
+        seg_ord_set = set(segment_order)
+        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
+        if len(mask_not_seg_ord):
+            segment_order = mask_not_seg_ord + segment_order
+            # for pp in mask_not_seg_ord:
+            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
+
         segment_order = np.array(segment_order, dtype=int)
 
         # solve k_coef - taken from the PRMSChannel initialization
@@ -320,23 +347,28 @@ class MMRToMF6:
         assert [inflow_unit] * len(inflow_units) == inflow_units
         inflow_unit = units(inflow_unit)
 
-        def read_inflow(vv):
-            return xr.open_dataset(pl.Path(inflow_dir) / f"{vv}.nc")[vv]
+        def read_inflow(vv, start_time, end_time):
+            ff = xr.open_dataset(pl.Path(inflow_dir) / f"{vv}.nc")[vv]
+            return ff.sel(time=slice(start_time, end_time))
 
-        inflows = sum([read_inflow(vv) for vv in inflow_list]).values
+        inflows = sum(
+            [
+                read_inflow(vv, self.start_time, self.end_time)
+                for vv in inflow_list
+            ]
+        ).values
         inflows *= inflow_unit
 
-        if "inch" in str(inflow_unit):  # PRMS style
+        # if from pynhm, inflows are already volumes in cubicfeet
+        if "inch" in str(inflow_unit):  # PRMS style need hru areas
             hru_area_unit = units(list(meta.get_units("hru_area").values())[0])
             hru_area = parameters["hru_area"] * hru_area_unit
             inflows *= hru_area
 
-        # if from pynhm, they are already volumes cubicfeet
-
-        inflows /= timestep.to("seconds")
+        inflows /= timestep_s.to("seconds")
 
         # calculate lateral flow term to the REACH/segment from HRUs
-        lat_inflow = np.zeros((nper, nsegment)) * inflows.units
+        lat_inflow = np.zeros((self.nper, nsegment)) * inflows.units
 
         for ihru in range(parameters["nhru"]):
             iseg = hru_segment[ihru]
@@ -345,7 +377,7 @@ class MMRToMF6:
                 # mass is being discarded in a way that has to be coordinated
                 # with other parts of the code.
                 # This code shuold be removed evenutally.
-                inflows[ihru] = zero * inflows.units
+                inflows[:, ihru] = zero * inflows.units
                 continue
 
             lat_inflow[:, iseg] += inflows[:, ihru]
@@ -356,7 +388,7 @@ class MMRToMF6:
                 [irch, lat_inflow[ispd, irch].to_base_units().magnitude]
                 for irch in range(nsegment)
             ]
-            for ispd in range(nper)
+            for ispd in range(self.nper)
         }
 
         _ = flopy.mf6.ModflowSnfflw(
@@ -366,6 +398,8 @@ class MMRToMF6:
             stress_period_data=flw_spd,
         )
 
+        print()
+        print(f"Writing simulation files to: {output_dir}")
         sim.write_simulation()
 
         return

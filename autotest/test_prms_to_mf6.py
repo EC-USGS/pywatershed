@@ -1,4 +1,7 @@
 # import hashlib
+import pathlib as pl
+
+import numpy as np
 
 from pynhm.utils.prms_to_mf6 import MMRToMF6
 
@@ -13,12 +16,16 @@ def test_mmr_to_mf6(domain, tmp_path):
 
     param_file = domain["param_file"]
     control_file = domain["control_file"]
+    domain_name = domain["domain_name"]
 
-    mmr = MMRToMF6(
+    _ = MMRToMF6(
         param_file=param_file,
         control_file=control_file,
         output_dir=tmp_path,
         inflow_dir=control_file.parent / "output",
+        start_time=np.datetime64("1979-01-01T00:00:00"),
+        end_time=np.datetime64("1979-07-01T00:00:00"),
+        sim_name=domain_name,
         # , hru_shapefile=shape_file)
     )
 

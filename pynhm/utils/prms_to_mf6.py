@@ -4,6 +4,7 @@ from warnings import warn
 import flopy
 import networkx as nx
 import numpy as np
+import pint
 import xarray as xr
 
 # try:
@@ -16,7 +17,7 @@ import xarray as xr
 
 from ..constants import fileish, SegmentType, zero
 from .parameters import PrmsParameters
-from pynhm import Control
+from pynhm import Control, meta
 
 # more generally: this is PRMSMMR to SNFDISL, SNFFLW, and/or SNFMMR
 
@@ -50,26 +51,14 @@ class MMRToMF6:
       disu_file: the output file to write.
 
     TODOS:
-        Do we manage unit conversions? Will mandate meters for now
-        Is there a way to test that this is a conforming file in mf6?
-        Non-contiguous polygons for HRUs.
+        * Deal with time/sim being optional
+        * add shapefile information, deal with non-contiguous HRUs.
+        * run mf6 in the tests
+
 
     Examples
     --------
 
-    # Ex 1. similar to autotest/test_dis_hru.py
-    import pathlib as pl
-
-    from pynhm.constants import __pynhm_root__
-    from pynhm.utils import DisHru
-
-    # not used
-    # shape_file = (
-    #     "/Users/jamesmcc/usgs/data/pynhm/20220209_gm_delaware_river"
-    #     "/GIS_simple/HRU_subset.shp")
-    param_file = (__pynhm_root__ / "../test_data/drb_2yr/myparam.param")
-    disu_file = pl.Path(".") / "disu_example_file.mf6"
-    dis = DisHru(param_file=param_file, disu_file=disu_file)
 
     """
 
@@ -80,13 +69,24 @@ class MMRToMF6:
         control: Control = None,
         params: PrmsParameters = None,
         hru_shapefile: fileish = None,
-        length_units: str = "meters",
         output_dir: fileish = pl.Path("."),
         sim_name: str = "mmr_to_mf6",
         inflow_dir: fileish = None,
+        inflow_from_PRMS: bool = True,
         # intial flows over ride from file?
+        length_units="meters",
+        time_units="seconds",
         **kwargs,
     ):
+
+        units = pint.UnitRegistry(system="mks")
+        # these are not really optional at the moment, but hope to make so soon
+        # making the system definition using input units.
+        length_units = "meters"
+        time_units = "seconds"
+        # per MF6, it appears that units must be plural? does it matter?
+        def conv_units(var: pint.Quantity):
+            return var.to_base_units().magnitude
 
         # read the parameter/control files (similar but not identical logic)
         inputs_dict = {
@@ -142,13 +142,16 @@ class MMRToMF6:
 
         # TDIS
         # time requires control file
+        timestep = self.control.time_step_seconds * units("seconds")
+        # convert to output units in the output data structure
+        perlen = timestep.to_base_units().magnitude  # not reused, ok2convert
         if hasattr(self, "control"):
             nper = self.control._n_times
-            tdis_rc = [(1.0, 1, 1.0) for ispd in range(nper)]
+            tdis_rc = [(perlen, 1, 1.0) for ispd in range(nper)]
             _ = flopy.mf6.ModflowTdis(
                 sim,
                 pname="tdis",
-                time_units="DAYS",
+                time_units=time_units,
                 nper=nper,
                 perioddata=tdis_rc,
             )
@@ -187,15 +190,22 @@ class MMRToMF6:
         hru_segment = parameters["hru_segment"] - 1
         tosegment = parameters["tosegment"] - 1
 
+        # united quantities
+
+        segment_units = units(meta.parameters["seg_length"]["units"])
+        segment_length = parameters["seg_length"]
+        segment_length = segment_length * segment_units
+
         _ = flopy.mf6.ModflowSnfdisl(
             snf,
             nodes=nsegment,
             nvert=nvert,
-            segment_length=parameters["seg_length"],
+            segment_length=segment_length.to_base_units().magnitude,
             tosegment=tosegment,
             idomain=1,  # ??
             vertices=vertices,
             cell2d=cell2d,
+            length_units=length_units,
         )
 
         # MMR
@@ -230,14 +240,21 @@ class MMRToMF6:
         segment_order = np.array(segment_order, dtype=int)
 
         # solve k_coef - taken from the PRMSChannel initialization
+        # meta.get_units could be defined
+        vel_units = {
+            key: units(val)
+            for key, val in meta.get_units(
+                ["mann_n", "seg_slope", "seg_depth"], to_pint=True
+            ).items()
+        }
+        for var in vel_units:
+            parameters[var] *= vel_units[var]
+
         velocity = (
-            (
-                (1.0 / parameters["mann_n"])
-                * np.sqrt(parameters["seg_slope"])
-                * parameters["seg_depth"] ** (2.0 / 3.0)
-            )
-            * 60.0
-            * 60.0
+            (1.0 / parameters["mann_n"])
+            * np.sqrt(parameters["seg_slope"])
+            * parameters["seg_depth"] ** (2.0 / 3.0)
+            * (3600.0 * units("seconds/hour"))
         )
 
         # JLM: This is a bad idea and should throw an error rather than edit
@@ -245,47 +262,81 @@ class MMRToMF6:
         # Shouldnt this ALSO BE ABOVE the velocity calculation?
         parameters["seg_slope"] = np.where(
             parameters["seg_slope"] < 1e-7, 0.0001, parameters["seg_slope"]
-        )  # not in prms6
+        )  # this is from prms5.2.1, it is not in prms6
 
+        # Kcoef
         # initialize Kcoef to 24.0 for segments with zero velocities
         # this is different from PRMS, which relied on divide by zero resulting
         # in a value of infinity that when evaluated relative to a maximum
         # desired Kcoef value of 24 would be reset to 24. This approach is
         # equivalent and avoids the occurence of a divide by zero.
         Kcoef = np.full(nsegment, 24.0, dtype=float)
+        Kcoef = Kcoef * (segment_length.units / velocity.units)
 
         # only calculate Kcoef for cells with velocities greater than zero
         idx = velocity > zero
-        Kcoef[idx] = parameters["seg_length"][idx] / velocity[idx]
+        Kcoef[idx] = segment_length[idx] / velocity[idx]
         Kcoef = np.where(
-            parameters["segment_type"] == SegmentType.LAKE.value, 24.0, Kcoef
+            parameters["segment_type"] == SegmentType.LAKE.value,
+            24.0 * Kcoef.units,
+            Kcoef,
         )
-        Kcoef = np.where(Kcoef < 0.01, 0.01, Kcoef)
-        Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
+        Kcoef = np.where(Kcoef.magnitude < 0.01, 0.01 * Kcoef.units, Kcoef)
+        Kcoef = np.where(Kcoef.magnitude > 24.0, 24.0 * Kcoef.units, Kcoef)
+
+        # qoutflow
+        qoutflow_units = units(
+            meta.get_units("segment_flow_init", to_pint=True)[
+                "segment_flow_init"
+            ]
+        )
+        qoutflow0 = parameters["segment_flow_init"] * qoutflow_units
+
+        # x_coef
+        x_coef_units = units(meta.get_units("x_coef", to_pint=True)["x_coef"])
+        x_coef = parameters["x_coef"] * x_coef_units
 
         _ = flopy.mf6.ModflowSnfmmr(
             snf,
             print_flows=True,
             observations=mmr_obs,
             iseg_order=segment_order,
-            qoutflow0=parameters["segment_flow_init"],
-            k_coef=Kcoef,
-            x_coef=parameters["x_coef"],
+            qoutflow0=qoutflow0.to_base_units().magnitude,
+            k_coef=Kcoef.to_base_units().magnitude,
+            x_coef=x_coef.to_base_units().magnitude,
         )
 
         # Boundary conditions
         # aggregate inflows over the contributing fluxes
 
-        inflow_list = ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"]
+        if inflow_from_PRMS:
+            inflow_list = ["sroff", "ssres_flow", "gwres_flow"]
+        else:
+            inflow_list = ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"]
+
+        # check they all have the same units before summing
+        inflow_units = list(meta.get_units(inflow_list, to_pint=True).values())
+        inflow_unit = inflow_units[0]
+        assert [inflow_unit] * len(inflow_units) == inflow_units
+        inflow_unit = units(inflow_unit)
 
         def read_inflow(vv):
             return xr.open_dataset(pl.Path(inflow_dir) / f"{vv}.nc")[vv]
 
-        s_per_time = self.control.time_step_seconds
-        inflows = sum([read_inflow(vv) for vv in inflow_list]) / (s_per_time)
+        inflows = sum([read_inflow(vv) for vv in inflow_list]).values
+        inflows *= inflow_unit
 
-        # calculate lateral flow term
-        lat_inflow = np.zeros((nper, nsegment))
+        if "inch" in str(inflow_unit):  # PRMS style
+            hru_area_unit = units(list(meta.get_units("hru_area").values())[0])
+            hru_area = parameters["hru_area"] * hru_area_unit
+            inflows *= hru_area
+
+        # if from pynhm, they are already volumes cubicfeet
+
+        inflows /= timestep.to("seconds")
+
+        # calculate lateral flow term to the REACH/segment from HRUs
+        lat_inflow = np.zeros((nper, nsegment)) * inflows.units
 
         for ihru in range(parameters["nhru"]):
             iseg = hru_segment[ihru]
@@ -294,13 +345,17 @@ class MMRToMF6:
                 # mass is being discarded in a way that has to be coordinated
                 # with other parts of the code.
                 # This code shuold be removed evenutally.
-                inflows[ihru] = zero
+                inflows[ihru] = zero * inflows.units
                 continue
 
             lat_inflow[:, iseg] += inflows[:, ihru]
 
+        # convert to output units in the output data structure
         flw_spd = {
-            ispd: [[irch, lat_inflow[ispd, irch]] for irch in range(nsegment)]
+            ispd: [
+                [irch, lat_inflow[ispd, irch].to_base_units().magnitude]
+                for irch in range(nsegment)
+            ]
             for ispd in range(nper)
         }
 

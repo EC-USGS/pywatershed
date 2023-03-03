@@ -1535,7 +1535,7 @@ mann_n:
   - muskingum_mann
   - mizuroute
   type: F
-  units: dimensionless
+  units: seconds / meter ** (1/3)
 mapvars_freq:
   default: 0
   desc: Mapped results frequency

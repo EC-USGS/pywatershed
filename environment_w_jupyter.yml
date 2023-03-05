@@ -48,6 +48,7 @@ dependencies:
       - black
       - click != 8.1.0
       - isort
+      - filelock
       - flake8
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black

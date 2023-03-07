@@ -46,7 +46,7 @@ class MMRToMF6:
       params: a PrmsParameters object (already loaded from file). This or
         param_file is required.
 
-      hru_shapefile: a shapefile for HRUS - NOT currently used
+      segment_shapefile: a shapefile for segments - NOT currently used
       length_units: only meters accepted for now (default)
       disu_file: the output file to write.
 
@@ -68,7 +68,7 @@ class MMRToMF6:
         param_file: fileish = None,
         control: Control = None,
         params: PrmsParameters = None,
-        hru_shapefile: fileish = None,
+        segment_shapefile: fileish = None,
         output_dir: fileish = pl.Path("."),
         bc_binary_files: bool = False,
         sim_name: str = "mmr_to_mf6",
@@ -80,8 +80,12 @@ class MMRToMF6:
         start_time: np.datetime64 = None,
         end_time: np.datetime64 = None,
         time_zone="UTC",
+        write_on_init: bool = True,
         **kwargs,
     ):
+
+        self.output_dir = output_dir
+        self.segment_shapefile = segment_shapefile
 
         self.units = pint.UnitRegistry(system="mks")
         # these are not really optional at the moment, but hope to make so soon
@@ -129,12 +133,12 @@ class MMRToMF6:
             else:
                 setattr(self, f"{key}_file", None)
 
-        # shorthand
+        # just shorthand
         parameters = self.params.parameters
 
         # MF6 simulation
-        sim = flopy.mf6.MFSimulation(
-            sim_ws=output_dir,
+        self.sim = flopy.mf6.MFSimulation(
+            sim_ws=self.output_dir,
             sim_name=sim_name,
             # version="mf6",
             # exe_name="mf6",
@@ -162,7 +166,7 @@ class MMRToMF6:
         if hasattr(self, "control"):
             tdis_rc = [(perlen, 1, 1.0) for ispd in range(self.nper)]
             _ = flopy.mf6.ModflowTdis(
-                sim,
+                self.sim,
                 pname="tdis",
                 time_units=self.time_units,
                 start_date_time=str(self.start_time) + time_zone,
@@ -171,10 +175,10 @@ class MMRToMF6:
             )
 
         # EMS
-        _ = flopy.mf6.ModflowEms(sim)
+        _ = flopy.mf6.ModflowEms(self.sim)
 
         # SNF
-        snf = flopy.mf6.ModflowSnf(sim, modelname=sim_name)
+        snf = flopy.mf6.ModflowSnf(self.sim, modelname=sim_name)
 
         # DISL
 
@@ -385,7 +389,6 @@ class MMRToMF6:
             lat_inflow[:, iseg] += inflows[:, ihru]
 
         # convert to output units in the output data structure
-
         flw_spd = {}
         for ispd in range(self.nper):
 
@@ -401,7 +404,7 @@ class MMRToMF6:
                     self.control.start_time + ispd * self.control.time_step
                 )
                 bin_name = f"snf_flw_bc/flw_{i_time_str.replace(':', '_')}.bin"
-                bin_name_pl = output_dir / bin_name
+                bin_name_pl = self.output_dir / bin_name
                 if not bin_name_pl.parent.exists():
                     bin_name_pl.parent.mkdir()
                 _ = ra.tofile(bin_name_pl)
@@ -415,7 +418,6 @@ class MMRToMF6:
             else:
                 flw_spd[ispd] = flw_ispd
 
-        # snfflw object
         _ = flopy.mf6.ModflowSnfflw(
             snf,
             print_input=True,
@@ -424,27 +426,14 @@ class MMRToMF6:
             maxbound=nsegment + 1,
         )
 
-        print()
-        print(f"Writing simulation files to: {output_dir}")
-        sim.write_simulation()
+        # done, write if requested/default else delay
+        if write_on_init:
+            self.write()
 
         return
 
-    # def write(self, out_file: fileish = None):
-    #     if out_file:
-    #         self.disu_file = out_file
+    def write(self):
+        print(f"\nWriting simulation files to: {self.output_dir}")
+        self.sim.write_simulation()
 
-    #     if self.disu_file:
-    #         mf6_file_writer(
-    #             self,
-    #             file_struct=disu_struct,
-    #             required=required,
-    #             output_file=self.disu_file,
-    #         )
-    #     else:
-    #         print(
-    #             "No output file (self.disu_file)  has been set for this "
-    #             "DisHru object, no output written."
-    #         )
-
-    #     return
+        return

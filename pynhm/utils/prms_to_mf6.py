@@ -70,6 +70,7 @@ class MMRToMF6:
         params: PrmsParameters = None,
         hru_shapefile: fileish = None,
         output_dir: fileish = pl.Path("."),
+        bc_binary_files: bool = False,
         sim_name: str = "mmr_to_mf6",
         inflow_dir: fileish = None,
         inflow_from_PRMS: bool = True,
@@ -82,14 +83,11 @@ class MMRToMF6:
         **kwargs,
     ):
 
-        units = pint.UnitRegistry(system="mks")
+        self.units = pint.UnitRegistry(system="mks")
         # these are not really optional at the moment, but hope to make so soon
         # making the system definition using input units.
         self.length_units = "meters"
         self.time_units = "seconds"
-        # per MF6, it appears that units must be plural? does it matter?
-        def conv_units(var: pint.Quantity):
-            return var.to_base_units().magnitude
 
         # read the parameter/control files (similar but not identical logic)
         inputs_dict = {
@@ -157,7 +155,7 @@ class MMRToMF6:
             int((self.end_time - self.start_time) / self.control.time_step) + 1
         )
 
-        timestep_s = self.control.time_step_seconds * units("seconds")
+        timestep_s = self.control.time_step_seconds * self.units("seconds")
         # convert to output units in the output data structure
         perlen = timestep_s.to_base_units().magnitude  # not reused, ok2convert
 
@@ -208,7 +206,7 @@ class MMRToMF6:
 
         # united quantities
 
-        segment_units = units(meta.parameters["seg_length"]["units"])
+        segment_units = self.units(meta.parameters["seg_length"]["units"])
         segment_length = parameters["seg_length"]
         segment_length = segment_length * segment_units
 
@@ -269,7 +267,7 @@ class MMRToMF6:
         # solve k_coef - taken from the PRMSChannel initialization
         # meta.get_units could be defined
         vel_units = {
-            key: units(val)
+            key: self.units(val)
             for key, val in meta.get_units(
                 ["mann_n", "seg_slope", "seg_depth"], to_pint=True
             ).items()
@@ -281,7 +279,7 @@ class MMRToMF6:
             (1.0 / parameters["mann_n"])
             * np.sqrt(parameters["seg_slope"])
             * parameters["seg_depth"] ** (2.0 / 3.0)
-            * (3600.0 * units("seconds/hour"))
+            * (3600.0 * self.units("seconds/hour"))
         )
 
         # JLM: This is a bad idea and should throw an error rather than edit
@@ -312,7 +310,7 @@ class MMRToMF6:
         Kcoef = np.where(Kcoef.magnitude > 24.0, 24.0 * Kcoef.units, Kcoef)
 
         # qoutflow
-        qoutflow_units = units(
+        qoutflow_units = self.units(
             meta.get_units("segment_flow_init", to_pint=True)[
                 "segment_flow_init"
             ]
@@ -320,7 +318,9 @@ class MMRToMF6:
         qoutflow0 = parameters["segment_flow_init"] * qoutflow_units
 
         # x_coef
-        x_coef_units = units(meta.get_units("x_coef", to_pint=True)["x_coef"])
+        x_coef_units = self.units(
+            meta.get_units("x_coef", to_pint=True)["x_coef"]
+        )
         x_coef = parameters["x_coef"] * x_coef_units
 
         _ = flopy.mf6.ModflowSnfmmr(
@@ -333,7 +333,7 @@ class MMRToMF6:
             x_coef=x_coef.to_base_units().magnitude,
         )
 
-        # Boundary conditions
+        # Boundary conditions / FLW
         # aggregate inflows over the contributing fluxes
 
         if inflow_from_PRMS:
@@ -345,7 +345,7 @@ class MMRToMF6:
         inflow_units = list(meta.get_units(inflow_list, to_pint=True).values())
         inflow_unit = inflow_units[0]
         assert [inflow_unit] * len(inflow_units) == inflow_units
-        inflow_unit = units(inflow_unit)
+        inflow_unit = self.units(inflow_unit)
 
         def read_inflow(vv, start_time, end_time):
             ff = xr.open_dataset(pl.Path(inflow_dir) / f"{vv}.nc")[vv]
@@ -361,7 +361,9 @@ class MMRToMF6:
 
         # if from pynhm, inflows are already volumes in cubicfeet
         if "inch" in str(inflow_unit):  # PRMS style need hru areas
-            hru_area_unit = units(list(meta.get_units("hru_area").values())[0])
+            hru_area_unit = self.units(
+                list(meta.get_units("hru_area").values())[0]
+            )
             hru_area = parameters["hru_area"] * hru_area_unit
             inflows *= hru_area
 
@@ -383,19 +385,43 @@ class MMRToMF6:
             lat_inflow[:, iseg] += inflows[:, ihru]
 
         # convert to output units in the output data structure
-        flw_spd = {
-            ispd: [
-                [irch, lat_inflow[ispd, irch].to_base_units().magnitude]
+
+        flw_spd = {}
+        for ispd in range(self.nper):
+
+            flw_ispd = [
+                (irch, lat_inflow[ispd, irch].to_base_units().magnitude)
                 for irch in range(nsegment)
             ]
-            for ispd in range(self.nper)
-        }
 
+            if bc_binary_files:
+                # should put the time in the file names?
+                ra = np.array(flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")])
+                i_time_str = str(
+                    self.control.start_time + ispd * self.control.time_step
+                )
+                bin_name = f"snf_flw_bc/flw_{i_time_str.replace(':', '_')}.bin"
+                bin_name_pl = output_dir / bin_name
+                if not bin_name_pl.parent.exists():
+                    bin_name_pl.parent.mkdir()
+                _ = ra.tofile(bin_name_pl)
+
+                flw_spd[ispd] = {
+                    "filename": str(bin_name),
+                    "binary": True,
+                    "data": None,
+                }
+
+            else:
+                flw_spd[ispd] = flw_ispd
+
+        # snfflw object
         _ = flopy.mf6.ModflowSnfflw(
             snf,
             print_input=True,
             print_flows=True,
             stress_period_data=flw_spd,
+            maxbound=nsegment + 1,
         )
 
         print()

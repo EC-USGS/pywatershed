@@ -26,7 +26,8 @@ def test_mmr_to_mf6(domain, tmp_path):
         start_time=np.datetime64("1979-01-01T00:00:00"),
         end_time=np.datetime64("1979-07-01T00:00:00"),
         sim_name=domain_name,
-        # , hru_shapefile=shape_file)
+        # bc_binary_files=True,
+        # hru_shapefile=shape_file,
     )
 
     # mmr.write(tmp_dir)

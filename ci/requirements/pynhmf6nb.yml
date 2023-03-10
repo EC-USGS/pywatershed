@@ -4,18 +4,31 @@ channels:
   - nodefaults
 dependencies:
   - appdirs
+  - cartopy
   - filelock
   - flaky
+  - flopy
   - fprettify
+  - geopandas
+  - geoviews
+  - holoviews
+  - hvplot
+  - ipython
+  - jupyter
+  - jupyter_contrib_nbextensions
+  - jupyterlab
   - jupytext
   - matplotlib
   - meson!=0.63.0
+  - nb_conda_kernels
+  - nbconvert
   - netCDF4
   - networkx
   - ninja
   - numpy
   - numba
   - pandas
+  - pint
   - pip
   - pip:
       - click != 8.1.0
@@ -27,6 +40,7 @@ dependencies:
       - git+https://github.com/modflowpy/pymake.git
       - git+https://github.com/MODFLOW-USGS/modflowapi.git
       - modflow-devtools
+  - pydot
   - pytest
   - pytest-cases
   - pytest-cov
@@ -35,9 +49,5 @@ dependencies:
   - pytest-order
   - pytest-xdist
   - pyyaml
+  - shapely<2.0.0
   - xarray
-  - flopy
-
-
-
-      

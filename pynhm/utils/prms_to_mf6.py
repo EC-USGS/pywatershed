@@ -138,7 +138,7 @@ class MMRToMF6:
 
         # MF6 simulation
         self.sim = flopy.mf6.MFSimulation(
-            sim_ws=self.output_dir,
+            sim_ws=str(self.output_dir),
             sim_name=sim_name,
             # version="mf6",
             # exe_name="mf6",

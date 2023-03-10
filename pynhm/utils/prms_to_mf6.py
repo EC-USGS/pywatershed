@@ -175,7 +175,9 @@ class MMRToMF6:
             )
 
         # EMS
-        _ = flopy.mf6.ModflowEms(self.sim)
+        _ = flopy.mf6.ModflowEms(
+            self.sim,
+        )
 
         # SNF
         snf = flopy.mf6.ModflowSnf(self.sim, modelname=sim_name)

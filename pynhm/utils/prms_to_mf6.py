@@ -395,7 +395,7 @@ class MMRToMF6:
         for ispd in range(self.nper):
 
             flw_ispd = [
-                (irch, lat_inflow[ispd, irch].to_base_units().magnitude)
+                (irch + 1, lat_inflow[ispd, irch].to_base_units().magnitude)
                 for irch in range(nsegment)
             ]
 

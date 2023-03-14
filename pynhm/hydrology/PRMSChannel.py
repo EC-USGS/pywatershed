@@ -208,6 +208,18 @@ class PRMSChannel(StorageUnit):
             segment_order = list(nx.topological_sort(graph))
         else:
             segment_order = [0]
+
+        # if the domain contains links with no upstream or
+        # downstream reaches, we just throw these back at the
+        # top of the order since networkx wont handle such nonsense
+        wh_mask_set = set(np.where(self._outflow_mask)[0])
+        seg_ord_set = set(segment_order)
+        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
+        if len(mask_not_seg_ord):
+            segment_order = mask_not_seg_ord + segment_order
+            # for pp in mask_not_seg_ord:
+            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
+
         self._segment_order = np.array(segment_order, dtype=int)
 
         # calculate the Muskingum parameters

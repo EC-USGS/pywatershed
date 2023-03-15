@@ -71,6 +71,7 @@ class MMRToMF6:
         segment_shapefile: fileish = None,
         output_dir: fileish = pl.Path("."),
         bc_binary_files: bool = False,
+        bc_flows_combine: bool = False,
         sim_name: str = "mmr_to_mf6",
         inflow_dir: fileish = None,
         inflow_from_PRMS: bool = True,
@@ -83,7 +84,6 @@ class MMRToMF6:
         write_on_init: bool = True,
         **kwargs,
     ):
-
         self.output_dir = output_dir
         self.segment_shapefile = segment_shapefile
 
@@ -357,76 +357,97 @@ class MMRToMF6:
             ff = xr.open_dataset(pl.Path(inflow_dir) / f"{vv}.nc")[vv]
             return ff.sel(time=slice(start_time, end_time))
 
-        inflows = sum(
-            [
-                read_inflow(vv, self.start_time, self.end_time)
-                for vv in inflow_list
-            ]
-        ).values
-        inflows *= inflow_unit
+        inflows = {
+            vv: read_inflow(vv, self.start_time, self.end_time)
+            for vv in inflow_list
+        }
 
-        # if from pynhm, inflows are already volumes in cubicfeet
-        if "inch" in str(inflow_unit):  # PRMS style need hru areas
-            hru_area_unit = self.units(
-                list(meta.get_units("hru_area").values())[0]
-            )
-            hru_area = parameters["hru_area"] * hru_area_unit
-            inflows *= hru_area
+        if bc_flows_combine:
+            inflows["combined"] = sum(inflows.values())
+            for kk in list(inflows.keys()):
+                if kk != "combined":
+                    del inflows[kk]
 
-        inflows /= timestep_s.to("seconds")
+        # add the units
+        inflows = {kk: vv.values * inflow_unit for kk, vv in inflows.items()}
 
-        # calculate lateral flow term to the REACH/segment from HRUs
-        lat_inflow = np.zeros((self.nper, nsegment)) * inflows.units
+        # flopy adds one to the index, but if we write binary we have to do it
+        add_one = int(bc_binary_files)
 
-        for ihru in range(parameters["nhru"]):
-            iseg = hru_segment[ihru]
-            if iseg < 0:
-                # This is bad, selective handling of fluxes is not cool,
-                # mass is being discarded in a way that has to be coordinated
-                # with other parts of the code.
-                # This code shuold be removed evenutally.
-                inflows[:, ihru] = zero * inflows.units
-                continue
-
-            lat_inflow[:, iseg] += inflows[:, ihru]
-
-        # convert to output units in the output data structure
-        flw_spd = {}
-        for ispd in range(self.nper):
-
-            flw_ispd = [
-                (irch + 1, lat_inflow[ispd, irch].to_base_units().magnitude)
-                for irch in range(nsegment)
-            ]
-
-            if bc_binary_files:
-                # should put the time in the file names?
-                ra = np.array(flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")])
-                i_time_str = str(
-                    self.control.start_time + ispd * self.control.time_step
+        for flow_name in inflows.keys():
+            # if from pynhm, inflows are already volumes in cubicfeet
+            if "inch" in str(inflow_unit):  # PRMS style need hru areas
+                hru_area_unit = self.units(
+                    list(meta.get_units("hru_area").values())[0]
                 )
-                bin_name = f"snf_flw_bc/flw_{i_time_str.replace(':', '_')}.bin"
-                bin_name_pl = self.output_dir / bin_name
-                if not bin_name_pl.parent.exists():
-                    bin_name_pl.parent.mkdir()
-                _ = ra.tofile(bin_name_pl)
+                hru_area = parameters["hru_area"] * hru_area_unit
+                inflows[flow_name] *= hru_area
 
-                flw_spd[ispd] = {
-                    "filename": str(bin_name),
-                    "binary": True,
-                    "data": None,
-                }
+            inflows[flow_name] /= timestep_s.to("seconds")
 
-            else:
-                flw_spd[ispd] = flw_ispd
+            new_inflow_unit = inflows[flow_name].units
 
-        _ = flopy.mf6.ModflowSnfflw(
-            snf,
-            print_input=True,
-            print_flows=True,
-            stress_period_data=flw_spd,
-            maxbound=nsegment + 1,
-        )
+            # calculate lateral flow term to the REACH/segment from HRUs
+            lat_inflow = np.zeros((self.nper, nsegment)) * new_inflow_unit
+
+            for ihru in range(parameters["nhru"]):
+                iseg = hru_segment[ihru]
+                if iseg < 0:
+                    # This is bad, selective handling of fluxes is not cool,
+                    # mass is being discarded in a way that has to be
+                    # coordinated
+                    # with other parts of the code.
+                    # This code shuold be removed evenutally.
+                    inflows[flow_name][:, ihru] = zero * new_inflow_unit
+                    continue
+
+                lat_inflow[:, iseg] += inflows[flow_name][:, ihru]
+
+            # convert to output units in the output data structure
+            flw_spd = {}
+            for ispd in range(self.nper):
+                flw_ispd = [
+                    (
+                        irch + add_one,
+                        lat_inflow[ispd, irch].to_base_units().magnitude,
+                    )
+                    for irch in range(nsegment)
+                ]
+
+                if bc_binary_files:
+                    # should put the time in the file names?
+                    ra = np.array(
+                        flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")]
+                    )
+                    i_time_str = str(
+                        self.control.start_time + ispd * self.control.time_step
+                    )
+                    bin_name = (
+                        f"snf_flw_bc/"
+                        f"flw_{flow_name}_{i_time_str.replace(':', '_')}.bin"
+                    )
+                    bin_name_pl = self.output_dir / bin_name
+                    if not bin_name_pl.parent.exists():
+                        bin_name_pl.parent.mkdir()
+                    _ = ra.tofile(bin_name_pl)
+
+                    flw_spd[ispd] = {
+                        "filename": str(bin_name),
+                        "binary": True,
+                        "data": None,
+                    }
+
+                else:
+                    flw_spd[ispd] = flw_ispd
+
+            _ = flopy.mf6.ModflowSnfflw(
+                snf,
+                print_input=True,
+                print_flows=True,
+                stress_period_data=flw_spd,
+                maxbound=nsegment + 1,
+                pname=flow_name,
+            )
 
         # done, write if requested/default else delay
         if write_on_init:

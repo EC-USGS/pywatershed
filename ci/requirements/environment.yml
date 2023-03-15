@@ -9,6 +9,12 @@ dependencies:
   - numba
   - pandas
   - pip
+  - pip:
+      - click != 8.1.0
+      - black < 23.1.0
+      - isort
+      - flake8
+      - pylint
   - pytest
   - pytest-cov
   - pytest-env
@@ -17,9 +23,3 @@ dependencies:
   - pyyaml
   - xarray
   - flopy
-  - pip:
-      - click != 8.1.0
-      - black < 23.1.0
-      - isort
-      - flake8
-      - pylint

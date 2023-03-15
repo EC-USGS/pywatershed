@@ -12,7 +12,6 @@ from .parameters import PrmsParameters
 #     has_geopandas = False
 
 
-
 acres_to_m2 = 4046.8564224
 
 required = [

@@ -1,5 +1,9 @@
 import numpy as np
 
+from ..constants import fileish
+from .mf6_file_writer import mf6_file_writer
+from .parameters import PrmsParameters
+
 # try:
 #     import geopandas as gpd
 
@@ -8,9 +12,6 @@ import numpy as np
 #     has_geopandas = False
 
 
-from ..constants import fileish
-from .mf6_file_writer import mf6_file_writer
-from .parameters import PrmsParameters
 
 acres_to_m2 = 4046.8564224
 

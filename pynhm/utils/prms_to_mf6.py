@@ -7,6 +7,11 @@ import numpy as np
 import pint
 import xarray as xr
 
+from pynhm import Control, meta
+
+from ..constants import SegmentType, fileish, zero
+from .parameters import PrmsParameters
+
 # try:
 #     import geopandas as gpd
 
@@ -15,9 +20,6 @@ import xarray as xr
 #     has_geopandas = False
 
 
-from ..constants import fileish, SegmentType, zero
-from .parameters import PrmsParameters
-from pynhm import Control, meta
 
 # more generally: this is PRMSMMR to SNFDISL, SNFFLW, and/or SNFMMR
 

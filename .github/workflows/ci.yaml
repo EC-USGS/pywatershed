@@ -146,6 +146,10 @@ jobs:
           cache-downloads: true
           cache-env: true
 
+      - name: Install pynhm
+        run: |
+          pip install .
+
       - name: Version info
         run: |
           pip -V

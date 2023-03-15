@@ -68,10 +68,12 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Install dependencies
-        run: |
-          pip install wheel
-          pip install -r ./ci/requirements/environment.txt
+      - name: Install Dependencies via Micromamba
+        uses: mamba-org/provision-with-micromamba@main
+        with:
+          environment-file: ./ci/requirements/environment.yml
+          cache-downloads: true
+          cache-env: true
 
       - name: Version info
         run: |

@@ -16,4 +16,4 @@ pytest-order
 pytest-xdist
 pyyaml
 xarray
-flopy
+--editable=git+https://github.com/modflowpy/flopy.git#egg=flopy

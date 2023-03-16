@@ -1,4 +1,4 @@
-name: pynhm-tests
+name: pynhm
 channels:
   - conda-forge
   - nodefaults
@@ -15,6 +15,7 @@ dependencies:
       - isort
       - flake8
       - pylint
+      - "--editable=git+https://github.com/modflowpy/flopy.git#egg=flopy"
   - pytest
   - pytest-cov
   - pytest-env

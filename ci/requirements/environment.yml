@@ -15,7 +15,8 @@ dependencies:
       - isort
       - flake8
       - pylint
-      - "--editable=git+https://github.com/modflowpy/flopy.git#egg=flopy"
+      - git+https://github.com/modflowpy/flopy.git
+      - modflow-devtools
   - pytest
   - pytest-cov
   - pytest-env

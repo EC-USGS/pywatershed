@@ -18,7 +18,6 @@ dependencies:
   - pytest-xdist
   - pyyaml
   - xarray
-  - flopy
   - cartopy
   - geopandas
   - geoviews
@@ -40,3 +39,5 @@ dependencies:
       - isort
       - flake8
       - pylint
+      - git+https://github.com/modflowpy/flopy.git
+      - modflow-devtools

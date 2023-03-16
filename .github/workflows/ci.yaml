@@ -8,6 +8,7 @@ on:
       - "*"
 
 jobs:
+
   pynhm_setup:
     name: standard installation
     runs-on: ubuntu-latest
@@ -16,9 +17,7 @@ jobs:
     defaults:
       run:
         shell: bash
-
     steps:
-
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -59,7 +58,6 @@ jobs:
       run:
         shell: bash
     steps:
-
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -115,9 +113,7 @@ jobs:
       matrix:
         os: [ "ubuntu-latest", "macos-latest", "windows-latest" ]
         python-version: [ "3.8", "3.9" ]  #, "3.10"]
-
     steps:
-
       - name: Checkout repo
         uses: actions/checkout@v3
 
@@ -126,6 +122,8 @@ jobs:
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
           echo "PYNHM_FORTRAN=true" >> $GITHUB_ENV
           echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
+          head -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
+          tail -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
 
       - name: Setup gfortran
         uses: awvwgk/setup-fortran@main
@@ -145,6 +143,18 @@ jobs:
           environment-file: ./ci/requirements/environment.yml
           cache-downloads: true
           cache-env: true
+
+      - name: Checkout MODFLOW 6
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.MF6_REMOTE }}
+          ref: ${{ env.MF6_REF }}
+          path: modflow6
+
+      - name: Update flopy MODFLOW 6 classes
+        working-directory: modflow6/autotest
+        run: |
+          python update_flopy.py
 
       - name: Install pynhm
         run: |

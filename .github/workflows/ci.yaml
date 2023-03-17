@@ -122,8 +122,9 @@ jobs:
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
           echo "PYNHM_FORTRAN=true" >> $GITHUB_ENV
           echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
-          head -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
-          tail -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
+          cat .mf6_ci_ref_remote  >> $GITHUB_ENV
+          #head -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV          
+          #tail -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
 
       - name: Enforce MF6 ref and remote merge to main
         if: github.base_ref == 'main'

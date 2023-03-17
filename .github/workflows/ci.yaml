@@ -128,10 +128,10 @@ jobs:
         if: github.base_ref == 'main'
         run: |
           echo Merge commit: GITHUB_BASE_REF = $GITHUB_BASE_REF
-          req_ref=develop  # if not develop, submit an issue
+          req_ref=feat-snf  # if not develop, submit an issue
           echo $MF6_REF
           if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
-          req_remote=MODFLOW-USGS/modflow6  # if not MODFLOW-USGS/modflow6, submit an issue
+          req_remote=langevin-usgs/modflow6  # if not MODFLOW-USGS/modflow6, submit an issue
           echo $MF6_REMOTE
           if [[ "$MF6_REMOTE" != "$req_remote" ]]; then exit 1; fi
 

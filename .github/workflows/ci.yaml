@@ -125,6 +125,11 @@ jobs:
           head -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
           tail -n1 .mf6_ci_ref_remote  >> $GITHUB_ENV
 
+      - name: Enforce MF6 ref and remote merge to main
+        run: |
+          echo "GITHUB_BASE_REF: ${GITHUB_BASE_REF}"
+          echo "GITHUB_HEAD_REF: ${GITHUB_HEAD_REF}"
+
       - name: Setup gfortran
         uses: awvwgk/setup-fortran@main
         with:

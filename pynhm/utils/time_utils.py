@@ -1,5 +1,6 @@
 import datetime
 
+import epiweeks as ew
 import numpy as np
 
 # JLM these np time manipulations need to be tested b/c i fear np might change
@@ -37,3 +38,8 @@ def datetime_dowy(dt64: np.datetime64) -> int:
         year_start -= 1
     diff = dt64 - np.datetime64(f"{year_start}-10-01")
     return diff.astype("timedelta64[D]").astype(int)
+
+
+def datetime_epiweek(dt64: np.datetime64) -> int:
+    """Get CDC eipweek [1, 53] from np.datetime64"""
+    return ew.Week.fromdate(dt64_to_dt(dt64)).week

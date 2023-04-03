@@ -1,6 +1,7 @@
 click != 8.1.0
 black < 23.1.0
 isort
+epiweeks
 flake8
 git+https://github.com/modflowpy/flopy.git
 pylint

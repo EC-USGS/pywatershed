@@ -8,6 +8,7 @@ from ..constants import fileish
 from ..utils import ControlVariables
 from ..utils.parameters import PrmsParameters
 from ..utils.time_utils import (
+    datetime_epiweek,
     datetime_dowy,
     datetime_doy,
     datetime_month,
@@ -130,6 +131,11 @@ class Control(Accessor):
     def current_dowy(self):
         """Get the current day of water year."""
         return datetime_dowy(self._current_time)
+
+    @property
+    def current_epiweek(self):
+        """Get the current epiweek [1, 53]."""
+        return datetime_epiweek(self._current_time)
 
     @property
     def previous_time(self):

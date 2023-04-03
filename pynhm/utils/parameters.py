@@ -76,7 +76,6 @@ class PrmsParameters:
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
     ) -> "PrmsParameters":
-
         self.parameters = parameter_dict
         self._params_sep_procs = all(
             [isinstance(pp, dict) for pp in self.parameters.values()]
@@ -401,3 +400,91 @@ class PrmsParameters:
             * ft2_per_acre
             / (inches_per_foot)
         )
+
+
+class StarfitParameters:
+    """
+    Starfit parameter class
+
+    Parameters
+    ----------
+    parameter_dict : dict
+        parameters dictionary: either structure
+          * param: value
+          * process: {param: value ... }
+        where the later is a parameter dictionary grouped by process.
+        The keys for process should be either the class itself, class.name, or
+        type(class.__name__).
+    parameter_dimensions_dict : dict
+        parameters dimensions dictionary with a structure mirring the parameter
+        dict as described above but with shape tuples in place of parameter
+        value data.
+
+    Returns:
+        StarfitParameters object
+
+    """
+
+    def __init__(
+        self,
+        parameter_dict: dict,
+        parameter_dimensions_dict: dict = None,
+    ) -> "StarfitParameters":
+        self.parameters = parameter_dict
+
+    @staticmethod
+    def from_netcdf(
+        resops_domain: fileish,
+        istarf_conus: fileish,
+        grand_dams: fileish,
+        grand_ids: fileish = None,
+    ) -> dict:
+        istarf_conus_ds = nc4.Dataset(istarf_conus)
+        resops_ds = nc4.Dataset(resops_domain)
+        grand_dams_ds = nc4.Dataset(grand_dams)
+
+        if grand_ids is None:
+            domain_grand_ids = resops_ds["grand_id"][:].data
+        else:
+            domain_grand_ids = nc4.Dataset(grand_ids)["grand_id"]
+
+        # As a convenience, subset the full reservoir datasets to
+        # the domain instead of requiring a preprocess.
+        param_dict = {}
+
+        # subset the GRanD data provided
+        # https://sedac.ciesin.columbia.edu/data/set/grand-v1-dams-rev01
+        wh_domain_grand = np.where(
+            np.isin(grand_dams_ds["GRAND_ID"], domain_grand_ids)
+        )
+        for vv in grand_dams_ds.variables:
+            # if we know the necessary parameters could skip un needed.
+            param_dict[vv] = grand_dams_ds[vv][:][wh_domain_grand].data
+
+        # subset the istarf data provided
+        # https://zenodo.org/record/4602277#.ZCtYj-zMJqs
+        wh_domain_istarf = np.where(
+            np.isin(istarf_conus_ds["GRanD_ID"], domain_grand_ids)
+        )
+        assert len(wh_domain_grand[0]) == len(domain_grand_ids)
+        for vv in istarf_conus_ds.variables:
+            # if we know the necessary parameters could skip un needed.
+            if vv in param_dict.keys():
+                raise KeyError(f"the key {vv} is already in the param_dict")
+            param_dict[vv] = istarf_conus_ds[vv][:][wh_domain_istarf].data
+
+        # subset the resops data provided
+        # https://zenodo.org/record/5893641#.ZCtakuzMJqs
+        wh_domain_resops = np.where(
+            np.isin(resops_ds["grand_id"], domain_grand_ids)
+        )
+        assert len(wh_domain_resops[0]) == len(domain_grand_ids)
+        for vv in resops_ds.variables:
+            # if we know the necessary parameters could skip un needed.
+            if vv in param_dict.keys():
+                raise KeyError(f"the key {vv} is already in the param_dict")
+            param_dict[vv] = resops_ds[vv][:][wh_domain_resops].data
+
+        return PrmsParameters(param_dict)
+
+        # it's desirable to have a netcdf write method for these parameters

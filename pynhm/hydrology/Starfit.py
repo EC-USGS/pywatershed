@@ -49,7 +49,7 @@ class Starfit(StorageUnit):
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get groundwater reservoir parameters
+        """Get starfit parameters
 
         Returns:
             parameters: input parameters
@@ -88,7 +88,7 @@ class Starfit(StorageUnit):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get groundwater reservoir input variables
+        """Get starfit input variables
 
         Returns:
             variables: input variables
@@ -113,7 +113,7 @@ class Starfit(StorageUnit):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get groundwater initial values
+        """Get starfit initial values
 
         Returns:
             dict: initial values for named variables
@@ -144,7 +144,7 @@ class Starfit(StorageUnit):
         return
 
     def _advance_variables(self) -> None:
-        """Advance the groundwater reservoir variables
+        """Advance the starfit variables
         Returns:
             None
         """
@@ -153,7 +153,7 @@ class Starfit(StorageUnit):
         return
 
     def _calculate(self, simulation_time):
-        """Calculate groundwater reservoir terms for a time step
+        """Calculate starfit terms for a time step
 
         Args:
             simulation_time: current simulation time
@@ -164,21 +164,6 @@ class Starfit(StorageUnit):
         """
 
         self._simulation_time = simulation_time
-
-        # for ires in range(self.nreservoirs):
-        #     if self.control.current_time > self.end_time[ires]:
-        #         self.lake_storage[ires] = nan
-        #         self.lake_release[ires] = nan
-        #         self.lake_spill[ires] = nan
-        #         self.lake_availability_status[ires] = nan
-        #         continue
-
-        #     if self.control.current_time < self.start_time[ires]:
-        #         continue
-
-        #     if self.control.current_time == self.start_time[ires]:
-        #         self.lake_storage[ires] = self.initial_storage[ires]
-        #         self.lake_storage_old[ires] = self.initial_storage[ires]
 
         wh_after_end = np.where(self.control.current_time > self.end_time)
         self.lake_storage[wh_after_end] = nan
@@ -194,7 +179,7 @@ class Starfit(StorageUnit):
             (
                 self.lake_release,
                 self.lake_availability_status,
-            ) = self._calculate_numpy(
+            ) = self._calc_istarf_release(
                 # use kws, sort by kw?
                 np.minimum(self.control.current_epiweek, 52),
                 self.grand_id,
@@ -231,7 +216,6 @@ class Starfit(StorageUnit):
             self.lake_release / 24 / 60 / 60
         )  # convert to m^3/s
 
-        # update storage (dS=I-R)
         self.lake_storage_change[:] = (
             (self.lake_inflow - self.lake_release) * 24 * 60 * 60 / 1.0e6
         )  # conv to MCM
@@ -256,7 +240,7 @@ class Starfit(StorageUnit):
         return
 
     @staticmethod
-    def _calculate_numpy(
+    def _calc_istarf_release(
         epiweek,
         reservoir_id,
         upper_min,

@@ -153,7 +153,7 @@ class Starfit(StorageUnit):
         return
 
     def _calculate(self, simulation_time):
-        """Calculate starfit terms for a time step
+        """Calculate starfit for a time step (vectorized)
 
         Args:
             simulation_time: current simulation time
@@ -180,30 +180,30 @@ class Starfit(StorageUnit):
             self.lake_availability_status[:],
         ) = self._calc_istarf_release(
             epiweek=np.minimum(self.control.current_epiweek, 52),
+            GRanD_CAP_MCM=self.GRanD_CAP_MCM,
             grand_id=self.grand_id,
-            NORhi_min=self.NORhi_min,
-            NORhi_max=self.NORhi_max,
+            lake_inflow=self.lake_inflow,
+            lake_storage=self.lake_storage,
             NORhi_alpha=self.NORhi_alpha,
             NORhi_beta=self.NORhi_beta,
+            NORhi_max=self.NORhi_max,
+            NORhi_min=self.NORhi_min,
             NORhi_mu=self.NORhi_mu,
-            NORlo_min=self.NORlo_min,
-            NORlo_max=self.NORlo_max,
             NORlo_alpha=self.NORlo_alpha,
             NORlo_beta=self.NORlo_beta,
+            NORlo_max=self.NORlo_max,
+            NORlo_min=self.NORlo_min,
             NORlo_mu=self.NORlo_mu,
-            Release_min=self.Release_min,
-            Release_max=self.Release_max,
+            Obs_MEANFLOW_CUMECS=self.Obs_MEANFLOW_CUMECS,
             Release_alpha1=self.Release_alpha1,
             Release_alpha2=self.Release_alpha2,
             Release_beta1=self.Release_beta1,
             Release_beta2=self.Release_beta2,
+            Release_c=self.Release_c,
+            Release_max=self.Release_max,
+            Release_min=self.Release_min,
             Release_p1=self.Release_p1,
             Release_p2=self.Release_p2,
-            Release_c=self.Release_c,
-            GRanD_CAP_MCM=self.GRanD_CAP_MCM,
-            Obs_MEANFLOW_CUMECS=self.Obs_MEANFLOW_CUMECS,
-            lake_storage=self.lake_storage,
-            lake_inflow=self.lake_inflow,
         )  # output in m^3/d
 
         self.lake_release[:] = (
@@ -251,13 +251,13 @@ class Starfit(StorageUnit):
         NORlo_min,
         NORlo_mu,
         Obs_MEANFLOW_CUMECS,
-        Release_max,
-        Release_min,
         Release_alpha1,
         Release_alpha2,
         Release_beta1,
         Release_beta2,
         Release_c,
+        Release_max,
+        Release_min,
         Release_p1,
         Release_p2,
     ):

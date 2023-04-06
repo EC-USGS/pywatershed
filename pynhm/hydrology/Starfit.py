@@ -219,36 +219,31 @@ class Starfit(StorageUnit):
                 )
                 raise ValueError(msg)
 
-            self.lake_release[ires] = (
-                self.lake_release[ires] / 24 / 60 / 60
-            )  # convert to m^3/s
+        self.lake_release[:] = (
+            self.lake_release / 24 / 60 / 60
+        )  # convert to m^3/s
 
-            # update storage (dS=I-R)
-            self.lake_storage_change[ires] = (
-                (self.lake_inflow[ires] - self.lake_release[ires])
-                * 24
-                * 60
-                * 60
-                / 1.0e6
-            )  # conv to MCM
+        # update storage (dS=I-R)
+        self.lake_storage_change[:] = (
+            (self.lake_inflow - self.lake_release) * 24 * 60 * 60 / 1.0e6
+        )  # conv to MCM
 
-            self.lake_storage[ires] = max(
-                self.lake_storage[ires] + self.lake_storage_change[ires], zero
-            )
+        self.lake_storage[:] = np.maximum(
+            self.lake_storage + self.lake_storage_change, zero
+        )
 
-            if self.lake_storage[ires] > self.GRanD_CAP_MCM[ires]:  # spill
-                self.lake_spill[ires] = (
-                    (self.lake_storage[ires] - self.GRanD_CAP_MCM[ires])
-                    * 1.0e6
-                    / 24
-                    / 60
-                    / 60
-                )
-                # release = release + spill  #uncomment to include spill in release value
-                self.lake_storage[ires] = self.GRanD_CAP_MCM[ires]
-
-            else:
-                self.lake_spill[ires] = zero
+        self.lake_spill[:] = nan
+        wh_active = np.where(~np.isnan(self.lake_storage))
+        self.lake_spill[wh_active] = zero
+        wh_spill = np.where(self.lake_storage > self.GRanD_CAP_MCM)
+        self.lake_spill[wh_spill] = (
+            (self.lake_storage[wh_spill] - self.GRanD_CAP_MCM[wh_spill])
+            * 1.0e6
+            / 24
+            / 60
+            / 60
+        )
+        self.lake_storage[wh_spill] = self.GRanD_CAP_MCM[wh_spill]
 
         return
 

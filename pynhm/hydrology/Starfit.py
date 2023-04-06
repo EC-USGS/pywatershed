@@ -4,7 +4,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan, zero
+from ..constants import nan, one, zero
 
 
 class Starfit(StorageUnit):
@@ -180,44 +180,42 @@ class Starfit(StorageUnit):
                 self.lake_storage[ires] = self.initial_storage[ires]
                 self.lake_storage_old[ires] = self.initial_storage[ires]
 
-            if self._calc_method.lower() in ["none", "numpy"]:
-                (
-                    self.lake_release[ires],
-                    self.lake_availability_status[ires],
-                ) = self._calculate_numpy(
-                    # use kws, sort by kw?
-                    np.minimum(self.control.current_epiweek, 52),
-                    self.grand_id[ires],
-                    self.NORhi_min[ires],
-                    self.NORhi_max[ires],
-                    self.NORhi_alpha[ires],
-                    self.NORhi_beta[ires],
-                    self.NORhi_mu[ires],
-                    self.NORlo_min[ires],
-                    self.NORlo_max[ires],
-                    self.NORlo_alpha[ires],
-                    self.NORlo_beta[ires],
-                    self.NORlo_mu[ires],
-                    self.Release_min[ires],
-                    self.Release_max[ires],
-                    self.Release_alpha1[ires],
-                    self.Release_alpha2[ires],
-                    self.Release_beta1[ires],
-                    self.Release_beta2[ires],
-                    self.Release_p1[ires],
-                    self.Release_p2[ires],
-                    self.Release_c[ires],
-                    self.GRanD_CAP_MCM[ires],
-                    self.Obs_MEANFLOW_CUMECS[ires],
-                    self.lake_storage[ires],
-                    self.lake_inflow[ires],
-                )  # output in m^3/d
+        if self._calc_method.lower() in ["none", "numpy"]:
+            (
+                self.lake_release,
+                self.lake_availability_status,
+            ) = self._calculate_numpy(
+                # use kws, sort by kw?
+                np.minimum(self.control.current_epiweek, 52),
+                self.grand_id,
+                self.NORhi_min,
+                self.NORhi_max,
+                self.NORhi_alpha,
+                self.NORhi_beta,
+                self.NORhi_mu,
+                self.NORlo_min,
+                self.NORlo_max,
+                self.NORlo_alpha,
+                self.NORlo_beta,
+                self.NORlo_mu,
+                self.Release_min,
+                self.Release_max,
+                self.Release_alpha1,
+                self.Release_alpha2,
+                self.Release_beta1,
+                self.Release_beta2,
+                self.Release_p1,
+                self.Release_p2,
+                self.Release_c,
+                self.GRanD_CAP_MCM,
+                self.Obs_MEANFLOW_CUMECS,
+                self.lake_storage,
+                self.lake_inflow,
+            )  # output in m^3/d
 
-            else:
-                msg = (
-                    f"Invalid calc_method={self._calc_method} for {self.name}"
-                )
-                raise ValueError(msg)
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
 
         self.lake_release[:] = (
             self.lake_release / 24 / 60 / 60
@@ -282,93 +280,125 @@ class Starfit(StorageUnit):
         # constant
         omega = 1.0 / 52.0
 
-        if np.isfinite(reservoir_id):
-            max_normal = np.minimum(
-                upper_max,
-                np.maximum(
-                    upper_min,
-                    upper_mu
-                    + upper_alpha * np.sin(2.0 * np.pi * omega * epiweek)
-                    + upper_beta * np.cos(2.0 * np.pi * omega * epiweek),
-                ),
+        if not np.isfinite(reservoir_id).any():
+            raise ValueError("Some non-finite reservoir_ids present")
+
+        max_normal = np.minimum(
+            upper_max,
+            np.maximum(
+                upper_min,
+                upper_mu
+                + upper_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+                + upper_beta * np.cos(2.0 * np.pi * omega * epiweek),
+            ),
+        )
+
+        min_normal = np.minimum(
+            lower_max,
+            np.maximum(
+                lower_min,
+                lower_mu
+                + lower_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+                + lower_beta * np.cos(2.0 * np.pi * omega * epiweek),
+            ),
+        )
+
+        # TODO could make a better forecast?
+        # why not use cumulative volume for the current epiweek, and only
+        # extrapolate for the remainder of the week?
+        forecasted_weekly_volume = 7.0 * inflow * 24.0 * 60.0 * 60.0
+        mean_weekly_volume = 7.0 * inflow_mean * 24.0 * 60.0 * 60.0
+
+        standardized_inflow = (
+            forecasted_weekly_volume / mean_weekly_volume
+        ) - 1.0
+
+        standardized_weekly_release = (
+            release_alpha_one * np.sin(2.0 * np.pi * omega * epiweek)
+            + release_alpha_two * np.sin(4.0 * np.pi * omega * epiweek)
+            + release_beta_one * np.cos(2.0 * np.pi * omega * epiweek)
+            + release_beta_two * np.cos(4.0 * np.pi * omega * epiweek)
+        )
+
+        release_min = mean_weekly_volume * (1 + release_min_parameter) / 7.0
+        release_max = mean_weekly_volume * (1 + release_max_parameter) / 7.0
+
+        availability_status = (100.0 * storage / capacity - min_normal) / (
+            max_normal - min_normal
+        )
+
+        # # above normal
+        # if availability_status > 1:
+        #     release = (
+        #         storage
+        #         - (capacity * max_normal / 100.0)
+        #         + forecasted_weekly_volume
+        #     ) / 7.0
+
+        # # below normal
+        # elif availability_status < 0:
+        #     release = (
+        #         storage
+        #         - (capacity * min_normal / 100.0)
+        #         + forecasted_weekly_volume
+        #     ) / 7.0  # NK: The first part of this sum will be negative.
+
+        # # within normal
+        # else:
+        #     release = (
+        #         mean_weekly_volume
+        #         * (
+        #             1
+        #             + (
+        #                 standardized_weekly_release
+        #                 + release_c
+        #                 + release_p_one * availability_status
+        #                 + release_p_two * standardized_inflow
+        #             )
+        #         )
+        #     ) / 7.0
+
+        # # enforce boundaries on release
+        # if release < release_min:
+        #     # shouldn't release less than min
+        #     release = release_min
+        # elif release > release_max:
+        #     # shouldn't release more than max
+        #     release = release_max
+
+        release = (
+            mean_weekly_volume
+            * (
+                1
+                + (
+                    standardized_weekly_release
+                    + release_c
+                    + release_p_one * availability_status
+                    + release_p_two * standardized_inflow
+                )
             )
+        ) / 7.0
 
-            min_normal = np.minimum(
-                lower_max,
-                np.maximum(
-                    lower_min,
-                    lower_mu
-                    + lower_alpha * np.sin(2.0 * np.pi * omega * epiweek)
-                    + lower_beta * np.cos(2.0 * np.pi * omega * epiweek),
-                ),
-            )
+        release_above_normal = (
+            storage
+            - (capacity * max_normal / 100.0)
+            + forecasted_weekly_volume
+        ) / 7.0
 
-            # TODO could make a better forecast?
-            # why not use cumulative volume for the current epiweek, and only
-            # extrapolate for the remainder of the week?
-            forecasted_weekly_volume = 7.0 * inflow * 24.0 * 60.0 * 60.0
-            mean_weekly_volume = 7.0 * inflow_mean * 24.0 * 60.0 * 60.0
+        release_below_normal = (
+            storage
+            - (capacity * min_normal / 100.0)
+            + forecasted_weekly_volume
+        ) / 7.0  # NK: The first part of this sum will be negative.
 
-            standardized_inflow = (
-                forecasted_weekly_volume / mean_weekly_volume
-            ) - 1.0
+        release = np.where(
+            availability_status > one, release_above_normal, release
+        )
+        release = np.where(
+            availability_status < zero, release_below_normal, release
+        )
+        release = np.where(release < release_min, release_min, release)
+        release = np.where(release > release_max, release_max, release)
 
-            standardized_weekly_release = (
-                release_alpha_one * np.sin(2.0 * np.pi * omega * epiweek)
-                + release_alpha_two * np.sin(4.0 * np.pi * omega * epiweek)
-                + release_beta_one * np.cos(2.0 * np.pi * omega * epiweek)
-                + release_beta_two * np.cos(4.0 * np.pi * omega * epiweek)
-            )
-
-            release_min = (
-                mean_weekly_volume * (1 + release_min_parameter) / 7.0
-            )
-            release_max = (
-                mean_weekly_volume * (1 + release_max_parameter) / 7.0
-            )
-
-            availability_status = (100.0 * storage / capacity - min_normal) / (
-                max_normal - min_normal
-            )
-
-            # above normal
-            if availability_status > 1:
-                release = (
-                    storage
-                    - (capacity * max_normal / 100.0)
-                    + forecasted_weekly_volume
-                ) / 7.0
-
-            # below normal
-            elif availability_status < 0:
-                release = (
-                    storage
-                    - (capacity * min_normal / 100.0)
-                    + forecasted_weekly_volume
-                ) / 7.0  # NK: The first part of this sum will be negative.
-
-            # within normal
-            else:
-                release = (
-                    mean_weekly_volume
-                    * (
-                        1
-                        + (
-                            standardized_weekly_release
-                            + release_c
-                            + release_p_one * availability_status
-                            + release_p_two * standardized_inflow
-                        )
-                    )
-                ) / 7.0
-
-            # enforce boundaries on release
-            if release < release_min:
-                # shouldn't release less than min
-                release = release_min
-            elif release > release_max:
-                # shouldn't release more than max
-                release = release_max
-
-            # storage update and boundaries are enforced during the regulation step
-            return release, availability_status
+        # storage update and boundaries are enforced during the regulation step
+        return release, availability_status

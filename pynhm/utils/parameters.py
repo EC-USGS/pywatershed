@@ -431,6 +431,7 @@ class StarfitParameters:
         parameter_dimensions_dict: dict = None,
     ) -> "StarfitParameters":
         self.parameters = parameter_dict
+        self.nhm_coordinates = {"grand_id": self.parameters["grand_id"]}
 
     @staticmethod
     def from_netcdf(
@@ -438,6 +439,7 @@ class StarfitParameters:
         istarf_conus: fileish,
         grand_dams: fileish,
         grand_ids: fileish = None,
+        param_names: list = None,
     ) -> dict:
         istarf_conus_ds = nc4.Dataset(istarf_conus)
         resops_ds = nc4.Dataset(resops_domain)
@@ -451,40 +453,82 @@ class StarfitParameters:
         # As a convenience, subset the full reservoir datasets to
         # the domain instead of requiring a preprocess.
         param_dict = {}
+        param_dim_dict = {}
+
+        # implied parameters
+        param_dict["nreservoirs"] = len(domain_grand_ids)
+        param_dict["nhru"] = len(domain_grand_ids)  # to remove
+
+        def get_params(data, grand_id_name):
+            wh_domain = np.where(
+                np.isin(data[grand_id_name], domain_grand_ids)
+            )
+            assert len(wh_domain[0]) == len(domain_grand_ids)
+            for vv in data.variables:
+                if param_names is not None and vv not in param_names:
+                    if vv.lower() != "grand_id":
+                        continue
+
+                if vv in param_dict.keys():
+                    raise KeyError(
+                        f"the key {vv} is already in the param_dict"
+                    )
+
+                if "time" in vv:
+                    param_dict[vv] = (
+                        nc4.num2date(
+                            data[vv][:][wh_domain],
+                            units=resops_ds[vv].units,
+                            calendar=resops_ds[vv].calendar,
+                            only_use_cftime_datetimes=False,
+                        )
+                        .filled()
+                        .astype("datetime64[s]")
+                    )
+
+                else:
+                    if "time" in data[vv].dimensions:
+                        param_dict[vv] = data[vv][:][:, wh_domain]
+                    else:
+                        param_dict[vv] = data[vv][:][wh_domain]
+
+                    if isinstance(param_dict[vv], np.ma.core.MaskedArray):
+                        param_dict[vv] = param_dict[vv].data
+
+            return
 
         # subset the GRanD data provided
         # https://sedac.ciesin.columbia.edu/data/set/grand-v1-dams-rev01
-        wh_domain_grand = np.where(
-            np.isin(grand_dams_ds["GRAND_ID"], domain_grand_ids)
-        )
-        for vv in grand_dams_ds.variables:
-            # if we know the necessary parameters could skip un needed.
-            param_dict[vv] = grand_dams_ds[vv][:][wh_domain_grand].data
+        get_params(grand_dams_ds, "GRAND_ID")
 
         # subset the istarf data provided
         # https://zenodo.org/record/4602277#.ZCtYj-zMJqs
-        wh_domain_istarf = np.where(
-            np.isin(istarf_conus_ds["GRanD_ID"], domain_grand_ids)
-        )
-        assert len(wh_domain_grand[0]) == len(domain_grand_ids)
-        for vv in istarf_conus_ds.variables:
-            # if we know the necessary parameters could skip un needed.
-            if vv in param_dict.keys():
-                raise KeyError(f"the key {vv} is already in the param_dict")
-            param_dict[vv] = istarf_conus_ds[vv][:][wh_domain_istarf].data
+        get_params(istarf_conus_ds, "GRanD_ID")
 
         # subset the resops data provided
         # https://zenodo.org/record/5893641#.ZCtakuzMJqs
-        wh_domain_resops = np.where(
-            np.isin(resops_ds["grand_id"], domain_grand_ids)
-        )
-        assert len(wh_domain_resops[0]) == len(domain_grand_ids)
-        for vv in resops_ds.variables:
-            # if we know the necessary parameters could skip un needed.
-            if vv in param_dict.keys():
-                raise KeyError(f"the key {vv} is already in the param_dict")
-            param_dict[vv] = resops_ds[vv][:][wh_domain_resops].data
+        get_params(resops_ds, "grand_id")
 
-        return PrmsParameters(param_dict)
+        # make sure the three subsets are colocated
+        # remove the duplicated grand_id (ridiculous)
+        assert (param_dict["GRAND_ID"] == param_dict["GRanD_ID"]).all()
+        assert (param_dict["GRAND_ID"] == param_dict["grand_id"]).all()
+        del param_dict["GRAND_ID"], param_dict["GRanD_ID"]
 
+        return StarfitParameters(param_dict)
+
+    def subset(self, **kwargs):
+        return self
+
+    def get_parameters(self, keys, **kwargs):
+        if not isinstance(keys, list):
+            keys = [keys]
+        return {
+            key: self.parameters[key]
+            for key in keys
+            if key in self.parameters.keys()
+        }
+
+    def write(self, file):
         # it's desirable to have a netcdf write method for these parameters
+        pass

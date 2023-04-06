@@ -4,14 +4,7 @@ from pynhm.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan
-
-try:
-    from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
-
-    has_prmsgroundwater_f = True
-except ImportError:
-    has_prmsgroundwater_f = False
+from ..constants import nan, zero
 
 
 class Starfit(StorageUnit):
@@ -35,7 +28,7 @@ class Starfit(StorageUnit):
     def __init__(
         self,
         control: Control,
-        inflows: adaptable,
+        lake_inflow: adaptable,
         budget_type: str = None,
         calc_method: str = None,
         verbose: bool = False,
@@ -47,6 +40,8 @@ class Starfit(StorageUnit):
             load_n_time_batches=load_n_time_batches,
         )
         self.name = "Starfit"
+
+        self._calc_method = str(calc_method)
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
@@ -61,14 +56,34 @@ class Starfit(StorageUnit):
 
         """
         return (
-            "nhru",
-            "ngw",
-            "nssr",
-            "hru_area",
-            "gwflow_coef",
-            "gwsink_coef",
-            "gwstor_init",
-            "gwstor_min",
+            "nreservoirs",
+            "nhru",  # to remove
+            "grand_id",
+            "initial_storage",
+            "start_time",
+            "end_time",
+            "inflow_mean",
+            "NORhi_min",
+            "NORhi_max",
+            "NORhi_alpha",
+            "NORhi_beta",
+            "NORhi_mu",
+            "NORlo_min",
+            "NORlo_max",
+            "NORlo_alpha",
+            "NORlo_beta",
+            "NORlo_mu",
+            "Release_min",
+            "Release_max",
+            "Release_alpha1",
+            "Release_alpha2",
+            "Release_beta1",
+            "Release_beta2",
+            "Release_p1",
+            "Release_p2",
+            "Release_c",
+            "GRanD_CAP_MCM",
+            "Obs_MEANFLOW_CUMECS",
         )
 
     @staticmethod
@@ -79,25 +94,20 @@ class Starfit(StorageUnit):
             variables: input variables
 
         """
-        return (
-            "soil_to_gw",
-            "ssr_to_gw",
-            "dprst_seep_hru",
-        )
+        return ("lake_inflow",)
 
     @staticmethod
     def get_mass_budget_terms():
         return {
             "inputs": [
-                "soil_to_gw",
-                "ssr_to_gw",
-                "dprst_seep_hru",
+                "lake_inflow",
             ],
             "outputs": [
-                "gwres_flow",
+                "lake_release",
+                "lake_spill",
             ],
             "storage_changes": [
-                "gwres_stor_change",
+                "lake_storage_change",
             ],
         }
 
@@ -109,18 +119,28 @@ class Starfit(StorageUnit):
             dict: initial values for named variables
         """
         return {
-            "gwres_flow": nan,
-            "gwres_flow_vol": nan,
-            "gwres_sink": nan,
-            "gwres_stor": nan,
-            "gwres_stor_old": nan,
-            "gwres_stor_change": nan,
+            "lake_storage": nan,
+            "lake_storage_old": nan,
+            "lake_storage_change": nan,
+            "lake_inflow": nan,
+            "lake_release": nan,
+            "lake_spill": nan,
+            "lake_availability_status": nan,
         }
 
     def _set_initial_conditions(self):
-        # initialize groundwater reservoir storage
-        self.gwres_stor[:] = self.gwstor_init.copy()
-        self.gwres_stor_old[:] = self.gwstor_init.copy()
+        # initialize storage when the appropriate time is reached
+        # currently each reservoir can start at a different time.
+        self.lake_storage[:] = nan
+        self.lake_storage_old[:] = nan
+
+        # HMM, this is sketchy seems like it should be a pre-process
+        self.Obs_MEANFLOW_CUMECS = np.where(
+            np.isnan(self.Obs_MEANFLOW_CUMECS),
+            self.inflow_mean,
+            self.Obs_MEANFLOW_CUMECS,
+        )
+
         return
 
     def _advance_variables(self) -> None:
@@ -128,7 +148,8 @@ class Starfit(StorageUnit):
         Returns:
             None
         """
-        self.gwres_stor_old[:] = self.gwres_stor
+        self.lake_storage_change[:] = self.lake_storage - self.lake_storage_old
+        self.lake_storage_old[:] = self.lake_storage
         return
 
     def _calculate(self, simulation_time):
@@ -144,128 +165,215 @@ class Starfit(StorageUnit):
 
         self._simulation_time = simulation_time
 
-        if self._calc_method.lower() == "numba":
-            import numba as nb
+        for ires in range(self.nreservoirs):
+            if self.control.current_time > self.end_time[ires]:
+                self.lake_storage[ires] = nan
+                self.lake_release[ires] = nan
+                self.lake_spill[ires] = nan
+                self.lake_availability_status[ires] = nan
+                continue
 
-            if not hasattr(self, "_calculate_numba"):
-                self._calculate_numba = nb.njit(
-                    nb.types.UniTuple(nb.float64[:], 5)(
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                    ),
-                    parallel=False,
-                )(self._calculate_numpy)
+            if self.control.current_time < self.start_time[ires]:
+                continue
 
-            (
-                self.gwres_stor[:],
-                self.gwres_flow[:],
-                self.gwres_sink[:],
-                self.gwres_stor_change[:],
-                self.gwres_flow_vol[:],
-            ) = self._calculate_numba(
-                self.hru_area,
-                self.soil_to_gw,
-                self.ssr_to_gw,
-                self.dprst_seep_hru,
-                self.gwres_stor,
-                self.gwflow_coef,
-                self.gwsink_coef,
-                self.gwres_stor_old,
-                self.control.params.hru_in_to_cf,
+            if self.control.current_time == self.start_time[ires]:
+                self.lake_storage[ires] = self.initial_storage[ires]
+                self.lake_storage_old[ires] = self.initial_storage[ires]
+
+            if self._calc_method.lower() in ["none", "numpy"]:
+                (
+                    self.lake_release[ires],
+                    self.lake_availability_status[ires],
+                ) = self._calculate_numpy(
+                    # use kws, sort by kw?
+                    np.minimum(self.control.current_epiweek, 52),
+                    self.grand_id[ires],
+                    self.NORhi_min[ires],
+                    self.NORhi_max[ires],
+                    self.NORhi_alpha[ires],
+                    self.NORhi_beta[ires],
+                    self.NORhi_mu[ires],
+                    self.NORlo_min[ires],
+                    self.NORlo_max[ires],
+                    self.NORlo_alpha[ires],
+                    self.NORlo_beta[ires],
+                    self.NORlo_mu[ires],
+                    self.Release_min[ires],
+                    self.Release_max[ires],
+                    self.Release_alpha1[ires],
+                    self.Release_alpha2[ires],
+                    self.Release_beta1[ires],
+                    self.Release_beta2[ires],
+                    self.Release_p1[ires],
+                    self.Release_p2[ires],
+                    self.Release_c[ires],
+                    self.GRanD_CAP_MCM[ires],
+                    self.Obs_MEANFLOW_CUMECS[ires],
+                    self.lake_storage[ires],
+                    self.lake_inflow[ires],
+                )  # output in m^3/d
+
+            else:
+                msg = (
+                    f"Invalid calc_method={self._calc_method} for {self.name}"
+                )
+                raise ValueError(msg)
+
+            self.lake_release[ires] = (
+                self.lake_release[ires] / 24 / 60 / 60
+            )  # convert to m^3/s
+
+            # update storage (dS=I-R)
+            self.lake_storage_change[ires] = (
+                (self.lake_inflow[ires] - self.lake_release[ires])
+                * 24
+                * 60
+                * 60
+                / 1.0e6
+            )  # conv to MCM
+
+            self.lake_storage[ires] = max(
+                self.lake_storage[ires] + self.lake_storage_change[ires], zero
             )
 
-        elif self._calc_method.lower() == "fortran":
-            (
-                self.gwres_stor[:],
-                self.gwres_flow[:],
-                self.gwres_sink[:],
-                self.gwres_stor_change[:],
-                self.gwres_flow_vol[:],
-            ) = _calculate_fortran(
-                self.hru_area,
-                self.soil_to_gw,
-                self.ssr_to_gw,
-                self.dprst_seep_hru,
-                self.gwres_stor,
-                self.gwflow_coef,
-                self.gwsink_coef,
-                self.gwres_stor_old,
-                self.control.params.hru_in_to_cf,
-            )
+            if self.lake_storage[ires] > self.GRanD_CAP_MCM[ires]:  # spill
+                self.lake_spill[ires] = (
+                    (self.lake_storage[ires] - self.GRanD_CAP_MCM[ires])
+                    * 1.0e6
+                    / 24
+                    / 60
+                    / 60
+                )
+                # release = release + spill  #uncomment to include spill in release value
+                self.lake_storage[ires] = self.GRanD_CAP_MCM[ires]
 
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            (
-                self.gwres_stor[:],
-                self.gwres_flow[:],
-                self.gwres_sink[:],
-                self.gwres_stor_change[:],
-                self.gwres_flow_vol[:],
-            ) = self._calculate_numpy(
-                self.hru_area,
-                self.soil_to_gw,
-                self.ssr_to_gw,
-                self.dprst_seep_hru,
-                self.gwres_stor,
-                self.gwflow_coef,
-                self.gwsink_coef,
-                self.gwres_stor_old,
-                self.control.params.hru_in_to_cf,
-            )
+            else:
+                self.lake_spill[ires] = zero
 
-        else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+        return
 
     @staticmethod
     def _calculate_numpy(
-        gwarea,
-        soil_to_gw,
-        ssr_to_gw,
-        dprst_seep_hru,
-        gwres_stor,
-        gwflow_coef,
-        gwsink_coef,
-        gwres_stor_old,
-        hru_in_to_cf,
+        epiweek,
+        reservoir_id,
+        upper_min,
+        upper_max,
+        upper_alpha,
+        upper_beta,
+        upper_mu,
+        lower_min,
+        lower_max,
+        lower_alpha,
+        lower_beta,
+        lower_mu,
+        release_min_parameter,
+        release_max_parameter,
+        release_alpha_one,
+        release_alpha_two,
+        release_beta_one,
+        release_beta_two,
+        release_p_one,
+        release_p_two,
+        release_c,
+        capacity_MCM,
+        inflow_mean,
+        storage_MCM,
+        inflow,
     ):
-        soil_to_gw_vol = soil_to_gw * gwarea
-        ssr_to_gw_vol = ssr_to_gw * gwarea
-        dprst_seep_hru_vol = dprst_seep_hru * gwarea
+        # input is in MCM, this function needs m^3
+        storage = storage_MCM * 1.0e6
+        capacity = capacity_MCM * 1.0e6
 
-        # todo: what about route order
+        # constant
+        omega = 1.0 / 52.0
 
-        _gwres_stor = gwres_stor * gwarea
-        _gwres_stor += soil_to_gw_vol + ssr_to_gw_vol + dprst_seep_hru_vol
+        if np.isfinite(reservoir_id):
+            max_normal = np.minimum(
+                upper_max,
+                np.maximum(
+                    upper_min,
+                    upper_mu
+                    + upper_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+                    + upper_beta * np.cos(2.0 * np.pi * omega * epiweek),
+                ),
+            )
 
-        _gwres_flow = _gwres_stor * gwflow_coef
-        _gwres_stor -= _gwres_flow
+            min_normal = np.minimum(
+                lower_max,
+                np.maximum(
+                    lower_min,
+                    lower_mu
+                    + lower_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+                    + lower_beta * np.cos(2.0 * np.pi * omega * epiweek),
+                ),
+            )
 
-        _gwres_sink = _gwres_stor * gwsink_coef
-        idx = np.where(_gwres_sink > _gwres_stor)
-        _gwres_sink[idx] = _gwres_stor[idx]
-        _gwres_stor -= _gwres_sink
+            # TODO could make a better forecast?
+            # why not use cumulative volume for the current epiweek, and only
+            # extrapolate for the remainder of the week?
+            forecasted_weekly_volume = 7.0 * inflow * 24.0 * 60.0 * 60.0
+            mean_weekly_volume = 7.0 * inflow_mean * 24.0 * 60.0 * 60.0
 
-        # convert most units back to self variables
-        # output variables
-        gwres_stor = _gwres_stor / gwarea
-        # for some stupid reason this is left in acre-inches
-        gwres_flow = _gwres_flow / gwarea
-        gwres_sink = _gwres_sink / gwarea
+            standardized_inflow = (
+                forecasted_weekly_volume / mean_weekly_volume
+            ) - 1.0
 
-        gwres_stor_change = gwres_stor - gwres_stor_old
-        gwres_flow_vol = gwres_flow * hru_in_to_cf
+            standardized_weekly_release = (
+                release_alpha_one * np.sin(2.0 * np.pi * omega * epiweek)
+                + release_alpha_two * np.sin(4.0 * np.pi * omega * epiweek)
+                + release_beta_one * np.cos(2.0 * np.pi * omega * epiweek)
+                + release_beta_two * np.cos(4.0 * np.pi * omega * epiweek)
+            )
 
-        return (
-            gwres_stor,
-            gwres_flow,
-            gwres_sink,
-            gwres_stor_change,
-            gwres_flow_vol,
-        )
+            release_min = (
+                mean_weekly_volume * (1 + release_min_parameter) / 7.0
+            )
+            release_max = (
+                mean_weekly_volume * (1 + release_max_parameter) / 7.0
+            )
+
+            availability_status = (100.0 * storage / capacity - min_normal) / (
+                max_normal - min_normal
+            )
+
+            # above normal
+            if availability_status > 1:
+                release = (
+                    storage
+                    - (capacity * max_normal / 100.0)
+                    + forecasted_weekly_volume
+                ) / 7.0
+
+            # below normal
+            elif availability_status < 0:
+                release = (
+                    storage
+                    - (capacity * min_normal / 100.0)
+                    + forecasted_weekly_volume
+                ) / 7.0  # NK: The first part of this sum will be negative.
+
+            # within normal
+            else:
+                release = (
+                    mean_weekly_volume
+                    * (
+                        1
+                        + (
+                            standardized_weekly_release
+                            + release_c
+                            + release_p_one * availability_status
+                            + release_p_two * standardized_inflow
+                        )
+                    )
+                ) / 7.0
+
+            # enforce boundaries on release
+            if release < release_min:
+                # shouldn't release less than min
+                release = release_min
+            elif release > release_max:
+                # shouldn't release more than max
+                release = release_max
+
+            # storage update and boundaries are enforced during the regulation step
+            return release, availability_status

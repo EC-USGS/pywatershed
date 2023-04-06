@@ -1756,6 +1756,12 @@ lake_2gw:
     0: nlake
   type: float64
   units: cfs
+lake_availability_status:
+  desc: Lake storage as percent of normal range.
+  dimensions:
+    0: nreservoirs
+  type: float64
+  units: cubic meters
 lake_elev:
   desc: Elevation of each simulated lake surface
   dimensions:
@@ -1789,9 +1795,9 @@ lake_gwflow:
 lake_inflow:
   desc: Total inflow to each lake
   dimensions:
-    0: nlake
+    0: nreservoirs
   type: float64
-  units: cfs
+  units: cubic meters
 lake_interflow:
   desc: Total interflow into each lake
   dimensions:
@@ -1853,6 +1859,12 @@ lake_precip:
     0: nlake
   type: float64
   units: cfs
+lake_release:
+  desc: Release from each lake (does not include spill)
+  dimensions:
+    0: nreservoirs
+  type: float64
+  units: cubic meters
 lake_seep_in:
   desc: Total seepage into each lake using broad-crested weir or gate opening routing
   dimensions:
@@ -1871,6 +1883,12 @@ lake_seepage_gwr:
     0: ngw
   type: float64
   units: inches
+lake_spill:
+  desc: Spill from each lake
+  dimensions:
+    0: nreservoirs
+  type: float64
+  units: cubic meters
 lake_sroff:
   desc: Total surface runoff into each lake
   dimensions:
@@ -1883,6 +1901,24 @@ lake_sto:
     0: nlake
   type: float64
   units: cfs-days
+lake_storage:
+  desc: Storage in each lake
+  dimensions:
+    0: nreservoirs
+  type: float64
+  units: cubic meters
+lake_storage_old:
+  desc: Previous storage in each lake
+  dimensions:
+    0: nreservoirs
+  type: float64
+  units: cubic meters
+lake_storage_change:
+  desc: Storage change for each lake
+  dimensions:
+    0: nreservoirs
+  type: float64
+  units: cubic meters
 lake_stream_in:
   desc: Total streamflow into each lake
   dimensions:

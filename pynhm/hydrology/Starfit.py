@@ -175,42 +175,36 @@ class Starfit(StorageUnit):
         self.lake_storage[wh_start] = self.initial_storage[wh_start]
         self.lake_storage_old[wh_start] = self.initial_storage[wh_start]
 
-        if self._calc_method.lower() in ["none", "numpy"]:
-            (
-                self.lake_release,
-                self.lake_availability_status,
-            ) = self._calc_istarf_release(
-                # use kws, sort by kw?
-                np.minimum(self.control.current_epiweek, 52),
-                self.grand_id,
-                self.NORhi_min,
-                self.NORhi_max,
-                self.NORhi_alpha,
-                self.NORhi_beta,
-                self.NORhi_mu,
-                self.NORlo_min,
-                self.NORlo_max,
-                self.NORlo_alpha,
-                self.NORlo_beta,
-                self.NORlo_mu,
-                self.Release_min,
-                self.Release_max,
-                self.Release_alpha1,
-                self.Release_alpha2,
-                self.Release_beta1,
-                self.Release_beta2,
-                self.Release_p1,
-                self.Release_p2,
-                self.Release_c,
-                self.GRanD_CAP_MCM,
-                self.Obs_MEANFLOW_CUMECS,
-                self.lake_storage,
-                self.lake_inflow,
-            )  # output in m^3/d
-
-        else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+        (
+            self.lake_release[:],
+            self.lake_availability_status[:],
+        ) = self._calc_istarf_release(
+            epiweek=np.minimum(self.control.current_epiweek, 52),
+            grand_id=self.grand_id,
+            NORhi_min=self.NORhi_min,
+            NORhi_max=self.NORhi_max,
+            NORhi_alpha=self.NORhi_alpha,
+            NORhi_beta=self.NORhi_beta,
+            NORhi_mu=self.NORhi_mu,
+            NORlo_min=self.NORlo_min,
+            NORlo_max=self.NORlo_max,
+            NORlo_alpha=self.NORlo_alpha,
+            NORlo_beta=self.NORlo_beta,
+            NORlo_mu=self.NORlo_mu,
+            Release_min=self.Release_min,
+            Release_max=self.Release_max,
+            Release_alpha1=self.Release_alpha1,
+            Release_alpha2=self.Release_alpha2,
+            Release_beta1=self.Release_beta1,
+            Release_beta2=self.Release_beta2,
+            Release_p1=self.Release_p1,
+            Release_p2=self.Release_p2,
+            Release_c=self.Release_c,
+            GRanD_CAP_MCM=self.GRanD_CAP_MCM,
+            Obs_MEANFLOW_CUMECS=self.Obs_MEANFLOW_CUMECS,
+            lake_storage=self.lake_storage,
+            lake_inflow=self.lake_inflow,
+        )  # output in m^3/d
 
         self.lake_release[:] = (
             self.lake_release / 24 / 60 / 60
@@ -242,80 +236,80 @@ class Starfit(StorageUnit):
     @staticmethod
     def _calc_istarf_release(
         epiweek,
-        reservoir_id,
-        upper_min,
-        upper_max,
-        upper_alpha,
-        upper_beta,
-        upper_mu,
-        lower_min,
-        lower_max,
-        lower_alpha,
-        lower_beta,
-        lower_mu,
-        release_min_parameter,
-        release_max_parameter,
-        release_alpha_one,
-        release_alpha_two,
-        release_beta_one,
-        release_beta_two,
-        release_p_one,
-        release_p_two,
-        release_c,
-        capacity_MCM,
-        inflow_mean,
-        storage_MCM,
-        inflow,
+        GRanD_CAP_MCM,
+        grand_id,
+        lake_inflow,
+        lake_storage,
+        NORhi_alpha,
+        NORhi_beta,
+        NORhi_max,
+        NORhi_min,
+        NORhi_mu,
+        NORlo_alpha,
+        NORlo_beta,
+        NORlo_max,
+        NORlo_min,
+        NORlo_mu,
+        Obs_MEANFLOW_CUMECS,
+        Release_max,
+        Release_min,
+        Release_alpha1,
+        Release_alpha2,
+        Release_beta1,
+        Release_beta2,
+        Release_c,
+        Release_p1,
+        Release_p2,
     ):
         # input is in MCM, this function needs m^3
-        storage = storage_MCM * 1.0e6
-        capacity = capacity_MCM * 1.0e6
+        storage = lake_storage * 1.0e6
+        capacity = GRanD_CAP_MCM * 1.0e6
 
         # constant
         omega = 1.0 / 52.0
 
-        if not np.isfinite(reservoir_id).any():
-            raise ValueError("Some non-finite reservoir_ids present")
+        if not np.isfinite(grand_id).any():
+            raise ValueError("Some non-finite grand_ids present")
 
         max_normal = np.minimum(
-            upper_max,
+            NORhi_max,
             np.maximum(
-                upper_min,
-                upper_mu
-                + upper_alpha * np.sin(2.0 * np.pi * omega * epiweek)
-                + upper_beta * np.cos(2.0 * np.pi * omega * epiweek),
+                NORhi_min,
+                NORhi_mu
+                + NORhi_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+                + NORhi_beta * np.cos(2.0 * np.pi * omega * epiweek),
             ),
         )
 
         min_normal = np.minimum(
-            lower_max,
+            NORlo_max,
             np.maximum(
-                lower_min,
-                lower_mu
-                + lower_alpha * np.sin(2.0 * np.pi * omega * epiweek)
-                + lower_beta * np.cos(2.0 * np.pi * omega * epiweek),
+                NORlo_min,
+                NORlo_mu
+                + NORlo_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+                + NORlo_beta * np.cos(2.0 * np.pi * omega * epiweek),
             ),
         )
 
         # TODO could make a better forecast?
         # why not use cumulative volume for the current epiweek, and only
         # extrapolate for the remainder of the week?
-        forecasted_weekly_volume = 7.0 * inflow * 24.0 * 60.0 * 60.0
-        mean_weekly_volume = 7.0 * inflow_mean * 24.0 * 60.0 * 60.0
+        forecasted_weekly_volume = 7.0 * lake_inflow * 24.0 * 60.0 * 60.0
+        mean_weekly_volume = 7.0 * Obs_MEANFLOW_CUMECS * 24.0 * 60.0 * 60.0
 
         standardized_inflow = (
             forecasted_weekly_volume / mean_weekly_volume
         ) - 1.0
 
         standardized_weekly_release = (
-            release_alpha_one * np.sin(2.0 * np.pi * omega * epiweek)
-            + release_alpha_two * np.sin(4.0 * np.pi * omega * epiweek)
-            + release_beta_one * np.cos(2.0 * np.pi * omega * epiweek)
-            + release_beta_two * np.cos(4.0 * np.pi * omega * epiweek)
+            Release_alpha1 * np.sin(2.0 * np.pi * omega * epiweek)
+            + Release_alpha2 * np.sin(4.0 * np.pi * omega * epiweek)
+            + Release_beta1 * np.cos(2.0 * np.pi * omega * epiweek)
+            + Release_beta2 * np.cos(4.0 * np.pi * omega * epiweek)
         )
 
-        release_min = mean_weekly_volume * (1 + release_min_parameter) / 7.0
-        release_max = mean_weekly_volume * (1 + release_max_parameter) / 7.0
+        release_min_vol = mean_weekly_volume * (1 + Release_min) / 7.0
+        release_max_vol = mean_weekly_volume * (1 + Release_max) / 7.0
 
         availability_status = (100.0 * storage / capacity - min_normal) / (
             max_normal - min_normal
@@ -327,9 +321,9 @@ class Starfit(StorageUnit):
                 1
                 + (
                     standardized_weekly_release
-                    + release_c
-                    + release_p_one * availability_status
-                    + release_p_two * standardized_inflow
+                    + Release_c
+                    + Release_p1 * availability_status
+                    + Release_p2 * standardized_inflow
                 )
             )
         ) / 7.0
@@ -352,8 +346,8 @@ class Starfit(StorageUnit):
         release = np.where(
             availability_status < zero, release_below_normal, release
         )
-        release = np.where(release < release_min, release_min, release)
-        release = np.where(release > release_max, release_max, release)
+        release = np.where(release < release_min_vol, release_min_vol, release)
+        release = np.where(release > release_max_vol, release_max_vol, release)
 
         # storage update and boundaries are enforced during the regulation step
         return release, availability_status

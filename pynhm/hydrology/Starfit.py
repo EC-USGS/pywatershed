@@ -165,20 +165,30 @@ class Starfit(StorageUnit):
 
         self._simulation_time = simulation_time
 
-        for ires in range(self.nreservoirs):
-            if self.control.current_time > self.end_time[ires]:
-                self.lake_storage[ires] = nan
-                self.lake_release[ires] = nan
-                self.lake_spill[ires] = nan
-                self.lake_availability_status[ires] = nan
-                continue
+        # for ires in range(self.nreservoirs):
+        #     if self.control.current_time > self.end_time[ires]:
+        #         self.lake_storage[ires] = nan
+        #         self.lake_release[ires] = nan
+        #         self.lake_spill[ires] = nan
+        #         self.lake_availability_status[ires] = nan
+        #         continue
 
-            if self.control.current_time < self.start_time[ires]:
-                continue
+        #     if self.control.current_time < self.start_time[ires]:
+        #         continue
 
-            if self.control.current_time == self.start_time[ires]:
-                self.lake_storage[ires] = self.initial_storage[ires]
-                self.lake_storage_old[ires] = self.initial_storage[ires]
+        #     if self.control.current_time == self.start_time[ires]:
+        #         self.lake_storage[ires] = self.initial_storage[ires]
+        #         self.lake_storage_old[ires] = self.initial_storage[ires]
+
+        wh_after_end = np.where(self.control.current_time > self.end_time)
+        self.lake_storage[wh_after_end] = nan
+        self.lake_release[wh_after_end] = nan
+        self.lake_spill[wh_after_end] = nan
+        self.lake_availability_status[wh_after_end] = nan
+
+        wh_start = np.where(self.control.current_time == self.start_time)
+        self.lake_storage[wh_start] = self.initial_storage[wh_start]
+        self.lake_storage_old[wh_start] = self.initial_storage[wh_start]
 
         if self._calc_method.lower() in ["none", "numpy"]:
             (
@@ -326,45 +336,6 @@ class Starfit(StorageUnit):
         availability_status = (100.0 * storage / capacity - min_normal) / (
             max_normal - min_normal
         )
-
-        # # above normal
-        # if availability_status > 1:
-        #     release = (
-        #         storage
-        #         - (capacity * max_normal / 100.0)
-        #         + forecasted_weekly_volume
-        #     ) / 7.0
-
-        # # below normal
-        # elif availability_status < 0:
-        #     release = (
-        #         storage
-        #         - (capacity * min_normal / 100.0)
-        #         + forecasted_weekly_volume
-        #     ) / 7.0  # NK: The first part of this sum will be negative.
-
-        # # within normal
-        # else:
-        #     release = (
-        #         mean_weekly_volume
-        #         * (
-        #             1
-        #             + (
-        #                 standardized_weekly_release
-        #                 + release_c
-        #                 + release_p_one * availability_status
-        #                 + release_p_two * standardized_inflow
-        #             )
-        #         )
-        #     ) / 7.0
-
-        # # enforce boundaries on release
-        # if release < release_min:
-        #     # shouldn't release less than min
-        #     release = release_min
-        # elif release > release_max:
-        #     # shouldn't release more than max
-        #     release = release_max
 
         release = (
             mean_weekly_volume

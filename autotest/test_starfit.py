@@ -7,7 +7,6 @@ import xarray as xr
 
 from pynhm.base.control import Control
 from pynhm.hydrology.Starfit import Starfit
-
 from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.utils.parameters import StarfitParameters
 

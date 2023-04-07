@@ -8,9 +8,9 @@ from ..constants import fileish
 from ..utils import ControlVariables
 from ..utils.parameters import PrmsParameters
 from ..utils.time_utils import (
-    datetime_epiweek,
     datetime_dowy,
     datetime_doy,
+    datetime_epiweek,
     datetime_month,
     datetime_year,
 )

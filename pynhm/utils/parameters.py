@@ -474,26 +474,22 @@ class StarfitParameters:
                         f"the key {vv} is already in the param_dict"
                     )
 
-                if "time" in vv:
+                param_dict[vv] = data[vv][:][wh_domain]
+
+                if hasattr(data[vv], "units") and "since" in data[vv].units:
                     param_dict[vv] = (
                         nc4.num2date(
-                            data[vv][:][wh_domain],
-                            units=resops_ds[vv].units,
-                            calendar=resops_ds[vv].calendar,
+                            param_dict[vv],
+                            units=data[vv].units,
+                            calendar=data[vv].calendar,
                             only_use_cftime_datetimes=False,
                         )
                         .filled()
                         .astype("datetime64[s]")
                     )
 
-                else:
-                    if "time" in data[vv].dimensions:
-                        param_dict[vv] = data[vv][:][:, wh_domain]
-                    else:
-                        param_dict[vv] = data[vv][:][wh_domain]
-
-                    if isinstance(param_dict[vv], np.ma.core.MaskedArray):
-                        param_dict[vv] = param_dict[vv].data
+                if isinstance(param_dict[vv], np.ma.core.MaskedArray):
+                    param_dict[vv] = param_dict[vv].data
 
             return
 

@@ -29,7 +29,8 @@ class TestStarfit:
         # passing the parameter names is optional
         starfit_parameters = Starfit.get_parameters()
         params = StarfitParameters.from_netcdf(
-            **param_files, param_names=starfit_parameters
+            **param_files,
+            param_names=starfit_parameters,
         )
 
         control = Control(

@@ -404,6 +404,7 @@ class NetCdfWrite(Accessor):
         nhru_coordinate = False
         nsegment_coordinate = False
         one_coordinate = False
+        nreservoirs_coordinate = False
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name

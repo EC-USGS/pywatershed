@@ -3,24 +3,11 @@ from copy import deepcopy
 
 import netCDF4 as nc4
 import numpy as np
+import xarray as xr
 
 from ..base import meta
 from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from .prms5_file_util import PrmsFile
-
-
-def _add_implied_parameters(params, param_dims):
-    """Add implied parameters and dims that dont come from file
-
-    Returns:
-        updated input arguments
-    """
-    params["ndoy"] = ndoy
-    param_dims["ndoy"] = None
-    params["nmonth"] = 12
-    param_dims["nmonth"] = None
-
-    return params, param_dims
 
 
 class JSONParameterEncoder(json.JSONEncoder):
@@ -48,7 +35,92 @@ def _json_load(json_filename):
     return pars
 
 
-class PrmsParameters:
+class Parameters:
+    def __init__(
+        self,
+        dims: dict,
+        coords: dict,
+        data: dict,
+        attrs: dict,
+    ) -> "Parameters":
+        # this is patterned off xarray.dataset.to_dict(numpy_data=True)
+        self._data_vars = data
+        self._dims = dims
+        self._coords = coords
+        self._attrs = attrs
+
+    @property
+    def dims(self) -> dict:
+        """Return the dimensions over all parameters"""
+        return self._dims
+
+    @property
+    def coords(self) -> dict:
+        """Return the coordinates over all parameters"""
+        return self._coords
+
+    @property
+    def parameters(self) -> dict:
+        """Return all parameters"""
+        return self._data_vars
+
+    @property
+    def attrs(self) -> dict:
+        """Return the parameter (global) attributes"""
+        return self._data_vars
+
+    @property
+    def spatial_coord_names(self) -> dict:
+        """Return the spatial coordinate names."""
+        return {kk: vv for kk, vv in self._attrs.items() if "spatial" in kk}
+
+    @staticmethod
+    def from_netcdf(nc_file_list) -> "Parameters":
+        """Load parameters object from a netcdf file(s?)"""
+        # Provide in base class
+        # handle more than one file? # see prms ?
+        raise NotImplementedError
+
+    def write_netcdf(self, filename) -> None:
+        """Write parameters to a json file"""
+        xr.Dataset.from_dict(
+            {
+                "dims": self._dims,
+                "coords": self._coords,
+                "data_vars": self._data_vars,
+                "attrs": self._attrs,
+            }
+        ).to_netcdf(filename)
+        return
+
+    @staticmethod
+    def from_json(json_filename: fileish) -> "Parameters":
+        """Load parameters object from a json file"""
+        raise NotImplementedError
+
+    def write_json(self, json_filename) -> None:
+        """Write parameters to a json file"""
+        raise NotImplementedError
+
+    def subset(
+        self,
+        keys: listish = None,
+        process: str = None,
+        keep_attrs=True,
+    ) -> "Parameters":
+        """Returns a Parameters object with a subset of the data."""
+        # Provide in base class
+        raise NotImplementedError
+
+    def get_parameters(
+        self, keys: listish, process: str = None, dims: bool = False
+    ) -> dict:
+        """Returns Parameter data for requested keys."""
+        # Provide in base class
+        raise NotImplementedError
+
+
+class PrmsParameters(Parameters):
     """
     PRMS parameter class
 
@@ -76,7 +148,8 @@ class PrmsParameters:
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
     ) -> "PrmsParameters":
-        self.parameters = parameter_dict
+        super().__init__({}, parameter_dimensions_dict, parameter_dict, {})
+
         self._params_sep_procs = all(
             [isinstance(pp, dict) for pp in self.parameters.values()]
         )
@@ -123,6 +196,8 @@ class PrmsParameters:
                     parameter_dimensions_dict[key] = tuple(temp_dims)
 
         self.parameter_dimensions = parameter_dimensions_dict
+
+        return
 
     def subset(
         self, keys: listish = None, process: str = None
@@ -297,12 +372,11 @@ class PrmsParameters:
         pars = _json_load(json_filename)
         params = PrmsParameters(pars)
 
-        (
-            params.parameters,
-            paramsparameter_dimensions,
-        ) = _add_implied_parameters(
-            params.parameters, params.parameter_dimensions
-        )
+        # add implied dimensions
+        params.parameters["ndoy"] = ndoy
+        params.parameters["nmonth"] = 12
+        params.parameter_dimensions["ndoy"] = None
+        params.parameter_dimensions["nmonth"] = None
 
         return params
 
@@ -318,19 +392,18 @@ class PrmsParameters:
 
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
-
-        (
-            data["parameter"]["parameters"],
-            data["parameter"]["parameter_dimensions"],
-        ) = _add_implied_parameters(
+        params = PrmsParameters(
             data["parameter"]["parameters"],
             data["parameter"]["parameter_dimensions"],
         )
 
-        return PrmsParameters(
-            data["parameter"]["parameters"],
-            data["parameter"]["parameter_dimensions"],
-        )
+        # add implied dimensions
+        params.parameters["ndoy"] = ndoy
+        params.parameters["nmonth"] = 12
+        params.parameter_dimensions["ndoy"] = None
+        params.parameter_dimensions["nmonth"] = None
+
+        return params
 
     @staticmethod
     def _from_nc_file(parameter_nc_file) -> dict:
@@ -464,6 +537,7 @@ class StarfitParameters:
                 np.isin(data[grand_id_name], domain_grand_ids)
             )
             assert len(wh_domain[0]) == len(domain_grand_ids)
+
             for vv in data.variables:
                 if param_names is not None and vv not in param_names:
                     if vv.lower() != "grand_id":
@@ -474,6 +548,7 @@ class StarfitParameters:
                         f"the key {vv} is already in the param_dict"
                     )
 
+                # param_dim_dict[vv] = list(data[vv].dimensions)
                 param_dict[vv] = data[vv][:][wh_domain]
 
                 if hasattr(data[vv], "units") and "since" in data[vv].units:

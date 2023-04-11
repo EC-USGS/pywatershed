@@ -8,6 +8,7 @@ import xarray as xr
 from ..base import meta
 from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from .prms5_file_util import PrmsFile
+from ..utils import data_model as dm
 
 
 class JSONParameterEncoder(json.JSONEncoder):
@@ -40,11 +41,12 @@ class Parameters:
         self,
         dims: dict,
         coords: dict,
-        data: dict,
+        data_vars: dict,
         attrs: dict,
+        metadata: dict,
+        encoding: dict = None,
     ) -> "Parameters":
-        # this is patterned off xarray.dataset.to_dict(numpy_data=True)
-        self._data_vars = data
+        self._data_vars = data_vars
         self._dims = dims
         self._coords = coords
         self._attrs = attrs
@@ -148,7 +150,13 @@ class PrmsParameters(Parameters):
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
     ) -> "PrmsParameters":
-        super().__init__({}, parameter_dimensions_dict, parameter_dict, {})
+        super().__init__(
+            dims={},
+            coords=parameter_dimensions_dict,
+            data_vars=parameter_dict,
+            attrs={},
+            metadata={},
+        )
 
         self._params_sep_procs = all(
             [isinstance(pp, dict) for pp in self.parameters.values()]
@@ -475,7 +483,7 @@ class PrmsParameters(Parameters):
         )
 
 
-class StarfitParameters:
+class StarfitParameters(Parameters):
     """
     Starfit parameter class
 
@@ -500,10 +508,21 @@ class StarfitParameters:
 
     def __init__(
         self,
-        parameter_dict: dict,
-        parameter_dimensions_dict: dict = None,
+        dims: dict,
+        coords: dict,
+        data_vars: dict,
+        attrs: dict,
+        metadata: dict,
     ) -> "StarfitParameters":
-        self.parameters = parameter_dict
+        super().__init__(
+            dims=dims,
+            coords=coords,
+            data_vars=data_vars,
+            attrs=attrs,
+            metadata=metadata,
+        )
+        # remove this throughout, no prms specific parameter methods should
+        # be used in netcdf utils
         self.nhm_coordinates = {"grand_id": self.parameters["grand_id"]}
 
     @staticmethod
@@ -514,6 +533,8 @@ class StarfitParameters:
         grand_ids: fileish = None,
         param_names: list = None,
     ) -> dict:
+        # istarf_conus_ds = dm.nc4_ds_to_dd(istarf_conus)
+
         istarf_conus_ds = nc4.Dataset(istarf_conus)
         resops_ds = nc4.Dataset(resops_domain)
         grand_dams_ds = nc4.Dataset(grand_dams)
@@ -586,7 +607,9 @@ class StarfitParameters:
         assert (param_dict["GRAND_ID"] == param_dict["grand_id"]).all()
         del param_dict["GRAND_ID"], param_dict["GRanD_ID"]
 
-        return StarfitParameters(param_dict)
+        return StarfitParameters(
+            attrs={}, dims={}, coords={}, data_vars=param_dict, metadata={}
+        )
 
     def subset(self, **kwargs):
         return self

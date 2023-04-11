@@ -8,9 +8,8 @@ import numpy as np
 
 
 def dt64_to_dt(dt64: np.datetime64) -> datetime.datetime:
-    """np.datetime64 to datetime.datetime, only works for scalars"""
-    # This is because I always forget this exists. And to take a vector
-    # solution at some point.
+    """np.datetime64 to datetime.datetime"""
+    # This is because I always forget this exists.
     return dt64.astype(datetime.datetime)
 
 

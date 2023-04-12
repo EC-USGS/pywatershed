@@ -9,7 +9,11 @@ import xarray as xr
 # or xarray datasets.
 
 # TODO: dataset_dict class?
-#       why?: methods for consistency?
+#       methods for consistency
+#       subset
+#       merge
+#       to & from
+#
 
 # TODO: what about hierarchical/groups in netcdf files?
 
@@ -40,6 +44,22 @@ template_xr_dd = {
 
 
 # Show a basic example of how an xr_dd is changed to a dd.
+
+# def merge_dds(*dd_list):
+#     # check each dd's data_vars for duplicates across the list
+#     # if there are duplicate vars, check for their data equality
+
+
+# def _merge_dicts(*dict_list):
+#     merged_dict = {}
+
+#     for d in dict_list:
+#         for key in d:
+#             if key in merged_dict:
+#                 raise ValueError(f"Duplicate key '{key}' found in dictionaries")
+#             merged_dict[key] = d[key]
+
+#     return merged_dict
 
 
 def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
@@ -98,8 +118,8 @@ def dd_to_xr_dd(dd: dict) -> dict:
 
     # loop over meta data, putting it back on the data_vars and/or coords
     # and moving the data to "data"
-    dd["attrs"] = meta.pop("global")
-    dd["encoding"] = encoding.pop("global")
+    dd["attrs"] = meta.pop("global", {})
+    dd["encoding"] = encoding.pop("global", {})
 
     for key, val in meta.items():
         cv = None

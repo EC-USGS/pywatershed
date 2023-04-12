@@ -42,14 +42,12 @@ class Parameters:
         dims: dict,
         coords: dict,
         data_vars: dict,
-        attrs: dict,
         metadata: dict,
-        encoding: dict = None,
+        encoding: dict = {},
     ) -> "Parameters":
         self._data_vars = data_vars
         self._dims = dims
         self._coords = coords
-        self._attrs = attrs
         self._metadata = metadata
         self._encoding = encoding
 
@@ -69,11 +67,6 @@ class Parameters:
         return self._data_vars
 
     @property
-    def attrs(self) -> dict:
-        """Return the parameter (global) attributes"""
-        return self._data_vars
-
-    @property
     def metadata(self) -> dict:
         """Return the metadata"""
         return self._metadata
@@ -86,7 +79,8 @@ class Parameters:
     @property
     def spatial_coord_names(self) -> dict:
         """Return the spatial coordinate names."""
-        return {kk: vv for kk, vv in self._attrs.items() if "spatial" in kk}
+        attrs = self._metadata["global"]
+        return {kk: vv for kk, vv in attrs.items() if "spatial" in kk}
 
     @staticmethod
     def from_netcdf(nc_file_list) -> "Parameters":
@@ -104,9 +98,8 @@ class Parameters:
                 "dims": self._dims,
                 "coords": self._coords,
                 "data_vars": self._data_vars,
-                "attrs": self._attrs,
                 "metadata": self._metadata,
-                #'encoding': dict = None,
+                "encoding": self._encoding,
             }
         ).to_netcdf(filename)
         return
@@ -124,7 +117,7 @@ class Parameters:
         self,
         keys: listish = None,
         process: str = None,
-        keep_attrs=True,
+        keep_metadata=True,
     ) -> "Parameters":
         """Returns a Parameters object with a subset of the data."""
         # Provide in base class
@@ -170,7 +163,6 @@ class PrmsParameters(Parameters):
             dims={},
             coords=parameter_dimensions_dict,
             data_vars=parameter_dict,
-            attrs={},
             metadata={},
         )
 
@@ -539,14 +531,12 @@ class StarfitParameters(Parameters):
         dims: dict,
         coords: dict,
         data_vars: dict,
-        attrs: dict,
         metadata: dict,
     ) -> "StarfitParameters":
         super().__init__(
             dims=dims,
             coords=coords,
             data_vars=data_vars,
-            attrs=attrs,
             metadata=metadata,
         )
         # remove this throughout, no prms specific parameter methods should
@@ -636,7 +626,7 @@ class StarfitParameters(Parameters):
         del param_dict["GRAND_ID"], param_dict["GRanD_ID"]
 
         return StarfitParameters(
-            attrs={}, dims={}, coords={}, data_vars=param_dict, metadata={}
+            dims={}, coords={}, data_vars=param_dict, metadata={}
         )
 
     def subset(self, **kwargs):

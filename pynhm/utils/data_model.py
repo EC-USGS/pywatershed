@@ -22,7 +22,7 @@ import xarray as xr
 
 # This is what a dataset_dict looks like. Metadata for coord and data_vars
 # is found in metadata.
-template_dataset_dict = {
+template_dd = {
     "dims": {},
     "coords": {},
     "data_vars": {},
@@ -30,7 +30,16 @@ template_dataset_dict = {
     "encoding": {},
 }
 
-# Show a basic example of how an xr_dict is changed to a dd.
+template_xr_dd = {
+    "attrs": {},
+    "dims": {},
+    "coords": {},
+    "data_vars": {},
+    "encoding": {},
+}
+
+
+# Show a basic example of how an xr_dd is changed to a dd.
 
 
 def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
@@ -47,16 +56,16 @@ def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
 
     dd = xr_ds.to_dict(numpy_data=True, data=(not schema_only), encoding=True)
 
-    dd = xr_dict_to_dd(dd)
+    dd = xr_dd_to_dd(dd)
 
     return dd
 
 
-def xr_dict_to_dd(xr_dict: dict) -> dict:
-    dd = deepcopy(xr_dict)
+def xr_dd_to_dd(xr_dd: dict) -> dict:
+    dd = deepcopy(xr_dd)
 
     # Move the global encoding to a global key of itself
-    dd["encoding"] = {"global": dd["encoding"]}
+    dd["encoding"] = {"global": dd.get("encoding", {})}
 
     # rename data to metadata for var and coord
     var_metadata = dd.pop("data_vars")
@@ -80,7 +89,7 @@ def xr_dict_to_dd(xr_dict: dict) -> dict:
     return dd
 
 
-def dd_to_xr_dict(dd: dict) -> dict:
+def dd_to_xr_dd(dd: dict) -> dict:
     dd = deepcopy(dd)
 
     # remove metadata and encoding from the dict/model
@@ -116,7 +125,7 @@ def dd_to_xr_ds(dd: dict) -> xr.Dataset:
     the keys of coords and data_vars. This maps the metadata back to the
     variables.
     """
-    return xr.Dataset.from_dict(dd_to_xr_dict(dd))
+    return xr.Dataset.from_dict(dd_to_xr_dd(dd))
 
 
 def _nc4_var_to_datetime64(var, attrs, encoding):
@@ -146,35 +155,28 @@ def _datetime64_to_nc4_var(var):
     # Based on what xarray does
     # https://github.com/pydata/xarray/blob/
     #   a1f5245a48146bd8fc5bdb07ef8ae6077d6e511c/xarray/coding/times.py#L687
-    from xarray.coding.times import encode_cf_datetime
+    from xarray.coding.times import encode_cf_datetime, decode_cf_datetime
 
     # This can take encoding info but we are using defaults.
-    (data, units, calendar) = encode_cf_datetime(var)
+    (data, units, calendar) = decode_cf_datetime(var)
 
     return {"data": data, "units": units, "calendar": calendar}
 
 
-def nc4_ds_to_dd(nc_file, subset: np.ndarray = None):
-    """netCDF4 dataset to a pywatershed dataset dict."""
-    nc = nc4.Dataset(nc_file)
+def nc4_ds_to_xr_dd(nc4_ds, xr_enc: dict = None) -> dict:
+    """Convert a netCDF4 dataset to and xarray dataset dictionary"""
 
-    # Create an empty dictionary to hold the data
-    dataset = {
-        "attrs": {},
-        "dims": {},
-        "coords": {},
-        "data_vars": {},
-        "encoding": {},
-    }
+    # An empty xr_dd dictionary to hold the data
+    xr_dd = deepcopy(template_xr_dd)
 
-    # dataset["attrs"] = nc_file.__dict__  # ugly
-    for attrname in nc.ncattrs():
-        dataset["attrs"][attrname] = nc.getncattr(attrname)
+    # xr_dd["attrs"] = nc_file.__dict__  # ugly
+    for attrname in nc4_ds.ncattrs():
+        xr_dd["attrs"][attrname] = nc4_ds.getncattr(attrname)
 
-    for dimname, dim in nc.dimensions.items():
-        dataset["dims"][dimname] = len(dim)
+    for dimname, dim in nc4_ds.dimensions.items():
+        xr_dd["dims"][dimname] = len(dim)
 
-    for varname, var in nc.variables.items():
+    for varname, var in nc4_ds.variables.items():
         # _Encoding is used for string encoding in nc4
         var_encoding = {}
         if "_Encoding" in var.__dict__.keys():
@@ -203,60 +205,140 @@ def nc4_ds_to_dd(nc_file, subset: np.ndarray = None):
         data_dict["attrs"] = var_attrs
         data_dict["encoding"] = var_encoding
 
-        if varname in nc.dimensions:
-            dataset["coords"][varname] = data_dict
+        if varname in nc4_ds.dimensions:
+            xr_dd["coords"][varname] = data_dict
         else:
-            dataset["data_vars"][varname] = data_dict
+            xr_dd["data_vars"][varname] = data_dict
 
-    nc.close()
+    nc4_ds.close()
 
-    dataset["encoding"] = {}
+    if xr_enc:
+        xr_dd["encoding"] = {**xr_dd["encoding"], **xr_enc.pop("global")}
+        for cc in xr_dd["coords"].keys():
+            if cc in xr_enc.keys():
+                xr_dd["coords"][cc]["encoding"] = {
+                    **xr_dd["coords"][cc]["encoding"],
+                    **xr_enc.pop(cc),
+                }
+        for vv in xr_dd["data_vars"].keys():
+            if vv in xr_enc.keys():
+                xr_dd["data_vars"][vv]["encoding"] = {
+                    **xr_dd["data_vars"][vv]["encoding"],
+                    **xr_enc.pop(vv),
+                }
 
-    # convert to pyws dataset_dict
-    data_dict = xr_dict_to_dd(dataset)
-
-    return data_dict
+    return xr_dd
 
 
-# def dd_to_nc4_ds(dd, nc_file):
-#     import cftime
-#     import datetime
+def _get_xr_encoding(nc_file) -> dict:
+    ds = xr.open_dataset(nc_file)
+    encoding = {}
+    encoding["global"] = ds.encoding
+    for vv in ds.variables:
+        encoding[vv] = ds[vv].encoding
 
-#     dd = dd_to_xr_dict(deepcopy(dd))
+    ds.close()
+    return encoding
 
-#     # create a new netCDF4 file
-#     with nc4.Dataset(nc_file, "w") as ds:
-#         # add global attributes
-#         for key, value in dd["attrs"].items():
-#             setattr(ds, key, value)
 
-#         # add dimensions
-#         for dim, size in dd["dims"].items():
-#             ds.createDimension(dim, size)
+def nc4_ds_to_dd(
+    nc4_file_ds, subset: np.ndarray = None, use_xr_enc=True
+) -> dict:
+    """netCDF4 dataset to a pywatershed dataset dict."""
+    xr_enc = None
+    if not isinstance(nc4_file_ds, nc4.Dataset):
+        if use_xr_enc:
+            xr_enc = _get_xr_encoding(nc4_file_ds)
+        nc4_file_ds = nc4.Dataset(nc4_file_ds)
+    else:
+        if use_xr_enc:
+            raise ValueError(
+                "Must pass a file and not an nc4.Dataset to use_xr_enc argument"
+            )
 
-#         # add coordinates
-#         for coord_name, values in dd["coords"].items():
-#             var = ds.createVariable(
-#                 coord_name, values["attrs"]["type"], dimensions=(coord_name,)
-#             )
+    xr_dd = nc4_ds_to_xr_dd(nc4_file_ds, xr_enc=xr_enc)
+    dd = xr_dd_to_dd(xr_dd)
+    return dd
 
-#             if not isinstance(var, np.datetime64):
-#                 # dates = values["data"].astype(datetime.datetime).tolist()
-#                 # cf_dates = cftime.num2date(dates, calendar=')
 
-#                 encoding_dict = _datetime64_to_nc4_var(dates)
-#                 asdf
+def dd_to_nc4_ds(dd, nc_file):
+    # import cftime
+    from xarray.coding.times import encode_cf_datetime
 
-#                 values["data"] = encoding_dict.pop("data")
-#                 values["attrs"] = {**values["attrs"], **encoding_dict}
+    dd = deepcopy(dd)
 
-#             var[:] = values["data"]
-#             var.setncatts(values["attrs"])
+    # work from xrarray's dict representation of a dataset
+    xr_dd = dd_to_xr_dd(dd)
+    del dd
 
-#         # add data variables
-#         for var_name, values in dd["data_vars"].items():
-#             var = ds.createVariable(
-#                 var_name, values["attrs"]["type"], dimensions=values["dims"]
-#             )
-#             var[:] = values["data"]
-#             var.setncatts(values["attrs"])
+    # create a new netCDF4 file
+    with nc4.Dataset(nc_file, "w") as ds:
+        ds.set_fill_on()
+
+        for key, value in xr_dd["attrs"].items():
+            setattr(ds, key, value)
+
+        for dim, size in xr_dd["dims"].items():
+            ds.createDimension(dim, size)
+
+        for coord_name, values in xr_dd["coords"].items():
+            enc = values["encoding"]
+            # handle time encoding
+            if np.issubdtype(values["data"].dtype, np.datetime64):
+                dates_enc, units, calendar = encode_cf_datetime(
+                    values["data"].astype("datetime64[ns]"),
+                    enc.get("units", None),
+                    enc.get("calendar", None),
+                )
+
+                # TODO: what if .astype("datetime64[ns]") fails?
+                # this would be a manual way that's looped and that
+                # dosent guess at units and calendar
+                # cf_dates = cftime.date2num(
+                #     dates,
+                #     units=enc.get("units"),
+                #     calendar=enc.get("calendar"),
+                # )
+
+                values["data"] = dates_enc
+                values["attrs"]["units"] = units
+                values["attrs"]["calendar"] = calendar
+                del enc["units"], enc["calendar"]
+                # values["attrs"]["type"] = str(dates_enc.dtype)  # not needed?
+
+            var = ds.createVariable(
+                coord_name,
+                values["attrs"]["type"],
+                dimensions=(coord_name,),
+                fill_value=enc.get("_FillValue", None),
+                # This is not complete. Defaults from nc4
+                zlib=enc.get("zlib", False),
+                complevel=enc.get("complevel", 4),
+                shuffle=enc.get("shuffle", True),
+                contiguous=enc.get("contiguous", False),
+                fletcher32=enc.get("fletcher32", False),
+                chunksizes=enc.get("chunksizes", None),
+            )
+            var[:] = values["data"]
+            var.setncatts(values["attrs"])
+
+        for var_name, values in xr_dd["data_vars"].items():
+            enc = values["encoding"]
+            var = ds.createVariable(
+                var_name,
+                values["attrs"]["type"],
+                dimensions=values["dims"],
+                fill_value=enc.get("_FillValue", None),
+                # This is not complete. Defaults from nc4
+                zlib=enc.get("zlib", False),
+                complevel=enc.get("complevel", 4),
+                shuffle=enc.get("shuffle", True),
+                contiguous=enc.get("contiguous", False),
+                fletcher32=enc.get("fletcher32", False),
+                chunksizes=enc.get("chunksizes", None),
+            )
+
+            var[:] = values["data"]
+            var.setncatts(values["attrs"])
+
+    return

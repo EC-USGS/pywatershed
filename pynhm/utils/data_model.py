@@ -1,4 +1,8 @@
+from copy import deepcopy
+
+import netCDF4 as nc4
 import numpy as np
+import xarray as xr
 
 # This file defines the data model for pywatershed. It is called a
 # "dataset_dict" and has a invertible mapping with non-hierarchical netcdf
@@ -19,7 +23,6 @@ import numpy as np
 # This is what a dataset_dict looks like. Metadata for coord and data_vars
 # is found in metadata.
 template_dataset_dict = {
-    "attrs": {},
     "dims": {},
     "coords": {},
     "data_vars": {},
@@ -37,67 +40,75 @@ def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
     var_metadata dictionary with the same keys found in the union of
     the keys of coords and data_vars.
     """
-    import xarray as xr
-
     if not isinstance(file_or_ds, xr.Dataset):
         xr_ds = xr.open_dataset(file_or_ds)
     else:
         xr_ds = file_or_ds
 
-    data_dict = xr_ds.to_dict(
-        numpy_data=True, data=(not schema_only), encoding=True
-    )
+    dd = xr_ds.to_dict(numpy_data=True, data=(not schema_only), encoding=True)
 
-    data_dict = xr_dict_to_dd(data_dict)
-
-    return data_dict
-
-
-def xr_dict_to_dd(xr_dict):
-    data_dict = xr_dict.copy()
-
-    # Move the global encoding to a global key of itself
-    data_dict["encoding"] = {"global": data_dict["encoding"]}
-
-    # rename data to metadata for var and coord
-    var_metadata = data_dict.pop("data_vars")
-    coord_metadata = data_dict.pop("coords")
-
-    # create empty data dicts and move the data out of the metadata
-    # and move the encoding to encoding[var]
-    data_dict["data_vars"] = {}
-    for key, val in var_metadata.items():
-        data_dict["data_vars"][key] = val.pop("data")
-        data_dict["encoding"][key] = val.pop("encoding")
-
-    data_dict["coords"] = {}
-    for key, val in coord_metadata.items():
-        data_dict["coords"][key] = val.pop("data")
-        data_dict["encoding"][key] = val.pop("encoding")
-
-    data_dict["metadata"] = {**coord_metadata, **var_metadata}
-
-    return data_dict
-
-
-def dd_to_xr_dict(dd):
-    dd = dd.copy()
-
-    # remove metadata from the dict/model
-    meta = dd.pop("metadata")
-
-    # loop over meta data, putting it back on the data_vars and/or coords
-    # and moving the data to "data"
-    for key, val in meta.items():
-        if key in dd["data_vars"]:
-            dd["data_vars"][key] = {**val, "data": dd["data_vars"][key]}
-        if key in dd["coords"]:
-            dd["coords"][key] = {**val, "data": dd["coords"][key]}
+    dd = xr_dict_to_dd(dd)
 
     return dd
 
 
-def dd_to_xr_ds(dd):
+def xr_dict_to_dd(xr_dict: dict) -> dict:
+    dd = deepcopy(xr_dict)
+
+    # Move the global encoding to a global key of itself
+    dd["encoding"] = {"global": dd["encoding"]}
+
+    # rename data to metadata for var and coord
+    var_metadata = dd.pop("data_vars")
+    coord_metadata = dd.pop("coords")
+
+    # create empty data dicts and move the data out of the metadata
+    # and move the encoding to encoding[var]
+    dd["data_vars"] = {}
+    for key, val in var_metadata.items():
+        dd["data_vars"][key] = val.pop("data")
+        dd["encoding"][key] = val.pop("encoding")
+
+    dd["coords"] = {}
+    for key, val in coord_metadata.items():
+        dd["coords"][key] = val.pop("data")
+        dd["encoding"][key] = val.pop("encoding")
+
+    dd["metadata"] = {**coord_metadata, **var_metadata}
+    dd["metadata"]["global"] = dd.pop("attrs")
+
+    return dd
+
+
+def dd_to_xr_dict(dd: dict) -> dict:
+    dd = deepcopy(dd)
+
+    # remove metadata and encoding from the dict/model
+    meta = dd.pop("metadata")
+    encoding = dd.pop("encoding")
+
+    # loop over meta data, putting it back on the data_vars and/or coords
+    # and moving the data to "data"
+    dd["attrs"] = meta.pop("global")
+    dd["encoding"] = encoding.pop("global")
+
+    for key, val in meta.items():
+        cv = None
+        if key in dd["data_vars"].keys():
+            cv = "data_vars"
+        elif key in dd["coords"].keys():
+            cv = "coords"
+
+        dd[cv][key] = {
+            **val,
+            "data": dd[cv][key],
+            "encoding": encoding[key],
+        }
+
+    return dd
+
+
+def dd_to_xr_ds(dd: dict) -> xr.Dataset:
     """pywatershed dataset dict to xarray dataset
 
     The pyws data model moves metadata off the variables to a separate
@@ -105,15 +116,11 @@ def dd_to_xr_ds(dd):
     the keys of coords and data_vars. This maps the metadata back to the
     variables.
     """
-    import xarray as xr
-
     return xr.Dataset.from_dict(dd_to_xr_dict(dd))
 
 
 def _nc4_var_to_datetime64(var, attrs, encoding):
     """netCDF4 conversion of time to numpy.datetime64 based on metadata."""
-    import netCDF4 as nc4
-
     if not (hasattr(var, "units") and "since" in var.units):
         return var[:], attrs, encoding
 
@@ -149,10 +156,7 @@ def _datetime64_to_nc4_var(var):
 
 def nc4_ds_to_dd(nc_file, subset: np.ndarray = None):
     """netCDF4 dataset to a pywatershed dataset dict."""
-    import netCDF4
-
-    # Open the netCDF file
-    nc = netCDF4.Dataset(nc_file)
+    nc = nc4.Dataset(nc_file)
 
     # Create an empty dictionary to hold the data
     dataset = {
@@ -218,9 +222,7 @@ def nc4_ds_to_dd(nc_file, subset: np.ndarray = None):
 #     import cftime
 #     import datetime
 
-#     import netCDF4 as nc4
-
-#     dd = dd_to_xr_dict(dd.copy())
+#     dd = dd_to_xr_dict(deepcopy(dd))
 
 #     # create a new netCDF4 file
 #     with nc4.Dataset(nc_file, "w") as ds:

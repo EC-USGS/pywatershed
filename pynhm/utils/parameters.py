@@ -50,6 +50,8 @@ class Parameters:
         self._dims = dims
         self._coords = coords
         self._attrs = attrs
+        self._metadata = metadata
+        self._encoding = encoding
 
     @property
     def dims(self) -> dict:
@@ -72,6 +74,16 @@ class Parameters:
         return self._data_vars
 
     @property
+    def metadata(self) -> dict:
+        """Return the metadata"""
+        return self._metadata
+
+    @property
+    def encoding(self) -> dict:
+        """Return the metadata"""
+        return self._encoding
+
+    @property
     def spatial_coord_names(self) -> dict:
         """Return the spatial coordinate names."""
         return {kk: vv for kk, vv in self._attrs.items() if "spatial" in kk}
@@ -83,14 +95,18 @@ class Parameters:
         # handle more than one file? # see prms ?
         raise NotImplementedError
 
-    def write_netcdf(self, filename) -> None:
-        """Write parameters to a json file"""
-        xr.Dataset.from_dict(
+    def to_netcdf(self, filename) -> None:
+        """Write parameters to a netcdf file"""
+        # the method could be taken from data_model
+        # and potentially not depend on xarray
+        dm.dd_to_xr_ds(
             {
                 "dims": self._dims,
                 "coords": self._coords,
                 "data_vars": self._data_vars,
                 "attrs": self._attrs,
+                "metadata": self._metadata,
+                #'encoding': dict = None,
             }
         ).to_netcdf(filename)
         return
@@ -487,6 +503,18 @@ class StarfitParameters(Parameters):
     """
     Starfit parameter class
 
+    The GRanD data
+    https://sedac.ciesin.columbia.edu/data/set/grand-v1-dams-rev01
+
+    The istarf data
+    https://zenodo.org/record/4602277#.ZCtYj-zMJqs
+
+    The resops data
+    https://zenodo.org/record/5893641#.ZCtakuzMJqs
+
+    # add citiatons. add this information to the starfit model too
+    # add a working example
+
     Parameters
     ----------
     parameter_dict : dict
@@ -533,7 +561,7 @@ class StarfitParameters(Parameters):
         grand_ids: fileish = None,
         param_names: list = None,
     ) -> dict:
-        # istarf_conus_ds = dm.nc4_ds_to_dd(istarf_conus)
+        # istarf_conus_dd = dm.nc4_ds_to_dd(istarf_conus)
 
         istarf_conus_ds = nc4.Dataset(istarf_conus)
         resops_ds = nc4.Dataset(resops_domain)
@@ -622,7 +650,3 @@ class StarfitParameters(Parameters):
             for key in keys
             if key in self.parameters.keys()
         }
-
-    def write(self, file):
-        # it's desirable to have a netcdf write method for these parameters
-        pass

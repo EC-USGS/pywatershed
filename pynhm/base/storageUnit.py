@@ -90,9 +90,9 @@ class StorageUnit(Accessor):
     def __init__(
         self, control: Control, verbose: bool, load_n_time_batches: int = 1
     ):
-
         self.name = "StorageUnit"
         self.control = control
+        # is this subset necessary? or move out of base to child class
         self.params = self.control.params.subset(process=type(self))
         self.verbose = verbose
         self._load_n_time_batches = load_n_time_batches
@@ -323,7 +323,6 @@ class StorageUnit(Accessor):
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
-
         self._input_variables_dict[input_variable_name] = adapter
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then

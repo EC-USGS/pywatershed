@@ -1,28 +1,24 @@
 from copy import deepcopy
+import itertools
+import pprint
 
 import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
+from .accessor import Accessor
+from ..constants import listish
+
 # This file defines the data model for pywatershed. It is called a
 # "dataset_dict" and has a invertible mapping with non-hierarchical netcdf
 # or xarray datasets.
 
-# TODO: dataset_dict class?
-#       methods for consistency
-#       subset
-#       merge
-#       to & from
-#
+# Show a basic example of how an xr_dd is changed to a dd.
+# What is the difference
+
 
 # TODO: what about hierarchical/groups in netcdf files?
 
-# TODO: nc4_ds_to_dd inverse
-
-# TODO: def validate dataset_dict
-#         check for all required keys
-#         check metadata keys against data
-#         check all dims, coords
 
 # This is what a dataset_dict looks like. Metadata for coord and data_vars
 # is found in metadata.
@@ -43,23 +39,190 @@ template_xr_dd = {
 }
 
 
-# Show a basic example of how an xr_dd is changed to a dd.
+class DatasetDict(Accessor):
+    def __init__(
+        self,
+        dims: dict = {},
+        coords: dict = {},
+        data_vars: dict = {},
+        metadata: dict = {},
+        encoding: dict = {},
+    ) -> "DatasetDict":
+        self._data_vars = data_vars
+        self._dims = dims
+        self._coords = coords
+        self._metadata = metadata
+        self._encoding = encoding
 
-# def merge_dds(*dd_list):
-#     # check each dd's data_vars for duplicates across the list
-#     # if there are duplicate vars, check for their data equality
+        return
+
+    @property
+    def dims(self) -> dict:
+        """Return the dimensions"""
+        return self._dims
+
+    @property
+    def coords(self) -> dict:
+        """Return the coordinates"""
+        return self._coords
+
+    @property
+    def data_vars(self) -> dict:
+        """Return the data_vars."""
+        return self._data_vars
+
+    @property
+    def variables(self) -> dict:
+        """Return coords and data_vars together"""
+        return {**self._coords, **self._data_vars}
+
+    @property
+    def metadata(self) -> dict:
+        """Return the metadata"""
+        return self._metadata
+
+    @property
+    def encoding(self) -> dict:
+        """Return the encoding"""
+        return self._encoding
+
+    @property
+    def data(self) -> dict:
+        return {
+            "dims": self._dims,
+            "coords": self._coords,
+            "data_vars": self._data_vars,
+            "metadata": self._metadata,
+            "encoding": self._encoding,
+        }
+
+    def _keys(self) -> list:
+        return ["dims", "coords", "data_vars", "metadata", "encoding"]
+
+    # are __repr__ and __str__ better than default?
+    # def __repr__(self):
+    #     return pprint.pformat(
+    #         {
+    #             "dims": self.dims,
+    #             "coords": self.coords,
+    #             "data_vars": self.data_vars,
+    #             "metadata": self.metadata,
+    #             "encoding": self.encoding,
+    #         }
+    #     )
+
+    # def __str__(self):
+    #     return
+
+    @staticmethod
+    def from_dict(dict_in):
+        return DatasetDict(**dict_in)
+
+    @property
+    def spatial_coord_names(self) -> dict:
+        """Return the spatial coordinate names."""
+        attrs = self._metadata["global"]
+        return {kk: vv for kk, vv in attrs.items() if "spatial" in kk}
+
+    @staticmethod
+    def from_ds(ds):
+        # detect typ as xr or nc4
+        if isinstance(ds, xr.Dataset):
+            return DatasetDict(**xr_ds_to_dd(ds))
+        elif isinstance(ds, nc4.Dataset):
+            return DatasetDict(**nc4_ds_to_dd(ds))
+        else:
+            raise ValueError("Passed dataset neither from xarray nor netCDF4")
+
+    @staticmethod
+    def from_netcdf(nc_file_list) -> "DatasetDict":
+        """Load parameters object from a netcdf file(s?)"""
+        # Provide in base class
+        # handle more than one file? # see prms ?
+        raise NotImplementedError
+
+    def to_xr_ds(self) -> xr.Dataset:
+        return dd_to_xr_ds(self.data)
+
+    def to_xr_dd(self) -> dict:
+        return dd_to_xr_dd(self.data)
+
+    def to_nc4_ds(self, filename) -> None:
+        return dd_to_nc4_ds(self.data, filename)
+
+    def to_netcdf(self, filename, use_xr=False) -> None:
+        """Write parameters to a netcdf file"""
+        if use_xr:
+            self.to_xr_ds.to_netcdf(filename)
+        else:
+            self.to_nc4_ds(filename)
+        return
+
+    def subset(
+        self,
+        keys: listish = None,
+        # process: str = None,
+    ) -> "DatasetDict":
+        """Returns a Parameters object with a subset of the data."""
+        subset = {}
+        for dd in self._data_vars.keys():
+            if dd not in keys:
+                continue
+            subset[dd] = self._data_vars[kk]
+            asdf
+
+    def get_parameters(
+        self, keys: listish, process: str = None, dims: bool = False
+    ) -> dict:
+        """Returns Parameter data for requested keys."""
+        # Provide in base class
+        raise NotImplementedError
+
+    def validate(self):
+        # TODO:
+        #    * check for all required keys
+        #    * check metadata keys against data
+        #    * check all dims, coords
+        raise NotImplementedError
+
+    @staticmethod
+    def merge(*dd_list):
+        # check each dd's data_vars for duplicates across the list
+        all_keys = [list(dd["data_vars"].keys()) for dd in dd_list]
+        all_keys = np.array(list(itertools.chain(*all_keys)))
+
+        # def merge_dicts(dict_list):
+        #     result = {}
+        #     for d in dict_list:
+        #         for key, value in d.items():
+        #             if key not in result:
+        #                 result[key] = value
+        #             elif isinstance(value, dict) and isinstance(result[key], dict):
+        #                 result[key] = merge_dicts([result[key], value])
+        #             elif value == result[key]:
+        #                 pass
+        #             else:
+        #                 raise ValueError(f"Duplicate key '{key}' with non-identical data")
+        #     return result
+
+        # if there are duplicate vars, check for their data equality
+        raise NotImplementedError
+
+    def _merge_dicts(*dict_list):
+        merged_dict = {}
+
+        for d in dict_list:
+            for key in d:
+                if key in merged_dict:
+                    raise ValueError(
+                        f"Duplicate key '{key}' found in dictionaries"
+                    )
+                merged_dict[key] = d[key]
+
+        return merged_dict
 
 
-# def _merge_dicts(*dict_list):
-#     merged_dict = {}
-
-#     for d in dict_list:
-#         for key in d:
-#             if key in merged_dict:
-#                 raise ValueError(f"Duplicate key '{key}' found in dictionaries")
-#             merged_dict[key] = d[key]
-
-#     return merged_dict
+# module scope function
 
 
 def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
@@ -183,20 +346,25 @@ def _datetime64_to_nc4_var(var):
     return {"data": data, "units": units, "calendar": calendar}
 
 
-def nc4_ds_to_xr_dd(nc4_ds, xr_enc: dict = None) -> dict:
+def nc4_ds_to_xr_dd(file_or_ds, xr_enc: dict = None) -> dict:
     """Convert a netCDF4 dataset to and xarray dataset dictionary"""
+
+    if not isinstance(file_or_ds, nc4.Dataset):
+        ds = nc4.Dataset(file_or_ds, "r")
+    else:
+        ds = file_or_ds
 
     # An empty xr_dd dictionary to hold the data
     xr_dd = deepcopy(template_xr_dd)
 
     # xr_dd["attrs"] = nc_file.__dict__  # ugly
-    for attrname in nc4_ds.ncattrs():
-        xr_dd["attrs"][attrname] = nc4_ds.getncattr(attrname)
+    for attrname in ds.ncattrs():
+        xr_dd["attrs"][attrname] = ds.getncattr(attrname)
 
-    for dimname, dim in nc4_ds.dimensions.items():
+    for dimname, dim in ds.dimensions.items():
         xr_dd["dims"][dimname] = len(dim)
 
-    for varname, var in nc4_ds.variables.items():
+    for varname, var in ds.variables.items():
         # _Encoding is used for string encoding in nc4
         var_encoding = {}
         if "_Encoding" in var.__dict__.keys():
@@ -225,12 +393,12 @@ def nc4_ds_to_xr_dd(nc4_ds, xr_enc: dict = None) -> dict:
         data_dict["attrs"] = var_attrs
         data_dict["encoding"] = var_encoding
 
-        if varname in nc4_ds.dimensions:
+        if varname in ds.dimensions:
             xr_dd["coords"][varname] = data_dict
         else:
             xr_dd["data_vars"][varname] = data_dict
 
-    nc4_ds.close()
+    ds.close()
 
     if xr_enc:
         xr_dd["encoding"] = {**xr_dd["encoding"], **xr_enc.pop("global")}
@@ -282,6 +450,7 @@ def nc4_ds_to_dd(
 
 
 def dd_to_nc4_ds(dd, nc_file):
+    """nc4_ds is a bit of a misnomer since it's on disk, dd_to_nc4"""
     # import cftime
     from xarray.coding.times import encode_cf_datetime
 
@@ -323,13 +492,15 @@ def dd_to_nc4_ds(dd, nc_file):
                 values["data"] = dates_enc
                 values["attrs"]["units"] = units
                 values["attrs"]["calendar"] = calendar
-                del enc["units"], enc["calendar"]
-                # values["attrs"]["type"] = str(dates_enc.dtype)  # not needed?
+                for kk in ["units", "calendar"]:
+                    if kk in enc.keys():
+                        del enc[kk]
 
+            var_type = values["attrs"].get("type", values["data"].dtype)
             var = ds.createVariable(
                 coord_name,
-                values["attrs"]["type"],
-                dimensions=(coord_name,),
+                var_type,
+                dimensions=xr_dd["coords"][coord_name]["dims"],
                 fill_value=enc.get("_FillValue", None),
                 # This is not complete. Defaults from nc4
                 zlib=enc.get("zlib", False),
@@ -341,12 +512,14 @@ def dd_to_nc4_ds(dd, nc_file):
             )
             var[:] = values["data"]
             var.setncatts(values["attrs"])
+            var.coordinates = coord_name
 
         for var_name, values in xr_dd["data_vars"].items():
             enc = values["encoding"]
+            var_type = values["attrs"].get("type", values["data"].dtype)
             var = ds.createVariable(
                 var_name,
-                values["attrs"]["type"],
+                var_type,
                 dimensions=values["dims"],
                 fill_value=enc.get("_FillValue", None),
                 # This is not complete. Defaults from nc4

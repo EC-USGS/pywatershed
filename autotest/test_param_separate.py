@@ -8,7 +8,7 @@ import pynhm
 from pynhm.base.control import Control
 from pynhm.base.timeseries import TimeseriesArray
 from pynhm.utils import separate_domain_params_to_ncdf
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 n_time_steps = 10
 budget_type = None
@@ -44,7 +44,6 @@ def control(domain, params):
     ids=pynhm_process_id,
 )
 def test_param_sep(domain, control, processes, tmp_path):
-
     tmp_path = pl.Path(tmp_path)
 
     domain_name = domain["domain_name"]

@@ -6,7 +6,7 @@ import numpy as np
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
-from ..utils.parameters import PrmsParameters
+from .parameters import Parameters
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
@@ -27,7 +27,7 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         config: dict = None,
-        params: PrmsParameters = None,
+        params: Parameters = None,
         verbosity: int = 0,
         **kwargs,
     ):
@@ -78,7 +78,7 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        params: PrmsParameters = None,
+        params: Parameters = None,
         verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file

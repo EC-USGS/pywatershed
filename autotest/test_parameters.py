@@ -3,7 +3,8 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.utils import PrmsParameters
+from pynhm import Parameters
+from pynhm.parameters import PrmsParameters
 from utils import assert_or_print
 
 
@@ -20,7 +21,7 @@ def test_parameter_init():
         "nsegment": 10,
         "xyz": np.arange(12 * 10, dtype=float).reshape(12, 10),
     }
-    param_obj = PrmsParameters(parameters)
+    param_obj = Parameters(data_vars=parameters)
 
     answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
 

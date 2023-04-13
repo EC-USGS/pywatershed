@@ -8,7 +8,7 @@ import pynhm
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.base.model import Model
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 compare_to_prms521 = False
 n_time_steps = 101
@@ -51,7 +51,6 @@ def control(domain, params):
     ids=test_models.keys(),
 )
 def test_model(domain, control, processes, tmp_path):
-
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
@@ -210,7 +209,6 @@ def test_model(domain, control, processes, tmp_path):
     fail_prms_compare = False
     fail_regression = False
     for istep in range(control.n_times):
-
         model.advance()
         model.calculate()
 

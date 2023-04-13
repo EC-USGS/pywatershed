@@ -1,5 +1,4 @@
 import pathlib as pl
-import platform
 
 import pytest
 
@@ -9,7 +8,7 @@ from pynhm.hydrology.PRMSGroundwater import (
     has_prmsgroundwater_f,
 )
 from pynhm.utils.netcdf_utils import NetCdfCompare
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 if has_prmsgroundwater_f:
@@ -60,7 +59,6 @@ class TestPRMSGroundwaterDomain:
         print(f"compare_nc_path: {compare_nc_path}")
 
         for istep in range(control.n_times):
-
             control.advance()
 
             gw.advance()

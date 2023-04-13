@@ -8,7 +8,7 @@ from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSEt import PRMSEt
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -23,7 +23,6 @@ def control(domain, params):
 
 class TestPRMSCanopyRunoffDomain:
     def test_init(self, domain, control, tmp_path):
-
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -213,7 +212,6 @@ class TestPRMSCanopyRunoffDomain:
 
         all_success = True
         for istep in range(control.n_times):
-
             # print(istep)
             control.advance()
             canopy.advance()

@@ -6,7 +6,7 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 
@@ -63,7 +63,6 @@ class TestPRMSRunoffDomain:
 
         all_success = True
         for istep in range(control.n_times):
-
             control.advance()
             runoff.advance()
             runoff.calculate(1.0)

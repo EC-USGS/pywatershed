@@ -6,7 +6,7 @@ import pytest
 from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -21,7 +21,6 @@ def control(domain, params):
 
 class TestPRMSAtmosphere:
     def test_init(self, domain, control, tmp_path):
-
         output_dir = domain["prms_output_dir"]
         cbh_dir = domain["cbh_inputs"]["prcp"].parent.resolve()
 

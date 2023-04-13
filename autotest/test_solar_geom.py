@@ -3,7 +3,7 @@ import pytest
 
 from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
 from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -21,7 +21,6 @@ def control(domain, params):
     "from_prms_file", (True, False), ids=("from_prms_file", "compute")
 )
 def test_solar_geom(domain, control, from_prms_file, tmp_path):
-
     prms_soltab_file = domain["prms_run_dir"] / "soltab_debug"
     if from_prms_file:
         from_prms_file = prms_soltab_file

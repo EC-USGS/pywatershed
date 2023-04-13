@@ -4,7 +4,7 @@ import pynhm
 
 from ..base import meta
 from ..constants import fileish
-from ..utils import PrmsParameters
+from ..parameters import PrmsParameters
 
 # these are prarameters that are provided as scalars which we will
 # force expand to their full dimensions

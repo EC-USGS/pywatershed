@@ -7,7 +7,7 @@ import xarray as xr
 import pynhm
 from pynhm.base.control import Control
 from pynhm.base.model import Model
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
@@ -56,7 +56,6 @@ check_budget_sum_vars_params = [False, True, "some"]
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
 def test_process_budgets(domain, control, tmp_path, budget_sum_param):
-
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
 

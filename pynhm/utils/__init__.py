@@ -1,7 +1,6 @@
 from .control import ControlVariables
 from .csv_utils import CsvFile
 from .netcdf_utils import NetCdfCompare, NetCdfRead, NetCdfWrite
-from .parameters import PrmsParameters, StarfitParameters
 from .prms5_file_util import PrmsFile
 from .prms5util import (
     Soltab,

@@ -8,6 +8,7 @@ from .base.adapter import Adapter
 from .base.budget import Budget
 from .base.control import Control
 from .base.model import Model
+from .base.parameters import Parameters
 from .base.storageUnit import StorageUnit
 from .base.timeseries import TimeseriesArray
 from .hydrology.PRMSCanopy import PRMSCanopy
@@ -22,7 +23,6 @@ from .utils import (
     NetCdfCompare,
     NetCdfRead,
     NetCdfWrite,
-    PrmsParameters,
     Soltab,
 )
 from .utils.csv_utils import CsvFile

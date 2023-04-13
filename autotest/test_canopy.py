@@ -1,5 +1,4 @@
 import pathlib as pl
-import platform
 
 import numpy as np
 import pytest
@@ -7,7 +6,7 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 if has_prmscanopy_f:
@@ -16,7 +15,6 @@ if has_prmscanopy_f:
 
 class TestPRMSCanopySimple:
     def test_init(self):
-
         time_dict = {
             "start_time": np.datetime64("1979-01-03T00:00:00.00"),
             "end_time": np.datetime64("1979-01-04T00:00:00.00"),

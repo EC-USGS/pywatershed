@@ -1,12 +1,11 @@
 import pathlib as pl
-import platform
 
 import pytest
 
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
 from pynhm.utils.netcdf_utils import NetCdfCompare
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 fail_fast = False
 
@@ -78,7 +77,6 @@ class TestPRMSChannelDomain:
                     assert False
 
             else:
-
                 print(f"comparison for {key} passed")
 
         assert not assert_error, "comparison failed"

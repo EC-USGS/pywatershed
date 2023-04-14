@@ -13,19 +13,23 @@ nc_file = pl.Path("../test_data/drb_2yr/prcp.nc")
 
 
 def mk_ds0():
-    # a simple dataset taken from xarray Dataset documentation
+    # a simple dataset adapted from xarray Dataset documentation
     np.random.seed(0)
     temperature = 15 + 8 * np.random.randn(2, 2, 3)
     precipitation = 10 * np.random.rand(2, 2, 3)
+    precip_occurence = precipitation > 0.0
+    precip_int = precipitation.astype(np.int32)
     lon = [[-99.83, -99.32], [-99.79, -99.23]]
     lat = [[42.25, 42.21], [42.63, 42.59]]
-    time = pd.date_range("2014-09-06", periods=3)
+    time = pd.date_range("2014-09-06", periods=3).values
     reference_time = pd.Timestamp("2014-09-05")
 
     ds = xr.Dataset(
         data_vars=dict(
             temperature=(["x", "y", "time"], temperature),
             precipitation=(["x", "y", "time"], precipitation),
+            precip_occurence=(["x", "y", "time"], precip_occurence),
+            precip_int=(["x", "y", "time"], precip_int),
         ),
         coords=dict(
             lon=(["x", "y"], lon),
@@ -170,25 +174,55 @@ def dd_spatial_coord_names():
     pass
 
 
-def dd_netcdf(tmp_path):
+def test_dd_netcdf(tmp_path):
     tmp_path = pl.Path(tmp_path)
     dd0 = DatasetDict.from_ds(ds0)  # from xarray ds
-    dd0_file = tmp_path / "dd0.nc"
-    dd0.to_netcdf(dd0_file)  # to file via xr (default)
-    ds1 = xr.open_dataset(dd0_file)
+    ds1_file = tmp_path / "ds1_xr.nc"
+    dd0.to_netcdf(ds1_file, use_xr=True)  # to file via xr
+    ds1 = xr.open_dataset(ds1_file)
     xr.testing.assert_identical(ds1, ds0)  # ds -> file(via xr) -> ds
     dd1 = DatasetDict.from_ds(ds1)
-    del ds1
-    dd0.to_netcdf(dd0_file, use_xr=False)  # file via nc4
-    ds1 = xr.open_dataset(dd0_file)
-    xr.testing.assert_identical(ds1, ds0)  # ds -> file(via nc4) -> ds
-    dd1_nc4 = DatasetDict.from_ds(ds1)
-    np.testing.assert_equal(dd1.data, dd1_nc4.data)
-    del ds1
+    del ds1  # close the file
+
+    ds2_file = tmp_path / "ds2_nc4.nc"
+    dd0.to_netcdf(ds2_file, use_xr=False)  # to file via nc4
+    ds2 = xr.open_dataset(ds2_file)
+    xr.testing.assert_identical(ds2, ds0)  # ds -> file(via nc4) -> ds
+    dd2 = DatasetDict.from_ds(ds2)
+    # from xarray, coordinate order is not ordered AFAIK, make it alphabetical
+    for ev in dd1.encoding.values():
+        for kk, vv in ev.items():
+            if kk == "coordinates":
+                ev[kk] = " ".join(sorted(vv.split(" ")))
+    for dd in [dd1, dd2]:
+        for kk, vv in dd.encoding.items():
+            del vv["source"]
+            if "_FillValue" in vv.keys():
+                del vv["_FillValue"]
+    # del dd2.encoding["global"]["unlimited_dims"]
+    ## compare dd2(to file by nc4) and dd1(to file by xr)
+    np.testing.assert_equal(dd2.data, dd1.data)
+
+    del ds2
 
     # read using nc4
-    # ds = nc4.
-    np.testing.assert_equal(dd1.data, dd1_nc4.data)
+    # apparently netcdf4 doesnt do any coordinate level organization
+    # so we'll have to implement this.
+    dd3 = DatasetDict.from_netcdf(ds1_file, use_xr=False)
+
+    # TODO: make functions to delete things that wont ever match
+
+    for ev in dd3.encoding.values():
+        for kk, vv in ev.items():
+            if kk == "coordinates":
+                ev[kk] = " ".join(sorted(vv.split(" ")))
+
+    for kk, vv in dd3.encoding.items():
+        del vv["source"]
+        if "_FillValue" in vv.keys():
+            del vv["_FillValue"]
+
+    np.testing.assert_equal(dd3.data, dd1.data)
 
     # from
     # to

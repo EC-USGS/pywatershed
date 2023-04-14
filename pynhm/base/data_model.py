@@ -2,12 +2,13 @@ from copy import deepcopy
 import itertools
 import pprint
 
+import cftime
 import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
 from .accessor import Accessor
-from ..constants import listish
+from ..constants import listish, fill_values_dict, np_type_to_netcdf_type_dict
 
 # This file defines the data model for pywatershed. It is called a
 # "dataset_dict" and has a invertible mapping with non-hierarchical netcdf
@@ -135,11 +136,13 @@ class DatasetDict(Accessor):
             raise ValueError("Passed dataset neither from xarray nor netCDF4")
 
     @staticmethod
-    def from_netcdf(nc_file_list) -> "DatasetDict":
-        """Load parameters object from a netcdf file(s?)"""
-        # Provide in base class
-        # handle more than one file? # see prms ?
-        raise NotImplementedError
+    def from_netcdf(nc_file, use_xr=False) -> "DatasetDict":
+        """Load from a netcdf file"""
+        # handle more than one file?
+        if use_xr:
+            return DatasetDict(**xr_ds_to_dd(nc_file))
+        else:
+            return DatasetDict(**nc4_ds_to_dd(nc_file))
 
     def to_xr_ds(self) -> xr.Dataset:
         return dd_to_xr_ds(self.data)
@@ -153,7 +156,7 @@ class DatasetDict(Accessor):
     def to_netcdf(self, filename, use_xr=False) -> None:
         """Write parameters to a netcdf file"""
         if use_xr:
-            self.to_xr_ds.to_netcdf(filename)
+            self.to_xr_ds().to_netcdf(filename)
         else:
             self.to_nc4_ds(filename)
         return
@@ -324,7 +327,10 @@ def _nc4_var_to_datetime64(var, attrs, encoding):
     else:
         time_data = nc4.num2date(var[:], var.units)
 
-    time_data = time_data.filled().astype("datetime64[us]")
+    if isinstance(time_data, cftime.real_datetime):
+        time_data = np.datetime64(time_data)
+    else:
+        time_data = time_data.filled().astype("datetime64[us]")
 
     for aa in ["calendar", "units"]:
         if aa in attrs.keys():
@@ -338,7 +344,7 @@ def _datetime64_to_nc4_var(var):
     # Based on what xarray does
     # https://github.com/pydata/xarray/blob/
     #   a1f5245a48146bd8fc5bdb07ef8ae6077d6e511c/xarray/coding/times.py#L687
-    from xarray.coding.times import encode_cf_datetime, decode_cf_datetime
+    from xarray.coding.times import decode_cf_datetime
 
     # This can take encoding info but we are using defaults.
     (data, units, calendar) = decode_cf_datetime(var)
@@ -400,6 +406,28 @@ def nc4_ds_to_xr_dd(file_or_ds, xr_enc: dict = None) -> dict:
 
     ds.close()
 
+    # have to promote coord variables here?
+    all_coords = [
+        vv["attrs"].pop("coordinates")
+        for vv in xr_dd["data_vars"].values()
+        if "coordinates" in vv["attrs"].keys()
+    ]
+    all_coords = sorted(set(" ".join(all_coords).split(" ")))
+    for cc in all_coords:
+        if cc == "":
+            continue
+        xr_dd["coords"][cc] = xr_dd["data_vars"].pop(cc)
+
+    # handle bools
+    for meta in [xr_dd["coords"], xr_dd["data_vars"]]:
+        for kk, vv in meta.items():
+            if "dtype" in vv["attrs"].keys():
+                dtype = vv["attrs"]["dtype"]
+                if dtype == "bool":
+                    vv["data"] = vv["data"].astype("bool")
+                    _ = vv["attrs"].pop("dtype")
+
+    # bring in the encoding information using xarray (cheating?)
     if xr_enc:
         xr_dd["encoding"] = {**xr_dd["encoding"], **xr_enc.pop("global")}
         for cc in xr_dd["coords"].keys():
@@ -512,16 +540,21 @@ def dd_to_nc4_ds(dd, nc_file):
             )
             var[:] = values["data"]
             var.setncatts(values["attrs"])
-            var.coordinates = coord_name
 
         for var_name, values in xr_dd["data_vars"].items():
             enc = values["encoding"]
-            var_type = values["attrs"].get("type", values["data"].dtype)
+            is_bool = values["data"].dtype == "bool"
+            np_type = values["data"].dtype
+            nc_type = np_type_to_netcdf_type_dict[np_type]
+            var_type = values["attrs"].get("type", nc_type)
+            if is_bool:
+                var_type = "i1"
+            default_fill = fill_values_dict[np_type]
             var = ds.createVariable(
                 var_name,
                 var_type,
                 dimensions=values["dims"],
-                fill_value=enc.get("_FillValue", None),
+                fill_value=enc.get("_FillValue", default_fill),
                 # This is not complete. Defaults from nc4
                 zlib=enc.get("zlib", False),
                 complevel=enc.get("complevel", 4),
@@ -531,7 +564,25 @@ def dd_to_nc4_ds(dd, nc_file):
                 chunksizes=enc.get("chunksizes", None),
             )
 
-            var[:] = values["data"]
+            if is_bool:
+                var[:] = values["data"].astype("int8")
+            else:
+                var[:] = values["data"]
             var.setncatts(values["attrs"])
+            # solve coords for this var: any coord which has any of its dims
+            coords = []
+            # these rules are a bit opaque
+            coords_just_cuz = ["reference_time"]
+            coords_no_way = ["time"]
+            for c_name, c_val in xr_dd["coords"].items():
+                if c_name in coords_no_way:
+                    continue
+                common = set(values["dims"]).intersection(set(c_val["dims"]))
+                if len(common) or c_name in coords_just_cuz:
+                    coords += [c_name]
+            if len(coords):
+                var.coordinates = " ".join(sorted(coords))
+            if is_bool:
+                var.setncattr("dtype", "bool")
 
     return

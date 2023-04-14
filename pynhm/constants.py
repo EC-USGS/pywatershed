@@ -31,6 +31,32 @@ epsilon32 = np.finfo(zero.astype("float32")).eps
 
 fill_value_f4 = 9.96921e36
 
+# work in progress...
+fill_values_dict = {
+    np.dtype("float64"): np.nan,
+    np.dtype("float32"): np.nan,
+    np.dtype("float16"): np.nan,
+    np.dtype("int64"): None,
+    np.dtype("int32"): None,
+    np.dtype("int16"): None,
+    np.dtype("int8"): None,
+    np.dtype("bool"): None,
+}
+
+np_type_to_netcdf_type_dict = {
+    np.dtype("float64"): "f8",
+    np.dtype("float32"): "f4",
+    np.dtype("int64"): "i8",
+    np.dtype("int32"): "i4",
+    np.dtype("int16"): "i2",
+    np.dtype("int8"): "i1",
+    np.dtype("uint64"): "u8",
+    np.dtype("uint32"): "u4",
+    np.dtype("uint16"): "u2",
+    np.dtype("uint8"): "u1",
+    np.dtype("bool"): None,
+}
+
 inch2cm = 2.54
 ft2_per_acre = 43560.0
 inches_per_foot = 12.0

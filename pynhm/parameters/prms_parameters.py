@@ -68,6 +68,7 @@ class PrmsParameters(Parameters):
             coords=parameter_dimensions_dict,
             data_vars=parameter_dict,
             metadata={},
+            validate=False,
         )
 
         self._params_sep_procs = all(

@@ -1,6 +1,6 @@
 from copy import deepcopy
 import itertools
-import pprint
+from pprint import pprint
 
 import cftime
 import netCDF4 as nc4
@@ -48,6 +48,7 @@ class DatasetDict(Accessor):
         data_vars: dict = {},
         metadata: dict = {},
         encoding: dict = {},
+        validate: bool = True,
     ) -> "DatasetDict":
         self._data_vars = data_vars
         self._dims = dims
@@ -55,47 +56,68 @@ class DatasetDict(Accessor):
         self._metadata = metadata
         self._encoding = encoding
 
+        if validate:
+            self.validate()
+
         return
 
+    # TODO: add copy to properties? assuming that's necessary
+
     @property
-    def dims(self) -> dict:
+    def dims(self, copy=False) -> dict:
         """Return the dimensions"""
+        if copy:
+            return deepcopy(self._dims)
         return self._dims
 
     @property
-    def coords(self) -> dict:
+    def coords(self, copy=False) -> dict:
         """Return the coordinates"""
+        if copy:
+            return deepcopy(self._coords)
         return self._coords
 
     @property
-    def data_vars(self) -> dict:
+    def data_vars(self, copy=False) -> dict:
         """Return the data_vars."""
+        if copy:
+            return deepcopy(self._data_vars)
         return self._data_vars
 
     @property
-    def variables(self) -> dict:
+    def variables(self, copy=False) -> dict:
         """Return coords and data_vars together"""
-        return {**self._coords, **self._data_vars}
+        vars = {**self._coords, **self._data_vars}
+        if copy:
+            return deepcopy(vars)
+        return vars
 
     @property
-    def metadata(self) -> dict:
+    def metadata(self, copy=False) -> dict:
         """Return the metadata"""
+        if copy:
+            return deepcopy(self._metadata)
         return self._metadata
 
     @property
-    def encoding(self) -> dict:
+    def encoding(self, copy=False) -> dict:
         """Return the encoding"""
+        if copy:
+            return deepcopy(self._encoding)
         return self._encoding
 
     @property
-    def data(self) -> dict:
-        return {
+    def data(self, copy=False) -> dict:
+        data = {
             "dims": self._dims,
             "coords": self._coords,
             "data_vars": self._data_vars,
             "metadata": self._metadata,
             "encoding": self._encoding,
         }
+        if copy:
+            return deepcopy(data)
+        return data
 
     def _keys(self) -> list:
         return ["dims", "coords", "data_vars", "metadata", "encoding"]
@@ -116,7 +138,9 @@ class DatasetDict(Accessor):
     #     return
 
     @staticmethod
-    def from_dict(dict_in):
+    def from_dict(dict_in, copy=False):
+        if copy:
+            return DatasetDict(**deepcopy(dict_in))
         return DatasetDict(**dict_in)
 
     @property
@@ -161,18 +185,93 @@ class DatasetDict(Accessor):
             self.to_nc4_ds(filename)
         return
 
+    def _get_var_dims(self, var_name, data=False, copy=False):
+        dim_names = self._metadata[var_name]["dims"]
+        if not data:
+            return dim_names  # tuple, no need to copy
+        else:
+            dim_data = {
+                kk: vv for kk, vv in self._dims.items() if kk in dim_names
+            }
+            if copy:
+                return deepcopy(dim_data)
+            return dim_data
+
+    def _get_dim_coords(self, dim_list, data=False, copy=False):
+        """Given a set of dimensions, get the corresponding coords"""
+        # if all of a coords dims are in supplied dims, take the coordinate
+        coords_out = []
+        coord_dims = {cc: self._get_var_dims(cc) for cc in self._coords.keys()}
+        for c_name, c_dims in coord_dims.items():
+            # if c_dims is empty (a scalar coord), it automatically goes
+            if len(set(c_dims) - set(dim_list)) == 0:
+                coords_out += [c_name]
+        if not data:
+            return coords_out
+
+        coord_data = {
+            ck: cv for ck, cv in self._coords.items() if ck in coords_out
+        }
+        if copy:
+            return deepcopy(coord_data)
+        return coord_data
+
     def subset(
         self,
         keys: listish = None,
         # process: str = None,
+        copy=True,
+        keep_global_metadata=False,
+        keep_global_encoding=False,
     ) -> "DatasetDict":
-        """Returns a Parameters object with a subset of the data."""
-        subset = {}
-        for dd in self._data_vars.keys():
-            if dd not in keys:
+        """Subset a DatasetDict to keys in data_vars or coordinates."""
+        # Instantiate the DatasetDict at end as deepcopy will be used
+        # on the constructed subset dict (if requested)
+        subset = deepcopy(template_dd)
+
+        subset["metadata"]["global"] = {}
+        subset["encoding"]["global"] = {}
+        if keep_global_metadata:
+            subset["metadata"]["global"] = self.metadata["global"]
+        if keep_global_encoding:
+            subset["encoding"]["global"] = self.encoding["global"]
+
+        for vv in self.variables.keys():
+            if vv not in keys:
                 continue
-            subset[dd] = self._data_vars[kk]
-            asdf
+
+            is_coord = vv in self._coords.keys()
+            if is_coord:
+                subset["coords"][vv] = self._coords[vv]
+            else:
+                subset["data_vars"][vv] = self._data_vars[vv]
+
+            subset["metadata"][vv] = self._metadata[vv]
+            subset["encoding"][vv] = self._encoding[vv]
+            var_dim_data = self._get_var_dims(vv, copy=True, data=True)
+            # dims
+            for dd in var_dim_data:
+                if dd not in subset["dims"].keys():  # faster?
+                    subset["dims"][dd] = var_dim_data[dd]
+
+            if not is_coord:
+                # build coords from variables
+                var_coord_data = self._get_dim_coords(
+                    list(var_dim_data.keys()), data=True
+                )
+                for ck, cv in var_coord_data.items():
+                    if ck not in subset["coords"].keys():
+                        subset["coords"][ck] = cv
+
+        # build metadata and encoding from coords
+        for cc in subset["coords"].keys():
+            for aa in ["metadata", "encoding"]:
+                if cc in subset[aa].keys():
+                    continue
+                subset[aa][cc] = self[aa][cc]
+
+        result = DatasetDict.from_dict(subset, copy=copy)
+        return result
 
     def get_parameters(
         self, keys: listish, process: str = None, dims: bool = False
@@ -182,11 +281,31 @@ class DatasetDict(Accessor):
         raise NotImplementedError
 
     def validate(self):
-        # TODO:
-        #    * check for all required keys
-        #    * check metadata keys against data
-        #    * check all dims, coords
-        raise NotImplementedError
+        # required keys
+        assert sorted(self.data.keys()) == sorted(
+            ["dims", "coords", "data_vars", "metadata", "encoding"]
+        )
+
+        # can not have same names in coords and data_vars
+        common_keys = set(self.coords.keys()).intersection(
+            set(self.data_vars.keys())
+        )
+        assert len(common_keys) == 0
+
+        # metadata and encoding keys against variable keys
+        meta_keys = set(self.metadata.keys())
+        enc_keys = set(self.encoding.keys())
+        var_keys = set(self.variables.keys())
+        assert meta_keys == enc_keys
+        assert meta_keys == var_keys.union(set(["global"]))
+
+        # check all vars dims exist
+        var_dims = [self.metadata[kk]["dims"] for kk in self.variables.keys()]
+        dims = set([dim for dims in var_dims for dim in dims])
+        for dd in dims:
+            assert dd in self.dims.keys()
+
+        return
 
     @staticmethod
     def merge(*dd_list):

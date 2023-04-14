@@ -1,4 +1,6 @@
+from copy import deepcopy
 import pathlib as pl
+from pprint import pprint
 
 import netCDF4 as nc4
 import numpy as np
@@ -12,6 +14,7 @@ from pynhm.base.data_model import DatasetDict
 nc_file = pl.Path("../test_data/drb_2yr/prcp.nc")
 
 
+# TODO: add more attributes to variables
 def mk_ds0():
     # a simple dataset adapted from xarray Dataset documentation
     np.random.seed(0)
@@ -174,7 +177,29 @@ def dd_spatial_coord_names():
     pass
 
 
+def coord_atts_sort(dd):
+    # from xarray, coordinate order is not ordered AFAIK, make it alphabetical
+    # cause that's what we are doing
+    for ev in dd.encoding.values():
+        for kk, vv in ev.items():
+            if kk == "coordinates":
+                ev[kk] = " ".join(sorted(vv.split(" ")))
+
+    return dd
+
+
+def del_encodings(dd, keys):
+    for del_key in keys:
+        for kk, vv in dd.encoding.items():
+            if del_key in vv.keys():
+                del vv[del_key]
+
+    return dd
+
+
 def test_dd_netcdf(tmp_path):
+    # xarray write, xarray read
+    # ds0 -> dd0 -xr-> file -xr-> ds1(compare ds0) -> dd1(compare dd0)
     tmp_path = pl.Path(tmp_path)
     dd0 = DatasetDict.from_ds(ds0)  # from xarray ds
     ds1_file = tmp_path / "ds1_xr.nc"
@@ -182,69 +207,50 @@ def test_dd_netcdf(tmp_path):
     ds1 = xr.open_dataset(ds1_file)
     xr.testing.assert_identical(ds1, ds0)  # ds -> file(via xr) -> ds
     dd1 = DatasetDict.from_ds(ds1)
+    # there are no encodings on dd0 because it was never encoded
+    dd1_noenc = deepcopy(dd1)
+    for kk in dd1_noenc.encoding.keys():
+        dd1_noenc.encoding[kk] = {}
+    np.testing.assert_equal(dd1_noenc.data, dd0.data)
     del ds1  # close the file
 
+    # nc4 write, xarray read
+    # ds0 -> dd0 -nc4-> file -xr-> ds2(compare to ds0) -> dd2(compare)
     ds2_file = tmp_path / "ds2_nc4.nc"
     dd0.to_netcdf(ds2_file, use_xr=False)  # to file via nc4
     ds2 = xr.open_dataset(ds2_file)
     xr.testing.assert_identical(ds2, ds0)  # ds -> file(via nc4) -> ds
     dd2 = DatasetDict.from_ds(ds2)
     # from xarray, coordinate order is not ordered AFAIK, make it alphabetical
-    for ev in dd1.encoding.values():
-        for kk, vv in ev.items():
-            if kk == "coordinates":
-                ev[kk] = " ".join(sorted(vv.split(" ")))
-    for dd in [dd1, dd2]:
-        for kk, vv in dd.encoding.items():
-            del vv["source"]
-            if "_FillValue" in vv.keys():
-                del vv["_FillValue"]
-    # del dd2.encoding["global"]["unlimited_dims"]
-    ## compare dd2(to file by nc4) and dd1(to file by xr)
+    dd1 = coord_atts_sort(dd1)
+    # TODO: The _FillValue thing is all over the place, sort it out
+    dd1 = del_encodings(dd1, ["source", "_FillValue"])
+    dd2 = del_encodings(dd2, ["source", "_FillValue"])
     np.testing.assert_equal(dd2.data, dd1.data)
-
     del ds2
 
     # read using nc4
     # apparently netcdf4 doesnt do any coordinate level organization
     # so we'll have to implement this.
     dd3 = DatasetDict.from_netcdf(ds1_file, use_xr=False)
-
-    # TODO: make functions to delete things that wont ever match
-
-    for ev in dd3.encoding.values():
-        for kk, vv in ev.items():
-            if kk == "coordinates":
-                ev[kk] = " ".join(sorted(vv.split(" ")))
-
-    for kk, vv in dd3.encoding.items():
-        del vv["source"]
-        if "_FillValue" in vv.keys():
-            del vv["_FillValue"]
-
+    dd3 = coord_atts_sort(dd3)
+    dd3 = del_encodings(dd3, ["source", "_FillValue"])
     np.testing.assert_equal(dd3.data, dd1.data)
 
-    # from
-    # to
-    # from
-    # roundtrip
-    # same as round trips above?
     return
 
 
-def dd_subset():
-    pass
+def test_dd_subset_merge(tmp_path):
+    sub1_keys = ["temperature"]
+    sub2_keys = [kk for kk in dd0.data_vars.keys() if "precip" in kk]
+    sub1 = dd0.subset(sub1_keys)
+    sub2 = dd0.subset(sub2_keys)
+    sub3 = dd0.subset("lon")
+
+    return foo
 
 
 def dd_get_parameters():
-    pass
-
-
-def dd_merge():
-    dd0 = {
-        "dims": {},
-        "coords": {},
-    }
     pass
 
 

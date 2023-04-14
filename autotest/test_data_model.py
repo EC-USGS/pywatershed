@@ -5,6 +5,7 @@ from pprint import pprint
 import netCDF4 as nc4
 import numpy as np
 import pandas as pd
+import pytest
 import xarray as xr
 
 from pynhm.base import data_model as dm
@@ -55,6 +56,26 @@ def assert_encodings_identical(ds1, ds2):
     assert sorted(ds1.variables) == sorted(ds2.variables)
     for vv in ds1.variables:
         np.testing.assert_equal(ds1[vv].encoding, ds2[vv].encoding)
+
+
+def coord_atts_sort(dd):
+    # from xarray, coordinate order is not ordered AFAIK, make it alphabetical
+    # cause that's what we are doing
+    for ev in dd.encoding.values():
+        for kk, vv in ev.items():
+            if kk == "coordinates":
+                ev[kk] = " ".join(sorted(vv.split(" ")))
+
+    return dd
+
+
+def del_encodings(dd, keys):
+    for del_key in keys:
+        for kk, vv in dd.encoding.items():
+            if del_key in vv.keys():
+                del vv[del_key]
+
+    return dd
 
 
 # helpers and data above
@@ -167,34 +188,8 @@ def dd_basics():
     pass
 
 
-def dd_validate():
-    # top-level keys
-    # coord and var dims
-    pass
-
-
 def dd_spatial_coord_names():
     pass
-
-
-def coord_atts_sort(dd):
-    # from xarray, coordinate order is not ordered AFAIK, make it alphabetical
-    # cause that's what we are doing
-    for ev in dd.encoding.values():
-        for kk, vv in ev.items():
-            if kk == "coordinates":
-                ev[kk] = " ".join(sorted(vv.split(" ")))
-
-    return dd
-
-
-def del_encodings(dd, keys):
-    for del_key in keys:
-        for kk, vv in dd.encoding.items():
-            if del_key in vv.keys():
-                del vv[del_key]
-
-    return dd
 
 
 def test_dd_netcdf(tmp_path):
@@ -243,16 +238,31 @@ def test_dd_netcdf(tmp_path):
 def test_dd_subset_merge(tmp_path):
     sub1_keys = ["temperature"]
     sub2_keys = [kk for kk in dd0.data_vars.keys() if "precip" in kk]
-    sub1 = dd0.subset(sub1_keys)
-    sub2 = dd0.subset(sub2_keys)
+    sub1 = dd0.subset(sub1_keys, keep_global=True)
+    sub2 = dd0.subset(sub2_keys, keep_global=True)
     sub3 = dd0.subset("lon")
 
-    return foo
+    dd_merge = DatasetDict.merge(sub1, sub2)
+    np.testing.assert_equal(dd_merge.data, dd0.data)
+
+    dd_merge = DatasetDict.merge(sub1, sub2, sub3)
+    np.testing.assert_equal(dd_merge.data, dd0.data)
+
+    # this passes because of refs
+    sub3.coords["lon"][:] = sub3.coords["lon"] - 25.0
+    dd_merge = DatasetDict.merge(sub1, sub2, sub3)
+    np.testing.assert_equal(dd_merge.data, dd0.data)
+
+    sub3 = dd0.subset("lon", copy=True)
+    sub3.coords["lon"][:] = sub3.coords["lon"] - 25.0
+    with pytest.raises(ValueError):
+        dd_merge = DatasetDict.merge(sub1, sub2, sub3)
+
+    return
 
 
 def dd_get_parameters():
     pass
 
 
-# method to get dd as a dict
 # methods to build dds from data and coord_name or coord_data

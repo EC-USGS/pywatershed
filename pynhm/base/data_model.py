@@ -50,6 +50,11 @@ class DatasetDict(Accessor):
         encoding: dict = {},
         validate: bool = True,
     ) -> "DatasetDict":
+        """DatasetDict class which maps between netcdf conventions
+
+        Note: Methods do not deep copy by default, but not all
+              references may be preserved. use with caution
+        """
         self._data_vars = data_vars
         self._dims = dims
         self._coords = coords
@@ -89,7 +94,7 @@ class DatasetDict(Accessor):
         """Return coords and data_vars together"""
         vars = {**self._coords, **self._data_vars}
         if copy:
-            return deepcopy(vars)
+            vars = deepcopy(vars)
         return vars
 
     @property
@@ -185,17 +190,16 @@ class DatasetDict(Accessor):
             self.to_nc4_ds(filename)
         return
 
-    def _get_var_dims(self, var_name, data=False, copy=False):
+    def _get_var_dims(self, var_name, data=False):
+        # dims will never return a dict or numpy array
         dim_names = self._metadata[var_name]["dims"]
         if not data:
-            return dim_names  # tuple, no need to copy
+            return dim_names
         else:
             dim_data = {
                 kk: vv for kk, vv in self._dims.items() if kk in dim_names
             }
-            if copy:
-                return deepcopy(dim_data)
-            return dim_data
+        return dim_data
 
     def _get_dim_coords(self, dim_list, data=False, copy=False):
         """Given a set of dimensions, get the corresponding coords"""
@@ -212,21 +216,28 @@ class DatasetDict(Accessor):
         coord_data = {
             ck: cv for ck, cv in self._coords.items() if ck in coords_out
         }
+
         if copy:
-            return deepcopy(coord_data)
+            coord_data = deepcopy(coord_data)
         return coord_data
 
     def subset(
         self,
         keys: listish = None,
-        # process: str = None,
-        copy=True,
-        keep_global_metadata=False,
-        keep_global_encoding=False,
+        copy=False,
+        keep_global: bool = False,
+        keep_global_metadata: bool = None,
+        keep_global_encoding: bool = None,
     ) -> "DatasetDict":
         """Subset a DatasetDict to keys in data_vars or coordinates."""
         # Instantiate the DatasetDict at end as deepcopy will be used
         # on the constructed subset dict (if requested)
+
+        if keep_global_metadata is None:
+            keep_global_metadata = keep_global
+        if keep_global_encoding is None:
+            keep_global_encoding = keep_global
+
         subset = deepcopy(template_dd)
 
         subset["metadata"]["global"] = {}
@@ -248,7 +259,7 @@ class DatasetDict(Accessor):
 
             subset["metadata"][vv] = self._metadata[vv]
             subset["encoding"][vv] = self._encoding[vv]
-            var_dim_data = self._get_var_dims(vv, copy=True, data=True)
+            var_dim_data = self._get_var_dims(vv, data=True)
             # dims
             for dd in var_dim_data:
                 if dd not in subset["dims"].keys():  # faster?
@@ -257,7 +268,7 @@ class DatasetDict(Accessor):
             if not is_coord:
                 # build coords from variables
                 var_coord_data = self._get_dim_coords(
-                    list(var_dim_data.keys()), data=True
+                    list(var_dim_data.keys()), data=True, copy=copy
                 )
                 for ck, cv in var_coord_data.items():
                     if ck not in subset["coords"].keys():
@@ -272,13 +283,6 @@ class DatasetDict(Accessor):
 
         result = DatasetDict.from_dict(subset, copy=copy)
         return result
-
-    def get_parameters(
-        self, keys: listish, process: str = None, dims: bool = False
-    ) -> dict:
-        """Returns Parameter data for requested keys."""
-        # Provide in base class
-        raise NotImplementedError
 
     def validate(self):
         # required keys
@@ -308,43 +312,42 @@ class DatasetDict(Accessor):
         return
 
     @staticmethod
-    def merge(*dd_list):
-        # check each dd's data_vars for duplicates across the list
-        all_keys = [list(dd["data_vars"].keys()) for dd in dd_list]
-        all_keys = np.array(list(itertools.chain(*all_keys)))
-
-        # def merge_dicts(dict_list):
-        #     result = {}
-        #     for d in dict_list:
-        #         for key, value in d.items():
-        #             if key not in result:
-        #                 result[key] = value
-        #             elif isinstance(value, dict) and isinstance(result[key], dict):
-        #                 result[key] = merge_dicts([result[key], value])
-        #             elif value == result[key]:
-        #                 pass
-        #             else:
-        #                 raise ValueError(f"Duplicate key '{key}' with non-identical data")
-        #     return result
-
-        # if there are duplicate vars, check for their data equality
-        raise NotImplementedError
-
-    def _merge_dicts(*dict_list):
-        merged_dict = {}
-
-        for d in dict_list:
-            for key in d:
-                if key in merged_dict:
-                    raise ValueError(
-                        f"Duplicate key '{key}' found in dictionaries"
-                    )
-                merged_dict[key] = d[key]
-
-        return merged_dict
+    def merge(*dd_list, copy=True):
+        merged_dict = _merge_dicts([dd.data for dd in dd_list])
+        if copy:
+            merged_dict = deepcopy(merged_dict)
+        return DatasetDict.from_dict(merged_dict)
 
 
-# module scope function
+# DatasetDict
+# ---------------------------
+# module scope functions
+
+
+def _is_equal(aa, bb):
+    """How sketchy is this?"""
+    try:
+        np.testing.assert_equal(aa, bb)
+        return True
+    except:  # noqa
+        return False
+
+
+def _merge_dicts(dict_list):
+    merged = {}
+    for dd in dict_list:
+        for key, value in dd.items():
+            if key not in merged:
+                merged[key] = value
+            elif isinstance(value, dict) and isinstance(merged[key], dict):
+                merged[key] = _merge_dicts([merged[key], value])
+            elif _is_equal(value, merged[key]):
+                pass
+            else:
+                raise ValueError(
+                    f"Duplicate key '{key}' with non-identical data"
+                )
+    return merged
 
 
 def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:

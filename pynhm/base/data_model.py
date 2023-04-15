@@ -190,6 +190,33 @@ class DatasetDict(Accessor):
             self.to_nc4_ds(filename)
         return
 
+    def rename_dim(self, name_maps: dict, in_place: bool = True):
+        if not in_place:
+            raise NotImplementedError
+        for old_name, new_name in name_maps.items():
+            self.dims[new_name] = self.dims.pop(old_name)
+            for mk, mv in self.metadata.items():
+                if "dims" in mv.keys() and old_name in mv["dims"]:
+                    dim_list = list(mv["dims"])
+                    dim_list[dim_list.index(old_name)] = new_name
+                    mv["dims"] = tuple(dim_list)
+
+        self.validate()
+        return
+
+    def rename_var(self, name_maps: dict, in_place=True):
+        if not in_place:
+            raise NotImplementedError
+        for old_name, new_name in name_maps.items():
+            for cv in ["coords", "data_vars"]:
+                if old_name in self[cv].keys():
+                    self[cv][new_name] = self[cv].pop(old_name)
+                    for aa in ["metadata", "encoding"]:
+                        self[aa][new_name] = self[aa].pop(old_name)
+
+        self.validate()
+        return
+
     def _get_var_dims(self, var_name, data=False):
         # dims will never return a dict or numpy array
         dim_names = self._metadata[var_name]["dims"]
@@ -284,6 +311,61 @@ class DatasetDict(Accessor):
         result = DatasetDict.from_dict(subset, copy=copy)
         return result
 
+    def subset_on_coord(
+        self,
+        coord_name: str,
+        where: np.ndarray,
+        in_place=True,
+    ):
+        # TODO: should almost work for 2+D? just linearizes np.where
+        if len(where) > 1:
+            raise NotImplementedError("at least not tested")
+
+        # add the where to the data_vars
+        wh_data_name = "subset_inds"
+        if wh_data_name in self.data_vars.keys():
+            raise NotImplementedError("more work needed to subset twice")
+
+        # what are the dim names of of the coord
+        coord_dims = self.metadata[coord_name]["dims"]
+
+        # new dim for the numer of dims in the where
+        subset_dims_dim = wh_data_name + "_n_dims"
+        self.dims[subset_dims_dim] = len(where)
+
+        # new var
+        self.data_vars[wh_data_name] = np.array(where).transpose()
+        self.metadata[wh_data_name] = {
+            "dims": coord_dims + (subset_dims_dim,),
+            "attrs": {
+                "description": (
+                    "Zero-based indices used to subset original data "
+                    f"coordinate '{coord_name}'"
+                ),
+            },
+        }
+        self.encoding[wh_data_name] = {}
+
+        # have to edit the dim AND all variables with this dim
+        for ii, dd in enumerate(coord_dims):
+            self.dims[dd] = len(where[ii])
+        dim_where = dict(zip(coord_dims, where))
+        for vk, vv in self.variables.items():
+            if vk == wh_data_name:
+                continue
+            var_dims = self.metadata[vk]["dims"]
+            var_wh = tuple(
+                [dim_where[dd] for dd in var_dims if dd in dim_where.keys()]
+            )
+            if vk in self.coords.keys():
+                self["coords"][vk] = self.variables[vk][var_wh]
+            else:
+                self["data_vars"][vk] = self.variables[vk][var_wh]
+            self.metadata[vk]["attrs"]["subset_on_coord"] = coord_name
+            self.metadata[vk]["attrs"]["subset_inds_on_orig"] = wh_data_name
+
+        return
+
     def validate(self):
         # required keys
         assert sorted(self.data.keys()) == sorted(
@@ -309,11 +391,22 @@ class DatasetDict(Accessor):
         for dd in dims:
             assert dd in self.dims.keys()
 
+        # TODO: check dims lens equal data in the coordinates with those dims
+
         return
 
     @staticmethod
-    def merge(*dd_list, copy=True):
-        merged_dict = _merge_dicts([dd.data for dd in dd_list])
+    def merge(*dd_list, copy=True, del_global_src=True):
+        if del_global_src or copy:
+            dd_list = [deepcopy(dd.data) for dd in dd_list]
+            if del_global_src:
+                for dd in dd_list:
+                    if "source" in dd["encoding"]["global"]:
+                        del dd["encoding"]["global"]["source"]
+            merged_dict = _merge_dicts(dd_list)
+        else:
+            merged_dict = _merge_dicts([deepcopy(dd.data) for dd in dd_list])
+
         if copy:
             merged_dict = deepcopy(merged_dict)
         return DatasetDict.from_dict(merged_dict)

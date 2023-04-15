@@ -6,6 +6,7 @@ import numpy as np
 from ..base.parameters import Parameters
 from ..constants import fileish
 from ..base import data_model as dm
+from ..base.data_model import DatasetDict
 
 
 class StarfitParameters(Parameters):
@@ -68,11 +69,31 @@ class StarfitParameters(Parameters):
         grand_ids: fileish = None,
         param_names: list = None,
     ) -> dict:
-        istarf_conus_dd = dm.nc4_ds_to_dd(istarf_conus)  # from_nc
-        resops_dd = dm.nc4_ds_to_dd(resops_domain)  # from_netcdf
-        params_dd = dm.DatasetDict.merge(istarf_conus_dd, resops_dd)
+        resops_dd = DatasetDict.from_netcdf(resops_domain)
+
+        istarf_conus_dd = DatasetDict.from_netcdf(istarf_conus)
+        istarf_rename = {"GRanD_ID": "grand_id"}
+        istarf_conus_dd.rename_dim(istarf_rename)
+        istarf_conus_dd.rename_var(istarf_rename)
+        wh_subset = np.where(
+            np.isin(
+                istarf_conus_dd.coords["grand_id"],
+                resops_dd.coords["grand_id"],
+            )
+        )
+        istarf_conus_dd.subset_on_coord("grand_id", wh_subset)
+        dum_file = "./foo.nc"
+        istarf_conus_dd.to_netcdf(dum_file, use_xr=True)
 
         asdf
+
+        grand_dams_dd = DatasetDict.from_netcdf(grand_dams)
+
+        params_dd = DatasetDict.merge(
+            istarf_conus_dd, resops_dd, grand_dams_dd
+        )
+
+        adsf
 
         istarf_conus_ds = nc4.Dataset(istarf_conus)
         resops_ds = nc4.Dataset(resops_domain)

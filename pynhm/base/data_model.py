@@ -217,22 +217,52 @@ class DatasetDict(Accessor):
         self.validate()
         return
 
-    def _get_var_dims(self, var_name, data=False):
+    def drop_var(self, var_names):
+        """Drop variables from the dd"""
+        if not isinstance(var_names, list):
+            var_names = [var_names]
+        for vv in var_names:
+            for cv in ["coords", "data_vars"]:
+                if vv in self[cv].keys():
+                    del self[cv][vv]
+                    del self.metadata[vv]
+                    del self.encoding[vv]
+
+        # todo: can any coords be dropped?
+
+        # can any dims be dropped?
+        coord_dims = self._get_var_dims(list(self.variables.keys()))
+        coord_dims = set([ii for cc in coord_dims.values() for ii in cc])
+        dims_rm = set(self.dims.keys()).difference(coord_dims)
+        for dd in dims_rm:
+            del self.dims[dd]
+        return
+
+    # TODO: add_var
+
+    def _get_var_dims(self, var_names, data=False):
+        """Get the dims of variables"""
         # dims will never return a dict or numpy array
-        dim_names = self._metadata[var_name]["dims"]
-        if not data:
-            return dim_names
-        else:
-            dim_data = {
-                kk: vv for kk, vv in self._dims.items() if kk in dim_names
-            }
-        return dim_data
+        result = {}
+        if not isinstance(var_names, list):
+            var_names = [var_names]
+        for vv in var_names:
+            dim_names = self._metadata[vv]["dims"]
+            if not data:
+                result[vv] = dim_names
+            else:
+                dim_data = {
+                    kk: vv for kk, vv in self._dims.items() if kk in dim_names
+                }
+                result[vv] = dim_data
+
+        return result
 
     def _get_dim_coords(self, dim_list, data=False, copy=False):
         """Given a set of dimensions, get the corresponding coords"""
         # if all of a coords dims are in supplied dims, take the coordinate
         coords_out = []
-        coord_dims = {cc: self._get_var_dims(cc) for cc in self._coords.keys()}
+        coord_dims = self._get_var_dims(list(self._coords.keys()))
         for c_name, c_dims in coord_dims.items():
             # if c_dims is empty (a scalar coord), it automatically goes
             if len(set(c_dims) - set(dim_list)) == 0:
@@ -255,10 +285,13 @@ class DatasetDict(Accessor):
         keep_global: bool = False,
         keep_global_metadata: bool = None,
         keep_global_encoding: bool = None,
+        process=None,
     ) -> "DatasetDict":
         """Subset a DatasetDict to keys in data_vars or coordinates."""
         # Instantiate the DatasetDict at end as deepcopy will be used
         # on the constructed subset dict (if requested)
+        if process:
+            return self
 
         if keep_global_metadata is None:
             keep_global_metadata = keep_global
@@ -286,7 +319,7 @@ class DatasetDict(Accessor):
 
             subset["metadata"][vv] = self._metadata[vv]
             subset["encoding"][vv] = self._encoding[vv]
-            var_dim_data = self._get_var_dims(vv, data=True)
+            var_dim_data = self._get_var_dims(vv, data=True)[vv]
             # dims
             for dd in var_dim_data:
                 if dd not in subset["dims"].keys():  # faster?

@@ -35,7 +35,7 @@ def test_regress(tmp_path):
     )
 
     control = Control(
-        params.parameters["start_time"].min(),
+        params.variables["start_time"].min(),
         np.datetime64("2019-09-30 00:00:00"),
         np.timedelta64(24, "h"),
         params=params,

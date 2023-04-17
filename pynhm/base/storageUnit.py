@@ -239,7 +239,7 @@ class StorageUnit(Accessor):
             setattr(
                 self,
                 name,
-                self.params.get_parameters(name, process=self)[name],
+                self.params.get_parameters(name)[name],
             )
         for name in self.inputs:
             setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)

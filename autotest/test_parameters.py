@@ -64,7 +64,7 @@ def test_parameter_canopy_subset(domain, canopy_parameters):
     canopy_subset = parameters.subset(canopy_parameters)
 
     with pytest.raises(KeyError):
-        v = canopy_subset.parameters["unknown"]
+        _ = canopy_subset.parameters["unknown"]
 
     for key in canopy_parameters:
         if key != "unknown":
@@ -86,14 +86,11 @@ def test_parameter_access(domain, canopy_parameters):
     ), "'srain_intcp' should not return None"
 
     with pytest.raises(KeyError):
-        v = parameters.parameters["unknown"]
+        _ = parameters.parameters["unknown"]
 
+    # can not delete parameters this way so will not raise a keyerror
     del parameters.parameters["srain_intcp"]
-    with pytest.raises(KeyError):
-        v = parameters.parameters["srain_intcp"]
-
-    with pytest.raises(KeyError):
-        del parameters.parameters["srain_intcp"]
+    _ = parameters.parameters["srain_intcp"]
 
 
 def test_parameter_json(domain, tmp_path):

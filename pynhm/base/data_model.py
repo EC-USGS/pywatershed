@@ -1,5 +1,4 @@
 from copy import deepcopy
-import itertools
 from pprint import pprint
 
 import cftime
@@ -142,11 +141,11 @@ class DatasetDict(Accessor):
     # def __str__(self):
     #     return
 
-    @staticmethod
-    def from_dict(dict_in, copy=False):
+    @classmethod
+    def from_dict(cls, dict_in, copy=False):
         if copy:
-            return DatasetDict(**deepcopy(dict_in))
-        return DatasetDict(**dict_in)
+            return cls(**deepcopy(dict_in))
+        return cls(**dict_in)
 
     @property
     def spatial_coord_names(self) -> dict:
@@ -154,24 +153,24 @@ class DatasetDict(Accessor):
         attrs = self._metadata["global"]
         return {kk: vv for kk, vv in attrs.items() if "spatial" in kk}
 
-    @staticmethod
-    def from_ds(ds):
+    @classmethod
+    def from_ds(cls, ds):
         # detect typ as xr or nc4
         if isinstance(ds, xr.Dataset):
-            return DatasetDict(**xr_ds_to_dd(ds))
+            return cls(**xr_ds_to_dd(ds))
         elif isinstance(ds, nc4.Dataset):
-            return DatasetDict(**nc4_ds_to_dd(ds))
+            return cls(**nc4_ds_to_dd(ds))
         else:
             raise ValueError("Passed dataset neither from xarray nor netCDF4")
 
-    @staticmethod
-    def from_netcdf(nc_file, use_xr=False) -> "DatasetDict":
+    @classmethod
+    def from_netcdf(cls, nc_file, use_xr=False) -> "DatasetDict":
         """Load from a netcdf file"""
         # handle more than one file?
         if use_xr:
-            return DatasetDict(**xr_ds_to_dd(nc_file))
+            return cls(**xr_ds_to_dd(nc_file))
         else:
-            return DatasetDict(**nc4_ds_to_dd(nc_file))
+            return cls(**nc4_ds_to_dd(nc_file))
 
     def to_xr_ds(self) -> xr.Dataset:
         return dd_to_xr_ds(self.data)
@@ -341,7 +340,9 @@ class DatasetDict(Accessor):
                     continue
                 subset[aa][cc] = self[aa][cc]
 
-        result = DatasetDict.from_dict(subset, copy=copy)
+        # result = DatasetDict.from_dict(subset, copy=copy)
+        # If this is in-place, then cant be a classmethod
+        result = type(self).from_dict(subset, copy=copy)
         return result
 
     def subset_on_coord(
@@ -350,6 +351,8 @@ class DatasetDict(Accessor):
         where: np.ndarray,
         in_place=True,
     ):
+        # only doing it in place for no
+
         # TODO: should almost work for 2+D? just linearizes np.where
         if len(where) > 1:
             raise NotImplementedError("at least not tested")
@@ -428,8 +431,8 @@ class DatasetDict(Accessor):
 
         return
 
-    @staticmethod
-    def merge(*dd_list, copy=True, del_global_src=True):
+    @classmethod
+    def merge(cls, *dd_list, copy=True, del_global_src=True):
         if del_global_src or copy:
             dd_list = [deepcopy(dd.data) for dd in dd_list]
             if del_global_src:
@@ -442,7 +445,7 @@ class DatasetDict(Accessor):
 
         if copy:
             merged_dict = deepcopy(merged_dict)
-        return DatasetDict.from_dict(merged_dict)
+        return cls.from_dict(merged_dict)
 
 
 # DatasetDict

@@ -61,7 +61,7 @@ class PrmsParameters(Parameters):
     def __init__(
         self,
         parameter_dict: dict,
-        parameter_dimensions_dict: dict = None,
+        parameter_dimensions_dict: dict = {},
     ) -> "PrmsParameters":
         super().__init__(
             dims={},
@@ -76,9 +76,8 @@ class PrmsParameters(Parameters):
         )
 
         # build dimensions from data
-        if parameter_dimensions_dict is None:
+        if len(parameter_dimensions_dict) is 0:
             # todo: handle self._params_sep_procs
-            parameter_dimensions_dict = {}
             for key, value in parameter_dict.items():
                 param_dim_names = meta.get_params(key)
                 if len(param_dim_names):
@@ -133,6 +132,7 @@ class PrmsParameters(Parameters):
                         self.parameter_dimensions
                     ),
                 )
+
             return PrmsParameters(
                 parameter_dict=deepcopy(self.parameters[process]),
                 parameter_dimensions_dict=deepcopy(
@@ -162,9 +162,7 @@ class PrmsParameters(Parameters):
             # This is still a work in progress
             raise NotImplementedError
 
-    def get_parameters(
-        self, keys: listish, process: str = None, dims: bool = False
-    ) -> dict:
+    def get_parameters(self, keys: listish, dims: bool = False) -> dict:
         """Get a subset of keys in the parameter dictionary
 
         Args:
@@ -176,6 +174,7 @@ class PrmsParameters(Parameters):
             dict: containing requested key:val pairs
 
         """
+        process = None
         if isinstance(keys, str):
             keys = [keys]
 
@@ -294,10 +293,8 @@ class PrmsParameters(Parameters):
         params = PrmsParameters(pars)
 
         # add implied dimensions
-        params.parameters["ndoy"] = ndoy
-        params.parameters["nmonth"] = 12
-        params.parameter_dimensions["ndoy"] = None
-        params.parameter_dimensions["nmonth"] = None
+        params._coords["ndoy"] = ndoy
+        params._coords["nmonth"] = 12
 
         return params
 
@@ -319,10 +316,8 @@ class PrmsParameters(Parameters):
         )
 
         # add implied dimensions
-        params.parameters["ndoy"] = ndoy
-        params.parameters["nmonth"] = 12
-        params.parameter_dimensions["ndoy"] = None
-        params.parameter_dimensions["nmonth"] = None
+        params._coords["ndoy"] = ndoy
+        params._coords["nmonth"] = 12
 
         return params
 

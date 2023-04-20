@@ -213,7 +213,7 @@ class Control(Accessor):
             if len([mm for mm in check_list if mm in var_dims[0]]):
                 del var_dims[0]
 
-        var_dim_sizes = self.params.get_parameters(var_dims)
+        var_dim_sizes = self.params.get_dim_values(var_dims)
         var_dim_shape = [var_dim_sizes[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]
         return np.full(var_dim_shape, np.nan, var_type)

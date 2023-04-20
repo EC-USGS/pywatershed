@@ -1,5 +1,6 @@
+import numpy as np
+
 from .data_model import DatasetDict
-from ..constants import listish
 
 
 class Parameters(DatasetDict):
@@ -12,6 +13,15 @@ class Parameters(DatasetDict):
         encoding: dict = {},
         validate: bool = True,
     ) -> "Parameters":
+        """Parameter class
+
+        This is a subclass of data_model.DatasetDict, it has all the same
+        methods. New methods map to DatasetDict as follows:
+            parameters: dd.variables
+            get_param_values: get values from dd.variables
+            get_dim_values: get values from dd.dims
+
+        """
         super().__init__(
             dims=dims,
             coords=coords,
@@ -26,20 +36,26 @@ class Parameters(DatasetDict):
     def parameters(self) -> dict:
         return self.variables
 
-    def get_parameters(
+    def get_param_values(
         self,
-        keys: listish = None,
-        copy=False,
-        keep_global: bool = False,
-        keep_global_metadata: bool = None,
-        keep_global_encoding: bool = None,
-        process=None,
-    ) -> "Parameters":
-        return self.subset(
-            keys=keys,
-            copy=copy,
-            keep_global=keep_global,
-            keep_global_metadata=keep_global_metadata,
-            keep_global_encoding=keep_global_encoding,
-            process=process,
-        )
+        keys: list | str = None,
+    ) -> dict | np.ndarray:
+        """Get the values of the parameters (coords or data_vars) by keys
+
+        Also see:
+            subset() method is a Parameter object is desired.
+        """
+        if not isinstance(keys, list):
+            return self.variables[keys]
+        else:
+            return {kk: self.variables[kk] for kk in keys}
+
+    def get_dim_values(
+        self,
+        keys: list | str = None,
+    ) -> dict | np.ndarray:
+        """Get the values of the dimensions by keys."""
+        if not isinstance(keys, list):
+            return self.dims[keys]
+        else:
+            return {kk: self.dims[kk] for kk in keys}

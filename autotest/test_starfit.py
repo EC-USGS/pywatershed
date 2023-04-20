@@ -127,6 +127,4 @@ def test_param_subset_write(tmp_path, domain_tag):
         param_names=starfit_parameters,
     )
 
-    params.to_netcdf(tmp_path / f"starfit_params_{domain_tag}.nc")
-
-    asdf
+    params.to_netcdf(tmp_path / f"starfit_params_{domain_tag}.nc", use_xr=True)

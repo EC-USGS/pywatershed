@@ -145,6 +145,11 @@ class StorageUnit(Accessor):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """Get a tuple of parameter names."""
+        raise Exception("This must be overridden")
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get a tuple of parameter names."""
         raise Exception("This must be overridden")
@@ -205,6 +210,11 @@ class StorageUnit(Accessor):
         raise Exception("This must be overridden")
 
     @property
+    def dimensions(self) -> tuple:
+        """A tuple of parameter names."""
+        return self.get_dimensions()
+
+    @property
     def parameters(self) -> tuple:
         """A tuple of parameter names."""
         return self.get_parameters()
@@ -235,14 +245,23 @@ class StorageUnit(Accessor):
         return self.get_mass_budget_terms()
 
     def _initialize_self_variables(self, restart: bool = False):
+        # dims
+        for name in self.dimensions:
+            setattr(self, name, self.control.params.dims[name])
+
+        # parameters
         for name in self.parameters:
-            setattr(
-                self,
-                name,
-                self.params.get_parameters(name)[name],
-            )
+            setattr(self, name, self.params.get_param_values(name))
+
+        # inputs
         for name in self.inputs:
-            setattr(self, name, np.zeros(self.nhru, dtype=float) + np.nan)
+            spatial_dims = self.control.params.get_dim_values(
+                list(meta.find_variables(name)[name]["dimensions"].values())
+            )
+            spatial_dims = tuple(spatial_dims.values())
+            setattr(self, name, np.zeros(spatial_dims, dtype=float) + np.nan)
+
+        # variables
         # skip restart variables if restart (for speed) ?
         # the code is below but commented.
         # restart_variables = self.restart_variables
@@ -250,16 +269,6 @@ class StorageUnit(Accessor):
             # if restart and (name in restart_variables):
             #     continue
             self._initialize_var(name)
-
-        # demote any self variables to single?
-        # for vv in self.__dict__.keys():
-        # for vv in self.parameters:
-        #     if (
-        #         isinstance(self[vv], np.ndarray)
-        #         and self[vv].dtype == "float64"
-        #     ):
-        #         print(f"converting {vv} from float64 to float32")
-        #         self[vv] = self[vv].astype("float32")
 
         return
 

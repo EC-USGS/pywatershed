@@ -48,6 +48,10 @@ class Starfit(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> dict:
+        return ("nreservoirs",)
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get starfit parameters
 
@@ -56,8 +60,6 @@ class Starfit(StorageUnit):
 
         """
         return (
-            "nreservoirs",
-            "nhru",  # to remove
             "grand_id",
             "initial_storage",
             "start_time",

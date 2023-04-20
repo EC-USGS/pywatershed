@@ -48,7 +48,7 @@ def mk_ds0():
 
 
 ds0 = mk_ds0()
-xr_dd0 = ds0.to_dict(numpy_data=True, encoding=True)
+xr_dd0 = ds0.to_dict(data="array", encoding=True)
 dd0 = DatasetDict.from_ds(ds0)
 
 
@@ -109,7 +109,7 @@ def test_xr_dd_xr(tmp_path):
 
     # start with a dd
     # round trip through a xr.dict: dd -> xr.dict -> dd
-    dd1 = dm.xr_dd_to_dd(ds1.to_dict(numpy_data=True, encoding=True))
+    dd1 = dm.xr_dd_to_dd(ds1.to_dict(data="array", encoding=True))
     dd2 = dm.xr_dd_to_dd(dm.dd_to_xr_dd(dd1))
     np.testing.assert_equal(dd1, dd2)
 

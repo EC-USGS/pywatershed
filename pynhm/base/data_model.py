@@ -491,7 +491,11 @@ def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
     else:
         xr_ds = file_or_ds
 
-    dd = xr_ds.to_dict(numpy_data=True, data=(not schema_only), encoding=True)
+    if schema_only:
+        data_arg = False
+    else:
+        data_arg = "array"
+    dd = xr_ds.to_dict(data=data_arg, encoding=True)
 
     dd = xr_dd_to_dd(dd)
 

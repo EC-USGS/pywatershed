@@ -9,6 +9,20 @@ from ..base.parameters import Parameters
 from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
 from ..utils.prms5_file_util import PrmsFile
 
+prms_dim_names = (
+    "nhru",
+    "nsegment",
+    "nssr",
+    "ngw",
+    "npoigages",
+    "nobs",
+    "ndeplval",
+    "ndepl",
+    "nmonth",
+    "ndoy",
+    "scalar",
+)
+
 
 class JSONParameterEncoder(json.JSONEncoder):
     """
@@ -60,107 +74,34 @@ class PrmsParameters(Parameters):
 
     def __init__(
         self,
-        parameter_dict: dict,
-        parameter_dimensions_dict: dict = {},
+        dims: dict = None,
+        coords: dict = None,
+        data_vars: dict = None,
+        metadata: dict = None,
+        encoding: dict = None,
+        validate: bool = True,
     ) -> "PrmsParameters":
+        if dims is None:
+            dims = {}
+        if coords is None:
+            coords = {}
+        if data_vars is None:
+            data_vars = {}
+        if metadata is None:
+            metadata = {}
+        if encoding is None:
+            encoding = {}
+
         super().__init__(
-            dims={},
-            coords=parameter_dimensions_dict,
-            data_vars=parameter_dict,
-            metadata={},
-            validate=False,
+            dims=dims,
+            coords=coords,
+            data_vars=data_vars,
+            metadata=metadata,
+            encoding=encoding,
+            validate=validate,
         )
-
-        self._params_sep_procs = all(
-            [isinstance(pp, dict) for pp in self.parameters.values()]
-        )
-
-        # build dimensions from data
-        if len(parameter_dimensions_dict) is 0:
-            # todo: handle self._params_sep_procs
-            for key, value in parameter_dict.items():
-                param_dim_names = meta.get_params(key)
-                if len(param_dim_names):
-                    param_dim_names = list(
-                        param_dim_names[key]["dimensions"].values()
-                    )
-                else:
-                    param_dim_names = [key]
-
-                common_params = set(param_dim_names) & set(
-                    self.dimensions.keys()
-                )
-                if not len(common_params):
-                    parameter_dimensions_dict[key] = tuple(["unknown"])
-                    continue
-
-                param_dims = {kk: self.dimensions[kk] for kk in common_params}
-
-                if isinstance(value, int):
-                    parameter_dimensions_dict[key] = None
-                elif isinstance(value, np.ndarray):
-                    shape = value.shape
-                    temp_dims = []
-                    for isize in shape:
-                        found_dim = False
-                        for dim_key, dim_value in param_dims.items():
-                            if dim_value == isize:
-                                found_dim = True
-                                temp_dims.append(dim_key)
-                                break
-
-                        if isize == 1 and not found_dim:
-                            found_dim = True
-                            temp_dims.append("scalar")
-
-                    parameter_dimensions_dict[key] = tuple(temp_dims)
-
-        self.parameter_dimensions = parameter_dimensions_dict
 
         return
-
-    def subset(
-        self, keys: listish = None, process: str = None
-    ) -> "PrmsParameters":
-        """Get a parameter object subset to passed keys and processes"""
-
-        if (process is not None) and (keys is None):
-            if not self._params_sep_procs:
-                return PrmsParameters(
-                    parameter_dict=deepcopy(self.parameters),
-                    parameter_dimensions_dict=deepcopy(
-                        self.parameter_dimensions
-                    ),
-                )
-
-            return PrmsParameters(
-                parameter_dict=deepcopy(self.parameters[process]),
-                parameter_dimensions_dict=deepcopy(
-                    self.parameter_dimensions[process]
-                ),
-            )
-
-        elif (process is None) and (keys is not None):
-            if not self._params_sep_procs:
-                return PrmsParameters(
-                    parameter_dict={
-                        kk: self.parameters[kk]
-                        for kk in keys
-                        if kk in self.parameters.keys()
-                    },
-                    parameter_dimensions_dict={
-                        kk: self.parameter_dimensions[kk]
-                        for kk in keys
-                        if kk in self.parameter_dimensions.keys()
-                    },
-                )
-            else:
-                raise NotImplementedError
-            pass
-
-        else:
-            # This is still a work in progress
-            raise NotImplementedError
 
     def get_parameters(self, keys: listish, dims: bool = False) -> dict:
         """Get a subset of keys in the parameter dictionary
@@ -178,39 +119,40 @@ class PrmsParameters(Parameters):
         if isinstance(keys, str):
             keys = [keys]
 
-        if self._params_sep_procs:
-            # If a parameter dict, get the values from any dict entry
-            # there should never be a param with different values
-            return_params = {}
-            for proc_key in self.parameters.keys():
-                if (process is not None) and (proc_key != type(process)):
-                    continue
-                # only allow a single process and do not return a process key
-                var_keys = self.parameters[proc_key].keys()
-                for key in keys:
-                    if key in var_keys:
-                        if dims:
-                            return_params[key] = self.parameters_dimensions[
-                                proc_key
-                            ][key]
-                        else:
-                            return_params[key] = self.parameters[proc_key][key]
+        # if self._params_sep_procs:
+        #     raise ValueError("deprecating")
+        #     # If a parameter dict, get the values from any dict entry
+        #     # there should never be a param with different values
+        #     return_params = {}
+        #     for proc_key in self.parameters.keys():
+        #         if (process is not None) and (proc_key != type(process)):
+        #             continue
+        #         # only allow a single process and do not return a process key
+        #         var_keys = self.parameters[proc_key].keys()
+        #         for key in keys:
+        #             if key in var_keys:
+        #                 if dims:
+        #                     return_params[key] = self.parameters_dimensions[
+        #                         proc_key
+        #                     ][key]
+        #                 else:
+        #                     return_params[key] = self.parameters[proc_key][key]
 
-            return return_params
+        #     return return_params
 
+        # else:
+        if dims:
+            return {
+                key: self.parameter_dimensions.get(key)
+                for key in keys
+                if key in self.parameter_dimensions.keys()
+            }
         else:
-            if dims:
-                return {
-                    key: self.parameter_dimensions.get(key)
-                    for key in keys
-                    if key in self.parameter_dimensions.keys()
-                }
-            else:
-                return {
-                    key: self.parameters.get(key)
-                    for key in keys
-                    if key in self.parameters.keys()
-                }
+            return {
+                key: self.parameters.get(key)
+                for key in keys
+                if key in self.parameters.keys()
+            }
 
     @property
     def dimensions(self) -> dict:
@@ -221,7 +163,7 @@ class PrmsParameters(Parameters):
 
         """
         dimensions = {}
-        for key, value in self.parameters.items():
+        for key, value in self.dims.items():
             if isinstance(value, int):
                 dimensions[key] = value
         return dimensions
@@ -237,7 +179,7 @@ class PrmsParameters(Parameters):
         if "nhm_id" in self.parameters.keys():
             nhm_id = self.parameters["nhm_id"]
         else:
-            nhm_id = np.arange(1, self.parameters["nhru"] + 1)
+            nhm_id = np.arange(1, self.dims["nhru"] + 1)
         return nhm_id
 
     @property
@@ -251,7 +193,7 @@ class PrmsParameters(Parameters):
         if "nhm_seg" in self.parameters.keys():
             nhm_seg = self.parameters["nhm_seg"]
         else:
-            nhm_seg = np.arange(1, self.parameters["nsegment"] + 1)
+            nhm_seg = np.arange(1, self.dims["nsegment"] + 1)
         return nhm_seg
 
     @property
@@ -270,7 +212,7 @@ class PrmsParameters(Parameters):
     def parameters_to_json(self, json_filename):
         """write the parameters dictionary out to a json file"""
         json.dump(
-            self.parameters,
+            {**self.dims, **self.parameters},
             open(json_filename, "w"),
             indent=4,
             cls=JSONParameterEncoder,
@@ -290,11 +232,7 @@ class PrmsParameters(Parameters):
 
         """
         pars = _json_load(json_filename)
-        params = PrmsParameters(pars)
-
-        # add implied dimensions
-        params._coords["ndoy"] = ndoy
-        params._coords["nmonth"] = 12
+        params = PrmsParameters.from_load(pars)
 
         return params
 
@@ -310,16 +248,120 @@ class PrmsParameters(Parameters):
 
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
-        params = PrmsParameters(
+        params = PrmsParameters.from_load(
             data["parameter"]["parameters"],
             data["parameter"]["parameter_dimensions"],
         )
 
-        # add implied dimensions
-        params._coords["ndoy"] = ndoy
-        params._coords["nmonth"] = 12
-
         return params
+
+    def from_load(
+        parameter_dict: dict,
+        parameter_dimensions_dict: dict = None,
+    ) -> "PrmsParameters":
+        # This was the traditional __init__ but is now a secondary load step
+
+        # TODO: add this back
+        # If the parameters are all dictionaries, they are params for
+        # separate processes, this just flags
+        # self._params_sep_procs = all(
+        #    [isinstance(pp, dict) for pp in parameter_dict.values()]
+        # )
+
+        # move dims from params to dims
+        if parameter_dimensions_dict is None:
+            parameter_dimensions_dict = {}
+
+        dims = {}
+        for dd in prms_dim_names:
+            if dd in parameter_dict.keys():
+                dims[dd] = parameter_dict.pop(dd)
+                if dd in parameter_dimensions_dict.keys():
+                    _ = parameter_dimensions_dict.pop(dd)
+
+        # add implied dimensions
+        dims["ndoy"] = ndoy
+        dims["nmonth"] = 12
+
+        # build dimension metadata from data
+        if len(parameter_dimensions_dict) == 0:
+            for key, value in parameter_dict.items():
+                param_dim_names = list(
+                    meta.get_params(key)[key]["dims"].values()
+                )
+                parameter_dimensions_dict[key] = {
+                    "dims": tuple(param_dim_names)
+                }
+
+                # need below?
+                # this was original code before above
+                # if len(param_dim_names):
+                #     param_dim_names = list(
+                #         param_dimensions_dict[key]["dims"].values()
+                #     )
+                # else:
+                #     param_dim_names = [key]
+
+                common_params = set(param_dim_names) & set(dims)
+                if not len(common_params):
+                    parameter_dimensions_dict[key] = {
+                        "dims": tuple(["unknown"])
+                    }
+                    continue
+
+                param_dims = {kk: dims[kk] for kk in common_params}
+
+                if isinstance(value, int):
+                    parameter_dimensions_dict[key] = None
+                elif isinstance(value, np.ndarray):
+                    shape = value.shape
+                    temp_dims = []
+                    for isize in shape:
+                        found_dim = False
+                        for dim_key, dim_value in param_dims.items():
+                            if dim_value == isize:
+                                found_dim = True
+                                temp_dims.append(dim_key)
+                                break
+
+                        if isize == 1 and not found_dim:
+                            found_dim = True
+                            temp_dims.append("scalar")
+
+                parameter_dimensions_dict[key] = {"dims": tuple(temp_dims)}
+
+        # build coords, only some dims have coords that are not indexes
+        coords = {}
+        for cc in ["nhm_id", "nhm_seg", "poi_gage_id"]:
+            coord_to_dim = {
+                "nhm_id": "nhru",
+                "nhm_seg": "nsegment",
+                "poi_gage_id": "npoigages",
+            }
+            dim_name = coord_to_dim[cc]
+            if dim_name not in dims:
+                continue
+
+            dim_val = dims[dim_name]
+
+            if cc in parameter_dict.keys():
+                coords[cc] = parameter_dict.pop(cc)
+            else:
+                coord_to_dim = {"nhm_id": "nhru", "nhm_seg": "nsegment"}
+                coords[cc] = np.arange(1, dim_val + 1)
+
+            parameter_dimensions_dict[cc] = {"dims": (dim_name,)}
+
+        parameter_dimensions_dict["global"] = {}
+
+        prms_params = PrmsParameters(
+            dims=dims,
+            coords=coords,
+            data_vars=parameter_dict,
+            metadata=parameter_dimensions_dict,
+            validate=True,
+        )
+        return prms_params
 
     @staticmethod
     def _from_nc_file(parameter_nc_file) -> dict:

@@ -83,7 +83,6 @@ class PRMSChannel(StorageUnit):
         budget_type: str = None,
         load_n_time_batches: int = 1,
     ) -> "PRMSChannel":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -103,6 +102,16 @@ class PRMSChannel(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """Get channel segment dimensions
+
+        Returns:
+            dimensions: input dimensions
+
+        """
+        return ("nhru", "nssr", "ngw", "nsegment")
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get channel segment parameters
 
@@ -111,10 +120,6 @@ class PRMSChannel(StorageUnit):
 
         """
         return (
-            "nhru",
-            "nssr",
-            "ngw",
-            "nsegment",
             "hru_area",
             "hru_segment",
             "mann_n",
@@ -374,7 +379,6 @@ class PRMSChannel(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_muskingum_mann_numba"):
-
                 # This is annoying that long integers on windows are 32bit
                 if platform.system() == "Windows":
                     self._muskingum_mann_numba = nb.njit(
@@ -570,7 +574,6 @@ class PRMSChannel(StorageUnit):
                     inflow_ts[jseg] /= ts[jseg]
 
                     if tsi[jseg] > 0:
-
                         # todo: evaluated if denormal results should be dealt with
 
                         # Muskingum routing equation

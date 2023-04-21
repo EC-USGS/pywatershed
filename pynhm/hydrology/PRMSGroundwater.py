@@ -46,17 +46,24 @@ class PRMSGroundwater(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """Get groundwater reservoir dimensions
+
+        Returns:
+            tuple of dimension names
+
+        """
+        return ("nhru", "ngw", "nssr")
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get groundwater reservoir parameters
 
         Returns:
-            parameters: input parameters
+            tuple of parameter name
 
         """
         return (
-            "nhru",
-            "ngw",
-            "nssr",
             "hru_area",
             "gwflow_coef",
             "gwsink_coef",
@@ -69,7 +76,7 @@ class PRMSGroundwater(StorageUnit):
         """Get groundwater reservoir input variables
 
         Returns:
-            variables: input variables
+            tuple: input variable name
 
         """
         return (

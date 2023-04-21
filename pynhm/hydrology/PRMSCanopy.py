@@ -44,7 +44,6 @@ class PRMSCanopy(StorageUnit):
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSCanopy":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -63,13 +62,18 @@ class PRMSCanopy(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """
+        Return a tuple the dimension names
+        """
+        return ("nhru",)
+
+    @staticmethod
     def get_parameters() -> tuple:
         """
-        Return a list of the parameters required for this process
-
+        Return a tuple of parameters names
         """
         return (
-            "nhru",
             "cov_type",
             "covden_sum",
             "covden_win",
@@ -77,7 +81,6 @@ class PRMSCanopy(StorageUnit):
             "wrain_intcp",
             "snow_intcp",
             "potet_sublim",
-            "snow_intcp",
         )
 
     @staticmethod
@@ -301,7 +304,6 @@ class PRMSCanopy(StorageUnit):
             )
 
         elif self._calc_method.lower() in ["none", "numpy"]:
-
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -353,7 +355,6 @@ class PRMSCanopy(StorageUnit):
             )
 
         elif self._calc_method.lower() == "fortran":
-
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -453,7 +454,6 @@ class PRMSCanopy(StorageUnit):
         ACTIVE,
         intercept,
     ):
-
         # TODO: would be nice to alphabetize the arguments
         #       probably while keeping constants at the end.
         #       intcp_form and intcp_transp_on also do not appear to be

@@ -29,7 +29,6 @@ class PRMSEt(StorageUnit):
         verbose: bool = False,
         budget_type: str = None,
     ) -> "PRMSEt":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -69,6 +68,16 @@ class PRMSEt(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """Get ET dimensions
+
+        Returns:
+            dimensions: input dimensions
+
+        """
+        return ("nhru",)
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get ET parameters
 
@@ -77,7 +86,6 @@ class PRMSEt(StorageUnit):
 
         """
         return (
-            "nhru",
             "dprst_frac",
             "hru_percent_imperv",
         )

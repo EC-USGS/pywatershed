@@ -47,7 +47,6 @@ class PRMSSolarGeometry(StorageUnit):
         from_nc_files_dir: fileish = None,
         load_n_time_batches: int = 1,
     ):
-
         # This is a singular case of having a constant parameter dimensions
         self.ndoy = doy
 
@@ -115,10 +114,12 @@ class PRMSSolarGeometry(StorageUnit):
         }
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        return ("nhru", "ndoy")
+
+    @staticmethod
     def get_parameters() -> tuple:
         return (
-            "nhru",
-            "ndoy",
             "hru_slope",
             "radj_sppt",
             "radj_wppt",
@@ -425,7 +426,7 @@ class PRMSSolarGeometry(StorageUnit):
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.nhm_coordinates,
+                self.params.coords,
                 [var],
                 {var: self.var_meta[var]},
             )

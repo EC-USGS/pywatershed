@@ -29,7 +29,7 @@ def expand_scalar_to_dims(param_dict, param_dim_dict):
     # case-by-case basis for now: just expand them to full size
     for param_name in param_dict.keys():
         if param_name in params_expand_scalar_to_dims:
-            dims = meta.find_variables(param_name)[param_name]["dimensions"]
+            dims = meta.find_variables(param_name)[param_name]["dims"]
             exp_dim = params_expand_scalar_to_dims[param_name]
             param_shape = param_dict[param_name].shape
             param_val = param_dict[param_name]
@@ -223,6 +223,11 @@ class PrmsFile:
         ) = expand_scalar_to_dims(
             parameters_full_dict, parameter_dimensions_full_dict
         )
+
+        parameter_dimensions_full_dict = {
+            kk: {"dims": vv}
+            for kk, vv in parameter_dimensions_full_dict.items()
+        }
 
         return parameters_full_dict, parameter_dimensions_full_dict
 

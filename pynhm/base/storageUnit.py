@@ -92,8 +92,7 @@ class StorageUnit(Accessor):
     ):
         self.name = "StorageUnit"
         self.control = control
-        # is this subset necessary? or move out of base to child class
-        self.params = self.control.params.subset(process=type(self))
+        self.params = self.control.params.subset(self.get_parameters())
         self.verbose = verbose
         self._load_n_time_batches = load_n_time_batches
 
@@ -254,12 +253,14 @@ class StorageUnit(Accessor):
             setattr(self, name, self.params.get_param_values(name))
 
         # inputs
-        for name in self.inputs:
-            spatial_dims = self.control.params.get_dim_values(
-                list(meta.find_variables(name)[name]["dimensions"].values())
-            )
-            spatial_dims = tuple(spatial_dims.values())
-            setattr(self, name, np.zeros(spatial_dims, dtype=float) + np.nan)
+        # TODO: necessary?
+        # for name in self.inputs:
+        #     # this is where meta gives
+        #     spatial_dims = self.control.params.get_dim_values(
+        #         list(meta.find_variables(name)[name]["dims"].values())
+        #     )
+        #     spatial_dims = tuple(spatial_dims.values())
+        #     setattr(self, name, np.zeros(spatial_dims, dtype=float) + np.nan)
 
         # variables
         # skip restart variables if restart (for speed) ?
@@ -286,9 +287,7 @@ class StorageUnit(Accessor):
                 )
             return
 
-        dims = [
-            self[vv] for vv in self.var_meta[var_name]["dimensions"].values()
-        ]
+        dims = [self[vv] for vv in self.var_meta[var_name]["dims"].values()]
         init_type = self.var_meta[var_name]["type"]
 
         if len(dims) == 1:
@@ -499,7 +498,7 @@ class StorageUnit(Accessor):
                 nc_path = pl.Path(output_dir) / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
-                    self.params.nhm_coordinates,
+                    self.params.coords,
                     [variable_name],
                     {variable_name: self.var_meta[variable_name]},
                 )

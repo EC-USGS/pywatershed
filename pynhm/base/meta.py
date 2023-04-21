@@ -116,7 +116,7 @@ def meta_dimensions(meta_item: dict) -> list:
         dimensions: tuple with dimension strings for a variable name
 
     """
-    return list(meta_item["dimensions"].values())
+    return list(meta_item["dims"].values())
 
 
 def is_available(variable_name: str) -> bool:
@@ -201,7 +201,7 @@ def get_dimensions(
         vars = [vars]
     variable_dict = find_variables(vars)
     return {
-        key: [dimension for tag, dimension in value["dimensions"].items()]
+        key: [dimension for tag, dimension in value["dims"].items()]
         for key, value in variable_dict.items()
     }
 

@@ -1,1436 +1,1436 @@
 KKITER:
   desc: Current iteration in GSFLOW simulation
-  dimensions:
+  dims:
     0: one
   type: int32
   units: none
 ai:
   desc: Maximum snowpack for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 albedo:
   desc: Snow surface albedo or the fraction of radiation reflected from the snowpack
     surface for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 basin_2ndstflow:
   desc: Basin volume-weighted average streamflow from each lake with a second outlet
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_actet:
   desc: Basin area-weighted average actual ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_actet_mo:
   desc: Monthly basin area-weighted average actual ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_actet_tot:
   desc: Total simulation basin area-weighted average actual ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_actet_yr:
   desc: Yearly basin area-weighted average actual ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_cap_infil_tot:
   desc: Basin area-weighted average infiltration with cascading flow into capillary
     reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_cap_up_max:
   desc: Basin area-weighted average maximum cascade flow that flows to capillary reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_capillary_wb:
   desc: Basin area-weighted average capillary reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_capwaterin:
   desc: Basin area-weighted average infiltration, cascading interflow and Dunnian
     flow added to capillary reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_cfs:
   desc: Streamflow leaving the basin through the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 basin_cfs_mo:
   desc: Monthly total streamflow to stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 basin_cfs_tot:
   desc: Total simulation basin area-weighted average streamflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_cfs_yr:
   desc: Yearly total streamflow to stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 basin_cloud_cover:
   desc: Basin area-weighted average cloud cover proportion
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_cms:
   desc: Streamflow leaving the basin through the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cms
 basin_contrib_fraction:
   desc: Basin area-weighted average contributing area of the pervious area of each
     HRU
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_cpr_stor_frac:
   desc: Basin area-weighted average fraction of capillary reservoir storage of the
     maximum storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_dncascadeflow:
   desc: Basin area-weighted average cascading interflow and Dunnian surface runoff
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dndunnianflow:
   desc: Basin area-weighted average cascading Dunnian flow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dninterflow:
   desc: Basin area-weighted average cascading interflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dprst_evap:
   desc: Basin area-weighted average evaporation from surface-depression storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dprst_seep:
   desc: Basin area-weighted average seepage from surface-depression storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dprst_sroff:
   desc: Basin area-weighted average surface runoff from open surface-depression storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dprst_volcl:
   desc: Basin area-weighted average storage volume in closed surface depressions
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dprst_volop:
   desc: Basin area-weighted average storage volume in open surface depressions
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dprst_wb:
   desc: Basin area-weighted average surface-depression storage water balance
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dunnian:
   desc: Basin area-weighted average Dunnian surface runoff that flows to the stream
     network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dunnian_gvr:
   desc: Basin area-weighted average excess flow to preferential-flow reservoirs from
     gravity reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_dunnian_pfr:
   desc: Basin area-weighted average excess infiltration to preferential-flow reservoirs
     from variable infil
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gravity_wb:
   desc: Basin area-weighted average gravity reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gvr2pfr:
   desc: Basin area-weighted average excess flow to preferential-flow reservoir storage
     from gravity reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gvr2sm:
   desc: Basin area-weighted average gravity flow to capillary reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gvr_stor_frac:
   desc: Basin area-weighted average fraction of gravity reservoir storage of the maximum
     storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_gwflow:
   desc: Basin area-weighted average of groundwater flow to the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwflow_cfs:
   desc: Basin area-weighted average of groundwater flow to the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 basin_gwflow_mo:
   desc: Monthly basin area-weighted average groundwater discharge
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwflow_tot:
   desc: Total simulation basin area-weighted average groundwater discharge
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwflow_yr:
   desc: Yearly basin area-weighted average groundwater discharge
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwin:
   desc: Basin area-weighted average of inflow to GWRs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwsink:
   desc: Basin area-weighted average of GWR outflow to the groundwater sink
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwstor:
   desc: Basin area-weighted average of storage in GWRs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_gwstor_minarea_wb:
   desc: Basin area-weighted average storage added to each GWR when storage is less
     than gwstor_min
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_horad:
   desc: Potential shortwave radiation for the basin centroid
-  dimensions:
+  dims:
     0: one
   type: float64
   units: Langleys
 basin_hortonian:
   desc: Basin area-weighted average Hortonian runoff
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_hortonian_lakes:
   desc: Basin area-weighted average Hortonian surface runoff to lakes
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_hru_apply:
   desc: Basin area-weighted average canopy_gain
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_humidity:
   desc: Basin area-weighted average humidity
-  dimensions:
+  dims:
     0: one
   type: float64
   units: percentage
 basin_imperv_evap:
   desc: Basin area-weighted average evaporation from impervious area
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_imperv_stor:
   desc: Basin area-weighted average storage on impervious area
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_infil:
   desc: Basin area-weighted average infiltration to the capillary reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_intcp_evap:
   desc: Basin area-weighted evaporation from the canopy
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_intcp_evap_mo:
   desc: Monthly basin area-weighted average interception evaporation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_intcp_evap_tot:
   desc: Total simulation basin area-weighted average canopy evaporation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_intcp_evap_yr:
   desc: Yearly basin area-weighted average canopy evaporation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_intcp_stor:
   desc: Basin area-weighted average interception storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_interflow_max:
   desc: Basin area-weighted average maximum interflow that flows from gravity reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_lake_seep:
   desc: Basin area-weighted average of lake-bed seepage to GWRs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: acre-feet
 basin_lake_stor:
   desc: Basin volume-weighted average storage for all lakes using broad-crested weir
     or gate opening routing
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_lakeevap:
   desc: Basin area-weighted average lake evaporation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_lakeinsz:
   desc: Basin area-weighted average lake inflow from land HRUs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_lakeprecip:
   desc: Basin area-weighted average precipitation on lake HRUs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_lapse_max:
   desc: Basin area-weighted average maximum air temperature lapse rate per 1000 feet
-  dimensions:
+  dims:
     0: one
   type: float64
   units: degrees
 basin_lapse_min:
   desc: Basin area-weighted average minimum air temperature lapse rate per 1000 feet
-  dimensions:
+  dims:
     0: one
   type: float64
   units: degrees
 basin_max_temp_mo:
   desc: Monthly basin area-weighted average maximum air temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_max_temp_tot:
   desc: Total simulation basin area-weighted average maximum temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_max_temp_yr:
   desc: Yearly basin area-weighted average maximum temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_min_temp_mo:
   desc: Monthly basin area-weighted average minimum air temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_min_temp_tot:
   desc: Total simulation basin area-weighted average minimum temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_min_temp_yr:
   desc: Yearly basin area-weighted average minimum temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_net_apply:
   desc: Basin area-weighted average net_apply
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_net_ppt:
   desc: Basin area-weighted average throughfall
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_net_ppt_mo:
   desc: Monthly area-weighted average net precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_net_ppt_yr:
   desc: Yearly basin area-weighted average net precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_net_rain:
   desc: Basin area-weighted average rain throughfall
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_net_snow:
   desc: Basin area-weighted average snow throughfall
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_obs_ppt:
   desc: Basin area-weighted average measured precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_orad:
   desc: Basin area-weighted average solar radiation on a horizontal surface
-  dimensions:
+  dims:
     0: one
   type: float64
   units: Langleys
 basin_perv_et:
   desc: Basin area-weighted average ET from capillary reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_pfr_stor_frac:
   desc: Basin area-weighted average fraction of preferential-flow reservoir storage
     of the maximum storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_pk_precip:
   desc: Basin area-weighted average precipitation added to snowpack
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_potet:
   desc: Basin area-weighted average potential ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_potet_mo:
   desc: Monthly basin area-weighted average potential ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_potet_tot:
   desc: Total simulation basin area-weighted average potential ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_potet_yr:
   desc: Yearly basin area-weighted average potential ET
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_potsw:
   desc: Basin area-weighted average shortwave radiation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: Langleys
 basin_ppt:
   desc: Basin area-weighted average precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ppt_mo:
   desc: Monthly basin area-weighted average precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ppt_tot:
   desc: Total simulation basin area-weighted average precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ppt_yr:
   desc: Yearly basin area-weighted average precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_pref_flow_infil:
   desc: Basin area-weighted average infiltration to preferential-flow reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_pref_stor:
   desc: Basin area-weighted average storage in preferential-flow reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_prefflow:
   desc: Basin area-weighted average interflow from preferential-flow reservoirs to
     the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_pweqv:
   desc: Basin area-weighted average snowpack water equivalent
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_radadj:
   desc: Basin area-weighted average radiation adjustment for cloud cover
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_rain:
   desc: Basin area-weighted average rainfall
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_recharge:
   desc: Basin area-weighted average recharge to GWRs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_runoff_ratio:
   desc: Basin area-weighted average discharge/precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_runoff_ratio_mo:
   desc: Monthly area-weighted average discharge/precipitation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_segment_storage:
   desc: Basin area-weighted average storage in the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_slowflow:
   desc: Basin area-weighted average interflow from gravity reservoirs to the stream
     network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_slstor:
   desc: Basin area-weighted average storage of gravity reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sm2gvr:
   desc: Basin area-weighted average excess flow from capillary reservoirs to gravity
     reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sm2gvr_maxin:
   desc: Basin area-weighted average maximum excess flow from capillary reservoirs
     that flows to gravity reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snow:
   desc: Basin area-weighted average snowfall for basin
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snowcov:
   desc: Basin area-weighted average snow-covered area
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_snowdepth:
   desc: Basin area-weighted average snow depth
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snowevap:
   desc: Basin area-weighted average evaporation and sublimation from snowpack
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snowmelt:
   desc: Basin area-weighted average snowmelt
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snowmelt_mo:
   desc: Monthly basin area-weighted average snowmelt
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snowmelt_tot:
   desc: Total simulation basin area-weighted average snowmelt
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_snowmelt_yr:
   desc: Yearly basin area-weighted average snowmelt
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_soil_lower_stor_frac:
   desc: Basin area-weighted average fraction of soil lower zone storage of the maximum
     storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_soil_moist:
   desc: Basin area-weighted average capillary reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_soil_moist_tot:
   desc: Basin area-weighted average total soil-zone water storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_soil_rechr:
   desc: Basin area-weighted average storage for recharge zone; upper portion of capillary
     reservoir where both evaporation and transpiration occurs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_soil_rechr_stor_frac:
   desc: Basin area-weighted average fraction of soil recharge zone storage of the
     maximum storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_soil_to_gw:
   desc: Basin average excess flow to capillary reservoirs that drains to GWRs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_soilzone_wb:
   desc: Basin area-weighted average storage in soilzone reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroff:
   desc: Basin area-weighted average surface runoff to the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroff_cfs:
   desc: Basin area-weighted average surface runoff to the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 basin_sroff_down:
   desc: Basin area-weighted average of cascading surface runoff
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroff_mo:
   desc: Monthly basin area-weighted average surface runoff
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroff_tot:
   desc: Total simulation basin area-weighted average overland flow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroff_upslope:
   desc: Basin area-weighted average of cascading surface runoff received from upslope
     HRUs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroff_yr:
   desc: Yearly basin area-weighted average overland runoff
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroffi:
   desc: Basin area-weighted average surface runoff from impervious areas
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sroffp:
   desc: Basin area-weighted average surface runoff from pervious areas
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ssflow:
   desc: Basin area-weighted average interflow from gravity and preferential-flow reservoirs
     to the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ssflow_cfs:
   desc: Interflow leaving the basin through the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 basin_ssflow_mo:
   desc: Monthly basin area-weighted average interflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ssflow_tot:
   desc: Total simulation basin area-weighted average interflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ssflow_yr:
   desc: Yearly basin area-weighted average interflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ssin:
   desc: Basin area-weighted average inflow to gravity and preferential-flow reservoir
     storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_ssstor:
   desc: Basin weighted average gravity and preferential-flow reservoir storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_stflow_in:
   desc: Basin area-weighted average lateral flow entering the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_stflow_mo:
   desc: Monthly basin area-weighted average simulated streamflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_stflow_out:
   desc: Basin area-weighted average streamflow leaving through the stream network
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_stflow_tot:
   desc: Total simulation basin area-weighted average streamflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_stflow_yr:
   desc: Yearly basin area-weighted average streamflow
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_storage:
   desc: Basin area-weighted average storage in all water storage reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_storvol:
   desc: Basin area-weighted average storage volume in all water storage reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: acre-inches
 basin_surface_storage:
   desc: Basin area-weighted average storage in all surface water storage reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_swale_et:
   desc: Basin area-weighted average ET from swale HRUs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_swrad:
   desc: Basin area-weighted average shortwave radiation
-  dimensions:
+  dims:
     0: one
   type: float64
   units: Langleys
 basin_sz2gw:
   desc: Basin area-weighted average drainage from gravity reservoirs to GWRs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_sz_stor_frac:
   desc: Basin area-weighted average fraction of soil zone storage of the maximum storage
-  dimensions:
+  dims:
     0: one
   type: float64
   units: decimal fraction
 basin_tcal:
   desc: Basin area-weighted average net snowpack energy balance
-  dimensions:
+  dims:
     0: one
   type: float64
   units: Langleys
 basin_temp:
   desc: Basin area-weighted average air temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_tmax:
   desc: Basin area-weighted average maximum air temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_tmin:
   desc: Basin area-weighted average minimum air temperature
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 basin_total_storage:
   desc: Basin area-weighted average storage in all water storage reservoirs
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 basin_transp_on:
   desc: Flag indicating whether transpiration is occurring anywhere in the basin (0=no;
     1=yes)
-  dimensions:
+  dims:
     0: one
   type: int32
   units: none
 basin_windspeed:
   desc: Basin area-weighted average wind speed
-  dimensions:
+  dims:
     0: one
   type: float64
   units: meters/second
 canopy_covden:
   desc: Canopy cover density for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 canopy_gain:
   desc: Transfer gain to the canopy reservoir for each HRU for each time step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 canopy_gain_tot:
   desc: Transfer gain to the canopy reservoir for each HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 cap_infil_tot:
   desc: Infiltration and cascading interflow and Dunnian flow added to capillary reservoir
     storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 cap_upflow_max:
   desc: Maximum infiltration and any cascading interflow and Dunnian surface runoff
     that can be added to capillary reservoir storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 cap_waterin:
   desc: Infiltration and any cascading interflow and Dunnian surface runoff added
     to capillary reservoir storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 cascade_dunnianflow:
   desc: Cascading Dunnian flow for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 cascade_interflow:
   desc: Cascading interflow for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 channel_outflow_vol:
   desc: Streamflow volume leaving the stream channel model
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cubicfeet
   var_category: mass flux
 cloud_cover_hru:
   desc: Cloud cover proportion of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 cloud_radadj:
   desc: Radiation adjustment for cloud cover of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 consumed_gain:
   desc: Transfer flow rate to each water-use comsumption destination for each time
     step
-  dimensions:
+  dims:
     0: nconsumed
   type: float64
   units: cfs
 consumed_gain_tot:
   desc: Transfer flow rate to each water-use comsumption destination for the simulation
-  dimensions:
+  dims:
     0: nconsumed
   type: float64
   units: cfs
 contrib_fraction:
   desc: Contributing area of each HRU pervious area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 cpr_stor_frac:
   desc: Fraction of capillary reservoir storage of the maximum storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 din1:
   desc: Inflow from the previous time step to each lake using Puls or linear storage
     routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 dlit:
   desc: Hours of daylight
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: hours
 dprst_area_clos:
   desc: Surface area of closed surface depressions based on storage volume for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 dprst_area_clos_max:
   desc: Aggregate sum of closed surface-depression storage areas of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 dprst_area_max:
   desc: Aggregate sum of surface-depression storage areas of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 dprst_area_open:
   desc: Surface area of open surface depressions based on storage volume for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 dprst_area_open_max:
   desc: Aggregate sum of open surface-depression storage areas of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 dprst_evap_hru:
   desc: Evaporation from surface-depression storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 dprst_gain:
   desc: Transfer gain to surface-depression storage for each HRU for each time step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 dprst_gain_tot:
   desc: Transfer gain to surface-depression storage for each HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 dprst_insroff_hru:
   desc: Surface runoff from pervious and impervious portions into open and closed
     surface-depression storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 dprst_seep_hru:
   desc: Seepage from surface-depression storage to associated GWR for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 dprst_sroff_hru:
   desc: Surface runoff from open surface-depression storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 dprst_stor_hru:
   desc: Surface-depression storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 dprst_stor_hru_change:
   desc: Surface-depression storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   variable_category: mass storage change
 dprst_stor_hru_old:
   desc: Surface-depression storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 dprst_transfer:
   desc: Transfer flow rate from surface-depression storage for each HRU for each time
     step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 dprst_transfer_tot:
   desc: Transfer flow rate from surface-depression storage for each HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 dprst_vol_clos:
   desc: Storage volume in closed surface depressions for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acre-inches
 dprst_vol_clos_frac:
   desc: Fraction of closed surface-depression storage of the maximum storage for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 dprst_vol_frac:
   desc: Fraction of surface-depression storage of the maximum storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 dprst_vol_open:
   desc: Storage volume in open surface depressions for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acre-inches
 dprst_vol_open_frac:
   desc: Fraction of open surface-depression storage of the maximum storage for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 dunnian_flow:
   desc: Dunnian surface runoff that flows to the stream network for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 elevlake:
   desc: Surface elevation of each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: feet
 external_gain:
   desc: Transfer gain to each external location for each time step
-  dimensions:
+  dims:
     0: nexternal
   type: float64
   units: cfs
 external_gain_tot:
   desc: Transfer gain to each external location for each time step
-  dimensions:
+  dims:
     0: nexternal
   type: float64
   units: cfs
 external_transfer:
   desc: Transfer flow rate from each external source for each time step
-  dimensions:
+  dims:
     0: nexternal
   type: float64
   units: cfs
 external_transfer_tot:
   desc: Transfer flow rate from each external source for the simulation
-  dimensions:
+  dims:
     0: nexternal
   type: float64
   units: cfs
 flow_headwater:
   desc: Total flow out of headwater segments (segment_type=1)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_in_great_lakes:
   desc: Total flow out into model domain from Great Lakes (segment_type=10)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_in_nation:
   desc: Total flow into model domain from Mexico or Canada (segment_type=4)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_in_region:
   desc: Total flow into region (segment_type=6)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_out:
   desc: Total flow out of model domain
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_out_NHM:
   desc: Total flow out of model domain to Mexico or Canada (segment_type=5)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_out_region:
   desc: Total flow out of region (segment_type=7)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_replacement:
   desc: Total flow out from replacement flow (segment_type=3)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_terminus:
   desc: Total flow to terminus segments (segment_type=9)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_to_great_lakes:
   desc: Total flow to Great Lakes (segment_type=11)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_to_lakes:
   desc: Total flow to lakes (segment_type=2)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 flow_to_ocean:
   desc: Total flow to oceans (segment_type=8)
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 frac_swe:
   desc: Fraction of maximum snow-water equivalent (snarea_thresh) on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 freeh2o:
   desc: Storage of free liquid water in the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 freeh2o_change:
   desc: Change in storage of free liquid water in the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 freeh2o_prev:
   desc: Previous storage of free liquid water in the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 gate_ht:
   desc: Height of the gate opening at each dam with a gate
-  dimensions:
+  dims:
     0: nratetbl
   type: float64
   units: inches
 grav_gwin:
   desc: Groundwater discharge to gravity-flow reservoirs for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 gravity_stor_res:
   desc: Storage in each gravity-flow reservoir
-  dimensions:
+  dims:
     0: nhrucell
   type: float64
   units: inches
 gvr2sm:
   desc: Gravity flow to soil moist replenishment for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 gvr_stor_frac:
   desc: Fraction of gravity reservoir storage of the maximum storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 gw2sm_grav:
   desc: Groundwater discharge to gravity-flow reservoirs
-  dimensions:
+  dims:
     0: nhrucell
   type: float64
   units: inches
 gw_in_soil:
   desc: Drainage from capillary reservoir excess water for each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: acre-inches
 gw_in_ssr:
   desc: Drainage from gravity reservoir excess water for each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: acre-inches
 gw_seep_lakein:
   desc: Groundwater discharge to any associated lake for each GWR
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: acre-feet
 gw_upslope:
   desc: Groundwater flow received from upslope GWRs for each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: acre-inches
 gwr_gain:
   desc: Transfer gain to the groundwater reservoir of each HRU for each time step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 gwr_gain_tot:
   desc: Transfer gain to the groundwater reservoir of each HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 gwr_transfer:
   desc: Transfer flow rate from the groundwater reservoir of each HRU for each time
     step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 gwr_transfer_tot:
   desc: Transfer flow rate from the groundwater reservoir of each HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 gwres_flow:
   desc: Groundwater discharge from each GWR to the stream network
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
   var_category: mass flux
 gwres_flow_vol:
   desc: Groundwater discharge volume from each GWR to the stream network
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: cubicfeet
@@ -1438,173 +1438,173 @@ gwres_flow_vol:
 gwres_sink:
   desc: Outflow from GWRs to the groundwater sink; water is considered underflow or
     flow to deep aquifers and does not flow to the stream network
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
   var_category: mass flux
 gwres_stor:
   desc: Storage in each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
   var_category: mass storage
 gwres_stor_change:
   desc: Change is storage in each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
   var_category: mass storage change
 gwres_stor_old:
   desc: Previous storage in each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
   var_category: mass storage
 gwstor_minarea_wb:
   desc: Storage added to each GWR when storage is less than gwstor_min
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
 hortonian_flow:
   desc: Hortonian surface runoff reaching stream network for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hortonian_lakes:
   desc: Surface runoff to lakes for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_actet:
   desc: Actual ET for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_et_yr:
   desc: Yearly area-weighted average actual ET for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_frac_perv:
   desc: Fraction of HRU that is pervious
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 hru_gw_cascadeflow:
   desc: Cascading groundwater flow from each GWR
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
 hru_hortn_cascflow:
   desc: Cascading Hortonian surface runoff leaving each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_imperv:
   desc: Area of HRU that is impervious
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 hru_impervevap:
   desc: HRU area-weighted average evaporation from impervious area for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 hru_impervstor:
   desc: HRU area-weighted average storage on impervious area for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_impervstor_change:
   desc: Change in HRU area-weighted average storage on impervious area for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 hru_impervstor_old:
   desc: Previous HRU area-weighted average storage on impervious area for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_intcpevap:
   desc: HRU area-weighted average evaporation from the canopy for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   # var_category: mass flux
 hru_intcpstor:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 hru_intcpstor_change:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 hru_intcpstor_old:
   desc: HRU area-weighted average Interception storage in the canopy for each HRU at previous time
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_lateral_flow:
   desc: Lateral flow to stream network from each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_outflow:
   desc: Total flow leaving each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 hru_perv:
   desc: Area of HRU that is pervious
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: acres
 hru_perv_actet:
   desc: Actual ET from the capillary reservoir of each HRU normalized to HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_ppt:
   desc: Precipitation distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: inches
 hru_rain:
   desc: Rain distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
@@ -1612,7 +1612,7 @@ hru_rain:
   var_category: mass flux
 hru_snow:
   desc: Snow distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
@@ -1620,75 +1620,75 @@ hru_snow:
   var_category: mass flux
 hru_sroffi:
   desc: HRU area-weighted average surface runoff from impervious areas for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_sroffp:
   desc: HRU area-weighted average surface runoff from pervious areas for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_storage:
   desc: Storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 hru_streamflow_out:
   desc: Total flow to stream network from each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 hru_sz_cascadeflow:
   desc: Cascading interflow and Dunnian surface runoff from each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 humidity:
   desc: Relative humidity at each measurement station
-  dimensions:
+  dims:
     0: nhumid
   type: float64
   units: percentage
 humidity_hru:
   desc: Relative humidity of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: percentage
 iasw:
   desc: Flag indicating that snow covered area is interpolated between previous location
     on curve and maximum (1) or is on the defined curve (0)
-  dimensions:
+  dims:
     0: nhru
   type: bool
   units: none
 imperv_evap:
   desc: Evaporation from impervious area for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 imperv_stor:
   desc: Storage on impervious area for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 infil:
   desc: Infiltration to the capillary and preferential-flow reservoirs, depth on pervious area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 infil_hru:
   desc: Infiltration to the capillary and preferential-flow reservoirs, depth on HRU area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -1696,518 +1696,518 @@ infil_hru:
 int_alb:
   desc: 'Flag to indicate (1: accumulation season curve; 2: use of the melt season
     curve)'
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 intcp_changeover:
   desc: Canopy throughfall caused by canopy density change from winter to summer
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 intcp_evap:
   desc: Evaporation from the canopy for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 intcp_form:
   desc: Form (rain or snow) of interception for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 intcp_on:
   desc: Flag indicating interception storage for each HRU (0=no;1=yes)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 intcp_stor:
   desc: Interception storage in canopy for cover density for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 intcp_transp_on:
   desc: Flag indicating whether transpiration is occurring in the canopy (0=no;1=yes)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 interflow_max:
   desc: Maximum interflow for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 iso:
   desc: Flag to indicate if time is before (1) or after (2) the day to force melt
     season (melt_force)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 lake_2gw:
   desc: Total seepage from each lake using broad-crested weir or gate opening routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_availability_status:
   desc: Lake storage as percent of normal range.
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_elev:
   desc: Elevation of each simulated lake surface
-  dimensions:
+  dims:
     0: nlakeelev
   type: float64
   units: feet
 lake_evap:
   desc: Total evaporation from each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_gain:
   desc: Transfer gain to each lake HRU for each time step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 lake_gain_tot:
   desc: Transfer gain to each lake HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 lake_gwflow:
   desc: Total groundflow into each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_inflow:
   desc: Total inflow to each lake
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_interflow:
   desc: Total interflow into each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_invol:
   desc: Inflow to each lake using broad-crested weir or gate opening routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: acre-feet
 lake_lateral_inflow:
   desc: Lateral inflow to each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_outcfs:
   desc: Streamflow leaving each lake (includes any second outlet flow)
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_outcms:
   desc: Streamflow leaving each lake (includes any second outlet flow)
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cms
 lake_outflow:
   desc: Evaporation and seepage from each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_outq2:
   desc: Streamflow from second outlet for each lake with a second outlet
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_outvol:
   desc: Outflow from each lake using broad-crested weir or gate opening routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: acre-inches
 lake_outvol_ts:
   desc: Outflow from each lake using broad-crested weir or gate opening routing for
     the time step
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: acre-inches
 lake_precip:
   desc: Total precipitation into each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_release:
   desc: Release from each lake (does not include spill)
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_seep_in:
   desc: Total seepage into each lake using broad-crested weir or gate opening routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_seepage:
   desc: Lake-bed seepage from each lake to associated GWRs
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: acre-feet
 lake_seepage_gwr:
   desc: Net lake-bed seepage to associated GWRs
-  dimensions:
+  dims:
     0: ngw
   type: float64
   units: inches
 lake_spill:
   desc: Spill from each lake
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_sroff:
   desc: Total surface runoff into each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_sto:
   desc: Storage in each lake using Puls or linear storage routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs-days
 lake_storage:
   desc: Storage in each lake
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_storage_old:
   desc: Previous storage in each lake
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_storage_change:
   desc: Storage change for each lake
-  dimensions:
+  dims:
     0: nreservoirs
   type: float64
   units: cubic meters
 lake_stream_in:
   desc: Total streamflow into each lake
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: cfs
 lake_transfer:
   desc: Transfer flow rate from each lake HRU for each time step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 lake_transfer_tot:
   desc: Transfer flow rate from each lake HRU for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 lake_vol:
   desc: Storage in each lake using broad-crested weir or gate opening routing
-  dimensions:
+  dims:
     0: nlake
   type: float64
   units: acre-feet
 lakein_sz:
   desc: Cascading interflow and Dunnian surface runoff to lake HRUs for each upslope
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 last_basin_stor:
   desc: Basin area-weighted average storage in all water storage reservoirs from previous
     time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 lso:
   desc: Counter for tracking the number of days the snowpack is at or above 0 degrees
     Celsius
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: number of iterations
 lst:
   desc: Flag indicating whether there was new snow that was insufficient to reset
     the albedo curve (1) (albset_snm or albset_sna) otherwise (0)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 lwrad_net:
   desc: Net long-wave radiation for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: megajoules/m**2/day
 mso:
   desc: Flag to indicate if time is before (1) or after (2) the first potential day
     for melt season (melt_look)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 net_apply:
   desc: canopy_gain minus interception
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 net_ppt:
   desc: Precipitation (rain and/or snow) that falls through the canopy for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 net_rain:
   desc: Rain that falls through canopy for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 net_snow:
   desc: Snow that falls through canopy for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 newsnow:
   desc: Flag to indicate if new snow fell on each HRU (0=no;1=yes)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 obs_runoff_mo:
   desc: Monthly measured streamflow at basin outlet
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 obs_runoff_tot:
   desc: Total simulation measured streamflow at basin outlet
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 obs_runoff_yr:
   desc: Yearly measured streamflow at basin outlet
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 obsq_inches:
   desc: Measured streamflow at specified outlet station
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 obsq_inches_mo:
   desc: Monthly measured streamflow at specified outlet station
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 obsq_inches_tot:
   desc: Total simulation basin area-weighted average measured streamflow at specified
     outlet station
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 obsq_inches_yr:
   desc: Yearly measured streamflow at specified outlet station
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 orad:
   desc: Measured or computed solar radiation on a horizontal surface
-  dimensions:
+  dims:
     0: one
   type: float64
   units: Langleys
 orad_hru:
   desc: Solar radiation on a horizontal surface for each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: Langleys
 pan_evap:
   desc: Pan evaporation at each measurement station
-  dimensions:
+  dims:
     0: nevap
   type: float64
   units: inches
 perv_actet:
   desc: Actual ET from the capillary reservoir of each HRU, depth on pervious area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 perv_actet_hru:
   desc: Actual ET from the capillary reservoir of each HRU, depth on HRU area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 perv_avail_et:
   desc: Unsatisfied ET available to the capillary reservoir of each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pfr_stor_frac:
   desc: Fraction of preferential flow reservoir storage of the maximum storage for
     each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 pk_def:
   desc: Heat deficit - amount of heat necessary to make the snowpack isothermal at
     0 degrees Celsius
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: Langleys
 pk_den:
   desc: Density of the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: gm/cm3
 pk_depth:
   desc: Depth of snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pk_ice:
   desc: Storage of frozen water in the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 pk_ice_change:
   desc: Storage of frozen water in the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 pk_ice_prev:
   desc: Storage of frozen water in the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 pk_precip:
   desc: Precipitation added to snowpack for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pk_temp:
   desc: Temperature of the snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degrees Celsius
 pksv:
   desc: Snowpack water equivalent when there is new snow and in melt phase; used to
     interpolate between depletion curve and100 percent on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pkwater_ante:
   desc: Previous snowpack water equivalent on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 pkwater_equiv:
   desc: Snowpack water equivalent on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 pkwater_equiv_change:
   desc: Change in snowpack water equivalent on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 potet:
   desc: Potential ET for each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: inches
 potet_lower:
   desc: Potential ET in the lower zone of the capillary reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 potet_rechr:
   desc: Potential ET in the recharge zone of the capillary reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pptmix:
   desc: Flag to indicate if precipitation is a mixture of rain and snow for each HRU
     (0=no;1=yes)
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: int32
@@ -2215,59 +2215,59 @@ pptmix:
 pptmix_nopack:
   desc: Flag indicating that a mixed precipitation event has occurred with no snowpack
     present on an HRU (1), otherwise (0)
-  dimensions:
+  dims:
     0: nhru
   type: int32
   units: none
 precip:
   desc: Precipitation at each measurement station
-  dimensions:
+  dims:
     0: nrain
   type: float64
   units: precip_units
 pref_flow:
   desc: Interflow from the preferential-flow reservoir that flows to the stream network
     for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 pref_flow_in:
   desc: Infiltration and flow from gravity reservoir to the preferential-flow reservoir
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pref_flow_infil:
   desc: Infiltration to the preferential-flow reservoir storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pref_flow_max:
   desc: Maximum storage of the preferential-flow reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pref_flow_stor:
   desc: Storage in preferential-flow reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 pref_flow_stor_change:
   desc: Storage change in preferential-flow reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 pref_flow_stor_prev:
   desc: Previous time storage in preferential-flow reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2275,328 +2275,328 @@ pref_flow_stor_prev:
 pref_flow_thrsh:
   desc: Soil storage threshold defining storage between field capacity and maximum
     soil saturation minus preferential-flow storage
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 prcp:
   desc: Input/forcing precipitation to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 prmx:
   desc: Fraction of rain in a mixed precipitation event for each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: decimal fraction
 pss:
   desc: Previous snowpack water equivalent plus new snow
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 pst:
   desc: While a snowpack exists, pst tracks the maximum snow water equivalent of that
     snowpack
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 rain_day:
   desc: Flag to set the form of any precipitation to rain (0=determine form; 1=rain)
-  dimensions:
+  dims:
     0: one
   type: int32
   units: none
 rhavg:
   desc: Input/forcing daily mean relative humidity to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: percent
 recharge:
   desc: Recharge to the associated GWR as sum of soil_to_gw and ssr_to_gw for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 runoff:
   desc: Streamflow at each measurement station
-  dimensions:
+  dims:
     0: nobs
   type: float64
   units: runoff_units
 salb:
   desc: Days since last new snow to reset albedo for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: days
 scrv:
   desc: Snowpack water equivalent plus a portion of new snow on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 seg_ccov:
   desc: Area-weighted average cloud cover fraction for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: decimal fraction
 seg_gwflow:
   desc: Area-weighted average groundwater discharge for each segment from HRUs contributing
     flow to the segment and upstream HRUs
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seg_humid:
   desc: Area-weighted average relative humidity for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: decimal fraction
 seg_inflow:
   desc: Total flow entering a segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
   var_category: mass flux
 seg_lateral_inflow:
   desc: Lateral inflow entering a segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 seg_maxtemp:
   desc: Area-weighted average maximum air temperature for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees Celsius
 seg_melt:
   desc: Area-weighted average snowmelt for each segment from HRUs contributing flow
     to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seg_outflow:
   desc: Streamflow leaving a segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
   var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seg_rain:
   desc: Area-weighted average rainfall for each segment from HRUs contributing flow
     to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seg_shade:
   desc: Area-weighted average shade fraction for each segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: decimal fraction
 seg_sroff:
   desc: Area-weighted average surface runoff for each segment from HRUs contributing
     flow to the segment and upstream HRUs
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seg_ssflow:
   desc: Area-weighted average interflow for each segment from HRUs contributing flow
     to the segment and upstream HRUs
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seg_stor_change:
   desc: Change in segment storage
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cubicfeet
   var_category: mass storage change
 seg_upstream_inflow:
   desc: Sum of inflow from upstream segments
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 seg_width:
   desc: Width of each segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: meters
 seginc_gwflow:
   desc: Area-weighted average groundwater discharge for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 seginc_potet:
   desc: Area-weighted average potential ET for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: inches
 seginc_sroff:
   desc: Area-weighted average surface runoff for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 seginc_ssflow:
   desc: Area-weighted average interflow for each segment from HRUs contributing flow
     to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 seginc_swrad:
   desc: Area-weighted average solar radiation for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: Langleys
 segment_delta_flow:
   desc: Cummulative flow in minus flow out for each stream segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 segment_gain:
   desc: Transfer gain for each stream segment for each time step
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 segment_gain_tot:
   desc: Transfer gain for each stream segment for the simulation
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 segment_transfer:
   desc: Transfer flow rate from each stream segment for each time step
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 segment_transfer_tot:
   desc: Transfer flow rate from each stream segment for the simulation
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 slow_flow:
   desc: Interflow from gravity reservoir storage that flows to the stream network
     for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 slow_stor:
   desc: Storage of gravity reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 slow_stor_change:
   desc: Storage of gravity reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 slow_stor_prev:
   desc: Previous time storage of gravity reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 slst:
   desc: Days since last new snow for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: days
 sm2gw_grav:
   desc: Drainage from each gravity reservoir to each MODFLOW cell
-  dimensions:
+  dims:
     0: nhrucell
   type: float64
   units: inches
 snow_evap:
   desc: Evaporation and sublimation from snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 snow_free:
   desc: Fraction of snow-free surface for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 snowcov_area:
   desc: Snow-covered area on each HRU prior to melt and sublimation unless snowpack
     depleted
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 snowcov_areasv:
   desc: Snow cover fraction when there is new snow and in melt phase; used to interpolate
     between depletion curve and100 percent on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 snowdepth:
   desc: Snow depth at each measurement station
-  dimensions:
+  dims:
     0: nsnow
   type: float64
   units: inches
 snowevap_aet_frac:
   desc: Fraction of sublimation of AET for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 snowmelt:
   desc: Snowmelt from snowpack on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2604,14 +2604,14 @@ snowmelt:
 snsv:
   desc: Tracks the cumulative amount of new snow until there is enough to reset the
     albedo curve (albset_snm or albset_sna)
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soil_lower:
   desc: Storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2619,7 +2619,7 @@ soil_lower:
 soil_lower_change:
   desc: Change in storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU, depth on pervious area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2627,7 +2627,7 @@ soil_lower_change:
 soil_lower_change_hru:
   desc: Change in storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU, depth on HRU area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2635,14 +2635,14 @@ soil_lower_change_hru:
 soil_lower_max:
   desc: Maximum storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soil_lower_prev:
   desc: Previous storage in the lower zone of the capillary reservoir that is only available
     for transpiration for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2650,39 +2650,39 @@ soil_lower_prev:
 soil_lower_ratio:
   desc: Water content ratio in the lower zone of the capillary reservoir for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 soil_moist:
   desc: Storage of capillary reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass storage
 soil_moist_frac:
   desc: Fraction of soil zone storage of the maximum storage for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 soil_moist_prev:
   desc: Previous storage of capillary reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soil_moist_tot:
   desc: Total soil-zone water storage (soil_moist + ssres_stor)
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soil_rechr:
   desc: Storage for recharge zone (upper portion) of the capillary reservoir that
     is available for both evaporation and transpiration
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2690,7 +2690,7 @@ soil_rechr:
 soil_rechr_change:
   desc: Change in storage for recharge zone (upper portion) of the capillary reservoir that
     is available for both evaporation and transpiration, depth on pervious area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2698,7 +2698,7 @@ soil_rechr_change:
 soil_rechr_change_hru:
   desc: Change in storage for recharge zone (upper portion) of the capillary reservoir that
     is available for both evaporation and transpiration, depth on HRU area
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2706,7 +2706,7 @@ soil_rechr_change_hru:
 soil_rechr_prev:
   desc: Previous storage for recharge zone (upper portion) of the capillary reservoir that
     is available for both evaporation and transpiration
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2714,21 +2714,21 @@ soil_rechr_prev:
 soil_rechr_max:
   desc: Maximum storage for soil recharge zone (upper portion of capillary reservoir
     where losses occur as both evaporation and transpiration)
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soil_rechr_ratio:
   desc: Water content ratio in the recharge zone of the capillary reservoir for each
     HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: decimal fraction
 soil_to_gw:
   desc: Portion of excess flow to the capillary reservoir that drains to the associated
     GWR for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
@@ -2736,87 +2736,87 @@ soil_to_gw:
 soil_to_ssr:
   desc: Portion of excess flow to the capillary reservoir that flows to the gravity
     reservoir for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soil_zone_max:
   desc: Maximum storage of all soil zone reservoirs
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 soilzone_gain:
   desc: Transfer gain to the capillary reservoir within the soilzone for each HRU
     for each time step
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 soilzone_gain_tot:
   desc: Transfer gain to the capillary reservoir within the soilzone for each HRU
     for the simulation
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cfs
 solrad:
   desc: Solar radiation at each measurement station
-  dimensions:
+  dims:
     0: nsol
   type: float64
   units: Langleys
 solrad_tmax:
   desc: Basin daily maximum temperature for use with solar radiation calculations
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 solrad_tmin:
   desc: Basin daily minimum temperature for use with solar radiation calculations
-  dimensions:
+  dims:
     0: one
   type: float64
   units: temp_units
 soltab_horad_potsw:
   desc: Potential solar radiation on a horizontal plane for each Julian Day for each
     HRU
-  dimensions:
+  dims:
     0: ndoy
     1: nhru
   type: float64
   units: Langleys
 soltab_potsw:
   desc: Potential solar radiation for each Julian Day for each HRU
-  dimensions:
+  dims:
     0: ndoy
     1: nhru
   type: float64
   units: Langleys
 soltab_sunhrs:
   desc: The number of hours of potential direct sunlight
-  dimensions:
+  dims:
     0: ndoy
     1: nhru
   type: float64
   units: hours
 sroff:
   desc: Surface runoff to the stream network for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 sroff_vol:
   desc: Surface runoff to the stream network for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: cubicfeet
   var_category: mass flux
 ssr_to_gw:
   desc: Drainage from the gravity-reservoir to the associated GWR for each HRU
-  dimensions:
+  dims:
     0: nssr
   type: float64
   units: inches
@@ -2824,196 +2824,196 @@ ssr_to_gw:
 ssres_flow:
   desc: Interflow from gravity and preferential-flow reservoirs to the stream network
     for each HRU
-  dimensions:
+  dims:
     0: nssr
   type: float64
   units: inches
 ssres_flow_vol:
   desc: Interflow volume from gravity and preferential-flow reservoirs to the stream network
     for each HRU
-  dimensions:
+  dims:
     0: nssr
   type: float64
   units: cubicfeet
 ssres_in:
   desc: Inflow to the gravity and preferential-flow reservoirs for each HRU
-  dimensions:
+  dims:
     0: nssr
   type: float64
   units: inches
 ssres_stor:
   desc: Storage in the gravity and preferential-flow reservoirs for each HRU
-  dimensions:
+  dims:
     0: nssr
   type: float64
   units: inches
 streamflow_cfs:
   desc: Streamflow at each measurement station
-  dimensions:
+  dims:
     0: nobs
   type: float64
   units: cfs
 streamflow_cms:
   desc: Streamflow at each measurement station
-  dimensions:
+  dims:
     0: nobs
   type: float64
   units: cms
 strm_seg_in:
   desc: Flow in stream segments as a result of cascading flow in each stream segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: cfs
 sub_cfs:
   desc: Total streamflow leaving each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 sub_cms:
   desc: Total streamflow leaving each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cms
 sub_gwflow:
   desc: Area-weighted average groundwater discharge from associated GWRs to each subbasin
     and from upstream subbasins
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 sub_inq:
   desc: Sum of streamflow from upstream subbasins to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 sub_interflow:
   desc: Area-weighted average interflow to each subbasin from associated HRUs and
     from upstream subbasins
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 sub_sroff:
   desc: Area-weighted average surface runoff from associated HRUs to each subbasin
     and from upstream subbasins
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 subinc_actet:
   desc: Area-weighted average actual ET from associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_capstor_frac:
   desc: Area-weighted average fraction of capillary reservoir water content storage
     for associated HRUs of each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: decimal fraction
 subinc_deltastor:
   desc: Change in storage for each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_gwflow:
   desc: Area-weighted average groundwater discharge from associatedGWRs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 subinc_interflow:
   desc: Area-weighted average interflow from associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 subinc_pkweqv:
   desc: Area-weighted average snowpack water equivalent from associated HRUs of each
     subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_potet:
   desc: Area-weighted average potential ET from associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_precip:
   desc: Area-weighted average precipitation from associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_rain:
   desc: Area-weighted average rain on associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_recharge:
   desc: Area-weighted average recharge from associated HRUs of each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_snow:
   desc: Area-weighted average snow on associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_snowcov:
   desc: Area-weighted average snow-covered area for associated HRUs for each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: decimal fraction
 subinc_snowmelt:
   desc: Area-weighted average snowmelt from associated HRUs of each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_sroff:
   desc: Area-weighted average surface runoff from associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: cfs
 subinc_stor:
   desc: Area-weighted average total water content in storage reservoirs associated
     HRUs of each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 subinc_swrad:
   desc: Area-weighted average shortwave radiation distributed to associated HRUs of
     each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: Langleys
 subinc_szstor_frac:
   desc: Area-weighted average fraction of soil-zone water content storage for associated
     HRUs of each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: decimal fraction
 subinc_tavgc:
   desc: Area-weighted average air temperature for associated HRUs to each subbasin
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nsub
   type: float64
@@ -3021,328 +3021,328 @@ subinc_tavgc:
 subinc_tmaxc:
   desc: Area-weighted average maximum air temperature for associated HRUs to each
     subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: degrees Celsius
 subinc_tminc:
   desc: Area-weighted average minimum air temperature for associated HRUs to each
     subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: degrees Celsius
 subinc_wb:
   desc: Water balance for each subbasin
-  dimensions:
+  dims:
     0: nsub
   type: float64
   units: inches
 swale_actet:
   desc: Evaporation from the gravity and preferential-flow reservoirs that exceeds
     sat_threshold
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 swrad:
   desc: Shortwave radiation distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: Langleys
 t_ground:
   desc: ground temperature
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees C
 t_gw:
   desc: groundwater temperature
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees C
 t_roff:
   desc: Area-weighted average air temperature for each segment from HRUs contributing
     flow to the segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees Celsius
 t_ss:
   desc: subsurface temperature
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees C
 tavgc:
   desc: Average air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: degrees Celsius
 tavgf:
   desc: Average air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degrees Fahrenheit
 tcal:
   desc: Net snowpack energy balance on each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: Langleys
 temp_avg:
   desc: Average stream temperature based on all inflows and previous temperature for
     each segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees Celsius
 tempc_dewpt:
   desc: Air temperature at dew point for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degrees Celsius
 through_rain:
   desc: Rain that passes through snow when no snow present
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
   var_category: mass flux
 tmax_hru:
   desc: Maximum air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degC
 tmax_sta:
   desc: Maximum air temperature at each measurement station
-  dimensions:
+  dims:
     0: ntemp
   type: float64
   units: degC
 tmaxc:
   desc: Maximum air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: degrees Celsius
 tmaxf:
   desc: Maximum air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: degrees Fahrenheit
 tmax:
   desc: Input/forcing maximum air temperature to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degrees Fahrenheit
 tmin_hru:
   desc: Minimum air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degC
 tmin_sta:
   desc: Minimum air temperature at each measurement station
-  dimensions:
+  dims:
     0: ntemp
   type: float64
   units: degC
 tminc:
   desc: Minimum air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: degrees Celsius
 tminf:
   desc: Minimum air temperature distributed to each HRU
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: float64
   units: degrees Fahrenheit
 tmin:
   desc: Input/forcing minimum air temperature to each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: degrees Fahrenheit
 total_canopy_gain:
   desc: Transfer gains to all canopy reservoirs for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_consumed_gain:
   desc: Transfer flow rates to all water-use comsumption destinations for each time
     step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_dprst_gain:
   desc: Transfer gains to all surface-depression storage for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_dprst_transfer:
   desc: Transfer flow rates from all surface-depression storage for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_external_gain:
   desc: Transfer gains to all external locations for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_external_transfer:
   desc: Transfer flow rates from all external sources for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_gwr_gain:
   desc: Flow to all groundwater reservoirs for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_gwr_transfer:
   desc: Transfer flow rates from all groundwater reservoirs for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_lake_gain:
   desc: Transfer gains to all lake HRUs for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_lake_transfer:
   desc: Transfer flow rates from all lake HRUs for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_segment_gain:
   desc: Transfer gains to all stream segments for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_segment_transfer:
   desc: Transfer flow rates from all stream segments for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_soilzone_gain:
   desc: Transfer gains to all capillary reservoirs for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 total_transfers:
   desc: Transfer of all water-use transfers for each time step
-  dimensions:
+  dims:
     0: one
   type: float64
   units: cfs
 transfer_rate:
   desc: Transfer of each water-use transfer for each time step
-  dimensions:
+  dims:
     0: nwateruse
   type: float64
   units: cfs
 transp_on:
   desc: Flag indicating whether transpiration is occurring (0=no;1=yes)
-  dimensions:
+  dims:
     0: n_time_chunk
     1: nhru
   type: int32
   units: none
 unused_potet:
   desc: Unsatisfied potential evapotranspiration
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 upslope_dunnianflow:
   desc: Cascading Dunnian surface runoff that flows to the capillary reservoir of
     each downslope HRU for each upslope HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 upslope_hortonian:
   desc: Hortonian surface runoff received from upslope HRUs
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 upslope_interflow:
   desc: Cascading interflow runoff that flows to the capillary reservoir of each downslope
     HRU for each upslope HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: inches
 upstrm_temp:
   desc: Temperature of streamflow entering each segment
-  dimensions:
+  dims:
     0: nsegment
   type: float64
   units: degrees Celsius
 vp_actual:
   desc: Actual vapor pressure for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: kilopascals
 vp_sat:
   desc: Saturation vapor pressure for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: kilopascals
 vp_slope:
   desc: Slope of saturation vapor pressure versus air temperature curve for each HRU
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: kilopascals/degrees Celsius
 watbal_sum:
   desc: Water balance aggregate
-  dimensions:
+  dims:
     0: one
   type: float64
   units: inches
 wind_speed:
   desc: Wind speed at each measurement station
-  dimensions:
+  dims:
     0: nwind
   type: float64
   units: mph
 windspeed_hru:
   desc: Area of HRU that is impervious
-  dimensions:
+  dims:
     0: nhru
   type: float64
   units: meters/second

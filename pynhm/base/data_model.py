@@ -1,5 +1,6 @@
 from copy import deepcopy
 from pprint import pprint
+from typing import Iterable
 
 import cftime
 import netCDF4 as nc4
@@ -22,6 +23,7 @@ from ..constants import listish, fill_values_dict, np_type_to_netcdf_type_dict
 
 # This is what a dataset_dict looks like. Metadata for coord and data_vars
 # is found in metadata.
+# These must always be deepcopied.
 template_dd = {
     "dims": {},
     "coords": {},
@@ -42,11 +44,11 @@ template_xr_dd = {
 class DatasetDict(Accessor):
     def __init__(
         self,
-        dims: dict = {},
-        coords: dict = {},
-        data_vars: dict = {},
-        metadata: dict = {},
-        encoding: dict = {},
+        dims: dict = None,
+        coords: dict = None,
+        data_vars: dict = None,
+        metadata: dict = None,
+        encoding: dict = None,
         validate: bool = True,
     ) -> "DatasetDict":
         """DatasetDict class which maps between netcdf conventions
@@ -54,18 +56,31 @@ class DatasetDict(Accessor):
         Note: Methods do not deep copy by default, but not all
               references may be preserved. use with caution
         """
+
+        if dims is None:
+            dims = {}
+        if coords is None:
+            coords = {}
+        if data_vars is None:
+            data_vars = {}
+        if metadata is None:
+            metadata = {}
+        if encoding is None:
+            encoding = {}
+
         self._data_vars = data_vars
         self._dims = dims
         self._coords = coords
         self._metadata = metadata
         self._encoding = encoding
 
+        if "global" not in self._metadata.keys():
+            self._metadata["global"] = {}
+
         if validate:
             self.validate()
 
         return
-
-    # TODO: add copy to properties? assuming that's necessary
 
     @property
     def dims(self, copy=False) -> dict:
@@ -284,13 +299,18 @@ class DatasetDict(Accessor):
         keep_global: bool = False,
         keep_global_metadata: bool = None,
         keep_global_encoding: bool = None,
-        process=None,
     ) -> "DatasetDict":
         """Subset a DatasetDict to keys in data_vars or coordinates."""
         # Instantiate the DatasetDict at end as deepcopy will be used
         # on the constructed subset dict (if requested)
-        if process:
-            return self
+
+        if not isinstance(keys, Iterable) or isinstance(keys, str):
+            keys = [keys]
+
+        for kk in keys:
+            if kk not in self.variables.keys():
+                msg = f"key '{kk}' not in this {type(self).__name__} object"
+                raise KeyError(msg)
 
         if keep_global_metadata is None:
             keep_global_metadata = keep_global
@@ -317,7 +337,9 @@ class DatasetDict(Accessor):
                 subset["data_vars"][vv] = self._data_vars[vv]
 
             subset["metadata"][vv] = self._metadata[vv]
-            subset["encoding"][vv] = self._encoding[vv]
+            if vv in subset["encoding"].keys():
+                subset["encoding"][vv] = self._encoding[vv]
+
             var_dim_data = self._get_var_dims(vv, data=True)[vv]
             # dims
             for dd in var_dim_data:
@@ -333,12 +355,15 @@ class DatasetDict(Accessor):
                     if ck not in subset["coords"].keys():
                         subset["coords"][ck] = cv
 
-        # build metadata and encoding from coords
-        for cc in subset["coords"].keys():
-            for aa in ["metadata", "encoding"]:
-                if cc in subset[aa].keys():
-                    continue
-                subset[aa][cc] = self[aa][cc]
+        # build metadata and encoding from coords and data_vars
+        for cv in ["coords", "data_vars"]:
+            for cc in subset[cv].keys():
+                for aa in ["metadata", "encoding"]:
+                    if cc in subset[aa].keys():
+                        continue
+                    if aa == "encoding" and cc not in self[aa].keys():
+                        continue
+                    subset[aa][cc] = self[aa][cc]
 
         # result = DatasetDict.from_dict(subset, copy=copy)
         # If this is in-place, then cant be a classmethod
@@ -351,7 +376,7 @@ class DatasetDict(Accessor):
         where: np.ndarray,
         in_place=True,
     ):
-        # only doing it in place for no
+        # only doing it in place for now
 
         # TODO: should almost work for 2+D? just linearizes np.where
         if len(where) > 1:
@@ -415,11 +440,14 @@ class DatasetDict(Accessor):
         assert len(common_keys) == 0
 
         # metadata and encoding keys against variable keys
-        meta_keys = set(self.metadata.keys())
-        enc_keys = set(self.encoding.keys())
         var_keys = set(self.variables.keys())
-        assert meta_keys == enc_keys
+        # all meta keys have to be in var keys
+        meta_keys = set(self.metadata.keys())
         assert meta_keys == var_keys.union(set(["global"]))
+        # all enc_keys besides global have to be in var_keys
+        enc_keys = set(self.encoding.keys())
+        enc_keys = enc_keys.difference(set(["global"]))
+        assert enc_keys.intersection(var_keys) == enc_keys
 
         # check all vars dims exist
         var_dims = [self.metadata[kk]["dims"] for kk in self.variables.keys()]

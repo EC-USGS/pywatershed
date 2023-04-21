@@ -111,7 +111,6 @@ class PRMSAtmosphere(StorageUnit):
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
     ):
-
         # This could be used to subclass storageUnit or Process classes to have
         # timeseries. Solar geom bas doy dimension not actual simulation times
 
@@ -249,9 +248,12 @@ class PRMSAtmosphere(StorageUnit):
         }
 
     @staticmethod
+    def get_dimensions():
+        return ("nhru", "nmonth")
+
+    @staticmethod
     def get_parameters():
         return (
-            "nmonth",
             "radadj_intcp",
             "radadj_slope",
             "tmax_index",
@@ -266,7 +268,6 @@ class PRMSAtmosphere(StorageUnit):
             "radj_wppt",
             "hru_lat",
             "hru_area",
-            "nhru",
             "hru_aspect",
             "jh_coef",
             "jh_coef_hru",
@@ -520,7 +521,6 @@ class PRMSAtmosphere(StorageUnit):
         hru_area,
         nmonth,
     ) -> (np.ndarray, np.ndarray):  # [n_time, n_hru]
-
         # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation_degday.f90
         n_time, n_hru = tmax_hru.shape
 
@@ -591,7 +591,6 @@ class PRMSAtmosphere(StorageUnit):
         cond_if = cond_ppt_gt_rad_adj
         wh_if = np.where(cond_if)
         if len(wh_if[0]):
-
             # * if.else
             pptadj[wh_if] = (
                 radadj_intcp_day
@@ -612,7 +611,6 @@ class PRMSAtmosphere(StorageUnit):
             cond_if_if = cond_if & cond_tmax_lt_index
             wh_if_if = np.where(cond_if_if)
             if len(wh_if_if[0]):
-
                 # The logic equiv to but changed from the original
                 radj_sppt_day = tile_space_to_time(radj_sppt, n_time)
                 pptadj[wh_if_if] = radj_sppt_day[wh_if_if]
@@ -703,7 +701,6 @@ class PRMSAtmosphere(StorageUnit):
     #     return et
 
     def calculate_transp_tindex(self):
-
         # INIT: Process_flag==INIT
         # transp_on inited to 0 everywhere above
 
@@ -806,7 +803,7 @@ class PRMSAtmosphere(StorageUnit):
             nc_path = self.netcdf_output_dir / f"{var}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.nhm_coordinates,
+                self.params.coords,
                 [var],
                 {var: self.var_meta[var]},
             )

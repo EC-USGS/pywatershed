@@ -158,25 +158,22 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
 def test_separate_together(domain, control, tmp_path, separate):
     tmp_dir = pl.Path(tmp_path)
     input_dir = domain["prms_output_dir"]
-
     model = Model(
         *model_procs,
         control=control,
         input_dir=input_dir,
         budget_type=budget_type,
     )
-
-    model.initialize_netcdf(tmp_dir, separate_files=separate)
-
+    model.initialize_netcdf(
+        output_dir=tmp_dir,
+        separate_files=separate,
+    )
     for tt in range(n_time_steps):
         model.advance()
         model.calculate()
         model.output()
 
     model.finalize()
-
-    written_files = sorted(tmp_dir.glob("*"))
-    n_processes = len(model_procs)
 
     if separate:
         for proc_key, proc in model.processes.items():
@@ -187,29 +184,20 @@ def test_separate_together(domain, control, tmp_path, separate):
                 assert (ds[vv][-1, :] == proc[vv]).all()
 
     else:
-        # grouped output but proc.n and proc_budget.nc
-        # one file for each proc and one for its budget
-        assert n_processes * 2 == len(written_files)
-        for wf in written_files:
-            proc = wf.with_suffix("").name
-            is_budget = False
-            if "budget" in proc:
-                is_budget = True
-                proc = proc.split("_")[0]
-            ds = xr.open_dataset(wf)
+        for proc_key, proc in model.processes.items():
+            # non-budget
+            nc_file = tmp_dir / f"{proc_key}.nc"
+            ds = xr.open_dataset(nc_file)
+            proc_vars = set(proc.get_variables())
+            nc_vars = set(ds.data_vars)
+            assert proc_vars == nc_vars
+            for vv in proc.variables:
+                assert (ds[vv][-1, :] == proc[vv]).all()
 
-            proc_ref = model.processes[proc]
-
-            if not is_budget:
-                proc_vars = set(proc_ref.get_variables())
-                nc_vars = set(ds.data_vars)
-                assert proc_vars == nc_vars
-                for vv in ds.data_vars:
-                    assert (proc_ref[vv] == ds[vv][-1, :]).all()
-            else:
-                # is_budget
-                sums = ["inputs_sum", "outputs_sum", "storage_changes_sum"]
-                for ss in sums:
-                    assert (proc_ref.budget[ss] == ds[ss][-1, :]).all()
+            # budget
+            nc_file = tmp_dir / f"{proc_key}_budget.nc"
+            ds = xr.open_dataset(nc_file)
+            for ss in budget_sum_vars_all:
+                assert (proc.budget[ss] == ds[ss][-1, :]).all()
 
     return

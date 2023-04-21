@@ -190,14 +190,25 @@ class Model:
         self._found_input_files = True
         return
 
-    def initialize_netcdf(self, *args, **kwargs):
+    def initialize_netcdf(
+        self,
+        output_dir: str,
+        separate_files: bool = True,
+        budget_args: dict = None,
+        output_vars: list = None,
+    ):
         """Initialize NetCDF output files for model (all processes)."""
         if not self._found_input_files:
             self._find_input_files()
 
-        self._netcdf_dir = dir
+        self._netcdf_dir = output_dir
         for cls in self.process_order:
-            self.processes[cls].initialize_netcdf(*args, **kwargs)
+            self.processes[cls].initialize_netcdf(
+                output_dir=output_dir,
+                separate_files=separate_files,
+                budget_args=budget_args,
+                output_vars=output_vars,
+            )
         return
 
     def run(

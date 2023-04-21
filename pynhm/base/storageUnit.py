@@ -451,7 +451,7 @@ class StorageUnit(Accessor):
         self,
         output_dir: str,
         separate_files: bool = True,
-        budget_args: dict = {},
+        budget_args: dict = None,
         output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
@@ -502,14 +502,14 @@ class StorageUnit(Accessor):
                 self.variables,
                 self.var_meta,
             )
-            # JLM: this code seems unnecessary/overwrought
-            # we are currently not testing single file output.
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
 
         if self.budget is not None:
-            if "output_dir" not in budget_args.keys():
-                budget_args["output_dir"] = output_dir
+            if budget_args is None:
+                budget_args = {}
+            budget_args["output_dir"] = output_dir
+
             self.budget.initialize_netcdf(**budget_args)
 
         return

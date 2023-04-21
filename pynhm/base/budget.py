@@ -588,7 +588,6 @@ class Budget(Accessor):
 
         """
         self._output_netcdf = True
-        self._netcdf = {}
         # make working directory
         output_dir = pl.Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)

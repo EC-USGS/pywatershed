@@ -44,7 +44,6 @@ class Budget(Accessor):
         imbalance_fatal: bool = False,
         verbose: bool = True,
     ):
-
         self.name = "Budget"
         self.control = control
         self.inputs = self.init_component(inputs)
@@ -344,7 +343,6 @@ class Budget(Accessor):
         return self._balance
 
     def __repr__(self):
-
         if self._itime_step == -1:
             msg = (
                 f"Budget (units: {self.units}) of {self.description} "
@@ -492,7 +490,6 @@ class Budget(Accessor):
         def balance_line_col_wise():
             bal_line = "Balance: "
             for oper, vals_sum, col_width, col_key_width in term_data:
-
                 bal_line += (
                     oper
                     + (" " * (col_key_width + col_extra_colon - len(oper)))
@@ -662,13 +659,11 @@ class Budget(Accessor):
 
         """
         if self._output_netcdf:
-
             self._netcdf.time[self.control.itime_step] = nc4.date2num(
                 self.control.current_datetime, self._netcdf.time.units
             )
             for nc_group, group_vars in self._netcdf_output_var_dict.items():
                 for nc_var in group_vars:
-
                     var_self_name = nc_var
 
                     if nc_group is None:

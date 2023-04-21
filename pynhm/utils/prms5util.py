@@ -250,7 +250,6 @@ class Soltab(Accessor):
         output_dir: fileish = None,
         nhm_ids: np.ndarray = None,
     ):
-
         self.soltab_file = soltab_file
         self.output_dir = output_dir
 

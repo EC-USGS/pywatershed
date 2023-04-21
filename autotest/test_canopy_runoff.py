@@ -78,7 +78,6 @@ class TestPRMSCanopyRunoffDomain:
 
         all_success = True
         for istep in range(control.n_times):
-
             control.advance()
             canopy.advance()
             runoff.advance()

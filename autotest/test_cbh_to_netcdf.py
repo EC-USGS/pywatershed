@@ -80,7 +80,6 @@ def test_cbh_files_to_df(domain, var, params):
 
 
 def test_cbh_files_to_netcdf(domain, params, tmp_path):
-
     nc_file = tmp_path / "cbh_files_to_netcdf.nc"
     input_files_dict = domain["cbh_inputs"]
     _ = cbh_files_to_netcdf(input_files_dict, params, nc_file)

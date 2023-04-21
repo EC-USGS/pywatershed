@@ -47,7 +47,6 @@ class Model:
         find_input_files: bool = True,
         load_n_time_batches: int = 1,
     ):
-
         self.control = control
         self.input_dir = input_dir
         self.verbose = verbose
@@ -239,7 +238,6 @@ class Model:
         if not n_time_steps:
             n_time_steps = self.control.n_times
         for istep in range(n_time_steps):
-
             # progress for the impatient
             pct_complete = math.floor((istep + 1) / n_time_steps * 100)
             if not (pct_complete % 10) and pct_complete != last_pct_comp:

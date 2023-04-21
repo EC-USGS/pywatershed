@@ -60,7 +60,6 @@ class TestPRMSGroundwaterDomain:
         print(f"compare_nc_path: {compare_nc_path}")
 
         for istep in range(control.n_times):
-
             control.advance()
 
             gw.advance()

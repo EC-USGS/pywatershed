@@ -44,7 +44,6 @@ class PRMSCanopy(StorageUnit):
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSCanopy":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -301,7 +300,6 @@ class PRMSCanopy(StorageUnit):
             )
 
         elif self._calc_method.lower() in ["none", "numpy"]:
-
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -353,7 +351,6 @@ class PRMSCanopy(StorageUnit):
             )
 
         elif self._calc_method.lower() == "fortran":
-
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -453,7 +450,6 @@ class PRMSCanopy(StorageUnit):
         ACTIVE,
         intercept,
     ):
-
         # TODO: would be nice to alphabetize the arguments
         #       probably while keeping constants at the end.
         #       intcp_form and intcp_transp_on also do not appear to be

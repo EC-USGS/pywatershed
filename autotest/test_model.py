@@ -51,7 +51,6 @@ def control(domain, params):
     ids=test_models.keys(),
 )
 def test_model(domain, control, processes, tmp_path):
-
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
@@ -210,7 +209,6 @@ def test_model(domain, control, processes, tmp_path):
     fail_prms_compare = False
     fail_regression = False
     for istep in range(control.n_times):
-
         model.advance()
         model.calculate()
 

@@ -76,7 +76,6 @@ class PrmsParameters:
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
     ) -> "PrmsParameters":
-
         self.parameters = parameter_dict
         self._params_sep_procs = all(
             [isinstance(pp, dict) for pp in self.parameters.values()]

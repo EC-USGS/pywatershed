@@ -32,7 +32,6 @@ class PRMSGroundwater(StorageUnit):
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSGroundwater":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -229,7 +228,6 @@ class PRMSGroundwater(StorageUnit):
         gwres_stor_old,
         hru_in_to_cf,
     ):
-
         soil_to_gw_vol = soil_to_gw * gwarea
         ssr_to_gw_vol = ssr_to_gw * gwarea
         dprst_seep_hru_vol = dprst_seep_hru * gwarea

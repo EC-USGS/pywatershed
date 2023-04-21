@@ -57,7 +57,6 @@ class ProcessPlot:
         hru_shp_file_name: str = "HRU_subset.shp",
         seg_shp_file_name: str = "Segments_subset.shp",
     ):
-
         if (
             (not has_cartopy)
             or (not has_geopandas)
@@ -108,7 +107,6 @@ class ProcessPlot:
             raise ValueError()
 
     def plot_seg_var(self, var_name: str, process: StorageUnit, cmap="cool"):
-
         data_df = pd.DataFrame(
             {
                 "nhm_seg": process.control.params.parameters["nhm_seg"],
@@ -207,7 +205,6 @@ class ProcessPlot:
         data_units: str = None,
         nhm_id: np.ndarray = None,
     ):
-
         if data is None:
             data_df = self.get_hru_var(var_name, model)
         else:
@@ -322,7 +319,6 @@ def plot_polygon_collection(
     patches = []
 
     for poly in geoms:
-
         a = np.asarray(poly.exterior)
         if poly.has_z:
             a = shapely.geometry.Polygon(zip(*poly.exterior.xy))

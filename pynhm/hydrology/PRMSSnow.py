@@ -93,7 +93,6 @@ class PRMSSnow(StorageUnit):
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSSnow":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -309,7 +308,6 @@ class PRMSSnow(StorageUnit):
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
 
         if self.control.config["init_vars_from_file"] in [0, 2, 3]:
-
             # The super().__init__ already set_initial_conditions using its
             # set_initial_conditions
             # Below Im just following PRMS6, will reconcile later with the
@@ -375,7 +373,6 @@ class PRMSSnow(StorageUnit):
             self.pst[:] = self.pkwater_equiv.copy()
 
         else:
-
             raise RuntimeError("Snow restart capability not implemented")
             # JLM: a list of restart variables dosent shed light on what states
             # actually have memory.
@@ -568,7 +565,6 @@ class PRMSSnow(StorageUnit):
             )
 
         elif self._calc_method.lower() in ["none", "numpy"]:
-
             (
                 self.ai[:],
                 self.albedo[:],
@@ -832,7 +828,6 @@ class PRMSSnow(StorageUnit):
         pptmix_nopack[:] = False
 
         for jj in prange(nhru):
-
             if hru_type[jj] == HruType.LAKE.value:
                 continue
 
@@ -1791,7 +1786,6 @@ class PRMSSnow(StorageUnit):
                 # there is going to be melt...
 
                 if dif_water > zero:
-
                     if dif_water > pkwater_equiv:
                         dif_water = pkwater_equiv
 
@@ -2116,7 +2110,6 @@ class PRMSSnow(StorageUnit):
                 # covered area curve instead.
                 # 2 options below (if-then, else)
                 if pkwater_equiv >= pksv:
-
                     # (2.2.1) The snow pack still has a larger water equivalent
                     # than before
                     # the previous new snow.  I.e., new snow has not melted

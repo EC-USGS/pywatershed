@@ -16,7 +16,6 @@ if has_prmscanopy_f:
 
 class TestPRMSCanopySimple:
     def test_init(self):
-
         time_dict = {
             "start_time": np.datetime64("1979-01-03T00:00:00.00"),
             "end_time": np.datetime64("1979-01-04T00:00:00.00"),

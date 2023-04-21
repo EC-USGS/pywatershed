@@ -90,7 +90,6 @@ class StorageUnit(Accessor):
     def __init__(
         self, control: Control, verbose: bool, load_n_time_batches: int = 1
     ):
-
         self.name = "StorageUnit"
         self.control = control
         self.params = self.control.params.subset(process=type(self))
@@ -323,7 +322,6 @@ class StorageUnit(Accessor):
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
-
         self._input_variables_dict[input_variable_name] = adapter
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
@@ -453,7 +451,7 @@ class StorageUnit(Accessor):
         self,
         output_dir: str,
         separate_files: bool = True,
-        budget_args: dict = {},
+        budget_args: dict = None,
         output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
@@ -499,19 +497,19 @@ class StorageUnit(Accessor):
             initial_variable = self.variables[0]
             pl.Path(output_dir).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                output_dir,
+                output_dir / f"{self.name}.nc",
                 self.params.nhm_coordinates,
                 self.variables,
                 self.var_meta,
             )
-            # JLM: this code seems unnecessary/overwrought
-            # we are currently not testing single file output.
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
 
         if self.budget is not None:
-            if "output_dir" not in budget_args.keys():
-                budget_args["output_dir"] = output_dir
+            if budget_args is None:
+                budget_args = {}
+            budget_args["output_dir"] = output_dir
+
             self.budget.initialize_netcdf(**budget_args)
 
         return

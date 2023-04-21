@@ -56,7 +56,6 @@ check_budget_sum_vars_params = [False, True, "some"]
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
 def test_process_budgets(domain, control, tmp_path, budget_sum_param):
-
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
 
@@ -147,5 +146,58 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
                 assert nn not in nc_data.variables
         elif not budget_sum_param:
             assert not (tmp_dir / f"{pp}_budget.nc").exists()
+
+    return
+
+
+@pytest.mark.parametrize(
+    "separate",
+    [False, True],
+    ids=["grp_by_process", "separate"],
+)
+def test_separate_together(domain, control, tmp_path, separate):
+    tmp_dir = pl.Path(tmp_path)
+    input_dir = domain["prms_output_dir"]
+    model = Model(
+        *model_procs,
+        control=control,
+        input_dir=input_dir,
+        budget_type=budget_type,
+    )
+    model.initialize_netcdf(
+        output_dir=tmp_dir,
+        separate_files=separate,
+    )
+    for tt in range(n_time_steps):
+        model.advance()
+        model.calculate()
+        model.output()
+
+    model.finalize()
+
+    if separate:
+        for proc_key, proc in model.processes.items():
+            for vv in proc.variables:
+                nc_file = tmp_dir / f"{vv}.nc"
+                assert nc_file.exists()
+                ds = xr.open_dataset(nc_file)
+                assert (ds[vv][-1, :] == proc[vv]).all()
+
+    else:
+        for proc_key, proc in model.processes.items():
+            # non-budget
+            nc_file = tmp_dir / f"{proc_key}.nc"
+            ds = xr.open_dataset(nc_file)
+            proc_vars = set(proc.get_variables())
+            nc_vars = set(ds.data_vars)
+            assert proc_vars == nc_vars
+            for vv in proc.variables:
+                assert (ds[vv][-1, :] == proc[vv]).all()
+
+            # budget
+            nc_file = tmp_dir / f"{proc_key}_budget.nc"
+            ds = xr.open_dataset(nc_file)
+            for ss in budget_sum_vars_all:
+                assert (proc.budget[ss] == ds[ss][-1, :]).all()
 
     return

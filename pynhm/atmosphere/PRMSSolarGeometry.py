@@ -47,7 +47,6 @@ class PRMSSolarGeometry(StorageUnit):
         from_nc_files_dir: fileish = None,
         load_n_time_batches: int = 1,
     ):
-
         # This is a singular case of having a constant parameter dimensions
         self.ndoy = doy
 

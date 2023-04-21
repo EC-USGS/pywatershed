@@ -51,7 +51,6 @@ class NetCdfRead(Accessor):
         load_n_times: int = None,
         load_n_time_batches: int = 1,
     ) -> "NetCdfRead":
-
         self.name = "NetCdfRead"
         self._nc_file = name
         self._nc_read_vars = nc_read_vars
@@ -375,7 +374,6 @@ class NetCdfWrite(Accessor):
         complevel: int = 4,
         chunk_sizes: dict = {"time": 30, "hruid": 0},
     ) -> "NetCdfWrite":
-
         if isinstance(variables, dict):
             group_variables = []
             for group, vars in variables.items():

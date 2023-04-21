@@ -44,7 +44,6 @@ class PRMSSoilzone(StorageUnit):
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSSoilzone":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -386,7 +385,6 @@ class PRMSSoilzone(StorageUnit):
         return
 
     def _calculate(self, simulation_time):
-
         if self._calc_method.lower() == "numba":
             import numba as nb
 
@@ -741,7 +739,6 @@ class PRMSSoilzone(StorageUnit):
         transp_on,
         unused_potet,
     ):
-
         """Calculate soil zone for a time step"""
 
         # JLM: not clear we need this / for GSFlow
@@ -778,7 +775,6 @@ class PRMSSoilzone(StorageUnit):
 
         # <
         for hh in prange(nhru):
-
             dunnianflw = zero
             dunnianflw_pfr = zero
             dunnianflw_gvr = zero
@@ -855,7 +851,6 @@ class PRMSSoilzone(StorageUnit):
 
             # PRMSIV Steps 4, 5, 6 (see compute_soilmoist)
             if (capwater_maxin + soil_moist[hh]) > zero:
-
                 # JLM: not sure why the function returns cap_waterin
                 (
                     cap_waterin[hh],
@@ -1146,7 +1141,6 @@ class PRMSSoilzone(StorageUnit):
         soil_to_gw,
         soil_to_ssr,
     ) -> tuple:
-
         # JLM: i dont see any real advantage of using this function.
 
         # PRMSIV Step 4 (eqn 1-125)
@@ -1282,7 +1276,6 @@ class PRMSSoilzone(StorageUnit):
         potet_rechr,
         potet_lower,
     ) -> tuple:
-
         # Determine type of evapotranspiration.
         #   et_type=2    - evaporation only
         #   et_type=3    - transpiration plus evaporation
@@ -1293,7 +1286,6 @@ class PRMSSoilzone(StorageUnit):
             avail_potet = zero
 
         elif not transp_on:
-
             if snow_free < 0.01:
                 et_type = ETType.ET_DEFAULT  # 1
 
@@ -1320,7 +1312,6 @@ class PRMSSoilzone(StorageUnit):
             potet_rechr = avail_potet
 
             if soil_type == SoilType.SAND.value:
-
                 if pcts < 0.25:
                     potet_lower = 0.5 * pcts * avail_potet
 
@@ -1330,7 +1321,6 @@ class PRMSSoilzone(StorageUnit):
 
                 # <
             elif soil_type == SoilType.LOAM.value:
-
                 if pcts < 0.5:
                     potet_lower = pcts * avail_potet
 
@@ -1340,7 +1330,6 @@ class PRMSSoilzone(StorageUnit):
 
                 # <
             elif soil_type == SoilType.CLAY.value:
-
                 if (pcts < TWOTHIRDS) and (pcts > ONETHIRD):
                     potet_lower = pcts * avail_potet
 
@@ -1373,7 +1362,6 @@ class PRMSSoilzone(StorageUnit):
 
             # <
             if (et_type == ETType.EVAP_ONLY) or (potet_rechr >= potet_lower):
-
                 if potet_rechr > soil_moist:
                     potet_rechr = soil_moist
                     soil_moist = zero

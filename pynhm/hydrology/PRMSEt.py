@@ -29,7 +29,6 @@ class PRMSEt(StorageUnit):
         verbose: bool = False,
         budget_type: str = None,
     ) -> "PRMSEt":
-
         super().__init__(
             control=control,
             verbose=verbose,

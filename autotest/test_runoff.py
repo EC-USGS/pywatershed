@@ -63,7 +63,6 @@ class TestPRMSRunoffDomain:
 
         all_success = True
         for istep in range(control.n_times):
-
             control.advance()
             runoff.advance()
             runoff.calculate(1.0)

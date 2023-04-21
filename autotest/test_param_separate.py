@@ -44,7 +44,6 @@ def control(domain, params):
     ids=pynhm_process_id,
 )
 def test_param_sep(domain, control, processes, tmp_path):
-
     tmp_path = pl.Path(tmp_path)
 
     domain_name = domain["domain_name"]

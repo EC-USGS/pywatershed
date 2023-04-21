@@ -21,7 +21,6 @@ def control(domain, params):
 
 class TestPRMSAtmosphere:
     def test_init(self, domain, control, tmp_path):
-
         output_dir = domain["prms_output_dir"]
         cbh_dir = domain["cbh_inputs"]["prcp"].parent.resolve()
 

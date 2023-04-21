@@ -47,7 +47,6 @@ class PRMSRunoff(StorageUnit):
         verbose: bool = False,
         load_n_time_batches: int = 1,
     ) -> "PRMSRunoff":
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -252,7 +251,6 @@ class PRMSRunoff(StorageUnit):
         for j in range(self.nhru):
             i = j
             if self.dprst_frac[i] > 0.0:
-
                 if self.dprst_depth_avg[i] == 0.0:
                     raise Exception(
                         f"dprst_fac > and dprst_depth_avg == 0 for HRU {i}"
@@ -662,14 +660,12 @@ class PRMSRunoff(StorageUnit):
         dprst_comp,
         imperv_et,
     ):
-
         # move towards replacing net_rain and other variables.
         # self.net_rain[:] = self.through_rain
 
         dprst_chk = 0
         infil[:] = 0.0
         for k in prange(nhru):
-
             # TODO: remove duplicated vars
             # TODO: move setting constants outside the loop.
 
@@ -894,7 +890,6 @@ class PRMSRunoff(StorageUnit):
         check_capacity,
         perv_comp,
     ):
-
         isglacier = False  # todo -- hardwired
         cascade_active = False
         hru_flag = 0
@@ -1053,7 +1048,6 @@ class PRMSRunoff(StorageUnit):
         imperv_frac,
         perv_frac,
     ):
-
         cascade_flag = OFF  # cdl -- todo: hardwired
         if cascade_flag > OFF:
             raise Exception("i am brokin")

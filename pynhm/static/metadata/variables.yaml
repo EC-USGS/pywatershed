@@ -1598,23 +1598,20 @@ hru_perv_actet:
 hru_ppt:
   desc: Precipitation distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: inches
 hru_rain:
   desc: Rain distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: inches
   var_category: mass flux
 hru_snow:
   desc: Snow distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: inches
   var_category: mass flux
@@ -2068,8 +2065,7 @@ orad:
 orad_hru:
   desc: Solar radiation on a horizontal surface for each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: Langleys
 pan_evap:
@@ -2188,8 +2184,7 @@ pkwater_equiv_change:
 potet:
   desc: Potential ET for each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: inches
 potet_lower:
@@ -2208,8 +2203,7 @@ pptmix:
   desc: Flag to indicate if precipitation is a mixture of rain and snow for each HRU
     (0=no;1=yes)
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: int32
   units: none
 pptmix_nopack:
@@ -2288,8 +2282,7 @@ prcp:
 prmx:
   desc: Fraction of rain in a mixed precipitation event for each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: decimal fraction
 pss:
@@ -3014,8 +3007,7 @@ subinc_szstor_frac:
 subinc_tavgc:
   desc: Area-weighted average air temperature for associated HRUs to each subbasin
   dims:
-    0: n_time_chunk
-    1: nsub
+    0: nsub
   type: float64
   units: degrees Celsius
 subinc_tmaxc:
@@ -3048,8 +3040,7 @@ swale_actet:
 swrad:
   desc: Shortwave radiation distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: Langleys
 t_ground:
@@ -3080,8 +3071,7 @@ t_ss:
 tavgc:
   desc: Average air temperature distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: degrees Celsius
 tavgf:
@@ -3131,15 +3121,13 @@ tmax_sta:
 tmaxc:
   desc: Maximum air temperature distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: degrees Celsius
 tmaxf:
   desc: Maximum air temperature distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: degrees Fahrenheit
 tmax:
@@ -3163,15 +3151,13 @@ tmin_sta:
 tminc:
   desc: Minimum air temperature distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: degrees Celsius
 tminf:
   desc: Minimum air temperature distributed to each HRU
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: float64
   units: degrees Fahrenheit
 tmin:
@@ -3274,8 +3260,7 @@ transfer_rate:
 transp_on:
   desc: Flag indicating whether transpiration is occurring (0=no;1=yes)
   dims:
-    0: n_time_chunk
-    1: nhru
+    0: nhru
   type: int32
   units: none
 unused_potet:

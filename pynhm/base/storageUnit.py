@@ -253,14 +253,13 @@ class StorageUnit(Accessor):
             setattr(self, name, self.params.get_param_values(name))
 
         # inputs
-        # TODO: necessary?
-        # for name in self.inputs:
-        #     # this is where meta gives
-        #     spatial_dims = self.control.params.get_dim_values(
-        #         list(meta.find_variables(name)[name]["dims"].values())
-        #     )
-        #     spatial_dims = tuple(spatial_dims.values())
-        #     setattr(self, name, np.zeros(spatial_dims, dtype=float) + np.nan)
+        for name in self.inputs:
+            # dims of internal variables never have time, so they are spatial
+            spatial_dims = self.control.params.get_dim_values(
+                list(meta.find_variables(name)[name]["dims"].values())
+            )
+            spatial_dims = tuple(spatial_dims.values())
+            setattr(self, name, np.zeros(spatial_dims, dtype=float) + np.nan)
 
         # variables
         # skip restart variables if restart (for speed) ?

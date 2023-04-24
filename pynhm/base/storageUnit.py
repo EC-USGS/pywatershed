@@ -449,7 +449,7 @@ class StorageUnit(Accessor):
 
     def initialize_netcdf(
         self,
-        output_dir: str,
+        output_dir: [str, pl.Path],
         separate_files: bool = True,
         budget_args: dict = None,
         output_vars: list = None,
@@ -474,8 +474,8 @@ class StorageUnit(Accessor):
             print(f"initializing netcdf output for: {self.output_dir}")
 
         self._output_netcdf = True
-        self._netcdf = {}
         self._output_vars = output_vars
+        self._netcdf = {}
         if separate_files:
             self._separate_netcdf = True
             # make working directory

@@ -30,6 +30,7 @@ def test_solar_geom(domain, control, from_prms_file, tmp_path):
     solar_geom = PRMSSolarGeometry(
         control, from_prms_file=from_prms_file, netcdf_output_dir=tmp_path
     )
+    solar_geom.finalize()
 
     ans = PRMSSolarGeometry(control, from_prms_file=prms_soltab_file)
 

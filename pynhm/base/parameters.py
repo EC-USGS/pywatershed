@@ -52,10 +52,10 @@ class Parameters(DatasetDict):
 
     def get_dim_values(
         self,
-        keys: list | str = None,
+        keys: list | tuple | str = None,
     ) -> dict | np.ndarray:
         """Get the values of the dimensions by keys."""
-        if not isinstance(keys, list):
+        if not isinstance(keys, (list, tuple)):
             return self.dims[keys]
         else:
             return {kk: self.dims[kk] for kk in keys}

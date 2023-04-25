@@ -493,8 +493,10 @@ def _is_equal(aa, bb):
 
 def _merge_dicts(
     dict_list: list[dict],
-    conflicts: Literal["ignore", "warn", "error"] = "error",
+    conflicts: Literal["left", "warn", "error"] = "error",
 ):
+    if not isinstance(dict_list, list):
+        raise ValueError("argument 'dict_list' is not a list")
     merged = {}
     for dd in dict_list:
         for key, value in dd.items():
@@ -502,7 +504,7 @@ def _merge_dicts(
                 merged[key] = value
             elif isinstance(value, dict) and isinstance(merged[key], dict):
                 merged[key] = _merge_dicts(
-                    [merged[key], value], conflicts=conflicts
+                    [value, merged[key]], conflicts=conflicts
                 )
             elif _is_equal(value, merged[key]):
                 pass
@@ -516,7 +518,7 @@ def _merge_dicts(
                     raise ValueError(msg)
                 elif conflicts == "warn":
                     warnings.warn(msg)
-                elif conflicts == "ignore":
+                elif conflicts == "left":
                     pass
                 else:
                     raise ValueError(

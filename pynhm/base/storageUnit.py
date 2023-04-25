@@ -122,11 +122,11 @@ class StorageUnit(Accessor):
         # self._patch_metadata(
         #     param_metadata, conflicts=metadata_patch_conflicts
         # )
-        # if metadata_patches is not None:
-        #     self._patch_metadata(
-        #         metadata_patches,
-        #         conflicts=metadata_patch_conflicts,
-        #     )
+        if metadata_patches is not None:
+            self._patch_metadata(
+                metadata_patches,
+                conflicts=metadata_patch_conflicts,
+            )
 
         self._initialize_self_variables()
         self._set_initial_conditions()
@@ -281,7 +281,7 @@ class StorageUnit(Accessor):
         for name in self.inputs:
             # dims of internal variables never have time, so they are spatial
             spatial_dims = self.control.params.get_dim_values(
-                list(meta.find_variables(name)[name]["dims"].values())
+                list(meta.find_variables(name)[name]["dims"])
             )
             spatial_dims = tuple(spatial_dims.values())
             setattr(self, name, np.zeros(spatial_dims, dtype=float) + np.nan)
@@ -311,7 +311,7 @@ class StorageUnit(Accessor):
                 )
             return
 
-        dims = [self[vv] for vv in self.meta[var_name]["dims"].values()]
+        dims = [self[vv] for vv in self.meta[var_name]["dims"]]
         init_type = self.meta[var_name]["type"]
 
         if len(dims) == 1:

@@ -34,7 +34,7 @@ def expand_scalar_to_dims(param_dict, param_dim_dict):
             param_shape = param_dict[param_name].shape
             param_val = param_dict[param_name]
             param_dims = param_dim_dict[param_name]
-            for ii, dim_name in enumerate(dims.values()):
+            for ii, dim_name in enumerate(dims):
                 if dim_name == exp_dim:
                     param_shape = list(param_shape)
                     param_dims = list(param_dims)

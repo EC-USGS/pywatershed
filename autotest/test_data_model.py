@@ -261,8 +261,35 @@ def test_dd_subset_merge(tmp_path):
     return
 
 
-def dd_get_parameters():
-    pass
+def test_merge_dicts():
+    dd_0 = {"a": {"aa": 123, "dims": {0: "zero", 1: "one"}}}
+    dd_1 = {"a": {"aa": 123, "dims": {0: "dd_1"}}}
+    dd_2 = {"a": {"aa": 123, "dims": {0: "dd_2"}}}
+    dd_3 = {"a": {"aa": 123, "zzzz": {0: "one"}}}
 
+    with pytest.raises(ValueError):
+        result = dm._merge_dicts([dd_0, dd_1])
 
-# methods to build dds from data and coord_name or coord_data
+    with pytest.raises(ValueError):
+        result = dm._merge_dicts([dd_0, dd_1], conflicts="error")
+
+    with pytest.warns(UserWarning):
+        result = dm._merge_dicts([dd_0, dd_1], conflicts="warn")
+
+    result = dm._merge_dicts([dd_0, dd_1], conflicts="left")
+    assert set(result["a"].keys()) == set(dd_0["a"].keys())
+    assert result == dd_0
+
+    result = dm._merge_dicts([dd_0, dd_1, dd_2], conflicts="left")
+    assert set(result["a"].keys()) == set(dd_0["a"].keys())
+    assert result == dd_0
+
+    result = dm._merge_dicts([dd_2, dd_1, dd_0], conflicts="left")
+    assert set(result["a"].keys()) == set(dd_2["a"].keys())
+    assert result == {"a": {"aa": 123, "dims": {0: "dd_2", 1: "one"}}}
+
+    result = dm._merge_dicts([dd_1, dd_2, dd_0], conflicts="left")
+    assert set(result["a"].keys()) == set(dd_0["a"].keys())
+    assert result == {"a": {"aa": 123, "dims": {0: "dd_1", 1: "one"}}}
+
+    return

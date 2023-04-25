@@ -113,20 +113,12 @@ class PRMSAtmosphere(StorageUnit):
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
     ):
-        # This could be used to subclass storageUnit or Process classes to have
-        # timeseries. Solar geom bas doy dimension not actual simulation times
-        super().__init__(
-            control=control,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
-        )
-        # need to override the initailization of self variables
-        self._set_inputs(locals())
-
-        self.name = "PRMSAtmosphere"
-        self.budget = None
-
-        self._calculated = False
+        metadata_patches = {
+            kk: {"dims": ("ntime", "nhru")} for kk in self.variables
+        }
+        # is there are more cannonical place to set this? like when
+        # params are added to control
+        control.params.dims["ntime"] = control.n_times
 
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
@@ -137,7 +129,25 @@ class PRMSAtmosphere(StorageUnit):
             self.n_time_chunk = n_time_chunk
 
         # Initialize full time with nans
-        self._time = np.full(self.n_time_chunk, nan, dtype="datetime64[s]")
+        # TODO: does time chunking work?
+        self._time = np.full(control.n_times, nan, dtype="datetime64[s]")
+
+        # This could be used to subclass storageUnit or Process classes to have
+        # timeseries. Solar geom bas doy dimension not actual simulation times
+        super().__init__(
+            control=control,
+            verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
+            metadata_patches=metadata_patches,
+            metadata_patch_conflicts="left",
+        )
+        # need to override the initailization of self variables
+        self._set_inputs(locals())
+
+        self.name = "PRMSAtmosphere"
+        self.budget = None
+
+        self._calculated = False
 
         self.netcdf_output_dir = netcdf_output_dir
         if self.netcdf_output_dir:
@@ -145,7 +155,7 @@ class PRMSAtmosphere(StorageUnit):
                 dir=pl.Path(netcdf_output_dir), output_vars=netcdf_output_vars
             )
             self._calculate_all_time()
-            self._write_netcdf_timeseries()
+            self._write_netcdf_timeseries
 
         else:
             self._output_netcdf = False
@@ -195,6 +205,61 @@ class PRMSAtmosphere(StorageUnit):
         # JLM todo: delete large variables on self for memory management
         self._calculated = True
         return
+
+    @staticmethod
+    def get_dimensions():
+        return (
+            "nhru",
+            "nmonth",
+            "ntime",
+        )
+
+    @staticmethod
+    def get_parameters():
+        return (
+            "radadj_intcp",
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+            "hru_aspect",
+            "jh_coef",
+            "jh_coef_hru",
+            "tmax_cbh_adj",
+            "tmin_cbh_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "snow_cbh_adj",
+            "rain_cbh_adj",
+            "adjmix_rain",
+            "transp_beg",
+            "transp_end",
+            "transp_tmax",
+            "radadj_intcp",  # below are solar params used by Atmosphere
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+            "temp_units",
+        )
 
     @staticmethod
     def get_inputs() -> tuple:
@@ -247,57 +312,6 @@ class PRMSAtmosphere(StorageUnit):
             "pptmix": nan,
             "orad_hru": nan,
         }
-
-    @staticmethod
-    def get_dimensions():
-        return ("nhru", "nmonth")
-
-    @staticmethod
-    def get_parameters():
-        return (
-            "radadj_intcp",
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "hru_slope",
-            "radj_sppt",
-            "radj_wppt",
-            "hru_lat",
-            "hru_area",
-            "hru_aspect",
-            "jh_coef",
-            "jh_coef_hru",
-            "tmax_cbh_adj",
-            "tmin_cbh_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "snow_cbh_adj",
-            "rain_cbh_adj",
-            "adjmix_rain",
-            "transp_beg",
-            "transp_end",
-            "transp_tmax",
-            "radadj_intcp",  # below are solar params used by Atmosphere
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "hru_slope",
-            "radj_sppt",
-            "radj_wppt",
-            "hru_lat",
-            "hru_area",
-            "temp_units",
-        )
 
     def _set_initial_conditions(self):
         return
@@ -821,6 +835,9 @@ class PRMSAtmosphere(StorageUnit):
         assert self.netcdf_output_dir.exists()
         self._output_netcdf = True
         self._output_vars = output_vars
+        return
+
+    def _finalize_netcdf(self) -> None:
         return
 
     def output(self):

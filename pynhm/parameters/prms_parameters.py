@@ -286,12 +286,8 @@ class PrmsParameters(Parameters):
         # build dimension metadata from data
         if len(parameter_dimensions_dict) == 0:
             for key, value in parameter_dict.items():
-                param_dim_names = list(
-                    meta.get_params(key)[key]["dims"].values()
-                )
-                parameter_dimensions_dict[key] = {
-                    "dims": tuple(param_dim_names)
-                }
+                param_dim_names = meta.get_params(key)[key]["dims"]
+                parameter_dimensions_dict[key] = {"dims": param_dim_names}
 
                 # need below?
                 # this was original code before above

@@ -428,7 +428,7 @@ class PRMSSolarGeometry(StorageUnit):
                 nc_path,
                 self.params.coords,
                 [var],
-                {var: self.var_meta[var]},
+                {var: self.meta[var]},
             )
             nc.add_all_data(
                 var,

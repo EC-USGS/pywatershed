@@ -1,6 +1,7 @@
 from copy import deepcopy
 from pprint import pprint
-from typing import Iterable
+from typing import Iterable, Literal
+import warnings
 
 import cftime
 import netCDF4 as nc4
@@ -490,20 +491,38 @@ def _is_equal(aa, bb):
         return False
 
 
-def _merge_dicts(dict_list):
+def _merge_dicts(
+    dict_list: list[dict],
+    conflicts: Literal["ignore", "warn", "error"] = "error",
+):
     merged = {}
     for dd in dict_list:
         for key, value in dd.items():
             if key not in merged:
                 merged[key] = value
             elif isinstance(value, dict) and isinstance(merged[key], dict):
-                merged[key] = _merge_dicts([merged[key], value])
+                merged[key] = _merge_dicts(
+                    [merged[key], value], conflicts=conflicts
+                )
             elif _is_equal(value, merged[key]):
                 pass
             else:
-                raise ValueError(
-                    f"Duplicate key '{key}' with non-identical data"
+                msg = (
+                    f"Duplicate key '{key}' with non-identical data:\n"
+                    f"    L={merged[key]}\n"
+                    f"    R={value}\n"
                 )
+                if conflicts == "error":
+                    raise ValueError(msg)
+                elif conflicts == "warn":
+                    warnings.warn(msg)
+                elif conflicts == "ignore":
+                    pass
+                else:
+                    raise ValueError(
+                        f"Argument 'conflicts' can not be '{conflicts}'"
+                    )
+
     return merged
 
 

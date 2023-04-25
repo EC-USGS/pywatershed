@@ -1,5 +1,6 @@
 import os
 import pathlib as pl
+from typing import Literal
 from warnings import warn
 
 import numpy as np
@@ -7,6 +8,8 @@ import numpy as np
 from ..base import meta
 from ..base.adapter import Adapter, adapter_factory
 from ..base.budget import Budget
+from ..base.data_model import _merge_dicts
+
 from ..base.timeseries import TimeseriesArray
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
@@ -88,7 +91,12 @@ class StorageUnit(Accessor):
     """
 
     def __init__(
-        self, control: Control, verbose: bool, load_n_time_batches: int = 1
+        self,
+        control: Control,
+        verbose: bool,
+        load_n_time_batches: int = 1,
+        metadata_patches: dict[dict] = None,
+        metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
         self.name = "StorageUnit"
         self.control = control
@@ -102,7 +110,24 @@ class StorageUnit(Accessor):
         self._separate_netcdf = True
         self._itime_step = -1
 
-        self._get_metadata()
+        # TODO metadata patching.
+        self._set_metadata()
+        # # compare the static metadata to those from the parameters
+        # param_metadata = {
+        #     kk: vv
+        #     for kk, vv in self.control.params.metadata.items()
+        #     if kk in self.parameters
+        # }
+        # param_metadata["tstorm_mo"]["dims"] = "foobar"
+        # self._patch_metadata(
+        #     param_metadata, conflicts=metadata_patch_conflicts
+        # )
+        # if metadata_patches is not None:
+        #     self._patch_metadata(
+        #         metadata_patches,
+        #         conflicts=metadata_patch_conflicts,
+        #     )
+
         self._initialize_self_variables()
         self._set_initial_conditions()
 
@@ -286,8 +311,8 @@ class StorageUnit(Accessor):
                 )
             return
 
-        dims = [self[vv] for vv in self.var_meta[var_name]["dims"].values()]
-        init_type = self.var_meta[var_name]["type"]
+        dims = [self[vv] for vv in self.meta[var_name]["dims"].values()]
+        init_type = self.meta[var_name]["type"]
 
         if len(dims) == 1:
             self[var_name] = np.full(
@@ -419,28 +444,31 @@ class StorageUnit(Accessor):
 
         return
 
-    def _get_metadata(self):
-        self.var_meta = self.control.meta.get_vars(self.variables)
-        self.input_meta = self.control.meta.get_vars(self.inputs)
-        self.param_meta = self.control.meta.get_params(self.parameters)
+    def _set_metadata(self):
+        """Set metadata on self for self's inputs, parameters, and variables"""
+        meta_keys = (*self.variables, *self.inputs, *self.parameters)
+        msg = (
+            "Duplicate varible names amongst self's variables, "
+            "inputs, and parameters"
+        )
+        assert len(meta_keys) == len(self.variables) + len(self.inputs) + len(
+            self.parameters
+        ), msg
 
-        # This a hack as we are mushing dims into params. time dimension
-        # is also not currently handled at all. Probably need to define
-        # dimensions on StorageUnits
-        dims = set(self.parameters).difference(set(self.param_meta.keys()))
-        self.param_meta = self.control.meta.get_dims(dims)
+        self.meta = self.control.meta.find_variables(meta_keys)
+        if "global" not in self.meta.keys():
+            self.meta["global"] = {}
+        return
 
-        if self.verbose:
-            from pprint import pprint
-
-            print("Metadata print out for StorageUnit subclass {self.name} :")
-            print(f"\n\nParameters ({len(self.param_meta.keys())}): {'*'* 70}")
-            pprint(self.param_meta)
-            print(f"\n\nInputs ({len(self.input_meta.keys())}): {'*'* 70}")
-            pprint(self.input_meta)
-            print(f"\n\nVariables ({len(self.var_meta.keys())}): {'*'* 70}")
-            pprint(self.var_meta)
-
+    def _patch_metadata(
+        self, patches, conflicts: Literal["ignore", "warn", "error"] = "error"
+    ):
+        patch_meta_on_self = {
+            kk: vv for kk, vv in patches.items() if kk in self.meta.keys()
+        }
+        self.meta = _merge_dicts(
+            [self.meta, patch_meta_on_self], conflicts=conflicts
+        )
         return
 
     def output_to_csv(self, pth):
@@ -499,7 +527,7 @@ class StorageUnit(Accessor):
                     nc_path,
                     self.params.coords,
                     [variable_name],
-                    {variable_name: self.var_meta[variable_name]},
+                    {variable_name: self.meta[variable_name]},
                 )
         else:
             initial_variable = self.variables[0]
@@ -508,7 +536,7 @@ class StorageUnit(Accessor):
                 output_dir,
                 self.params.nhm_coordinates,
                 self.variables,
-                self.var_meta,
+                self.meta,
             )
             # JLM: this code seems unnecessary/overwrought
             # we are currently not testing single file output.

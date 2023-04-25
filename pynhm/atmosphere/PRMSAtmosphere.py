@@ -5,8 +5,10 @@ import numpy as np
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfWrite
 
+from ..base import meta
 from ..base.adapter import adaptable
 from ..base.control import Control
+from ..base.data_model import _merge_dicts
 from ..constants import epsilon, fileish, inch2cm, nan, one, zero
 from ..utils.time_utils import datetime_doy, datetime_month
 from .solar_constants import solf
@@ -113,6 +115,18 @@ class PRMSAtmosphere(StorageUnit):
     ):
         # This could be used to subclass storageUnit or Process classes to have
         # timeseries. Solar geom bas doy dimension not actual simulation times
+        super().__init__(
+            control=control,
+            verbose=verbose,
+            load_n_time_batches=load_n_time_batches,
+        )
+        # need to override the initailization of self variables
+        self._set_inputs(locals())
+
+        self.name = "PRMSAtmosphere"
+        self.budget = None
+
+        self._calculated = False
 
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
@@ -126,19 +140,6 @@ class PRMSAtmosphere(StorageUnit):
         self._time = np.full(self.n_time_chunk, nan, dtype="datetime64[s]")
 
         self.netcdf_output_dir = netcdf_output_dir
-
-        super().__init__(
-            control=control,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
-        )
-        self._set_inputs(locals())
-
-        self.name = "PRMSAtmosphere"
-        self.budget = None
-
-        self._calculated = False
-
         if self.netcdf_output_dir:
             self.initialize_netcdf(
                 dir=pl.Path(netcdf_output_dir), output_vars=netcdf_output_vars

@@ -210,7 +210,7 @@ class TestPRMSSnow:
                     )
                     print(f"pkwe[wh_max_diff]: {pkwe[wh_max_diff]}")
                     print(f"pkwe_ans[wh_max_diff]: {pkwe_ans[wh_max_diff]}")
-                    asdf
+                    assert success
 
         snow.finalize()
 

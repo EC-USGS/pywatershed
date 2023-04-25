@@ -250,7 +250,7 @@ class PrmsParameters(Parameters):
         data = PrmsFile(parameter_file, "parameter").get_data()
         params = PrmsParameters.from_load(
             data["parameter"]["parameters"],
-            data["parameter"]["parameter_dimensions"],
+            # data["parameter"]["parameter_dimensions"],
         )
 
         return params

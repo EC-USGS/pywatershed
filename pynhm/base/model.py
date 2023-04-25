@@ -21,7 +21,7 @@ class Model:
         input_dir: A directory to search for input files.
         budget_type: None, "warn", or "error".
         verbose: Boolean.
-          calc_method: Choice of available computational backend (where
+        calc_method: Choice of available computational backend (where
           available): None and "numpy" are default, "numba" gives numba (env
           variables can control its behavior), and "fortran" uses compiled
           fortran if available.

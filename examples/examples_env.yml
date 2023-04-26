@@ -16,7 +16,6 @@ dependencies:
   - pytest-order
   - pytest-xdist
   - pyyaml
-  - xarray
   - cartopy
   - geopandas
   - geoviews
@@ -40,3 +39,4 @@ dependencies:
       - pylint
       - git+https://github.com/modflowpy/flopy.git
       - modflow-devtools
+      - git+https://github.com/jmccreight/xarray.git@to_dict-numpy-data-version-fake

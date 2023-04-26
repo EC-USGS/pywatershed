@@ -21,7 +21,6 @@ def control(domain, params):
 
 class TestPRMSEt:
     def test_init(self, domain, control, tmp_path):
-
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -58,7 +57,6 @@ class TestPRMSEt:
 
         all_success = True
         for istep in range(control.n_times):
-
             control.advance()
             et.advance()
             et.calculate(1.0)

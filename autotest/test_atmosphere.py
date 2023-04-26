@@ -21,7 +21,6 @@ def control(domain, params):
 
 class TestPRMSAtmosphere:
     def test_init(self, domain, control, tmp_path):
-
         output_dir = domain["prms_output_dir"]
         cbh_dir = domain["cbh_inputs"]["prcp"].parent.resolve()
 
@@ -89,6 +88,7 @@ class TestPRMSAtmosphere:
 
                 success_a = np.allclose(a2, a1, atol=tol, rtol=0.00)
                 success_r = np.allclose(a2, a1, atol=0.00, rtol=tol)
+                success = False
                 if (not success_a) and (not success_r):
                     diff = a2 - a1
                     diffratio = abs(diff / a2)
@@ -108,7 +108,7 @@ class TestPRMSAtmosphere:
                     print(f"diff   {diffmin}  {diffmax}")
                     print(f"absdiffmax  {absdiffmax}")
                     print(f"wh_absdiffmax  {wh_absdiffmax}")
-                    asdf
+                    assert success
 
         atm.finalize()
 

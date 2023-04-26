@@ -35,13 +35,7 @@ def params(domain):
 @pytest.fixture(scope="function")
 def control(domain, params):
     control = Control.load(domain["control_file"], params=params)
-    # should probably provide methods for changing the time
-    # doing this allows proper exercise of load_n_time_batches
-    # which splits based on control._n_times
-    control._n_times = n_time_steps
-    control._end_time = (
-        control._start_time + (control._n_times - 1) * control._time_step
-    )
+    control.edit_n_time_steps(n_time_steps)
     return control
 
 
@@ -51,7 +45,6 @@ def control(domain, params):
     ids=test_models.keys(),
 )
 def test_model(domain, control, processes, tmp_path):
-
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
@@ -210,7 +203,6 @@ def test_model(domain, control, processes, tmp_path):
     fail_prms_compare = False
     fail_regression = False
     for istep in range(control.n_times):
-
         model.advance()
         model.calculate()
 

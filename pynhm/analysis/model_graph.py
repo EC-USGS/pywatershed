@@ -63,10 +63,8 @@ class ModelGraph:
         files = []
         connections = []
         for process in self.model.process_order:
-
             frm_already = []
             for var, frm in self.model.process_input_from[process].items():
-
                 var_con = f":{var}"
                 if self.hide_variables:
                     var_con = ""
@@ -163,7 +161,6 @@ class ModelGraph:
         ]
 
         for varset_name, varset in show_categories.items():
-
             n_vars = len(varset)
             if not n_vars:
                 continue

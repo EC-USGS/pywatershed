@@ -21,7 +21,7 @@ class Model:
         input_dir: A directory to search for input files.
         budget_type: None, "warn", or "error".
         verbose: Boolean.
-          calc_method: Choice of available computational backend (where
+        calc_method: Choice of available computational backend (where
           available): None and "numpy" are default, "numba" gives numba (env
           variables can control its behavior), and "fortran" uses compiled
           fortran if available.
@@ -47,7 +47,6 @@ class Model:
         find_input_files: bool = True,
         load_n_time_batches: int = 1,
     ):
-
         self.control = control
         self.input_dir = input_dir
         self.verbose = verbose
@@ -191,14 +190,25 @@ class Model:
         self._found_input_files = True
         return
 
-    def initialize_netcdf(self, *args, **kwargs):
+    def initialize_netcdf(
+        self,
+        output_dir: str,
+        separate_files: bool = True,
+        budget_args: dict = None,
+        output_vars: list = None,
+    ):
         """Initialize NetCDF output files for model (all processes)."""
         if not self._found_input_files:
             self._find_input_files()
 
-        self._netcdf_dir = dir
+        self._netcdf_dir = output_dir
         for cls in self.process_order:
-            self.processes[cls].initialize_netcdf(*args, **kwargs)
+            self.processes[cls].initialize_netcdf(
+                output_dir=output_dir,
+                separate_files=separate_files,
+                budget_args=budget_args,
+                output_vars=output_vars,
+            )
         return
 
     def run(
@@ -239,7 +249,6 @@ class Model:
         if not n_time_steps:
             n_time_steps = self.control.n_times
         for istep in range(n_time_steps):
-
             # progress for the impatient
             pct_complete = math.floor((istep + 1) / n_time_steps * 100)
             if not (pct_complete % 10) and pct_complete != last_pct_comp:

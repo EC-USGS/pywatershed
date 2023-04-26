@@ -7,7 +7,7 @@ from pynhm.utils.netcdf_utils import NetCdfWrite
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import epsilon, fileish, inch2cm, nan, one, zero
+from ..constants import epsilon, inch2cm, nan, one, zero
 from ..utils.time_utils import datetime_doy, datetime_month
 from .solar_constants import solf
 
@@ -98,20 +98,20 @@ class PRMSAtmosphere(StorageUnit):
     def __init__(
         self,
         control: Control,
-        prcp: fileish,
-        tmax: fileish,
-        tmin: fileish,
+        prcp: [str, pl.Path],
+        tmax: [str, pl.Path],
+        tmin: [str, pl.Path],
         soltab_potsw: adaptable,
         soltab_horad_potsw: adaptable,
         budget_type: str = None,
         verbose: bool = False,
-        netcdf_output_dir: fileish = None,
+        netcdf_output_dir: [str, pl.Path] = None,
         netcdf_output_vars: list = None,
-        # from_file_dir: fileish = None,
+        netcdf_separate_files: bool = True,
+        # from_file_dir: [str, pl.Path] = None,
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
     ):
-
         # This could be used to subclass storageUnit or Process classes to have
         # timeseries. Solar geom bas doy dimension not actual simulation times
 
@@ -126,8 +126,6 @@ class PRMSAtmosphere(StorageUnit):
         # Initialize full time with nans
         self._time = np.full(self.n_time_chunk, nan, dtype="datetime64[s]")
 
-        self.netcdf_output_dir = netcdf_output_dir
-
         super().__init__(
             control=control,
             verbose=verbose,
@@ -140,12 +138,13 @@ class PRMSAtmosphere(StorageUnit):
 
         self._calculated = False
 
+        self.netcdf_output_dir = netcdf_output_dir
         if self.netcdf_output_dir:
             self.initialize_netcdf(
-                dir=pl.Path(netcdf_output_dir), output_vars=netcdf_output_vars
+                output_dir=pl.Path(netcdf_output_dir),
+                separate_variables=netcdf_separate_files,
+                output_vars=netcdf_output_vars,
             )
-            self._calculate_all_time()
-            self._write_netcdf_timeseries()
 
         else:
             self._output_netcdf = False
@@ -153,6 +152,9 @@ class PRMSAtmosphere(StorageUnit):
         return
 
     def _calculate_all_time(self):
+        if self._calculated:
+            return
+
         # Eventually refactor to work at specific chunks of time
         for input in ["prcp", "tmax", "tmin"]:
             # # this is a bit of a mess: ._dataset.dataset
@@ -194,6 +196,7 @@ class PRMSAtmosphere(StorageUnit):
 
         # JLM todo: delete large variables on self for memory management
         self._calculated = True
+
         return
 
     @staticmethod
@@ -309,7 +312,8 @@ class PRMSAtmosphere(StorageUnit):
         """
         if not self._calculated:
             self._calculate_all_time()
-
+        for vv in self.variables:
+            self[vv].advance()
         return
 
     def _calculate(self, time_length):
@@ -520,7 +524,6 @@ class PRMSAtmosphere(StorageUnit):
         hru_area,
         nmonth,
     ) -> (np.ndarray, np.ndarray):  # [n_time, n_hru]
-
         # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation_degday.f90
         n_time, n_hru = tmax_hru.shape
 
@@ -591,7 +594,6 @@ class PRMSAtmosphere(StorageUnit):
         cond_if = cond_ppt_gt_rad_adj
         wh_if = np.where(cond_if)
         if len(wh_if[0]):
-
             # * if.else
             pptadj[wh_if] = (
                 radadj_intcp_day
@@ -612,7 +614,6 @@ class PRMSAtmosphere(StorageUnit):
             cond_if_if = cond_if & cond_tmax_lt_index
             wh_if_if = np.where(cond_if_if)
             if len(wh_if_if[0]):
-
                 # The logic equiv to but changed from the original
                 radj_sppt_day = tile_space_to_time(radj_sppt, n_time)
                 pptadj[wh_if_if] = radj_sppt_day[wh_if_if]
@@ -703,7 +704,6 @@ class PRMSAtmosphere(StorageUnit):
     #     return et
 
     def calculate_transp_tindex(self):
-
         # INIT: Process_flag==INIT
         # transp_on inited to 0 everywhere above
 
@@ -797,20 +797,44 @@ class PRMSAtmosphere(StorageUnit):
     def _write_netcdf_timeseries(self) -> None:
         if not self._output_netcdf:
             return
-        for var in self.variables:
-            if (self._output_vars is not None) and (
-                var not in self._output_vars
-            ):
-                continue
 
-            nc_path = self.netcdf_output_dir / f"{var}.nc"
+        if self.netcdf_separate_files:
+            for var in self.variables:
+                if var not in self.netcdf_output_vars:
+                    continue
+                nc_path = self.netcdf_output_dir / f"{var}.nc"
+                nc = NetCdfWrite(
+                    nc_path,
+                    self.params.nhm_coordinates,
+                    [var],
+                    {var: self.var_meta[var]},
+                )
+                nc.add_all_data(
+                    var,
+                    self[var].data,
+                    self._time,
+                )
+                nc.close()
+                assert nc_path.exists()
+                print(f"Wrote preprocessed forcing file: {nc_path}")
+
+        else:
+            nc_path = self.netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
                 self.params.nhm_coordinates,
-                [var],
-                {var: self.var_meta[var]},
+                self.netcdf_output_vars,
+                self.var_meta,
             )
-            nc.add_all_data(var, self[var].data, self._time)
+            for var in self.variables:
+                if var not in self.netcdf_output_vars:
+                    continue
+                nc.add_all_data(
+                    var,
+                    self[var].data,
+                    self._time,
+                )
+
             nc.close()
             assert nc_path.exists()
             print(f"Wrote preprocessed forcing file: {nc_path}")
@@ -818,17 +842,32 @@ class PRMSAtmosphere(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir, output_vars: list = None):
-        self.netcdf_output_dir = dir
-        assert self.netcdf_output_dir.exists()
+    def _finalize_netcdf(self) -> None:
+        return
+
+    def initialize_netcdf(
+        self,
+        output_dir: [str, pl.Path],
+        separate_files: bool = True,
+        output_vars: list = None,
+        **kwargs,
+    ):
         self._output_netcdf = True
-        self._output_vars = output_vars
+        self.netcdf_separate_files = separate_files
+        self.netcdf_output_dir = output_dir
+        if output_vars is None:
+            self.netcdf_output_vars = self.variables
+        else:
+            self.netcdf_output_vars = output_vars
+
         return
 
     def output(self):
         if self._output_netcdf:
             if self.verbose:
-                print(f"writing FULL timeseries output for: {self.name}")
+                print(
+                    f"Writing FULL timeseries output for: {self.name}",
+                    flush=True,
+                )
             self._write_netcdf_timeseries()
-            self._output_netcdf = False
         return

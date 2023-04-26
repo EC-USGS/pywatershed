@@ -77,7 +77,6 @@ class TestPRMSChannelDomain:
                     assert False
 
             else:
-
                 print(f"comparison for {key} passed")
 
         assert not assert_error, "comparison failed"

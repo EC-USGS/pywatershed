@@ -6,7 +6,6 @@ import numpy as np
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
-from .parameters import Parameters
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
@@ -15,6 +14,7 @@ from ..utils.time_utils import (
     datetime_year,
 )
 from .accessor import Accessor
+from .parameters import Parameters
 
 
 class Control(Accessor):

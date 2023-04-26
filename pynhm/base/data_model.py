@@ -1,15 +1,15 @@
+import warnings
 from copy import deepcopy
 from pprint import pprint
 from typing import Iterable, Literal
-import warnings
 
 import cftime
 import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
+from ..constants import fill_values_dict, listish, np_type_to_netcdf_type_dict
 from .accessor import Accessor
-from ..constants import listish, fill_values_dict, np_type_to_netcdf_type_dict
 
 # This file defines the data model for pywatershed. It is called a
 # "dataset_dict" and has a invertible mapping with non-hierarchical netcdf

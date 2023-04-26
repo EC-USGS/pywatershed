@@ -7,8 +7,8 @@ import pytest
 import pynhm
 from pynhm.base.control import Control
 from pynhm.base.timeseries import TimeseriesArray
-from pynhm.utils import separate_domain_params_to_ncdf
 from pynhm.parameters import PrmsParameters
+from pynhm.utils import separate_domain_params_to_ncdf
 
 n_time_steps = 10
 budget_type = None

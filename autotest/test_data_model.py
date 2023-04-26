@@ -1,5 +1,5 @@
-from copy import deepcopy
 import pathlib as pl
+from copy import deepcopy
 from pprint import pprint
 
 import netCDF4 as nc4
@@ -10,7 +10,6 @@ import xarray as xr
 
 from pynhm.base import data_model as dm
 from pynhm.base.data_model import DatasetDict
-
 
 nc_file = pl.Path("../test_data/drb_2yr/prcp.nc")
 

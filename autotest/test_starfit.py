@@ -1,8 +1,8 @@
 import pathlib as pl
 import pickle
 
-import pytest
 import numpy as np
+import pytest
 import xarray as xr
 
 from pynhm.base.control import Control

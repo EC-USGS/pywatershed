@@ -4,8 +4,8 @@ import pytest
 
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
-from pynhm.utils.netcdf_utils import NetCdfCompare
 from pynhm.parameters import PrmsParameters
+from pynhm.utils.netcdf_utils import NetCdfCompare
 
 fail_fast = False
 

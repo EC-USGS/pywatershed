@@ -9,7 +9,7 @@ netCDF4
 networkx
 numpy
 numba
-pandas
+pandas >= 1.4
 pip
 pylint
 pytest

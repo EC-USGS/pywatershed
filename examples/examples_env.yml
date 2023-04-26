@@ -3,7 +3,9 @@ channels:
   - conda-forge
   - nodefaults
   - pyviz
+  - bioconda
 dependencies:
+  - epiweeks  
   - netCDF4
   - networkx
   - numpy

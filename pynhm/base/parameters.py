@@ -1,3 +1,5 @@
+from typing import Union
+
 import numpy as np
 
 from .data_model import DatasetDict
@@ -38,8 +40,8 @@ class Parameters(DatasetDict):
 
     def get_param_values(
         self,
-        keys: list | str = None,
-    ) -> dict | np.ndarray:
+        keys: Union[list, str] = None,
+    ) -> Union[dict, np.ndarray]:
         """Get the values of the parameters (coords or data_vars) by keys
 
         Also see:
@@ -52,8 +54,8 @@ class Parameters(DatasetDict):
 
     def get_dim_values(
         self,
-        keys: list | tuple | str = None,
-    ) -> dict | np.ndarray:
+        keys: Union[list, tuple, str] = None,
+    ) -> Union[dict, np.ndarray]:
         """Get the values of the dimensions by keys."""
         if not isinstance(keys, (list, tuple)):
             return self.dims[keys]

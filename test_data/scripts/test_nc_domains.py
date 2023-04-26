@@ -3,7 +3,7 @@ from time import sleep
 import numpy as np
 
 from pynhm import CsvFile, Soltab
-from pynhm import PrmsParameters
+from pynhm.parameters import PrmsParameters
 from pynhm.constants import epsilon64, zero
 
 import pytest
@@ -51,7 +51,6 @@ def test_csv_to_previous_netcdf(csv_files_prev):
 
 @pytest.mark.order(after=["test_csv_to_previous_netcdf"])
 def test_misc_netcdf(misc_nc_files_input):
-
     if misc_nc_files_input.name in ["sroff", "ssres_flow", "gwres_flow"]:
         data_dir = misc_nc_files_input.parent
         domain_dir = misc_nc_files_input.parent.parent
@@ -84,7 +83,6 @@ def test_misc_netcdf(misc_nc_files_input):
 
 @pytest.mark.order(after=["test_misc_netcdf", "test_csv_to_previous_netcdf"])
 def test_misc_final(misc_nc_final_input):
-
     if misc_nc_final_input.name == "through_rain":
         data_dir = misc_nc_final_input.parent
         data_vars = [

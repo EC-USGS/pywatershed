@@ -219,3 +219,23 @@ class Control(Accessor):
         var_dim_shape = [var_dim_sizes[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]
         return np.full(var_dim_shape, np.nan, var_type)
+
+    def edit_end_time(self, new_end_time: np.datetime64):
+        "Supply a new end time for the simulation."
+
+        self._end_time = new_end_time
+        assert self._end_time - self._start_time > 0
+        self._n_times = (
+            (self._end_time - self._start_time) / self._time_step
+        ) + 1
+        self.params.dims["ntime"] = self._n_times
+        return
+
+    def edit_n_time_steps(self, new_n_time_steps: int):
+        "Supply a new number of timesteps to change the simulation end time."
+        self._n_times = new_n_time_steps
+        self._end_time = (
+            self._start_time + (self._n_times - 1) * self._time_step
+        )
+        self.params.dims["ntime"] = self._n_times
+        return

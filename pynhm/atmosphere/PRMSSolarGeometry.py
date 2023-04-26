@@ -9,7 +9,7 @@ from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
-from ..constants import epsilon32, fileish, nan, one, zero
+from ..constants import epsilon32, nan, one, zero
 from ..utils.prms5util import load_soltab_debug
 from .solar_constants import ndoy, pi, pi_12, r1, solar_declination, two_pi
 
@@ -42,10 +42,12 @@ class PRMSSolarGeometry(StorageUnit):
         self,
         control: Control,
         verbose: bool = False,
-        netcdf_output_dir: fileish = None,
-        from_prms_file: fileish = None,
-        from_nc_files_dir: fileish = None,
+        from_prms_file: [str, pl.Path] = None,
+        from_nc_files_dir: [str, pl.Path] = None,
         load_n_time_batches: int = 1,
+        netcdf_output_dir: [str, pl.Path] = None,
+        netcdf_separate_files: bool = True,
+        netcdf_output_vars: list = None,
     ):
         # This is a singular case of having a constant parameter dimensions
         self.ndoy = doy
@@ -76,11 +78,12 @@ class PRMSSolarGeometry(StorageUnit):
         self._calculated = False
 
         if self.netcdf_output_dir:
-            self._output_netcdf = True
             self._calculate_all_time()
-            self.netcdf_output_dir = pl.Path(netcdf_output_dir)
-            assert self.netcdf_output_dir.exists()
-            self._write_netcdf_timeseries()
+            self.initialize_netcdf(
+                output_dir=pl.Path(netcdf_output_dir),
+                separate_variables=netcdf_separate_files,
+                output_vars=netcdf_output_vars,
+            )
 
         else:
             self._output_netcdf = False
@@ -166,7 +169,8 @@ class PRMSSolarGeometry(StorageUnit):
         """
         if not self._calculated:
             self._calculate_all_time()
-            self._write_netcdf_timeseries()
+        for vv in self.variables:
+            self[vv].advance()
         return
 
     def _calculate(self, time_length):
@@ -422,20 +426,46 @@ class PRMSSolarGeometry(StorageUnit):
         if not self._output_netcdf:
             return
 
-        for var in self.variables:
-            nc_path = self.netcdf_output_dir / f"{var}.nc"
+        if self.netcdf_separate_files:
+            for var in self.variables:
+                if var not in self.netcdf_output_vars:
+                    continue
+                nc_path = self.netcdf_output_dir / f"{var}.nc"
+
+                nc = NetCdfWrite(
+                    nc_path,
+                    self.params.coords,
+                    [var],
+                    {var: self.meta[var]},
+                )
+                nc.add_all_data(
+                    var,
+                    self[var].data,
+                    self._time,
+                    time_coord="doy",
+                )
+                nc.close()
+                assert nc_path.exists()
+                print(f"Wrote file: {nc_path}")
+
+        else:
+            nc_path = self.netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
                 self.params.coords,
-                [var],
-                {var: self.meta[var]},
+                self.netcdf_output_vars,
+                self.meta,
             )
-            nc.add_all_data(
-                var,
-                self[var].data,
-                self._time,
-                time_coord="doy",
-            )
+            for var in self.variables:
+                if var not in self.netcdf_output_vars:
+                    continue
+                nc.add_all_data(
+                    var,
+                    self[var].data,
+                    self._time,
+                    time_coord="doy",
+                )
+
             nc.close()
             assert nc_path.exists()
             print(f"Wrote file: {nc_path}")
@@ -443,9 +473,24 @@ class PRMSSolarGeometry(StorageUnit):
         self._output_netcdf = False
         return
 
-    def initialize_netcdf(self, dir):
-        self.netcdf_output_dir = dir
+    def _finalize_netcdf(self) -> None:
+        return
+
+    def initialize_netcdf(
+        self,
+        output_dir: [str, pl.Path],
+        separate_files: bool = True,
+        output_vars: list = None,
+        **kwargs,
+    ):
         self._output_netcdf = True
+        self.netcdf_separate_files = separate_files
+        self.netcdf_output_dir = output_dir
+        if output_vars is None:
+            self.netcdf_output_vars = self.variables
+        else:
+            self.netcdf_output_vars = output_vars
+
         return
 
     def output(self):
@@ -453,5 +498,4 @@ class PRMSSolarGeometry(StorageUnit):
             if self.verbose:
                 print(f"writing FULL timeseries output for: {self.name}")
             self._write_netcdf_timeseries()
-            self._output_netcdf = False
         return

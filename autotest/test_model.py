@@ -35,14 +35,7 @@ def params(domain):
 @pytest.fixture(scope="function")
 def control(domain, params):
     control = Control.load(domain["control_file"], params=params)
-    # should probably provide methods for changing the time
-    # doing this allows proper exercise of load_n_time_batches
-    # which splits based on control._n_times
-    control._n_times = n_time_steps
-    control._end_time = (
-        control._start_time + (control._n_times - 1) * control._time_step
-    )
-    control.params.dims["ntime"] = n_time_steps
+    control.edit_n_time_steps(n_time_steps)
     return control
 
 

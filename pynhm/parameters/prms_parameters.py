@@ -152,6 +152,9 @@ class PrmsParameters(Parameters):
             id: nhm coordinate for each hru
 
         """
+        if "nhru" not in self.dims.keys():
+            return None
+
         if "nhm_id" in self.parameters.keys():
             nhm_id = self.parameters["nhm_id"]
         else:
@@ -166,6 +169,9 @@ class PrmsParameters(Parameters):
             id: nhm coordinate for each segment
 
         """
+        if "nsegment" not in self.dims.keys():
+            return None
+
         if "nhm_seg" in self.parameters.keys():
             nhm_seg = self.parameters["nhm_seg"]
         else:

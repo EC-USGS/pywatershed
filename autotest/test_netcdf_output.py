@@ -1,4 +1,5 @@
 import pathlib as pl
+import shutil
 
 import numpy as np
 import pytest
@@ -13,6 +14,9 @@ from pynhm.parameters import PrmsParameters
 # budgets
 
 
+n_time_steps = 10
+
+
 # This probably dosent need varied over domain
 @pytest.fixture(scope="function")
 def params(domain):
@@ -21,11 +25,10 @@ def params(domain):
 
 @pytest.fixture(scope="function")
 def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+    control = Control.load(domain["control_file"], params=params)
+    control.edit_n_time_steps(n_time_steps)
+    return control
 
-
-n_time_steps = 10
-model_procs = [pynhm.PRMSCanopy, pynhm.PRMSChannel]
 
 # Things to parameterize
 # optional variables to processes
@@ -58,6 +61,7 @@ check_budget_sum_vars_params = [False, True, "some"]
 def test_process_budgets(domain, control, tmp_path, budget_sum_param):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
+    model_procs = [pynhm.PRMSCanopy, pynhm.PRMSChannel]
 
     # Deal with parameter around what budget sum vars to write and check
     if budget_sum_param == "some":
@@ -147,4 +151,93 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
         elif not budget_sum_param:
             assert not (tmp_dir / f"{pp}_budget.nc").exists()
 
+    return
+
+
+@pytest.mark.parametrize(
+    "separate",
+    [False, True],
+    ids=["grp_by_process", "separate"],
+)
+def test_separate_together(domain, control, tmp_path, separate):
+    tmp_dir = pl.Path(tmp_path)
+
+    model_procs = [
+        pynhm.PRMSSolarGeometry,
+        pynhm.PRMSAtmosphere,
+        pynhm.PRMSCanopy,
+        pynhm.PRMSChannel,
+    ]
+
+    # setup input_dir with symlinked prms inputs and outputs
+    test_output_dir = tmp_dir / "test_results"
+    domain_output_dir = domain["prms_output_dir"]
+    input_dir = tmp_path / "input"
+    input_dir.mkdir()
+    # Could limit this to just the variables in model_procs
+    for ff in domain_output_dir.resolve().glob("*.nc"):
+        shutil.copy(ff, input_dir / ff.name)
+    for ff in domain_output_dir.parent.resolve().glob("*.nc"):
+        shutil.copy(ff, input_dir / ff.name)
+
+    model = Model(
+        *model_procs,
+        control=control,
+        input_dir=input_dir,
+        budget_type=budget_type,
+    )
+
+    model.initialize_netcdf(
+        output_dir=test_output_dir,
+        separate_files=separate,
+    )
+
+    for tt in range(n_time_steps):
+        model.advance()
+        model.calculate()
+        model.output()
+
+    model.finalize()
+
+    if separate:
+        for proc_key, proc in model.processes.items():
+            for vv in proc.variables:
+                nc_file = test_output_dir / f"{vv}.nc"
+                assert nc_file.exists()
+                ds = xr.open_dataset(nc_file, decode_timedelta=False)
+                if isinstance(proc[vv], pynhm.base.timeseries.TimeseriesArray):
+                    assert (ds[vv].values == proc[vv].data).all()
+                else:
+                    assert (ds[vv][-1, :] == proc[vv]).all()
+
+                del ds
+
+    else:
+        for proc_key, proc in model.processes.items():
+            # non-budget
+            nc_file = test_output_dir / f"{proc_key}.nc"
+            assert nc_file.exists()
+            ds = xr.open_dataset(nc_file, decode_timedelta=False)
+            proc_vars = set(proc.get_variables())
+            nc_vars = set(ds.data_vars)
+            assert proc_vars == nc_vars
+            for vv in proc.variables:
+                if isinstance(proc[vv], pynhm.base.timeseries.TimeseriesArray):
+                    assert (ds[vv].values == proc[vv].data).all()
+
+                else:
+                    assert (ds[vv][-1, :] == proc[vv]).all()
+
+            del ds
+
+            # budget
+            # no budgets for solar or atmosphere
+            if proc_key in ["PRMSSolarGeometry", "PRMSAtmosphere"]:
+                continue
+            nc_file = test_output_dir / f"{proc_key}_budget.nc"
+            ds = xr.open_dataset(nc_file)
+            for ss in budget_sum_vars_all:
+                assert (proc.budget[ss] == ds[ss][-1, :]).all()
+
+            del ds
     return

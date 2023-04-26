@@ -113,13 +113,6 @@ class PRMSAtmosphere(StorageUnit):
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
     ):
-        metadata_patches = {
-            kk: {"dims": ("ntime", "nhru")} for kk in self.variables
-        }
-        # is there are more cannonical place to set this? like when
-        # params are added to control
-        control.params.dims["ntime"] = control.n_times
-
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
         # TODO: make time chunking options work (esp with output)
@@ -129,8 +122,11 @@ class PRMSAtmosphere(StorageUnit):
             self.n_time_chunk = n_time_chunk
 
         # Initialize full time with nans
-        # TODO: does time chunking work?
         self._time = np.full(control.n_times, nan, dtype="datetime64[s]")
+
+        metadata_patches = {
+            kk: {"dims": ("ntime", "nhru")} for kk in self.variables
+        }
 
         # This could be used to subclass storageUnit or Process classes to have
         # timeseries. Solar geom bas doy dimension not actual simulation times
@@ -155,7 +151,7 @@ class PRMSAtmosphere(StorageUnit):
                 dir=pl.Path(netcdf_output_dir), output_vars=netcdf_output_vars
             )
             self._calculate_all_time()
-            self._write_netcdf_timeseries
+            self._write_netcdf_timeseries()
 
         else:
             self._output_netcdf = False
@@ -820,7 +816,7 @@ class PRMSAtmosphere(StorageUnit):
                 nc_path,
                 self.params.coords,
                 [var],
-                {var: self.var_meta[var]},
+                {var: self.meta[var]},
             )
             nc.add_all_data(var, self[var].data, self._time)
             nc.close()

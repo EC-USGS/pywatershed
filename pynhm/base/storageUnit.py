@@ -112,16 +112,6 @@ class StorageUnit(Accessor):
 
         # TODO metadata patching.
         self._set_metadata()
-        # # compare the static metadata to those from the parameters
-        # param_metadata = {
-        #     kk: vv
-        #     for kk, vv in self.control.params.metadata.items()
-        #     if kk in self.parameters
-        # }
-        # param_metadata["tstorm_mo"]["dims"] = "foobar"
-        # self._patch_metadata(
-        #     param_metadata, conflicts=metadata_patch_conflicts
-        # )
         if metadata_patches is not None:
             self._patch_metadata(
                 metadata_patches,
@@ -461,7 +451,7 @@ class StorageUnit(Accessor):
         return
 
     def _patch_metadata(
-        self, patches, conflicts: Literal["ignore", "warn", "error"] = "error"
+        self, patches, conflicts: Literal["left", "warn", "error"] = "error"
     ):
         patch_meta_on_self = {
             kk: vv for kk, vv in patches.items() if kk in self.meta.keys()

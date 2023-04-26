@@ -42,6 +42,7 @@ def control(domain, params):
     control._end_time = (
         control._start_time + (control._n_times - 1) * control._time_step
     )
+    control.params.dims["ntime"] = n_time_steps
     return control
 
 

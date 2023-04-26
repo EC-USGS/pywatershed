@@ -96,10 +96,14 @@ def test_cbh_files_to_netcdf(domain, params, tmp_path):
                 .mean()
             )
         else:
-            results[var] = results_ds[var].mean().mean()
+            results[var] = results_ds[var].mean().mean().values.tolist()
 
     assert_or_print(
-        results, answers, "files_to_np_dict", print_ans=domain["print_ans"]
+        results,
+        answers,
+        "files_to_np_dict",
+        print_ans=domain["print_ans"],
+        close=True,
     )
 
     return

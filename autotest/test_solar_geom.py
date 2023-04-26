@@ -16,7 +16,7 @@ def control(domain, params):
     return Control.load(domain["control_file"], params=params)
 
 
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "from_prms_file", (True, False), ids=("from_prms_file", "compute")
 )

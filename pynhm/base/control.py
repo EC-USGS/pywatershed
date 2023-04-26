@@ -69,6 +69,8 @@ class Control(Accessor):
 
         self.config = config
         self.params = params
+        if params is not None:
+            self.params.dims["ntime"] = self.n_times
 
         self.meta = meta
         # This will have the time dimension name

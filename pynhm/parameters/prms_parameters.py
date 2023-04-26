@@ -1,5 +1,4 @@
 import json
-from copy import deepcopy
 
 import netCDF4 as nc4
 import numpy as np
@@ -115,32 +114,9 @@ class PrmsParameters(Parameters):
             dict: containing requested key:val pairs
 
         """
-        process = None
         if isinstance(keys, str):
             keys = [keys]
 
-        # if self._params_sep_procs:
-        #     raise ValueError("deprecating")
-        #     # If a parameter dict, get the values from any dict entry
-        #     # there should never be a param with different values
-        #     return_params = {}
-        #     for proc_key in self.parameters.keys():
-        #         if (process is not None) and (proc_key != type(process)):
-        #             continue
-        #         # only allow a single process and do not return a process key
-        #         var_keys = self.parameters[proc_key].keys()
-        #         for key in keys:
-        #             if key in var_keys:
-        #                 if dims:
-        #                     return_params[key] = self.parameters_dimensions[
-        #                         proc_key
-        #                     ][key]
-        #                 else:
-        #                     return_params[key] = self.parameters[proc_key][key]
-
-        #     return return_params
-
-        # else:
         if dims:
             return {
                 key: self.parameter_dimensions.get(key)
@@ -232,7 +208,7 @@ class PrmsParameters(Parameters):
 
         """
         pars = _json_load(json_filename)
-        params = PrmsParameters.from_load(pars)
+        params = PrmsParameters._after_load(pars)
 
         return params
 
@@ -248,26 +224,17 @@ class PrmsParameters(Parameters):
 
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
-        params = PrmsParameters.from_load(
+        params = PrmsParameters._after_load(
             data["parameter"]["parameters"],
             # data["parameter"]["parameter_dimensions"],
         )
 
         return params
 
-    def from_load(
+    def _after_load(
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
     ) -> "PrmsParameters":
-        # This was the traditional __init__ but is now a secondary load step
-
-        # TODO: add this back
-        # If the parameters are all dictionaries, they are params for
-        # separate processes, this just flags
-        # self._params_sep_procs = all(
-        #    [isinstance(pp, dict) for pp in parameter_dict.values()]
-        # )
-
         # move dims from params to dims
         if parameter_dimensions_dict is None:
             parameter_dimensions_dict = {}
@@ -360,41 +327,12 @@ class PrmsParameters(Parameters):
         return prms_params
 
     @staticmethod
-    def _from_nc_file(parameter_nc_file) -> dict:
-        import importlib
-
-        ds = nc4.Dataset(parameter_nc_file)
-        attrs = ds.__dict__
-        process_name = attrs["nhm_process"]
-        process = importlib.import_module("pynhm").__dict__[process_name]
-        proc_params = process.get_parameters()
-
-        param_dict = {kk: vv[:].data for kk, vv in ds.variables.items()}
-        param_dict_dimensions = {
-            kk: vv.dimensions for kk, vv in ds.variables.items()
-        }
-
-        dimension_params = {
-            kk: len(vv) for kk, vv in ds.dimensions.items() if kk != "scalar"
-        }
-        dimension_params_dims = {kk: None for kk in dimension_params.keys()}
-
-        param_dict = {**param_dict, **dimension_params}
-        param_dict_dimensions = {
-            **param_dict_dimensions,
-            **dimension_params_dims,
-        }
-
-        # Additional scalar parameters are in the golbal attributes
-        neglected_params = list(set(proc_params).difference(param_dict.keys()))
-        for nn in neglected_params:
-            param_dict[nn] = ds.__dict__[nn]
-            param_dict_dimensions[nn] = None
-
-        return {"parameters": param_dict, "dimensions": param_dict_dimensions}
-
-    @staticmethod
-    def from_nc_files(proc_param_nc_file_dict: dict) -> "PrmsParameters":
+    def from_nc_files(
+        proc_param_nc_file_dict: dict,
+        use_xr: bool = False,
+        merge: bool = False,
+    ) -> "PrmsParameters":
+        # TODO: this method could be in the super: DatasetDict?
         """Load parameters from a PRMS parameter file
 
         Args:
@@ -406,13 +344,14 @@ class PrmsParameters(Parameters):
             each process.
 
         """
-        param_dim = {
-            proc: PrmsParameters._from_nc_file(file)
+        params = {
+            proc: PrmsParameters.from_netcdf(file)
             for proc, file in proc_param_nc_file_dict.items()
         }
-        parameters = {key: val["parameters"] for key, val in param_dim.items()}
-        dims = {key: val["dimensions"] for key, val in param_dim.items()}
-        return PrmsParameters(parameters, dims)
+        if merge:
+            params = PrmsParameters.merge(list(prams.values()))
+
+        return params
 
     def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
         "Derived parameter converting inches to cfs on hrus."

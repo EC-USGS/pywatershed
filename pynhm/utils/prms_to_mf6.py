@@ -181,7 +181,7 @@ class MMRToMF6:
         )
 
         # SNF
-        snf = flopy.mf6.ModflowSnf(self.sim, modelname=sim_name)
+        snf = flopy.mf6.ModflowSwf(self.sim, modelname=sim_name)
 
         # DISL
 
@@ -217,12 +217,12 @@ class MMRToMF6:
         segment_length = parameters["seg_length"]
         segment_length = segment_length * segment_units
 
-        _ = flopy.mf6.ModflowSnfdisl(
+        _ = flopy.mf6.ModflowSwfdisl(
             snf,
             nodes=nsegment,
             nvert=nvert,
-            segment_length=segment_length.to_base_units().magnitude,
-            tosegment=tosegment,
+            reach_length=segment_length.to_base_units().magnitude,
+            toreach=tosegment,
             idomain=1,  # ??
             vertices=vertices,
             cell2d=cell2d,
@@ -330,7 +330,7 @@ class MMRToMF6:
         )
         x_coef = parameters["x_coef"] * x_coef_units
 
-        _ = flopy.mf6.ModflowSnfmmr(
+        _ = flopy.mf6.ModflowSwfmmr(
             snf,
             print_flows=True,
             observations=mmr_obs,
@@ -441,7 +441,7 @@ class MMRToMF6:
                 else:
                     flw_spd[ispd] = flw_ispd
 
-            _ = flopy.mf6.ModflowSnfflw(
+            _ = flopy.mf6.ModflowSwfflw(
                 snf,
                 print_input=True,
                 print_flows=True,

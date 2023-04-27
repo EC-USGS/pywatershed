@@ -1,5 +1,4 @@
 import pathlib as pl
-import platform
 
 import pytest
 

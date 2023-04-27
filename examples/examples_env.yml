@@ -1,4 +1,4 @@
-name: pynhm_nb
+name: pyws_nb
 channels:
   - conda-forge
   - nodefaults

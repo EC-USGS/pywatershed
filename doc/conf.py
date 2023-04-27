@@ -23,7 +23,7 @@ import pywatershed
 
 # -- Project information -----------------------------------------------------
 
-project = "pynhm"
+project = "pywatershed"
 copyright = datetime.now().strftime("%Y")
 author = "USGS Developers and Community"
 
@@ -98,7 +98,7 @@ pygments_style = "sphinx"
 # html_theme = "pydata_sphinx_theme"
 html_theme = "sphinx_book_theme"
 
-html_title = "pynhm"
+html_title = "pywatershed"
 
 html_context = {
     "github_user": "pydata",
@@ -122,7 +122,7 @@ html_css_files = ["style.css"]
 html_theme_options = dict(
     # analytics_id=''  this is configured in rtfd.io
     # canonical_url="",
-    repository_url="https://github.com/EC-USGS/pynhm",
+    repository_url="https://github.com/EC-USGS/pywatershed",
     repository_branch="main",
     path_to_docs="doc",
     use_edit_page_button=True,

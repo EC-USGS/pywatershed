@@ -136,7 +136,7 @@ class ModelGraph:
         cls = process.__class__.__name__
 
         label = (
-            f'<<TABLE BORDER="0" CELLBORDER=".5" CELLSPACING="0" CELLPADDING="1">\n'
+            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
             f'    <TR><TD COLSPAN="6">{cls}</TD></TR>\n'
         )
 
@@ -197,7 +197,8 @@ class ModelGraph:
             cls,
             label=label,
             pos=f'"{self._current_pos},0!"',
-            shape="process",
+            # shape="process",
+            shape="box",
             color=color_str,
             penwidth=f'"{self.node_penwidth}"',
         )
@@ -208,7 +209,7 @@ class ModelGraph:
     def _file_node(self, files):
         files = list(set(files))
         label = (
-            f'<<TABLE BORDER="0" CELLBORDER=".5" CELLSPACING="0" CELLPADDING="1">\n'
+            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
             f'    <TR><TD COLSPAN="1">Files</TD></TR>\n'
         )
 

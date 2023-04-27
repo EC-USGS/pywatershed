@@ -1,17 +1,18 @@
 import pathlib as pl
-import platform
 
 import pytest
 
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
-from pynhm.utils.netcdf_utils import NetCdfCompare
-from pynhm.utils.parameters import PrmsParameters
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSGroundwater import (
+    PRMSGroundwater,
+    has_prmsgroundwater_f,
+)
+from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.netcdf_utils import NetCdfCompare
 
-if platform.system() == "Windows":
-    calc_methods = ("numpy", "numba")
-else:
-    calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
+if has_prmsgroundwater_f:
+    calc_methods += ("fortran",)
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)
@@ -58,7 +59,6 @@ class TestPRMSGroundwaterDomain:
         print(f"compare_nc_path: {compare_nc_path}")
 
         for istep in range(control.n_times):
-
             control.advance()
 
             gw.advance()

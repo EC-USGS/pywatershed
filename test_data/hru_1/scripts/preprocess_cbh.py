@@ -2,7 +2,7 @@ import pathlib as pl
 
 import yaml
 
-import pynhm
+import pywatershed
 
 yaml_path = "../hru_1.yaml"
 dd_file = pl.Path(yaml_path)
@@ -32,10 +32,10 @@ domain_dict["input_files_dict"] = {
 }
 
 parameter_file = domain_dict["param_file"]
-parameters = pynhm.PrmsParameters.load(domain_dict["param_file"])
+parameters = pywatershed.PrmsParameters.load(domain_dict["param_file"])
 
 
-cbh = pynhm.CBH(
+cbh = pywatershed.CBH(
     domain_dict["input_files_dict"],
     parameters=parameters,
     adjust=True,

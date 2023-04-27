@@ -3,12 +3,12 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.hydrology.PRMSEt import PRMSEt
-from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.utils.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSCanopy import PRMSCanopy
+from pywatershed.hydrology.PRMSEt import PRMSEt
+from pywatershed.hydrology.PRMSRunoff import PRMSRunoff
+from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -23,7 +23,6 @@ def control(domain, params):
 
 class TestPRMSCanopyRunoffDomain:
     def test_init(self, domain, control, tmp_path):
-
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -202,7 +201,7 @@ class TestPRMSCanopyRunoffDomain:
             ],
         }
 
-        # Read PRMS output into ans for comparison with pynhm results
+        # Read PRMS output into ans for comparison with pywatershed results
         ans = {key: {} for key in comparison_vars_dict.keys()}
         for unit_name, var_names in comparison_vars_dict.items():
             for vv in var_names:
@@ -213,7 +212,6 @@ class TestPRMSCanopyRunoffDomain:
 
         all_success = True
         for istep in range(control.n_times):
-
             # print(istep)
             control.advance()
             canopy.advance()
@@ -249,7 +247,7 @@ class TestPRMSCanopyRunoffDomain:
 
         # check at the end and error if one or more steps didn't pass
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")
 
         return
 
@@ -276,13 +274,13 @@ class TestPRMSCanopyRunoffDomain:
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
                     if detailed:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
                             print(
-                                f"hru {i} prms {a1[i]} pynhm {a2[i]} "
+                                f"hru {i} prms {a1[i]} pywatershed {a2[i]} "
                                 f"diff {diff[i]}"
                             )
                 if failfast:

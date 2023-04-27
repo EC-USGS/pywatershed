@@ -3,10 +3,10 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
+from pywatershed.atmosphere.PRMSAtmosphere import PRMSAtmosphere
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -21,7 +21,6 @@ def control(domain, params):
 
 class TestPRMSAtmosphere:
     def test_init(self, domain, control, tmp_path):
-
         output_dir = domain["prms_output_dir"]
         cbh_dir = domain["cbh_inputs"]["prcp"].parent.resolve()
 
@@ -89,6 +88,7 @@ class TestPRMSAtmosphere:
 
                 success_a = np.allclose(a2, a1, atol=tol, rtol=0.00)
                 success_r = np.allclose(a2, a1, atol=0.00, rtol=tol)
+                success = False
                 if (not success_a) and (not success_r):
                     diff = a2 - a1
                     diffratio = abs(diff / a2)
@@ -104,13 +104,13 @@ class TestPRMSAtmosphere:
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
                     print(f"absdiffmax  {absdiffmax}")
                     print(f"wh_absdiffmax  {wh_absdiffmax}")
-                    asdf
+                    assert success
 
         atm.finalize()
 
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")

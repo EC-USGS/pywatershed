@@ -3,11 +3,11 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.constants import epsilon32, zero
-from pynhm.hydrology.PRMSSnow import PRMSSnow
-from pynhm.utils.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.constants import epsilon32, zero
+from pywatershed.hydrology.PRMSSnow import PRMSSnow
+from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -138,7 +138,7 @@ class TestPRMSSnow:
             # longer term differences in other variables. The solution is
             # to flag (memory) when iso gets out of snyc over reasonable/small
             # pkwater equiv differences no not evaluate those points and
-            # after pk water has gone to zero for both pynhm and prms.
+            # after pk water has gone to zero for both pywatershed and prms.
             # we'll want to report the number of points being censored this
             # way at each time. this censor mask has to be used for pkwater
             # above
@@ -194,7 +194,7 @@ class TestPRMSSnow:
                     print(f"time step {istep}")
                     print(f"output variable: {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
 
                     zz = abs(a2 - a1)
@@ -203,18 +203,18 @@ class TestPRMSSnow:
                     print(f"wh_max_diff: {wh_max_diff}")
                     print(f"max diff: {zz[wh_max_diff]}")
                     print(f"prms: {a1[wh_max_diff]}")
-                    print(f"pynhm: {a2[wh_max_diff]}")
+                    print(f"pywatershed: {a2[wh_max_diff]}")
                     print(
                         f"pkwater_absdiff[wh_max_diff]: "
                         f"{pkwater_absdiff[wh_max_diff]}"
                     )
                     print(f"pkwe[wh_max_diff]: {pkwe[wh_max_diff]}")
                     print(f"pkwe_ans[wh_max_diff]: {pkwe_ans[wh_max_diff]}")
-                    asdf
+                    assert success
 
         snow.finalize()
 
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")
 
         return

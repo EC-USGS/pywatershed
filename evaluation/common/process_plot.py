@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize
 from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 import pandas as pd
-import pynhm
+import pywatershed
 import shapely
 
 
@@ -52,8 +52,8 @@ class ProcessPlot():
 
         return
 
-    def plot(self, var_name: str, process: pynhm.StorageUnit, cmap: str=None):
-        var_dims = list(pynhm.meta.get_vars(var_name)[var_name]['dimensions'].values())
+    def plot(self, var_name: str, process: pywatershed.StorageUnit, cmap: str=None):
+        var_dims = list(pywatershed.meta.get_vars(var_name)[var_name]['dimensions'].values())
         if 'nsegment' in var_dims:
             if not cmap:
                 cmap = 'cool'
@@ -63,7 +63,7 @@ class ProcessPlot():
         else:
             raise ValueError()
     
-    def plot_seg_var(self, var_name: str, process: pynhm.StorageUnit, cmap='cool'):
+    def plot_seg_var(self, var_name: str, process: pywatershed.StorageUnit, cmap='cool'):
         
         data_df = pd.DataFrame({
             'nhm_seg': process.control.params.parameters['nhm_seg'],
@@ -105,7 +105,7 @@ class ProcessPlot():
         mapper = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         mapper.set_array(df_plot[var_name])
 
-        metadata = pynhm.meta.get_vars(var_name)[var_name]
+        metadata = pywatershed.meta.get_vars(var_name)[var_name]
         plt.title("Variable: {}".format(var_name))
         plt.colorbar(mapper, shrink=0.6, label=metadata['units'])
         
@@ -127,7 +127,7 @@ class ProcessPlot():
         
         return
     
-    def get_hru_var(self, var_name: str, model: pynhm.Model):
+    def get_hru_var(self, var_name: str, model: pywatershed.Model):
         # find the process
         for proc_name, proc in model.processes.items():
             params_vars = list(set(proc.variables) | set(proc.parameters))
@@ -141,7 +141,7 @@ class ProcessPlot():
         }).set_index('nhm_id')
         return data_df
         
-    def plot_hru(self, var_name: str, model: pynhm.Model, data: np.ndarray=None, data_units: str=None):        
+    def plot_hru(self, var_name: str, model: pywatershed.Model, data: np.ndarray=None, data_units: str=None):        
         
         if data is None:
             data_df = self.get_hru_var(var_name, model)
@@ -153,9 +153,9 @@ class ProcessPlot():
             
         plot_df = self.hru_gdf.join(data_df)
 
-        metadata = pynhm.meta.get_vars(var_name)
+        metadata = pywatershed.meta.get_vars(var_name)
         if not len(metadata):
-            metadata = pynhm.meta.get_params(var_name)
+            metadata = pywatershed.meta.get_params(var_name)
         if len(metadata):            
             metadata = metadata[var_name]
         else: 

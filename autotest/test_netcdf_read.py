@@ -1,4 +1,4 @@
-from pynhm.utils.netcdf_utils import NetCdfRead
+from pywatershed.utils.netcdf_utils import NetCdfRead
 
 
 def test_netcdf(domain):

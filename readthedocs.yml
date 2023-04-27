@@ -17,10 +17,18 @@ sphinx:
 formats: all
 
 # Optionally set the version of Python and requirements required to build your docs
-python:
-  version: 3.8
-  install:
-    - requirements: ci/requirements/doc.txt
-    - requirements: ci/requirements/environment.txt
-    - method: pip
-      path: .
+# python:
+#   version: 3.8
+#   install:
+#     - requirements: ci/requirements/doc.txt
+#     - requirements: ci/requirements/environment.txt
+#     - method: pip
+#       path: .
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: mambaforge-4.10
+
+conda:
+  environment: ci/requirements/doc.yml

@@ -59,6 +59,7 @@ generated/
 
 # gis data
 examples/pynhm_gis
+examples/pywatershed_gis
 examples/model_loop_custom_output
 
 # graphics
@@ -70,8 +71,10 @@ examples/model_loop_custom_output
 *.gz
 *.zip
 
-
 # f2y detritus
 *module.c
 PRMS*.so
 *f2pywrappers*.f*
+
+# starfit repo used for development
+starfit_minimal/

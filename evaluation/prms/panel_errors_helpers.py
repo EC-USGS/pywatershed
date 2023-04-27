@@ -6,7 +6,7 @@ import hvplot.xarray
 import numpy as np
 import pandas as pd
 import panel as pn
-import pynhm
+import pywatershed
 import xarray as xr
 
 sys.path.append('../common')
@@ -14,7 +14,7 @@ import metrics
 
 pd.options.plotting.backend = 'holoviews'
 
-fileish = pynhm.constants.fileish
+fileish = pywatershed.constants.fileish
 
 
 def get_diff_tol_df(var_df: pd.DataFrame, var_name: str, tol: np.float64) -> pd.DataFrame:
@@ -34,7 +34,7 @@ def get_diff_tol_df(var_df: pd.DataFrame, var_name: str, tol: np.float64) -> pd.
     return diff_df
 
 
-def get_proc_var_dict(model: pynhm.Model, ds: xr.Dataset) -> dict:
+def get_proc_var_dict(model: pywatershed.Model, ds: xr.Dataset) -> dict:
     """Dictionary of process: var for a model given a dataset containing actual model,obs variables
     from that model to filter available variables"""
     avail_vars = list(ds.variables)
@@ -48,8 +48,8 @@ def get_proc_var_dict(model: pynhm.Model, ds: xr.Dataset) -> dict:
     return proc_var_dict
 
 
-def get_comp_ds(model: pynhm.Model, var_name: str) -> xr.Dataset:
-    """Get a dataset for comparing variables from pynhm to PRMS"""
+def get_comp_ds(model: pywatershed.Model, var_name: str) -> xr.Dataset:
+    """Get a dataset for comparing variables from pywatershed to PRMS"""
     prms_file = model.input_dir / f"{var_name}.nc"
     pynhm_file = model._netcdf_dir / f"{var_name}.nc"
     if not prms_file.exists():
@@ -64,7 +64,7 @@ def get_comp_ds(model: pynhm.Model, var_name: str) -> xr.Dataset:
         xr.open_dataset(pynhm_file, decode_timedelta=False).rename({var_name: f'{var_name}_pynhm'}),
     ])
     comp_ds.attrs['Description'] = f"Variable comparison for PRMS and pynhm"
-    comp_ds.attrs[var_name] = pynhm.meta.get_vars(var_name)[var_name]
+    comp_ds.attrs[var_name] = pywatershed.meta.get_vars(var_name)[var_name]
 
     return comp_ds
 
@@ -76,7 +76,7 @@ def get_stat_location_id(stat_df, stat_name, tap_value, space_coord):
 
 
 def err_panel(
-    model: pynhm.Model,
+    model: pywatershed.Model,
     fig_width: int=600,
     tol: np.float64 = np.finfo(np.single).resolution,
     gis_dir: fileish=None,
@@ -153,7 +153,7 @@ def err_panel(
         space_coord, time_coord = get_var_info(var_name)
         stat_df = get_stat_df(stat_name, var_name)
 
-        var_meta = pynhm.meta.get_vars(var_name)[var_name]
+        var_meta = pywatershed.meta.get_vars(var_name)[var_name]
         title=(
             f"{var_meta['desc']}\n"
             f"domain 1979-1980: {stat_name.upper()} by {space_coord}\n"

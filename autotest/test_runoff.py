@@ -3,10 +3,10 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.utils.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSRunoff import PRMSRunoff
+from pywatershed.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 
@@ -40,7 +40,7 @@ class TestPRMSRunoffDomain:
         ]
         output_dir = domain["prms_output_dir"]
 
-        # Read PRMS output into ans for comparison with pynhm results
+        # Read PRMS output into ans for comparison with pywatershed results
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
@@ -63,7 +63,6 @@ class TestPRMSRunoffDomain:
 
         all_success = True
         for istep in range(control.n_times):
-
             control.advance()
             runoff.advance()
             runoff.calculate(1.0)
@@ -90,7 +89,7 @@ class TestPRMSRunoffDomain:
 
         # check at the end and error if one or more steps didn't pass
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")
 
         return
 
@@ -110,13 +109,13 @@ class TestPRMSRunoffDomain:
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
                     if detailed:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
                             print(
-                                f"hru {i} prms {a1[i]} pynhm {a2[i]} diff {diff[i]}"
+                                f"hru {i} prms {a1[i]} pywatershed {a2[i]} diff {diff[i]}"
                             )
                 asdf
         return all_success

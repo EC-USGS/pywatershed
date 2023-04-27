@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pynhm.utils import PrmsParameters
-from pynhm.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
+from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
 from utils import assert_or_print
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
@@ -80,7 +80,6 @@ def test_cbh_files_to_df(domain, var, params):
 
 
 def test_cbh_files_to_netcdf(domain, params, tmp_path):
-
     nc_file = tmp_path / "cbh_files_to_netcdf.nc"
     input_files_dict = domain["cbh_inputs"]
     _ = cbh_files_to_netcdf(input_files_dict, params, nc_file)
@@ -97,10 +96,14 @@ def test_cbh_files_to_netcdf(domain, params, tmp_path):
                 .mean()
             )
         else:
-            results[var] = results_ds[var].mean().mean()
+            results[var] = results_ds[var].mean().mean().values.tolist()
 
     assert_or_print(
-        results, answers, "files_to_np_dict", print_ans=domain["print_ans"]
+        results,
+        answers,
+        "files_to_np_dict",
+        print_ans=domain["print_ans"],
+        close=True,
     )
 
     return

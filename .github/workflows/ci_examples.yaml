@@ -35,7 +35,7 @@ jobs:
       - name: Download GIS files
         working-directory: examples
         run: |
-          curl -LO https://github.com/EC-USGS/pynhm/releases/download/v2022.0.1/pynhm_gis.zip
+          curl -LO https://github.com/EC-USGS/pywatershed/releases/download/v2022.0.1/pynhm_gis.zip
           unzip pynhm_gis.zip
 
       - name: Set environment variables
@@ -47,7 +47,7 @@ jobs:
         uses: mamba-org/provision-with-micromamba@main
         with:
           environment-file: examples/examples_env.yml
-          environment-name: pynhm_nb
+          environment-name: pyws_nb
           cache-env: true
           # cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
 
@@ -70,9 +70,9 @@ jobs:
           echo -------
           pip list
 
-      - name: Import pynhm
+      - name: Import pywatershed
         run: |
-          python -c "import pynhm"
+          python -c "import pywatershed"
 
       - name: Run tests
         working-directory: autotest_exs

@@ -1,9 +1,11 @@
-name: nynhm-docs
+name: pyws-docs
 channels:
   # Don't change to pkgs/main, as it causes random timeouts in readthedocs
   - conda-forge
   - nodefaults
+  - bioconda
 dependencies:
+  - epiweeks
   - black
   - isort
   - jinja2<3.1
@@ -18,11 +20,21 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-env
+  - pytest-order
   - pytest-xdist
   - pyyaml
-  - xarray
   - ipython
   - sphinx
   - sphinx-book-theme
   - sphinx-autosummary-accessors
   - sphinx-copybutton
+  - pip:
+      - click != 8.1.0
+      - black < 23.1.0
+      - isort
+      - flake8
+      - pylint
+      - git+https://github.com/modflowpy/flopy.git
+      - modflow-devtools
+      - git+https://github.com/jmccreight/xarray.git@to_dict-numpy-data-version-fake
+      - -e ../..

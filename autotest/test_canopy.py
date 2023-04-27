@@ -1,23 +1,20 @@
 import pathlib as pl
-import platform
 
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.utils.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
+from pywatershed.parameters import PrmsParameters
 
-if platform.system() == "Windows":
-    calc_methods = ("numpy", "numba")
-else:
-    calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
+if has_prmscanopy_f:
+    calc_methods += ("fortran",)
 
 
 class TestPRMSCanopySimple:
     def test_init(self):
-
         time_dict = {
             "start_time": np.datetime64("1979-01-03T00:00:00.00"),
             "end_time": np.datetime64("1979-01-04T00:00:00.00"),
@@ -26,18 +23,24 @@ class TestPRMSCanopySimple:
 
         nhru = 2
         prms_params = {
-            "nhru": nhru,
-            "hru_area": np.array(nhru * [1.0]),
-            "covden_sum": np.array(nhru * [0.5]),
-            "covden_win": np.array(nhru * [0.5]),
-            "srain_intcp": np.array(nhru * [1.0]),
-            "wrain_intcp": np.array(nhru * [1.0]),
-            "snow_intcp": np.array(nhru * [1.0]),
-            "epan_coef": np.array(nhru * [1.0]),
-            "potet_sublim": np.array(nhru * [1.0]),
-            "cov_type": np.array(nhru * [1]),
+            "dims": {"nhru": nhru},
+            "data_vars": {
+                "hru_area": np.array(nhru * [1.0]),
+                "covden_sum": np.array(nhru * [0.5]),
+                "covden_win": np.array(nhru * [0.5]),
+                "srain_intcp": np.array(nhru * [1.0]),
+                "wrain_intcp": np.array(nhru * [1.0]),
+                "snow_intcp": np.array(nhru * [1.0]),
+                "epan_coef": np.array(nhru * [1.0]),
+                "potet_sublim": np.array(nhru * [1.0]),
+                "cov_type": np.array(nhru * [1]),
+            },
         }
-        prms_params = PrmsParameters(prms_params)
+        prms_params["metadata"] = {}
+        for kk in prms_params["data_vars"].keys():
+            prms_params["metadata"][kk] = {"dims": ("nhru",)}
+
+        prms_params = PrmsParameters(**prms_params)
 
         control = Control(**time_dict, params=prms_params)
 
@@ -127,13 +130,13 @@ class TestPRMSCanopyDomain:
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
 
         cnp.finalize()
 
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")
         # is comparing along the way slower or faster than comparing netcdf?
 
         # prms_output_dataframes = {}
@@ -145,22 +148,22 @@ class TestPRMSCanopyDomain:
         #     prms_output_dataframes[cv] = df
 
         # # get a dictionary of dataframes for process model output
-        # pynhm_output_dataframes = cnp.get_output_dataframes()
+        # pyws_output_dataframes = cnp.get_output_dataframes()
 
-        # # compare prms and pynhm data
+        # # compare prms and pywatershed data
         # for cv in comparison_variables:
         #     prms_data = prms_output_dataframes[cv]
-        #     pynhm_data = pynhm_output_dataframes[cv]
+        #     pyws_data = pyws_output_dataframes[cv]
 
         #     print(f"\n{50*'*'}")
         #     print(f"{cv}  min  max")
         #     a1 = prms_data.to_numpy()
-        #     a2 = pynhm_data.to_numpy()
+        #     a2 = pyws_data.to_numpy()
         #     diff = a1 - a2
         #     diffmin = diff.min()
         #     diffmax = diff.max()
         #     print(f"prms   {a1.min()}    {a1.max()}")
-        #     print(f"pynhm  {a2.min()}    {a2.max()}")
+        #     print(f"pywatershed  {a2.min()}    {a2.max()}")
         #     print(f"diff   {diffmin}  {diffmax}")
 
         #     atol = 1.0e-5

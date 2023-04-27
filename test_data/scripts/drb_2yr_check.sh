@@ -4,8 +4,8 @@
 source_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb
 target_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr
 run_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr_check
-repo_dir=/Users/jamesmcc/usgs/pynhm
-prms=/Users/jamesmcc/usgs/pynhm/prms_src/prms5.2.1/bin/prms
+repo_dir=/Users/jamesmcc/usgs/pywatershed
+prms=/Users/jamesmcc/usgs/pywatershed/prms_src/prms5.2.1/bin/prms
 
 # ---------------------------------
 

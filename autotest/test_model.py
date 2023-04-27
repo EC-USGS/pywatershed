@@ -4,25 +4,25 @@ import shutil
 import numpy as np
 import pytest
 
-import pynhm
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.base.model import Model
-from pynhm.utils.parameters import PrmsParameters
+import pywatershed
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.base.model import Model
+from pywatershed.parameters import PrmsParameters
 
 compare_to_prms521 = False
 n_time_steps = 101
 budget_type = None
 test_models = {
     "nhm": [
-        pynhm.PRMSSolarGeometry,
-        pynhm.PRMSAtmosphere,
-        pynhm.PRMSCanopy,
-        pynhm.PRMSSnow,
-        pynhm.PRMSRunoff,
-        pynhm.PRMSSoilzone,
-        pynhm.PRMSGroundwater,
-        pynhm.PRMSChannel,
+        pywatershed.PRMSSolarGeometry,
+        pywatershed.PRMSAtmosphere,
+        pywatershed.PRMSCanopy,
+        pywatershed.PRMSSnow,
+        pywatershed.PRMSRunoff,
+        pywatershed.PRMSSoilzone,
+        pywatershed.PRMSGroundwater,
+        pywatershed.PRMSChannel,
     ],
 }
 
@@ -35,13 +35,7 @@ def params(domain):
 @pytest.fixture(scope="function")
 def control(domain, params):
     control = Control.load(domain["control_file"], params=params)
-    # should probably provide methods for changing the time
-    # doing this allows proper exercise of load_n_time_batches
-    # which splits based on control._n_times
-    control._n_times = n_time_steps
-    control._end_time = (
-        control._start_time + (control._n_times - 1) * control._time_step
-    )
+    control.edit_n_time_steps(n_time_steps)
     return control
 
 
@@ -51,7 +45,6 @@ def control(domain, params):
     ids=test_models.keys(),
 )
 def test_model(domain, control, processes, tmp_path):
-
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
@@ -171,7 +164,7 @@ def test_model(domain, control, processes, tmp_path):
         key = cls.__name__
         comparison_vars_dict[key] = comparison_vars_dict_all[key]
 
-    # Read PRMS output into ans for comparison with pynhm results
+    # Read PRMS output into ans for comparison with pywatershed results
     ans = {key: {} for key in comparison_vars_dict.keys()}
     for unit_name, var_names in comparison_vars_dict.items():
         for vv in var_names:
@@ -210,7 +203,6 @@ def test_model(domain, control, processes, tmp_path):
     fail_prms_compare = False
     fail_regression = False
     for istep in range(control.n_times):
-
         model.advance()
         model.calculate()
 
@@ -265,13 +257,13 @@ def test_model(domain, control, processes, tmp_path):
     if not all_success:
         if fail_prms_compare and fail_regression:
             msg = (
-                "pynhm results both failed regression test and comparison "
+                "pywatershed results both failed regression test and comparison "
                 "with prms5.2.1"
             )
         elif fail_prms_compare:
-            msg = "pynhm results failed comparison with prms5.2.1"
+            msg = "pywatershed results failed comparison with prms5.2.1"
         elif fail_regression:
-            msg = "pynhm results failed regression"
+            msg = "pywatershed results failed regression"
         else:
             assert False, "this should not be possible"
 
@@ -306,14 +298,14 @@ def check_timestep_results(
                 print(f"time step {istep}")
                 print(f"output variable {key}")
                 print(f"prms   {a1.min()}    {a1.max()}")
-                print(f"pynhm  {a2.min()}    {a2.max()}")
+                print(f"pywatershed  {a2.min()}    {a2.max()}")
                 print(f"diff   {diffmin}  {diffmax}")
 
                 if detailed:
                     idx = np.where(~success)
                     for i in idx:
                         print(
-                            f"hru {i} prms {a1[i]} pynhm {a2[i]} "
+                            f"hru {i} prms {a1[i]} pywatershed {a2[i]} "
                             f"diff {diff[i]}"
                         )
             if failfast:

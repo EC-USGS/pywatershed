@@ -1,5 +1,6 @@
 import os
 import pathlib as pl
+from platform import processor
 import sys
 from fnmatch import fnmatch
 
@@ -35,7 +36,10 @@ def exe():
     if platform == "win32":
         exe_name += "_win.exe"
     elif platform == "darwin":
-        exe_name += "_mac"
+        if processor() == "arm":
+            exe_name += "_mac_m1_intel"
+        else:
+            exe_name += "_mac"
     elif platform == "linux":
         exe_name += "_linux"
     exe_pth = pl.Path(f"../../bin/{exe_name}").resolve()
@@ -43,9 +47,7 @@ def exe():
 
 
 rootdir = ".."
-test_dirs = sorted(
-    [path for path in pl.Path(rootdir).iterdir() if path.is_dir()]
-)
+test_dirs = sorted([path for path in pl.Path(rootdir).iterdir() if path.is_dir()])
 
 
 # This would change to handle other/additional schedulers
@@ -67,10 +69,14 @@ previous_vars = [
 
 misc_nc_file_vars = [
     "infil",
-    "through_rain",
     "sroff",
     "ssres_flow",
     "gwres_flow",
+]
+
+
+final_nc_file_vars = [
+    "through_rain",
 ]
 
 
@@ -84,9 +90,7 @@ def scheduler_active():
 def enforce_scheduler(test_dir):
     if scheduler_active():
         return None
-    glob_match = list(
-        fnmatch(str(test_dir), gg) for gg in domain_globs_schedule
-    )
+    glob_match = list(fnmatch(str(test_dir), gg) for gg in domain_globs_schedule)
     if any(glob_match):
         raise RuntimeError(
             f"Domain '{test_dir}' must be scheduled (use --force to override)"
@@ -121,8 +125,7 @@ def collect_simulations(domain_list: list, force: bool):
         found = [pl.Path(dd).name for dd in simulations.keys()]
         requested_not_found = requested.difference(found)
         msg = (
-            f"The following requested domains were not found: "
-            f"{requested_not_found}"
+            f"The following requested domains were not found: " f"{requested_not_found}"
         )
         pytest.exit(msg)
 
@@ -141,11 +144,11 @@ def collect_csv_files(domain_list: list, force: bool):
     return csv_files
 
 
-def collect_misc_nc_files(domain_list: list, force: bool):
+def collect_misc_nc_files(domain_list: list, var_list: list, force: bool):
     simulations = collect_simulations(domain_list, force)
     sim_dirs = list(simulations.keys())
     misc_nc_files = []
-    for var in misc_nc_file_vars:
+    for var in var_list:
         for sim in sim_dirs:
             the_file = pl.Path(sim) / f"output/{var}.nc"
             # assert the_file.exists()
@@ -161,8 +164,7 @@ def pytest_generate_tests(metafunc):
     if "simulations" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)
         sim_list = [
-            {"ws": key, "control_file": val}
-            for key, val in simulations.items()
+            {"ws": key, "control_file": val} for key, val in simulations.items()
         ]
         ids = [pl.Path(ss).name for ss in simulations.keys()]
         metafunc.parametrize("simulations", sim_list, ids=ids)
@@ -174,21 +176,22 @@ def pytest_generate_tests(metafunc):
 
     if "csv_files_prev" in metafunc.fixturenames:
         csv_files = collect_csv_files(domain_list, force)
-        csv_files = [
-            ff for ff in csv_files if ff.with_suffix("").name in previous_vars
-        ]
+        csv_files = [ff for ff in csv_files if ff.with_suffix("").name in previous_vars]
         ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
         metafunc.parametrize("csv_files_prev", csv_files, ids=ids)
 
     if "misc_nc_files_input" in metafunc.fixturenames:
-        misc_nc_files = collect_misc_nc_files(domain_list, force)
+        misc_nc_files = collect_misc_nc_files(domain_list, misc_nc_file_vars, force)
         ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
         metafunc.parametrize("misc_nc_files_input", misc_nc_files, ids=ids)
 
+    if "misc_nc_final_input" in metafunc.fixturenames:
+        misc_nc_files = collect_misc_nc_files(domain_list, final_nc_file_vars, force)
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
+        metafunc.parametrize("misc_nc_final_input", misc_nc_files, ids=ids)
+
     if "soltab_file" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, force)
-        soltab_files = [
-            pl.Path(kk) / "soltab_debug" for kk in simulations.keys()
-        ]
+        soltab_files = [pl.Path(kk) / "soltab_debug" for kk in simulations.keys()]
         ids = [ff.parent.name + ":" + ff.name for ff in soltab_files]
         metafunc.parametrize("soltab_file", soltab_files, ids=ids)

@@ -339,7 +339,7 @@ class PrmsParameters:
         ds = nc4.Dataset(parameter_nc_file)
         attrs = ds.__dict__
         process_name = attrs["nhm_process"]
-        process = importlib.import_module("pynhm").__dict__[process_name]
+        process = importlib.import_module("pywatershed").__dict__[process_name]
         proc_params = process.get_parameters()
 
         param_dict = {kk: vv[:].data for kk, vv in ds.variables.items()}

@@ -1,9 +1,9 @@
 major = 0
-minor = 0
+minor = 1
 micro = 1
 __version__ = f"{major}.{minor}.{micro}"
 
-__pakname__ = "pynhm"
+__pakname__ = "pywatershed"
 
 # edit author dictionary as necessary (
 # in order of commits after Bakker and Post

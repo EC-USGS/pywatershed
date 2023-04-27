@@ -12,7 +12,7 @@ from pywatershed.utils import separate_domain_params_to_ncdf
 
 n_time_steps = 10
 budget_type = None
-pynhm_processes = [
+pyws_processes = [
     [pywatershed.PRMSSolarGeometry],
     [pywatershed.PRMSAtmosphere],
     [pywatershed.PRMSCanopy],
@@ -23,8 +23,8 @@ pynhm_processes = [
     [pywatershed.PRMSChannel],
     [pywatershed.PRMSGroundwater, pywatershed.PRMSChannel],
 ]
-pynhm_process_id = [
-    "_".join([proc.__name__ for proc in procs]) for procs in pynhm_processes
+pyws_process_id = [
+    "_".join([proc.__name__ for proc in procs]) for procs in pyws_processes
 ]
 
 
@@ -40,8 +40,8 @@ def control(domain, params):
 
 @pytest.mark.parametrize(
     "processes",
-    pynhm_processes,
-    ids=pynhm_process_id,
+    pyws_processes,
+    ids=pyws_process_id,
 )
 def test_param_sep(domain, control, processes, tmp_path):
     tmp_path = pl.Path(tmp_path)

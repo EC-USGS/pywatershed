@@ -18,7 +18,7 @@ verbose = true
 
 [tool.isort]
 profile = "black"
-src_paths = ["pynhm", "autotest", "test_data"]
+src_paths = ["pywatershed", "autotest", "test_data"]
 line_length = 79
 
 [tool.setuptools_scm]

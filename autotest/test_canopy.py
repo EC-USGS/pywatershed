@@ -148,17 +148,17 @@ class TestPRMSCanopyDomain:
         #     prms_output_dataframes[cv] = df
 
         # # get a dictionary of dataframes for process model output
-        # pynhm_output_dataframes = cnp.get_output_dataframes()
+        # pyws_output_dataframes = cnp.get_output_dataframes()
 
         # # compare prms and pynhm data
         # for cv in comparison_variables:
         #     prms_data = prms_output_dataframes[cv]
-        #     pynhm_data = pynhm_output_dataframes[cv]
+        #     pyws_data = pyws_output_dataframes[cv]
 
         #     print(f"\n{50*'*'}")
         #     print(f"{cv}  min  max")
         #     a1 = prms_data.to_numpy()
-        #     a2 = pynhm_data.to_numpy()
+        #     a2 = pyws_data.to_numpy()
         #     diff = a1 - a2
         #     diffmin = diff.min()
         #     diffmax = diff.max()

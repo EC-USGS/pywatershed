@@ -132,6 +132,28 @@ azrh:
   - stream_temp
   type: F
   units: radians
+available_water_capacity:
+  default: 2.0
+  desc: Available water capacity for a soil, in inches per foot
+  dimensions:
+    0: nhru
+  help: Available water capacity for a soil, in inches per foot
+  maximum: 10.0
+  minimum: 0.0
+  modules:
+  type: F
+  units: inches per foot
+base_curve_number:
+  default: 70.0
+  desc: National Soil Conservation Service curve number for type 2 antecedant runoff condition
+  dimensions:
+    0: nhru
+  help: National Soil Conservation Service curve number for type 2 antecedant runoff condition
+  maximum: 100.0
+  minimum: 20.0
+  modules:
+  type: F
+  units: radians
 basin_solsta:
   default: 0
   desc: Index of main solar radiation station
@@ -1576,6 +1598,17 @@ max_missing:
   - temp_1sta_laps
   type: I
   units: none
+max_net_infiltration_rate:
+  default: 0.5
+  desc: Maximum daily net_infiltration rate, in inches
+  dimensions:
+    0: nhru
+  help: Maximum daily net_infiltration rate, in inches
+  maximum: 20.0
+  minimum: 0.0
+  modules:
+  type: F
+  units: inches  
 max_psta:
   default: 0
   desc: Maximum number of precipitation stations to distribute to an HRU
@@ -2418,6 +2451,17 @@ ratetbl_lake:
   - muskingum_lake
   type: I
   units: none
+rooting_depth:
+  default: 1.0
+  desc: Rooting depth for an SWB soil storage reservoir
+  dimensions:
+    0: nhru
+  help: Rooting depth, in feet
+  maximum: 12.0
+  minimum: 0.0
+  modules:
+  type: F
+  units: feet
 runoff_units:
   default: 0
   desc: Measured streamflow units

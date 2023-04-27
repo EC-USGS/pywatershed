@@ -1960,6 +1960,12 @@ net_ppt:
     0: nhru
   type: float64
   units: inches
+net_infiltration:
+  desc: Infiltrated water that leaves the root zone
+  dimensions:
+    0: nhru
+  type: float64
+  units: inches
 net_rain:
   desc: Rain that falls through canopy for each HRU
   dimensions:
@@ -3016,6 +3022,12 @@ swrad:
     1: nhru
   type: float64
   units: Langleys
+swb_runoff:
+  desc: Runoff calculated by a SWB method
+  dimensions:
+    0: nhru
+  type: float64
+  units: runoff_units
 t_ground:
   desc: ground temperature
   dimensions:

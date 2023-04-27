@@ -17,7 +17,7 @@ from .hydrology.PRMSGroundwater import PRMSGroundwater
 from .hydrology.PRMSRunoff import PRMSRunoff
 from .hydrology.PRMSSnow import PRMSSnow
 from .hydrology.PRMSSoilzone import PRMSSoilzone
-from .hydrology.SWBRootZone_Storage import SWBRootZone_Storage
+from .hydrology.SWBRootZone import SWBRootZone
 from .utils import (
     ControlVariables,
     NetCdfCompare,

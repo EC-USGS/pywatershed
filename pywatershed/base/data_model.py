@@ -1,7 +1,8 @@
 import warnings
 from copy import deepcopy
+import pathlib as pl
 from pprint import pprint
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Union
 
 import cftime
 import netCDF4 as nc4
@@ -156,6 +157,14 @@ class DatasetDict(Accessor):
 
     # def __str__(self):
     #     return
+
+    @classmethod
+    def from_yaml(cls, the_file: Union[str, pl.Path]) -> dict:
+        """Read from a YAML file"""
+        import yaml
+
+        with pl.Path(the_file).open("r") as file_stream:
+            return cls(**yaml.load(file_stream, Loader=yaml.Loader))
 
     @classmethod
     def from_dict(cls, dict_in, copy=False):

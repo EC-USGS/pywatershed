@@ -1,0 +1,57 @@
+dims:
+  nhru: 1
+
+coords:
+
+data_vars:
+  max_net_infiltration_rate: 0.24
+  available_water_capacity: 3.0
+  rooting_depth: 1.2
+  base_curve_number: 87
+
+metadata:
+  global: "SWB Coolness"
+
+  available_water_capacity:
+    default: 2.0
+    desc: Available water capacity for a soil, in inches per foot
+    dims:
+      - nhru
+    help: Available water capacity for a soil, in inches per foot
+    maximum: 10.0
+    minimum: 0.0
+    type: float32
+    units: inches per foot
+
+  base_curve_number:
+    default: 70.0
+    desc: National Soil Conservation Service curve number for type 2 antecedant runoff condition
+    dims:
+      - nhru
+    help: National Soil Conservation Service curve number for type 2 antecedant runoff condition
+    maximum: 100.0
+    minimum: 20.0
+    type: float32
+    units: none
+
+  max_net_infiltration_rate:
+    default: 0.5
+    desc: Maximum daily net_infiltration rate, in inches
+    dims:
+      - nhru
+    help: Maximum daily net_infiltration rate, in inches
+    maximum: 20.0
+    minimum: 0.0
+    type: float32
+    units: inches
+
+  rooting_depth:
+    default: 1.0
+    desc: Rooting depth for an SWB soil storage reservoir
+    dims:
+      - nhru
+    help: Rooting depth, in feet
+    maximum: 12.0
+    minimum: 0.0
+    type: float32
+    units: feet

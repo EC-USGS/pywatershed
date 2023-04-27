@@ -12,7 +12,7 @@ from pywatershed.utils.netcdf_utils import NetCdfCompare
 class TestPRMSGroundwaterDomain:
     def test_init(self, domain, tmp_path):
         tmp_path = pl.Path(tmp_path)
-        params = PrmsParameters.load(domain["param_file"])
+        params = PrmsParameters.from_yaml(domain["swb_param_file"])
 
         # Set information from the control file
         control = Control.load(domain["control_file"], params=params)
@@ -24,6 +24,7 @@ class TestPRMSGroundwaterDomain:
             nc_path = output_dir / f"{key}.nc"
             input_variables[key] = nc_path
 
+        asdf
         gw = SWBRootZone(
             control,
             **input_variables,

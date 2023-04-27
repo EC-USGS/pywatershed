@@ -3,10 +3,10 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSSoilzone import PRMSSoilzone
-from pynhm.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSSoilzone import PRMSSoilzone
+from pywatershed.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 

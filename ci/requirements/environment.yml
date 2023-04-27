@@ -1,4 +1,4 @@
-name: pynhm
+name: pyws
 channels:
   - conda-forge
   - nodefaults

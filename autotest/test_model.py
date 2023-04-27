@@ -4,25 +4,25 @@ import shutil
 import numpy as np
 import pytest
 
-import pynhm
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.base.model import Model
-from pynhm.parameters import PrmsParameters
+import pywatershed
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.base.model import Model
+from pywatershed.parameters import PrmsParameters
 
 compare_to_prms521 = False
 n_time_steps = 101
 budget_type = None
 test_models = {
     "nhm": [
-        pynhm.PRMSSolarGeometry,
-        pynhm.PRMSAtmosphere,
-        pynhm.PRMSCanopy,
-        pynhm.PRMSSnow,
-        pynhm.PRMSRunoff,
-        pynhm.PRMSSoilzone,
-        pynhm.PRMSGroundwater,
-        pynhm.PRMSChannel,
+        pywatershed.PRMSSolarGeometry,
+        pywatershed.PRMSAtmosphere,
+        pywatershed.PRMSCanopy,
+        pywatershed.PRMSSnow,
+        pywatershed.PRMSRunoff,
+        pywatershed.PRMSSoilzone,
+        pywatershed.PRMSGroundwater,
+        pywatershed.PRMSChannel,
     ],
 }
 

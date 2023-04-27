@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from pynhm.base.budget import Budget
-from pynhm.base.control import Control
+from pywatershed.base.budget import Budget
+from pywatershed.base.control import Control
 
 # TODO
 # * Test restart more robustly

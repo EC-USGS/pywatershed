@@ -3,10 +3,10 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
-from pynhm.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
+from pywatershed.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 if has_prmscanopy_f:

@@ -4,7 +4,7 @@ import pint
 import pytest
 import xarray as xr
 
-from pynhm.utils.prms_to_mf6 import MMRToMF6
+from pywatershed.utils.prms_to_mf6 import MMRToMF6
 
 # not currently in repo or being used but might be good to add
 # shape_file = (

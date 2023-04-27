@@ -5,10 +5,10 @@ import numpy as np
 import pytest
 import xarray as xr
 
-import pynhm
-from pynhm.base.control import Control
-from pynhm.base.model import Model
-from pynhm.parameters import PrmsParameters
+import pywatershed
+from pywatershed.base.control import Control
+from pywatershed.base.model import Model
+from pywatershed.parameters import PrmsParameters
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
@@ -61,7 +61,7 @@ check_budget_sum_vars_params = [False, True, "some"]
 def test_process_budgets(domain, control, tmp_path, budget_sum_param):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
-    model_procs = [pynhm.PRMSCanopy, pynhm.PRMSChannel]
+    model_procs = [pywatershed.PRMSCanopy, pywatershed.PRMSChannel]
 
     # Deal with parameter around what budget sum vars to write and check
     if budget_sum_param == "some":
@@ -163,10 +163,10 @@ def test_separate_together(domain, control, tmp_path, separate):
     tmp_dir = pl.Path(tmp_path)
 
     model_procs = [
-        pynhm.PRMSSolarGeometry,
-        pynhm.PRMSAtmosphere,
-        pynhm.PRMSCanopy,
-        pynhm.PRMSChannel,
+        pywatershed.PRMSSolarGeometry,
+        pywatershed.PRMSAtmosphere,
+        pywatershed.PRMSCanopy,
+        pywatershed.PRMSChannel,
     ]
 
     # setup input_dir with symlinked prms inputs and outputs
@@ -205,7 +205,7 @@ def test_separate_together(domain, control, tmp_path, separate):
                 nc_file = test_output_dir / f"{vv}.nc"
                 assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
-                if isinstance(proc[vv], pynhm.base.timeseries.TimeseriesArray):
+                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
                     assert (ds[vv].values == proc[vv].data).all()
                 else:
                     assert (ds[vv][-1, :] == proc[vv]).all()
@@ -222,7 +222,7 @@ def test_separate_together(domain, control, tmp_path, separate):
             nc_vars = set(ds.data_vars)
             assert proc_vars == nc_vars
             for vv in proc.variables:
-                if isinstance(proc[vv], pynhm.base.timeseries.TimeseriesArray):
+                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
                     assert (ds[vv].values == proc[vv].data).all()
 
                 else:

@@ -2,8 +2,8 @@ import pathlib as pl
 
 import numpy as np
 
-from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.netcdf_utils import NetCdfWrite
+from pywatershed.base.storageUnit import StorageUnit
+from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base import meta
 from ..base.adapter import adaptable

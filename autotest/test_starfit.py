@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pynhm.base.control import Control
-from pynhm.hydrology.Starfit import Starfit
-from pynhm.parameters import StarfitParameters
+from pywatershed.base.control import Control
+from pywatershed.hydrology.Starfit import Starfit
+from pywatershed.parameters import StarfitParameters
 
 
 # havent pared down the data yet to add it to the repo

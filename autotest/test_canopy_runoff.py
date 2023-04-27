@@ -3,11 +3,11 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.parameters import PrmsParameters
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSCanopy import PRMSCanopy
+from pywatershed.hydrology.PRMSRunoff import PRMSRunoff
+from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")

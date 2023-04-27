@@ -95,14 +95,14 @@ class DisHru:
     # Ex 1. similar to autotest/test_dis_hru.py
     import pathlib as pl
 
-    from pynhm.constants import __pynhm_root__
-    from pynhm.utils import DisHru
+    from pywatershed.constants import __pywatershed_root__
+    from pywatershed.utils import DisHru
 
     # not used
     # shape_file = (
     #     "/Users/jamesmcc/usgs/data/pynhm/20220209_gm_delaware_river"
     #     "/GIS_simple/HRU_subset.shp")
-    param_file = (__pynhm_root__ / "../test_data/drb_2yr/myparam.param")
+    param_file = (__pywatershed_root__ / "../test_data/drb_2yr/myparam.param")
     disu_file = pl.Path(".") / "disu_example_file.mf6"
     dis = DisHru(param_file=param_file, disu_file=disu_file)
 

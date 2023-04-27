@@ -5,7 +5,7 @@ from typing import Tuple, Union
 
 import numpy as np
 
-import pynhm
+import pywatershed
 
 from ..base import meta
 
@@ -22,7 +22,7 @@ def rename_dims(dim_name):
 
 
 def expand_scalar_to_dims(param_dict, param_dim_dict):
-    from pynhm.utils.separate_nhm_params import params_expand_scalar_to_dims
+    from pywatershed.utils.separate_nhm_params import params_expand_scalar_to_dims
 
     # sometimes a scalar is allowed to represent a uniform values for
     # the full dimensions of a parameter. Going to handle those on a

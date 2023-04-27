@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pynhm.parameters import PrmsParameters
-from pynhm.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
+from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
 from utils import assert_or_print
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]

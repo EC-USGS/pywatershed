@@ -2,10 +2,10 @@ import pathlib as pl
 
 import pytest
 
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
-from pynhm.parameters import PrmsParameters
-from pynhm.utils.netcdf_utils import NetCdfCompare
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
+from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.netcdf_utils import NetCdfCompare
 
 fail_fast = False
 

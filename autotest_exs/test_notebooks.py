@@ -3,11 +3,11 @@ import subprocess
 import sys
 
 import pytest
-from pynhm.constants import __pynhm_root__
+from pywatershed.constants import __pywatershed_root__
 
 # "Official" notebooks are numbered
 notebooks = sorted(
-    pl.Path(__pynhm_root__).parent.joinpath("examples").glob("[0-9]*.ipynb")
+    pl.Path(__pywatershed_root__).parent.joinpath("examples").glob("[0-9]*.ipynb")
 )
 
 notebook_ids = [nb.name for nb in notebooks]

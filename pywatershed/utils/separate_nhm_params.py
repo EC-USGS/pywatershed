@@ -1,6 +1,6 @@
 import numpy as np
 
-import pynhm
+import pywatershed
 
 from ..base import meta
 from ..constants import fileish
@@ -42,14 +42,14 @@ def separate_domain_params_to_ncdf(
     import xarray as xr
 
     nhm_processes = [
-        pynhm.PRMSSolarGeometry,
-        pynhm.PRMSAtmosphere,
-        pynhm.PRMSCanopy,
-        pynhm.PRMSSnow,
-        pynhm.PRMSRunoff,
-        pynhm.PRMSSoilzone,
-        pynhm.PRMSGroundwater,
-        pynhm.PRMSChannel,
+        pywatershed.PRMSSolarGeometry,
+        pywatershed.PRMSAtmosphere,
+        pywatershed.PRMSCanopy,
+        pywatershed.PRMSSnow,
+        pywatershed.PRMSRunoff,
+        pywatershed.PRMSSoilzone,
+        pywatershed.PRMSGroundwater,
+        pywatershed.PRMSChannel,
     ]
     if process_list is None:
         process_list = nhm_processes

@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath("../"))
 
 import sphinx_autosummary_accessors
 
-import pynhm
+import pywatershed
 
 # -- Project information -----------------------------------------------------
 

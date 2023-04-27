@@ -1,6 +1,6 @@
 import numpy as np
 
-from pynhm.base.storageUnit import StorageUnit
+from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control

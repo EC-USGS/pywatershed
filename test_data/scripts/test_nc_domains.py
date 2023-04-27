@@ -2,9 +2,9 @@ from time import sleep
 
 import numpy as np
 
-from pynhm import CsvFile, Soltab
-from pynhm.parameters import PrmsParameters
-from pynhm.constants import epsilon64, zero
+from pywatershed import CsvFile, Soltab
+from pywatershed.parameters import PrmsParameters
+from pywatershed.constants import epsilon64, zero
 
 import pytest
 import xarray as xr

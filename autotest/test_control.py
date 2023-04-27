@@ -3,9 +3,9 @@ from datetime import datetime
 import numpy as np
 import pytest
 
-from pynhm.base.control import Control
-from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.parameters import PrmsParameters  # # TODO: too specific
+from pywatershed.base.control import Control
+from pywatershed.hydrology.PRMSCanopy import PRMSCanopy
+from pywatershed.parameters import PrmsParameters  # # TODO: too specific
 
 time_dict = {
     "start_time": np.datetime64("1979-01-03T00:00:00.00"),

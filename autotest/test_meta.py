@@ -1,7 +1,7 @@
 import pytest
 
-from pynhm.base import meta
-from pynhm.hydrology.PRMSGroundwater import PRMSGroundwater
+from pywatershed.base import meta
+from pywatershed.hydrology.PRMSGroundwater import PRMSGroundwater
 
 
 def test_init():

@@ -6,7 +6,7 @@ from warnings import warn
 import netCDF4 as nc4
 import numpy as np
 
-from pynhm.base.control import Control
+from pywatershed.base.control import Control
 
 from ..constants import zero
 from ..utils.formatting import pretty_print

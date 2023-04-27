@@ -8,8 +8,8 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from pynhm.base import data_model as dm
-from pynhm.base.data_model import DatasetDict
+from pywatershed.base import data_model as dm
+from pywatershed.base.data_model import DatasetDict
 
 nc_file = pl.Path("../test_data/drb_2yr/prcp.nc")
 

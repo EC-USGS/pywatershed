@@ -1,7 +1,7 @@
 import numpy as np
 
-from pynhm.base.budget import Budget
-from pynhm.base.storageUnit import StorageUnit
+from pywatershed.base.budget import Budget
+from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control

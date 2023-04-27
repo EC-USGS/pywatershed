@@ -1,8 +1,8 @@
 # this creates individual netcdf file from individual cbh files
 import pathlib as pl
 
-from pynhm import PrmsParameters
-from pynhm.utils.cbh_utils import cbh_files_to_netcdf
+from pywatershed import PrmsParameters
+from pywatershed.utils.cbh_utils import cbh_files_to_netcdf
 
 dom_dir = pl.Path('/Users/jamesmcc/usgs/data/pynhm/conus_2yr/')
 param_file = dom_dir / 'myparam.param'

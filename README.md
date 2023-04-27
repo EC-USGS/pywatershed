@@ -45,7 +45,7 @@ instructions.
 
 To install the software you will need Python >= 3.8. We recommend installing
 the python package dependencies using anaconda or miniconda. Most users will
-likely want to create the `pynhm_nb` conda environment by running
+likely want to create the `pyws_nb` conda environment by running
 
 ```conda env create -f examples/examples_env.yml```.
 
@@ -58,7 +58,7 @@ but this is not guaranteed.
 Once the environment is established, activate the environment and install
 pynhm
 
-`conda activate pynhm_nb; cd pynhm; pip install .`
+`conda activate pyws_nb; cd pynhm; pip install .`
 
 If you would like to compile the fortran computational kernels for
 certain physical process representations (not required), you'll need a fortran
@@ -91,7 +91,7 @@ Python >= 3.8 is required. Three different python environments are specified wit
 These are:
 
 * Minimal (for developing/testing), 'pynhm': ci/requirements/environment.yml
-* Notebooks (~= minimal + jupyter), 'pynhm_nb': examples/examples_env.yml
+* Notebooks (~= minimal + jupyter), 'pyws_nb': examples/examples_env.yml
 * Documentation (only if you want to build the documentation), 'pynhm-docs': ci/requirements/doc.yml
 
 We recommend (because we test it in CI) using anacoda or miniconda to establish these environments

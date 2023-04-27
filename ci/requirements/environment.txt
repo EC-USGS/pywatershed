@@ -10,6 +10,7 @@ networkx
 numpy
 numba
 pandas >= 1.4
+pint
 pip
 pylint
 pytest

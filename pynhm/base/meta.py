@@ -246,6 +246,26 @@ def find_variables(vars: varoptions) -> dict:
     return variable_dict
 
 
+def get_units(vars: varoptions, to_pint: bool = False) -> dict:
+    """For names, return units
+
+    Args:
+        vars: select variable names in variables, dimensions, control and/or
+            parameters
+
+    Returns:
+        units_dict: units for select variable names. An empty
+        dictionary will be returned if the select variable names are not
+        found.
+    """
+    units_dict = {
+        key: val["units"] for key, val in find_variables(vars).items()
+    }
+    if to_pint:
+        units_dict = prms_to_pint(units_dict)
+    return units_dict
+
+
 def get_types(variables: Iterable) -> dict:
     """Get the types for the supplied variables."""
     vars = find_variables(variables)
@@ -256,3 +276,26 @@ def get_numpy_types(variables: Iterable) -> dict:
     """Get the types for the supplied variables."""
     vars = find_variables(variables)
     return {kk: meta_numpy_type(vv) for kk, vv in vars.items()}
+
+
+def prms_to_pint(var_units_dict: dict) -> dict:
+    """Convert PRMS units to pint units
+
+    A work in progress to keep track of PRMS units/dimensions that dont
+    work with pint and their.
+
+    Args: A dictionary of {var_name: prms_units, ...}
+
+    Returns: A dictonary of {var_name: pint_units, ...}
+    """
+    prms_to_pint = {
+        "decimal fraction": "dimensionless",
+        "cfs": "feet **3 / seconds",
+        "cubicfeet": "feet ** 3",
+        # more to come!
+    }
+
+    return {
+        key: (val if val not in prms_to_pint.keys() else prms_to_pint[val])
+        for key, val in var_units_dict.items()
+    }

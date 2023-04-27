@@ -1,4 +1,4 @@
-name: pynhmf6nb
+name: pywsmf6nb
 channels:
   - conda-forge
   - nodefaults

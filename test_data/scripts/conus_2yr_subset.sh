@@ -2,14 +2,14 @@
 # Purpose:
 # Generate a 2 year test case of DRB from the full 40yr
 
-source_dir=/home/jmccreight/pynhm_data/20220209_gm_byHWobs_CONUS
-target_dir=/home/jmccreight/pynhm_data/conus_2yr
-pynhm_repo_dir=/home/jmccreight/pynhm
+source_dir=/home/jmccreight/pywatershed_data/20220209_gm_byHWobs_CONUS
+target_dir=/home/jmccreight/pywatershed_data/conus_2yr
+pywatershed_repo_dir=/home/jmccreight/pywatershed
 
 mkdir -p $target_dir
 
 # we'll take the control file from the repo
-cp $pynhm_repo_dir/test_data/conus_2yr/control.test $target_dir/.
+cp $pywatershed_repo_dir/test_data/conus_2yr/control.test $target_dir/.
 
 invariant_files=(myparam.param)
 cbh_files=(prcp.cbh  rhavg.cbh  tmax.cbh  tmin.cbh)

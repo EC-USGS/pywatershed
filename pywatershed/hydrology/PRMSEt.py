@@ -1,7 +1,7 @@
 import numpy as np
 
-from pynhm.base.budget import Budget
-from pynhm.base.storageUnit import StorageUnit
+from pywatershed.base.budget import Budget
+from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -11,7 +11,7 @@ from ..constants import nan, one, zero
 # not exist in the future.
 # PRMS: solution is calculate hru_actet at the bottom of the chain, in
 #       soilzone.
-# pynhm solution: potet and hru_actet are in atmosphere. potet is an "input"
+# pywatershed solution: potet and hru_actet are in atmosphere. potet is an "input"
 #       and avail_potet is passed around, resulting in hru_actet at the
 #       end of each time calculation.
 

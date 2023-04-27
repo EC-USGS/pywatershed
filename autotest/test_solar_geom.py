@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
-from pynhm.base.control import Control
-from pynhm.parameters import PrmsParameters
+from pywatershed.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
+from pywatershed.base.control import Control
+from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")

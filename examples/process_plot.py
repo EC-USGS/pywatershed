@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize
 from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 import pandas as pd
-import pynhm
+import pywatershed
 import shapely
 
 
@@ -52,7 +52,7 @@ class ProcessPlot():
 
         return
     
-    def plot_seg_var(self, var_name: str, process: pynhm.StorageUnit, cmap='cool'):
+    def plot_seg_var(self, var_name: str, process: pywatershed.StorageUnit, cmap='cool'):
         
         data_df = pd.DataFrame({
             'nhm_seg': process.control.params.parameters['nhm_seg'],
@@ -94,7 +94,7 @@ class ProcessPlot():
         mapper = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
         mapper.set_array(df_plot[var_name])
 
-        metadata = pynhm.meta.get_vars(var_name)[var_name]
+        metadata = pywatershed.meta.get_vars(var_name)[var_name]
         plt.title("Variable: {}".format(var_name))
         plt.colorbar(mapper, ax=ax, shrink=0.6, label=metadata['units'])
         
@@ -116,7 +116,7 @@ class ProcessPlot():
         
         return
     
-    def plot_hru_var(self, var_name: str, process: pynhm.StorageUnit):
+    def plot_hru_var(self, var_name: str, process: pywatershed.StorageUnit):
         
         data_df = pd.DataFrame({
             'nhm_id': process.control.params.parameters['nhm_id'],
@@ -124,9 +124,9 @@ class ProcessPlot():
         }).set_index('nhm_id')
         plot_df = self.hru_gdf.join(data_df)
 
-        metadata = pynhm.meta.get_vars(var_name)
+        metadata = pywatershed.meta.get_vars(var_name)
         if not len(metadata):
-            metadata = pynhm.meta.get_params(var_name)
+            metadata = pywatershed.meta.get_params(var_name)
         metadata = metadata[var_name]
 
         frame_height = 550

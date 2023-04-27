@@ -34,7 +34,7 @@ class StorageUnit(Accessor):
             Still working on conventions if these are to be modified but
             the storageUnit. For an input to be successfully inicluded,
             that variable must be defined in the metadata
-            (pynhm/static/metadata/variables.yaml).
+            (pywatershed/static/metadata/variables.yaml).
             Efforts should be made to not use diagnostic variables as input
             as much as possible.
         variables/get_variables():
@@ -42,7 +42,7 @@ class StorageUnit(Accessor):
             to be public, variables should be made private with a single,
             leading underscore and not maintained in this list. For an input
             to be successfully inicluded, that variable must be defined in the
-            metadata (pynhm/static/metadata/variables.yaml).
+            metadata (pywatershed/static/metadata/variables.yaml).
             Efforts should be made not to track diagnostic variables in this
             public variable set, as much as possible.
         parameters/get_parameters():

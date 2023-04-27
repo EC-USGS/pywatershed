@@ -6,22 +6,22 @@ import warnings
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup
 
-pynhm_fortran = str(os.getenv("PYNHM_FORTRAN"))
-if pynhm_fortran.lower() == "true":
-    pynhm_fortran = True
+pyws_fortran = str(os.getenv("PYWS_FORTRAN"))
+if pyws_fortran.lower() == "true":
+    pyws_fortran = True
     if platform.system() == "Windows":
-        pynhm_fortran = False
+        pyws_fortran = False
         warnings.warn(
             "Fortran source compilation not enabled on Windows", Warning
         )
 
 else:
-    pynhm_fortran = False
+    pyws_fortran = False
 
 
-config = Configuration("pynhm")
+config = Configuration("pywatershed")
 
-if pynhm_fortran:
+if pyws_fortran:
     source_dir_names = {
         "hydrology": ["PRMSGroundwater", "PRMSCanopy", "PRMSChannel"]
     }
@@ -30,8 +30,8 @@ if pynhm_fortran:
             config.add_extension(
                 f"{name}_f",
                 sources=[
-                    f"pynhm/{dir}/{name}.pyf",
-                    f"pynhm/{dir}/{name}.f90",
+                    f"pywatershed/{dir}/{name}.pyf",
+                    f"pywatershed/{dir}/{name}.f90",
                 ],
             )
 

@@ -4,11 +4,11 @@ import pint
 import pytest
 import xarray as xr
 
-from pynhm.utils.prms_to_mf6 import MMRToMF6
+from pywatershed.utils.prms_to_mf6 import MMRToMF6
 
 # not currently in repo or being used but might be good to add
 # shape_file = (
-#     "/Users/jamesmcc/usgs/data/pynhm/20220209_gm_delaware_river"
+#     "/Users/jamesmcc/usgs/data/pywatershed/20220209_gm_delaware_river"
 #     "/GIS_simple/HRU_subset.shp"
 # )
 

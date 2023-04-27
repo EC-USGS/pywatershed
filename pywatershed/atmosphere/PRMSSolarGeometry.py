@@ -5,8 +5,8 @@ from typing import Tuple
 import numpy as np
 
 # would like to not subclass storageUnit but it is much simpler to do so
-from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.netcdf_utils import NetCdfWrite
+from pywatershed.base.storageUnit import StorageUnit
+from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
 from ..constants import epsilon32, nan, one, zero

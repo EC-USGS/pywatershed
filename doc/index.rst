@@ -1,7 +1,7 @@
-.. currentmodule:: pynhm
+.. currentmodule:: pywatershed
 
 ####################################################
-pynhm: The USGS National Hydrologic Model in python
+pywatershed: a hydrologic model in Python
 ####################################################
 
 

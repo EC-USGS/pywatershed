@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pynhm.utils import ControlVariables
+from pywatershed.utils import ControlVariables
 from utils import assert_or_print
 
 

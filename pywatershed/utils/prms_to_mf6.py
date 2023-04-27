@@ -7,7 +7,7 @@ import numpy as np
 import pint
 import xarray as xr
 
-from pynhm import Control, meta
+from pywatershed import Control, meta
 
 from ..constants import SegmentType, fileish, zero
 from .parameters import PrmsParameters
@@ -376,7 +376,7 @@ class MMRToMF6:
         add_one = int(bc_binary_files)
 
         for flow_name in inflows.keys():
-            # if from pynhm, inflows are already volumes in cubicfeet
+            # if from pywatershed, inflows are already volumes in cubicfeet
             if "inch" in str(inflow_unit):  # PRMS style need hru areas
                 hru_area_unit = self.units(
                     list(meta.get_units("hru_area").values())[0]

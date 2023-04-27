@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pynhm.base.control import Control
-from pynhm.hydrology.Starfit import Starfit
-from pynhm.parameters import StarfitParameters
+from pywatershed.base.control import Control
+from pywatershed.hydrology.Starfit import Starfit
+from pywatershed.parameters import StarfitParameters
 
 
 # havent pared down the data yet to add it to the repo
@@ -18,7 +18,7 @@ def test_regress(tmp_path):
     tmp_path = pl.Path(tmp_path)
     print(tmp_path)
     data_dir = pl.Path(
-        "/Users/jmccreight/usgs/pynhm/pynhm/hydrology/starfit_minimal"
+        "/Users/jmccreight/usgs/pywatershed/pywatershed/hydrology/starfit_minimal"
     )
 
     # TODO: make this work with the original source files
@@ -112,7 +112,7 @@ def test_param_subset_write(tmp_path, domain_tag):
     tmp_path = pl.Path(tmp_path)
     print(tmp_path)
     data_dir = pl.Path(
-        "/Users/jmccreight/usgs/pynhm/pynhm/hydrology/starfit_minimal"
+        "/Users/jmccreight/usgs/pywatershed/pywatershed/hydrology/starfit_minimal"
     )
 
     # TODO: make this work with the original source files

@@ -19,7 +19,7 @@ listish = Union[str, list, tuple]
 # PRMS6 Constants module:
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/misc/m_constants.f90
 
-__pynhm_root__ = pl.Path(__file__).parent
+__pywatershed_root__ = pl.Path(__file__).parent
 
 zero = np.zeros([1])[0]
 one = np.ones([1])[0]

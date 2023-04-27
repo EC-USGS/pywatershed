@@ -2,13 +2,13 @@ import math
 import pathlib as pl
 from copy import deepcopy
 
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.constants import fileish
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.constants import fileish
 
 
 class Model:
-    """pynhmn model builder class.
+    """pywatershedn model builder class.
 
     Build a model from process classes. Model wires the inputs and outputs,
     searching for unavailable inputs from file (input_dir).

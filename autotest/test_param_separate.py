@@ -4,27 +4,27 @@ import shutil
 import numpy as np
 import pytest
 
-import pynhm
-from pynhm.base.control import Control
-from pynhm.base.timeseries import TimeseriesArray
-from pynhm.parameters import PrmsParameters
-from pynhm.utils import separate_domain_params_to_ncdf
+import pywatershed
+from pywatershed.base.control import Control
+from pywatershed.base.timeseries import TimeseriesArray
+from pywatershed.parameters import PrmsParameters
+from pywatershed.utils import separate_domain_params_to_ncdf
 
 n_time_steps = 10
 budget_type = None
-pynhm_processes = [
-    [pynhm.PRMSSolarGeometry],
-    [pynhm.PRMSAtmosphere],
-    [pynhm.PRMSCanopy],
-    [pynhm.PRMSSnow],
-    [pynhm.PRMSRunoff],
-    [pynhm.PRMSSoilzone],
-    [pynhm.PRMSGroundwater],
-    [pynhm.PRMSChannel],
-    [pynhm.PRMSGroundwater, pynhm.PRMSChannel],
+pyws_processes = [
+    [pywatershed.PRMSSolarGeometry],
+    [pywatershed.PRMSAtmosphere],
+    [pywatershed.PRMSCanopy],
+    [pywatershed.PRMSSnow],
+    [pywatershed.PRMSRunoff],
+    [pywatershed.PRMSSoilzone],
+    [pywatershed.PRMSGroundwater],
+    [pywatershed.PRMSChannel],
+    [pywatershed.PRMSGroundwater, pywatershed.PRMSChannel],
 ]
-pynhm_process_id = [
-    "_".join([proc.__name__ for proc in procs]) for procs in pynhm_processes
+pyws_process_id = [
+    "_".join([proc.__name__ for proc in procs]) for procs in pyws_processes
 ]
 
 
@@ -40,8 +40,8 @@ def control(domain, params):
 
 @pytest.mark.parametrize(
     "processes",
-    pynhm_processes,
-    ids=pynhm_process_id,
+    pyws_processes,
+    ids=pyws_process_id,
 )
 def test_param_sep(domain, control, processes, tmp_path):
     tmp_path = pl.Path(tmp_path)
@@ -89,7 +89,7 @@ def test_param_sep(domain, control, processes, tmp_path):
     for ff in prms_output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    model_prms_params = pynhm.Model(
+    model_prms_params = pywatershed.Model(
         *processes,
         control=control,
         input_dir=input_dir,
@@ -102,7 +102,7 @@ def test_param_sep(domain, control, processes, tmp_path):
     control_params_sep = Control.load(
         domain["control_file"], params=list(params_sep.values)[0]
     )
-    model_sep_params = pynhm.Model(
+    model_sep_params = pywatershed.Model(
         *processes,
         control=control_params_sep,
         input_dir=input_dir,

@@ -3,10 +3,10 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
-from pynhm.base.adapter import adapter_factory
-from pynhm.base.control import Control
-from pynhm.parameters import PrmsParameters
+from pywatershed.atmosphere.PRMSAtmosphere import PRMSAtmosphere
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
+from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -104,7 +104,7 @@ class TestPRMSAtmosphere:
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
                     print(f"absdiffmax  {absdiffmax}")
                     print(f"wh_absdiffmax  {wh_absdiffmax}")
@@ -113,4 +113,4 @@ class TestPRMSAtmosphere:
         atm.finalize()
 
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")

@@ -3,7 +3,7 @@
 Metadata for variables, parameters and dimensions are accssed by the functions
 in this module.
 
-The metadata are static (pynhm/static/metadata) so this is a module and
+The metadata are static (pywatershed/static/metadata) so this is a module and
 not a class.
 
 """
@@ -14,14 +14,14 @@ from typing import Iterable, Union
 import numpy as np
 import yaml
 
-from ..constants import __pynhm_root__
+from ..constants import __pywatershed_root__
 
 varoptions = Union[str, list, tuple]
 
-dims_file = __pynhm_root__ / "static/metadata/dimensions.yaml"
-control_file = __pynhm_root__ / "static/metadata/control.yaml"
-params_file = __pynhm_root__ / "static/metadata/parameters.yaml"
-vars_file = __pynhm_root__ / "static/metadata/variables.yaml"
+dims_file = __pywatershed_root__ / "static/metadata/dimensions.yaml"
+control_file = __pywatershed_root__ / "static/metadata/control.yaml"
+params_file = __pywatershed_root__ / "static/metadata/parameters.yaml"
+vars_file = __pywatershed_root__ / "static/metadata/variables.yaml"
 
 
 def load_yaml_file(the_file: pl.Path) -> dict:

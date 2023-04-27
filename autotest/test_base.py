@@ -1,6 +1,6 @@
 import pytest
 
-from pynhm.base.accessor import Accessor
+from pywatershed.base.accessor import Accessor
 
 
 class TestAccessor:

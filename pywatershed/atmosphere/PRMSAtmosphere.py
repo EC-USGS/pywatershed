@@ -2,8 +2,8 @@ import pathlib as pl
 
 import numpy as np
 
-from pynhm.base.storageUnit import StorageUnit
-from pynhm.utils.netcdf_utils import NetCdfWrite
+from pywatershed.base.storageUnit import StorageUnit
+from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base import meta
 from ..base.adapter import adaptable
@@ -61,7 +61,7 @@ class PRMSAtmosphere(StorageUnit):
     requested) prior to the first model advance. This is effectively a complete
     preprocessing of the input CBH files to the fields the model actually uses
     on initialization. If you just want to preprocess these variables, see
-    `this notebook <https://github.com/EC-USGS/pynhm/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
+    `this notebook <https://github.com/EC-USGS/pywatershed/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
 
 
     The full time version of a variable is given by the "private" version of
@@ -82,7 +82,7 @@ class PRMSAtmosphere(StorageUnit):
         tmax: maximum daily temperature cbh netcdf file
         tmin: minimum daily temperature cbh netcdf file
         soltab_potsw: potential shortwave radiation special format file. Only
-            the versions of PRMS 5.2.1 shipped with pynhm output soltab in this
+            the versions of PRMS 5.2.1 shipped with pywatershed output soltab in this
             format
         soltab_horad_potsw: this is the potential shortwave on the horizontal
             plane at each HRU. See soltab_potsw comment on file format.

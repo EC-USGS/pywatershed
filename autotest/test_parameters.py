@@ -3,8 +3,8 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm import Parameters, PRMSCanopy
-from pynhm.parameters import PrmsParameters
+from pywatershed import Parameters, PRMSCanopy
+from pywatershed.parameters import PrmsParameters
 from utils import assert_or_print
 
 

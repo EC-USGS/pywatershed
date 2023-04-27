@@ -1,4 +1,4 @@
-name: pynhm-docs
+name: pyws-docs
 channels:
   # Don't change to pkgs/main, as it causes random timeouts in readthedocs
   - conda-forge

@@ -1,4 +1,4 @@
-.. currentmodule:: pynhm
+.. currentmodule:: pywatershed
 
 ################
 Full API Listing

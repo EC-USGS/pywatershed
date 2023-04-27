@@ -64,7 +64,7 @@ If you would like to compile the fortran computational kernels for
 certain physical process representations (not required), you'll need a fortran
 compiler and you will run
 
-`export PYNHM_FORTRAN=true; cd pynhm;  pip install .`
+`export PYWS_FORTRAN=true; cd pynhm;  pip install .`
 
 See Developer Requirements below for more details.
 
@@ -126,7 +126,7 @@ installation is achieved by the following code:
 export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"
 export CC=path/to/gcc  # for example
 export FC=path/to/gfortran  # for example
-export PYNHM_FORTRAN=true
+export PYWS_FORTRAN=true
 cd path/to/pynhm
 pip install -e .
 ```

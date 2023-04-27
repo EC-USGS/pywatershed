@@ -23,7 +23,7 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "PYNHM_FORTRAN=true" >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
           echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
 
       - name: Setup Python
@@ -120,7 +120,7 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
-          echo "PYNHM_FORTRAN=true" >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
           echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
           cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 

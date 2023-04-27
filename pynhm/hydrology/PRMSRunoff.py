@@ -87,13 +87,20 @@ class PRMSRunoff(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """
+        Return a list of the dimensions required for this process
+
+        """
+        return ("nhru",)
+
+    @staticmethod
     def get_parameters() -> tuple:
         """
         Return a list of the parameters required for this process
 
         """
         return (
-            "nhru",
             "hru_type",
             "hru_area",
             "hru_percent_imperv",

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from ..base import meta
-from ..utils.parameters import PrmsParameters
+from ..parameters import PrmsParameters
 
 zero = np.zeros((1))[0]
 one = np.ones((1))[0]

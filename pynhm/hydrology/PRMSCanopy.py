@@ -62,13 +62,18 @@ class PRMSCanopy(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """
+        Return a tuple the dimension names
+        """
+        return ("nhru",)
+
+    @staticmethod
     def get_parameters() -> tuple:
         """
-        Return a list of the parameters required for this process
-
+        Return a tuple of parameters names
         """
         return (
-            "nhru",
             "cov_type",
             "covden_sum",
             "covden_win",
@@ -76,7 +81,6 @@ class PRMSCanopy(StorageUnit):
             "wrain_intcp",
             "snow_intcp",
             "potet_sublim",
-            "snow_intcp",
         )
 
     @staticmethod

@@ -4,7 +4,7 @@ import pynhm
 
 from ..base import meta
 from ..constants import fileish
-from ..utils import PrmsParameters
+from ..parameters import PrmsParameters
 
 # these are prarameters that are provided as scalars which we will
 # force expand to their full dimensions
@@ -54,31 +54,29 @@ def separate_domain_params_to_ncdf(
     if process_list is None:
         process_list = nhm_processes
 
-    param_dict = PrmsParameters.load(prms_param_file).parameters
+    prms_parameters = PrmsParameters.load(prms_param_file)
+    param_dict = prms_parameters.parameters
+
+    # TODO: PRMSParameters should merge the static metadata when this is done,
+    #       it will very much transform the following code
 
     written_files = {}
-
-    # Get the dimensions up front, use as needed later.
-    meta_dim_names = list(meta.dimensions.keys())
-    dim_meta = {}
-    for dim in meta_dim_names:
-        if dim in param_dict.keys():
-            dim_meta[dim] = int(param_dict[dim])
 
     for proc in process_list:
         proc_param_names = proc.get_parameters()
         proc_params = {name: param_dict[name] for name in proc_param_names}
 
-        # need all dims for process over inputs, variables & parameters
-        proc_vars = proc.get_variables()
-        proc_inputs = proc.get_inputs()
-        proc_dims = set()
-        for pp in [proc_params, proc_vars, proc_inputs]:
-            for name in pp:
-                mm = meta.find_variables(name)[name]
-                if "dimensions" in mm.keys():
-                    proc_dims = proc_dims.union(mm["dimensions"].values())
-        proc_dims = list(proc_dims)
+        # in some cases (e.g. PRMSAtmosphere) the parameters dont need
+        # all the process dimensions
+        # proc_dims = proc.get_dimensions()  ## too much
+        proc_dims = set(
+            [
+                vv["dims"]
+                for kk, vv in prms_parameters.metadata.items()
+                if kk in proc_params.keys()
+            ]
+        )
+        proc_dims = tuple([dd for tt in proc_dims for dd in tt])
 
         ds = xr.Dataset(
             attrs=dict(
@@ -92,36 +90,30 @@ def separate_domain_params_to_ncdf(
         )
         nc_out_file = out_dir / f"parameters_{domain_name}_{proc.__name__}.nc"
 
-        # dimensions
-        dim_dict = {}
-        for dim in meta_dim_names:
-            if dim in proc_params.keys():
-                dim_dict[dim] = proc_params[dim]
-        # these are implied and not included
-        implied_dims = ["ndoy", "nmonth", "scalar"]
-        for dd in implied_dims:
-            dim_dict[dd] = meta.dimensions[dd]["default"]
-
+        # dimension
         # Add parameters with dimensions
         for param_name in proc_params.keys():
-            if param_name in dim_dict.keys():
-                continue
-
             param_meta = meta.find_variables(param_name)[param_name]
+
             param_vals = proc_params[param_name]
 
             param_shape = shape(param_vals)
             if isinstance(param_shape, int):
                 param_shape = [param_shape]
 
+            param_dim_names = prms_parameters.metadata[param_name]["dims"]
             param_dims = {
-                dim_name: dim_dict[dim_name]
-                for dim_name in param_meta["dimensions"].values()
+                dim_name: prms_parameters.dims[dim_name]
+                for dim_name in param_dim_names
             }
+
+            proc_dims = list(proc_dims)
             for pp in param_dims:
                 # remove dims used for parameter data
                 if pp in proc_dims:
                     proc_dims.remove(pp)
+
+            proc_dims = tuple(proc_dims)
 
             # sometimes a scalar is allowed to represent a uniform values for
             # the full dimensions of a parameter. Going to handle those on a
@@ -131,7 +123,7 @@ def separate_domain_params_to_ncdf(
                     full_dim = params_expand_scalar_to_dims[param_name]
                     if dim_name == full_dim:
                         param_shape = list(param_shape)
-                        param_shape[ii] = dim_dict[full_dim]
+                        param_shape[ii] = prms_parameters.dims[full_dim]
                         param_shape = tuple(param_shape)
                         param_vals = np.zeros(param_shape) + param_vals
 
@@ -146,7 +138,7 @@ def separate_domain_params_to_ncdf(
 
         # to file
         for vv in proc_dims:
-            ds.attrs[vv] = dim_meta[vv]
+            ds.attrs[vv] = prms_parameters.dims[vv]
         ds.to_netcdf(nc_out_file)
         ds.close()
         assert nc_out_file.exists()

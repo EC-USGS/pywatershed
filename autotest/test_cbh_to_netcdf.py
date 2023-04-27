@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from pynhm.utils import PrmsParameters
+from pynhm.parameters import PrmsParameters
 from pynhm.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
 from utils import assert_or_print
 
@@ -96,10 +96,14 @@ def test_cbh_files_to_netcdf(domain, params, tmp_path):
                 .mean()
             )
         else:
-            results[var] = results_ds[var].mean().mean()
+            results[var] = results_ds[var].mean().mean().values.tolist()
 
     assert_or_print(
-        results, answers, "files_to_np_dict", print_ans=domain["print_ans"]
+        results,
+        answers,
+        "files_to_np_dict",
+        print_ans=domain["print_ans"],
+        close=True,
     )
 
     return

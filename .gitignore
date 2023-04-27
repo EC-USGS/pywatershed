@@ -70,8 +70,10 @@ examples/model_loop_custom_output
 *.gz
 *.zip
 
-
 # f2y detritus
 *module.c
 PRMS*.so
 *f2pywrappers*.f*
+
+# starfit repo used for development
+starfit_minimal/

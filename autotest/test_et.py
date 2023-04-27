@@ -6,7 +6,7 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSEt import PRMSEt
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")

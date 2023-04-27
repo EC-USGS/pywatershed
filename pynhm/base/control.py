@@ -6,14 +6,15 @@ import numpy as np
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
-from ..utils.parameters import PrmsParameters
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
+    datetime_epiweek,
     datetime_month,
     datetime_year,
 )
 from .accessor import Accessor
+from .parameters import Parameters
 
 
 class Control(Accessor):
@@ -26,7 +27,7 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         config: dict = None,
-        params: PrmsParameters = None,
+        params: Parameters = None,
         verbosity: int = 0,
         **kwargs,
     ):
@@ -68,6 +69,8 @@ class Control(Accessor):
 
         self.config = config
         self.params = params
+        if params is not None:
+            self.params.dims["ntime"] = self.n_times
 
         self.meta = meta
         # This will have the time dimension name
@@ -77,7 +80,7 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        params: PrmsParameters = None,
+        params: Parameters = None,
         verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file
@@ -130,6 +133,11 @@ class Control(Accessor):
     def current_dowy(self):
         """Get the current day of water year."""
         return datetime_dowy(self._current_time)
+
+    @property
+    def current_epiweek(self):
+        """Get the current epiweek [1, 53]."""
+        return datetime_epiweek(self._current_time)
 
     @property
     def previous_time(self):
@@ -205,9 +213,9 @@ class Control(Accessor):
             # this is pretty adhoc
             check_list = ["time", "doy"]
             if len([mm for mm in check_list if mm in var_dims[0]]):
-                del var_dims[0]
+                var_dims = var_dims[1:]
 
-        var_dim_sizes = self.params.get_parameters(var_dims)
+        var_dim_sizes = self.params.get_dim_values(var_dims)
         var_dim_shape = [var_dim_sizes[vv] for vv in var_dims]
         var_type = self.meta.get_numpy_types(var_name)[var_name]
         return np.full(var_dim_shape, np.nan, var_type)
@@ -220,6 +228,7 @@ class Control(Accessor):
         self._n_times = (
             (self._end_time - self._start_time) / self._time_step
         ) + 1
+        self.params.dims["ntime"] = self._n_times
         return
 
     def edit_n_time_steps(self, new_n_time_steps: int):
@@ -228,4 +237,5 @@ class Control(Accessor):
         self._end_time = (
             self._start_time + (self._n_times - 1) * self._time_step
         )
+        self.params.dims["ntime"] = self._n_times
         return

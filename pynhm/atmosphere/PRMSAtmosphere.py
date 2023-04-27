@@ -5,6 +5,7 @@ import numpy as np
 from pynhm.base.storageUnit import StorageUnit
 from pynhm.utils.netcdf_utils import NetCdfWrite
 
+from ..base import meta
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import epsilon, inch2cm, nan, one, zero
@@ -112,9 +113,6 @@ class PRMSAtmosphere(StorageUnit):
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
     ):
-        # This could be used to subclass storageUnit or Process classes to have
-        # timeseries. Solar geom bas doy dimension not actual simulation times
-
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
         # TODO: make time chunking options work (esp with output)
@@ -124,13 +122,20 @@ class PRMSAtmosphere(StorageUnit):
             self.n_time_chunk = n_time_chunk
 
         # Initialize full time with nans
-        self._time = np.full(self.n_time_chunk, nan, dtype="datetime64[s]")
+        self._time = np.full(control.n_times, nan, dtype="datetime64[s]")
+
+        metadata_patches = {
+            kk: {"dims": ("ntime", "nhru")} for kk in self.variables
+        }
 
         super().__init__(
             control=control,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
+            metadata_patches=metadata_patches,
+            metadata_patch_conflicts="left",
         )
+        # need to override the initailization of self variables
         self._set_inputs(locals())
 
         self.name = "PRMSAtmosphere"
@@ -200,6 +205,61 @@ class PRMSAtmosphere(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions():
+        return (
+            "nhru",
+            "nmonth",
+            "ntime",
+        )
+
+    @staticmethod
+    def get_parameters():
+        return (
+            "radadj_intcp",
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+            "hru_aspect",
+            "jh_coef",
+            "jh_coef_hru",
+            "tmax_cbh_adj",
+            "tmin_cbh_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "snow_cbh_adj",
+            "rain_cbh_adj",
+            "adjmix_rain",
+            "transp_beg",
+            "transp_end",
+            "transp_tmax",
+            "radadj_intcp",  # below are solar params used by Atmosphere
+            "radadj_slope",
+            "tmax_index",
+            "dday_slope",
+            "dday_intcp",
+            "radmax",
+            "ppt_rad_adj",
+            "tmax_allsnow",
+            "tmax_allrain_offset",
+            "hru_slope",
+            "radj_sppt",
+            "radj_wppt",
+            "hru_lat",
+            "hru_area",
+            "temp_units",
+        )
+
+    @staticmethod
     def get_inputs() -> tuple:
         return (
             "prcp",
@@ -250,55 +310,6 @@ class PRMSAtmosphere(StorageUnit):
             "pptmix": nan,
             "orad_hru": nan,
         }
-
-    @staticmethod
-    def get_parameters():
-        return (
-            "nmonth",
-            "radadj_intcp",
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "hru_slope",
-            "radj_sppt",
-            "radj_wppt",
-            "hru_lat",
-            "hru_area",
-            "nhru",
-            "hru_aspect",
-            "jh_coef",
-            "jh_coef_hru",
-            "tmax_cbh_adj",
-            "tmin_cbh_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "snow_cbh_adj",
-            "rain_cbh_adj",
-            "adjmix_rain",
-            "transp_beg",
-            "transp_end",
-            "transp_tmax",
-            "radadj_intcp",  # below are solar params used by Atmosphere
-            "radadj_slope",
-            "tmax_index",
-            "dday_slope",
-            "dday_intcp",
-            "radmax",
-            "ppt_rad_adj",
-            "tmax_allsnow",
-            "tmax_allrain_offset",
-            "hru_slope",
-            "radj_sppt",
-            "radj_wppt",
-            "hru_lat",
-            "hru_area",
-            "temp_units",
-        )
 
     def _set_initial_conditions(self):
         return
@@ -803,11 +814,12 @@ class PRMSAtmosphere(StorageUnit):
                 if var not in self.netcdf_output_vars:
                     continue
                 nc_path = self.netcdf_output_dir / f"{var}.nc"
+
                 nc = NetCdfWrite(
                     nc_path,
-                    self.params.nhm_coordinates,
+                    self.params.coords,
                     [var],
-                    {var: self.var_meta[var]},
+                    {var: self.meta[var]},
                 )
                 nc.add_all_data(
                     var,
@@ -816,15 +828,15 @@ class PRMSAtmosphere(StorageUnit):
                 )
                 nc.close()
                 assert nc_path.exists()
-                print(f"Wrote preprocessed forcing file: {nc_path}")
+                print(f"Wrote file: {nc_path}")
 
         else:
             nc_path = self.netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.nhm_coordinates,
+                self.params.coords,
                 self.netcdf_output_vars,
-                self.var_meta,
+                self.meta,
             )
             for var in self.variables:
                 if var not in self.netcdf_output_vars:
@@ -837,7 +849,7 @@ class PRMSAtmosphere(StorageUnit):
 
             nc.close()
             assert nc_path.exists()
-            print(f"Wrote preprocessed forcing file: {nc_path}")
+            print(f"Wrote file: {nc_path}")
 
         self._output_netcdf = False
         return
@@ -860,6 +872,9 @@ class PRMSAtmosphere(StorageUnit):
         else:
             self.netcdf_output_vars = output_vars
 
+        return
+
+    def _finalize_netcdf(self) -> None:
         return
 
     def output(self):

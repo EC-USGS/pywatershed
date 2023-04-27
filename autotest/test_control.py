@@ -5,7 +5,7 @@ import pytest
 
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters  # # TODO: too specific
 
 time_dict = {
     "start_time": np.datetime64("1979-01-03T00:00:00.00"),
@@ -19,18 +19,24 @@ nhru = 2
 @pytest.fixture(scope="function")
 def params_simple():
     prms_params = {
-        "nhru": nhru,
-        "hru_area": np.array(nhru * [1.0]),
-        "covden_sum": np.array(nhru * [0.5]),
-        "covden_win": np.array(nhru * [0.5]),
-        "srain_intcp": np.array(nhru * [1.0]),
-        "wrain_intcp": np.array(nhru * [1.0]),
-        "snow_intcp": np.array(nhru * [1.0]),
-        "epan_coef": np.array(nhru * [1.0]),
-        "potet_sublim": np.array(nhru * [1.0]),
-        "cov_type": np.array(nhru * [1]),
+        "dims": {"nhru": nhru},
+        "data_vars": {
+            "hru_area": np.array(nhru * [1.0]),
+            "covden_sum": np.array(nhru * [0.5]),
+            "covden_win": np.array(nhru * [0.5]),
+            "srain_intcp": np.array(nhru * [1.0]),
+            "wrain_intcp": np.array(nhru * [1.0]),
+            "snow_intcp": np.array(nhru * [1.0]),
+            "epan_coef": np.array(nhru * [1.0]),
+            "potet_sublim": np.array(nhru * [1.0]),
+            "cov_type": np.array(nhru * [1]),
+        },
     }
-    return PrmsParameters(prms_params)
+    prms_params["metadata"] = {}
+    for kk in prms_params["data_vars"].keys():
+        prms_params["metadata"][kk] = {"dims": ("nhru",)}
+
+    return PrmsParameters(**prms_params)
 
 
 @pytest.fixture(scope="function")

@@ -142,6 +142,9 @@ class NetCdfRead(Accessor):
             spatial_id_names.append("nhm_id")
         elif "hru_id" in self.ds_var_list:
             spatial_id_names.append("hru_id")
+        elif "grand_id" in self.ds_var_list:
+            spatial_id_names.append("grand_id")
+
         if "nhm_seg" in self.ds_var_list:
             spatial_id_names.append("nhm_seg")
         elif "hru_seg" in self.ds_var_list:
@@ -401,6 +404,7 @@ class NetCdfWrite(Accessor):
         nhru_coordinate = False
         nsegment_coordinate = False
         one_coordinate = False
+        nreservoirs_coordinate = False
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name
@@ -414,6 +418,8 @@ class NetCdfWrite(Accessor):
                 nsegment_coordinate = True
             if "one" in dimension_name:
                 one_coordinate = True
+            if "nreservoirs" in dimension_name:
+                nreservoirs_coordinate = True
 
         if nhru_coordinate:
             hru_ids = coordinates["nhm_id"]
@@ -435,6 +441,9 @@ class NetCdfWrite(Accessor):
 
         if one_coordinate:
             self.one_ids = coordinates["one"]
+
+        if nreservoirs_coordinate:
+            self.nreservoirs = len(coordinates["grand_id"])
 
         # Dimensions
 
@@ -471,6 +480,8 @@ class NetCdfWrite(Accessor):
             self.dataset.createDimension("nhm_seg", self.nsegments)
         if one_coordinate:
             self.dataset.createDimension("one", 1)
+        if nreservoirs_coordinate:
+            self.dataset.createDimension("grand_id", self.nreservoirs)
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
@@ -485,6 +496,11 @@ class NetCdfWrite(Accessor):
         if one_coordinate:
             self.oneid = self.dataset.createVariable("one", "i4", ("one"))
             self.oneid[:] = np.array(self.one_ids, dtype=int)
+        if nreservoirs_coordinate:
+            self.grandid = self.dataset.createVariable(
+                "grand_id", "i4", ("grand_id")
+            )
+            self.grandid[:] = coordinates["grand_id"]
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
@@ -499,6 +515,8 @@ class NetCdfWrite(Accessor):
                 spatial_coordinate = "nhm_seg"
             elif "one" in variable_dimensions[var_name]:
                 spatial_coordinate = "one"
+            elif "nreservoirs" in variable_dimensions[var_name]:
+                spatial_coordinate = "grand_id"
             else:
                 msg = (
                     "Undefined spatial coordinate name in "

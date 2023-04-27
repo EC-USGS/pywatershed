@@ -22,9 +22,15 @@ test_ans:
 
   parameter_read:
     nhru: 1
-    ngw: 1
-    nssr: 1
     nsegment: 1
+    nssr: 1
+    ngw: 1
+    nobs: 1
+    ndeplval: 11
+    ndepl: 1
+    nmonth: 12
+    scalar: 1
+    ndoy: 366
 
   preprocess_cbh:
     files_to_df:

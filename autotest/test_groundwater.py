@@ -1,5 +1,4 @@
 import pathlib as pl
-import platform
 
 import pytest
 
@@ -8,8 +7,8 @@ from pynhm.hydrology.PRMSGroundwater import (
     PRMSGroundwater,
     has_prmsgroundwater_f,
 )
+from pynhm.parameters import PrmsParameters
 from pynhm.utils.netcdf_utils import NetCdfCompare
-from pynhm.utils.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 if has_prmsgroundwater_f:

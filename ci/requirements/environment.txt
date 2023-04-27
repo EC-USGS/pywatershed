@@ -1,21 +1,22 @@
-click != 8.1.0
 black < 23.1.0
-isort
+click != 8.1.0
+epiweeks
 flake8
 git+https://github.com/modflowpy/flopy.git
-pylint
+isort
 modflow-devtools
 netCDF4
 networkx
 numpy
 numba
-pandas
+pandas >= 1.4
 pint
 pip
+pylint
 pytest
 pytest-cov
 pytest-env
 pytest-order
 pytest-xdist
 pyyaml
-xarray
+git+https://github.com/jmccreight/xarray.git@to_dict-numpy-data-version-fake

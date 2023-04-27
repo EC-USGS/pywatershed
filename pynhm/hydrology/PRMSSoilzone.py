@@ -59,6 +59,16 @@ class PRMSSoilzone(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """Get soil zone dimensions
+
+        Returns:
+            dimensions: input dimensions
+
+        """
+        return ("nhru", "nssr")
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get soil zone parameters
 
@@ -67,8 +77,6 @@ class PRMSSoilzone(StorageUnit):
 
         """
         return (
-            "nhru",
-            "nssr",
             "dprst_frac",
             "cov_type",
             "fastcoef_lin",

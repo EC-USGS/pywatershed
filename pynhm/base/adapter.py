@@ -69,7 +69,7 @@ class AdapterNetcdf(Adapter):
     @property
     def data(self):
         # TODO JLM: seems like we'd want to cache this data if we invoke once
-        return self._nc_read.all_time(self._variable)
+        return self._nc_read.all_time(self._variable).data
 
 
 class AdapterOnedarray(Adapter):

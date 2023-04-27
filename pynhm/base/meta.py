@@ -39,10 +39,24 @@ def load_yaml_file(the_file: pl.Path) -> dict:
     return data
 
 
-dimensions = load_yaml_file(dims_file)
-control = load_yaml_file(control_file)
-parameters = load_yaml_file(params_file)
-variables = load_yaml_file(vars_file)
+# change the representaiton of dimensions in the metadata to tuples
+def _dims_to_tuples(dd):
+    result = {}
+    for kk, vv in dd.items():
+        if kk == "dims":
+            result[kk] = tuple(vv.values())
+        elif isinstance(vv, dict):
+            result[kk] = _dims_to_tuples(vv)
+        else:
+            result[kk] = vv
+
+    return result
+
+
+dimensions = _dims_to_tuples(load_yaml_file(dims_file))
+control = _dims_to_tuples(load_yaml_file(control_file))
+parameters = _dims_to_tuples(load_yaml_file(params_file))
+variables = _dims_to_tuples(load_yaml_file(vars_file))
 
 
 def meta_netcdf_type(meta_item: dict) -> str:
@@ -116,7 +130,7 @@ def meta_dimensions(meta_item: dict) -> list:
         dimensions: tuple with dimension strings for a variable name
 
     """
-    return list(meta_item["dimensions"].values())
+    return list(meta_item["dims"])
 
 
 def is_available(variable_name: str) -> bool:
@@ -200,10 +214,7 @@ def get_dimensions(
     if isinstance(vars, str):
         vars = [vars]
     variable_dict = find_variables(vars)
-    return {
-        key: [dimension for tag, dimension in value["dimensions"].items()]
-        for key, value in variable_dict.items()
-    }
+    return {key: value["dims"] for key, value in variable_dict.items()}
 
 
 def find_variables(vars: varoptions) -> dict:

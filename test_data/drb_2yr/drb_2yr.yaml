@@ -22,9 +22,17 @@ test_ans:
     initial_deltat: 24
 
   parameter_read:
-    nhru: 765
+    ndepl: 5
+    ndeplval: 55
+    ndoy: 366
     ngw: 765
+    nhru: 765
+    nmonth: 12
+    nobs: 168
+    npoigages: 168
+    nsegment: 456
     nssr: 765
+    scalar: 1
 
   preprocess_cbh:
     files_to_df:

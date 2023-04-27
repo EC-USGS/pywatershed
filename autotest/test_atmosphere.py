@@ -6,7 +6,7 @@ import pytest
 from pynhm.atmosphere.PRMSAtmosphere import PRMSAtmosphere
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")

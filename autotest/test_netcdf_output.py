@@ -8,7 +8,7 @@ import xarray as xr
 import pynhm
 from pynhm.base.control import Control
 from pynhm.base.model import Model
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets

@@ -8,7 +8,7 @@ import pynhm
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.base.model import Model
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 compare_to_prms521 = False
 n_time_steps = 101

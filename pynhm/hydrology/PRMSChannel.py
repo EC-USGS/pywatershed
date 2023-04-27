@@ -102,6 +102,16 @@ class PRMSChannel(StorageUnit):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        """Get channel segment dimensions
+
+        Returns:
+            dimensions: input dimensions
+
+        """
+        return ("nhru", "nssr", "ngw", "nsegment")
+
+    @staticmethod
     def get_parameters() -> tuple:
         """Get channel segment parameters
 
@@ -110,10 +120,6 @@ class PRMSChannel(StorageUnit):
 
         """
         return (
-            "nhru",
-            "nssr",
-            "ngw",
-            "nsegment",
             "hru_area",
             "hru_segment",
             "mann_n",

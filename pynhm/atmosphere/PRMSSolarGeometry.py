@@ -117,10 +117,12 @@ class PRMSSolarGeometry(StorageUnit):
         }
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        return ("nhru", "ndoy")
+
+    @staticmethod
     def get_parameters() -> tuple:
         return (
-            "nhru",
-            "ndoy",
             "hru_slope",
             "radj_sppt",
             "radj_wppt",
@@ -429,11 +431,12 @@ class PRMSSolarGeometry(StorageUnit):
                 if var not in self.netcdf_output_vars:
                     continue
                 nc_path = self.netcdf_output_dir / f"{var}.nc"
+
                 nc = NetCdfWrite(
                     nc_path,
-                    self.params.nhm_coordinates,
+                    self.params.coords,
                     [var],
-                    {var: self.var_meta[var]},
+                    {var: self.meta[var]},
                 )
                 nc.add_all_data(
                     var,
@@ -449,9 +452,9 @@ class PRMSSolarGeometry(StorageUnit):
             nc_path = self.netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.nhm_coordinates,
+                self.params.coords,
                 self.netcdf_output_vars,
-                self.var_meta,
+                self.meta,
             )
             for var in self.variables:
                 if var not in self.netcdf_output_vars:

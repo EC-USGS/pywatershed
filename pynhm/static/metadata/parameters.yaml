@@ -1,7 +1,7 @@
 K_coef:
   default: 1.0
   desc: Muskingum storage coefficient
-  dimensions:
+  dims:
     0: nsegment
   help: Travel time of flood wave from one segment to the next downstream segment,
     called the Muskingum storage coefficient; enter 1.0 for reservoirs, diversions,
@@ -18,7 +18,7 @@ K_coef:
 adjmix_rain:
   default: 1.0
   desc: Adjustment factor for rain in a rain/snow mix
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) factor to adjust rain proportion in a mixed
@@ -35,7 +35,7 @@ adjmix_rain:
 albedo:
   default: 0.1
   desc: Short-wave solar radiation reflected by streams
-  dimensions:
+  dims:
     0: scalar
   help: Short-wave solar radiation reflected by streams
   maximum: 1.0
@@ -47,7 +47,7 @@ albedo:
 albset_rna:
   default: 0.8
   desc: Albedo reset - rain, accumulation stage
-  dimensions:
+  dims:
     0: scalar
   help: Fraction of rain in a mixed precipitation event above which the snow albedo
     is not reset; applied during the snowpack accumulation stage
@@ -60,7 +60,7 @@ albset_rna:
 albset_rnm:
   default: 0.6
   desc: Albedo reset - rain,  melt stage
-  dimensions:
+  dims:
     0: scalar
   help: Fraction of rain in a mixed precipitation event above which the snow albedo
     is not reset; applied during the snowpack melt stage
@@ -73,7 +73,7 @@ albset_rnm:
 albset_sna:
   default: 0.05
   desc: Albedo reset - snow, accumulation stage
-  dimensions:
+  dims:
     0: scalar
   help: Minimum snowfall, in water equivalent, needed to reset snow albedo during
     the snowpack accumulation stage
@@ -86,7 +86,7 @@ albset_sna:
 albset_snm:
   default: 0.2
   desc: Albedo reset - snow, melt stage
-  dimensions:
+  dims:
     0: scalar
   help: Minimum snowfall, in water equivalent, needed to reset snow albedo during
     the snowpack melt stage
@@ -99,7 +99,7 @@ albset_snm:
 alte:
   default: 0.0
   desc: East bank topographic altitude
-  dimensions:
+  dims:
     0: nsegment
   help: East bank topographic altitude of each segment
   maximum: 1.57079633
@@ -111,7 +111,7 @@ alte:
 altw:
   default: 0.0
   desc: West bank topographic altitude
-  dimensions:
+  dims:
     0: nsegment
   help: West bank topographic altitude of each segment
   maximum: 1.57079633
@@ -123,7 +123,7 @@ altw:
 azrh:
   default: 0.0
   desc: Azimuth angle of each segment, measured clockwise from north
-  dimensions:
+  dims:
     0: nsegment
   help: Azimuth angle of each segment, measured clockwise from north
   maximum: 6.28296
@@ -135,7 +135,7 @@ azrh:
 basin_solsta:
   default: 0
   desc: Index of main solar radiation station
-  dimensions:
+  dims:
     0: scalar
   help: Index of solar radiation station used to compute basin radiation values, used
     when dimension nsol>0
@@ -150,7 +150,7 @@ basin_solsta:
 basin_tsta:
   default: 0
   desc: Index of main temperature station
-  dimensions:
+  dims:
     0: scalar
   help: Index of temperature station used to compute basin temperature values
   maximum: ntemp
@@ -164,7 +164,7 @@ basin_tsta:
 carea_max:
   default: 0.6
   desc: Maximum contributing area
-  dimensions:
+  dims:
     0: nhru
   help: Maximum possible area contributing to surface runoff expressed as a portion
     of the HRU area
@@ -179,7 +179,7 @@ carea_max:
 carea_min:
   default: 0.2
   desc: Minimum contributing area
-  dimensions:
+  dims:
     0: nhru
   help: Minimum possible area contributing to surface runoff expressed as a portion
     of the area for each HRU
@@ -192,7 +192,7 @@ carea_min:
 cascade_flg:
   default: 0
   desc: Flag to indicate cascade type (0=allow many to many; 1=force one to one)
-  dimensions:
+  dims:
     0: scalar
   help: Flag to indicate cascade type (0=allow many to many; 1=force one to one)
   maximum: 1
@@ -204,7 +204,7 @@ cascade_flg:
 cascade_tol:
   default: 5.0
   desc: Cascade area below which a cascade link is ignored
-  dimensions:
+  dims:
     0: scalar
   help: Cascade area below which a cascade link is ignored
   maximum: 99.0
@@ -216,7 +216,7 @@ cascade_tol:
 ccov_intcp:
   default: 1.83
   desc: Intercept in temperature cloud cover relationship
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) intercept in cloud-cover relationship
@@ -229,7 +229,7 @@ ccov_intcp:
 ccov_slope:
   default: -0.13
   desc: Slope in temperature cloud cover relationship
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) coefficient in cloud-cover relationship
@@ -242,7 +242,7 @@ ccov_slope:
 cecn_coef:
   default: 5.0
   desc: Monthly convection condensation energy coefficient for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) convection condensation energy coefficient for
@@ -256,7 +256,7 @@ cecn_coef:
 circle_switch:
   default: 1
   desc: Switch to check for circles
-  dimensions:
+  dims:
     0: scalar
   help: Switch to check for circles (0=no check; 1=check)
   maximum: 1
@@ -268,7 +268,7 @@ circle_switch:
 cov_type:
   default: 3
   desc: Cover type designation for HRU
-  dimensions:
+  dims:
     0: nhru
   help: Vegetation cover type for each HRU (0=bare soil; 1=grasses; 2=shrubs; 3=trees;
     4=coniferous)
@@ -281,7 +281,7 @@ cov_type:
 covden_sum:
   default: 0.5
   desc: Summer vegetation cover density for major vegetation type
-  dimensions:
+  dims:
     0: nhru
   help: Summer vegetation cover density for the major vegetation type in each HRU
   maximum: 1.0
@@ -293,7 +293,7 @@ covden_sum:
 covden_win:
   default: 0.5
   desc: Winter vegetation cover density for major vegetation type
-  dimensions:
+  dims:
     0: nhru
   help: Winter vegetation cover density for the major vegetation type in each HRU
   maximum: 1.0
@@ -305,7 +305,7 @@ covden_win:
 crad_coef:
   default: 0.4
   desc: Coefficient in cloud cover-solar radiation relationship
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Coefficient(B) in Thompson(1976) equation; varies by region, contour map of
@@ -319,7 +319,7 @@ crad_coef:
 crad_exp:
   default: 0.61
   desc: Exponent in cloud cover-solar radiation relationship
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Exponent(P) in Thompson(1976) equation
@@ -332,7 +332,7 @@ crad_exp:
 crop_coef:
   default: 1.0
   desc: Crop coefficient for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) crop coefficient for each HRU
@@ -346,7 +346,7 @@ crop_coef:
 dday_intcp:
   default: -40.0
   desc: Intercept in temperature degree-day relationship
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) intercept in degree-day equation for each HRU
@@ -359,7 +359,7 @@ dday_intcp:
 dday_slope:
   default: 0.4
   desc: Slope in temperature degree-day relationship
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) slope in degree-day equation for each HRU
@@ -372,7 +372,7 @@ dday_slope:
 den_init:
   default: 0.1
   desc: Initial density of new-fallen snow
-  dimensions:
+  dims:
     0: scalar
   help: Initial density of new-fallen snow
   maximum: 0.5
@@ -384,7 +384,7 @@ den_init:
 den_max:
   default: 0.6
   desc: Average maximum snowpack density
-  dimensions:
+  dims:
     0: scalar
   help: Average maximum snowpack density
   maximum: 0.8
@@ -396,7 +396,7 @@ den_max:
 dist_max:
   default: 1000000000.0
   desc: Maximum distance from HRU to include a climate station
-  dimensions:
+  dims:
     0: scalar
   help: Maximum distance from an HRU to a measurement station for use in calcuations
   maximum: 1.0E9
@@ -409,7 +409,7 @@ dist_max:
 dprst_depth_avg:
   default: 132.0
   desc: Average depth of surface depressions at maximum storage capacity
-  dimensions:
+  dims:
     0: nhru
   help: Average depth of surface depressions at maximum storage capacity
   maximum: 500.0
@@ -424,7 +424,7 @@ dprst_et_coef:
   default: 1.0
   desc: Fraction of unsatisfied potential evapotranspiration to apply to surface-depression
     storage
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of unsatisfied potential evapotranspiration to apply to surface-depression
     storage
@@ -439,7 +439,7 @@ dprst_et_coef:
 dprst_flow_coef:
   default: 0.05
   desc: Coefficient in linear flow routing equation for open surface depressions
-  dimensions:
+  dims:
     0: nhru
   help: Coefficient in linear flow routing equation for open surface depressions for
     each HRU
@@ -454,7 +454,7 @@ dprst_flow_coef:
 dprst_frac:
   default: 0.0
   desc: Fraction of each HRU area that has surface depressions
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of each HRU area that has surface depressions
   maximum: 0.999
@@ -466,7 +466,7 @@ dprst_frac:
 dprst_frac_init:
   default: 0.5
   desc: Fraction of maximum storage that contains water at the start of a simulation
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of maximum surface-depression storage that contains water at the
     start of a simulation
@@ -482,7 +482,7 @@ dprst_frac_open:
   default: 1.0
   desc: Fraction of open surface-depression storage area within an HRU that can generate
     surface runoff as a function of storage volume
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of open surface-depression storage area within an HRU that can generate
     surface runoff as a function of storage volume
@@ -495,7 +495,7 @@ dprst_frac_open:
 dprst_seep_rate_clos:
   default: 0.02
   desc: Coefficient used in linear seepage flow equation for closed surface depressions
-  dimensions:
+  dims:
     0: nhru
   help: Coefficient used in linear seepage flow equation for closed surface depressions
     for each HRU
@@ -510,7 +510,7 @@ dprst_seep_rate_clos:
 dprst_seep_rate_open:
   default: 0.02
   desc: Coefficient used in linear seepage flow equation for open surface depressions
-  dimensions:
+  dims:
     0: nhru
   help: Coefficient used in linear seepage flow equation for open surface depressions
     for each HRU
@@ -525,7 +525,7 @@ dprst_seep_rate_open:
 elev_outflow:
   default: 0.0
   desc: Elevation of the main outflow point
-  dimensions:
+  dims:
     0: nlake
   help: Elevation of the main outflow point for each lake using broad-crested weir
     routing
@@ -538,7 +538,7 @@ elev_outflow:
 elev_units:
   default: 0
   desc: Elevation units flag
-  dimensions:
+  dims:
     0: scalar
   help: Flag to indicate the units of the elevation values (0=feet; 1=meters)
   maximum: 1
@@ -550,7 +550,7 @@ elev_units:
 elevlake_init:
   default: 1.0
   desc: Initial lake surface elevation
-  dimensions:
+  dims:
     0: nlake
   help: Initial lake surface elevation for each lake using broad-crested weir or gate
     opening routing
@@ -563,7 +563,7 @@ elevlake_init:
 emis_noppt:
   default: 0.757
   desc: Emissivity of air on days without precipitation for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Average emissivity of air on days without precipitation for each HRU
   maximum: 1.0
@@ -575,7 +575,7 @@ emis_noppt:
 epan_coef:
   default: 1.0
   desc: Evaporation pan coefficient
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) evaporation pan coefficient for each HRU
@@ -589,7 +589,7 @@ fall_frost:
   default: 264
   desc: The solar date (number of days after winter solstice) of the first killing
     frost of the fall
-  dimensions:
+  dims:
     0: nhru
   help: The solar date (number of days after winter solstice) of the first killing
     frost of the fall
@@ -602,7 +602,7 @@ fall_frost:
 fastcoef_lin:
   default: 0.1
   desc: Linear preferential-flow routing coefficient
-  dimensions:
+  dims:
     0: nhru
   help: Linear coefficient in equation to route preferential-flow storage downslope
     for each HRU
@@ -615,7 +615,7 @@ fastcoef_lin:
 fastcoef_sq:
   default: 0.8
   desc: Non-linear preferential-flow routing coefficient
-  dimensions:
+  dims:
     0: nhru
   help: Non-linear coefficient in equation used to route preferential-flow storage
     downslope for each HRU
@@ -628,7 +628,7 @@ fastcoef_sq:
 freeh2o_cap:
   default: 0.05
   desc: Free-water holding capacity of snowpack for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Free-water holding capacity of snowpack for each HRU, expressed as a decimal
     fraction of the frozen water content of the snowpack (pk_ice)
@@ -641,7 +641,7 @@ freeh2o_cap:
 frost_temp:
   default: 28.0
   desc: Temperature of killing frost
-  dimensions:
+  dims:
     0: nhru
   help: Temperature of killing frost
   maximum: 32.0
@@ -653,7 +653,7 @@ frost_temp:
 gvr_cell_id:
   default: 0
   desc: Corresponding grid cell id associated with each GVR
-  dimensions:
+  dims:
     0: nhrucell
   help: Index of the grid cell associated with each gravity reservoir
   maximum: nhrucell
@@ -665,7 +665,7 @@ gvr_cell_id:
 gvr_cell_pct:
   default: 0.0
   desc: Proportion of the grid cell associated with each GVR
-  dimensions:
+  dims:
     0: nhrucell
   help: Proportion of the grid cell area associated with each gravity reservoir
   maximum: 1.0
@@ -677,7 +677,7 @@ gvr_cell_pct:
 gvr_hru_id:
   default: 0
   desc: Corresponding HRU id of each GVR
-  dimensions:
+  dims:
     0: nhrucell
   help: Index of the HRU associated with each gravity reservoir
   maximum: nhru
@@ -690,7 +690,7 @@ gvr_hru_id:
 gw_down_id:
   default: 0
   desc: GWR index of downslope GWR
-  dimensions:
+  dims:
     0: ncascdgw
   help: Index number of the downslope GWR to which the upslope GWR contributes flow
   maximum: nhru
@@ -702,7 +702,7 @@ gw_down_id:
 gw_init:
   default: 1.0
   desc: Initial groundwater temperature
-  dimensions:
+  dims:
     0: nsegment
   help: Initial temperature of groundwater entering each segment; recommended value
     equal to long-term average air temperature
@@ -715,7 +715,7 @@ gw_init:
 gw_pct_up:
   default: 1.0
   desc: Fraction of GWR area associated with cascade area
-  dimensions:
+  dims:
     0: ncascdgw
   help: Fraction of GWR area used to compute flow contributed to a downslope GWR or
     stream segment for cascade area
@@ -729,7 +729,7 @@ gw_seep_coef:
   default: 0.015
   desc: Linear coefficient to compute seepage and groundwater discharge to and from
     associated lake HRUs
-  dimensions:
+  dims:
     0: nhru
   help: Linear coefficient in equation to compute lakebed seepage to the GWR and groundwater
     discharge to each lake using broad-crested weir routing or gate opening routing
@@ -742,7 +742,7 @@ gw_seep_coef:
 gw_strmseg_down_id:
   default: 0
   desc: Stream segment index that cascade area contributes flow
-  dimensions:
+  dims:
     0: ncascdgw
   help: Index number of the stream segment that cascade area contributes flow
   maximum: nsegment
@@ -754,7 +754,7 @@ gw_strmseg_down_id:
 gw_tau:
   default: 365
   desc: Average residence time in groundwater flow
-  dimensions:
+  dims:
     0: nsegment
   help: Average residence time in subsurface flow
   maximum: 365
@@ -766,7 +766,7 @@ gw_tau:
 gw_up_id:
   default: 0
   desc: Index of GWR containing cascade area
-  dimensions:
+  dims:
     0: ncascdgw
   help: Index of GWR containing cascade area
   maximum: nhru
@@ -778,7 +778,7 @@ gw_up_id:
 gwflow_coef:
   default: 0.015
   desc: Groundwater routing coefficient
-  dimensions:
+  dims:
     0: ngw
   help: Linear coefficient in the equation to compute groundwater discharge for each
     GWR
@@ -791,7 +791,7 @@ gwflow_coef:
 gwsink_coef:
   default: 0.0
   desc: Groundwater sink coefficient
-  dimensions:
+  dims:
     0: ngw
   help: Linear coefficient in the equation to compute outflow to the groundwater sink
     for each GWR
@@ -804,7 +804,7 @@ gwsink_coef:
 gwstor_init:
   default: 2.0
   desc: Initial storage in each GWR
-  dimensions:
+  dims:
     0: ngw
   help: Storage in each GWR at the beginning of a simulation
   maximum: 50.0
@@ -816,7 +816,7 @@ gwstor_init:
 gwstor_min:
   default: 0.0
   desc: Minimum storage in each GWR
-  dimensions:
+  dims:
     0: ngw
   help: Minimum storage in each GWR to ensure storage is greater than specified value
     to account for inflow from deep aquifers or injection wells with the water source
@@ -830,7 +830,7 @@ gwstor_min:
 hamon_coef:
   default: 0.0055
   desc: Monthly air temperature coefficient - Hamon
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) air temperature coefficient used in Hamon potential
@@ -844,7 +844,7 @@ hamon_coef:
 hru_area:
   default: 1.0
   desc: HRU area
-  dimensions:
+  dims:
     0: nhru
   help: Area of each HRU
   maximum: 1.0E9
@@ -857,7 +857,7 @@ hru_area:
 hru_aspect:
   default: 0.0
   desc: HRU aspect
-  dimensions:
+  dims:
     0: nhru
   help: Aspect of each HRU
   maximum: 360.0
@@ -869,7 +869,7 @@ hru_aspect:
 hru_deplcrv:
   default: 1
   desc: Index number for snowpack areal depletion curve
-  dimensions:
+  dims:
     0: nhru
   help: Index number for the snowpack areal depletion curve associated with each HRU
   maximum: ndepl
@@ -881,7 +881,7 @@ hru_deplcrv:
 hru_down_id:
   default: 0
   desc: HRU index of downslope HRU
-  dimensions:
+  dims:
     0: ncascade
   help: Index number of the downslope HRU to which the upslope HRU contributes flow
   maximum: nhru
@@ -893,7 +893,7 @@ hru_down_id:
 hru_elev:
   default: 0.0
   desc: HRU mean elevation
-  dimensions:
+  dims:
     0: nhru
   help: Mean elevation for each HRU
   maximum: 30000.0
@@ -905,7 +905,7 @@ hru_elev:
 hru_humidity_sta:
   default: 0
   desc: Index of humidity measurement station for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of humidity measurement station for each HRU
   maximum: nhumid
@@ -917,7 +917,7 @@ hru_humidity_sta:
 hru_lat:
   default: 40.0
   desc: HRU latitude
-  dimensions:
+  dims:
     0: nhru
   help: Latitude of each HRU
   maximum: 90.0
@@ -929,7 +929,7 @@ hru_lat:
 hru_lon:
   default: -105.0
   desc: HRU longitude
-  dimensions:
+  dims:
     0: nhru
   help: Longitude of each HRU
   maximum: 360.0
@@ -941,7 +941,7 @@ hru_lon:
 hru_pansta:
   default: 0
   desc: Index of pan evaporation station for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of pan evaporation station used to compute HRU potential ET
   maximum: nevap
@@ -953,7 +953,7 @@ hru_pansta:
 hru_pct_up:
   default: 1.0
   desc: Fraction of HRU area associated with cascade area
-  dimensions:
+  dims:
     0: ncascade
   help: Fraction of HRU area used to compute flow contributed to a downslope HRU or
     stream segment for cascade area
@@ -966,7 +966,7 @@ hru_pct_up:
 hru_percent_imperv:
   default: 0.0
   desc: HRU percent impervious
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of each HRU area that is impervious
   maximum: 0.999
@@ -978,7 +978,7 @@ hru_percent_imperv:
 hru_plaps:
   default: 0
   desc: Index of precipitation station to lapse against hru_psta
-  dimensions:
+  dims:
     0: nhru
   help: Index of the lapse precipitation measurement station used for lapse rate calculations
     for each HRU
@@ -991,7 +991,7 @@ hru_plaps:
 hru_psta:
   default: 0
   desc: Index of base precipitation station for HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of the base precipitation station used for lapse rate calculations for
     each HRU
@@ -1004,7 +1004,7 @@ hru_psta:
 hru_segment:
   default: 0
   desc: Segment index for HRU lateral inflows
-  dimensions:
+  dims:
     0: nhru
   help: Segment index to which an HRU contributes lateral flows (surface runoff, interflow,
     and groundwater discharge)
@@ -1020,7 +1020,7 @@ hru_segment:
 hru_segment_nhm:
   default: 0
   desc: NHM segment index for HRU lateral inflows
-  dimensions:
+  dims:
     0: nhru
   help: NHM segment index to which an HRU contributes lateral flows (surface runoff,
     interflow, and groundwater discharge)
@@ -1036,7 +1036,7 @@ hru_segment_nhm:
 hru_slope:
   default: 0.0
   desc: HRU slope
-  dimensions:
+  dims:
     0: nhru
   help: Slope of each HRU, specified as change in vertical length divided by change
     in horizontal length
@@ -1049,7 +1049,7 @@ hru_slope:
 hru_solsta:
   default: 0
   desc: Index of solar radiation station associated with each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of solar radiation station associated with each HRU
   maximum: nsol
@@ -1063,7 +1063,7 @@ hru_solsta:
 hru_strmseg_down_id:
   default: 0
   desc: Stream segment index that cascade area contributes flow
-  dimensions:
+  dims:
     0: ncascade
   help: Index number of the stream segment that cascade area contributes flow
   maximum: nsegment
@@ -1075,7 +1075,7 @@ hru_strmseg_down_id:
 hru_subbasin:
   default: 0
   desc: Index of subbasin assigned to each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of subbasin assigned to each HRU
   maximum: nsub
@@ -1088,7 +1088,7 @@ hru_subbasin:
 hru_tlaps:
   default: 0
   desc: Index of lapse temperature station for HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of the lapse temperature station used for lapse rate calculations
   maximum: ntemp
@@ -1100,7 +1100,7 @@ hru_tlaps:
 hru_tsta:
   default: 0
   desc: Index of base temperature station for HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of the base temperature station used for lapse rate calculations
   maximum: ntemp
@@ -1113,7 +1113,7 @@ hru_tsta:
 hru_type:
   default: 1
   desc: HRU type
-  dimensions:
+  dims:
     0: nhru
   help: Type of each HRU (0=inactive; 1=land; 2=lake; 3=swale)
   maximum: 3
@@ -1125,7 +1125,7 @@ hru_type:
 hru_up_id:
   default: 0
   desc: Index of HRU containing cascade area
-  dimensions:
+  dims:
     0: ncascade
   help: Index of HRU containing cascade area
   maximum: nhru
@@ -1140,7 +1140,7 @@ hru_up_id:
 hru_windspeed_sta:
   default: 0
   desc: Index of wind speed measurement station for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Index of wind speed measurement station for each HRU
   maximum: nwind
@@ -1152,7 +1152,7 @@ hru_windspeed_sta:
 hru_x:
   default: 0.0
   desc: X for each HRU (albers)
-  dimensions:
+  dims:
     0: nhru
   help: Longitude (X) for each HRU in albers projection
   maximum: 1.0E7
@@ -1164,7 +1164,7 @@ hru_x:
 hru_xlong:
   default: 0.0
   desc: HRU longitude of centroid, State Plane
-  dimensions:
+  dims:
     0: nhru
   help: Longitude of each HRU for the centroid, State Plane Coordinate System
   maximum: 1.0E9
@@ -1177,7 +1177,7 @@ hru_xlong:
 hru_y:
   default: 0.0
   desc: Y for each HRU (albers)
-  dimensions:
+  dims:
     0: nhru
   help: Latitude (Y) for each HRU in albers projection
   maximum: 1.0E7
@@ -1189,7 +1189,7 @@ hru_y:
 hru_ylat:
   default: 0.0
   desc: HRU latitude of centroid, State Plane
-  dimensions:
+  dims:
     0: nhru
   help: Latitude of each HRU for the centroid, State Plane Coordinate System
   maximum: 1.0E9
@@ -1202,7 +1202,7 @@ hru_ylat:
 hs_krs:
   default: 0.0135
   desc: Potential ET adjustment factor - Hargreaves-Samani
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor used in Hargreaves-Samani
@@ -1216,7 +1216,7 @@ hs_krs:
 humidity_percent:
   default: 0.0
   desc: Monthy humidity for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthy humidity for each HRU
@@ -1236,7 +1236,7 @@ humidity_percent:
 imperv_stor_max:
   default: 0.05
   desc: HRU maximum impervious area retention storage
-  dimensions:
+  dims:
     0: nhru
   help: Maximum impervious area retention storage for each HRU
   maximum: 0.5
@@ -1250,7 +1250,7 @@ imperv_stor_max:
 irr_type:
   default: 0
   desc: Method of application of water for each application
-  dimensions:
+  dims:
     0: nhru
   help: Method of application of water for each application time-series (0=sprinkler
     (interception applies); 1=furrow/drip (no intercept); 2=ignore)
@@ -1263,7 +1263,7 @@ irr_type:
 jh_coef:
   default: 0.014
   desc: Monthly air temperature coefficient for each HRU - Jensen-Haise
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) air temperature coefficient used in Jensen-Haise
@@ -1277,7 +1277,7 @@ jh_coef:
 jh_coef_hru:
   default: 13.0
   desc: HRU air temperature coefficient - Jensen-Haise
-  dimensions:
+  dims:
     0: nhru
   help: Air temperature coefficient used in Jensen-Haise potential ET computations
     for each HRU
@@ -1290,7 +1290,7 @@ jh_coef_hru:
 lake_coef:
   default: 0.1
   desc: Linear lake routing coefficient
-  dimensions:
+  dims:
     0: nlake
   help: Coefficient in equation to route storage to streamflow for each lake using
     linear routing
@@ -1303,7 +1303,7 @@ lake_coef:
 lake_din1:
   default: 0.1
   desc: Initial inflow to each lake
-  dimensions:
+  dims:
     0: nlake
   help: Initial inflow to each lake using Puls or linear storage routing
   maximum: 1.0E7
@@ -1315,7 +1315,7 @@ lake_din1:
 lake_evap_adj:
   default: 1.0
   desc: Monthly potet factor to adjust potet on lakes
-  dimensions:
+  dims:
     0: nmonth
     1: nlake
   help: Monthly (January to December) adjustment factor for potential ET for each
@@ -1329,7 +1329,7 @@ lake_evap_adj:
 lake_hru_id:
   default: 0
   desc: Identification number of the lake associated with an HRU
-  dimensions:
+  dims:
     0: nhru
   help: Identification number of the lake associated with an HRU; more than one HRU
     can be associated with each lake
@@ -1342,7 +1342,7 @@ lake_hru_id:
 lake_init:
   default: 0.0
   desc: Initial storage in each lake
-  dimensions:
+  dims:
     0: nlake
   help: Initial storage in each lake using Puls or linear storage routing
   maximum: 1.0E7
@@ -1354,7 +1354,7 @@ lake_init:
 lake_out2:
   default: 0
   desc: Switch to specify a second outlet from a lake
-  dimensions:
+  dims:
     0: nlake
   help: Switch to specify a second outlet from each lake using gate opening routing
     (0=no; 1=yes)
@@ -1367,7 +1367,7 @@ lake_out2:
 lake_out2_a:
   default: 1.0
   desc: Outflow coefficient A for each lake with second outlet
-  dimensions:
+  dims:
     0: nlake
   help: Coefficient A in outflow equation for each lake with a second outlet using
     gate opening routing
@@ -1380,7 +1380,7 @@ lake_out2_a:
 lake_out2_b:
   default: 100.0
   desc: Outflow coefficient A for each lake with second outlet
-  dimensions:
+  dims:
     0: nlake
   help: Coefficient B in outflow equation for each lake with a second outlet using
     gate opening routing
@@ -1393,7 +1393,7 @@ lake_out2_b:
 lake_qro:
   default: 0.1
   desc: Initial daily mean outflow from each lake
-  dimensions:
+  dims:
     0: nlake
   help: Initial daily mean outflow from each lake
   maximum: 1.0E7
@@ -1405,7 +1405,7 @@ lake_qro:
 lake_seep_elev:
   default: 1.0
   desc: Elevation over which lakebed seepage to the GWR occurs
-  dimensions:
+  dims:
     0: nlake
   help: Elevation over which lakebed seepage to the GWR occurs for lake HRUs using
     broad-crested weir routing or gate opening routing
@@ -1418,7 +1418,7 @@ lake_seep_elev:
 lake_segment_id:
   default: 0
   desc: Index of lake associated with a segment
-  dimensions:
+  dims:
     0: nsegment
   help: Index of lake associated with a segment
   maximum: nlake
@@ -1430,7 +1430,7 @@ lake_segment_id:
 lake_type:
   default: 1
   desc: Type of lake routing method
-  dimensions:
+  dims:
     0: nlake
   help: Type of lake routing method (1=Puls routing; 2=linear routing; 3=flow through;
     4=broad crested weir; 5=gate opening; 6=measured flow)
@@ -1443,7 +1443,7 @@ lake_type:
 lake_vol_init:
   default: 0.0
   desc: Initial lake volume
-  dimensions:
+  dims:
     0: nlake
   help: Initial lake volume for each lake using broad-crested weir or gate opening
     routing
@@ -1456,7 +1456,7 @@ lake_vol_init:
 lapsemax_max:
   default: 2.0
   desc: Monthly maximum lapse rate for maximum temperature
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly (January to December) maximum lapse rate to constrain lowest maximum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
@@ -1470,7 +1470,7 @@ lapsemax_max:
 lapsemax_min:
   default: -6.5
   desc: Monthly minimum lapse rate for maximum temperature
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly (January to December) maximum lapse rate to constrain lowest minimum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
@@ -1484,7 +1484,7 @@ lapsemax_min:
 lapsemin_max:
   default: 3.0
   desc: Monthly maximum lapse rate for minimum temperature
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly (January to December) minimum lapse rate to constrain lowest maximum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
@@ -1498,7 +1498,7 @@ lapsemin_max:
 lapsemin_min:
   default: -4.0
   desc: Monthly minimum lapse rate for minimum temperature
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly (January to December) minimum lapse rate to constrain lowest minimum
     lapse rate on the basis of historical daily air temperatures for all air-temperature
@@ -1512,7 +1512,7 @@ lapsemin_min:
 lat_temp_adj:
   default: 0.0
   desc: Correction factor to adjust the bias of the temperature of the lateral inflow
-  dimensions:
+  dims:
     0: nsegment
     1: nmonth
   help: Correction factor to adjust the bias of the temperature of the lateral inflow
@@ -1525,7 +1525,7 @@ lat_temp_adj:
 mann_n:
   default: 0.04
   desc: Manning's roughness coefficient
-  dimensions:
+  dims:
     0: nsegment
   help: Manning's roughness coefficient for each segment
   maximum: 0.15
@@ -1539,7 +1539,7 @@ mann_n:
 mapvars_freq:
   default: 0
   desc: Mapped results frequency
-  dimensions:
+  dims:
     0: scalar
   help: Flag to specify the output frequency (0=none; 1=monthly; 2=yearly; 3=total;
     4=monthly and yearly; 5=monthly, yearly, and total; 6=weekly; 7=daily)
@@ -1552,7 +1552,7 @@ mapvars_freq:
 mapvars_units:
   default: 0
   desc: Flag to specify the output units of mapped results
-  dimensions:
+  dims:
     0: scalar
   help: Flag to specify the output units of mapped results (0=units of the variable;
     1=inches to feet; 2=inches to centimeters; 3=inches to meters; as states or fluxes)
@@ -1566,7 +1566,7 @@ max_missing:
   default: 3
   desc: Maximum number of consecutive missing values allowed for any air-temperature-measurement
     station; 0=unlimited
-  dimensions:
+  dims:
     0: scalar
   help: Maximum number of consecutive missing values allowed for any air-temperature-measurement
     station; missing value set to last valid value; 0=unlimited
@@ -1579,7 +1579,7 @@ max_missing:
 max_psta:
   default: 0
   desc: Maximum number of precipitation stations to distribute to an HRU
-  dimensions:
+  dims:
     0: scalar
   help: Maximum number of precipitation measurement stations to distribute to an HRU
   maximum: nrain
@@ -1592,7 +1592,7 @@ max_tsta:
   default: 0
   desc: Maximum number of temperature stations to use for distributing temperature
     to any HRU
-  dimensions:
+  dims:
     0: scalar
   help: Maximum number of air-temperature measurement stations to use for distributing
     temperature to any HRU
@@ -1605,7 +1605,7 @@ max_tsta:
 maxday_prec:
   default: 15.0
   desc: Maximum daily precipitation for any weather site
-  dimensions:
+  dims:
     0: scalar
   help: Maximum measured precipitation value above which precipitation is assumed
     to be in error
@@ -1618,7 +1618,7 @@ maxday_prec:
 maxiter_sntemp:
   default: 1000
   desc: Maximum number of Newton-Raphson iterations to compute stream temperature
-  dimensions:
+  dims:
     0: scalar
   help: Maximum number of Newton-Raphson iterations to compute stream temperature
   maximum: 2000
@@ -1630,7 +1630,7 @@ maxiter_sntemp:
 melt_force:
   default: 140
   desc: Julian date to force snowpack to spring snowmelt stage for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Julian date to force snowpack to spring snowmelt stage for each HRU; varies
     with region depending on length of time that permanent snowpack exists
@@ -1643,7 +1643,7 @@ melt_force:
 melt_look:
   default: 90
   desc: Julian date to start looking for spring snowmelt for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Julian date to start looking for spring snowmelt stage for each HRU; varies
     with region depending on length of time that permanent snowpack exists
@@ -1656,7 +1656,7 @@ melt_look:
 melt_temp:
   default: 1.5
   desc: Temperature at which snowmelt enters a stream
-  dimensions:
+  dims:
     0: scalar
   help: Temperature at which snowmelt enters a stream
   maximum: 10.0
@@ -1668,7 +1668,7 @@ melt_temp:
 monmax:
   default: 100.0
   desc: Daily maximum temperature
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly maximum air temperature to constrain lowest minimum measured air temperatures
     for bad values based on historical temperature for all measurement stations
@@ -1681,7 +1681,7 @@ monmax:
 monmin:
   default: -60.0
   desc: Daily minimum temperature
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly minimum air temperature to constrain lowest minimum measured air temperatures
     for bad values based on historical temperature for all measurement stations
@@ -1694,7 +1694,7 @@ monmin:
 ncol:
   default: 1
   desc: Number of columns for each row of the mapped results
-  dimensions:
+  dims:
     0: scalar
   help: Number of columns for each row of the mapped results
   maximum: 50000
@@ -1706,7 +1706,7 @@ ncol:
 nhm_deplcrv:
   default: 1
   desc: NHM index number for snowpack areal depletion curve
-  dimensions:
+  dims:
     0: nhru
   help: NHM index number for the snowpack areal depletion curve associated with each
     HRU
@@ -1719,7 +1719,7 @@ nhm_deplcrv:
 nhm_id:
   default: 1
   desc: National Hydrologic Model HRU ID
-  dimensions:
+  dims:
     0: nhru
   help: National Hydrologic Model HRU ID
   maximum: 9999999
@@ -1733,7 +1733,7 @@ nhm_id:
 nhm_seg:
   default: 0
   desc: National Hydrologic Model segment ID
-  dimensions:
+  dims:
     0: nsegment
   help: National Hydrologic Model segment ID
   maximum: 9999999
@@ -1747,7 +1747,7 @@ nhm_seg:
 nsos:
   default: 0
   desc: Number of storage/outflow values in table for Puls routing
-  dimensions:
+  dims:
     0: nlake
   help: Number of storage/outflow values in table for each lake using Puls routing
   maximum: mxnsos
@@ -1759,7 +1759,7 @@ nsos:
 o2:
   default: 0.0
   desc: Outflow values in outflow/storage tables for Puls routing
-  dimensions:
+  dims:
     0: mxnsos
     1: nlake
   help: Outflow values in outflow/storage tables for each lake using Puls routing
@@ -1772,7 +1772,7 @@ o2:
 obsin_segment:
   default: 0
   desc: Index of measured streamflow station that replaces inflow to a segment
-  dimensions:
+  dims:
     0: nsegment
   help: Index of measured streamflow station that replaces inflow to a segment
   maximum: nobs
@@ -1786,7 +1786,7 @@ obsin_segment:
 obsout_lake:
   default: 0
   desc: Index of streamflow measurement station that specifies outflow from a lake
-  dimensions:
+  dims:
     0: nlake
   help: Index of streamflow measurement station that specifies outflow from each lake
     using measured flow replacement
@@ -1799,7 +1799,7 @@ obsout_lake:
 obsout_segment:
   default: 0
   desc: Index of measured streamflow station that replaces outflow from a segment
-  dimensions:
+  dims:
     0: nsegment
   help: Index of measured streamflow station that replaces outflow from a segment
   maximum: nobs
@@ -1814,7 +1814,7 @@ op_flow_thres:
   default: 1.0
   desc: Fraction of open depression storage above which surface runoff occurs for
     each timestep
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of open depression storage above which surface runoff occurs; any
     water above maximum open storage capacity spills as surface runoff
@@ -1829,7 +1829,7 @@ op_flow_thres:
 outlet_sta:
   default: 0
   desc: Index of measurement station to use for basin outlet
-  dimensions:
+  dims:
     0: scalar
   help: Index of measured streamflow station corresponding to the basin outlet
   maximum: nobs
@@ -1841,7 +1841,7 @@ outlet_sta:
 padj_rn:
   default: 1.0
   desc: Rain adjustment factor, by month for each precipitation station
-  dimensions:
+  dims:
     0: nrain
     1: nmonth
   help: Monthly (January to December) factor to adjust precipitation lapse rate computed
@@ -1857,7 +1857,7 @@ padj_rn:
 padj_sn:
   default: 1.0
   desc: Snow adjustment factor, by month for each precipitation station
-  dimensions:
+  dims:
     0: nrain
     1: nmonth
   help: Monthly (January to December) factor to adjust precipitation lapse rate computed
@@ -1873,7 +1873,7 @@ padj_sn:
 parent_gw:
   default: 1
   desc: Lumen index in parent model for each GWR
-  dimensions:
+  dims:
     0: nhru
   help: Lumen index in parent model for each GWR
   maximum: 9999999
@@ -1885,7 +1885,7 @@ parent_gw:
 parent_hru:
   default: 1
   desc: Lumen index in parent model for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Lumen index in parent model for each HRU
   maximum: 9999999
@@ -1897,7 +1897,7 @@ parent_hru:
 parent_poigages:
   default: 0
   desc: Lumen index in parent model for each POI gage
-  dimensions:
+  dims:
     0: npoigages
   help: Lumen index in parent model for each POI gage
   maximum: 9999999
@@ -1910,7 +1910,7 @@ parent_poigages:
 parent_segment:
   default: 0
   desc: Lumen index in parent model for each segment
-  dimensions:
+  dims:
     0: nsegment
   help: Lumen index in parent model for each segment
   maximum: 9999999
@@ -1922,7 +1922,7 @@ parent_segment:
 parent_ssr:
   default: 1
   desc: Lumen index in parent model for each SSR
-  dimensions:
+  dims:
     0: nhru
   help: Lumen index in parent model  for each SSR
   maximum: 99999999
@@ -1934,7 +1934,7 @@ parent_ssr:
 pm_d_coef:
   default: 0.34
   desc: Penman-Monteith coefficient
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) Penman-Monteith potential ET D wind-speed coefficient
@@ -1949,7 +1949,7 @@ pm_d_coef:
 pm_n_coef:
   default: 900.0
   desc: Penman-Monteith coefficient
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) Penman-Monteith potential ET N temperauture
@@ -1964,7 +1964,7 @@ pm_n_coef:
 pmn_mo:
   default: 1.0
   desc: Mean monthly precipitation for each lapse precipitation station
-  dimensions:
+  dims:
     0: nrain
     1: nmonth
   help: Mean monthly (January to December) precipitation for each lapse precipitation
@@ -1977,7 +1977,7 @@ pmn_mo:
   units: precip_units
 poi_gage_id:
   desc: POI Gage ID
-  dimensions:
+  dims:
     0: npoigages
   help: USGS stream gage for each POI gage
   maximum: 9999999
@@ -1990,7 +1990,7 @@ poi_gage_id:
 poi_gage_segment:
   default: 0
   desc: Segment index for each POI gage
-  dimensions:
+  dims:
     0: npoigages
   help: Segment index for each POI gage
   maximum: nsegment
@@ -2003,7 +2003,7 @@ poi_gage_segment:
 poi_type:
   default: 1
   desc: Type code for each POI gage
-  dimensions:
+  dims:
     0: npoigages
   help: Type code for each POI gage
   maximum: 1
@@ -2015,7 +2015,7 @@ poi_type:
 potet_cbh_adj:
   default: 1.0
   desc: Potential ET adjustment factor, by month for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor to potential evapotranspiration
@@ -2029,7 +2029,7 @@ potet_cbh_adj:
 potet_sublim:
   default: 0.5
   desc: Fraction of potential ET that is sublimated from snow for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of potential ET that is sublimated from snow in the canopy and snowpack
     for each HRU
@@ -2042,7 +2042,7 @@ potet_sublim:
 ppt_rad_adj:
   default: 0.02
   desc: Radiation reduced if HRU precipitation above this value
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly minimum precipitation, if HRU precipitation exceeds this value, radiation
@@ -2058,7 +2058,7 @@ ppt_rad_adj:
 ppt_zero_thresh:
   default: 0.000
   desc: The zero threshold for precipitation
-  dimensions:
+  dims:
     0: scalar
   help: The minimum/zero threhold for precipitation
   maximum: 0.0
@@ -2069,7 +2069,7 @@ ppt_zero_thresh:
 precip_units:
   default: 0
   desc: Units for measured precipitation
-  dimensions:
+  dims:
     0: scalar
   help: Units for measured precipitation (0=inches; 1=mm)
   maximum: 1
@@ -2084,7 +2084,7 @@ precip_units:
 pref_flow_den:
   default: 0.0
   desc: Fraction of the soil zone in which preferential flow occurs for each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of the soil zone in which preferential flow occurs for each HRU
   maximum: 0.5
@@ -2096,7 +2096,7 @@ pref_flow_den:
 print_freq:
   default: 3
   desc: Frequency for the output frequency
-  dimensions:
+  dims:
     0: scalar
   help: Flag to select the output frequency; for combinations, add index numbers,
     e.g., daily plus yearly = 10; yearly plus total = 3 (0=none; 1=run totals; 2=yearly;
@@ -2110,7 +2110,7 @@ print_freq:
 print_type:
   default: 1
   desc: Type of output written to output file
-  dimensions:
+  dims:
     0: scalar
   help: Flag to select the type of results written to the output file (0=measured
     and simulated flow only; 1=water balance table; 2=detailed output)
@@ -2123,7 +2123,7 @@ print_type:
 psta_elev:
   default: 0.0
   desc: Precipitation station elevation
-  dimensions:
+  dims:
     0: nrain
   help: Elevation of each precipitation measurement station
   maximum: 30000.0
@@ -2137,7 +2137,7 @@ psta_elev:
 psta_mon:
   default: 1.0
   desc: Monthly precipitation for each of the nrain precipitation measurement stations
-  dimensions:
+  dims:
     0: nrain
     1: nmonth
   help: Monthly (January to December) factor to precipitation at each measured station
@@ -2152,7 +2152,7 @@ psta_mon:
 psta_xlong:
   default: 0.0
   desc: Precipitation station longitude, State Plane
-  dimensions:
+  dims:
     0: nrain
   help: Longitude of each precipitation measurement station, State Plane Coordinate
     System
@@ -2165,7 +2165,7 @@ psta_xlong:
 psta_ylat:
   default: 0.0
   desc: Precipitation station latitude, State Plane
-  dimensions:
+  dims:
     0: nrain
   help: Latitude of each precipitation measurement station, State Plane Coordinate
     System
@@ -2178,7 +2178,7 @@ psta_ylat:
 pt_alpha:
   default: 1.26
   desc: Potential ET adjustment factor - Priestly-Taylor
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor used in Priestly-Taylor potential
@@ -2192,7 +2192,7 @@ pt_alpha:
 rad_conv:
   default: 1.0
   desc: Conversion factor to Langleys for measured solar radiation
-  dimensions:
+  dims:
     0: scalar
   help: Conversion factor to Langleys for measured solar radiation
   maximum: 100.0
@@ -2206,7 +2206,7 @@ rad_conv:
 rad_trncf:
   default: 0.5
   desc: Solar radiation transmission coefficient
-  dimensions:
+  dims:
     0: nhru
   help: Transmission coefficient for short-wave radiation through the winter vegetation
     canopy
@@ -2219,7 +2219,7 @@ rad_trncf:
 radadj_intcp:
   default: 1.0
   desc: Intercept in air temperature range adjustment to degree-day equation
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) intercept in air temperature range adjustment
@@ -2233,7 +2233,7 @@ radadj_intcp:
 radadj_slope:
   default: 0.0
   desc: Slope in air temperature range adjustment to degree-day equation
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) slope in air temperature range adjustment to
@@ -2247,7 +2247,7 @@ radadj_slope:
 radj_sppt:
   default: 0.44
   desc: Adjustment to solar radiation on precipitation day - summer
-  dimensions:
+  dims:
     0: nhru
   help: Adjustment factor for computed solar radiation for summer day with greater
     than ppt_rad_adj inches of precipitation for each HRU
@@ -2262,7 +2262,7 @@ radj_sppt:
 radj_wppt:
   default: 0.5
   desc: Adjustment to solar radiation on precipitation day - winter
-  dimensions:
+  dims:
     0: nhru
   help: Adjustment factor for computed solar radiation for winter day with greater
     than ppt_rad_adj inches of precipitation for each HRU
@@ -2277,7 +2277,7 @@ radj_wppt:
 radmax:
   default: 0.8
   desc: Maximum fraction of potential solar radiation
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) maximum fraction of the potential solar radiation
@@ -2293,7 +2293,7 @@ radmax:
 rain_adj:
   default: 1.0
   desc: Monthly rain adjustment factor for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) factor to adjust measured precipitation on each
@@ -2307,7 +2307,7 @@ rain_adj:
 rain_cbh_adj:
   default: 1.0
   desc: Rain adjustment factor, by month for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor to measured precipitation
@@ -2322,7 +2322,7 @@ rain_cbh_adj:
 rain_code:
   default: 2
   desc: Flag indicating rule for precipitation station use
-  dimensions:
+  dims:
     0: nmonth
   help: Monthly (January to December) flag indicating rule for precipitation measurement
     station use (1=only precipitation if the regression stations have precipitation;
@@ -2338,7 +2338,7 @@ rain_code:
 rain_mon:
   default: 1.0
   desc: Rain adjustment factor, by month for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) factor to rain on each HRU to adjust precipitation
@@ -2352,7 +2352,7 @@ rain_mon:
 rate_table:
   default: 5.0
   desc: Rating table 1 with stage (rows) and gate opening (cols)
-  dimensions:
+  dims:
     0: nstage
     1: ngate
   help: Rating table with stage (rows) and gate opening (cols) for rating table 1
@@ -2366,7 +2366,7 @@ rate_table:
 rate_table2:
   default: 5.0
   desc: Rating table 2 with stage (rows) and gate opening (cols)
-  dimensions:
+  dims:
     0: nstage2
     1: ngate2
   help: Rating table with stage (rows) and gate opening (cols) for rating table 2
@@ -2380,7 +2380,7 @@ rate_table2:
 rate_table3:
   default: 5.0
   desc: Rating table 3 with stage (rows) and gate opening (cols)
-  dimensions:
+  dims:
     0: nstage3
     1: ngate3
   help: Rating table with stage (rows) and gate opening (cols) for rating table 3
@@ -2394,7 +2394,7 @@ rate_table3:
 rate_table4:
   default: 5.0
   desc: Rating table 4 with stage (rows) and gate opening (cols)
-  dimensions:
+  dims:
     0: nstage4
     1: ngate4
   help: Rating table with stage (rows) and gate opening (cols) for rating table 4
@@ -2408,7 +2408,7 @@ rate_table4:
 ratetbl_lake:
   default: 0
   desc: Index of lake associated with each rating table
-  dimensions:
+  dims:
     0: nratetbl
   help: Index of lake associated with each rating table for each lake using gate opening
     routing
@@ -2421,7 +2421,7 @@ ratetbl_lake:
 runoff_units:
   default: 0
   desc: Measured streamflow units
-  dimensions:
+  dims:
     0: scalar
   help: Measured streamflow units (0=cfs; 1=cms)
   maximum: 1
@@ -2433,7 +2433,7 @@ runoff_units:
 s2:
   default: 0.0
   desc: Storage values in outflow/storage tables for Puls routing
-  dimensions:
+  dims:
     0: mxnsos
     1: nlake
   help: Storage values in outflow/storage table for each lake using Puls routing
@@ -2446,7 +2446,7 @@ s2:
 sat_threshold:
   default: 999.0
   desc: Soil saturation threshold, above field-capacity threshold
-  dimensions:
+  dims:
     0: nhru
   help: Water holding capacity of the gravity and preferential-flow reservoirs; difference
     between field capacity and total soil saturation for each HRU
@@ -2460,7 +2460,7 @@ sat_threshold:
 seg_cum_area:
   default: NaN
   desc: Segment cumulative area
-  dimensions:
+  dims:
     0: nsegment
   help: Ssegment cumulative area
   maximum: NaN
@@ -2472,7 +2472,7 @@ seg_cum_area:
 seg_depth:
   default: 1.0
   desc: Depth of bankfull water in segment
-  dimensions:
+  dims:
     0: nsegment
   help: Width of segment
   maximum: 250.0
@@ -2485,7 +2485,7 @@ seg_depth:
 seg_elev:
   default: 0.0
   desc: Segment elevation at midpoint
-  dimensions:
+  dims:
     0: nsegment
   help: Segment elevation at midpoint
   maximum: 30000
@@ -2497,7 +2497,7 @@ seg_elev:
 seg_humidity:
   default: 0.7
   desc: Mean monthly humidity for each segment
-  dimensions:
+  dims:
     0: nsegment
     1: nmonth
   help: Mean monthly humidity for each segment, used when values not input in CBH
@@ -2511,7 +2511,7 @@ seg_humidity:
 seg_humidity_sta:
   default: 0
   desc: Index of humidity measurement station for each stream segment
-  dimensions:
+  dims:
     0: nsegment
   help: Index of humidity measurement station for each stream segment
   maximum: nhumid
@@ -2523,7 +2523,7 @@ seg_humidity_sta:
 seg_lat:
   default: 40.0
   desc: Segment latitude
-  dimensions:
+  dims:
     0: nsegment
   help: Latitude of each segment
   maximum: 90.0
@@ -2535,7 +2535,7 @@ seg_lat:
 seg_length:
   default: 1000.0
   desc: Length of each segment
-  dimensions:
+  dims:
     0: nsegment
   help: Length of each segment, bounds based on CONUS
   maximum: 200000.0
@@ -2550,7 +2550,7 @@ seg_length:
 seg_slope:
   default: 0.0001
   desc: Surface slope of each segment
-  dimensions:
+  dims:
     0: nsegment
   help: Surface slope of each segment
   maximum: 2.0
@@ -2565,7 +2565,7 @@ seg_slope:
 seg_summer_humidity:
   default: 0.7
   desc: Summer humidity for each segment
-  dimensions:
+  dims:
     0: nsegment
   help: Summer humidity for each segment, used when values not input in CBH File
   maximum: 1.0
@@ -2577,7 +2577,7 @@ seg_summer_humidity:
 seg_width:
   default: 15.0
   desc: Segment river width
-  dimensions:
+  dims:
     0: nsegment
   help: Segment river width, narrowest observed from Zimmerman 1967, Amazon biggest
   maximum: 40000.0
@@ -2590,7 +2590,7 @@ seg_width:
 seg_winter_humidity:
   default: 0.5
   desc: Winter humidity for each segment
-  dimensions:
+  dims:
     0: nsegment
   help: Winter humidity for each segment, used when values not input in CBH File
   maximum: 1.0
@@ -2602,7 +2602,7 @@ seg_winter_humidity:
 segment_flow_init:
   default: 0.0
   desc: Initial flow in each stream segment
-  dimensions:
+  dims:
     0: nsegment
   help: Initial flow in each stream segment
   maximum: 1.0E7
@@ -2616,7 +2616,7 @@ segment_flow_init:
 segment_type:
   default: 0
   desc: Segment type
-  dimensions:
+  dims:
     0: nsegment
   help: Segment type (0=segment; 1=headwater; 2=lake; 3=replace inflow; 4=inbound
     to NHM; 5=outbound from NHM; 6=inbound to region; 7=outbound from region; 8=drains
@@ -2632,7 +2632,7 @@ segment_type:
 segshade_sum:
   default: 0.0
   desc: Total shade fraction for summer vegetation
-  dimensions:
+  dims:
     0: nsegment
   help: Total shade fraction for summer vegetation; required when stream_temp_flag=1
   maximum: 1.0
@@ -2644,7 +2644,7 @@ segshade_sum:
 segshade_win:
   default: 0.0
   desc: Total shade fraction for winter vegetation
-  dimensions:
+  dims:
     0: nsegment
   help: Total shade fraction for winter vegetation; required when stream_temp_flag=1
   maximum: 1.0
@@ -2656,7 +2656,7 @@ segshade_win:
 settle_const:
   default: 0.1
   desc: Snowpack settlement time constant
-  dimensions:
+  dims:
     0: scalar
   help: Snowpack settlement time constant
   maximum: 0.5
@@ -2668,7 +2668,7 @@ settle_const:
 slowcoef_lin:
   default: 0.015
   desc: Linear gravity-flow reservoir routing coefficient
-  dimensions:
+  dims:
     0: nhru
   help: Linear coefficient in equation to route gravity-reservoir storage downslope
     for each HRU
@@ -2681,7 +2681,7 @@ slowcoef_lin:
 slowcoef_sq:
   default: 0.1
   desc: Non-linear gravity-flow reservoir routing coefficient
-  dimensions:
+  dims:
     0: nhru
   help: Non-linear coefficient in equation to route gravity-reservoir storage downslope
     for each HRU
@@ -2694,7 +2694,7 @@ slowcoef_sq:
 smidx_coef:
   default: 0.005
   desc: Coefficient in contributing area computations
-  dimensions:
+  dims:
     0: nhru
   help: Coefficient in non-linear contributing area algorithm for each HRU
   maximum: 1.0
@@ -2707,7 +2707,7 @@ smidx_coef:
 smidx_exp:
   default: 0.3
   desc: Exponent in contributing area computations
-  dimensions:
+  dims:
     0: nhru
   help: Exponent in non-linear contributing area algorithm for each HRU
   maximum: 5.0
@@ -2720,7 +2720,7 @@ smidx_exp:
 snarea_curve:
   default: 1.0
   desc: Snow area depletion curve values
-  dimensions:
+  dims:
     0: ndeplval
   help: Snow area depletion curve values, 11 values for each curve (0.0 to 1.0 in
     0.1 increments)
@@ -2733,7 +2733,7 @@ snarea_curve:
 snarea_thresh:
   default: 50.0
   desc: Maximum threshold water equivalent for snow depletion
-  dimensions:
+  dims:
     0: nhru
   help: Maximum threshold snowpack water equivalent below which the snow-covered-area
     curve is applied
@@ -2746,7 +2746,7 @@ snarea_thresh:
 snow_adj:
   default: 1.0
   desc: Monthly snow adjustment factor for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) factor to adjust measured precipitation on each
@@ -2760,7 +2760,7 @@ snow_adj:
 snow_cbh_adj:
   default: 1.0
   desc: Snow adjustment factor, by month for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor to measured precipitation
@@ -2775,7 +2775,7 @@ snow_cbh_adj:
 snow_intcp:
   default: 0.1
   desc: Snow interception storage capacity
-  dimensions:
+  dims:
     0: nhru
   help: Snow interception storage capacity for the major vegetation type in each HRU
   maximum: 1.0
@@ -2787,7 +2787,7 @@ snow_intcp:
 snow_mon:
   default: 1.0
   desc: Rain adjustment factor, by month for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) factor to snow on each HRU to adjust precipitation
@@ -2801,7 +2801,7 @@ snow_mon:
 snowinfil_max:
   default: 2.0
   desc: Maximum snow infiltration per day
-  dimensions:
+  dims:
     0: nhru
   help: Maximum snow infiltration per day for each HRU
   maximum: 20.0
@@ -2815,7 +2815,7 @@ snowinfil_max:
 snowpack_init:
   default: 0.0
   desc: Initial snowpack water equivalent in each HRU
-  dimensions:
+  dims:
     0: nhru
   help: Storage of snowpack in each HRU at the beginning of a simulation
   maximum: 5000.0
@@ -2827,7 +2827,7 @@ snowpack_init:
 soil2gw_max:
   default: 0.0
   desc: Maximum value for capillary reservoir excess to GWR
-  dimensions:
+  dims:
     0: nhru
   help: Maximum amount of the capillary reservoir excess that is routed directly to
     the GWR for each HRU
@@ -2840,7 +2840,7 @@ soil2gw_max:
 soil_moist_init_frac:
   default: 0.0
   desc: Initial fraction available water in the capillary reservoir
-  dimensions:
+  dims:
     0: nhru
   help: Initial fraction of available water in the capillary reservoir (fraction of
     soil_moist_max for each HRU
@@ -2854,7 +2854,7 @@ soil_moist_init_frac:
 soil_moist_max:
   default: 2.0
   desc: Maximum value of water for soil zone
-  dimensions:
+  dims:
     0: nhru
   help: Maximum available water holding capacity of capillary reservoir from land
     surface to rooting depth of the major vegetation type of each HRU
@@ -2869,7 +2869,7 @@ soil_rechr_init_frac:
   default: 0.0
   desc: Initial fraction of available water in the soil recharge zone within the capillary
     reservoir
-  dimensions:
+  dims:
     0: nhru
   help: Initial fraction of available water in the capillary reservoir where losses
     occur as both evaporation and transpiration (upper zone of capillary reservoir)
@@ -2885,7 +2885,7 @@ soil_rechr_max_frac:
   default: 1.0
   desc: Fraction of capillary reservoir where losses occur as both evaporation and
     transpiration (soil recharge zone)
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of the capillary reservoir water-holding capacity (soil_moist_max)
     where losses occur as both evaporation and transpiration (upper zone of capillary
@@ -2900,7 +2900,7 @@ soil_rechr_max_frac:
 soil_type:
   default: 2
   desc: HRU soil type
-  dimensions:
+  dims:
     0: nhru
   help: Soil type of each HRU (1=sand; 2=loam; 3=clay)
   maximum: 3
@@ -2913,7 +2913,7 @@ spring_frost:
   default: 111
   desc: The solar date (number of days after winter solstice) of the last killing
     frost of the spring
-  dimensions:
+  dims:
     0: nhru
   help: The solar date (number of days after winter solstice) of the last killing
     frost of the spring
@@ -2926,7 +2926,7 @@ spring_frost:
 srain_intcp:
   default: 0.1
   desc: Summer rain interception storage capacity
-  dimensions:
+  dims:
     0: nhru
   help: Summer rain interception storage capacity for the major vegetation type in
     each HRU
@@ -2939,7 +2939,7 @@ srain_intcp:
 sro_to_dprst_imperv:
   default: 0.2
   desc: Fraction of impervious surface runoff that flows into surface-depression storage
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of impervious surface runoff that flows into surface-depression storage;
     the remainder flows to a stream network for each HRU
@@ -2954,7 +2954,7 @@ sro_to_dprst_imperv:
 sro_to_dprst_perv:
   default: 0.2
   desc: Fraction of pervious surface runoff that flows into surface-depression storage
-  dimensions:
+  dims:
     0: nhru
   help: Fraction of pervious surface runoff that flows into surface-depression storage;
     the remainder flows to a stream network for each HRU
@@ -2969,7 +2969,7 @@ sro_to_dprst_perv:
 ss_init:
   default: 15.0
   desc: Initial interflow temperature
-  dimensions:
+  dims:
     0: nsegment
   help: Initial temperature of interflow entering each segment; recommended value
     equal to long-term average air temperature
@@ -2982,7 +2982,7 @@ ss_init:
 ss_tau:
   default: 30
   desc: Average residence time of subsurface interflow
-  dimensions:
+  dims:
     0: nsegment
   help: Average residence time of subsurface interflow
   maximum: 365
@@ -2994,7 +2994,7 @@ ss_tau:
 ssr2gw_exp:
   default: 1.0
   desc: Coefficient to route water from subsurface to groundwater
-  dimensions:
+  dims:
     0: nssr
   help: Non-linear coefficient in equation used to route water from the gravity reservoir
     to the GWR for each HRU
@@ -3007,7 +3007,7 @@ ssr2gw_exp:
 ssr2gw_rate:
   default: 0.1
   desc: Coefficient to route water from gravity reservoir to GWR
-  dimensions:
+  dims:
     0: nssr
   help: Linear coefficient in equation used to route water from the gravity reservoir
     to the GWR for each HRU
@@ -3021,7 +3021,7 @@ ssstor_init_frac:
   default: 0.0
   desc: Initial fraction of available water in the gravity plus preferential-flow
     reservoirs
-  dimensions:
+  dims:
     0: nssr
   help: Initial fraction of available water in the gravity plus preferential-flow
     reservoirs (fraction of sat_threshold) for each HRU
@@ -3035,7 +3035,7 @@ ssstor_init_frac:
 stream_tave_init:
   default: NaN
   desc: Cold-start stream average stream temperature
-  dimensions:
+  dims:
     0: scalar
   help: Cold-start stream average stream temperature
   maximum: unbounded
@@ -3046,7 +3046,7 @@ stream_tave_init:
 subbasin_down:
   default: 0
   desc: Downstream subbasin for each subbasin
-  dimensions:
+  dims:
     0: nsub
   help: Index number for the downstream subbasin whose inflow is outflow from this
     subbasin
@@ -3059,7 +3059,7 @@ subbasin_down:
 tbl_gate:
   default: 0.0
   desc: Gate openings for each column of rating table 1
-  dimensions:
+  dims:
     0: ngate
   help: Gate openings for each column for rating table 1 for lakes using gate opening
     routing and nratetbl>0
@@ -3072,7 +3072,7 @@ tbl_gate:
 tbl_gate2:
   default: 0.0
   desc: Gate openings for each column of rating table 2
-  dimensions:
+  dims:
     0: ngate2
   help: Gate openings for each column for rating table 2 for lakes using gate opening
     routing and nratetbl>1
@@ -3085,7 +3085,7 @@ tbl_gate2:
 tbl_gate3:
   default: 0.0
   desc: Gate openings for each column of rating table 3
-  dimensions:
+  dims:
     0: ngate3
   help: Gate openings for each column for rating table 3 for lakes using gate opening
     routing and nratetbl>2
@@ -3098,7 +3098,7 @@ tbl_gate3:
 tbl_gate4:
   default: 0.0
   desc: Gate openings for each column of rating table 4
-  dimensions:
+  dims:
     0: ngate4
   help: Gate openings for each column for rating table 4 for lakes using gate opening
     routing and nratetbl>3
@@ -3111,7 +3111,7 @@ tbl_gate4:
 tbl_stage:
   default: 5.0
   desc: Stage values for each row of rating table 1
-  dimensions:
+  dims:
     0: nstage
   help: Stage values for each row for rating table 1 for lakes using gate opening
     routing and nratetbl>0
@@ -3124,7 +3124,7 @@ tbl_stage:
 tbl_stage2:
   default: 5.0
   desc: Stage values for each row of rating table 2
-  dimensions:
+  dims:
     0: nstage2
   help: Stage values for each row for rating table 2 for lakes using gate opening
     routing and nratetbl>1
@@ -3137,7 +3137,7 @@ tbl_stage2:
 tbl_stage3:
   default: 5.0
   desc: Stage values for each row of rating table 3
-  dimensions:
+  dims:
     0: nstage3
   help: Stage values for each row for rating table 3 for lakes using gate opening
     routing and nratetbl>2
@@ -3150,7 +3150,7 @@ tbl_stage3:
 tbl_stage4:
   default: 5.0
   desc: Stage values for each row of rating table 4
-  dimensions:
+  dims:
     0: nstage4
   help: Stage values for each row for rating table 4 for lakes using gate opening
     routing and nratetbl>3
@@ -3163,7 +3163,7 @@ tbl_stage4:
 temp_units:
   default: 0
   desc: Units flag for measured temperature
-  dimensions:
+  dims:
     0: scalar
   help: Flag to indicate the units of measured air-temperature values (0=Fahrenheit;
     1=Celsius)
@@ -3179,7 +3179,7 @@ temp_units:
 tmax_adj:
   default: 0.0
   desc: HRU maximum temperature adjustment
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Adjustment to maximum temperature for each HRU, estimated on the basis of
@@ -3197,7 +3197,7 @@ tmax_adj:
 tmax_allrain_offset:
   default: 1.0
   desc: Precipitation is rain if HRU max temperature >= tmax_allsnow + this value
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) maximum air temperature when precipitation is
@@ -3216,7 +3216,7 @@ tmax_allrain_offset:
 tmax_allsnow:
   default: 32.0
   desc: Maximum temperature when precipitation is all snow
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Maximum air temperature when precipitation is assumed to be snow; if HRU air
@@ -3234,7 +3234,7 @@ tmax_allsnow:
 tmax_cbh_adj:
   default: 0.0
   desc: Monthly maximum temperature adjustment factor for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor to maximum air temperature
@@ -3248,7 +3248,7 @@ tmax_cbh_adj:
 tmax_index:
   default: 50.0
   desc: Monthly index temperature
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) index temperature used to determine precipitation
@@ -3262,7 +3262,7 @@ tmax_index:
 tmax_lapse:
   default: 3.0
   desc: Monthly maximum temperature lapse rate for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) values representing the change in maximum air
@@ -3276,7 +3276,7 @@ tmax_lapse:
 tmin_adj:
   default: 0.0
   desc: HRU minimum temperature adjustment
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Adjustment to minimum temperature for each HRU, estimated on the basis of
@@ -3294,7 +3294,7 @@ tmin_adj:
 tmin_cbh_adj:
   default: 0.0
   desc: Monthly minimum temperature adjustment factor for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) adjustment factor to minimum air temperature
@@ -3308,7 +3308,7 @@ tmin_cbh_adj:
 tmin_lapse:
   default: 3.0
   desc: Monthly minimum temperature lapse rate for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly (January to December) values representing the change in minimum air
@@ -3322,7 +3322,7 @@ tmin_lapse:
 tosegment:
   default: 0
   desc: The index of the downstream segment
-  dimensions:
+  dims:
     0: nsegment
   help: Index of downstream segment to which the segment streamflow flows, for segments
     that do not flow to another segment enter 0
@@ -3338,7 +3338,7 @@ tosegment:
 tosegment_nhm:
   default: 0
   desc: National Hydrologic Model downstream segment ID
-  dimensions:
+  dims:
     0: nsegment
   help: National Model Hydrologic downstream segment ID
   maximum: 9999999
@@ -3350,7 +3350,7 @@ tosegment_nhm:
 transp_beg:
   default: 1
   desc: Month to begin testing for transpiration
-  dimensions:
+  dims:
     0: nhru
   help: Month to begin summing the maximum air temperature for each HRU; when sum
     is greater than or equal to transp_tmax, transpiration begins
@@ -3363,7 +3363,7 @@ transp_beg:
 transp_end:
   default: 13
   desc: Month to stop transpiration period
-  dimensions:
+  dims:
     0: nhru
   help: Month to stop transpiration computations; transpiration is computed thru end
     of previous month
@@ -3376,7 +3376,7 @@ transp_end:
 transp_tmax:
   default: 1.0
   desc: Tmax index to determine start of transpiration
-  dimensions:
+  dims:
     0: nhru
   help: Temperature index to determine the specific date of the start of the transpiration
     period; the maximum air temperature for each HRU is summed starting with the first
@@ -3390,7 +3390,7 @@ transp_tmax:
 tsta_elev:
   default: 0.0
   desc: Temperature station elevation
-  dimensions:
+  dims:
     0: ntemp
   help: Elevation of each air-temperature-measurement station
   maximum: 30000.0
@@ -3404,7 +3404,7 @@ tsta_elev:
 tsta_xlong:
   default: 0.0
   desc: Temperature station longitude, State Plane
-  dimensions:
+  dims:
     0: ntemp
   help: Longitude of each air-temperature-measurement station, State Plane Coordinate
     System
@@ -3417,7 +3417,7 @@ tsta_xlong:
 tsta_ylat:
   default: 0.0
   desc: Temperature station latitude, State Plane
-  dimensions:
+  dims:
     0: ntemp
   help: Latitude of each air-temperature-measurement station, State Plane Coordinate
     System
@@ -3430,7 +3430,7 @@ tsta_ylat:
 tstorm_mo:
   default: 0
   desc: Set to 1 if thunderstorms prevalent during month for each HRU
-  dimensions:
+  dims:
     0: nmonth
     1: nhru
   help: Monthly flag (January to December) for prevalent storm type for each HRU (0=frontal
@@ -3445,7 +3445,7 @@ va_clos_exp:
   default: 0.001
   desc: Coefficient in the exponential equation to compute current surface area of
     closed surface-depression storage
-  dimensions:
+  dims:
     0: nhru
   help: Coefficient in the exponential equation relating maximum surface area to the
     fraction that closed depressions are full to compute current surface area for
@@ -3462,7 +3462,7 @@ va_open_exp:
   default: 0.001
   desc: Coefficient in the exponential equation to compute current surface area of
     open surface-depression storage
-  dimensions:
+  dims:
     0: nhru
   help: Coefficient in the exponential equation relating maximum surface area to the
     fraction that open depressions are full to compute current surface area for each
@@ -3478,7 +3478,7 @@ va_open_exp:
 vce:
   default: 0.0
   desc: East bank average vegetation crown width
-  dimensions:
+  dims:
     0: nsegment
   help: East bank average vegetation crown width for each segment
   maximum: 15.0
@@ -3490,7 +3490,7 @@ vce:
 vcw:
   default: 0.0
   desc: West bank vegetation crown width
-  dimensions:
+  dims:
     0: nsegment
   help: West bank average vegetation crown width for each segment
   maximum: 15.0
@@ -3502,7 +3502,7 @@ vcw:
 vdemn:
   default: 0.0
   desc: Minimum east bank vegetation density
-  dimensions:
+  dims:
     0: nsegment
   help: Minimum east bank vegetation density for each segment
   maximum: 1.0
@@ -3514,7 +3514,7 @@ vdemn:
 vdemx:
   default: 0.0
   desc: Maximum east bank vegetation density
-  dimensions:
+  dims:
     0: nsegment
   help: Maximum east bank vegetation density for each segment
   maximum: 1.0
@@ -3526,7 +3526,7 @@ vdemx:
 vdwmx:
   default: 0.0
   desc: Maximum west bank vegetation density
-  dimensions:
+  dims:
     0: nsegment
   help: Maximum west bank vegetation density for each segment
   maximum: 1.0
@@ -3538,7 +3538,7 @@ vdwmx:
 vdwmn:
   default: 0.0
   desc: Minimum west bank vegetation density
-  dimensions:
+  dims:
     0: nsegment
   help: Minimum west bank vegetation density for each segment
   maximum: 0.0
@@ -3550,7 +3550,7 @@ vdwmn:
 vhe:
   default: 0.0
   desc: East bank vegetation height
-  dimensions:
+  dims:
     0: nsegment
   help: East bank average vegetation height for each segment
   maximum: 30.0
@@ -3562,7 +3562,7 @@ vhe:
 vhw:
   default: 0.0
   desc: West bank vegetation height
-  dimensions:
+  dims:
     0: nsegment
   help: West bank average vegetation height for each segment
   maximum: 30.0
@@ -3574,7 +3574,7 @@ vhw:
 voe:
   default: 0.0
   desc: East bank vegetation offset
-  dimensions:
+  dims:
     0: nsegment
   help: East bank vegetation offset for each segment
   maximum: 100.0
@@ -3586,7 +3586,7 @@ voe:
 vow:
   default: 0.0
   desc: West bank vegetation offset
-  dimensions:
+  dims:
     0: nsegment
   help: West bank vegetation offset for each segment
   maximum: 100.0
@@ -3598,7 +3598,7 @@ vow:
 weir_coef:
   default: 2.7
   desc: Broad-crested weir coefficent
-  dimensions:
+  dims:
     0: nlake
   help: Coefficient for lakes using broad-crested weir routing
   maximum: 3.0
@@ -3610,7 +3610,7 @@ weir_coef:
 weir_len:
   default: 5.0
   desc: Broad-crested weir length
-  dimensions:
+  dims:
     0: nlake
   help: Weir length for lakes using broad-crested weir routing
   maximum: 1000.0
@@ -3622,7 +3622,7 @@ weir_len:
 width_alpha:
   default: 0.015
   desc: Alpha coefficient in power function for width calculation
-  dimensions:
+  dims:
     0: nsegment
   help: Alpha coefficient in power function for width calculation
   maximum: 2.0
@@ -3634,7 +3634,7 @@ width_alpha:
 width_m:
   default: 0.015
   desc: M value in power function for width calculation
-  dimensions:
+  dims:
     0: nsegment
   help: M value in power function for width calculation
   maximum: 2.0
@@ -3646,7 +3646,7 @@ width_m:
 wrain_intcp:
   default: 0.1
   desc: Winter rain interception storage capacity
-  dimensions:
+  dims:
     0: nhru
   help: Winter rain interception storage capacity for the major vegetation type in
     each HRU
@@ -3659,7 +3659,7 @@ wrain_intcp:
 x_coef:
   default: 0.2
   desc: Routing weighting factor
-  dimensions:
+  dims:
     0: nsegment
   help: The amount of attenuation of the flow wave, called the Muskingum routing weighting
     factor; enter 0.0 for reservoirs, diversions, and segment(s) flowing out of the

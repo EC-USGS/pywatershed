@@ -7,7 +7,7 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.constants import epsilon32, zero
 from pynhm.hydrology.PRMSSnow import PRMSSnow
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
@@ -210,7 +210,7 @@ class TestPRMSSnow:
                     )
                     print(f"pkwe[wh_max_diff]: {pkwe[wh_max_diff]}")
                     print(f"pkwe_ans[wh_max_diff]: {pkwe_ans[wh_max_diff]}")
-                    asdf
+                    assert success
 
         snow.finalize()
 

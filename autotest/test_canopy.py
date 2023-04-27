@@ -1,5 +1,4 @@
 import pathlib as pl
-import platform
 
 import numpy as np
 import pytest
@@ -7,7 +6,7 @@ import pytest
 from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 if has_prmscanopy_f:
@@ -24,18 +23,24 @@ class TestPRMSCanopySimple:
 
         nhru = 2
         prms_params = {
-            "nhru": nhru,
-            "hru_area": np.array(nhru * [1.0]),
-            "covden_sum": np.array(nhru * [0.5]),
-            "covden_win": np.array(nhru * [0.5]),
-            "srain_intcp": np.array(nhru * [1.0]),
-            "wrain_intcp": np.array(nhru * [1.0]),
-            "snow_intcp": np.array(nhru * [1.0]),
-            "epan_coef": np.array(nhru * [1.0]),
-            "potet_sublim": np.array(nhru * [1.0]),
-            "cov_type": np.array(nhru * [1]),
+            "dims": {"nhru": nhru},
+            "data_vars": {
+                "hru_area": np.array(nhru * [1.0]),
+                "covden_sum": np.array(nhru * [0.5]),
+                "covden_win": np.array(nhru * [0.5]),
+                "srain_intcp": np.array(nhru * [1.0]),
+                "wrain_intcp": np.array(nhru * [1.0]),
+                "snow_intcp": np.array(nhru * [1.0]),
+                "epan_coef": np.array(nhru * [1.0]),
+                "potet_sublim": np.array(nhru * [1.0]),
+                "cov_type": np.array(nhru * [1]),
+            },
         }
-        prms_params = PrmsParameters(prms_params)
+        prms_params["metadata"] = {}
+        for kk in prms_params["data_vars"].keys():
+            prms_params["metadata"][kk] = {"dims": ("nhru",)}
+
+        prms_params = PrmsParameters(**prms_params)
 
         control = Control(**time_dict, params=prms_params)
 

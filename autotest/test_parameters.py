@@ -3,16 +3,13 @@ import pathlib as pl
 import numpy as np
 import pytest
 
-from pynhm.utils import PrmsParameters
+from pynhm import Parameters, PRMSCanopy
+from pynhm.parameters import PrmsParameters
 from utils import assert_or_print
 
 
-@pytest.fixture
-def canopy_parameters():
-    return tuple(("unknown", "srain_intcp", "wrain_intcp", "snow_intcp"))
-
-
 def test_parameter_init():
+    # TODO: this is now an invalid parameter object, fix?
     parameters = {
         "nhru": 2,
         "abc": np.zeros(2, dtype=float),
@@ -20,7 +17,7 @@ def test_parameter_init():
         "nsegment": 10,
         "xyz": np.arange(12 * 10, dtype=float).reshape(12, 10),
     }
-    param_obj = PrmsParameters(parameters)
+    param_obj = Parameters(data_vars=parameters, validate=False)
 
     answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
 
@@ -42,29 +39,26 @@ def test_parameter_read(domain):
 
     # check dimensions
     answers = domain["test_ans"]["parameter_read"]
-    results = {
-        key: val
-        for key, val in parameters.parameters.items()
-        if key in answers.keys()
-    }
+    results = parameters.dims
     assert_or_print(results, answers, print_ans=domain["print_ans"])
 
     print(f"success parsing...'{parameter_file}'")
     return
 
 
-def test_parameter_canopy_subset(domain, canopy_parameters):
+def test_parameter_canopy_subset(domain):
     parameter_file = domain["param_file"]
     print(f"parsing...'{parameter_file}'")
-
     parameters = PrmsParameters.load(parameter_file)
 
-    canopy_subset = parameters.subset(canopy_parameters)
+    canopy_params = PRMSCanopy.get_parameters()
+    canopy_subset = parameters.subset(canopy_params)
 
+    canopy_params_2 = tuple([*canopy_params, "bar"])
     with pytest.raises(KeyError):
-        v = canopy_subset.parameters["unknown"]
+        canopy_subset = parameters.subset(canopy_params_2)
 
-    for key in canopy_parameters:
+    for key in canopy_params:
         if key != "unknown":
             assert (
                 canopy_subset.parameters[key] is not None
@@ -73,7 +67,7 @@ def test_parameter_canopy_subset(domain, canopy_parameters):
     print(f"success parsing...'{parameter_file}'")
 
 
-def test_parameter_access(domain, canopy_parameters):
+def test_parameter_access(domain):
     parameter_file = domain["param_file"]
     print(f"parsing...'{parameter_file}'")
 
@@ -84,14 +78,11 @@ def test_parameter_access(domain, canopy_parameters):
     ), "'srain_intcp' should not return None"
 
     with pytest.raises(KeyError):
-        v = parameters.parameters["unknown"]
+        _ = parameters.parameters["unknown"]
 
+    # can not delete parameters this way so will not raise a keyerror
     del parameters.parameters["srain_intcp"]
-    with pytest.raises(KeyError):
-        v = parameters.parameters["srain_intcp"]
-
-    with pytest.raises(KeyError):
-        del parameters.parameters["srain_intcp"]
+    _ = parameters.parameters["srain_intcp"]
 
 
 def test_parameter_json(domain, tmp_path):
@@ -107,15 +98,5 @@ def test_parameter_json(domain, tmp_path):
     assert json_file.exists()
 
     params_from_json = PrmsParameters.load_from_json(json_file)
-
-    param_obj_keys = params_from_json.__dict__.keys()
-    assert sorted(param_obj_keys) == sorted(parameters.__dict__.keys())
-
-    for kk in param_obj_keys:
-        vv_result = params_from_json.__dict__["parameter_dimensions"]
-        vv_ans = parameters.__dict__["parameter_dimensions"]
-        assert len(vv_result) == len(vv_ans)
-        for kk1 in vv_result.keys():
-            assert vv_result[kk1] == vv_ans[kk1]
-
+    np.testing.assert_equal(parameters.data, params_from_json.data)
     return

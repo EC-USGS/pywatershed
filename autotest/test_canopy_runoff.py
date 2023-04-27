@@ -7,7 +7,7 @@ from pynhm.base.adapter import adapter_factory
 from pynhm.base.control import Control
 from pynhm.hydrology.PRMSCanopy import PRMSCanopy
 from pynhm.hydrology.PRMSRunoff import PRMSRunoff
-from pynhm.utils.parameters import PrmsParameters
+from pynhm.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")

@@ -23,9 +23,16 @@ test_ans:
 
   parameter_read:
     nhru: 3851
-    ngw: 3851
-    nssr: 3851
     nsegment: 1942
+    nssr: 3851
+    ngw: 3851
+    npoigages: 347
+    nobs: 347
+    ndeplval: 55
+    ndepl: 5
+    nmonth: 12
+    scalar: 1
+    ndoy: 366
 
   preprocess_cbh:
     files_to_df:

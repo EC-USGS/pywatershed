@@ -1,6 +1,6 @@
 import numpy as np
 
-from pynhm.base.storageUnit import StorageUnit
+from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -18,14 +18,13 @@ class SWBRootZone(StorageUnit):
         self,
         control: Control,
         net_rain: adaptable,
-        snowmelt: adaptable, 
+        snowmelt: adaptable,
         potet: adaptable,
         budget_type: str = None,
         calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ):
-
+    ) -> "SWBRootZone":
         super().__init__(
             control=control,
             verbose=verbose,
@@ -37,6 +36,12 @@ class SWBRootZone(StorageUnit):
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
+        return
+
+    @staticmethod
+    def get_dimensions() -> tuple:
+        """Get dimensions"""
+        return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:
@@ -46,10 +51,12 @@ class SWBRootZone(StorageUnit):
             parameters: input parameters
 
         """
-        return ("base_curve_number",
-                "max_net_infiltration_rate",
-                "available_water_capacity",
-                "rooting_depth")
+        return (
+            "base_curve_number",
+            "max_net_infiltration_rate",
+            "available_water_capacity",
+            "rooting_depth",
+        )
 
     @staticmethod
     def get_inputs() -> tuple:
@@ -59,9 +66,7 @@ class SWBRootZone(StorageUnit):
             variables: input variables
 
         """
-        return ("net_rain",
-                "snowmelt",
-                "potet")
+        return ("net_rain", "snowmelt", "potet")
 
     @staticmethod
     def get_mass_budget_terms():
@@ -122,7 +127,10 @@ class SWBRootZone(StorageUnit):
 
         self._simulation_time = simulation_time
 
-        (self.runoff[:], self.storage[:],) = self._calculate_numpy(
+        (
+            self.runoff[:],
+            self.storage[:],
+        ) = self._calculate_numpy(
             self.base_curve_number,
             self.net_rain,
             self.snowmelt,
@@ -137,7 +145,6 @@ class SWBRootZone(StorageUnit):
         snowmelt,
         storage_old,
     ):
-
         # TBD
 
         return (runoff, storage)

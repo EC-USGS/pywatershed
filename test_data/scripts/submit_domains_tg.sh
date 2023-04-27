@@ -21,7 +21,7 @@ conda activate gnu_tg
 which gcc
 which gfortran
 
-conda activate --stack pynhm_tg
+conda activate --stack pywatershed_tg
 conda list
 
 # Could parallelize with -n=$SLURM_NTASKS but

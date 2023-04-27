@@ -90,9 +90,9 @@ the fortran kernels in pynhm only compile with gnu.
 Python >= 3.8 is required. Three different python environments are specified within the repository.
 These are:
 
-* Minimal (for developing/testing), 'pynhm': ci/requirements/environment.yml
+* Minimal (for developing/testing), 'pyws': ci/requirements/environment.yml
 * Notebooks (~= minimal + jupyter), 'pyws_nb': examples/examples_env.yml
-* Documentation (only if you want to build the documentation), 'pynhm-docs': ci/requirements/doc.yml
+* Documentation (only if you want to build the documentation), 'pyws-docs': ci/requirements/doc.yml
 
 We recommend (because we test it in CI) using anacoda or miniconda to establish these environments
 with the following commands

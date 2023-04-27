@@ -59,6 +59,7 @@ generated/
 
 # gis data
 examples/pynhm_gis
+examples/pywatershed_gis
 examples/model_loop_custom_output
 
 # graphics

@@ -9,7 +9,7 @@ on:
 
 jobs:
 
-  pynhm_setup:
+  pyws_setup:
     name: standard installation
     runs-on: ubuntu-latest
     strategy:
@@ -42,14 +42,14 @@ jobs:
 
       - name: Print pyhmn version
         run: |
-          python -c "import pynhm; print(pynhm.__version__)"
+          python -c "import pywatershed; print(pywatershed.__version__)"
 
-      - name: Build pynhm, check dist outputs
+      - name: Build pywatershed, check dist outputs
         run: |
           python -m build
           twine check --strict dist/*
 
-  pynhm_lint:
+  pyws_lint:
     name: linting
     runs-on: ubuntu-latest
     strategy:
@@ -81,26 +81,26 @@ jobs:
           echo "if isort check fails update isort using"
           echo "  pip install isort --upgrade"
           echo "and run"
-          echo "  isort ./pynhm ./autotest"
+          echo "  isort ./pywatershed ./autotest"
           echo "and then commit the changes."
-          isort --check --diff ./pynhm
+          isort --check --diff ./pywatershed
 
       - name: Run black
         run: |
           echo "if black check fails update black using"
           echo "  pip install black --upgrade"
           echo "and run"
-          echo "  black ./pynhm ./autotest"
+          echo "  black ./pywatershed ./autotest"
           echo "and then commit the changes."
-          black --check --diff ./pynhm
+          black --check --diff ./pywatershed
 
       - name: Run flake8
         run: |
-          flake8 --count --show-source --exit-zero ./pynhm ./autotest
+          flake8 --count --show-source --exit-zero ./pywatershed ./autotest
 
       - name: Run pylint
         run: |
-          pylint --jobs=2 --errors-only --exit-zero ./pynhm ./autotest
+          pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 
   test:
     name: ${{ matrix.os}} py${{ matrix.python-version }}
@@ -166,7 +166,7 @@ jobs:
         run: |
           python update_flopy.py
 
-      - name: Install pynhm
+      - name: Install pywatershed
         run: |
           pip install .
 
@@ -193,7 +193,7 @@ jobs:
           -n=auto
           --durations=0
           --all_domains
-          --cov=pynhm
+          --cov=pywatershed
           --cov-report=xml
           --junitxml=pytest.xml
 

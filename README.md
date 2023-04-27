@@ -1,9 +1,9 @@
-# pynhm
-[![ci-badge](https://github.com/ec-usgs/pynhm/workflows/CI/badge.svg?branch=main)](https://github.com/ec-usgs/pynhm/actions?query=workflow%3ACI)
-[![codecov-badge](https://codecov.io/gh/ec-usgs/pynhm/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pynhm)
-[![Documentation Status](https://readthedocs.org/projects/pynhm/badge/?version=latest)](https://pynhm.readthedocs.io/en/latest/?badge=latest)
+# pywatershed
+[![ci-badge](https://github.com/ec-usgs/pywatershed/workflows/CI/badge.svg?branch=main)](https://github.com/ec-usgs/pywatershed/actions?query=workflow%3ACI)
+[![codecov-badge](https://codecov.io/gh/ec-usgs/pywatershed/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pywatershed)
+[![Documentation Status](https://readthedocs.org/projects/pywatershed/badge/?version=latest)](https://pywatershed.readthedocs.io/en/latest/?badge=latest)
 
-[//]: # (<img src="https://raw.githubusercontent.com/ec-usgs/pynhm/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">)
+[//]: # (<img src="https://raw.githubusercontent.com/ec-usgs/pywatershed/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">)
 
 Purpose
 =========
@@ -26,7 +26,7 @@ Goals for EC Watershed Modeling:
   * Redesign PRMS to be more modern and flexible
   * Prioritize process representations in the current National Hydrological Model (NHM) based on PRMS 5.2.1
 
-Prototype an EC watershed model: "pynhm"
+Prototype an EC watershed model: "pywatershed"
   * Redesign PRMS quickly in python
   * Couple to MF6 via BMI/XMI interface (Hughes et al, 2021; Hutton et al, 2020)
   * Establish a prototyping ground for EC codes that couples to the compiled framework: low cost proof of concepts (at the price of potentially less computational performance)
@@ -56,15 +56,15 @@ One could also do
 but this is not guaranteed.
 
 Once the environment is established, activate the environment and install
-pynhm
+pywatershed
 
-`conda activate pyws_nb; cd pynhm; pip install .`
+`conda activate pyws_nb; cd pywatershed; pip install .`
 
 If you would like to compile the fortran computational kernels for
 certain physical process representations (not required), you'll need a fortran
 compiler and you will run
 
-`export PYWS_FORTRAN=true; cd pynhm;  pip install .`
+`export PYWS_FORTRAN=true; cd pywatershed;  pip install .`
 
 See Developer Requirements below for more details.
 
@@ -82,10 +82,10 @@ two applications:
 
   1. Compiling and running C/Fortran PRMS code to generate testing/verification data
   2. Compiling (installing) and running fortran backends/kernels for some hydrological
-     process representations in pynhm
+     process representations in pywatershed
 
 On Apple Silicon, the PRMS source code is only currently known to compile with intel while
-the fortran kernels in pynhm only compile with gnu.
+the fortran kernels in pywatershed only compile with gnu.
 
 Python >= 3.8 is required. Three different python environments are specified within the repository.
 These are:
@@ -112,9 +112,9 @@ There are also .txt equivalents that can be used for installing from pip, like s
 though these are not comprehensive installs as with conda and not tested.
 
 Once the python environment and dependencies are established and activated (`conda activate env_of_choice`),
-pynhm is installed for development into that environment with the following command
+pywatershed is installed for development into that environment with the following command
 
-`cd pynhm; pip install -e .`
+`cd pywatershed; pip install -e .`
 
 The numpy extension F2PY is used to provide fortran compiled kernels of core calculations to boost
 performance. F2PY is documented [within numpy](https://numpy.org/doc/stable/f2py/index.html). This
@@ -127,7 +127,7 @@ export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"
 export CC=path/to/gcc  # for example
 export FC=path/to/gfortran  # for example
 export PYWS_FORTRAN=true
-cd path/to/pynhm
+cd path/to/pywatershed
 pip install -e .
 ```
 
@@ -137,7 +137,7 @@ To run the tests, we first need to generate the test data. This consists of runn
 and then converting the output to netcdf:
 
 ```
-cd path/to/pynhm/test_data/scripts
+cd path/to/pywatershed/test_data/scripts
 pytest -v -n=4 test_run_domains.py
 pytest -v -n=8 test_nc_domains.py
 ```
@@ -145,7 +145,7 @@ pytest -v -n=8 test_nc_domains.py
 Finally, run the tests themselves,
 
 ```
-cd path/to/pynhm/autotest
+cd path/to/pywatershed/autotest
 pytest -v -n=8
 ```
 
@@ -164,9 +164,9 @@ be verified moving ahead in time.
 Example Notebooks
 ==================
 Jupyter notebooks containing examples are found in the
-[examples/](https://github.com/EC-USGS/pynhm/tree/main/examples) directory. Numbered notebooks are tested.
+[examples/](https://github.com/EC-USGS/pywatershed/tree/main/examples) directory. Numbered notebooks are tested.
 Notebooks 00 and 01 walk the user through the setting the python environment and running the software tests.
-Notebook 02 demonstrates modeling with pynhm. Non-numbered notebooks cover additional topics. These notebooks
+Notebook 02 demonstrates modeling with pywatershed. Non-numbered notebooks cover additional topics. These notebooks
 are note yet covered by testing and so may be expected to have some issues until they are added to testing.
 
 
@@ -176,13 +176,13 @@ The contents of directories at this level is described. Therein you may discover
 
 ```
 .github/    Github actions for deploying continuous integration (CI)
-autotest/   pynhm package testing using pytest
+autotest/   pywatershed package testing using pytest
 bin/        PRMS executables distributed
 ci/         Python environments for CI
 doc/        Package/code documentation source code
 examples/   How to use the package, mostly jupyter notebooks
 prms_src/   PRMS source used for generating executables in bin/
-pynhm/      Package source
+pywatershed/      Package source
 reference/  Ancillary materials for development
 resources/  Static stuff like images
 test_data/  Data used for automated testing

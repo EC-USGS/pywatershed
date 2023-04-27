@@ -130,13 +130,13 @@ class TestPRMSCanopyDomain:
                     print(f"time step {istep}")
                     print(f"output variable {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
 
         cnp.finalize()
 
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")
         # is comparing along the way slower or faster than comparing netcdf?
 
         # prms_output_dataframes = {}
@@ -150,7 +150,7 @@ class TestPRMSCanopyDomain:
         # # get a dictionary of dataframes for process model output
         # pyws_output_dataframes = cnp.get_output_dataframes()
 
-        # # compare prms and pynhm data
+        # # compare prms and pywatershed data
         # for cv in comparison_variables:
         #     prms_data = prms_output_dataframes[cv]
         #     pyws_data = pyws_output_dataframes[cv]
@@ -163,7 +163,7 @@ class TestPRMSCanopyDomain:
         #     diffmin = diff.min()
         #     diffmax = diff.max()
         #     print(f"prms   {a1.min()}    {a1.max()}")
-        #     print(f"pynhm  {a2.min()}    {a2.max()}")
+        #     print(f"pywatershed  {a2.min()}    {a2.max()}")
         #     print(f"diff   {diffmin}  {diffmax}")
 
         #     atol = 1.0e-5

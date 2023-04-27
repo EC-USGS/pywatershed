@@ -26,4 +26,4 @@ flag `--all_domains` will detect these repos and run them.
 This contains code for reproducing test data in the domains. Importantly, `run_domains.py` should be run
 occasionally to update the test data.
 
-Original source data can be found on Denali for most (all?) domains in `/home/jmccreight/pynhm_data`.
+Original source data can be found on Denali for most (all?) domains in `/home/jmccreight/pywatershed_data`.

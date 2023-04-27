@@ -102,7 +102,7 @@ class TestPRMSSoilzone:
                     # print(f"time step {istep}")
                     print(f"fail output variable: {key}")
                     print(f"prms   {a1.min()}    {a1.max()}")
-                    print(f"pynhm  {a2.min()}    {a2.max()}")
+                    print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
 
             # if istep == 15:
@@ -111,7 +111,7 @@ class TestPRMSSoilzone:
         soil.finalize()
 
         if not all_success:
-            raise Exception("pynhm results do not match prms results")
+            raise Exception("pywatershed results do not match prms results")
 
         #   gw.output()
 

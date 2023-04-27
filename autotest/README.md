@@ -11,7 +11,7 @@ Pytest options can be explored via `pytest --help`.
 
 ## Developer
 
-This is how the pynhm package tests itself.
+This is how the pywatershed package tests itself.
 
 The test suite consists both
 	* stand alone tests, and
@@ -40,9 +40,9 @@ inputs (e.g. CBH forcing files, parameter files), static or reference model
 output (from PRMS/NHM), and the answers to domain tests.
 
 Examples of `domain_yaml` files can be found in, for example, in
-`pynhm/test_data/drb_2yr/drb_2yr.yaml`
+`pywatershed/test_data/drb_2yr/drb_2yr.yaml`
 and
-`pynhm/test_data/conus_2yr/conus_2yr.yaml`.
+`pywatershed/test_data/conus_2yr/conus_2yr.yaml`.
 
 
 ### Domain inputs

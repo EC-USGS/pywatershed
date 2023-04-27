@@ -10,6 +10,8 @@ from pynhm.hydrology.Starfit import Starfit
 from pynhm.parameters import StarfitParameters
 
 
+# havent pared down the data yet to add it to the repo
+@pytest.mark.xfail
 def test_regress(tmp_path):
     # Regression against independenly run outputs in pickle file
 

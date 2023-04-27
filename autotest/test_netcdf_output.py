@@ -205,7 +205,9 @@ def test_separate_together(domain, control, tmp_path, separate):
                 nc_file = test_output_dir / f"{vv}.nc"
                 assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
-                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
+                if isinstance(
+                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
+                ):
                     assert (ds[vv].values == proc[vv].data).all()
                 else:
                     assert (ds[vv][-1, :] == proc[vv]).all()
@@ -222,7 +224,9 @@ def test_separate_together(domain, control, tmp_path, separate):
             nc_vars = set(ds.data_vars)
             assert proc_vars == nc_vars
             for vv in proc.variables:
-                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
+                if isinstance(
+                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
+                ):
                     assert (ds[vv].values == proc[vv].data).all()
 
                 else:

@@ -340,7 +340,7 @@ def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
 
     With `print_debug` set to 5 in the control file, PRMS 5.2.1 prings the
     `soltab_debug` file in the run directory. This function parses it. Both the
-    PRMS 5.2.1 in pynhm and this routine have been extended to print and ingest
+    PRMS 5.2.1 in pywatershed and this routine have been extended to print and ingest
     not only "soltab_potsw" but "soltab_horad_potsw" and "soltab_sunhrs" as
     well.
 

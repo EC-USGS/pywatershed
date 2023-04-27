@@ -3,7 +3,7 @@
 Metadata for variables, parameters and dimensions are accssed by the functions
 in this module.
 
-The metadata are static (pynhm/static/metadata) so this is a module and
+The metadata are static (pywatershed/static/metadata) so this is a module and
 not a class.
 
 """

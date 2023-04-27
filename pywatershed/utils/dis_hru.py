@@ -100,7 +100,7 @@ class DisHru:
 
     # not used
     # shape_file = (
-    #     "/Users/jamesmcc/usgs/data/pynhm/20220209_gm_delaware_river"
+    #     "/Users/jamesmcc/usgs/data/pywatershed/20220209_gm_delaware_river"
     #     "/GIS_simple/HRU_subset.shp")
     param_file = (__pywatershed_root__ / "../test_data/drb_2yr/myparam.param")
     disu_file = pl.Path(".") / "disu_example_file.mf6"

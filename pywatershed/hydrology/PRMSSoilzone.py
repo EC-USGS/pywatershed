@@ -33,7 +33,7 @@ class PRMSSoilzone(StorageUnit):
         dprst_seep_hru: adaptable,
         hru_impervevap: adaptable,
         hru_intcpevap: adaptable,
-        infil_hru: adaptable,  # file by /pynhm/analysis/budget_soilzone.py
+        infil_hru: adaptable,  # file by /pywatershed/analysis/budget_soilzone.py
         sroff: adaptable,
         potet: adaptable,
         transp_on: adaptable,

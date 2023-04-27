@@ -8,7 +8,7 @@ from pywatershed.constants import fileish
 
 
 class Model:
-    """pynhmn model builder class.
+    """pywatershedn model builder class.
 
     Build a model from process classes. Model wires the inputs and outputs,
     searching for unavailable inputs from file (input_dir).

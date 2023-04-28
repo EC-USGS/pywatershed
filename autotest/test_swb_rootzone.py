@@ -30,7 +30,7 @@ def test_init(domain, tmp_path):
     swb_rz = SWBRootZone(
         control,
         **input_variables,
-        budget_type="error",
+        budget_type="warn",
     )
 
     nc_parent = tmp_path / domain["domain_name"]

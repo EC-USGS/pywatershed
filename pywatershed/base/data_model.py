@@ -166,10 +166,11 @@ class DatasetDict(Accessor):
         with pl.Path(the_file).open("r") as file_stream:
             dd = cls(**yaml.load(file_stream, Loader=yaml.Loader))
 
-        for vv in dd.variables:
-            # TODO, introduce dims for shape if necessary
-            if not isinstance(dd.variables[vv], np.ndarray):
-                dd.variables[vv] = np.array(dd.variables[vv])
+        for cv in ["coords", "data_vars"]:
+            for vv in dd[cv].keys():
+                # TODO, introduce dims for shape if necessary
+                if not isinstance(dd[cv][vv], np.ndarray):
+                    dd[cv][vv] = np.array(dd[cv][vv])
 
         return dd
 

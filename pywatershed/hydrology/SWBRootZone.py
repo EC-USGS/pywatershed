@@ -1,5 +1,3 @@
-import numpy as np
-
 from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
@@ -54,6 +52,7 @@ class SWBRootZone(StorageUnit):
             "max_net_infiltration_rate",
             "available_water_capacity",
             "rooting_depth",
+            "swb_rootzone_storage_init",
         )
 
     @staticmethod
@@ -75,10 +74,10 @@ class SWBRootZone(StorageUnit):
             dict: initial values for named variables
         """
         return {
-            "swb_runoff": nan,
-            "swb_rootzone_storage": nan,
-            "swb_rootzone_storage_old": nan,
-            "swb_rootzone_storage_change": nan,
+            "swb_runoff": zero,
+            "swb_rootzone_storage": zero,
+            "swb_rootzone_storage_old": zero,
+            "swb_rootzone_storage_change": zero,
             "swb_net_infiltration": zero,
         }
 
@@ -99,6 +98,7 @@ class SWBRootZone(StorageUnit):
         }
 
     def _set_initial_conditions(self):
+        self.swb_rootzone_storage[:] = self.swb_rootzone_storage_init.copy()
         return
 
     def _advance_variables(self) -> None:

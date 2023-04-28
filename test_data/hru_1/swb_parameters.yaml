@@ -10,6 +10,7 @@ data_vars:
   available_water_capacity: 3.0
   rooting_depth: 1.2
   base_curve_number: 87
+  swb_rootzone_storage_init: .5
 
 metadata:
   global:
@@ -65,3 +66,13 @@ metadata:
     minimum: 0.0
     type: float32
     units: feet
+
+  swb_rootzone_storage_init:
+    default: .5
+    desc: Initial (cold start) swb_rootzone_storage
+    dims:
+      - nhru
+    maximum: 74.0
+    minimum: 0.0
+    type: float32
+    units: inches

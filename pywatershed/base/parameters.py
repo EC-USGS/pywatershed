@@ -8,11 +8,11 @@ from .data_model import DatasetDict
 class Parameters(DatasetDict):
     def __init__(
         self,
-        dims: dict = {},
-        coords: dict = {},
-        data_vars: dict = {},
-        metadata: dict = {},
-        encoding: dict = {},
+        dims: dict = None,
+        coords: dict = None,
+        data_vars: dict = None,
+        metadata: dict = None,
+        encoding: dict = None,
         validate: bool = True,
     ) -> "Parameters":
         """Parameter class

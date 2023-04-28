@@ -4,7 +4,7 @@ from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan
+from ..constants import nan, zero
 
 
 class SWBRootZone(StorageUnit):
@@ -46,10 +46,8 @@ class SWBRootZone(StorageUnit):
     @staticmethod
     def get_parameters() -> tuple:
         """Get root zone reservoir parameters
-
         Returns:
             parameters: input parameters
-
         """
         return (
             "base_curve_number",
@@ -61,12 +59,28 @@ class SWBRootZone(StorageUnit):
     @staticmethod
     def get_inputs() -> tuple:
         """Get root zone reservoir input variables
-
         Returns:
             variables: input variables
-
         """
-        return ("net_rain", "snowmelt", "potet")
+        return (
+            "net_rain",
+            "snowmelt",
+            "potet",
+        )
+
+    @staticmethod
+    def get_init_values() -> dict:
+        """Get SWB rootzone initial values
+        Returns:
+            dict: initial values for named variables
+        """
+        return {
+            "swb_runoff": nan,
+            "swb_rootzone_storage": nan,
+            "swb_rootzone_storage_old": nan,
+            "swb_rootzone_storage_change": nan,
+            "swb_net_infiltration": zero,
+        }
 
     @staticmethod
     def get_mass_budget_terms():
@@ -77,33 +91,14 @@ class SWBRootZone(StorageUnit):
             ],
             "outputs": [
                 "swb_runoff",
-                "net_infiltration",
+                "swb_net_infiltration",
             ],
             "storage_changes": [
-                "storage_change",
+                "swb_rootzone_storage_change",
             ],
-        }
-
-    @staticmethod
-    def get_init_values() -> dict:
-        """Get SWB rootzone initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
-        return {
-            "swb_runoff": nan,
-            "storage": nan,
-            "storage_old": nan,
-            "storage_change": nan,
         }
 
     def _set_initial_conditions(self):
-        # initialize SWB rootzone storage
-        self.swb_runoff[:] = 0.0
-        self.net_infiltration = 0.0
-        # self.storage[:] = ?
-        # self.storage_old[:] = ?
         return
 
     def _advance_variables(self) -> None:
@@ -111,7 +106,7 @@ class SWBRootZone(StorageUnit):
         Returns:
             None
         """
-        self.storage_old[:] = self.storage
+        self.swb_rootzone_storage_old[:] = self.swb_rootzone_storage
         return
 
     def _calculate(self, simulation_time):
@@ -128,13 +123,13 @@ class SWBRootZone(StorageUnit):
         self._simulation_time = simulation_time
 
         (
-            self.runoff[:],
-            self.storage[:],
+            self.swb_runoff[:],
+            self.swb_rootzone_storage[:],
         ) = self._calculate_numpy(
-            self.base_curve_number,
-            self.net_rain,
-            self.snowmelt,
-            self.storage_old,
+            base_curve_number=self.base_curve_number,
+            net_rain=self.net_rain,
+            snowmelt=self.snowmelt,
+            storage_old=self.swb_rootzone_storage_old,
         )
         return
 
@@ -146,5 +141,7 @@ class SWBRootZone(StorageUnit):
         storage_old,
     ):
         # TBD
+        storage = storage_old + net_rain
+        runoff = snowmelt
 
         return (runoff, storage)

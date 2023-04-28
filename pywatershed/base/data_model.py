@@ -68,7 +68,7 @@ class DatasetDict(Accessor):
         if metadata is None:
             metadata = {}
         if encoding is None:
-            encoding = {}
+            encoding = {kk: {} for kk in metadata.keys()}
 
         self._data_vars = data_vars
         self._dims = dims
@@ -164,7 +164,14 @@ class DatasetDict(Accessor):
         import yaml
 
         with pl.Path(the_file).open("r") as file_stream:
-            return cls(**yaml.load(file_stream, Loader=yaml.Loader))
+            dd = cls(**yaml.load(file_stream, Loader=yaml.Loader))
+
+        for vv in dd.variables:
+            # TODO, introduce dims for shape if necessary
+            if not isinstance(dd.variables[vv], np.ndarray):
+                dd.variables[vv] = np.array(dd.variables[vv])
+
+        return dd
 
     @classmethod
     def from_dict(cls, dict_in, copy=False):
@@ -607,10 +614,13 @@ def dd_to_xr_dd(dd: dict) -> dict:
         elif key in dd["coords"].keys():
             cv = "coords"
 
+        key_enc = None
+        if key in encoding.keys():
+            key_enc = encoding[key]
         dd[cv][key] = {
             **val,
             "data": dd[cv][key],
-            "encoding": encoding[key],
+            "encoding": key_enc,
         }
 
     return dd

@@ -636,7 +636,7 @@ class Budget(Accessor):
         for key in self.terms.keys():
             global_attrs[key] = "[" + ", ".join(self.terms[key]) + "]"
 
-        coordinates = {"one": 0, **self.control.params.nhm_coordinates}
+        coordinates = {"one": 0, **self.control.params.coords}
 
         self._netcdf = NetCdfWrite(
             nc_path,

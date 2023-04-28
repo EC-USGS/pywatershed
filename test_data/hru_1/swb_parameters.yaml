@@ -2,6 +2,8 @@ dims:
   nhru: 1
 
 coords:
+  nhm_id:
+    - 1
 
 data_vars:
   max_net_infiltration_rate: 0.24
@@ -10,7 +12,15 @@ data_vars:
   base_curve_number: 87
 
 metadata:
-  global: "SWB Coolness"
+  global:
+    model: "SWB Coolness"
+
+  nhm_id:
+    desc: NHM HRU identifier
+    dims:
+      - nhru
+    type: int32
+    units: none
 
   available_water_capacity:
     default: 2.0

@@ -1,6 +1,5 @@
 import json
 
-import netCDF4 as nc4
 import numpy as np
 
 from ..base import meta
@@ -203,6 +202,11 @@ class PrmsParameters(Parameters):
         return
 
     @staticmethod
+    def _from_dict(param_dict: dict) -> "PrmsParameters":
+        """Load parameters from a dictionary of just parameters"""
+        return PrmsParameters._after_load(param_dict)
+
+    @staticmethod
     def load_from_json(json_filename: fileish) -> "PrmsParameters":
         """Load parameters from a json file
 
@@ -261,15 +265,6 @@ class PrmsParameters(Parameters):
             for key, value in parameter_dict.items():
                 param_dim_names = meta.get_params(key)[key]["dims"]
                 parameter_dimensions_dict[key] = {"dims": param_dim_names}
-
-                # need below?
-                # this was original code before above
-                # if len(param_dim_names):
-                #     param_dim_names = list(
-                #         param_dimensions_dict[key]["dims"].values()
-                #     )
-                # else:
-                #     param_dim_names = [key]
 
                 common_params = set(param_dim_names) & set(dims)
                 if not len(common_params):

@@ -13,8 +13,7 @@ dependencies:
   - pint
   - pip
   - pip:
-      - click != 8.1.0
-      - black < 23.1.0
+      - black
       - isort
       - flake8
       - pylint

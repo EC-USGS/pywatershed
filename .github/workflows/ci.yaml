@@ -142,13 +142,14 @@ jobs:
           version: 11
 
       - name: Install Dependencies via Micromamba
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: ./ci/requirements/environment.yml
           cache-downloads: true
           cache-env: true
           extra-specs: |
-            python=${{ matrix.python-version }}
+            python=${{matrix.python-version}}
+            conda
 
       - name: Checkout MODFLOW 6
         uses: actions/checkout@v3

@@ -117,7 +117,6 @@ class DisHru:
         disu_file: fileish = None,
         **kwargs,
     ):
-
         # read the parameter file: currently just for HRU areas
         self._param_file = param_file
         self.params = params

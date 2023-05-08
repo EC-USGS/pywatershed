@@ -1,5 +1,4 @@
-black < 23.1.0
-click != 8.1.0
+black
 epiweeks
 flake8
 git+https://github.com/modflowpy/flopy.git
@@ -19,4 +18,4 @@ pytest-env
 pytest-order
 pytest-xdist
 pyyaml
-git+https://github.com/jmccreight/xarray.git@to_dict-numpy-data-version-fake
+git+https://github.com/pydata/xarray.git

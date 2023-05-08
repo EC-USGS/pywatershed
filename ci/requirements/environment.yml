@@ -13,14 +13,13 @@ dependencies:
   - pint
   - pip
   - pip:
-      - click != 8.1.0
-      - black < 23.1.0
+      - black
       - isort
       - flake8
       - pylint
       - git+https://github.com/modflowpy/flopy.git
       - modflow-devtools
-      - git+https://github.com/jmccreight/xarray.git@to_dict-numpy-data-version-fake
+      - git+https://github.com/pydata/xarray.git
   - pytest
   - pytest-cov
   - pytest-env

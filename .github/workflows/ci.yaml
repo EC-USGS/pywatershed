@@ -139,7 +139,7 @@ jobs:
         uses: awvwgk/setup-fortran@main
         with:
           compiler: gcc
-          version: 12
+          version: 11
 
       - name: Install Dependencies via Micromamba
         uses: mamba-org/provision-with-micromamba@v15

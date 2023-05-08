@@ -936,7 +936,10 @@ class PRMSSoilzone(StorageUnit):
                 # PRMSIV Step 9
                 # Compute slow contribution to interflow, if any
                 if slow_stor[hh] > epsilon:
-                    (slow_stor[hh], slow_flow[hh],) = compute_interflow(
+                    (
+                        slow_stor[hh],
+                        slow_flow[hh],
+                    ) = compute_interflow(
                         slowcoef_lin[hh],
                         slowcoef_sq[hh],
                         ssresin,
@@ -950,7 +953,10 @@ class PRMSSoilzone(StorageUnit):
 
             # <
             if (slow_stor[hh] > epsilon) and (ssr2gw_rate[hh] > zero):
-                (ssr_to_gw[hh], slow_stor[hh],) = compute_gwflow(
+                (
+                    ssr_to_gw[hh],
+                    slow_stor[hh],
+                ) = compute_gwflow(
                     ssr2gw_rate[hh],
                     ssr2gw_exp[hh],
                     slow_stor[hh],

@@ -1,10 +1,10 @@
 import os
 import platform
-import setuptools  # noqa
 import warnings
 
-from numpy.distutils.misc_util import Configuration
+import setuptools
 from numpy.distutils.core import setup
+from numpy.distutils.misc_util import Configuration
 
 pyws_fortran = str(os.getenv("PYWS_FORTRAN"))
 if pyws_fortran.lower() == "true":
@@ -36,4 +36,4 @@ if pyws_fortran:
             )
 
 
-setup(**config.todict(), packages=setuptools.find_packages())
+setup(name="pywatershed")

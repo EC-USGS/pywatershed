@@ -1,22 +1,8 @@
 import pathlib as pl
 import tempfile
-import warnings
 
 from ..base.model import Model
-
-try:
-    import pydot
-
-    has_pydot = True
-except ModuleNotFoundError:
-    has_pydot = False
-
-try:
-    from IPython.display import SVG, display
-
-    has_ipython = True
-except ModuleNotFoundError:
-    has_ipython = False
+from ..utils import import_optional_dependency
 
 
 class ModelGraph:
@@ -31,9 +17,7 @@ class ModelGraph:
         node_spacing: float = 2.75,
         hide_variables: bool = True,
     ):
-        if not has_pydot:
-            warnings.warn("pydot not available")
-
+        self.pydot = import_optional_dependency("pydot")
         self.model = model
         self.show_params = show_params
         self.process_colors = process_colors
@@ -98,7 +82,7 @@ class ModelGraph:
         self.file_node = self._file_node(files)
 
         # build the graph
-        self.graph = pydot.Dot(
+        self.graph = self.pydot.Dot(
             graph_type="digraph",
             layout="neato",
             splines="polyline",
@@ -110,15 +94,15 @@ class ModelGraph:
             self.graph.add_node(self.process_nodes[process])
 
         for con in connections:
-            self.graph.add_edge(pydot.Edge(con[0], con[1], color=con[2]))
+            self.graph.add_edge(self.pydot.Edge(con[0], con[1], color=con[2]))
 
         return
 
     def SVG(self, verbose: bool = False):
         """Display an SVG in jupyter notebook (via tempfile)."""
 
-        if not has_ipython:
-            warnings.warn("IPython is not available")
+        ipdisplay = import_optional_dependency("IPython.display")
+
         tmp_file = pl.Path(tempfile.NamedTemporaryFile().name)
         if self.graph is None:
             self.build_graph()
@@ -126,7 +110,7 @@ class ModelGraph:
         if verbose:
             print(f"Displaying SVG written to temp file: {tmp_file}")
 
-        display(SVG(tmp_file))
+        ipdisplay.display(ipdisplay.SVG(tmp_file))
         return
 
     def _process_node(self, process, show_params: bool = False):
@@ -193,7 +177,7 @@ class ModelGraph:
         if self.process_colors:
             color_str = f'"{self.process_colors[cls]}"'
 
-        node = pydot.Node(
+        node = self.pydot.Node(
             cls,
             label=label,
             pos=f'"{self._current_pos},0!"',
@@ -220,7 +204,7 @@ class ModelGraph:
 
         label += f"</TABLE>>\n"
         label = label
-        node = pydot.Node(
+        node = self.pydot.Node(
             "Files",
             label=label,
             pos=f'"{self._current_pos},0!"',

@@ -22,6 +22,7 @@
 from typing import Union
 
 from ...base.model import Model
+from ...utils.utl_import import import_optional_dependency
 
 
 class ColorBrewer:
@@ -2355,11 +2356,11 @@ def nhm_process_colors(model: Model = None):
 
 
 def jupyter_palette(palette: Union[list, dict]):
-    from IPython.display import Markdown, display
+    ipdisplay = import_optional_dependency("IPython.display")
 
     if isinstance(palette, list):
-        display(
-            Markdown(
+        ipdisplay.display(
+            ipdisplay.Markdown(
                 "<br>".join(
                     f'<span style="font-family: monospace">{color} <span style="color: {color}">████████</span></span>'
                     for color in palette
@@ -2367,8 +2368,8 @@ def jupyter_palette(palette: Union[list, dict]):
             )
         )
     else:
-        display(
-            Markdown(
+        ipdisplay.display(
+            ipdisplay.Markdown(
                 "<br>".join(
                     f'<span style="font-family: monospace">{key} <span style="color: {color}">████████</span></span>'
                     for key, color in palette.items()

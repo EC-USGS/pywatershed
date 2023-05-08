@@ -1,12 +1,100 @@
 [build-system]
-# Minimum requirements for the build system to execute
 requires = [
+    "setuptools >=61",
     "numpy",
-    "setuptools>=45",
-    "setuptools_scm[toml]>=6.2",
-    "wheel",
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pywatershed"
+description = "pywatershed is a Python package for hydrologic modeling"
+authors = [
+    {name = "USGS Enterprise Capacity Team", email = "modflow@usgs.gov"},
+]
+maintainers = [
+    { name = "James L. McCreight", email = "jmccreight@usgs.gov" },
+    { name = "Joseph D. Hughes", email = "jdhughes@usgs.gov" },
+]
+keywords = ["hydrology", "PRMS"]
+license = { text = "CC0" }
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Scientific/Engineering :: Hydrology",
+]
+requires-python = ">=3.8,<3.11"
+dependencies = [
+    "numpy >=1.15.0",
+    "matplotlib >=1.4.0",
+    "epiweeks",
+    "netCDF4",
+    "networkx",
+    "numpy",
+    "numba",
+    "pandas",
+    "pint",
+    "xarray@git+https://github.com/pydata/xarray.git",
+    "xmltodict",
+    "pyyaml",
+]
+dynamic = ["version", "readme"]
+
+[project.optional-dependencies]
+lint = [
+    "cffconvert",
+    "black",
+    "click",
+    "isort",
+    "flake8",
+    "pylint",
+    "flynt",
+]
+test = [
+    "pywatershed[lint]",
+    "coverage",
+    "flaky",
+    "modflow-devtools",
+    "pytest",
+    "pytest-cov",
+    "pytest-env",
+    "pytest-order",
+    "pytest-xdist",
+]
+optional = [
+    "pydot",
+    "geos",
+    "cartopy",
+    "geopandas",
+    "hvplot",
+    "shapely <2.0.0",
+    "ipython",
+    "jupyter",
+    "jupyterlab",
+]
+
+[project.urls]
+Documentation = "https://pywatershed.readthedocs.io"
+"Bug Tracker" = "https://github.com/EC-USGS/pywatershed/issues"
+"Source Code" = "https://github.com/EC-USGS/pywatershed"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+
+[tool.setuptools.dynamic]
+version = { attr = "pywatershed.version.__version__" }
+readme = { file = ["README.md"], content-type = "text/markdown" }
+
+[tool.setuptools.packages.find]
+include = ["pywatershed", "pywatershed.*"]
+
+[tool.setuptools.package-data]
+"pywatershed.static.metadata" = ["*.yaml"]
 
 [tool.black]
 line-length = 79
@@ -20,6 +108,3 @@ verbose = true
 profile = "black"
 src_paths = ["pywatershed", "autotest", "test_data"]
 line_length = 79
-
-[tool.setuptools_scm]
-fallback_version = "999"

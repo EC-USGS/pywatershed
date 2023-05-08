@@ -396,7 +396,7 @@ class NetCdfWrite(Accessor):
             group_variables = variables
 
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
-        self.dataset.setncattr("Description", "PYNHM output data")
+        self.dataset.setncattr("Description", "pywatershed output data")
         for att_key, att_val in global_attrs.items():
             self.dataset.setncattr(att_key, att_val)
 

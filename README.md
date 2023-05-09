@@ -47,7 +47,7 @@ This installation assumes you do not need to run automated tests locally. See
 the following "Developer Installation" section for complete installation
 instructions.
 
-To install the software you will need Python >= 3.8. We recommend installing
+To install the software you will need Python >= 3.9. We recommend installing
 the python package dependencies using anaconda or miniconda. Most users will
 likely want to create the `pyws_nb` conda environment by running
 
@@ -91,7 +91,7 @@ two applications:
 On Apple Silicon, the PRMS source code is only currently known to compile with intel while
 the fortran kernels in pywatershed only compile with gnu.
 
-Python >= 3.8 is required. Three different python environments are specified within the repository.
+Python >= 3.9 is required. Three different python environments are specified within the repository.
 These are:
 
 * Minimal (for developing/testing), 'pyws': ci/requirements/environment.yml

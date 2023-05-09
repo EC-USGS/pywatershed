@@ -181,7 +181,7 @@ class PRMSChannel(StorageUnit):
 
     def _set_initial_conditions(self) -> None:
         # initialize channel segment storage
-        self.seg_outflow = self.segment_flow_init
+        self.seg_outflow[:] = self.segment_flow_init
         return
 
     def _initialize_channel_data(self) -> None:
@@ -360,16 +360,19 @@ class PRMSChannel(StorageUnit):
                 # mass is being discarded in a way that has to be coordinated
                 # with other parts of the code.
                 # This code shuold be removed evenutally.
-                self.sroff_vol[ihru] = zero
-                self.ssres_flow_vol[ihru] = zero
-                self.gwres_flow_vol[ihru] = zero
+                _sroff_vol = zero
+                _ssres_flow_vol = zero
+                _gwres_flow_vol = zero
                 continue
+
+            else:
+                _sroff_vol = self.sroff_vol[ihru]
+                _ssres_flow_vol = self.ssres_flow_vol[ihru]
+                _gwres_flow_vol = self.gwres_flow_vol[ihru]
 
             # cubicfeet to cfs
             lateral_inflow = (
-                self.sroff_vol[ihru]
-                + self.ssres_flow_vol[ihru]
-                + self.gwres_flow_vol[ihru]
+                _sroff_vol + _ssres_flow_vol + _gwres_flow_vol
             ) / (s_per_time)
 
             self.seg_lateral_inflow[iseg] += lateral_inflow

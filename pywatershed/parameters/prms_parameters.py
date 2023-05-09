@@ -350,7 +350,7 @@ class PrmsParameters(Parameters):
             for proc, file in proc_param_nc_file_dict.items()
         }
         if merge:
-            params = PrmsParameters.merge(list(prams.values()))
+            params = PrmsParameters.merge(list(params.values()))
 
         return params
 

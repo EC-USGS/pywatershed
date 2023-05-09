@@ -33,7 +33,7 @@ class TestPRMSChannelDomain:
         channel = PRMSChannel(
             control,
             **input_variables,
-            budget_type="warn",
+            budget_type="error",
             calc_method=calc_method,
         )
         nc_parent = tmp_path / domain["domain_name"]

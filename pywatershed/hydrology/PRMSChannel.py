@@ -157,6 +157,9 @@ class PRMSChannel(StorageUnit):
             dict: initial values for named variables
         """
         return {
+            "channel_sroff_vol": nan,
+            "channel_ssres_flow_vol": nan,
+            "channel_gwres_flow_vol": nan,
             "channel_outflow_vol": nan,
             "seg_lateral_inflow": zero,
             "seg_upstream_inflow": zero,
@@ -167,7 +170,11 @@ class PRMSChannel(StorageUnit):
     @staticmethod
     def get_mass_budget_terms():
         return {
-            "inputs": ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"],
+            "inputs": [
+                "channel_sroff_vol",
+                "channel_ssres_flow_vol",
+                "channel_gwres_flow_vol",
+            ],
             "outputs": ["channel_outflow_vol"],
             "storage_changes": ["seg_stor_change"],
         }
@@ -360,19 +367,21 @@ class PRMSChannel(StorageUnit):
                 # mass is being discarded in a way that has to be coordinated
                 # with other parts of the code.
                 # This code shuold be removed evenutally.
-                _sroff_vol = zero
-                _ssres_flow_vol = zero
-                _gwres_flow_vol = zero
+                self.channel_sroff_vol[ihru] = zero
+                self.channel_ssres_flow_vol[ihru] = zero
+                self.channel_gwres_flow_vol[ihru] = zero
                 continue
 
             else:
-                _sroff_vol = self.sroff_vol[ihru]
-                _ssres_flow_vol = self.ssres_flow_vol[ihru]
-                _gwres_flow_vol = self.gwres_flow_vol[ihru]
+                self.channel_sroff_vol[ihru] = self.sroff_vol[ihru]
+                self.channel_ssres_flow_vol[ihru] = self.ssres_flow_vol[ihru]
+                self.channel_gwres_flow_vol[ihru] = self.gwres_flow_vol[ihru]
 
             # cubicfeet to cfs
             lateral_inflow = (
-                _sroff_vol + _ssres_flow_vol + _gwres_flow_vol
+                self.channel_sroff_vol[ihru]
+                + self.channel_ssres_flow_vol[ihru]
+                + self.channel_gwres_flow_vol[ihru]
             ) / (s_per_time)
 
             self.seg_lateral_inflow[iseg] += lateral_inflow

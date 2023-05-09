@@ -59,7 +59,7 @@ autotest/temp
 generated/
 
 # gis data
-examples/pywatershed_gis
+examples/pynhm_gis
 examples/pywatershed_gis
 examples/model_loop_custom_output
 

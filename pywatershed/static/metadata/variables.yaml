@@ -1009,6 +1009,27 @@ cascade_interflow:
     0: nhru
   type: float64
   units: inches
+channel_sroff_vol:
+  desc: Runoff volume entering the stream channel from each HRU
+  dims:
+    0: nhru
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
+channel_ssres_flow_vol:
+  desc: Subsurface reservoir discharge volume entering the stream channel from each HRU
+  dims:
+    0: nhru
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
+channel_gwres_flow_vol:
+  desc: Groundwater reservoir discharge volume entering the stream channel from each HRU
+  dims:
+    0: nhru
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 channel_outflow_vol:
   desc: Streamflow volume leaving the stream channel model
   dims:

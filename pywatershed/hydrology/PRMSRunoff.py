@@ -591,7 +591,7 @@ class PRMSRunoff(StorageUnit):
             self.dprst_stor_hru - self.dprst_stor_hru_old
         )
 
-        self.sroff_vol = self.sroff * self.control.params.hru_in_to_cf
+        self.sroff_vol[:] = self.sroff * self.control.params.hru_in_to_cf
 
         return
 
@@ -1276,6 +1276,7 @@ class PRMSRunoff(StorageUnit):
 
         if ca_fraction > carea_max:
             ca_fraction = carea_max
+
         srpp = ca_fraction * pptp
         infil = infil - srpp
         srp = srp + srpp
@@ -1295,6 +1296,7 @@ class PRMSRunoff(StorageUnit):
         if excess > snowinfil_max:
             srp = srp + excess - snowinfil_max
             infil = snowinfil_max + capacity
+
         return infil, srp
 
     @staticmethod

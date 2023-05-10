@@ -168,7 +168,7 @@ class PRMSSoilzone(StorageUnit):
             "soil_lower_ratio": zero,
             "soil_lower_max": nan,  # completely set later
             "soil_moist": nan,  # sm_climateflow
-            "soil_moist_prev": nan,  # sm_climateflow
+            "soil_moist_prev": zero,  # sm_climateflow
             "soil_moist_tot": nan,  # completely set later
             "soil_rechr": nan,  # sm_climateflow
             "soil_rechr_change": nan,  # sm_climateflow

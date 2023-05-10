@@ -8,7 +8,7 @@ from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import SegmentType, nan, zero
+from ..constants import SegmentType, nan, numba_num_threads, zero
 
 try:
     from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran
@@ -391,6 +391,14 @@ class PRMSChannel(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_muskingum_mann_numba"):
+                numba_msg = f"{self.name} jit compiling with numba "
+                nb_parallel = (numba_num_threads is not None) and (
+                    numba_num_threads > 1
+                )
+                if nb_parallel:
+                    numba_msg += f"and using {numba_num_threads} threads"
+                print(numba_msg, flush=True)
+
                 # This is annoying that long integers on windows are 32bit
                 if platform.system() == "Windows":
                     self._muskingum_mann_numba = nb.njit(

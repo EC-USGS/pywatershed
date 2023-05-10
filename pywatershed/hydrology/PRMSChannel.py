@@ -8,7 +8,7 @@ from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import SegmentType, nan, zero, numba_num_threads
+from ..constants import SegmentType, nan, numba_num_threads, zero
 
 try:
     from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran

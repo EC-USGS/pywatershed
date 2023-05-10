@@ -376,12 +376,12 @@ class PRMSRunoff(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                numba_msg = f"{self.name} using numba "
+                numba_msg = f"{self.name} jit compiling with numba "
                 nb_parallel = (numba_num_threads is not None) and (
                     numba_num_threads > 1
                 )
                 if nb_parallel:
-                    numba_msg += f"with {numba_num_threads} threads"
+                    numba_msg += f"and using {numba_num_threads} threads"
                 print(numba_msg, flush=True)
 
                 self._calculate_numba = nb.njit(

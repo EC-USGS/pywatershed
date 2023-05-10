@@ -5,7 +5,7 @@ from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan
+from ..constants import nan, numba_num_threads
 
 try:
     from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
@@ -148,6 +148,14 @@ class PRMSGroundwater(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
+                numba_msg = f"{self.name} jit compiling with numba "
+                nb_parallel = (numba_num_threads is not None) and (
+                    numba_num_threads > 1
+                )
+                if nb_parallel:
+                    numba_msg += f"and using {numba_num_threads} threads"
+                print(numba_msg, flush=True)
+
                 self._calculate_numba = nb.njit(
                     nb.types.UniTuple(nb.float64[:], 5)(
                         nb.float64[:],

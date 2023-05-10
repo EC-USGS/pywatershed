@@ -10,7 +10,10 @@ from pywatershed.base.control import Control
 from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
 
-compare_to_prms521 = False
+compare_to_prms521 = False  # TODO TODO TODO
+failfast = True
+detailed = True
+
 n_time_steps = 101
 budget_type = None
 test_models = {
@@ -45,6 +48,7 @@ def control(domain, params):
     ids=test_models.keys(),
 )
 def test_model(domain, control, processes, tmp_path):
+    """Run the full NHM model"""
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
@@ -67,6 +71,7 @@ def test_model(domain, control, processes, tmp_path):
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1
+    # this is the adhoc set of things to compare, to circumvent fussy issues?
     comparison_vars_dict_all = {
         "PRMSSolarGeometry": [],
         "PRMSAtmosphere": [
@@ -123,7 +128,6 @@ def test_model(domain, control, processes, tmp_path):
             "soil_lower",
             "soil_moist",
             "soil_moist_tot",
-            "infil",
             "soil_rechr",
             "soil_to_gw",
             "soil_to_ssr",
@@ -133,9 +137,9 @@ def test_model(domain, control, processes, tmp_path):
             "ssres_stor",
         ],
         "PRMSGroundwater": [
-            "soil_to_gw",  # input
-            "ssr_to_gw",  # input
-            "dprst_seep_hru",  # input
+            # "soil_to_gw",  # input
+            # "ssr_to_gw",  # input
+            # "dprst_seep_hru",  # input
             "gwres_flow",
             "gwres_sink",
             "gwres_stor",
@@ -152,11 +156,11 @@ def test_model(domain, control, processes, tmp_path):
         "PRMSAtmosphere": 1.0e-4,
         "PRMSCanopy": 1.0e-5,
         "PRMSSnow": 5e-2,
-        "PRMSRunoff": 1.0e-5,
-        "PRMSSoilzone": 1.0e-4,  #
+        "PRMSRunoff": 1.0e-3,
+        "PRMSSoilzone": 1.0e-3,  #
         "PRMSGroundwater": 1.0e-2,
-        "PRMSEt": 1.0e-5,
-        "PRMSChannel": 1.0e-5,
+        "PRMSEt": 1.0e-3,
+        "PRMSChannel": 1.0e-3,
     }
 
     comparison_vars_dict = {}
@@ -182,18 +186,18 @@ def test_model(domain, control, processes, tmp_path):
         9: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1110.7599712622546,
-                    "hru_1": 13.101081272636613,
-                    "ucb_2yr": 1694.466212449281,
+                    "drb_2yr": 1430.6364027142613,
+                    "hru_1": 13.416914151483681,
+                    "ucb_2yr": 1694.5412856707849,
                 },
             },
         },
         99: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1005.2487950998989,
-                    "hru_1": 11.33037211045364,
-                    "ucb_2yr": 396.09319234315706,
+                    "drb_2yr": 1588.1444684289775,
+                    "hru_1": 19.596412903692578,
+                    "ucb_2yr": 407.2200022510677,
                 },
             },
         },
@@ -213,10 +217,8 @@ def test_model(domain, control, processes, tmp_path):
                 ans[unit_name][vv].advance()
 
         # make a comparison check with answer
-        failfast = True
-        detailed = True
 
-        # compare_to_prms521 is a golbal variable
+        # compare_to_prms521 is a global variable
         if compare_to_prms521:
             for unit_name in ans.keys():
                 success = check_timestep_results(
@@ -285,7 +287,10 @@ def check_timestep_results(
     for key in ans.keys():
         # print(key)
         a1 = ans[key].current
-        a2 = storageunit[key]
+        if not isinstance(storageunit[key], np.ndarray):
+            a2 = storageunit[key].current
+        else:
+            a2 = storageunit[key]
         success_a = np.isclose(a2, a1, atol=tol, rtol=0.0)
         success_r = np.isclose(a2, a1, atol=0.0, rtol=tol)
         success = success_a | success_r

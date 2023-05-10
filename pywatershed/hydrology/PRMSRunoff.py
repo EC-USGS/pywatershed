@@ -376,12 +376,12 @@ class PRMSRunoff(StorageUnit):
             import numba as nb
 
             if not hasattr(self, "_calculate_numba"):
-                numba_msg = f"{self.name} using numba "
+                numba_msg = f"{self.name} jit compiling with numba "
                 nb_parallel = (numba_num_threads is not None) and (
                     numba_num_threads > 1
                 )
                 if nb_parallel:
-                    numba_msg += f"with {numba_num_threads} threads"
+                    numba_msg += f"and using {numba_num_threads} threads"
                 print(numba_msg, flush=True)
 
                 self._calculate_numba = nb.njit(
@@ -591,7 +591,7 @@ class PRMSRunoff(StorageUnit):
             self.dprst_stor_hru - self.dprst_stor_hru_old
         )
 
-        self.sroff_vol = self.sroff * self.control.params.hru_in_to_cf
+        self.sroff_vol[:] = self.sroff * self.control.params.hru_in_to_cf
 
         return
 
@@ -1276,6 +1276,7 @@ class PRMSRunoff(StorageUnit):
 
         if ca_fraction > carea_max:
             ca_fraction = carea_max
+
         srpp = ca_fraction * pptp
         infil = infil - srpp
         srp = srp + srpp
@@ -1295,6 +1296,7 @@ class PRMSRunoff(StorageUnit):
         if excess > snowinfil_max:
             srp = srp + excess - snowinfil_max
             infil = snowinfil_max + capacity
+
         return infil, srp
 
     @staticmethod

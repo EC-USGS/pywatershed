@@ -64,6 +64,7 @@ class Model:
             vars = deepcopy(class_vars)
             c_inputs = inputs.pop(comp)
             _ = vars.pop(comp)
+
             self._inputs_from[comp] = {}
             # inputs_from_prev[comp] = {}
             # inputs
@@ -178,7 +179,6 @@ class Model:
                 load_n_time_batches=self._load_n_time_batches,
             )
         for process in self.process_order:
-            self.process_input_from[process] = {}
             for input, frm in self._inputs_from[process].items():
                 if not frm:
                     fname = file_inputs[input]._fname

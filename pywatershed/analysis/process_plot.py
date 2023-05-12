@@ -73,8 +73,9 @@ class ProcessPlot:
         # HRU one-time setups
         self.hru_gdf = (
             gpd.read_file(self.hru_shapefile)
-            # .drop("nhm_id", axis=1)
-            .rename(columns={"nhru_v1_1": "nhm_id"}).set_index("nhm_id")
+            .drop("nhm_id", axis=1)
+            .rename(columns={"nhru_v1_1": "nhm_id"})
+            .set_index("nhm_id")
         )
 
         # segment one-time setup
@@ -94,15 +95,13 @@ class ProcessPlot:
         return
 
     def plot(self, var_name: str, process: StorageUnit, cmap: str = None):
-        var_dims = list(
-            meta.get_vars(var_name)[var_name]["dimensions"].values()
-        )
+        var_dims = list(meta.get_vars(var_name)[var_name]["dims"])
         if "nsegment" in var_dims:
             if not cmap:
                 cmap = "cool"
-            return self.plot_seg_var(self, var_name, process, cmap)
+            return self.plot_seg_var(var_name, process, cmap)
         elif "nhru" in var_dims:
-            return self.plot_hru_var(self, var_name, process)
+            return self.plot_hru_var(var_name, process)
         else:
             raise ValueError()
 
@@ -197,16 +196,23 @@ class ProcessPlot:
         ).set_index("nhm_id")
         return data_df
 
-    def plot_hru(
+    def plot_hru_var(
         self,
         var_name: str,
-        model: Model = None,
+        process: StorageUnit,
         data: np.ndarray = None,
         data_units: str = None,
         nhm_id: np.ndarray = None,
     ):
         if data is None:
-            data_df = self.get_hru_var(var_name, model)
+            # data_df = self.get_hru_var(var_name, model)
+            data_df = pd.DataFrame(
+                {
+                    "nhm_id": process.control.params.parameters["nhm_id"],
+                    var_name: process[var_name],
+                }
+            ).set_index("nhm_id")
+
         else:
             if nhm_id is None:
                 nhm_id = model.control.params.parameters["nhm_id"]

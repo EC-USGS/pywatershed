@@ -1,5 +1,7 @@
 import pathlib as pl
 import tempfile
+import warnings
+from pprint import pprint
 
 from ..base.model import Model
 from ..utils import import_optional_dependency
@@ -18,6 +20,8 @@ class ModelGraph:
         hide_variables: bool = True,
     ):
         self.pydot = import_optional_dependency("pydot")
+        self.graph = None
+
         self.model = model
         self.show_params = show_params
         self.process_colors = process_colors
@@ -29,8 +33,6 @@ class ModelGraph:
             self.from_file_edge_color = from_file_edge_color
         self.node_spacing = node_spacing
         self.hide_variables = hide_variables
-
-        self.graph = None
 
         return
 
@@ -44,12 +46,13 @@ class ModelGraph:
             )
 
         # Solve the connections
-        files = []
-        connections = []
+        self.files = []
+        self.connections = []
         for process in self.model.process_order:
             frm_already = []
             for var, frm in self.model.process_input_from[process].items():
                 var_con = f":{var}"
+
                 if self.hide_variables:
                     var_con = ""
                     if frm in frm_already:
@@ -63,13 +66,14 @@ class ModelGraph:
                     color = self.default_edge_color
                     if self.process_colors:
                         color = self.process_colors[frm]
-                    connections += [
+                    self.connections += [
                         (f"{frm}{var_con}", f"{process}{var_con}", color)
                     ]
+
                 else:
                     file_name = frm.name
-                    files += [file_name]
-                    connections += [
+                    self.files += [file_name]
+                    self.connections += [
                         (
                             f"Files:{file_name.split('.')[0]}",
                             f"{process}{var_con}",
@@ -79,7 +83,7 @@ class ModelGraph:
 
         # Build the file node, reset the position
         self._current_pos = 0
-        self.file_node = self._file_node(files)
+        self.file_node = self._file_node(self.files)
 
         # build the graph
         self.graph = self.pydot.Dot(
@@ -93,12 +97,12 @@ class ModelGraph:
         for process in self.model.process_order:
             self.graph.add_node(self.process_nodes[process])
 
-        for con in connections:
-            self.graph.add_edge(self.pydot.Edge(con[0], con[1], color=con[2]))
+        for con in self.connections:
+            self.graph.add_edge(pydot.Edge(con[0], con[1], color=con[2]))
 
         return
 
-    def SVG(self, verbose: bool = False):
+    def SVG(self, verbose: bool = False, dpi=45):
         """Display an SVG in jupyter notebook (via tempfile)."""
 
         ipdisplay = import_optional_dependency("IPython.display")
@@ -106,7 +110,7 @@ class ModelGraph:
         tmp_file = pl.Path(tempfile.NamedTemporaryFile().name)
         if self.graph is None:
             self.build_graph()
-        self.graph.write_svg(tmp_file)
+        self.graph.write_svg(tmp_file, prog=["dot", f"-Gdpi={dpi}"])
         if verbose:
             print(f"Displaying SVG written to temp file: {tmp_file}")
 
@@ -167,7 +171,7 @@ class ModelGraph:
                 if vv in mass_budget_vars:
                     border_color_str = 'border="1" COLOR="BLUE"'
                 label += f"    <TR>\n"
-                label += f'        <TD COLSPAN="4" BGCOLOR="{category_colors[varset_name]}" {border_color_str} PORT="{vv}" ><FONT POINT-SIZE="9.0">{vv}</FONT></TD>\n'
+                label += f'        <TD COLSPAN="4" BGCOLOR="{category_colors[varset_name]}" {border_color_str} PORT="{vv}"><FONT POINT-SIZE="9.0">{vv}</FONT></TD>\n'
                 label += f"    </TR>\n"
 
         label += f"</TABLE>>\n"

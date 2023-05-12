@@ -36,4 +36,4 @@ if pyws_fortran:
             )
 
 
-setup(**config.todict(), name="pywatershed")
+setup(name="pywatershed")

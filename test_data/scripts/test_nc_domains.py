@@ -1,13 +1,12 @@
 from time import sleep
 
 import numpy as np
-
-from pywatershed import CsvFile, Soltab
-from pywatershed.parameters import PrmsParameters
-from pywatershed.constants import epsilon64, zero
-
 import pytest
 import xarray as xr
+
+from pywatershed import CsvFile, Soltab
+from pywatershed.constants import epsilon64, zero
+from pywatershed.parameters import PrmsParameters
 
 
 def test_csv_to_netcdf(csv_files):

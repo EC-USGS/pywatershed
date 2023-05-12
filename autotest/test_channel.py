@@ -9,13 +9,16 @@ from pywatershed.utils.netcdf_utils import NetCdfCompare
 
 fail_fast = False
 
-calc_methods = ("numpy", "numba")
-if has_prmschannel_f:
-    calc_methods += ("fortran",)
+calc_methods = ("numpy", "numba", "fortran")
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)
-def test_run(domain, tmp_path, calc_method):
+def test_compare_prms(domain, tmp_path, calc_method):
+    if not has_prmschannel_f and calc_method == "fortran":
+        pytest.skip(
+            "PRMSChannel fortran code not available, skipping its test."
+        )
+
     tmp_path = pl.Path(tmp_path)
     params = PrmsParameters.load(domain["param_file"])
 

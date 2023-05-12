@@ -26,7 +26,7 @@ from .utils import (
     Soltab,
 )
 from .utils.csv_utils import CsvFile
-from .version import __author__, __author_email__, __version__
+from .version import __version__
 
 __all__ = [
     "analysis",

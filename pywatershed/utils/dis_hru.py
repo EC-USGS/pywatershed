@@ -4,14 +4,6 @@ from ..constants import fileish
 from .mf6_file_writer import mf6_file_writer
 from .parameters import PrmsParameters
 
-# try:
-#     import geopandas as gpd
-
-#     has_geopandas = True
-# except ModuleNotFoundError:
-#     has_geopandas = False
-
-
 acres_to_m2 = 4046.8564224
 
 required = [

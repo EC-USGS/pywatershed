@@ -2,7 +2,7 @@ netCDF4
 networkx
 numpy
 numba
-pandas
+pandas >= 1.4.0
 pip
 pytest
 pytest-cov

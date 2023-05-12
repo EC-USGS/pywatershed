@@ -8,7 +8,7 @@ netCDF4
 networkx
 numpy
 numba
-pandas >= 1.4
+pandas >= 1.4.0
 pint
 pip
 pylint

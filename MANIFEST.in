@@ -1,0 +1,15 @@
+prune .idea
+prune .git
+prune .github
+prune autotest
+prune autotest_exs
+prune bin
+prune ci
+prune doc
+prune evaluation
+prune examples
+prune prms_src
+prune reference
+prune resources
+prune test_data
+include pyproject.toml

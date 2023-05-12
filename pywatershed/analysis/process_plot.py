@@ -1,53 +1,18 @@
 import pathlib as pl
 from textwrap import wrap
 
-try:
-    import cartopy.crs as ccrs
-
-    has_cartopy = True
-except ModuleNotFoundError:
-    has_cartopy = False
-
-try:
-    import geopandas as gpd
-
-    has_geopandas = True
-except ModuleNotFoundError:
-    has_geopandas = False
-
-try:
-    import hvplot.pandas  # noqa
-
-    has_hvplot = True
-except ModuleNotFoundError:
-    has_hvplot = False
-
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 import numpy as np
-
-try:
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-    from matplotlib.collections import LineCollection, PatchCollection
-    from matplotlib.colors import Normalize
-    from matplotlib.patches import Polygon
-
-    has_matplotlib = True
-except ModuleNotFoundError:
-    has_matplotlib = False
-
 import pandas as pd
-
-try:
-    import shapely
-
-    has_shapely = True
-except ModuleNotFoundError:
-    has_shapely = False
-
+from matplotlib.collections import LineCollection, PatchCollection
+from matplotlib.colors import Normalize
+from matplotlib.patches import Polygon
 
 from ..base import meta
 from ..base.model import Model
 from ..base.storageUnit import StorageUnit
+from ..utils.optional_import import import_optional_dependency
 
 
 class ProcessPlot:
@@ -57,15 +22,7 @@ class ProcessPlot:
         hru_shp_file_name: str = "HRU_subset.shp",
         seg_shp_file_name: str = "Segments_subset.shp",
     ):
-        if (
-            (not has_cartopy)
-            or (not has_geopandas)
-            or (not has_hvplot)
-            or (not has_matplotlib)
-            or (not has_shapely)
-        ):
-            msg = "Some required modules for ProcessPlot are not present."
-            raise ModuleNotFoundError(msg)
+        gpd = import_optional_dependency("geopandas")
 
         self.hru_shapefile = gis_dir / hru_shp_file_name
         self.seg_shapefile = gis_dir / seg_shp_file_name
@@ -106,6 +63,8 @@ class ProcessPlot:
             raise ValueError()
 
     def plot_seg_var(self, var_name: str, process: StorageUnit, cmap="cool"):
+        ccrs = import_optional_dependency("cartopy.crs")
+
         data_df = pd.DataFrame(
             {
                 "nhm_seg": process.control.params.parameters["nhm_seg"],
@@ -204,6 +163,8 @@ class ProcessPlot:
         data_units: str = None,
         nhm_id: np.ndarray = None,
     ):
+        ccrs = import_optional_dependency("cartopy.crs")
+
         if data is None:
             # data_df = self.get_hru_var(var_name, model)
             data_df = pd.DataFrame(
@@ -275,6 +236,8 @@ def plot_line_collection(
     **kwargs,
 ):
     """Plot a collection of line geometries"""
+    shapely = import_optional_dependency("shapely")
+
     lines = []
     for geom in geoms:
         a = np.asarray(geom.coords)
@@ -322,6 +285,8 @@ def plot_polygon_collection(
 ):
     """Plot a collection of Polygon geometries"""
     # from https://stackoverflow.com/questions/33714050/geopandas-plotting-any-way-to-speed-things-up
+    shapely = import_optional_dependency("shapely")
+
     patches = []
 
     for poly in geoms:

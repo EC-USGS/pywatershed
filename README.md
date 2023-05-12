@@ -3,6 +3,10 @@
 [![codecov-badge](https://codecov.io/gh/ec-usgs/pywatershed/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pywatershed)
 [![Documentation Status](https://readthedocs.org/projects/pywatershed/badge/?version=latest)](https://pywatershed.readthedocs.io/en/latest/?badge=latest)
 
+[![PyPI Version](https://img.shields.io/pypi/v/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+[![PyPI Status](https://img.shields.io/pypi/status/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+[![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+
 [//]: # (<img src="https://raw.githubusercontent.com/ec-usgs/pywatershed/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">)
 
 Purpose

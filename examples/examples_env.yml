@@ -10,7 +10,7 @@ dependencies:
   - networkx
   - numpy
   - numba
-  - pandas
+  - pandas>=1.4.0
   - pint
   - pip
   - pytest

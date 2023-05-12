@@ -12,7 +12,7 @@ from matplotlib.patches import Polygon
 from ..base import meta
 from ..base.model import Model
 from ..base.storageUnit import StorageUnit
-from ..utils.utl_import import import_optional_dependency
+from ..utils.optional_import import import_optional_dependency
 
 
 class ProcessPlot:

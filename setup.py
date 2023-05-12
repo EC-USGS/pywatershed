@@ -25,15 +25,15 @@ if pyws_fortran:
     source_dir_names = {
         "hydrology": ["PRMSGroundwater", "PRMSCanopy", "PRMSChannel"]
     }
-    for dir, names in source_dir_names.items():
+    for dir_name, names in source_dir_names.items():
         for name in names:
             config.add_extension(
                 f"{name}_f",
                 sources=[
-                    f"pywatershed/{dir}/{name}.pyf",
-                    f"pywatershed/{dir}/{name}.f90",
+                    f"pywatershed/{dir_name}/{name}.pyf",
+                    f"pywatershed/{dir_name}/{name}.f90",
                 ],
             )
 
 
-setup(name="pywatershed")
+setup(**config.todict(), name="pywatershed")

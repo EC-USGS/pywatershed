@@ -22,7 +22,7 @@
 from typing import Union
 
 from ...base.model import Model
-from ...utils.utl_import import import_optional_dependency
+from ...utils.optional_import import import_optional_dependency
 
 
 class ColorBrewer:

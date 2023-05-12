@@ -46,17 +46,15 @@ from .parse_version import Version
 
 # Update docs/flopy_method_dependencies.md when updating versions!
 
+# add any minimum versions for required or optional packages
 VERSIONS = {
-    "shapefile": "2.0.0",
-    "dateutil": "2.4.0",
-    "pandas": "0.15.0",
+    "pandas": "1.4.0",
 }
 
 # A mapping from import name to package name (on PyPI) for packages where
 # these two names are different.
 
 INSTALL_MAPPING = {
-    "shapefile": "pyshp",
     "dateutil": "python-dateutil",
 }
 
@@ -148,7 +146,7 @@ def import_optional_dependency(
         version = get_version(module_to_get)
         if Version(version) < Version(minimum_version):
             msg = (
-                f"FloPy requires version '{minimum_version}' "
+                f"pywatershed requires version '{minimum_version}' "
                 f"or newer of '{parent}' "
                 f"(version '{version}' currently installed)."
             )

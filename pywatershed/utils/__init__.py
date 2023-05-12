@@ -11,4 +11,4 @@ from .prms5util import (
 from .separate_nhm_params import separate_domain_params_to_ncdf
 from .utils import timer
 
-from .utl_import import import_optional_dependency  # isort:skip
+from .optional_import import import_optional_dependency  # isort:skip

@@ -1,7 +1,7 @@
 import pathlib as pl
-from pprint import pprint
 import tempfile
 import warnings
+from pprint import pprint
 
 from ..base.model import Model
 

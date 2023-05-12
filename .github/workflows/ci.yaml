@@ -175,8 +175,8 @@ jobs:
       - name: Run available domains with PRMS and convert csv output to NetCDF
         working-directory: test_data/scripts
         run: |
-          pytest -v -n=auto --durations=0 test_run_domains.py
-          pytest -v -n=auto --durations=0 test_nc_domains.py
+          pytest -v -n=4 --durations=0 test_run_domains.py
+          pytest -v -n=4 --durations=0 test_nc_domains.py
 
       - name: List all NetCDF files in test_data directory
         working-directory: test_data
@@ -187,7 +187,7 @@ jobs:
         working-directory: autotest
         run: pytest
           -v
-          -n=auto
+          -n=4
           --durations=0
           --all_domains
           --cov=pywatershed

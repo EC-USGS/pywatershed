@@ -57,6 +57,8 @@ test = [
     "pywatershed[lint]",
     "coverage",
     "flaky",
+    "flopy",
+    "filelock",
     "modflow-devtools",
     "pytest",
     "pytest-cov",
@@ -75,8 +77,16 @@ optional = [
     "jupyter",
     "jupyterlab",
 ]
+doc = [
+    "ipython",
+    "jinja2<3.1",
+    "sphinx",
+    "sphinx-book-theme",
+    "sphinx-autosummary-accessors",
+    "sphinx-copybutton"
+]
 all = [
-    "pywatershed[lint, test, optional]",
+    "pywatershed[lint, test, optional, doc]",
 ]
 
 [project.urls]

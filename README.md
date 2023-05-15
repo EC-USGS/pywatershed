@@ -3,6 +3,10 @@
 [![codecov-badge](https://codecov.io/gh/ec-usgs/pywatershed/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pywatershed)
 [![Documentation Status](https://readthedocs.org/projects/pywatershed/badge/?version=latest)](https://pywatershed.readthedocs.io/en/latest/?badge=latest)
 
+[![PyPI Version](https://img.shields.io/pypi/v/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+[![PyPI Status](https://img.shields.io/pypi/status/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+[![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+
 [//]: # (<img src="https://raw.githubusercontent.com/ec-usgs/pywatershed/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">)
 
 Purpose
@@ -43,7 +47,7 @@ This installation assumes you do not need to run automated tests locally. See
 the following "Developer Installation" section for complete installation
 instructions.
 
-To install the software you will need Python >= 3.8. We recommend installing
+To install the software you will need Python >= 3.9. We recommend installing
 the python package dependencies using anaconda or miniconda. Most users will
 likely want to create the `pyws_nb` conda environment by running
 
@@ -87,7 +91,7 @@ two applications:
 On Apple Silicon, the PRMS source code is only currently known to compile with intel while
 the fortran kernels in pywatershed only compile with gnu.
 
-Python >= 3.8 is required. Three different python environments are specified within the repository.
+Python >= 3.9 is required. Three different python environments are specified within the repository.
 These are:
 
 * Minimal (for developing/testing), 'pyws': ci/requirements/environment.yml

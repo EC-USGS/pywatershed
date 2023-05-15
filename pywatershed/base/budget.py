@@ -629,7 +629,7 @@ class Budget(Accessor):
 
         global_attrs = {
             "Description": (
-                f"PYNHM ({self.basis}) budget for {self.description}"
+                f"pywatershed ({self.basis}) budget for {self.description}"
             ),
             "Budget basis": f"{self.basis} (unit or global)",
         }

@@ -1,5 +1,6 @@
 # python
 build/
+dist/
 *.egg-info/
 *.pkl
 

@@ -2,7 +2,7 @@ import pathlib as pl
 import shutil
 from typing import Union, Literal
 
-import pynhm as pws
+import pywatershed as pws
 
 from . import parameterized, test_data_dir
 
@@ -12,23 +12,23 @@ n_time_steps = 183
 
 model_tests = {
     "solar": (pws.PRMSSolarGeometry,),
-    "atm": (pws.PRMSAtmosphere,),
-    "canopy": (pws.PRMSCanopy,),
-    "snow": (pws.PRMSSnow,),
-    "runoff": (pws.PRMSRunoff,),
-    "soil": (pws.PRMSSoilzone,),
-    "gw": (pws.PRMSGroundwater,),
-    "channel": (pws.PRMSChannel,),
-    "nhm": (
-        pws.PRMSSolarGeometry,
-        pws.PRMSAtmosphere,
-        pws.PRMSCanopy,
-        pws.PRMSSnow,
-        pws.PRMSRunoff,
-        pws.PRMSSoilzone,
-        pws.PRMSGroundwater,
-        pws.PRMSChannel,
-    ),
+    # "atm": (pws.PRMSAtmosphere,),
+    # "canopy": (pws.PRMSCanopy,),
+    # "snow": (pws.PRMSSnow,),
+    # "runoff": (pws.PRMSRunoff,),
+    # "soil": (pws.PRMSSoilzone,),
+    # "gw": (pws.PRMSGroundwater,),
+    # "channel": (pws.PRMSChannel,),
+    # "nhm": (
+    #     pws.PRMSSolarGeometry,
+    #     pws.PRMSAtmosphere,
+    #     pws.PRMSCanopy,
+    #     pws.PRMSSnow,
+    #     pws.PRMSRunoff,
+    #     pws.PRMSSoilzone,
+    #     pws.PRMSGroundwater,
+    #     pws.PRMSChannel,
+    # ),
 }
 model_tests_inv = {v: k for k, v in model_tests.items()}
 
@@ -42,7 +42,7 @@ class PRMSBasics:
     )
     def time_prms_parameter_read(self, domain):
         parameter_file = test_data_dir / f"{domain}/myparam.param"
-        _ = pws.PrmsParameters.load(parameter_file)
+        _ = pws.parameters.PrmsParameters.load(parameter_file)
         return
 
     @parameterized(
@@ -66,7 +66,7 @@ class PRMSModels:
         self.control_file = test_data_dir / f"{self.domain}/control.test"
         self.parameter_file = test_data_dir / f"{self.domain}/myparam.param"
         print(f"model_setup_run tag: {self.tag}")
-        params = pws.PrmsParameters.load(self.parameter_file)
+        params = pws.parameters.PrmsParameters.load(self.parameter_file)
         self.control = pws.Control.load(self.control_file, params=params)
         self.control.edit_n_time_steps(n_time_steps)
 

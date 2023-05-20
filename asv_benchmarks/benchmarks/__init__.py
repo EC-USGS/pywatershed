@@ -1,6 +1,6 @@
-import pynhm as pws
+import pywatershed as pws
 
-pws_root = pws.constants.__pynhm_root__
+pws_root = pws.constants.__pywatershed_root__
 test_data_dir = pws_root / "../test_data"
 
 

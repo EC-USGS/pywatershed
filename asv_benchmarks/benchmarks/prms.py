@@ -8,7 +8,7 @@ from . import parameterized, test_data_dir
 
 domains = ["hru_1", "drb_2yr", "ucb_2yr"]
 outputs = [None, "separate", "together"]
-n_time_steps = 90
+n_time_steps = 183
 
 model_tests = {
     "solar": (pws.PRMSSolarGeometry,),

@@ -75,3 +75,6 @@ examples/model_loop_custom_output
 *module.c
 PRMS*.so
 *f2pywrappers*.f*
+
+# asv
+.asv

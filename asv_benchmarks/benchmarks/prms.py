@@ -1,18 +1,34 @@
 import pathlib as pl
 import shutil
+from typing import Union, Literal
 
 import pynhm as pws
 
 from . import parameterized, test_data_dir
 
 domains = ["hru_1", "drb_2yr", "ucb_2yr"]
-
+outputs = [None, "separate", "together"]
+n_time_steps = 90
 
 model_tests = {
-    # "solar": (pws.PRMSSolarGeometry,),
-    # "atm": (pws.PRMSAtmosphere),
+    "solar": (pws.PRMSSolarGeometry,),
+    "atm": (pws.PRMSAtmosphere,),
     "canopy": (pws.PRMSCanopy,),
-    "solar-atm": (pws.PRMSSolarGeometry, pws.PRMSAtmosphere),
+    "snow": (pws.PRMSSnow,),
+    "runoff": (pws.PRMSRunoff,),
+    "soil": (pws.PRMSSoilzone,),
+    "gw": (pws.PRMSGroundwater,),
+    "channel": (pws.PRMSChannel,),
+    "nhm": (
+        pws.PRMSSolarGeometry,
+        pws.PRMSAtmosphere,
+        pws.PRMSCanopy,
+        pws.PRMSSnow,
+        pws.PRMSRunoff,
+        pws.PRMSSoilzone,
+        pws.PRMSGroundwater,
+        pws.PRMSChannel,
+    ),
 }
 model_tests_inv = {v: k for k, v in model_tests.items()}
 
@@ -24,7 +40,7 @@ class PRMSBasics:
         ["domain"],
         (domains),
     )
-    def time_parameter_read_prms(self, domain):
+    def time_prms_parameter_read(self, domain):
         parameter_file = test_data_dir / f"{domain}/myparam.param"
         _ = pws.PrmsParameters.load(parameter_file)
         return
@@ -33,7 +49,7 @@ class PRMSBasics:
         ["domain"],
         (domains),
     )
-    def time_control_read(self, domain):
+    def time_prms_control_read(self, domain):
         control_file = test_data_dir / f"{domain}/control.test"
         _ = pws.Control.load(control_file)
         return
@@ -49,6 +65,10 @@ class PRMSModels:
 
         self.control_file = test_data_dir / f"{self.domain}/control.test"
         self.parameter_file = test_data_dir / f"{self.domain}/myparam.param"
+        print(f"model_setup_run tag: {self.tag}")
+        params = pws.PrmsParameters.load(self.parameter_file)
+        self.control = pws.Control.load(self.control_file, params=params)
+        self.control.edit_n_time_steps(n_time_steps)
 
         # setup input_dir with symlinked prms inputs and outputs
         self.domain_dir = pl.Path(f"PRMSModels_{self.domain}")
@@ -63,41 +83,42 @@ class PRMSModels:
 
     def teardown(self, *args):
         shutil.rmtree(self.domain_dir)
+        pass
 
     # Helper function
     def model_setup_run(
         self,
         domain: str = None,
         processes: tuple = None,
-        write_output: bool = None,
+        write_output: Union[bool, Literal["separate", "together"]] = None,
     ):
-        print(f"model_setup_run tag: {self.tag}")
-        params = pws.PrmsParameters.load(self.parameter_file)
-        control = pws.Control.load(self.control_file, params=params)
-
         model = pws.Model(
             *self.processes,
-            control=control,
+            control=self.control,
             input_dir=self.tag_input_dir,
             budget_type="warn",
             calc_method="numba",
         )
-        if write_output:
-            model.initialize_netcdf(self.tag_dir)
+        if write_output is not None:
+            model.initialize_netcdf(
+                self.tag_dir, separate_files=(write_output == "separate")
+            )
         model.run(finalize=True)
 
     @parameterized(
-        ["domain", "processes"],
+        ["domain", "processes", "output"],
         (
             domains,
             list(model_tests.values()),
+            outputs,
         ),
     )
-    def time_model_setup_run_no_output(
+    def time_prms_run(
         self,
         domain: str,
         processes: tuple,
+        output: Union[None, Literal["separate", "together"]],
     ):
         _ = self.model_setup_run(
-            domain=domain, processes=processes, write_output=False
+            domain=domain, processes=processes, write_output=output
         )

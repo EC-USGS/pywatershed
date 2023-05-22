@@ -2,9 +2,14 @@ import pathlib as pl
 import shutil
 from typing import Union, Literal
 
-import pywatershed as pws
 
-from . import parameterized, test_data_dir
+from . import _is_pws, parameterized, test_data_dir
+
+if _is_pws:
+    import pywatershed as pws
+else:
+    import pynhm as pws
+
 
 domains = ["hru_1", "drb_2yr", "ucb_2yr"]
 outputs = [None, "separate", "together"]
@@ -12,23 +17,23 @@ n_time_steps = 183
 
 model_tests = {
     "solar": (pws.PRMSSolarGeometry,),
-    # "atm": (pws.PRMSAtmosphere,),
-    # "canopy": (pws.PRMSCanopy,),
-    # "snow": (pws.PRMSSnow,),
-    # "runoff": (pws.PRMSRunoff,),
-    # "soil": (pws.PRMSSoilzone,),
-    # "gw": (pws.PRMSGroundwater,),
-    # "channel": (pws.PRMSChannel,),
-    # "nhm": (
-    #     pws.PRMSSolarGeometry,
-    #     pws.PRMSAtmosphere,
-    #     pws.PRMSCanopy,
-    #     pws.PRMSSnow,
-    #     pws.PRMSRunoff,
-    #     pws.PRMSSoilzone,
-    #     pws.PRMSGroundwater,
-    #     pws.PRMSChannel,
-    # ),
+    "atm": (pws.PRMSAtmosphere,),
+    "canopy": (pws.PRMSCanopy,),
+    "snow": (pws.PRMSSnow,),
+    "runoff": (pws.PRMSRunoff,),
+    "soil": (pws.PRMSSoilzone,),
+    "gw": (pws.PRMSGroundwater,),
+    "channel": (pws.PRMSChannel,),
+    "nhm": (
+        pws.PRMSSolarGeometry,
+        pws.PRMSAtmosphere,
+        pws.PRMSCanopy,
+        pws.PRMSSnow,
+        pws.PRMSRunoff,
+        pws.PRMSSoilzone,
+        pws.PRMSGroundwater,
+        pws.PRMSChannel,
+    ),
 }
 model_tests_inv = {v: k for k, v in model_tests.items()}
 
@@ -42,7 +47,10 @@ class PRMSBasics:
     )
     def time_prms_parameter_read(self, domain):
         parameter_file = test_data_dir / f"{domain}/myparam.param"
-        _ = pws.parameters.PrmsParameters.load(parameter_file)
+        if _is_pws:
+            _ = pws.parameters.PrmsParameters.load(parameter_file)
+        else:
+            _ = pws.PrmsParameters.load(parameter_file)
         return
 
     @parameterized(
@@ -66,7 +74,11 @@ class PRMSModels:
         self.control_file = test_data_dir / f"{self.domain}/control.test"
         self.parameter_file = test_data_dir / f"{self.domain}/myparam.param"
         print(f"model_setup_run tag: {self.tag}")
-        params = pws.parameters.PrmsParameters.load(self.parameter_file)
+        if _is_pws:
+            params = pws.parameters.PrmsParameters.load(self.parameter_file)
+        else:
+            params = pws.PrmsParameters.load(self.parameter_file)
+
         self.control = pws.Control.load(self.control_file, params=params)
         self.control.edit_n_time_steps(n_time_steps)
 

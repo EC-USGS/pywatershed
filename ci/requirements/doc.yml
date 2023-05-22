@@ -22,6 +22,7 @@ dependencies:
   - pytest-env
   - pytest-order
   - pytest-xdist
+  - python<3.11
   - pyyaml
   - ipython
   - sphinx

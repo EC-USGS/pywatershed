@@ -22,7 +22,7 @@ New Features
 
 - Add automatic release workflow to PyPi as per :issue:`178`. Associated
   implementation of gitflow and semver conventions. Overhauled
-  `./CONTRIBUTING.md`, `DEVELOPER.md`, `README.md`, and `.github/RELEASE.md`
+  `CONTRIBUTING.md`, `DEVELOPER.md`, `README.md`, and `.github/RELEASE.md`
   to document adopted practices. Adoption of `git-cliff` to generate change
   logs by filtering comitt messages, see `cliff.toml`. Clean up of environment
   files and streamlining against `pyproject.toml`. Symlink gfortran dylibs to

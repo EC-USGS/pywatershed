@@ -98,7 +98,7 @@ class ModelGraph:
             self.graph.add_node(self.process_nodes[process])
 
         for con in self.connections:
-            self.graph.add_edge(pydot.Edge(con[0], con[1], color=con[2]))
+            self.graph.add_edge(self.pydot.Edge(con[0], con[1], color=con[2]))
 
         return
 

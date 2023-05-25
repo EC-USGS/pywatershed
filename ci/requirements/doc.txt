@@ -1,6 +1,0 @@
-ipython
-jinja2<3.1
-sphinx
-sphinx-book-theme
-sphinx-autosummary-accessors
-sphinx-copybutton

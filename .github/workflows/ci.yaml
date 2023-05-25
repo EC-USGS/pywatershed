@@ -3,9 +3,11 @@ on:
   push:
     branches:
       - "*"
+      - "!v[0-9]+.[0-9]+.[0-9]+*"
   pull_request:
     branches:
       - "*"
+      - "!v[0-9]+.[0-9]+.[0-9]+*"
 
 jobs:
 
@@ -69,7 +71,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install wheel
-          pip install -r ./ci/requirements/environment.txt
+          pip install .
+          pip install ".[lint]"
 
       - name: Version info
         run: |
@@ -140,14 +143,18 @@ jobs:
         with:
           compiler: gcc
           version: 11
+      
+      - name: Link gfortran dylibs on Mac
+        if: runner.os == 'macOS'
+        run: .github/scripts/symlink_gfortran_mac.sh
 
       - name: Install Dependencies via Micromamba
-        uses: mamba-org/provision-with-micromamba@v15
+        uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ./ci/requirements/environment.yml
+          environment-file: environment.yml
+          cache-environment: true
           cache-downloads: true
-          cache-env: true
-          extra-specs: |
+          create-args: >-
             python=${{matrix.python-version}}
             conda
 

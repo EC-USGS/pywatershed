@@ -1,4 +1,4 @@
-name: pyws_nb
+name: pywatershed
 channels:
   - conda-forge
   - nodefaults
@@ -34,6 +34,7 @@ dependencies:
   - nb_conda_kernels
   - pydot
   - shapely<2.0.0
+  - filelock
   - pip:
       - click != 8.1.0
       - black

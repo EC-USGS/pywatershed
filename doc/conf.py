@@ -41,13 +41,18 @@ extensions = [
     # "nbsphinx",
     "sphinx_autosummary_accessors",
     "sphinx.ext.intersphinx",
-    # "sphinx.ext.extlinks",
+    "sphinx.ext.extlinks",
     # "sphinx_copybutton",
     # "sphinx.ext.mathjax",
     # "numpydoc",
     "IPython.sphinxext.ipython_directive",
     "IPython.sphinxext.ipython_console_highlighting",
 ]
+
+extlinks = {
+    "issue": ("https://github.com/EC-USGS/pywatershed/issues/%s", "GH%s"),
+    "pull": ("https://github.com/EC-USGS/pywatershed/pull/%s", "PR%s"),
+}
 
 
 autosummary_generate = True

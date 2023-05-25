@@ -3,6 +3,7 @@ build/
 dist/
 *.egg-info/
 *.pkl
+venv
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -79,3 +80,9 @@ PRMS*.so
 
 # starfit repo used for development
 starfit_minimal/
+
+# release-specific changelogs
+CHANGELOG_*.md
+
+# environment files
+.env

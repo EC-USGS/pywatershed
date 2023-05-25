@@ -34,5 +34,6 @@ __all__ = [
     "atmosphere",
     "base",
     "hydrology",
+    "functions",
     "utils",
 ]

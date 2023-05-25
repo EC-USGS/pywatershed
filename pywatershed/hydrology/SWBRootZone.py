@@ -1,8 +1,9 @@
 from pywatershed.base.storageUnit import StorageUnit
 
-from ..base.adapter import adaptable
-from ..base.control import Control
-from ..constants import nan, zero
+from pywatershed.base.adapter import adaptable
+from pywatershed.base.control import Control
+from pywatershed.constants import nan, zero
+import pywatershed.functions.runoff_curve_number as cn
 
 
 class SWBRootZone(StorageUnit):

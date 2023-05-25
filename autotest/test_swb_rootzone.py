@@ -62,7 +62,7 @@ def test_init(domain, tmp_path):
 
     swb_rz.finalize()
 
-    asdf
+    breakpoint()
 
     assert_error = False
     for key, (base, compare) in output_compare.items():

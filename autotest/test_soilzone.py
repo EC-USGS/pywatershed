@@ -105,8 +105,8 @@ class TestPRMSSoilzone:
                     print(f"pywatershed  {a2.min()}    {a2.max()}")
                     print(f"diff   {diffmin}  {diffmax}")
 
-            # if istep == 15:
-            #     asdf
+            if istep == 15:
+                asdf
 
         soil.finalize()
 

@@ -3,6 +3,7 @@ build/
 dist/
 *.egg-info/
 *.pkl
+venv
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -82,3 +83,9 @@ starfit_minimal/
 
 # asv
 .asv
+
+# release-specific changelogs
+CHANGELOG_*.md
+
+# environment files
+.env

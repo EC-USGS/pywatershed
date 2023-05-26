@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - "*"
+      - "!v[0-9]+.[0-9]+.[0-9]+*"
   pull_request:
     branches:
       - "*"
+      - "!v[0-9]+.[0-9]+.[0-9]+*"
 
 jobs:
 
@@ -44,12 +46,11 @@ jobs:
           echo "SETUPTOOLS_ENABLE_FEATURES=legacy-editable" >> $GITHUB_ENV
 
       - name: Setup micromamba
-        uses: mamba-org/provision-with-micromamba@main
+        uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: examples/examples_env.yml
-          environment-name: pyws_nb
-          cache-env: true
-          # cache-env-key: "${{runner.os}}-${{runner.arch}}-py${{matrix.python-version}}-${{env.TODAY}}"
+          environment-file: environment.yml
+          cache-environment: true
+          cache-downloads: true
 
       - name: Install error reporter
         run: |

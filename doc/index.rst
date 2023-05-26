@@ -19,6 +19,14 @@ pywatershed: a hydrologic model in Python
     Utils <api/utils>
 
 .. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: For developers
+
+   What’s New <whats-new>
+   GitHub repository <https://github.com/EC-USGS/pywatershed>
+    
+.. toctree::
    :hidden:
    :caption: Index
 

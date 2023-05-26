@@ -1,7 +1,10 @@
 import os
 import pathlib as pl
+import sys
 
 import pynhm as pws
+
+print("sys.version: ", sys.version)
 
 # For backwards compatabilty with pynhm
 if "constants" in pws.__dict__.keys():

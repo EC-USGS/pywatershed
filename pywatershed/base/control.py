@@ -1,5 +1,6 @@
 """The control class."""
 import datetime
+from types import MappingProxyType
 
 import numpy as np
 
@@ -70,7 +71,8 @@ class Control(Accessor):
         self.config = config
         self.params = params
         if params is not None:
-            self.params.dims["ntime"] = self.n_times
+            # this should be a super private method on parameters
+            self.edit_n_time_steps(self.n_times)
 
         self.meta = meta
         # This will have the time dimension name
@@ -237,5 +239,7 @@ class Control(Accessor):
         self._end_time = (
             self._start_time + (self._n_times - 1) * self._time_step
         )
-        self.params.dims["ntime"] = self._n_times
+        self.params._dims = MappingProxyType(
+            self.params.dims | {"ntime": self._n_times}
+        )
         return

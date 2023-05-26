@@ -1,3 +1,4 @@
+from types import MappingProxyType
 from typing import Union
 
 import numpy as np
@@ -32,6 +33,10 @@ class Parameters(DatasetDict):
             encoding=encoding,
             validate=validate,
         )
+
+        for kk in self._keys():
+            self[f"_{kk}"] = _set_dict_read_only(self[kk])
+
         return
 
     @property
@@ -61,3 +66,14 @@ class Parameters(DatasetDict):
             return self.dims[keys]
         else:
             return {kk: self.dims[kk] for kk in keys}
+
+
+def _set_dict_read_only(dd: dict):
+    for kk, vv in dd.items():
+        if isinstance(vv, dict):
+            _set_dict_read_only(vv)
+            dd[kk] = MappingProxyType(vv)
+        elif isinstance(vv, np.ndarray):
+            vv.flags.writeable = False
+
+    return MappingProxyType(dd)

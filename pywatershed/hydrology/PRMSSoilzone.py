@@ -243,10 +243,12 @@ class PRMSSoilzone(StorageUnit):
             (self.hru_type == HruType.INACTIVE.value)
             | (self.hru_type == HruType.LAKE.value)
         )
-        self.sat_threshold[wh_inactive_or_lake] = zero
+        self._sat_threshold = self.sat_threshold.copy()
+        self._sat_threshold[wh_inactive_or_lake] = zero
         # edit a param
         wh_not_land = np.where(self.hru_type != HruType.LAND.value)
-        self.pref_flow_den[wh_not_land] = zero
+        self._pref_flow_den = self.pref_flow_den.copy()
+        self._pref_flow_den[wh_not_land] = zero
 
         # variables
         if self.control.config["init_vars_from_file"] in [0, 2, 5]:
@@ -270,7 +272,7 @@ class PRMSSoilzone(StorageUnit):
 
         # ssres_stor
         if self.control.config["init_vars_from_file"] in [0, 2, 5]:
-            self.ssres_stor = self.ssstor_init_frac * self.sat_threshold
+            self.ssres_stor = self.ssstor_init_frac * self._sat_threshold
             wh_inactive_or_lake = np.where(
                 (self.hru_type == HruType.INACTIVE.value)
                 | (self.hru_type == HruType.LAKE.value)
@@ -312,8 +314,8 @@ class PRMSSoilzone(StorageUnit):
             self.soil_rechr > self.soil_moist, self.soil_moist, self.soil_rechr
         )
         self.ssres_stor = np.where(
-            self.ssres_stor > self.sat_threshold,
-            self.sat_threshold,
+            self.ssres_stor > self._sat_threshold,
+            self._sat_threshold,
             self.ssres_stor,
         )
 
@@ -321,20 +323,21 @@ class PRMSSoilzone(StorageUnit):
         # need to set on swale_limit self? move to variables?
         self._swale_limit = np.full(self.nhru, zero, "float64")
         wh_swale = np.where(self.hru_type == HruType.SWALE.value)
-        self._swale_limit[wh_swale] = 3.0 * self.sat_threshold[wh_swale]
+        self._swale_limit[wh_swale] = 3.0 * self._sat_threshold[wh_swale]
 
-        self.pref_flow_thrsh[wh_swale] = self.sat_threshold[wh_swale]
+        self.pref_flow_thrsh[wh_swale] = self._sat_threshold[wh_swale]
         wh_land = np.where(self.hru_type == HruType.LAND.value)
-        self.pref_flow_thrsh[wh_land] = self.sat_threshold[wh_land] * (
-            one - self.pref_flow_den[wh_land]
+        self.pref_flow_thrsh[wh_land] = self._sat_threshold[wh_land] * (
+            one - self._pref_flow_den[wh_land]
         )
         self.pref_flow_max[wh_land] = (
-            self.sat_threshold[wh_land] - self.pref_flow_thrsh[wh_land]
+            self._sat_threshold[wh_land] - self.pref_flow_thrsh[wh_land]
         )
 
         # Need to set pref_flow_flag on self? or add to variables?
         wh_land_and_prf_den = np.where(
-            (self.hru_type == HruType.LAND.value) & (self.pref_flow_den > zero)
+            (self.hru_type == HruType.LAND.value)
+            & (self._pref_flow_den > zero)
         )
         self._pref_flow_flag = np.full(self.nhru, False, dtype=int)
         self._pref_flow_flag[wh_land_and_prf_den] = True
@@ -368,7 +371,7 @@ class PRMSSoilzone(StorageUnit):
         self._soil2gw_flag[wh_soil2gwmax] = True
 
         self.soil_zone_max = (
-            self.sat_threshold + self.soil_moist_max * self.hru_frac_perv
+            self._sat_threshold + self.soil_moist_max * self.hru_frac_perv
         )
         self.soil_moist_tot = (
             self.ssres_stor + self.soil_moist * self.hru_frac_perv
@@ -495,7 +498,7 @@ class PRMSSoilzone(StorageUnit):
                 pref_flow_stor_prev=self.pref_flow_stor_prev,
                 pref_flow_thrsh=self.pref_flow_thrsh,
                 recharge=self.recharge,
-                sat_threshold=self.sat_threshold,
+                sat_threshold=self._sat_threshold,
                 slow_flow=self.slow_flow,
                 slow_stor=self.slow_stor,
                 slow_stor_change=self.slow_stor_change,
@@ -618,7 +621,7 @@ class PRMSSoilzone(StorageUnit):
                 pref_flow_stor_prev=self.pref_flow_stor_prev,
                 pref_flow_thrsh=self.pref_flow_thrsh,
                 recharge=self.recharge,
-                sat_threshold=self.sat_threshold,
+                sat_threshold=self._sat_threshold,
                 slow_flow=self.slow_flow,
                 slow_stor=self.slow_stor,
                 slow_stor_change=self.slow_stor_change,

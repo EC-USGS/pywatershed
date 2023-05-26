@@ -98,5 +98,9 @@ def test_parameter_json(domain, tmp_path):
     assert json_file.exists()
 
     params_from_json = PrmsParameters.load_from_json(json_file)
-    np.testing.assert_equal(parameters.data, params_from_json.data)
+    assert parameters.data.keys() == params_from_json.data.keys()
+    for kk in parameters.data.keys():
+        np.testing.assert_equal(
+            dict(parameters.data[kk]), dict(params_from_json.data[kk])
+        )
     return

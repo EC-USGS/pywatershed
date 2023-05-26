@@ -27,5 +27,8 @@ Currently, [ASV is not getting the version of python correct](https://github.com
 in the environment it is building (with conda). I managed to get it to use
 python 3.10 for the `./environment.yml` file. When I tried reducing
 dependencies needed for benchmarking, it kept installing python 3.11 which wont
-install pywatershed per the `pyproject.toml` requires-python field.
+install pywatershed per the `pyproject.toml` requires-python field. For this
+reason, in `__import__` i'm printing `sys.version` and since each test is run
+in a separate subprocess, the actual python version number will be littered
+around your screen when using the `--verbose` flag.
 

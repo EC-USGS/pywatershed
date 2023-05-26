@@ -40,6 +40,7 @@ Breaking changes
 Deprecations
 ~~~~~~~~~~~~
 
+
 Performance
 ~~~~~~~~~~~
 
@@ -50,6 +51,11 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
+
+- Made the Parameter class data completely private by converting dicts to
+  MappingProxyTypes and setting numpy.ndarrays to read-only. (:issue:`177`
+  and :pull:`183`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Documentation

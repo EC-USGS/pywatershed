@@ -197,14 +197,14 @@ class PRMSChannel(StorageUnit):
         """Initialize internal variables from raw channel data"""
 
         # convert prms data to zero-based
-        self.hru_segment -= 1
-        self.tosegment -= 1
+        self._hru_segment = self.hru_segment - 1
+        self._tosegment = self.tosegment - 1
 
         # calculate connectivity
-        self._outflow_mask = np.full((len(self.tosegment)), False)
+        self._outflow_mask = np.full((len(self._tosegment)), False)
         connectivity = []
         for iseg in range(self.nsegment):
-            tosegment = self.tosegment[iseg]
+            tosegment = self._tosegment[iseg]
             if tosegment < 0:
                 self._outflow_mask[iseg] = True
                 continue
@@ -328,7 +328,7 @@ class PRMSChannel(StorageUnit):
 
         # initialize internal self_inflow variable
         for iseg in range(self.nsegment):
-            jseg = self.tosegment[iseg]
+            jseg = self._tosegment[iseg]
             if jseg < 0:
                 continue
             self._seg_inflow[jseg] = self.seg_outflow[iseg]
@@ -419,7 +419,7 @@ class PRMSChannel(StorageUnit):
         # calculate lateral flow term
         self.seg_lateral_inflow[:] = 0.0
         for ihru in range(self.nhru):
-            iseg = self.hru_segment[ihru]
+            iseg = self._hru_segment[ihru]
             if iseg < 0:
                 # This is bad, selective handling of fluxes is not cool,
                 # mass is being discarded in a way that has to be coordinated
@@ -456,7 +456,7 @@ class PRMSChannel(StorageUnit):
             self._seg_current_sum[:],
         ) = self._muskingum_mann(
             self._segment_order,
-            self.tosegment,
+            self._tosegment,
             self.seg_lateral_inflow,
             self._seg_inflow0,
             self._outflow_ts,

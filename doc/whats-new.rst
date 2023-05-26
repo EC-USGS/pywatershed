@@ -31,7 +31,7 @@ New Features
   By `Wes Bonelli <https://github.com/w-bonelli>`_.
 - What's new workflow (behold!) per :issue:`180` and :pull:`181`
   By `James McCreight <https://github.com/jmccreight>`_.
-  
+
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
@@ -42,6 +42,10 @@ Deprecations
 
 Performance
 ~~~~~~~~~~~
+
+- Introduce ASV performance benchmarks for import and various NHM configurations
+  in pywatershed. (:issue:`170` and :pull:`184`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Bug fixes

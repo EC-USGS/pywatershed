@@ -2,18 +2,23 @@ import os
 import pathlib as pl
 import sys
 
-import pynhm as pws
-
 print("sys.version: ", sys.version)
 
-# For backwards compatabilty with pynhm
-if "constants" in pws.__dict__.keys():
+try:
+    import pynhm as pws
+
     _is_pws = False
-else:
+except ModuleNotFoundError:
     import pywatershed as pws
 
     _is_pws = True
 
+# this is in asv dev
+if not "constants" in pws.__dict__.keys():
+    del pws
+    import pywatershed as pws
+
+    _is_pws = False
 
 # The package is installed without data. The test data are relative to the repo
 # used to do the install. So use the asv env var to find that.

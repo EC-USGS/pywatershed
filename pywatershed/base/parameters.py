@@ -18,8 +18,10 @@ class Parameters(DatasetDict):
     ) -> "Parameters":
         """Parameter class
 
-        This is a subclass of data_model.DatasetDict, it has all the same
-        methods. New methods map to DatasetDict as follows:
+        This is a subclass of data_model.DatasetDict, but that all the data are
+        read-only by design.
+        Parameters has all the same methods as DatasetDict plus several new
+        ones that map to DatasetDict as follows:
             parameters: dd.variables
             get_param_values: get values from dd.variables
             get_dim_values: get values from dd.dims

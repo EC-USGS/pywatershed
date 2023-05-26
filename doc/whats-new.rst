@@ -31,7 +31,7 @@ New Features
   By `Wes Bonelli <https://github.com/w-bonelli>`_.
 - What's new workflow (behold!) per :issue:`180` and :pull:`181`
   By `James McCreight <https://github.com/jmccreight>`_.
-  
+
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
@@ -40,12 +40,18 @@ Breaking changes
 Deprecations
 ~~~~~~~~~~~~
 
+
 Performance
 ~~~~~~~~~~~
 
 
 Bug fixes
 ~~~~~~~~~
+
+- Made the Parameter class data completely private by converting dicts to
+  MappingProxyTypes and setting numpy.ndarrays to read-only. (:issue:`177`
+  and :pull:`183`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Documentation

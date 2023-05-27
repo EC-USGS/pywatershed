@@ -1,6 +1,6 @@
 # pywatershed
 
-[![ci-badge](https://github.com/ec-usgs/pywatershed/workflows/CI/badge.svg?branch=main)](https://github.com/ec-usgs/pywatershed/actions?query=workflow%3ACI)
+[![ci-badge](https://github.com/ec-usgs/pywatershed/workflows/CI/badge.svg?branch=develop)](https://github.com/ec-usgs/pywatershed/actions?query=workflow%3ACI)
 [![codecov-badge](https://codecov.io/gh/ec-usgs/pywatershed/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pywatershed)
 [![Documentation Status](https://readthedocs.org/projects/pywatershed/badge/?version=latest)](https://pywatershed.readthedocs.io/en/latest/?badge=latest)
 

@@ -5,7 +5,21 @@ channels:
   - pyviz
   - bioconda
 dependencies:
-  - epiweeks  
+  - bash_kernel
+  - cartopy
+  - epiweeks
+  - filelock
+  - geopandas
+  - geoviews
+  - holoviews
+  - hvplot
+  - git
+  - ipython
+  - jupyter
+  - jupyter_contrib_nbextensions
+  - jupyterlab
+  - nb_conda_kernels
+  - nbconvert
   - netCDF4
   - networkx
   - numpy
@@ -13,28 +27,15 @@ dependencies:
   - pandas>=1.4.0
   - pint
   - pip
+  - pydot
   - pytest
   - pytest-cov
   - pytest-env
   - pytest-order
   - pytest-xdist
   - pyyaml
-  - cartopy
-  - geopandas
-  - geoviews
-  - holoviews
-  - hvplot
-  - bash_kernel
-  - git
-  - ipython
-  - jupyter
-  - jupyterlab
-  - nbconvert
-  - jupyter_contrib_nbextensions
-  - nb_conda_kernels
-  - pydot
   - shapely<2.0.0
-  - filelock
+  - xarray>=2023.05.0
   - pip:
       - click != 8.1.0
       - black
@@ -43,4 +44,3 @@ dependencies:
       - pylint
       - git+https://github.com/modflowpy/flopy.git
       - modflow-devtools
-      - git+https://github.com/pydata/xarray.git

@@ -37,7 +37,7 @@ dependencies = [
     "numba",
     "pandas >= 1.4.0",
     "pint",
-    "xarray@git+https://github.com/pydata/xarray.git",
+    "xarray >= 2023.5.0",
     "xmltodict",
     "pyyaml",
 ]

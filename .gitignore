@@ -81,6 +81,9 @@ PRMS*.so
 # starfit repo used for development
 starfit_minimal/
 
+# asv
+.asv
+
 # release-specific changelogs
 CHANGELOG_*.md
 

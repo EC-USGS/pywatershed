@@ -44,6 +44,10 @@ Deprecations
 Performance
 ~~~~~~~~~~~
 
+- Introduce ASV performance benchmarks for import and various NHM configurations
+  in pywatershed. (:issue:`170` and :pull:`184`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+
 
 Bug fixes
 ~~~~~~~~~

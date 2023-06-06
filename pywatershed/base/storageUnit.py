@@ -482,8 +482,8 @@ class StorageUnit(Accessor):
         """Initialize NetCDF output.
 
         Args:
-            output_dir: base directory path or NetCDF file path if separate_files
-                is True
+            output_dir: base directory path or NetCDF file path if
+                separate_files is True
             separate_files: boolean indicating if storage component output
                 variables should be written to a separate file for each
                 variable

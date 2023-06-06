@@ -327,33 +327,6 @@ class PrmsParameters(Parameters):
         )
         return prms_params
 
-    @staticmethod
-    def from_nc_files(
-        proc_param_nc_file_dict: dict,
-        use_xr: bool = False,
-        merge: bool = False,
-    ) -> "PrmsParameters":
-        # TODO: this method could be in the super: DatasetDict?
-        """Load parameters from a PRMS parameter file
-
-        Args:
-            proc_param_nc_file_dict: dict of proc: param_nc_file pairs
-            for all processes in the model
-
-        Returns:
-            param_dict: A dictionary containing PRMSParameters objects for
-            each process.
-
-        """
-        params = {
-            proc: PrmsParameters.from_netcdf(file)
-            for proc, file in proc_param_nc_file_dict.items()
-        }
-        if merge:
-            params = PrmsParameters.merge(list(params.values()))
-
-        return params
-
     def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
         "Derived parameter converting inches to cfs on hrus."
         time_step_seconds = time_step / np.timedelta64(1, "s")

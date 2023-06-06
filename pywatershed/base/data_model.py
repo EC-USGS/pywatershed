@@ -483,7 +483,7 @@ class DatasetDict(Accessor):
 
 
 def _is_equal(aa, bb):
-    """How sketchy is this?"""
+    # How sketchy is this? (honest question)
     try:
         np.testing.assert_equal(aa, bb)
         return True
@@ -598,10 +598,13 @@ def dd_to_xr_dd(dd: dict) -> dict:
         elif key in dd["coords"].keys():
             cv = "coords"
 
+        key_enc = {}
+        if key in encoding.keys():
+            key_enc = encoding[key]
         dd[cv][key] = {
             **val,
             "data": dd[cv][key],
-            "encoding": encoding[key],
+            "encoding": key_enc,
         }
 
     return dd

@@ -387,11 +387,11 @@ class PRMSRunoff(StorageUnit):
                 self._calculate_numba = nb.njit(
                     self._calculate_numpy, parallel=nb_parallel
                 )
-                self.check_capacity_numba = nb.jit(self.check_capacity)
-                self.perv_comp_numba = nb.jit(self.perv_comp)
-                self.compute_infil_numba = nb.jit(self.compute_infil)
-                self.dprst_comp_numba = nb.jit(self.dprst_comp)
-                self.imperv_et_numba = nb.jit(self.imperv_et)
+                self.check_capacity_numba = nb.njit(self.check_capacity)
+                self.perv_comp_numba = nb.njit(self.perv_comp)
+                self.compute_infil_numba = nb.njit(self.compute_infil)
+                self.dprst_comp_numba = nb.njit(self.dprst_comp)
+                self.imperv_et_numba = nb.njit(self.imperv_et)
 
             # <
             (

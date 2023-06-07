@@ -74,7 +74,6 @@ def separate_domain_params_to_ncdf(
     for proc in process_list:
         proc_param_names = proc.get_parameters()
         proc_params = prms_parameters.subset(proc_param_names)
-        # do this with both netcdf4 and xarray
         nc_out_file = out_dir / f"parameters_{domain_name}_{proc.__name__}.nc"
         proc_params.to_netcdf(nc_out_file, use_xr=use_xr)
         written_files[proc] = nc_out_file

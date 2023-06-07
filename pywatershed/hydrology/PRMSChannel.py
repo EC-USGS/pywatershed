@@ -111,7 +111,7 @@ class PRMSChannel(StorageUnit):
             dimensions: input dimensions
 
         """
-        return ("nhru", "nssr", "ngw", "nsegment")
+        return ("nhru", "nsegment")
 
     @staticmethod
     def get_parameters() -> tuple:

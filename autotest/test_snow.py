@@ -9,18 +9,24 @@ from pywatershed.constants import epsilon32, zero
 from pywatershed.hydrology.PRMSSnow import PRMSSnow
 from pywatershed.parameters import PrmsParameters
 
+calc_methods = ("numpy", "numba")
 
-@pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+
+@pytest.fixture(scope="function", params=["params_sep", "params_one"])
+def params(domain, request):
+    if request.param == "params_one":
+        params = PrmsParameters.load(domain["param_file"])
+    else:
+        params = PrmsParameters.from_netcdf(
+            domain["dir"] / "parameters_PRMSSnow.nc"
+        )
+
+    return params
 
 
 @pytest.fixture(scope="function")
 def control(domain, params):
     return Control.load(domain["control_file"], params=params)
-
-
-calc_methods = ("numpy", "numba")
 
 
 @pytest.mark.xfail

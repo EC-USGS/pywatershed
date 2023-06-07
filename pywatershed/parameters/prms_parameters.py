@@ -1,3 +1,4 @@
+from copy import deepcopy
 import json
 
 import numpy as np
@@ -218,7 +219,7 @@ class PrmsParameters(Parameters):
 
         """
         pars = _json_load(json_filename)
-        params = PrmsParameters._after_load(pars)
+        params = PrmsParameters._process_file_input(pars)
 
         return params
 
@@ -234,14 +235,14 @@ class PrmsParameters(Parameters):
 
         """
         data = PrmsFile(parameter_file, "parameter").get_data()
-        params = PrmsParameters._after_load(
+        params = PrmsParameters._process_file_input(
             data["parameter"]["parameters"],
             # data["parameter"]["parameter_dimensions"],
         )
 
         return params
 
-    def _after_load(
+    def _process_file_input(
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
     ) -> "PrmsParameters":
@@ -296,11 +297,19 @@ class PrmsParameters(Parameters):
 
         # build coords, only some dims have coords that are not indexes
         coords = {}
-        for cc in ["nhm_id", "nhm_seg", "poi_gage_id"]:
+        # edge case of dims that have only index or implied coords
+        # this is justified, as this data should probably be in the parameter
+        # files. netcdf neccisitates this to even carry the dimension data.
+        # alternative would be to have a scalar, but in fact this is a
+        # dimension of the data.
+        coords["doy"] = np.arange(dims["ndoy"], dtype="int32") + 1
+
+        for cc in ["nhm_id", "nhm_seg", "poi_gage_id", "doy"]:
             coord_to_dim = {
                 "nhm_id": "nhru",
                 "nhm_seg": "nsegment",
                 "poi_gage_id": "npoigages",
+                "doy": "ndoy",
             }
             dim_name = coord_to_dim[cc]
             if dim_name not in dims:
@@ -316,7 +325,14 @@ class PrmsParameters(Parameters):
 
             parameter_dimensions_dict[cc] = {"dims": (dim_name,)}
 
-        parameter_dimensions_dict["global"] = {}
+        for key, value in parameter_dimensions_dict.items():
+            key_meta = deepcopy(meta.get_params(key)[key])
+            _ = key_meta.pop("dims")
+            parameter_dimensions_dict[key]["attrs"] = key_meta
+
+        parameter_dimensions_dict["global"] = {
+            "Description": "Parameter data for PRMS"
+        }
 
         prms_params = PrmsParameters(
             dims=dims,
@@ -325,6 +341,7 @@ class PrmsParameters(Parameters):
             metadata=parameter_dimensions_dict,
             validate=True,
         )
+
         return prms_params
 
     def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:

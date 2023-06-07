@@ -206,15 +206,12 @@ class PRMSAtmosphere(StorageUnit):
 
     @staticmethod
     def get_dimensions():
-        return (
-            "nhru",
-            "nmonth",
-            "ntime",
-        )
+        return ("nhru", "nmonth", "ndoy", "ntime")
 
     @staticmethod
     def get_parameters():
         return (
+            "doy",
             "radadj_intcp",
             "radadj_slope",
             "tmax_index",

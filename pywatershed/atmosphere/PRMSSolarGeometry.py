@@ -49,12 +49,14 @@ class PRMSSolarGeometry(StorageUnit):
         netcdf_separate_files: bool = True,
         netcdf_output_vars: list = None,
     ):
-        # This is a singular case of having a constant parameter dimensions
-        self.ndoy = doy
-
         budget_type = None
         self._set_budget(budget_type)
         self.netcdf_output_dir = netcdf_output_dir
+
+        # self._time is needed by storageUnit for timeseries arrays
+        # TODO: this is redundant because the parameter doy is set
+        #       on load of prms file. Could pass the name to use for
+        #       self._time to super or come up with some other work around.
         self._time = doy
 
         super().__init__(
@@ -123,6 +125,7 @@ class PRMSSolarGeometry(StorageUnit):
     @staticmethod
     def get_parameters() -> tuple:
         return (
+            "doy",
             "hru_slope",
             "radj_sppt",
             "radj_wppt",
@@ -441,7 +444,7 @@ class PRMSSolarGeometry(StorageUnit):
                 nc.add_all_data(
                     var,
                     self[var].data,
-                    self._time,
+                    self.doy,
                     time_coord="doy",
                 )
                 nc.close()
@@ -462,7 +465,7 @@ class PRMSSolarGeometry(StorageUnit):
                 nc.add_all_data(
                     var,
                     self[var].data,
-                    self._time,
+                    self.doy,
                     time_coord="doy",
                 )
 

@@ -8,7 +8,7 @@ import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
-from ..constants import fill_values_dict, listish, np_type_to_netcdf_type_dict
+from ..constants import fill_values_dict, np_type_to_netcdf_type_dict, fileish
 from .accessor import Accessor
 
 # This file defines the data model for pywatershed. It is called a
@@ -180,7 +180,9 @@ class DatasetDict(Accessor):
             raise ValueError("Passed dataset neither from xarray nor netCDF4")
 
     @classmethod
-    def from_netcdf(cls, nc_file, use_xr=False) -> "DatasetDict":
+    def from_netcdf(
+        cls, nc_file: fileish, use_xr: bool = False
+    ) -> "DatasetDict":
         """Load from a netcdf file"""
         # handle more than one file?
         if use_xr:
@@ -295,13 +297,26 @@ class DatasetDict(Accessor):
 
     def subset(
         self,
-        keys: listish = None,
-        copy=False,
+        keys: Iterable,
+        copy: bool = False,
         keep_global: bool = False,
         keep_global_metadata: bool = None,
         keep_global_encoding: bool = None,
     ) -> "DatasetDict":
-        """Subset a DatasetDict to keys in data_vars or coordinates."""
+        """Subset a DatasetDict to keys in data_vars or coordinates
+
+        Args:
+            keys: Iterable to subset on
+            copy: bool to copy the input or edit it
+            keep_global: bool that sets both keep_global_metadata and
+                keep_global_encoding
+            keep_global_metadata: bool retain the global metadata in the subset
+            keep_global_encoding: bool retain the global encoding in the subset
+
+        Returns:
+          A subset Parameter object on the passed keys.
+
+        """
         # Instantiate the DatasetDict at end as deepcopy will be used
         # on the constructed subset dict (if requested)
 
@@ -893,3 +908,7 @@ def dd_to_nc4_ds(dd, nc_file):
                 var.setncattr("dtype", "bool")
 
     return
+
+
+def open_datasetdict(nc_file: fileish, use_xr=True):
+    return DatasetDict.from_netcdf(nc_file, use_xr=use_xr)

@@ -11,9 +11,16 @@ from pywatershed.parameters import PrmsParameters
 calc_methods = ("numpy", "numba")
 
 
-@pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+@pytest.fixture(scope="function", params=["params_sep", "params_one"])
+def params(domain, request):
+    if request.param == "params_one":
+        params = PrmsParameters.load(domain["param_file"])
+    else:
+        params = PrmsParameters.from_netcdf(
+            domain["dir"] / "parameters_PRMSSoilzone.nc"
+        )
+
+    return params
 
 
 @pytest.fixture(scope="function")

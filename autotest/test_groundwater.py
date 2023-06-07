@@ -13,18 +13,31 @@ from pywatershed.utils.netcdf_utils import NetCdfCompare
 calc_methods = ("numpy", "numba", "fortran")
 
 
+@pytest.fixture(scope="function", params=["params_sep", "params_one"])
+def params(domain, request):
+    if request.param == "params_one":
+        params = PrmsParameters.load(domain["param_file"])
+    else:
+        params = PrmsParameters.from_netcdf(
+            domain["dir"] / "parameters_PRMSGroundwater.nc"
+        )
+
+    return params
+
+
+@pytest.fixture(scope="function")
+def control(domain, params):
+    return Control.load(domain["control_file"], params=params)
+
+
 @pytest.mark.parametrize("calc_method", calc_methods)
-def test_compare_prms(domain, tmp_path, calc_method):
+def test_compare_prms(domain, control, tmp_path, calc_method):
     if not has_prmsgroundwater_f and calc_method == "fortran":
         pytest.skip(
             "PRMSGroundwater fortran code not available, skipping its test."
         )
 
     tmp_path = pl.Path(tmp_path)
-    params = PrmsParameters.load(domain["param_file"])
-
-    # Set information from the control file
-    control = Control.load(domain["control_file"], params=params)
 
     # load csv files into dataframes
     output_dir = domain["prms_output_dir"]

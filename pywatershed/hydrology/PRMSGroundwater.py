@@ -60,7 +60,7 @@ class PRMSGroundwater(StorageUnit):
             tuple of dimension names
 
         """
-        return ("nhru", "ngw", "nssr")
+        return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:

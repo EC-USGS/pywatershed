@@ -66,7 +66,7 @@ class PRMSSoilzone(StorageUnit):
             dimensions: input dimensions
 
         """
-        return ("nhru", "nssr")
+        return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:

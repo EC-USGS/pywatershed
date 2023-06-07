@@ -115,7 +115,7 @@ class PRMSSnow(StorageUnit):
             dimensions: input dimensions
 
         """
-        return ("nhru", "nmonth", "ndeplval")
+        return ("nhru", "nmonth", "ndoy", "ndeplval")
 
     @staticmethod
     def get_parameters() -> tuple:
@@ -126,6 +126,7 @@ class PRMSSnow(StorageUnit):
 
         """
         return (
+            "doy",
             "cov_type",
             "covden_win",
             "covden_sum",

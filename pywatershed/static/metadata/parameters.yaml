@@ -406,6 +406,12 @@ dist_max:
   - temp_dist2
   type: F
   units: feet
+doy:
+  desc: Day of year (1-366)
+  dims:
+    0: ndoy
+  type: I
+  units: day index  # using 'days' will trigger an undesired xarray encoding
 dprst_depth_avg:
   default: 132.0
   desc: Average depth of surface depressions at maximum storage capacity

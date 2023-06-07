@@ -58,9 +58,16 @@ def test_simple():
     return
 
 
-@pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+@pytest.fixture(scope="function", params=["params_sep", "params_one"])
+def params(domain, request):
+    if request.param == "params_one":
+        params = PrmsParameters.load(domain["param_file"])
+    else:
+        params = PrmsParameters.from_netcdf(
+            domain["dir"] / "parameters_PRMSCanopy.nc"
+        )
+
+    return params
 
 
 @pytest.fixture(scope="function")
@@ -136,45 +143,5 @@ def test_compare_prms(domain, control, tmp_path, calc_method):
 
     if not all_success:
         raise Exception("pywatershed results do not match prms results")
-    # is comparing along the way slower or faster than comparing netcdf?
-
-    # prms_output_dataframes = {}
-    # for cv in comparison_variables:
-    #     fname = prms_output_files[cv]
-    #     print(f"loading {fname}")
-    #     csvobj = CsvFile(fname)
-    #     df = csvobj.to_dataframe()
-    #     prms_output_dataframes[cv] = df
-
-    # # get a dictionary of dataframes for process model output
-    # pyws_output_dataframes = cnp.get_output_dataframes()
-
-    # # compare prms and pywatershed data
-    # for cv in comparison_variables:
-    #     prms_data = prms_output_dataframes[cv]
-    #     pyws_data = pyws_output_dataframes[cv]
-
-    #     print(f"\n{50*'*'}")
-    #     print(f"{cv}  min  max")
-    #     a1 = prms_data.to_numpy()
-    #     a2 = pyws_data.to_numpy()
-    #     diff = a1 - a2
-    #     diffmin = diff.min()
-    #     diffmax = diff.max()
-    #     print(f"prms   {a1.min()}    {a1.max()}")
-    #     print(f"pywatershed  {a2.min()}    {a2.max()}")
-    #     print(f"diff   {diffmin}  {diffmax}")
-
-    #     atol = 1.0e-5
-    #     errmsg = f"Canopy variable {cv} does not match to within {atol}"
-    #     assert np.allclose(diffmin, 0.0, atol=atol), errmsg
-    #     assert np.allclose(diffmax, 0.0, atol=atol), errmsg
-
-    # # save cnp output as dataframes in temp/domain_name
-    # saveoutput = False
-    # if saveoutput:
-    #     pth = pathlib.Path(".", "temp", domain["domain_name"])
-    #     pth.mkdir(parents=True, exist_ok=True)
-    #     cnp.output_to_csv(pth)
 
     return

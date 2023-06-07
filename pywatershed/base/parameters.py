@@ -82,6 +82,7 @@ class Parameters(DatasetDict):
         return dd_to_nc4_ds(_set_dict_read_write(self.data), filename)
 
 
+# TODO: test that these dont modify in place
 def _set_dict_read_write(mp: MappingProxyType):
     dd = mp | {}
     for kk, vv in dd.items():

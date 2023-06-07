@@ -9,7 +9,6 @@ from pywatershed.base.data_model import open_datasetdict
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils import separate_domain_params_to_ncdf
 
-
 nhm_processes = [
     pywatershed.PRMSSolarGeometry,
     pywatershed.PRMSAtmosphere,

@@ -8,7 +8,7 @@ import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
-from ..constants import fill_values_dict, np_type_to_netcdf_type_dict, fileish
+from ..constants import fileish, fill_values_dict, np_type_to_netcdf_type_dict
 from .accessor import Accessor
 
 # This file defines the data model for pywatershed. It is called a

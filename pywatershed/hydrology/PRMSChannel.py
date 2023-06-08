@@ -199,6 +199,9 @@ class PRMSChannel(StorageUnit):
         # convert prms data to zero-based
         self._hru_segment = self.hru_segment - 1
         self._tosegment = self.tosegment - 1
+        # this is because the data are int32 in windows
+        if self._tosegment.dtype != self.tosegment.dtype:
+            self._tosegment = self._tosegment.astype(self.tosegment.dtype)
 
         # calculate connectivity
         self._outflow_mask = np.full((len(self._tosegment)), False)

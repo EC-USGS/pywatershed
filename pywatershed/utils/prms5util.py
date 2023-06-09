@@ -62,9 +62,7 @@ def unit_conversion(data, verbose=False):
 
 
 # JLM: what is the fate of this? I deprecated in my preprocessing
-def load_prms_input(
-    input_data_path, datanames, filenames, convert=True, verbose=False
-):
+def load_prms_input(input_data_path, datanames, filenames, convert=True, verbose=False):
     # load prms input
     templist = []
     for dataname, cbhname in zip(datanames, filenames):
@@ -82,9 +80,7 @@ def load_prms_input(
                     sec = int(ll[4])
                     data = ll[5:]
                     # dt = datetime.datetime(yr, mo, da)
-                    filelist += (
-                        f"{da:02d}/{mo:02d}/{yr:04d},{','.join(data)}\n"
-                    )
+                    filelist += f"{da:02d}/{mo:02d}/{yr:04d},{','.join(data)}\n"
         tdf = pd.read_csv(
             StringIO(filelist),
             parse_dates=["date"],

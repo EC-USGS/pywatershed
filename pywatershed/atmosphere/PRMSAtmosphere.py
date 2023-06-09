@@ -124,9 +124,7 @@ class PRMSAtmosphere(StorageUnit):
         # Initialize full time with nans
         self._time = np.full(control.n_times, nan, dtype="datetime64[s]")
 
-        metadata_patches = {
-            kk: {"dims": ("ntime", "nhru")} for kk in self.variables
-        }
+        metadata_patches = {kk: {"dims": ("ntime", "nhru")} for kk in self.variables}
 
         super().__init__(
             control=control,
@@ -347,8 +345,7 @@ class PRMSAtmosphere(StorageUnit):
         # throw an error if these have different shapes
         if self["tmax_cbh_adj"].shape != self["tmin_cbh_adj"].shape:
             msg = (
-                "Not implemented: tmin/tmax cbh adj parameters "
-                "with different shapes"
+                "Not implemented: tmin/tmax cbh adj parameters " "with different shapes"
             )
             raise NotImplementedError(msg)
 
@@ -357,10 +354,7 @@ class PRMSAtmosphere(StorageUnit):
         elif self["tmax_cbh_adj"].shape[0] == 1:
             month_ind = self._month_ind_1
         else:
-            msg = (
-                "Unexpected month dimension for cbh "
-                "temperature adjustment params"
-            )
+            msg = "Unexpected month dimension for cbh " "temperature adjustment params"
             raise ValueError(msg)
 
         # (time, space) dimensions on these variables
@@ -420,9 +414,7 @@ class PRMSAtmosphere(StorageUnit):
             (self.tmaxf.data - self.tmax_allsnow[month_ind]) / tdiff
         ) * self.adjmix_rain[month_ind]
 
-        self.prmx.data[:] = np.where(
-            self.prmx.data < zero, zero, self.prmx.data
-        )
+        self.prmx.data[:] = np.where(self.prmx.data < zero, zero, self.prmx.data)
         self.prmx.data[:] = np.where(self.prmx.data > one, one, self.prmx.data)
         del tdiff
 
@@ -439,9 +431,7 @@ class PRMSAtmosphere(StorageUnit):
 
         # This is in climate_hru as a condition of calling climateflow
         # (eye roll)
-        self.prmx.data[:] = np.where(
-            ivd["prcp"].data <= zero, zero, self.prmx.data
-        )
+        self.prmx.data[:] = np.where(ivd["prcp"].data <= zero, zero, self.prmx.data)
 
         self.pptmix.data[:] = np.where(
             (self.prmx.data > zero) & (self.prmx.data < one), 1, 0
@@ -539,9 +529,9 @@ class PRMSAtmosphere(StorageUnit):
         n_time, n_hru = tmax_hru.shape
 
         # Transforms of time
-        doy = (dates - dates.astype("datetime64[Y]")).astype(
-            "timedelta64[h]"
-        ).astype(int) / 24 + 1
+        doy = (dates - dates.astype("datetime64[Y]")).astype("timedelta64[h]").astype(
+            int
+        ) / 24 + 1
         doy = tile_time_to_space(doy, n_hru).astype(int)
         month = (dates.astype("datetime64[M]").astype(int) % nmonth) + 1
         month = tile_time_to_space(month, n_hru)
@@ -551,9 +541,7 @@ class PRMSAtmosphere(StorageUnit):
         is_summer = (doy >= 79) & (doy <= 265)
         northern_hemisphere = hru_lat > zero
         if not any(northern_hemisphere):
-            northern_hemisphere = tile_space_to_time(
-                northern_hemisphere, n_time
-            )
+            northern_hemisphere = tile_space_to_time(northern_hemisphere, n_time)
             msg = "Implementation not checked"
             raise NotImplementedError(msg)
             is_summer = is_summer & northern_hemisphere
@@ -607,8 +595,7 @@ class PRMSAtmosphere(StorageUnit):
         if len(wh_if[0]):
             # * if.else
             pptadj[wh_if] = (
-                radadj_intcp_day
-                + radadj_slope_day * (tmax_hru - tmax_index_day)
+                radadj_intcp_day + radadj_slope_day * (tmax_hru - tmax_index_day)
             )[wh_if]
 
             # * if.else.if
@@ -631,9 +618,7 @@ class PRMSAtmosphere(StorageUnit):
 
                 # if.if.else: negate the if.if.if
                 radj_wppt_day = tile_space_to_time(radj_wppt, n_time)
-                tmax_allrain_day = monthly_to_daily(
-                    tmax_allrain_offset + tmax_allsnow
-                )
+                tmax_allrain_day = monthly_to_daily(tmax_allrain_offset + tmax_allsnow)
                 cond_tmax_lt_allrain = tmax_hru < tmax_allrain_day
                 cond_if_if_else = cond_if_if & cond_tmax_lt_allrain
                 wh_if_if_else = np.where(cond_if_if_else)
@@ -641,12 +626,10 @@ class PRMSAtmosphere(StorageUnit):
                     pptadj[wh_if_if_else] = radj_wppt_day[wh_if_if_else]
 
                 # if.if.if(.if): the cake is taken!
-                cond_tmax_gt_allrain_and_not_summer = (
-                    tmax_hru >= tmax_allrain_day
-                ) & (~is_summer)
-                cond_if_if_if = (
-                    cond_if_if & cond_tmax_gt_allrain_and_not_summer
+                cond_tmax_gt_allrain_and_not_summer = (tmax_hru >= tmax_allrain_day) & (
+                    ~is_summer
                 )
+                cond_if_if_if = cond_if_if & cond_tmax_gt_allrain_and_not_summer
                 wh_if_if_if = np.where(cond_if_if_if)
                 if len(wh_if_if_if[0]):
                     pptadj[wh_if_if_if] = radj_wppt_day[wh_if_if_if]
@@ -725,9 +708,7 @@ class PRMSAtmosphere(StorageUnit):
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0
 
         transp_check = self.transp_on.current.copy()  # dim nhrus only
-        tmax_sum = self.transp_on.current.copy().astype(
-            "float64"
-        )  # dim nhrus only
+        tmax_sum = self.transp_on.current.copy().astype("float64")  # dim nhrus only
         start_day = self.control.start_doy
         start_month = self.control.start_month
 
@@ -763,9 +744,7 @@ class PRMSAtmosphere(StorageUnit):
         for tt in range(ntime):
             for hh in range(self.nhru):
                 if tt > 0:
-                    self.transp_on.data[tt, hh] = self.transp_on.data[
-                        tt - 1, hh
-                    ]
+                    self.transp_on.data[tt, hh] = self.transp_on.data[tt - 1, hh]
 
                 # if tt == 2 and hh == 980:
                 #      asdf

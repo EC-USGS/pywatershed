@@ -145,14 +145,10 @@ class TestPRMSCanopyRunoffDomain:
         )
 
         # canopy
-        canopy.set_input_to_adapter(
-            "potet", adapter_factory(et.potet, control=control)
-        )
+        canopy.set_input_to_adapter("potet", adapter_factory(et.potet, control=control))
 
         # runoff
-        runoff.set_input_to_adapter(
-            "potet", adapter_factory(et.potet, control=control)
-        )
+        runoff.set_input_to_adapter("potet", adapter_factory(et.potet, control=control))
         runoff.set_input_to_adapter(
             "snow_evap", adapter_factory(common_inputs["snow_evap"])
         )

@@ -18,13 +18,7 @@ from .hydrology.PRMSGroundwater import PRMSGroundwater
 from .hydrology.PRMSRunoff import PRMSRunoff
 from .hydrology.PRMSSnow import PRMSSnow
 from .hydrology.PRMSSoilzone import PRMSSoilzone
-from .utils import (
-    ControlVariables,
-    NetCdfCompare,
-    NetCdfRead,
-    NetCdfWrite,
-    Soltab,
-)
+from .utils import ControlVariables, NetCdfCompare, NetCdfRead, NetCdfWrite, Soltab
 from .utils.csv_utils import CsvFile
 from .version import __version__
 

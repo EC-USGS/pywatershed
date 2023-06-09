@@ -48,9 +48,7 @@ class TimeseriesArray:
             else:
                 # This is for datetime, which is float
                 if self.control.itime_step == 0:
-                    start_time_ind = np.where(
-                        self.time == self.control._start_time
-                    )[0]
+                    start_time_ind = np.where(self.time == self.control._start_time)[0]
                     if not len(start_time_ind):
                         msg = "Control start_time is not in the input time"
                         raise ValueError(msg)

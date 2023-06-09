@@ -71,9 +71,7 @@ def control(domain, params):
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(domain, control, tmp_path, calc_method):
     if not has_prmscanopy_f and calc_method == "fortran":
-        pytest.skip(
-            "PRMSCanopy fortran code not available, skipping its test."
-        )
+        pytest.skip("PRMSCanopy fortran code not available, skipping its test.")
 
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]

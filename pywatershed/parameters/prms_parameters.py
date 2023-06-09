@@ -268,9 +268,7 @@ class PrmsParameters(Parameters):
 
                 common_params = set(param_dim_names) & set(dims)
                 if not len(common_params):
-                    parameter_dimensions_dict[key] = {
-                        "dims": tuple(["unknown"])
-                    }
+                    parameter_dimensions_dict[key] = {"dims": tuple(["unknown"])}
                     continue
 
                 param_dims = {kk: dims[kk] for kk in common_params}

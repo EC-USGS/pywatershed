@@ -114,18 +114,14 @@ class NetCdfRead(Accessor):
             # data are actually loaded in get_data
             if self._load_n_time_batches is not None:
                 # use ceil because we want exactly the requested # of batches
-                self._load_n_times = ceil(
-                    self._ntimes / self._load_n_time_batches
-                )
+                self._load_n_times = ceil(self._ntimes / self._load_n_time_batches)
                 self._data_loaded = {}
 
             elif self._load_n_times is not None:
                 # Use ceil to account for the remainder batch
                 if self._load_n_times == -1:
                     self._load_n_times = self._ntimes
-                self._load_time_batches = ceil(
-                    self._ntimes / self._load_n_times
-                )
+                self._load_time_batches = ceil(self._ntimes / self._load_n_times)
                 self._data_loaded = {}
 
             # Note that if neither _load variables is specified, then no time
@@ -281,14 +277,10 @@ class NetCdfRead(Accessor):
 
         """
         if variable not in self._nc_read_vars:
-            raise ValueError(
-                f"'{variable}' not in list of available variables"
-            )
+            raise ValueError(f"'{variable}' not in list of available variables")
 
         if itime_step is None:
-            return self.dataset[variable][
-                self._start_index : (self._end_index + 1), :
-            ]
+            return self.dataset[variable][self._start_index : (self._end_index + 1), :]
 
         else:
             if itime_step >= self._ntimes:
@@ -307,9 +299,7 @@ class NetCdfRead(Accessor):
                     #     f"#{ith_batch}/{self._load_n_time_batches-1}: "
                     #     f"{variable}"
                     # )
-                    start_ind = self._start_index + (
-                        ith_batch * self._load_n_times
-                    )
+                    start_ind = self._start_index + (ith_batch * self._load_n_times)
                     end_ind = start_ind + self._load_n_times
                     self._data_loaded[variable] = self.dataset[variable][
                         start_ind:end_ind, :
@@ -321,9 +311,7 @@ class NetCdfRead(Accessor):
                 # no time batching
                 return self.dataset[variable][itime_step, :]
 
-    def advance(
-        self, variable: str, current_time: np.datetime64 = None
-    ) -> np.ndarray:
+    def advance(self, variable: str, current_time: np.datetime64 = None) -> np.ndarray:
         """Get the data for a variable for the next time step
 
         Args:
@@ -386,11 +374,7 @@ class NetCdfWrite(Accessor):
                     else:
                         group_variables += [f"{group}/{var_name}"]
 
-            v2 = [
-                var_name
-                for group, vars in variables.items()
-                for var_name in vars
-            ]
+            v2 = [var_name for group, vars in variables.items() for var_name in vars]
             variables = v2
         else:
             group_variables = variables
@@ -484,22 +468,16 @@ class NetCdfWrite(Accessor):
             self.dataset.createDimension("grand_id", self.nreservoirs)
 
         if nhru_coordinate:
-            self.hruid = self.dataset.createVariable(
-                "nhm_id", "i4", ("nhm_id")
-            )
+            self.hruid = self.dataset.createVariable("nhm_id", "i4", ("nhm_id"))
             self.hruid[:] = np.array(self.hru_ids, dtype=int)
         if nsegment_coordinate:
-            self.segid = self.dataset.createVariable(
-                "nhm_seg", "i4", ("nhm_seg")
-            )
+            self.segid = self.dataset.createVariable("nhm_seg", "i4", ("nhm_seg"))
             self.segid[:] = np.array(self.segment_ids, dtype=int)
         if one_coordinate:
             self.oneid = self.dataset.createVariable("one", "i4", ("one"))
             self.oneid[:] = np.array(self.one_ids, dtype=int)
         if nreservoirs_coordinate:
-            self.grandid = self.dataset.createVariable(
-                "grand_id", "i4", ("grand_id")
-            )
+            self.grandid = self.dataset.createVariable("grand_id", "i4", ("grand_id"))
             self.grandid[:] = coordinates["grand_id"]
 
         self.variables = {}
@@ -558,9 +536,7 @@ class NetCdfWrite(Accessor):
         self.time[itime_step] = nc4.date2num(simulation_time, self.time.units)
         return
 
-    def add_data(
-        self, name: str, itime_step: int, current: np.ndarray
-    ) -> None:
+    def add_data(self, name: str, itime_step: int, current: np.ndarray) -> None:
         """Add data for a time step to a NetCDF variable
 
         Args:
@@ -595,9 +571,7 @@ class NetCdfWrite(Accessor):
             raise KeyError(f"{name} not a valid variable name")
 
         if time_coord == "time":
-            start_date = (
-                time_data[0].astype(dt.datetime).strftime("%Y-%m-%d %H:%M:%S")
-            )
+            start_date = time_data[0].astype(dt.datetime).strftime("%Y-%m-%d %H:%M:%S")
             self[time_coord].units = f"days since {start_date}"
             self[time_coord][:] = nc4.date2num(
                 time_data.astype(dt.datetime),
@@ -634,9 +608,7 @@ class NetCdfCompare(Accessor):
         self._compare = NetCdfRead(compare_pth)
         self._verbose = verbose
         if not self.__validate_comparison:
-            raise KeyError(
-                f"Variables in {compare_pth} do not exist in {base_pth}"
-            )
+            raise KeyError(f"Variables in {compare_pth} do not exist in {base_pth}")
 
     def __del__(self):
         if self._base.dataset.isopen():

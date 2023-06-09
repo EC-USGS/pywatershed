@@ -90,9 +90,7 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
     check_dict = {proc: {} for proc in check_vars.keys()}
 
     # test outputting specific vars by only using check_vars
-    output_vars = [
-        item for sublist in list(check_vars.values()) for item in sublist
-    ]
+    output_vars = [item for sublist in list(check_vars.values()) for item in sublist]
     output_vars = None
 
     model.initialize_netcdf(
@@ -126,9 +124,7 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
                         )
                     )
 
-                check_dict[pp][bb][tt, :] = model.processes[pp].budget[
-                    f"_{bb}"
-                ]
+                check_dict[pp][bb][tt, :] = model.processes[pp].budget[f"_{bb}"]
 
     model.finalize()
 
@@ -144,9 +140,7 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
 
         if budget_sum_param == "some":
             nc_data = xr.open_dataset(tmp_dir / f"{pp}_budget.nc")
-            for nn in set(budget_sum_vars_all).difference(
-                set(check_budget_sum_vars)
-            ):
+            for nn in set(budget_sum_vars_all).difference(set(check_budget_sum_vars)):
                 assert nn not in nc_data.variables
         elif not budget_sum_param:
             assert not (tmp_dir / f"{pp}_budget.nc").exists()
@@ -205,9 +199,7 @@ def test_separate_together(domain, control, tmp_path, separate):
                 nc_file = test_output_dir / f"{vv}.nc"
                 assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
-                if isinstance(
-                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
-                ):
+                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
                     assert (ds[vv].values == proc[vv].data).all()
                 else:
                     assert (ds[vv][-1, :] == proc[vv]).all()
@@ -224,9 +216,7 @@ def test_separate_together(domain, control, tmp_path, separate):
             nc_vars = set(ds.data_vars)
             assert proc_vars == nc_vars
             for vv in proc.variables:
-                if isinstance(
-                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
-                ):
+                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
                     assert (ds[vv].values == proc[vv].data).all()
 
                 else:

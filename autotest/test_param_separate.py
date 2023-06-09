@@ -63,9 +63,7 @@ def test_param_sep(domain, control, processes, tmp_path):
 
     # check roundtrip
     for proc_class, proc_val in params_sep.items():
-        assert set(proc_val.parameters.keys()) == set(
-            proc_class.get_parameters()
-        )
+        assert set(proc_val.parameters.keys()) == set(proc_class.get_parameters())
         for param in proc_class.get_parameters():
             np.testing.assert_equal(
                 proc_val.parameters[param], control.params.parameters[param]

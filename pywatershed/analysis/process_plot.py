@@ -73,9 +73,7 @@ class ProcessPlot:
         ).set_index("nhm_seg")
 
         minx, miny, maxx, maxy = self.hru_gdf.geometry.total_bounds
-        hru_geoms_exploded = self.hru_gdf.explode().reset_index(
-            level=1, drop=True
-        )
+        hru_geoms_exploded = self.hru_gdf.explode().reset_index(level=1, drop=True)
 
         aa = {}
         for yy in self.seg_gdf.crs.coordinate_operation.params:

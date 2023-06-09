@@ -47,11 +47,11 @@ Prototype an EC watershed model: "pywatershed"
 To install the software you will need Python 3.9 or 3.10.
 
 We currently recommend dependencies be installed with [Mamba](https://mamba.readthedocs.io/en/latest/)
-which will be much faster than Ananconda. An environment containing all core and optional dependencies
-can be created from the project root with:
+which will be much faster than Ananconda (but the conda command can also be used). An environment
+containing all core and optional dependencies can be created from the project root with:
 
 ```
-conda env create -f environment.yml
+mamba env create -f environment.yml
 ```
 
 The `pywatershed` package is [available on PyPI](https://pypi.org/project/pywatershed/) and can be installed with:

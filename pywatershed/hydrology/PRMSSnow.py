@@ -819,7 +819,7 @@ class PRMSSnow(StorageUnit):
             None
         """
 
-        canopy_covden = covden_win
+        canopy_covden = covden_win.copy()
         wh_transp_on = np.where(transp_on)
         canopy_covden[wh_transp_on] = covden_sum[wh_transp_on]
 

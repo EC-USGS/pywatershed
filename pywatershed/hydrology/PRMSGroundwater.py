@@ -43,6 +43,13 @@ class PRMSGroundwater(StorageUnit):
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
+
+        if calc_method == "numba":
+            # read-only arrays dont have numba signatures
+            self._hru_area = self.hru_area.copy()
+            self._gwflow_coef = self.gwflow_coef.copy()
+            self._gwsink_coef = self.gwsink_coef.copy()
+
         return
 
     @staticmethod
@@ -178,13 +185,13 @@ class PRMSGroundwater(StorageUnit):
                 self.gwres_stor_change[:],
                 self.gwres_flow_vol[:],
             ) = self._calculate_numba(
-                self.hru_area,
+                self._hru_area,
                 self.soil_to_gw,
                 self.ssr_to_gw,
                 self.dprst_seep_hru,
                 self.gwres_stor,
-                self.gwflow_coef,
-                self.gwsink_coef,
+                self._gwflow_coef,
+                self._gwsink_coef,
                 self.gwres_stor_old,
                 self.control.params.hru_in_to_cf,
             )

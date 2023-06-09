@@ -14,7 +14,7 @@ The release procedure is mostly automated. The workflow is defined in `.github/w
 
 To release a new version:
 
-1. Create a release branch from `develop` or a patch branch from `main`.
+1. On your local machine, create a release branch from `develop` or a patch branch from `main`.
 
     The branch's name must follow format `v{major}.{minor}.{patch}` ([semantic version](https://semver.org/) number with a leading 'v'). For instance, for a minor release, if this repo is an `upstream` remote and one's local `develop` is up to date with upstream `develop`, then from `develop` run `git switch -c vx.y.z`.
 

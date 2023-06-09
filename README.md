@@ -44,7 +44,17 @@ Prototype an EC watershed model: "pywatershed"
 
 ## Installation
 
-To install the software you will need Python 3.9 or 3.10. The `pywatershed` package is [available on PyPI](https://pypi.org/project/pywatershed/) and can be installed with:
+To install the software you will need Python 3.9 or 3.10.
+
+We currently recommend dependencies be installed with [Mamba](https://mamba.readthedocs.io/en/latest/)
+which will be much faster than Ananconda. An environment containing all core and optional dependencies
+can be created from the project root with:
+
+```
+conda env create -f environment.yml
+```
+
+The `pywatershed` package is [available on PyPI](https://pypi.org/project/pywatershed/) and can be installed with:
 
 ```
 pip install pywatershed
@@ -54,12 +64,6 @@ A number of extra dependencies are needed to run the example notebooks. These ca
 
 ```
 pip install "pywatershed[optional]"
-```
-
-Alternatively dependencies can be installed with Anaconda or Miniconda. An environment containing all core and optional dependencies can be created from the project root with:
-
-```
-conda env create -f environment.yml
 ```
 
 These installation steps are suitable for `pywatershed` end users. See the [developer documentation](./DEVELOPER.md) for detailed instructions on configuring a development environment.

@@ -199,9 +199,7 @@ class PRMSChannel(StorageUnit):
         # convert prms data to zero-based
         self._hru_segment = self.hru_segment - 1
         self._tosegment = self.tosegment - 1
-        # this is because the data are int32 in windows
-        if self._tosegment.dtype != self.tosegment.dtype:
-            self._tosegment = self._tosegment.astype(self.tosegment.dtype)
+        self._tosegment = self._tosegment.astype('int64')
 
         # calculate connectivity
         self._outflow_mask = np.full((len(self._tosegment)), False)
@@ -237,7 +235,7 @@ class PRMSChannel(StorageUnit):
             # for pp in mask_not_seg_ord:
             #    assert (tosegment[pp] == -1) and (not pp in tosegment)
 
-        self._segment_order = np.array(segment_order, dtype=int)
+        self._segment_order = np.array(segment_order, dtype='int64')
 
         # calculate the Muskingum parameters
         velocity = (
@@ -272,7 +270,7 @@ class PRMSChannel(StorageUnit):
         self._Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
 
         self._ts = np.ones(self.nsegment, dtype=float)
-        self._tsi = np.ones(self.nsegment, dtype=int)
+        self._tsi = np.ones(self.nsegment, dtype='int64')
 
         # todo: vectorize this
         for iseg in range(self.nsegment):
@@ -344,45 +342,25 @@ class PRMSChannel(StorageUnit):
 
             if not hasattr(self, "_muskingum_mann_numba"):
                 numba_msg = f"{self.name} jit compiling with numba "
-                # this method can not be parallelized
+                # this method can not be parallelized (? true?)
                 print(numba_msg, flush=True)
 
-                # This is annoying that long integers on windows are 32bit
-                if platform.system() == "Windows":
-                    self._muskingum_mann = nb.njit(
-                        nb.types.UniTuple(nb.float64[:], 7)(
-                            nb.int32[:],  # _segment_order
-                            nb.int32[:],  # tosegment
-                            nb.float64[:],  # seg_lateral_inflow
-                            nb.float64[:],  # _seg_inflow0
-                            nb.float64[:],  # _outflow_ts
-                            nb.int32[:],  # _tsi
-                            nb.float64[:],  # _ts
-                            nb.float64[:],  # _c0
-                            nb.float64[:],  # _c1
-                            nb.float64[:],  # _c2
-                        ),
-                        fastmath=True,
-                        parallel=False,
-                    )(self._muskingum_mann_numpy)
-
-                else:
-                    self._muskingum_mann = nb.njit(
-                        nb.types.UniTuple(nb.float64[:], 7)(
-                            nb.int64[:],  # _segment_order
-                            nb.int64[:],  # tosegment
-                            nb.float64[:],  # seg_lateral_inflow
-                            nb.float64[:],  # _seg_inflow0
-                            nb.float64[:],  # _outflow_ts
-                            nb.int64[:],  # _tsi
-                            nb.float64[:],  # _ts
-                            nb.float64[:],  # _c0
-                            nb.float64[:],  # _c1
-                            nb.float64[:],  # _c2
-                        ),
-                        fastmath=True,
-                        parallel=False,
-                    )(self._muskingum_mann_numpy)
+                self._muskingum_mann = nb.njit(
+                    nb.types.UniTuple(nb.float64[:], 7)(
+                        nb.int64[:],  # _segment_order
+                        nb.int64[:],  # _tosegment
+                        nb.float64[:],  # seg_lateral_inflow
+                        nb.float64[:],  # _seg_inflow0
+                        nb.float64[:],  # _outflow_ts
+                        nb.int64[:],  # _tsi
+                        nb.float64[:],  # _ts
+                        nb.float64[:],  # _c0
+                        nb.float64[:],  # _c1
+                        nb.float64[:],  # _c2
+                    ),
+                    fastmath=True,
+                    parallel=False,
+                )(self._muskingum_mann_numpy)
 
         elif self._calc_method.lower() in ["none", "numpy"]:
             self._muskingum_mann = self._muskingum_mann_numpy

@@ -23,7 +23,7 @@ class SWBRootZone(StorageUnit):
         calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ) -> "SWBRootZone":
+    ):
         super().__init__(
             control=control,
             verbose=verbose,
@@ -35,7 +35,6 @@ class SWBRootZone(StorageUnit):
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
-        return
 
     @staticmethod
     def get_dimensions() -> tuple:

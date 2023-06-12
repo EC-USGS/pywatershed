@@ -6,20 +6,12 @@ from matplotlib.backends.backend_pdf import PdfPages
 from datetime import timedelta
 import sys
 
-csv_filename = sys.argv[1]
-flux_tower_csv = sys.argv[2] if len(sys.argv) > 2 else 'NA'
+csv_filename = '..\swb_output\SWB2_variable_values__col_1__row_1__x_1866006__y_2234241.csv'
 
-#csv_file = 'SWB2_variable_values__col_236__row_373__x_386474__y_1289444.csv'
 bits = csv_filename.replace('___','_').replace('__','_').replace('.','_').split('_')
 output_file_prefix = csv_filename.split('.')[0]
 locator_text = 'x: ' + bits[8] + ', y: ' + bits[10]
 df = pd.read_csv(csv_filename)
-
-flux_df = None
-
-if flux_tower_csv != 'NA':
-    flux_df_in = pd.read_csv(flux_tower_csv,header=0,comment='#')
-    flux_df = munge_flux_tower_data(flux_df_in)
 
 # eliminate unwanted spaces before and after items in the column name list
 df.columns = map(str.strip, df.columns)
@@ -145,11 +137,6 @@ with PdfPages(output_filename) as pdf:
         ax.flat[p_et].plot(df_ss.index, -df_ss['reference_ET0'],marker=' ',linestyle='--',color='orange', 
             label='reference ET0')    
         ax.flat[p_et].set(ylabel='Evapotranspiration\n from soil (inches)')
-
-        if flux_df is not None:
-            flux_df_ss = flux_df.loc[flux_df.index.year==years[n]]
-            ax.flat[p_et].plot(flux_df_ss.index, -flux_df_ss['AET_in'], marker='x',linestyle='none',
-                color='red',label='flux tower')
 
         ax2 = ax.flat[p_et].twinx()
         ax2.plot(df_ss.index, np.cumsum(-df_ss['actual_ET']), color="darkgreen", label='cumulative actual ET')   

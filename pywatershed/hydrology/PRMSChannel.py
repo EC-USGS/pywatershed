@@ -199,7 +199,7 @@ class PRMSChannel(StorageUnit):
         # convert prms data to zero-based
         self._hru_segment = self.hru_segment - 1
         self._tosegment = self.tosegment - 1
-        self._tosegment = self._tosegment.astype('int64')
+        self._tosegment = self._tosegment.astype("int64")
 
         # calculate connectivity
         self._outflow_mask = np.full((len(self._tosegment)), False)
@@ -235,7 +235,7 @@ class PRMSChannel(StorageUnit):
             # for pp in mask_not_seg_ord:
             #    assert (tosegment[pp] == -1) and (not pp in tosegment)
 
-        self._segment_order = np.array(segment_order, dtype='int64')
+        self._segment_order = np.array(segment_order, dtype="int64")
 
         # calculate the Muskingum parameters
         velocity = (
@@ -270,7 +270,7 @@ class PRMSChannel(StorageUnit):
         self._Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
 
         self._ts = np.ones(self.nsegment, dtype=float)
-        self._tsi = np.ones(self.nsegment, dtype='int64')
+        self._tsi = np.ones(self.nsegment, dtype="int64")
 
         # todo: vectorize this
         for iseg in range(self.nsegment):

@@ -31,9 +31,7 @@ hash_line = "##############"
 hash_line_official = "########################################"
 
 
-def _cbh_file_to_df(
-    the_file: file_type, params: PrmsParameters = None
-) -> pd.DataFrame:
+def _cbh_file_to_df(the_file: file_type, params: PrmsParameters = None) -> pd.DataFrame:
     # Only take cbh files that contain single variables
     # JLM: this can be substantially simplified as
     # we are only reading NHM CBH files now.
@@ -115,24 +113,18 @@ def _cbh_file_to_df(
     return data
 
 
-def _cbh_files_to_df(
-    file_dict: dict, params: PrmsParameters = None
-) -> pd.DataFrame:
+def _cbh_files_to_df(file_dict: dict, params: PrmsParameters = None) -> pd.DataFrame:
     dfs = [_cbh_file_to_df(val, params) for val in file_dict.values()]
     return pd.concat(dfs, axis=1)
 
 
-def cbh_files_to_df(
-    files: fileish, params: PrmsParameters = None
-) -> pd.DataFrame:
+def cbh_files_to_df(files: fileish, params: PrmsParameters = None) -> pd.DataFrame:
     if isinstance(files, (str, pl.Path)):
         df = _cbh_file_to_df(files, params)
     elif isinstance(files, (dict)):
         df = _cbh_files_to_df(files, params)
     else:
-        raise ValueError(
-            f'"files" argument of type {type(files)} not accepted.'
-        )
+        raise ValueError(f'"files" argument of type {type(files)} not accepted.')
     return df
 
 
@@ -150,9 +142,7 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
     var_names = df.columns.unique(level=0)
     np_dict = {}
     np_dict["time"] = df.index.to_numpy(copy=True).astype("datetime64[s]")
-    spatial_ids = (
-        df.loc[:, var_names[0]].columns.values.astype(float).astype(int)
-    )
+    spatial_ids = df.loc[:, var_names[0]].columns.values.astype(float).astype(int)
     if spatial_ids[0] == "000":
         np_dict["hru_ind"] = spatial_ids
     else:
@@ -164,9 +154,7 @@ def cbh_df_to_np_dict(df: pd.DataFrame) -> dict:
 
 def cbh_n_hru(np_dict: dict) -> int:
     odd_shapes = ["time", "hru_ind", "nhm_id"]
-    shapes = [
-        var.shape for key, var in np_dict.items() if key not in odd_shapes
-    ]
+    shapes = [var.shape for key, var in np_dict.items() if key not in odd_shapes]
     for ss in shapes:
         assert shapes[0] == ss
     return shapes[0][1]
@@ -214,9 +202,7 @@ def _cbh_to_netcdf(
     # time.calendar = time_calendar
 
     hru_name = "hru_ind" if "hru_ind" in np_dict.keys() else "nhm_id"
-    hruid = ds.createVariable(
-        hru_name, meta.get_types(hru_name)[hru_name], ("hru")
-    )
+    hruid = ds.createVariable(hru_name, meta.get_types(hru_name)[hru_name], ("hru"))
     hru_meta_dict = {
         "hru_ind": {
             "type": "i4",

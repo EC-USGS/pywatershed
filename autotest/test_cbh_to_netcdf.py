@@ -3,10 +3,10 @@ import pathlib as pl
 import numpy as np
 import pytest
 import xarray as xr
+from utils import assert_or_print
 
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.cbh_utils import cbh_files_to_df, cbh_files_to_netcdf
-from utils import assert_or_print
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
@@ -73,9 +73,7 @@ def test_cbh_files_to_df(domain, var, params):
     df = cbh_files_to_df(the_file, params)
     results = {var: df.mean().mean()}
     answers = answer_key[domain["domain_name"]]["files_to_df"]
-    assert_or_print(
-        results, answers, "files_to_df", print_ans=domain["print_ans"]
-    )
+    assert_or_print(results, answers, "files_to_df", print_ans=domain["print_ans"])
     return
 
 
@@ -90,10 +88,7 @@ def test_cbh_files_to_netcdf(domain, params, tmp_path):
     for var in answers.keys():
         if var == "time":
             results[var] = (
-                results_ds[var]
-                .values.astype("datetime64[s]")
-                .astype(np.int32)
-                .mean()
+                results_ds[var].values.astype("datetime64[s]").astype(np.int32).mean()
             )
         else:
             results[var] = results_ds[var].mean().mean().values.tolist()

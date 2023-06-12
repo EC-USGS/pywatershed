@@ -262,9 +262,7 @@ class PRMSChannel(StorageUnit):
         # only calculate Kcoef for cells with velocities greater than zero
         idx = velocity > 0.0
         Kcoef[idx] = self.seg_length[idx] / velocity[idx]
-        Kcoef = np.where(
-            self.segment_type == SegmentType.LAKE.value, 24.0, Kcoef
-        )
+        Kcoef = np.where(self.segment_type == SegmentType.LAKE.value, 24.0, Kcoef)
         Kcoef = np.where(Kcoef < 0.01, 0.01, Kcoef)
         self._Kcoef = np.where(Kcoef > 24.0, 24.0, Kcoef)
 
@@ -305,9 +303,7 @@ class PRMSChannel(StorageUnit):
         d = np.where(np.abs(d) < 1e-6, 0.0001, d)
         self._c0 = (-(self._Kcoef * self.x_coef) + (0.5 * self._ts)) / d
         self._c1 = ((self._Kcoef * self.x_coef) + (0.5 * self._ts)) / d
-        self._c2 = (
-            self._Kcoef - (self._Kcoef * self.x_coef) - (0.5 * self._ts)
-        ) / d
+        self._c2 = (self._Kcoef - (self._Kcoef * self.x_coef) - (0.5 * self._ts)) / d
 
         # Short travel time
         idx = self._c2 < 0.0
@@ -467,9 +463,7 @@ class PRMSChannel(StorageUnit):
             self._c2,
         )
 
-        self.seg_stor_change[:] = (
-            self._seg_inflow - self.seg_outflow
-        ) * s_per_time
+        self.seg_stor_change[:] = (self._seg_inflow - self.seg_outflow) * s_per_time
 
         self.channel_outflow_vol[:] = (
             np.where(self._outflow_mask, self.seg_outflow, zero)

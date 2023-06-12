@@ -160,9 +160,7 @@ class ModelGraph:
                 varset_col_span = 6
 
             label += f"    <TR>\n"
-            label += (
-                f'        <TD COLSPAN="{varset_col_span}" ROWSPAN="{n_vars+1}"'
-            )
+            label += f'        <TD COLSPAN="{varset_col_span}" ROWSPAN="{n_vars+1}"'
             label += f'         BGCOLOR="{category_colors[varset_name]}">{varset_name}</TD>\n'
             label += f"    </TR>\n"
 

@@ -208,9 +208,7 @@ class Starfit(StorageUnit):
             Release_p2=self.Release_p2,
         )  # output in m^3/d
 
-        self.lake_release[:] = (
-            self.lake_release / 24 / 60 / 60
-        )  # convert to m^3/s
+        self.lake_release[:] = self.lake_release / 24 / 60 / 60  # convert to m^3/s
 
         self.lake_storage_change[:] = (
             (self.lake_inflow - self.lake_release) * 24 * 60 * 60 / 1.0e6
@@ -299,9 +297,7 @@ class Starfit(StorageUnit):
         forecasted_weekly_volume = 7.0 * lake_inflow * 24.0 * 60.0 * 60.0
         mean_weekly_volume = 7.0 * Obs_MEANFLOW_CUMECS * 24.0 * 60.0 * 60.0
 
-        standardized_inflow = (
-            forecasted_weekly_volume / mean_weekly_volume
-        ) - 1.0
+        standardized_inflow = (forecasted_weekly_volume / mean_weekly_volume) - 1.0
 
         standardized_weekly_release = (
             Release_alpha1 * np.sin(2.0 * np.pi * omega * epiweek)
@@ -331,23 +327,15 @@ class Starfit(StorageUnit):
         ) / 7.0
 
         release_above_normal = (
-            storage
-            - (capacity * max_normal / 100.0)
-            + forecasted_weekly_volume
+            storage - (capacity * max_normal / 100.0) + forecasted_weekly_volume
         ) / 7.0
 
         release_below_normal = (
-            storage
-            - (capacity * min_normal / 100.0)
-            + forecasted_weekly_volume
+            storage - (capacity * min_normal / 100.0) + forecasted_weekly_volume
         ) / 7.0  # NK: The first part of this sum will be negative.
 
-        release = np.where(
-            availability_status > one, release_above_normal, release
-        )
-        release = np.where(
-            availability_status < zero, release_below_normal, release
-        )
+        release = np.where(availability_status > one, release_above_normal, release)
+        release = np.where(availability_status < zero, release_below_normal, release)
         release = np.where(release < release_min_vol, release_min_vol, release)
         release = np.where(release > release_max_vol, release_max_vol, release)
 

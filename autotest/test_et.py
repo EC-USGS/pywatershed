@@ -51,9 +51,7 @@ class TestPRMSEt:
         ans = {}
         for key in comparison_vars:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(
-                nc_pth, variable_name=key, control=control
-            )
+            ans[key] = adapter_factory(nc_pth, variable_name=key, control=control)
 
         all_success = True
         for istep in range(control.n_times):

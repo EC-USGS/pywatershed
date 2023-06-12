@@ -68,9 +68,7 @@ class TestPRMSSnow:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(
-                nc_pth, variable_name=key, control=control
-            )
+            ans[key] = adapter_factory(nc_pth, variable_name=key, control=control)
 
         # setup the snow
         input_variables = {}
@@ -126,10 +124,7 @@ class TestPRMSSnow:
                 pkwater_equiv_one_zero = np.where(
                     iso_censor_mask, True, pkwater_equiv_one_zero
                 )
-            print(
-                f"pkwater_equiv_one_zero.sum(): "
-                f"{pkwater_equiv_one_zero.sum()}"
-            )
+            print(f"pkwater_equiv_one_zero.sum(): " f"{pkwater_equiv_one_zero.sum()}")
 
             # iso ---
             # iso has a memory of packwater equiv which can cause about
@@ -159,9 +154,7 @@ class TestPRMSSnow:
 
             # reset points where near zero and have matching iso
             pkwater_both_zero_and_iso = (
-                (pkwe <= epsilon32)
-                & (pkwe_ans <= epsilon32)
-                & (iso == iso_ans)
+                (pkwe <= epsilon32) & (pkwe_ans <= epsilon32) & (iso == iso_ans)
             )
             iso_censor_mask = np.where(
                 pkwater_both_zero_and_iso, False, iso_censor_mask

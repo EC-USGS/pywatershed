@@ -289,9 +289,7 @@ class PRMSSnow(StorageUnit):
 
         # Deninv and denmaxinv not in variables nor in metadata but we can set
         # them on self for convenience
-        if (self.den_init.shape == ()) or (
-            self.den_init.shape[0] != self.nhru
-        ):
+        if (self.den_init.shape == ()) or (self.den_init.shape[0] != self.nhru):
             # this one dosent get used later
             den_init = np.ones(self.nhru, dtype=np.float64) * self.den_init
             # but this one does
@@ -302,9 +300,7 @@ class PRMSSnow(StorageUnit):
         if len(self.den_max) == 1:
             self.den_max = np.ones(self.nhru, dtype=np.float64) * self.den_max
         if len(self.settle_const) == 1:
-            self.settle_const = (
-                np.ones(self.nhru, dtype=np.float64) * self.settle_const
-            )
+            self.settle_const = np.ones(self.nhru, dtype=np.float64) * self.settle_const
 
         self.deninv = one / den_init
         self.denmaxinv = one / self.den_max
@@ -342,23 +338,16 @@ class PRMSSnow(StorageUnit):
             pkweq_gt_zero = self.pkwater_equiv > zero
             wh_pkweq_gt_zero = np.where(pkweq_gt_zero)
             self.pk_depth[wh_pkweq_gt_zero] = (
-                self.pkwater_equiv[wh_pkweq_gt_zero]
-                * self.deninv[wh_pkweq_gt_zero]
+                self.pkwater_equiv[wh_pkweq_gt_zero] * self.deninv[wh_pkweq_gt_zero]
             )
             self.pk_den[wh_pkweq_gt_zero] = (
-                self.pkwater_equiv[wh_pkweq_gt_zero]
-                / self.pk_depth[wh_pkweq_gt_zero]
+                self.pkwater_equiv[wh_pkweq_gt_zero] / self.pk_depth[wh_pkweq_gt_zero]
             )
-            self.pk_ice[wh_pkweq_gt_zero] = self.pkwater_equiv[
-                wh_pkweq_gt_zero
-            ]
+            self.pk_ice[wh_pkweq_gt_zero] = self.pkwater_equiv[wh_pkweq_gt_zero]
             self.freeh2o[wh_pkweq_gt_zero] = (
-                self.pk_ice[wh_pkweq_gt_zero]
-                * self.freeh2o_cap[wh_pkweq_gt_zero]
+                self.pk_ice[wh_pkweq_gt_zero] * self.freeh2o_cap[wh_pkweq_gt_zero]
             )
-            self.ai[wh_pkweq_gt_zero] = self.pkwater_equiv[
-                wh_pkweq_gt_zero
-            ]  # inches
+            self.ai[wh_pkweq_gt_zero] = self.pkwater_equiv[wh_pkweq_gt_zero]  # inches
 
             ai_gt_snarea_thresh = self.ai > self.snarea_thresh
             wh_pkweq_gt_zero_and_ai_gt_snth = np.where(
@@ -415,9 +404,9 @@ class PRMSSnow(StorageUnit):
                     numba_msg += f"and using {numba_num_threads} threads"
                 print(numba_msg, flush=True)
 
-                self._calculate_numba = nb.njit(
-                    fastmath=True, parallel=nb_parallel
-                )(self._calculate_numpy)
+                self._calculate_numba = nb.njit(fastmath=True, parallel=nb_parallel)(
+                    self._calculate_numpy
+                )
                 fns = [
                     "_calc_calin",
                     "_calc_caloss",
@@ -1101,9 +1090,7 @@ class PRMSSnow(StorageUnit):
                     # Snow can evaporate when transpiration is not occuring or
                     # when transpiration is occuring with cover types of bare
                     # soil or grass.
-                    if (not transp_on[jj]) or (
-                        transp_on[jj] and cov_type[jj] < 2
-                    ):
+                    if (not transp_on[jj]) or (transp_on[jj] and cov_type[jj] < 2):
                         (
                             freeh2o[jj],
                             pk_def[jj],
@@ -1208,9 +1195,9 @@ class PRMSSnow(StorageUnit):
         freeh2o_change[:] = freeh2o - freeh2o_prev
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
-        wh_through = (
-            ((pk_ice_prev + freeh2o_prev) <= epsilon64) & ~newsnow
-        ) | (pptmix_nopack == 1)
+        wh_through = (((pk_ice_prev + freeh2o_prev) <= epsilon64) & ~newsnow) | (
+            pptmix_nopack == 1
+        )
         through_rain[:] = np.where(wh_through, net_rain, zero)
 
         return (
@@ -1311,9 +1298,7 @@ class PRMSSnow(StorageUnit):
         """Add rain and/or snow to snowpack."""
 
         # WARNING: pan - wouldn't this be pkwater_equiv > DNEARZERO?
-        ppt_through = ~(
-            (pkwater_equiv > zero and net_ppt > zero) or net_snow > zero
-        )
+        ppt_through = ~((pkwater_equiv > zero and net_ppt > zero) or net_snow > zero)
         if ppt_through:
             return (
                 freeh2o,
@@ -1471,9 +1456,7 @@ class PRMSSnow(StorageUnit):
                         # Calculate the excess heat per area added by the
                         # portion of rain that does not bring the snowpack to
                         # isothermal (using specific heat of water)
-                        calpr = (
-                            train * (net_rain - pndz) * inch2cm
-                        )  # [cal/cm^2]
+                        calpr = train * (net_rain - pndz) * inch2cm  # [cal/cm^2]
 
                         # Add the new heat to the snow pack (the heat in this
                         # excess rain will melt some of the pack ice when the
@@ -1633,9 +1616,7 @@ class PRMSSnow(StorageUnit):
                     # negative number = plus) and calculate the new pack
                     # temperature.
                     pk_def = pk_def - calps  # [cal/cm^2]
-                    pk_temp = (
-                        -1 * pk_def / (pkwater_equiv * 1.27)
-                    )  # [degrees C]
+                    pk_temp = -1 * pk_def / (pkwater_equiv * 1.27)  # [degrees C]
 
         # <<<
         return (
@@ -2154,9 +2135,7 @@ class PRMSSnow(StorageUnit):
 
                     # <
                     # Linearly interpolate the new snow covered area.
-                    snowcov_area = (
-                        snowcov_areasv + fracy * difx
-                    )  # [fraction of area]
+                    snowcov_area = snowcov_areasv + fracy * difx  # [fraction of area]
 
                     # Terminate the subroutine.
                     return (
@@ -2899,9 +2878,7 @@ class PRMSSnow(StorageUnit):
         # respectively. Note that the canopy is assumed to be a perfect
         # blackbody (emissivity=1) and the air has emissivity as determined
         # from previous calculations.
-        sky = (one - canopy_covden) * (
-            (emis * air) - sno
-        )  # [cal/cm^2] or [Langleys]
+        sky = (one - canopy_covden) * ((emis * air) - sno)  # [cal/cm^2] or [Langleys]
         can = canopy_covden * (air - sno)  # [cal/cm^2] or [Langleys]
 
         # RAPCOMMENT - CHECK THE INTERECEPT MODULE FOR CHANGE. What if the land

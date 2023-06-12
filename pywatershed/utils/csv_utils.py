@@ -203,9 +203,7 @@ class CsvFile:
             )
             # add additional meta data
             if self.meta.is_available(variable_name):
-                var_meta = self.meta.find_variables(variable_name)[
-                    variable_name
-                ]
+                var_meta = self.meta.find_variables(variable_name)[variable_name]
                 for key, val in var_meta.items():
                     if isinstance(val, dict):
                         continue
@@ -247,9 +245,7 @@ class CsvFile:
             None
 
         """
-        str2date = lambda x: dt.datetime.strptime(
-            x.decode("utf-8"), "%Y-%m-%d"
-        )
+        str2date = lambda x: dt.datetime.strptime(x.decode("utf-8"), "%Y-%m-%d")
         all_data = []
         ntimes = 0
         dtype = [("date", dt.datetime)]
@@ -276,10 +272,7 @@ class CsvFile:
                 variable_type = meta.meta_numpy_type(
                     self.meta.find_variables(variable_name)[variable_name]
                 )
-                if (
-                    "nsegment"
-                    in self.meta.get_dimensions(variable_name)[variable_name]
-                ):
+                if "nsegment" in self.meta.get_dimensions(variable_name)[variable_name]:
                     coordinate_name = "nhm_seg"
                 else:
                     coordinate_name = "nhm_id"

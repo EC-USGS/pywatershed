@@ -53,9 +53,7 @@ class AdapterNetcdf(Adapter):
 
         self.time = self._nc_read.times
 
-        self._current_value = control.get_var_nans(
-            self._variable, drop_time_dim=True
-        )
+        self._current_value = control.get_var_nans(self._variable, drop_time_dim=True)
         return
 
     def advance(self):

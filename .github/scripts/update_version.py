@@ -6,8 +6,6 @@ from os import PathLike
 from pathlib import Path
 from typing import NamedTuple
 
-
-
 _project_name = "pywatershed"
 _project_root_path = Path(__file__).parent.parent.parent
 _version_txt_path = _project_root_path / "version.txt"
@@ -39,8 +37,7 @@ class Version(NamedTuple):
         """Parse version information from a version.py file"""
 
         lines = [
-            line.rstrip("\n")
-            for line in open(Path(path).expanduser().absolute(), "r")
+            line.rstrip("\n") for line in open(Path(path).expanduser().absolute(), "r")
         ]
         vmajor = vminor = vpatch = None
         for line in lines:
@@ -63,15 +60,12 @@ class Version(NamedTuple):
             vmajor is not None and vminor is not None and vpatch is not None
         ), "version string must follow semantic version format: major.minor.patch"
         return cls(major=vmajor, minor=vminor, patch=vpatch)
-    
+
     @classmethod
     def from_txt_file(cls, path: PathLike) -> "Version":
         """Parse version information from a version.txt file"""
 
-        lines = [
-            line.rstrip("\n")
-            for line in open(Path(path).expanduser().absolute())
-        ]
+        lines = [line.rstrip("\n") for line in open(Path(path).expanduser().absolute())]
         vmajor = vminor = vpatch = None
         for line in lines:
             line = line.strip()
@@ -119,7 +113,7 @@ def update_version(
     version: Version = None,
     approve: bool = False,
 ):
-    from filelock import FileLock   
+    from filelock import FileLock
 
     lock_path = Path(_version_py_path.name + ".lock")
     try:

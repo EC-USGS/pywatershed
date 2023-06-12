@@ -156,9 +156,7 @@ class MMRToMF6:
         if end_time is None:
             self.end_time = self.control.end_time
 
-        self.nper = (
-            int((self.end_time - self.start_time) / self.control.time_step) + 1
-        )
+        self.nper = int((self.end_time - self.start_time) / self.control.time_step) + 1
 
         timestep_s = self.control.time_step_seconds * self.units("seconds")
         # convert to output units in the output data structure
@@ -318,16 +316,12 @@ class MMRToMF6:
 
         # qoutflow
         qoutflow_units = self.units(
-            meta.get_units("segment_flow_init", to_pint=True)[
-                "segment_flow_init"
-            ]
+            meta.get_units("segment_flow_init", to_pint=True)["segment_flow_init"]
         )
         qoutflow0 = parameters["segment_flow_init"] * qoutflow_units
 
         # x_coef
-        x_coef_units = self.units(
-            meta.get_units("x_coef", to_pint=True)["x_coef"]
-        )
+        x_coef_units = self.units(meta.get_units("x_coef", to_pint=True)["x_coef"])
         x_coef = parameters["x_coef"] * x_coef_units
 
         _ = flopy.mf6.ModflowSwfmmr(
@@ -359,8 +353,7 @@ class MMRToMF6:
             return ff.sel(time=slice(start_time, end_time))
 
         inflows = {
-            vv: read_inflow(vv, self.start_time, self.end_time)
-            for vv in inflow_list
+            vv: read_inflow(vv, self.start_time, self.end_time) for vv in inflow_list
         }
 
         if bc_flows_combine:
@@ -378,9 +371,7 @@ class MMRToMF6:
         for flow_name in inflows.keys():
             # if from pywatershed, inflows are already volumes in cubicfeet
             if "inch" in str(inflow_unit):  # PRMS style need hru areas
-                hru_area_unit = self.units(
-                    list(meta.get_units("hru_area").values())[0]
-                )
+                hru_area_unit = self.units(list(meta.get_units("hru_area").values())[0])
                 hru_area = parameters["hru_area"] * hru_area_unit
                 inflows[flow_name] *= hru_area
 
@@ -417,9 +408,7 @@ class MMRToMF6:
 
                 if bc_binary_files:
                     # should put the time in the file names?
-                    ra = np.array(
-                        flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")]
-                    )
+                    ra = np.array(flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")])
                     i_time_str = str(
                         self.control.start_time + ispd * self.control.time_step
                     )

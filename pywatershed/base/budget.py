@@ -133,9 +133,7 @@ class Budget(Accessor):
                     )
                     raise ValueError(msg)
                 elif var_name not in self[comp_name].keys():
-                    msg = (
-                        f"Component '{comp_name}' has no variable '{var_name}'"
-                    )
+                    msg = f"Component '{comp_name}' has no variable '{var_name}'"
                     raise KeyError(msg)
                 else:
                     self[comp_name][var_name] = var_data
@@ -198,9 +196,9 @@ class Budget(Accessor):
                 continue
             for var in self[component].keys():
                 if var in init_accumulations[component].keys():
-                    self._accumulations[component][var] = init_accumulations[
-                        component
-                    ][var]
+                    self._accumulations[component][var] = init_accumulations[component][
+                        var
+                    ]
 
         self._sum_component_accumulations()
         return
@@ -266,9 +264,9 @@ class Budget(Accessor):
             self._accumulations_sum[component] = None
             for var in self[component].keys():
                 if self._accumulations_sum[component] is None:
-                    self._accumulations_sum[component] = self._accumulations[
-                        component
-                    ][var].copy()
+                    self._accumulations_sum[component] = self._accumulations[component][
+                        var
+                    ].copy()
                 else:
                     self._accumulations_sum[component] += self._accumulations[
                         component
@@ -384,9 +382,7 @@ class Budget(Accessor):
         stor_col_fill = " " * stor_col_width
         sep_width = 4
         col_sep = " " * sep_width
-        terms_width = (
-            in_col_width + out_col_width + stor_col_width + (2 * sep_width)
-        )
+        terms_width = in_col_width + out_col_width + stor_col_width + (2 * sep_width)
         total_width = indent_width + terms_width
 
         # volume/mass or energy
@@ -456,8 +452,7 @@ class Budget(Accessor):
                                 precision=prec_width,
                             )
                             line += (
-                                pretty_print(f"{keys[ll]}: {vv}", col_width)
-                                + col_sep
+                                pretty_print(f"{keys[ll]}: {vv}", col_width) + col_sep
                             )
                         else:
                             line += col_fill + col_sep
@@ -496,10 +491,7 @@ class Budget(Accessor):
                     + pretty_print(
                         np.format_float_scientific(
                             vals_sum.sum(),
-                            precision=col_width
-                            - col_key_width
-                            - col_extra_colon
-                            - 6,
+                            precision=col_width - col_key_width - col_extra_colon - 6,
                         ),
                         col_width - col_key_width - col_extra_colon,
                     )
@@ -599,9 +591,7 @@ class Budget(Accessor):
             nc_out_vars = list(self.output_vars_desc.keys())
         elif isinstance(write_sum_vars, list):
             nc_out_vars = [
-                var
-                for var in self.output_vars_desc.keys()
-                if var in write_sum_vars
+                var for var in self.output_vars_desc.keys() if var in write_sum_vars
             ]
         elif (write_sum_vars is False) or (write_sum_vars is None):
             nc_out_vars = []

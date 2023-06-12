@@ -25,9 +25,9 @@ def datetime_month(dt64: np.datetime64) -> int:
 
 def datetime_doy(dt64: np.datetime64) -> int:
     """Get day of year from np.datetime64"""
-    return (dt64 - dt64.astype("datetime64[Y]")).astype(
-        "timedelta64[D]"
-    ).astype(int) + 1
+    return (dt64 - dt64.astype("datetime64[Y]")).astype("timedelta64[D]").astype(
+        int
+    ) + 1
 
 
 def datetime_dowy(dt64: np.datetime64) -> int:

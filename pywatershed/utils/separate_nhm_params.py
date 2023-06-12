@@ -81,8 +81,7 @@ def separate_domain_params_to_ncdf(
         ds = xr.Dataset(
             attrs=dict(
                 description=(
-                    f"NHM Parameters for {proc.__name__} in "
-                    f"{domain_name} domain"
+                    f"NHM Parameters for {proc.__name__} in " f"{domain_name} domain"
                 ),
                 domain_name=domain_name,
                 nhm_process=proc.__name__,
@@ -103,8 +102,7 @@ def separate_domain_params_to_ncdf(
 
             param_dim_names = prms_parameters.metadata[param_name]["dims"]
             param_dims = {
-                dim_name: prms_parameters.dims[dim_name]
-                for dim_name in param_dim_names
+                dim_name: prms_parameters.dims[dim_name] for dim_name in param_dim_names
             }
 
             proc_dims = list(proc_dims)
@@ -131,9 +129,7 @@ def separate_domain_params_to_ncdf(
 
             ds[param_name] = xr.DataArray(data=param_vals, dims=param_dims)
             ds[param_name].attrs = {
-                kk: vv
-                for kk, vv in param_meta.items()
-                if kk in var_meta_to_attrs
+                kk: vv for kk, vv in param_meta.items() if kk in var_meta_to_attrs
             }
 
         # to file

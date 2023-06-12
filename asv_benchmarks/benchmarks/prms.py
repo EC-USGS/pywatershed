@@ -1,7 +1,6 @@
 import pathlib as pl
 import shutil
-from typing import Union, Literal
-
+from typing import Literal, Union
 
 from . import _is_pws, parameterized, test_data_dir
 

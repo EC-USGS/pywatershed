@@ -242,9 +242,7 @@ def test_model(domain, control, processes, tmp_path):
                     result = model.processes[pp][vv].mean()
                     reg_ans = aa[domain["domain_name"]]
                     if not reg_ans:
-                        print(
-                            f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}"
-                        )
+                        print(f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}")
                         success = False
                     else:
                         success = (abs(result - reg_ans) / abs(reg_ans)) < 1e-5

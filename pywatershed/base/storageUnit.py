@@ -182,9 +182,7 @@ class StorageUnit(Accessor):
         """Get a dictionary of variable names for mass budget terms."""
         mass_budget_terms = {
             "inputs": list(
-                meta.filter_vars(
-                    cls.get_inputs(), "var_category", "mass flux"
-                ).keys()
+                meta.filter_vars(cls.get_inputs(), "var_category", "mass flux").keys()
             ),
             "outputs": list(
                 meta.filter_vars(
@@ -295,18 +293,14 @@ class StorageUnit(Accessor):
         init_vals = self.get_init_values()
         if var_name not in init_vals.keys():
             if self.verbose:
-                warn(
-                    f"{var_name} not initialized (no initial value specified)"
-                )
+                warn(f"{var_name} not initialized (no initial value specified)")
             return
 
         dims = [self[vv] for vv in self.meta[var_name]["dims"]]
         init_type = self.meta[var_name]["type"]
 
         if len(dims) == 1:
-            self[var_name] = np.full(
-                dims, init_vals[var_name], dtype=init_type
-            )
+            self[var_name] = np.full(dims, init_vals[var_name], dtype=init_type)
         else:
             self[var_name] = TimeseriesArray(
                 var_name=var_name,
@@ -359,9 +353,7 @@ class StorageUnit(Accessor):
             for comp in self.budget.components:
                 if input_variable_name in self.budget[comp].keys():
                     # can not use [:] on the LHS?
-                    self.budget[comp][input_variable_name] = self[
-                        input_variable_name
-                    ]
+                    self.budget[comp][input_variable_name] = self[input_variable_name]
 
         return
 
@@ -455,9 +447,7 @@ class StorageUnit(Accessor):
         patch_meta_on_self = {
             kk: vv for kk, vv in patches.items() if kk in self.meta.keys()
         }
-        self.meta = _merge_dicts(
-            [self.meta, patch_meta_on_self], conflicts=conflicts
-        )
+        self.meta = _merge_dicts([self.meta, patch_meta_on_self], conflicts=conflicts)
         return
 
     def output_to_csv(self, pth):

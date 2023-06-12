@@ -3,10 +3,7 @@ import pathlib as pl
 import pytest
 
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSGroundwater import (
-    PRMSGroundwater,
-    has_prmsgroundwater_f,
-)
+from pywatershed.hydrology.PRMSGroundwater import PRMSGroundwater, has_prmsgroundwater_f
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.netcdf_utils import NetCdfCompare
 
@@ -16,9 +13,7 @@ calc_methods = ("numpy", "numba", "fortran")
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(domain, tmp_path, calc_method):
     if not has_prmsgroundwater_f and calc_method == "fortran":
-        pytest.skip(
-            "PRMSGroundwater fortran code not available, skipping its test."
-        )
+        pytest.skip("PRMSGroundwater fortran code not available, skipping its test.")
 
     tmp_path = pl.Path(tmp_path)
     params = PrmsParameters.load(domain["param_file"])

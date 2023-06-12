@@ -22,9 +22,7 @@ def rename_dims(dim_name):
 
 
 def expand_scalar_to_dims(param_dict, param_dim_dict):
-    from pywatershed.utils.separate_nhm_params import (
-        params_expand_scalar_to_dims,
-    )
+    from pywatershed.utils.separate_nhm_params import params_expand_scalar_to_dims
 
     # sometimes a scalar is allowed to represent a uniform values for
     # the full dimensions of a parameter. Going to handle those on a
@@ -222,13 +220,10 @@ class PrmsFile:
         (
             parameters_full_dict,
             parameter_dimensions_full_dict,
-        ) = expand_scalar_to_dims(
-            parameters_full_dict, parameter_dimensions_full_dict
-        )
+        ) = expand_scalar_to_dims(parameters_full_dict, parameter_dimensions_full_dict)
 
         parameter_dimensions_full_dict = {
-            kk: {"dims": vv}
-            for kk, vv in parameter_dimensions_full_dict.items()
+            kk: {"dims": vv} for kk, vv in parameter_dimensions_full_dict.items()
         }
 
         return parameters_full_dict, parameter_dimensions_full_dict

@@ -44,9 +44,7 @@ class TestPRMSAtmosphere:
         ans = {}
         for key in comparison_var_names:
             nc_pth = output_dir / f"{key}.nc"
-            ans[key] = adapter_factory(
-                nc_pth, variable_name=key, control=control
-            )
+            ans[key] = adapter_factory(nc_pth, variable_name=key, control=control)
 
         input_variables = {}
         for key in PRMSAtmosphere.get_inputs():

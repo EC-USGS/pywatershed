@@ -12,9 +12,42 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.0.1.2:
+.. _whats-new.0.3.0:
 
-v0.1.2 (unreleased)
+v0.3.0 (unreleased)
+-----------------------
+
+New Features
+~~~~~~~~~~~~
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+
+Deprecations
+~~~~~~~~~~~~
+
+
+Performance
+~~~~~~~~~~~
+
+
+Bug fixes
+~~~~~~~~~
+
+
+Documentation
+~~~~~~~~~~~~~
+
+
+Internal Changes
+~~~~~~~~~~~~~~~~
+
+
+.. _whats-new.0.2.0:
+
+v0.2.0 (13 June 2023)
 -----------------------
 
 New Features
@@ -64,7 +97,10 @@ Documentation
 
 Internal Changes
 ~~~~~~~~~~~~~~~~
+- Refactor dependencies for standard pypi installation. (:pull:`164`, :issue:`178`)
+  By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
 
+  
 .. _whats-new.0.1.1:
 
 v0.1.1 (27 April 2023)

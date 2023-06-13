@@ -3064,6 +3064,24 @@ swrad:
     0: nhru
   type: float64
   units: Langleys
+swb_atual_et:
+  desc: Actual evapotranspiration
+  dims:
+    0: nhru
+  type: float64
+  units: inches
+swb_accumulated_potential_water_loss:
+  desc: Accumulated potential water loss as per Thornthwaite-Mather (1957)
+  dims:
+    0: nhru
+  type: float64
+  units: inches
+swb_accumulated_potential_water_loss_old:
+  desc: Accumulated potential water loss as per Thornthwaite-Mather (1957)
+  dims:
+    0: nhru
+  type: float64
+  units: inches
 swb_net_infiltration:
   desc: Infiltrated water that leaves the root zone
   dims:
@@ -3076,20 +3094,26 @@ swb_runoff:
     0: nhru
   type: float64
   units: inches
-swb_rootzone_storage:
+swb_soil_storage:
   desc: Storage in the SWB root zone
   dims:
     0: nhru
   type: float64
   units: inches
-swb_rootzone_storage_old:
+swb_soil_storage_old:
   desc: Storage old in the SWB root zone
   dims:
     0: nhru
   type: float64
   units: inches
-swb_rootzone_storage_change:
+swb_soil_storage_change:
   desc: Storage change in the SWB root zone
+  dims:
+    0: nhru
+  type: float64
+  units: inches
+swb_soil_storage_max:
+  desc: Storage maximum in the SWB root zone
   dims:
     0: nhru
   type: float64

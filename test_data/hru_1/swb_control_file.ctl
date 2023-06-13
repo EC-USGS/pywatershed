@@ -54,13 +54,14 @@ INITIAL_SNOW_COVER_STORAGE CONSTANT 2.0
 
 %% OUTPUT CONTROL SECTION:
 OUTPUT DISABLE snow_storage
-OUTPUT ENABLE tmin tmax
-OUTPUT DISABLE crop_et soil_storage delta_soil_storage reference_ET0 
-OUTPUT DISABLE runon interception soil_storage delta_soil_storage
+OUTPUT ENABLE soil_storage delta_soil_storage
+OUTPUT DISABLE crop_et reference_ET0 
+OUTPUT DISABLE runon interception tmin tmax
 
-OUTPUT ENABLE gross_precipitation 
+OUTPUT DISABLE gross_precipitation 
 OUTPUT ENABLE runoff_outside rejected_net_infiltration 
-OUTPUT ENABLE runoff actual_et rainfall snowmelt 
+OUTPUT ENABLE runoff actual_et
+OUTPUT_DISABLE rainfall snowmelt 
 
 DUMP_VARIABLES COORDINATES 1866006 2234241 
 

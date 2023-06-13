@@ -21,10 +21,11 @@ def test_init(domain, tmp_path):
     control = Control.load(domain["control_file"], params=params)
 
     # load csv files into dataframes
-    output_dir = domain["prms_output_dir"]
+    swb_output_dir = domain["swb_output_dir"]
+    prms_output_dir = domain["prms_output_dir"]
     input_variables = {}
     for key in SWBRootZone.get_inputs():
-        nc_path = output_dir / f"{key}.nc"
+        nc_path = pl.Path(prms_output_dir) / f"{key}.nc"
         input_variables[key] = nc_path
 
     swb_rz = SWBRootZone(
@@ -36,23 +37,21 @@ def test_init(domain, tmp_path):
     nc_parent = tmp_path / domain["domain_name"]
     swb_rz.initialize_netcdf(nc_parent)
 
-    # output_compare = {}
-    # vars_compare = (
-    #     "swb_rzres_flow",
-    #     "swb_rzres_sink",
-    #     "swb_rzres_stor",
-    #     "ssr_to_swb_rz",
-    #     "soil_to_swb_rz",
-    # )
-    # for key in SWBRootZone.get_variables():
-    #     if key not in vars_compare:
-    #         continue
-    #     base_nc_path = output_dir / f"{key}.nc"
-    #     compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
-    #     output_compare[key] = (base_nc_path, compare_nc_path)
+    output_compare = {}
+    vars_compare = (
+        "swb_rootzone_storage",
+    )
 
-    # print(f"base_nc_path: {base_nc_path}")
-    # print(f"compare_nc_path: {compare_nc_path}")
+    for key in SWBRootZone.get_variables():
+        if key not in vars_compare:
+            continue
+    
+        base_nc_path = pl.Path(swb_output_dir) / f"hru_1_5000__{key}__1979-01-01_to_2019-12-31__1_by_1.nc"
+        compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
+        output_compare[key] = (base_nc_path, compare_nc_path)
+
+        print(f"base_nc_path: {base_nc_path}")
+        print(f"compare_nc_path: {compare_nc_path}")
 
     for istep in range(control.n_times):
         control.advance()
@@ -62,7 +61,7 @@ def test_init(domain, tmp_path):
 
     swb_rz.finalize()
 
-    breakpoint()
+    #breakpoint()
 
     assert_error = False
     for key, (base, compare) in output_compare.items():
@@ -76,5 +75,7 @@ def test_init(domain, tmp_path):
             )
             assert_error = True
     assert not assert_error, "comparison failed"
+
+    breakpoint()
 
     return

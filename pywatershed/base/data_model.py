@@ -162,17 +162,17 @@ class DatasetDict(Accessor):
     def from_yaml(cls, the_file: Union[str, pl.Path]) -> dict:
         """Read from a YAML file"""
         import yaml
-
+           
         with pl.Path(the_file).open("r") as file_stream:
-            dd = cls(**yaml.load(file_stream, Loader=yaml.Loader))
-
+            dd = yaml.load(file_stream, Loader=yaml.Loader)
+            
         for cv in ["coords", "data_vars"]:
             for vv in dd[cv].keys():
                 # TODO, introduce dims for shape if necessary
                 if not isinstance(dd[cv][vv], np.ndarray):
                     dd[cv][vv] = np.array(dd[cv][vv])
-
-        return dd
+                    
+        return cls(**dd)
 
     @classmethod
     def from_dict(cls, dict_in, copy=False):

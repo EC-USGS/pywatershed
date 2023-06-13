@@ -11,6 +11,7 @@ swb_param_file: ../test_data/hru_1/swb_parameters.yaml
 
 prms_run_dir: ./
 prms_output_dir: ./output
+swb_output_dir: ./swb_output
 
 cbh_nc: cbh.nc
 

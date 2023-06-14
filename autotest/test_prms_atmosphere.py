@@ -9,7 +9,6 @@ from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
 
-
 params = ["params_sep", "params_one"]
 
 

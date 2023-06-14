@@ -5,7 +5,7 @@ from warnings import warn
 
 import numpy as np
 
-from ..base import meta, Parameters
+from ..base import Parameters, meta
 from ..base.adapter import Adapter, adapter_factory
 from ..base.budget import Budget
 from ..base.data_model import _merge_dicts

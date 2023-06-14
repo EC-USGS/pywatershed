@@ -77,6 +77,7 @@ class SWBRootZone(StorageUnit):
         """
         return {
             "swb_runoff": zero,
+            "swb_actual_et": zero,
             "swb_soil_storage": zero,
             "swb_soil_storage_old": zero,
             "swb_soil_storage_change": zero,
@@ -172,17 +173,24 @@ class SWBRootZone(StorageUnit):
         P_minus_PE_lt_0 = np.where(P_minus_PE < 0.)
 
         # handle cases where P minus PET is >= 0
-        actual_et[P_minus_PE_ge_0] = reference_et[P_minus_PE_ge_0]
-        delta = storage_old[P_minus_PE_ge_0] - P_minus_PE[P_minus_PE_ge_0]
-        storage[P_minus_PE_ge_0] = np.min(storage_max[P_minus_PE_ge_0], delta)
-        net_infiltration[P_minus_PE_ge_0] = np.max(0.0, delta)
+        if len(P_minus_PE_ge_0[0]) > 0:
+            actual_et[P_minus_PE_ge_0] = reference_et[P_minus_PE_ge_0]
+            temp_storage = storage_old[P_minus_PE_ge_0] + P_minus_PE[P_minus_PE_ge_0]
+            zeros = np.full_like(temp_storage, fill_value=0.0)
+            storage[P_minus_PE_ge_0] = np.min((storage_max[P_minus_PE_ge_0], temp_storage))
+            net_infiltration[P_minus_PE_ge_0] = np.max((zeros, temp_storage - storage_max[P_minus_PE_ge_0]))
 
-        apwl_new[P_minus_PE_ge_0] = aet.thornthwaite_mather_accumulated_potential_water_loss_inches(max_soil_moisture=storage_max[P_minus_PE_ge_0],
-                                                                                                    soil_moisture=temp_storage)        
+            apwl_new[P_minus_PE_ge_0] = aet.thornthwaite_mather_accumulated_potential_water_loss_inches(max_soil_moisture=storage_max[P_minus_PE_ge_0],
+                                                                                                        soil_moisture=storage)        
+            actual_et[P_minus_PE_ge_0] = reference_et[P_minus_PE_ge_0]
+            
         # now handle cases where P minus PET < 0
-        apwl_new[P_minus_PE_lt_0] = apwl_new[P_minus_PE_lt_0] + P_minus_PE[P_minus_PE_lt_0]        
-        storage[P_minus_PE_lt_0] = aet.thornthwaite_mather_soil_moisture_inches(max_soil_moisture=storage_max[P_minus_PE_lt_0],
-                                                                                     apwl=apwl_new[P_minus_PE_lt_0])
-        actual_et[P_minus_PE_lt_0] = storage_old[P_minus_PE_lt_0] - storage[P_minus_PE_lt_0]        
+        if len(P_minus_PE_lt_0[0]) > 0:
+            apwl_new[P_minus_PE_lt_0] = apwl_new[P_minus_PE_lt_0] + np.abs(P_minus_PE[P_minus_PE_lt_0])        
+            storage[P_minus_PE_lt_0] = aet.thornthwaite_mather_soil_moisture_inches(max_soil_moisture=storage_max[P_minus_PE_lt_0],
+                                                                                    apwl=apwl_new[P_minus_PE_lt_0])
+            actual_et[P_minus_PE_lt_0] = storage_old[P_minus_PE_lt_0] - storage[P_minus_PE_lt_0]        
+                
+        #breakpoint()
                 
         return (runoff, storage, apwl_new, actual_et, net_infiltration)

@@ -3064,7 +3064,7 @@ swrad:
     0: nhru
   type: float64
   units: Langleys
-swb_atual_et:
+swb_actual_et:
   desc: Actual evapotranspiration
   dims:
     0: nhru

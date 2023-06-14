@@ -39,14 +39,14 @@ def test_init(domain, tmp_path):
 
     output_compare = {}
     vars_compare = (
-        "swb_rootzone_storage",
+        "swb_soil_storage",
     )
 
     for key in SWBRootZone.get_variables():
         if key not in vars_compare:
             continue
     
-        base_nc_path = pl.Path(swb_output_dir) / f"hru_1_5000__{key}__1979-01-01_to_2019-12-31__1_by_1.nc"
+        base_nc_path = pl.Path(swb_output_dir) / f"hru_1_5000__{key.removeprefix('swb_')}__1979-01-01_to_2019-12-31__1_by_1.nc"
         compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
         output_compare[key] = (base_nc_path, compare_nc_path)
 
@@ -66,6 +66,7 @@ def test_init(domain, tmp_path):
     assert_error = False
     for key, (base, compare) in output_compare.items():
         success, diff = NetCdfCompare(base, compare).compare()
+        breakpoint()
         if not success:
             print(
                 f"comparison for {key} failed: "
@@ -76,6 +77,6 @@ def test_init(domain, tmp_path):
             assert_error = True
     assert not assert_error, "comparison failed"
 
-    breakpoint()
+    #breakpoint()
 
     return

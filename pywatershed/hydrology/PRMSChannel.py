@@ -1,4 +1,3 @@
-import platform
 from typing import Tuple
 
 import networkx as nx
@@ -8,7 +7,7 @@ from pywatershed.base.storageUnit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import SegmentType, nan, numba_num_threads, zero
+from ..constants import SegmentType, nan, zero
 
 try:
     from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran

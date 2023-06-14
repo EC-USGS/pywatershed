@@ -5,28 +5,28 @@ import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
+from pywatershed.base.parameters import Parameters
 from pywatershed.constants import epsilon32, zero
 from pywatershed.hydrology.PRMSSnow import PRMSSnow
 from pywatershed.parameters import PrmsParameters
 
 calc_methods = ("numpy", "numba")
 
+params = ["params_sep", "params_one"]
 
-@pytest.fixture(scope="function", params=["params_sep", "params_one"])
-def params(domain, request):
+
+@pytest.fixture(scope="function", params=params)
+def control(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
+        dis = None
     else:
-        params = PrmsParameters.from_netcdf(
-            domain["dir"] / "parameters_PRMSSnow.nc"
-        )
+        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+        gw_param_file = domain["dir"] / "parameters_PRMSSnow.nc"
+        params = {"PRMSSnow": PrmsParameters.from_netcdf(gw_param_file)}
+        dis = {"dis_hru": Parameters.from_netcdf(dis_hru_file, encoding=False)}
 
-    return params
-
-
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+    return Control.load(domain["control_file"], params=params, dis=dis)
 
 
 @pytest.mark.xfail

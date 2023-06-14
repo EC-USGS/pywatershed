@@ -3,6 +3,7 @@ import pathlib as pl
 import pytest
 
 from pywatershed.base.control import Control
+from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.netcdf_utils import NetCdfCompare
@@ -10,23 +11,29 @@ from pywatershed.utils.netcdf_utils import NetCdfCompare
 fail_fast = False
 
 calc_methods = ("numpy", "numba", "fortran")
+params = ["params_sep", "params_one"]
 
 
-@pytest.fixture(scope="function", params=["params_sep", "params_one"])
-def params(domain, request):
+@pytest.fixture(scope="function", params=params)
+def control(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
+        dis = None
+
     else:
-        params = PrmsParameters.from_netcdf(
-            domain["dir"] / "parameters_PRMSChannel.nc"
+        # channel needs both hru and seg dis files
+        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+        dis_seg_file = domain["dir"] / "parameters_dis_seg.nc"
+        dis_data = Parameters.merge(
+            Parameters.from_netcdf(dis_hru_file, encoding=False),
+            Parameters.from_netcdf(dis_seg_file, encoding=False),
         )
+        dis = {"dis_hru": dis_data}
 
-    return params
+        param_file = domain["dir"] / "parameters_PRMSChannel.nc"
+        params = {"PRMSChannel": PrmsParameters.from_netcdf(param_file)}
 
-
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+    return Control.load(domain["control_file"], params=params, dis=dis)
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)

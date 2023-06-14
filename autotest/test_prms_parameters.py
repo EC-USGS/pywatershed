@@ -9,7 +9,7 @@ from utils import assert_or_print
 
 
 def test_parameter_init():
-    # TODO: this is now an invalid parameter object, fix?
+    # TODO: this test should be moved to tests for the Parameters class
     parameters = {
         "nhru": 2,
         "abc": np.zeros(2, dtype=float),
@@ -28,7 +28,7 @@ def test_parameter_init():
     }
     assert_or_print(results, answers)
 
-    print("success initializing PrmsParameters object")
+    print("success initializing Parameters object")
 
 
 def test_parameter_read(domain):
@@ -56,7 +56,7 @@ def test_parameter_canopy_subset(domain):
 
     canopy_params_2 = tuple([*canopy_params, "bar"])
     with pytest.raises(KeyError):
-        canopy_subset = parameters.subset(canopy_params_2)
+        canopy_subset = parameters.subset(canopy_params_2, strict=True)
 
     for key in canopy_params:
         if key != "unknown":

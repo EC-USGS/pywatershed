@@ -1,5 +1,4 @@
 import numpy as np
-from numba import prange
 
 from pywatershed.base.storageUnit import StorageUnit
 
@@ -16,10 +15,7 @@ except ImportError:
 
 
 class PRMSGroundwater(StorageUnit):
-    """PRMS groundwater reservoir.
-
-    Args:
-    """
+    """PRMS groundwater reservoir."""
 
     def __init__(
         self,
@@ -31,7 +27,7 @@ class PRMSGroundwater(StorageUnit):
         calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ) -> "PRMSGroundwater":
+    ):
         super().__init__(
             control=control,
             verbose=verbose,
@@ -193,7 +189,7 @@ class PRMSGroundwater(StorageUnit):
                 self._gwflow_coef,
                 self._gwsink_coef,
                 self.gwres_stor_old,
-                self.control.params.hru_in_to_cf,
+                self.params.hru_in_to_cf,
             )
 
         elif self._calc_method.lower() == "fortran":
@@ -212,7 +208,7 @@ class PRMSGroundwater(StorageUnit):
                 self.gwflow_coef,
                 self.gwsink_coef,
                 self.gwres_stor_old,
-                self.control.params.hru_in_to_cf,
+                self.params.hru_in_to_cf,
             )
 
         elif self._calc_method.lower() in ["none", "numpy"]:
@@ -231,7 +227,7 @@ class PRMSGroundwater(StorageUnit):
                 self.gwflow_coef,
                 self.gwsink_coef,
                 self.gwres_stor_old,
-                self.control.params.hru_in_to_cf,
+                self.params.hru_in_to_cf,
             )
 
         else:

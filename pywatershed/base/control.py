@@ -19,8 +19,6 @@ from .parameters import Parameters
 
 
 class Control(Accessor):
-    """The control class."""
-
     def __init__(
         self,
         start_time: np.datetime64,
@@ -28,18 +26,22 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         config: dict = None,
+        dis: Parameters = None,
         params: Parameters = None,
         verbosity: int = 0,
         **kwargs,
     ):
-        """Initialize time with data and parameters.
+        """Initialize the control class
+
+        The Control class manages input passed at run time, metadata, and
+        keeps track of time.
 
         Args:
             start_time: this is the first time of integration NOT the restart
                 time
             end_time: the last integration time
             time_step: the length fo the time step
-            config: a PRMS config file to read and use for contorl
+            config: a PRMS config file to read and use for control parameters
             verbosity: the level of verbosity in [0,10]
         """
         super().__init__(**kwargs)
@@ -69,6 +71,7 @@ class Control(Accessor):
         self._itime_step = -1
 
         self.config = config
+        self.dis = dis
         self.params = params
         if params is not None:
             # this should be a super private method on parameters
@@ -83,6 +86,7 @@ class Control(Accessor):
         cls,
         control_file: fileish,
         params: Parameters = None,
+        dis: Parameters = None,
         verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file
@@ -103,6 +107,7 @@ class Control(Accessor):
             control.control["initial_deltat"],
             config=control.control,
             params=params,
+            dis=dis,
             verbosity=verbosity,
         )
 
@@ -206,22 +211,6 @@ class Control(Accessor):
 
         return None
 
-    def get_var_nans(self, var_name: str, drop_time_dim: bool = None):
-        """Get an array filled with nans for a given variable"""
-        var_dims = self.meta.get_dimensions(var_name)[var_name]
-        if drop_time_dim:
-            # This accomodates Timeseries like objects that need to init both
-            # full rank and reduced rank versions of their data
-            # this is pretty adhoc
-            check_list = ["time", "doy"]
-            if len([mm for mm in check_list if mm in var_dims[0]]):
-                var_dims = var_dims[1:]
-
-        var_dim_sizes = self.params.get_dim_values(var_dims)
-        var_dim_shape = [var_dim_sizes[vv] for vv in var_dims]
-        var_type = self.meta.get_numpy_types(var_name)[var_name]
-        return np.full(var_dim_shape, np.nan, var_type)
-
     def edit_end_time(self, new_end_time: np.datetime64):
         "Supply a new end time for the simulation."
 
@@ -230,7 +219,6 @@ class Control(Accessor):
         self._n_times = (
             (self._end_time - self._start_time) / self._time_step
         ) + 1
-        self.params.dims["ntime"] = self._n_times
         return
 
     def edit_n_time_steps(self, new_n_time_steps: int):
@@ -238,8 +226,5 @@ class Control(Accessor):
         self._n_times = new_n_time_steps
         self._end_time = (
             self._start_time + (self._n_times - 1) * self._time_step
-        )
-        self.params._dims = MappingProxyType(
-            self.params.dims | {"ntime": self._n_times}
         )
         return

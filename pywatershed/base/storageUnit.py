@@ -5,7 +5,7 @@ from warnings import warn
 
 import numpy as np
 
-from ..base import meta
+from ..base import meta, Parameters
 from ..base.adapter import Adapter, adapter_factory
 from ..base.budget import Budget
 from ..base.data_model import _merge_dicts
@@ -99,7 +99,20 @@ class StorageUnit(Accessor):
     ):
         self.name = "StorageUnit"
         self.control = control
-        self.params = self.control.params.subset(self.get_parameters())
+        if isinstance(self.control.params, Parameters):
+            self.params = self.control.params.subset(self.get_parameters())
+        else:
+            self._class_name = self.__class__.__name__
+            params = self.control.params[self._class_name].subset(
+                self.get_parameters()
+            )
+
+            # TODO: not good to use hardcoded name.
+            dis_params = self.control.dis["dis_hru"].subset(
+                self.get_parameters()
+            )
+            self.params = type(params).merge(params, dis_params)
+
         self.verbose = verbose
         self._load_n_time_batches = load_n_time_batches
 
@@ -260,7 +273,10 @@ class StorageUnit(Accessor):
     def _initialize_self_variables(self, restart: bool = False):
         # dims
         for name in self.dimensions:
-            setattr(self, name, self.control.params.dims[name])
+            if name == "ntime":
+                setattr(self, name, self.control.n_times)
+            else:
+                setattr(self, name, self.params.dims[name])
 
         # parameters
         for name in self.parameters:
@@ -269,7 +285,7 @@ class StorageUnit(Accessor):
         # inputs
         for name in self.inputs:
             # dims of internal variables never have time, so they are spatial
-            spatial_dims = self.control.params.get_dim_values(
+            spatial_dims = self.params.get_dim_values(
                 list(meta.find_variables(name)[name]["dims"])
             )
             spatial_dims = tuple(spatial_dims.values())
@@ -332,10 +348,23 @@ class StorageUnit(Accessor):
     def _set_inputs(self, args):
         self._input_variables_dict = {}
         for ii in self.inputs:
+            ii_dims = self.control.meta.get_dimensions(ii)[ii]
+            # This accomodates Timeseries like objects that need to init
+            # both full rank and reduced rank versions of their data
+            # this is pretty adhoc
+            check_list = ["time", "doy"]
+            if len([mm for mm in check_list if mm in ii_dims[0]]):
+                ii_dims = ii_dims[1:]
+
+            ii_dim_sizes = tuple(self.params.get_dim_values(ii_dims).values())
+            ii_type = self.control.meta.get_numpy_types(ii)[ii]
+
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii],
-                ii,
-                args["control"],
+                variable_name=ii,
+                control=args["control"],
+                variable_dim_sizes=ii_dim_sizes,
+                variable_type=ii_type,
                 load_n_time_batches=self._load_n_time_batches,
             )
             if self._input_variables_dict[ii]:
@@ -534,6 +563,7 @@ class StorageUnit(Accessor):
             if budget_args is None:
                 budget_args = {}
             budget_args["output_dir"] = output_dir
+            budget_args["params"] = self.params
 
             self.budget.initialize_netcdf(**budget_args)
 

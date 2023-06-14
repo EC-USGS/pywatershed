@@ -33,12 +33,16 @@ class AdapterNetcdf(Adapter):
         self,
         fname: fileish,
         variable: str,
+        dim_sizes: tuple,
+        type: str,
         control: Control,
         load_n_time_batches: int = 1,
     ) -> None:
         super().__init__(variable)
         self.name = "AdapterNetcdf"
 
+        self._dim_sizes = dim_sizes
+        self._type = type
         self._fname = fname
         self.control = control
         self._start_time = self.control.start_time
@@ -51,11 +55,18 @@ class AdapterNetcdf(Adapter):
             load_n_time_batches=load_n_time_batches,
         )
 
-        self.time = self._nc_read.times
+        # would like to make this a check if dim_sizes and type are available
+        nc_type = self._nc_read.dataset[variable].dtype
+        nc_shape = list(self._nc_read.dataset[variable].shape)
+        nc_dims = list(self._nc_read.dataset[variable].dimensions)
+        for time_dim in ["time", "doy"]:
+            if time_dim in nc_dims:
+                _ = nc_shape.pop(nc_dims.index(time_dim))
 
-        self._current_value = control.get_var_nans(
-            self._variable, drop_time_dim=True
-        )
+        self.time = self._nc_read.times
+        # self._current_value = np.full(self._dim_sizes, np.nan, self._type)
+        self._current_value = np.full(nc_shape, np.nan, nc_type)
+
         return
 
     def advance(self):
@@ -94,6 +105,8 @@ def adapter_factory(
     var: adaptable,
     variable_name: str = None,
     control: Control = None,
+    variable_dim_sizes: tuple = None,
+    variable_type: str = None,
     load_n_time_batches: int = 1,
 ):
     if isinstance(var, Adapter):
@@ -107,6 +120,8 @@ def adapter_factory(
                 var,
                 variable=variable_name,
                 control=control,
+                dim_sizes=variable_dim_sizes,
+                type=variable_type,
                 load_n_time_batches=load_n_time_batches,
             )
 

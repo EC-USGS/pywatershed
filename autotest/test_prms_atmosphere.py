@@ -6,24 +6,31 @@ import pytest
 from pywatershed.atmosphere.PRMSAtmosphere import PRMSAtmosphere
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
+from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
 
 
-@pytest.fixture(scope="function", params=["params_sep", "params_one"])
-def params(domain, request):
+params = ["params_sep", "params_one"]
+
+
+@pytest.fixture(scope="function", params=params)
+def control(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
+        dis = None
+
     else:
-        params = PrmsParameters.from_netcdf(
-            domain["dir"] / "parameters_PRMSAtmosphere.nc"
+        # channel needs both hru and seg dis files
+        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+        dis_data = Parameters.merge(
+            Parameters.from_netcdf(dis_hru_file, encoding=False),
         )
+        dis = {"dis_hru": dis_data}
 
-    return params
+        param_file = domain["dir"] / "parameters_PRMSAtmosphere.nc"
+        params = {"PRMSAtmosphere": PrmsParameters.from_netcdf(param_file)}
 
-
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+    return Control.load(domain["control_file"], params=params, dis=dis)
 
 
 class TestPRMSAtmosphere:

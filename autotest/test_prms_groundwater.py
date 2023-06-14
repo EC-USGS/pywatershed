@@ -3,6 +3,7 @@ import pathlib as pl
 import pytest
 
 from pywatershed.base.control import Control
+from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.PRMSGroundwater import (
     PRMSGroundwater,
     has_prmsgroundwater_f,
@@ -11,23 +12,21 @@ from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.netcdf_utils import NetCdfCompare
 
 calc_methods = ("numpy", "numba", "fortran")
+params = ["params_sep", "params_one"]
 
 
-@pytest.fixture(scope="function", params=["params_sep", "params_one"])
-def params(domain, request):
+@pytest.fixture(scope="function", params=params)
+def control(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
+        dis = None
     else:
-        params = PrmsParameters.from_netcdf(
-            domain["dir"] / "parameters_PRMSGroundwater.nc"
-        )
+        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+        gw_param_file = domain["dir"] / "parameters_PRMSGroundwater.nc"
+        params = {"PRMSGroundwater": PrmsParameters.from_netcdf(gw_param_file)}
+        dis = {"dis_hru": Parameters.from_netcdf(dis_hru_file, encoding=False)}
 
-    return params
-
-
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+    return Control.load(domain["control_file"], params=params, dis=dis)
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)

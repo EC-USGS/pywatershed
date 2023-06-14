@@ -181,14 +181,14 @@ class DatasetDict(Accessor):
 
     @classmethod
     def from_netcdf(
-        cls, nc_file: fileish, use_xr: bool = False
+        cls, nc_file: fileish, use_xr: bool = False, encoding=True
     ) -> "DatasetDict":
         """Load from a netcdf file"""
         # handle more than one file?
         if use_xr:
-            return cls(**xr_ds_to_dd(nc_file))
+            return cls(**xr_ds_to_dd(nc_file, encoding=encoding))
         else:
-            return cls(**nc4_ds_to_dd(nc_file))
+            return cls(**nc4_ds_to_dd(nc_file, use_xr_enc=encoding))
 
     def to_xr_ds(self) -> xr.Dataset:
         return dd_to_xr_ds(self.data)
@@ -302,6 +302,7 @@ class DatasetDict(Accessor):
         keep_global: bool = False,
         keep_global_metadata: bool = None,
         keep_global_encoding: bool = None,
+        strict: bool = False,
     ) -> "DatasetDict":
         """Subset a DatasetDict to keys in data_vars or coordinates
 
@@ -325,6 +326,8 @@ class DatasetDict(Accessor):
 
         for kk in keys:
             if kk not in self.variables.keys():
+                if not strict:
+                    continue
                 msg = f"key '{kk}' not in this {type(self).__name__} object"
                 raise KeyError(msg)
 
@@ -543,7 +546,7 @@ def _merge_dicts(
     return merged
 
 
-def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
+def xr_ds_to_dd(file_or_ds, schema_only=False, encoding=True) -> dict:
     """Xarray dataset to a pywatershed dataset dict
 
     The pyws data model moves metadata off the variables to a separate
@@ -559,7 +562,8 @@ def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
         data_arg = False
     else:
         data_arg = "array"
-    dd = xr_ds.to_dict(data=data_arg, encoding=True)
+
+    dd = xr_ds.to_dict(data=data_arg, encoding=encoding)
 
     dd = xr_dd_to_dd(dd)
 
@@ -791,7 +795,7 @@ def nc4_ds_to_dd(
     else:
         if use_xr_enc:
             raise ValueError(
-                "Must pass a file and not an nc4.Dataset to use_xr_enc argument"
+                "Pass a file and not an nc4.Dataset to use_xr_enc argument"
             )
 
     xr_dd = nc4_ds_to_xr_dd(nc4_file_ds, xr_enc=xr_enc)

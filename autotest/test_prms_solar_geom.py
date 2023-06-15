@@ -6,34 +6,38 @@ from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
 
-params = ["params_sep", "params_one"]
+params = ("params_sep", "params_one")
+
+
+@pytest.fixture(scope="function")
+def control(domain):
+    return Control.load(domain["control_file"])
+
+
+@pytest.fixture(scope="function")
+def discretization(domain):
+    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+    return Parameters.from_netcdf(dis_hru_file, encoding=False)
 
 
 @pytest.fixture(scope="function", params=params)
-def control(domain, request):
+def parameters(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
-        dis = None
-
     else:
-        # channel needs both hru and seg dis files
-        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
-        dis_data = Parameters.merge(
-            Parameters.from_netcdf(dis_hru_file, encoding=False),
-        )
-        dis = {"dis_hru": dis_data}
-
         param_file = domain["dir"] / "parameters_PRMSSolarGeometry.nc"
-        params = {"PRMSSolarGeometry": PrmsParameters.from_netcdf(param_file)}
+        params = PrmsParameters.from_netcdf(param_file)
 
-    return Control.load(domain["control_file"], params=params, dis=dis)
+    return params
 
 
 @pytest.mark.xfail
 @pytest.mark.parametrize(
     "from_prms_file", (True, False), ids=("from_prms_file", "compute")
 )
-def test_solar_geom(domain, control, from_prms_file, tmp_path):
+def test_compare_prms(
+    domain, control, discretization, parameters, tmp_path, from_prms_file
+):
     prms_soltab_file = domain["prms_run_dir"] / "soltab_debug"
     if from_prms_file:
         from_prms_file = prms_soltab_file
@@ -41,11 +45,20 @@ def test_solar_geom(domain, control, from_prms_file, tmp_path):
         from_prms_file = None
 
     solar_geom = PRMSSolarGeometry(
-        control, from_prms_file=from_prms_file, netcdf_output_dir=tmp_path
+        control,
+        discretization=discretization,
+        parameters=parameters,
+        from_prms_file=from_prms_file,
+        netcdf_output_dir=tmp_path,
     )
     solar_geom.finalize()
 
-    ans = PRMSSolarGeometry(control, from_prms_file=prms_soltab_file)
+    ans = PRMSSolarGeometry(
+        control,
+        discretization=discretization,
+        parameters=parameters,
+        from_prms_file=prms_soltab_file,
+    )
 
     # check the shapes
     for vv in solar_geom.variables:

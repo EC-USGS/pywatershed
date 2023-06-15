@@ -6,6 +6,7 @@ from pywatershed.base.storageUnit import StorageUnit
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import HruType, nan, numba_num_threads, zero
+from ..parameters import Parameters
 
 NEARZERO = 1.0e-6
 DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
@@ -29,6 +30,8 @@ class PRMSRunoff(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         soil_moist_prev: adaptable,
         net_rain: adaptable,
         net_ppt: adaptable,
@@ -49,6 +52,8 @@ class PRMSRunoff(StorageUnit):
     ) -> "PRMSRunoff":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

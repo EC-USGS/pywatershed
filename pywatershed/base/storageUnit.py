@@ -5,7 +5,8 @@ from warnings import warn
 
 import numpy as np
 
-from ..base import Parameters, meta
+from ..base import meta
+from ..parameters import Parameters
 from ..base.adapter import Adapter, adapter_factory
 from ..base.budget import Budget
 from ..base.data_model import _merge_dicts
@@ -92,6 +93,8 @@ class StorageUnit(Accessor):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         verbose: bool,
         load_n_time_batches: int = 1,
         metadata_patches: dict[dict] = None,
@@ -99,19 +102,14 @@ class StorageUnit(Accessor):
     ):
         self.name = "StorageUnit"
         self.control = control
-        if isinstance(self.control.params, Parameters):
-            self.params = self.control.params.subset(self.get_parameters())
-        else:
-            self._class_name = self.__class__.__name__
-            params = self.control.params[self._class_name].subset(
-                self.get_parameters()
-            )
 
-            # TODO: not good to use hardcoded name.
-            dis_params = self.control.dis["dis_hru"].subset(
-                self.get_parameters()
-            )
-            self.params = type(params).merge(params, dis_params)
+        missing_params = set(self.parameters).difference(
+            set(parameters.variables.keys())
+        )
+        if missing_params:
+            self.params = type(parameters).merge(parameters, discretization)
+        else:
+            self.params = parameters.subset(self.get_parameters())
 
         self.verbose = verbose
         self._load_n_time_batches = load_n_time_batches

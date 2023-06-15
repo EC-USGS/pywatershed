@@ -5,10 +5,10 @@ import numpy as np
 from pywatershed.base.storageUnit import StorageUnit
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
-from ..base import meta
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import epsilon, inch2cm, nan, one, zero
+from ..parameters import Parameters
 from ..utils.time_utils import datetime_doy, datetime_month
 from .solar_constants import solf
 
@@ -99,6 +99,8 @@ class PRMSAtmosphere(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         prcp: [str, pl.Path],
         tmax: [str, pl.Path],
         tmin: [str, pl.Path],
@@ -130,6 +132,8 @@ class PRMSAtmosphere(StorageUnit):
 
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
             metadata_patches=metadata_patches,

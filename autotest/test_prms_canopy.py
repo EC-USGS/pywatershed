@@ -6,77 +6,38 @@ import pytest
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
-from pywatershed.parameters import PrmsParameters
+from pywatershed.parameters import Parameters, PrmsParameters
 
 calc_methods = ("numpy", "numba", "fortran")
+params = ("params_sep", "params_one")
 
 
-def test_simple():
-    time_dict = {
-        "start_time": np.datetime64("1979-01-03T00:00:00.00"),
-        "end_time": np.datetime64("1979-01-04T00:00:00.00"),
-        "time_step": np.timedelta64(1, "D"),
-    }
-
-    nhru = 2
-    prms_params = {
-        "dims": {"nhru": nhru},
-        "data_vars": {
-            "hru_area": np.array(nhru * [1.0]),
-            "covden_sum": np.array(nhru * [0.5]),
-            "covden_win": np.array(nhru * [0.5]),
-            "srain_intcp": np.array(nhru * [1.0]),
-            "wrain_intcp": np.array(nhru * [1.0]),
-            "snow_intcp": np.array(nhru * [1.0]),
-            "epan_coef": np.array(nhru * [1.0]),
-            "potet_sublim": np.array(nhru * [1.0]),
-            "cov_type": np.array(nhru * [1]),
-        },
-    }
-    prms_params["metadata"] = {}
-    for kk in prms_params["data_vars"].keys():
-        prms_params["metadata"][kk] = {"dims": ("nhru",)}
-
-    prms_params = PrmsParameters(**prms_params)
-
-    control = Control(**time_dict, params=prms_params)
-
-    input_variables = {}
-    for key in PRMSCanopy.get_inputs():
-        input_variables[key] = np.ones([nhru])
-
-    # todo: this is testing instantiation, but not physics
-    cnp = PRMSCanopy(
-        control=control,
-        **input_variables,
-        budget_type="error",
-    )
-    control.advance()
-    cnp.advance()
-    cnp.calculate(time_length=1.0)
-
-    return
+@pytest.fixture(scope="function")
+def control(domain):
+    return Control.load(domain["control_file"])
 
 
-@pytest.fixture(scope="function", params=["params_sep", "params_one"])
-def params(domain, request):
+@pytest.fixture(scope="function")
+def discretization(domain):
+    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+    return Parameters.from_netcdf(dis_hru_file, encoding=False)
+
+
+@pytest.fixture(scope="function", params=params)
+def parameters(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
     else:
-        params = PrmsParameters.from_netcdf(
-            domain["dir"] / "parameters_PRMSCanopy.nc"
-        )
+        param_file = domain["dir"] / "parameters_PRMSCanopy.nc"
+        params = PrmsParameters.from_netcdf(param_file)
 
     return params
 
 
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
-
-
 @pytest.mark.parametrize("calc_method", calc_methods)
-def test_compare_prms(domain, control, tmp_path, calc_method):
+def test_compare_prms(
+    domain, control, discretization, parameters, tmp_path, calc_method
+):
     if not has_prmscanopy_f and calc_method == "fortran":
         pytest.skip(
             "PRMSCanopy fortran code not available, skipping its test."
@@ -109,6 +70,8 @@ def test_compare_prms(domain, control, tmp_path, calc_method):
 
     cnp = PRMSCanopy(
         control=control,
+        discretization=discretization,
+        parameters=parameters,
         **input_variables,
         budget_type="error",
         calc_method=calc_method,

@@ -14,30 +14,37 @@ calc_methods = ("numpy", "numba", "fortran")
 params = ["params_sep", "params_one"]
 
 
+@pytest.fixture(scope="function")
+def control(domain):
+    return Control.load(domain["control_file"])
+
+
+@pytest.fixture(scope="function")
+def discretization(domain):
+    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+    dis_seg_file = domain["dir"] / "parameters_dis_seg.nc"
+    dis = Parameters.merge(
+        Parameters.from_netcdf(dis_hru_file, encoding=False),
+        Parameters.from_netcdf(dis_seg_file, encoding=False),
+    )
+    return dis
+
+
 @pytest.fixture(scope="function", params=params)
-def control(domain, request):
+def parameters(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
-        dis = None
-
     else:
-        # channel needs both hru and seg dis files
-        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
-        dis_seg_file = domain["dir"] / "parameters_dis_seg.nc"
-        dis_data = Parameters.merge(
-            Parameters.from_netcdf(dis_hru_file, encoding=False),
-            Parameters.from_netcdf(dis_seg_file, encoding=False),
-        )
-        dis = {"dis_hru": dis_data}
-
         param_file = domain["dir"] / "parameters_PRMSChannel.nc"
-        params = {"PRMSChannel": PrmsParameters.from_netcdf(param_file)}
+        params = PrmsParameters.from_netcdf(param_file)
 
-    return Control.load(domain["control_file"], params=params, dis=dis)
+    return params
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)
-def test_compare_prms(domain, control, tmp_path, calc_method):
+def test_compare_prms(
+    domain, control, discretization, parameters, tmp_path, calc_method
+):
     if not has_prmschannel_f and calc_method == "fortran":
         pytest.skip(
             "PRMSChannel fortran code not available, skipping its test."
@@ -54,6 +61,8 @@ def test_compare_prms(domain, control, tmp_path, calc_method):
 
     channel = PRMSChannel(
         control,
+        discretization,
+        parameters,
         **input_variables,
         budget_type="error",
         calc_method=calc_method,

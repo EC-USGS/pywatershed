@@ -5,6 +5,7 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..base.storageUnit import StorageUnit
 from ..constants import CovType, HruType, numba_num_threads, zero
+from ..parameters import Parameters
 
 try:
     from ..PRMSCanopy_f import canopy
@@ -33,6 +34,8 @@ class PRMSCanopy(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         pkwater_ante: adaptable,
         transp_on: adaptable,
         hru_ppt: adaptable,
@@ -46,6 +49,8 @@ class PRMSCanopy(StorageUnit):
     ) -> "PRMSCanopy":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

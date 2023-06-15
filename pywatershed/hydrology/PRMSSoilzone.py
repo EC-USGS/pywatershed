@@ -15,6 +15,7 @@ from ..constants import (
     one,
     zero,
 )
+from ..parameters import Parameters
 
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
@@ -29,6 +30,8 @@ class PRMSSoilzone(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         dprst_evap_hru: adaptable,
         dprst_seep_hru: adaptable,
         hru_impervevap: adaptable,
@@ -46,6 +49,8 @@ class PRMSSoilzone(StorageUnit):
     ) -> "PRMSSoilzone":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

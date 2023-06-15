@@ -5,6 +5,7 @@ from pywatershed.base.storageUnit import StorageUnit
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan, numba_num_threads
+from ..parameters import Parameters
 
 try:
     from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
@@ -20,6 +21,8 @@ class PRMSGroundwater(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
@@ -30,6 +33,8 @@ class PRMSGroundwater(StorageUnit):
     ):
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

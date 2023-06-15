@@ -8,6 +8,7 @@ from pywatershed.base.storageUnit import StorageUnit
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import SegmentType, nan, zero
+from ..parameters import Parameters
 
 try:
     from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran
@@ -74,6 +75,8 @@ class PRMSChannel(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         sroff_vol: adaptable,
         ssres_flow_vol: adaptable,
         gwres_flow_vol: adaptable,
@@ -84,6 +87,8 @@ class PRMSChannel(StorageUnit):
     ) -> "PRMSChannel":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

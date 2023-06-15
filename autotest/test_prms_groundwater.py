@@ -15,22 +15,32 @@ calc_methods = ("numpy", "numba", "fortran")
 params = ["params_sep", "params_one"]
 
 
+@pytest.fixture(scope="function")
+def control(domain):
+    return Control.load(domain["control_file"])
+
+
+@pytest.fixture(scope="function")
+def discretization(domain):
+    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+    return Parameters.from_netcdf(dis_hru_file, encoding=False)
+
+
 @pytest.fixture(scope="function", params=params)
-def control(domain, request):
+def parameters(domain, request):
     if request.param == "params_one":
         params = PrmsParameters.load(domain["param_file"])
-        dis = None
     else:
-        dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
-        gw_param_file = domain["dir"] / "parameters_PRMSGroundwater.nc"
-        params = {"PRMSGroundwater": PrmsParameters.from_netcdf(gw_param_file)}
-        dis = {"dis_hru": Parameters.from_netcdf(dis_hru_file, encoding=False)}
+        param_file = domain["dir"] / "parameters_PRMSGroundwater.nc"
+        params = PrmsParameters.from_netcdf(param_file)
 
-    return Control.load(domain["control_file"], params=params, dis=dis)
+    return params
 
 
 @pytest.mark.parametrize("calc_method", calc_methods)
-def test_compare_prms(domain, control, tmp_path, calc_method):
+def test_compare_prms(
+    domain, control, discretization, parameters, tmp_path, calc_method
+):
     if not has_prmsgroundwater_f and calc_method == "fortran":
         pytest.skip(
             "PRMSGroundwater fortran code not available, skipping its test."
@@ -47,6 +57,8 @@ def test_compare_prms(domain, control, tmp_path, calc_method):
 
     gw = PRMSGroundwater(
         control,
+        discretization,
+        parameters,
         **input_variables,
         budget_type="error",
         calc_method=calc_method,

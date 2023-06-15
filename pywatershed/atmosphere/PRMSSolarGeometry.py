@@ -10,6 +10,7 @@ from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
 from ..constants import epsilon32, nan, one, zero
+from ..parameters import Parameters
 from ..utils.prms5util import load_soltab_debug
 from .solar_constants import ndoy, pi, pi_12, r1, solar_declination, two_pi
 
@@ -41,6 +42,8 @@ class PRMSSolarGeometry(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         verbose: bool = False,
         from_prms_file: [str, pl.Path] = None,
         from_nc_files_dir: [str, pl.Path] = None,
@@ -61,6 +64,8 @@ class PRMSSolarGeometry(StorageUnit):
 
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

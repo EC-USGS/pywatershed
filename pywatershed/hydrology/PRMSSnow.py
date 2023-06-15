@@ -15,6 +15,7 @@ from ..constants import (
     one,
     zero,
 )
+from ..parameters import Parameters
 
 # These are constants used like variables (on self) in PRMS6
 # They dont appear on any LHS, so it seems they are constants
@@ -73,6 +74,8 @@ class PRMSSnow(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         orad_hru: adaptable,
         soltab_horad_potsw: adaptable,
         swrad: adaptable,
@@ -95,6 +98,8 @@ class PRMSSnow(StorageUnit):
     ) -> "PRMSSnow":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

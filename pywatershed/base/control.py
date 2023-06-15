@@ -1,6 +1,5 @@
 """The control class."""
 import datetime
-from types import MappingProxyType
 
 import numpy as np
 
@@ -27,7 +26,6 @@ class Control(Accessor):
         init_time: np.datetime64 = None,
         config: dict = None,
         dis: Parameters = None,
-        params: Parameters = None,
         verbosity: int = 0,
         **kwargs,
     ):
@@ -72,10 +70,6 @@ class Control(Accessor):
 
         self.config = config
         self.dis = dis
-        self.params = params
-        if params is not None:
-            # this should be a super private method on parameters
-            self.edit_n_time_steps(self.n_times)
 
         self.meta = meta
         # This will have the time dimension name
@@ -85,7 +79,6 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        params: Parameters = None,
         dis: Parameters = None,
         verbosity: int = 0,
     ) -> "Control":
@@ -106,7 +99,6 @@ class Control(Accessor):
             control.control["end_time"],
             control.control["initial_deltat"],
             config=control.control,
-            params=params,
             dis=dis,
             verbosity=verbosity,
         )

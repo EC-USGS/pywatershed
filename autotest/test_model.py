@@ -1,4 +1,6 @@
+from itertools import product
 import pathlib as pl
+from pprint import pprint
 import shutil
 
 import numpy as np
@@ -54,39 +56,63 @@ def discretization(domain):
     return dis
 
 
-@pytest.fixture(scope="function", params=params)
-def parameters(domain, request):
-    if request.param == "params_one":
-        params = PrmsParameters.load(domain["param_file"])
+@pytest.fixture(
+    scope="function", params=list(product(params, test_models.keys()))
+)
+def model_args(domain, control, discretization, request):
+    params = request.param[0]
+    model_key = request.param[1]
+    process_list = test_models[model_key]
+
+    if params == "params_one":
+        # Single params is the backwards compatible way
+        args = {
+            "process_list_or_model_dict": process_list,
+            "control": control,
+            "discretization_dict": None,
+            "parameters": PrmsParameters.load(domain["param_file"]),
+        }
+
     else:
-        # In this case we are not passing parameters
-        # but the model dict
-        params = {}
+        # Constructing this model_dict is the new way
+        model_dict = discretization
+        model_dict["control"] = control
+        # could use any names
+        model_dict["model_order"] = [
+            pp.__name__.lower() for pp in process_list
+        ]
+
         for process in test_models["nhm"]:
-            proc_name = process.__name__
-            params[proc_name] = {}
-            proc = params[proc_name]
+            proc_name = process.__name__.lower()
+            model_dict[proc_name] = {}
+            proc = model_dict[proc_name]
             proc["class"] = process
             proc_param_file = domain["dir"] / f"parameters_{proc_name}.nc"
             proc["parameters"] = PrmsParameters.from_netcdf(proc_param_file)
-            if proc_name == "PRMSChannel":
+            if proc_name == "PRMSChannel".lower():
                 proc["dis"] = "dis_combined"
             else:
                 proc["dis"] = "dis_hru"
 
-    return params
+        pprint(model_dict, sort_dicts=False)
+
+        args = {
+            "process_list_or_model_dict": model_dict,
+            "control": None,
+            "discretization_dict": None,
+            "parameters": None,
+        }
+
+    return args
 
 
-@pytest.mark.parametrize(
-    "processes",
-    test_models.values(),
-    ids=test_models.keys(),
-)
-def test_model(
-    domain, control, discretization, parameters, processes, tmp_path
-):
+# @pytest.mark.parametrize(
+#     "processes",
+#     test_models.values(),
+#     ids=test_models.keys(),
+# )
+def test_model(domain, model_args, tmp_path):
     """Run the full NHM model"""
-    control_copy = control
 
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
@@ -99,31 +125,8 @@ def test_model(
     for ff in output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    if isinstance(parameters, PrmsParameters):
-        process_list_or_model_dict = processes
-        discretization = None  # not used
-
-    elif isinstance(parameters, dict):
-        assert isinstance(discretization, dict)
-        process_list_or_model_dict = discretization | parameters
-        process_list_or_model_dict["control"] = control
-        process_list_or_model_dict["model_order"] = [
-            pp.__name__ for pp in processes
-        ]
-        # all arr folded in to the above dict
-        control = None
-        discretization = None
-        parameters = None
-
-    else:
-        raise ValueError("what type is parameters?")
-
-    # TODO: Eliminate potet and other variables from being used
     model = Model(
-        process_list_or_model_dict,
-        control=control,
-        discretization_dict=discretization,
-        parameters=parameters,
+        **model_args,
         input_dir=input_dir,
         budget_type=budget_type,
         load_n_time_batches=3,
@@ -224,6 +227,19 @@ def test_model(
     }
 
     comparison_vars_dict = {}
+
+    plomd = model_args["process_list_or_model_dict"]
+    if isinstance(plomd, list):
+        is_old_style = True
+        processes = plomd
+        control = model_args["control"]
+    else:
+        is_old_style = False
+        processes = [
+            vv["class"] for vv in plomd.values() if isinstance(vv, dict)
+        ]
+        control = plomd["control"]
+
     for cls in processes:
         key = cls.__name__
         comparison_vars_dict[key] = comparison_vars_dict_all[key]
@@ -237,7 +253,7 @@ def test_model(
             else:
                 nc_pth = input_dir / f"{vv}.nc"
             ans[unit_name][vv] = adapter_factory(
-                nc_pth, variable_name=vv, control=control_copy
+                nc_pth, variable_name=vv, control=control
             )
 
     # ---------------------------------
@@ -266,7 +282,7 @@ def test_model(
     all_success = True
     fail_prms_compare = False
     fail_regression = False
-    for istep in range(control_copy.n_times):
+    for istep in range(control.n_times):
         model.advance()
         model.calculate()
 
@@ -299,6 +315,8 @@ def test_model(
         if istep in regression_ans:
             for pp, var_ans in regression_ans[istep].items():
                 for vv, aa in var_ans.items():
+                    if not is_old_style:
+                        pp = pp.lower()
                     result = model.processes[pp][vv].mean()
                     reg_ans = aa[domain["domain_name"]]
                     if not reg_ans:

@@ -243,9 +243,10 @@ class Model:
                 "load_n_time_batches": self._load_n_time_batches,
             }
 
-            if proc_name not in ["PRMSSolarGeometry"]:
+            proc_class_name = self._proc_dict[proc_name].__name__
+            if proc_class_name not in ["PRMSSolarGeometry"]:
                 args["budget_type"] = self.budget_type
-            if proc_name not in ["PRMSSolarGeometry", "PRMSAtmosphere"]:
+            if proc_class_name not in ["PRMSSolarGeometry", "PRMSAtmosphere"]:
                 args["calc_method"] = self.calc_method
 
             # init the process classes with the args

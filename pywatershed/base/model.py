@@ -1,6 +1,6 @@
-from copy import deepcopy
 import math
 import pathlib as pl
+from copy import deepcopy
 from pprint import pprint
 from typing import Union
 

@@ -83,13 +83,14 @@ def model_args(domain, control, discretization, request):
         ]
 
         for process in test_models["nhm"]:
-            proc_name = process.__name__.lower()
-            model_dict[proc_name] = {}
-            proc = model_dict[proc_name]
+            proc_name = process.__name__
+            proc_name_lower = proc_name.lower()
+            model_dict[proc_name_lower] = {}
+            proc = model_dict[proc_name_lower]
             proc["class"] = process
             proc_param_file = domain["dir"] / f"parameters_{proc_name}.nc"
             proc["parameters"] = PrmsParameters.from_netcdf(proc_param_file)
-            if proc_name == "PRMSChannel".lower():
+            if proc_name_lower == "PRMSChannel".lower():
                 proc["dis"] = "dis_combined"
             else:
                 proc["dis"] = "dis_hru"

@@ -8,7 +8,7 @@ import pywatershed
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.model import Model
-from pywatershed.parameters import PrmsParameters
+from pywatershed.parameters import Parameters, PrmsParameters
 
 compare_to_prms521 = False  # TODO TODO TODO
 failfast = True
@@ -30,16 +30,51 @@ test_models = {
 }
 
 
-@pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+params = ("params_sep", "params_one")
 
 
 @pytest.fixture(scope="function")
-def control(domain, params):
-    control = Control.load(domain["control_file"], params=params)
-    control.edit_n_time_steps(n_time_steps)
-    return control
+def control(domain):
+    return Control.load(domain["control_file"])
+
+
+@pytest.fixture(scope="function")
+def discretization(domain):
+    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+    dis_seg_file = domain["dir"] / "parameters_dis_seg.nc"
+    dis_hru = Parameters.from_netcdf(dis_hru_file, encoding=False)
+    # PRMSChannel needs both dis where as it should only need dis_seg
+    # and will when we have exchanges
+    dis_combined = Parameters.merge(
+        Parameters.from_netcdf(dis_hru_file, encoding=False),
+        Parameters.from_netcdf(dis_seg_file, encoding=False),
+    )
+    dis = {"dis_hru": dis_hru, "dis_combined": dis_combined}
+
+    return dis
+
+
+@pytest.fixture(scope="function", params=params)
+def parameters(domain, request):
+    if request.param == "params_one":
+        params = PrmsParameters.load(domain["param_file"])
+    else:
+        # In this case we are not passing parameters
+        # but the model dict
+        params = {}
+        for process in test_models["nhm"]:
+            proc_name = process.__name__
+            params[proc_name] = {}
+            proc = params[proc_name]
+            proc["class"] = process
+            proc_param_file = domain["dir"] / f"parameters_{proc_name}.nc"
+            proc["parameters"] = PrmsParameters.from_netcdf(proc_param_file)
+            if proc_name == "PRMSChannel":
+                proc["dis"] = "dis_combined"
+            else:
+                proc["dis"] = "dis_hru"
+
+    return params
 
 
 @pytest.mark.parametrize(
@@ -47,8 +82,12 @@ def control(domain, params):
     test_models.values(),
     ids=test_models.keys(),
 )
-def test_model(domain, control, processes, tmp_path):
+def test_model(
+    domain, control, discretization, parameters, processes, tmp_path
+):
     """Run the full NHM model"""
+    control_copy = control
+
     tmp_path = pl.Path(tmp_path)
     output_dir = domain["prms_output_dir"]
 
@@ -60,10 +99,31 @@ def test_model(domain, control, processes, tmp_path):
     for ff in output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
+    if isinstance(parameters, PrmsParameters):
+        process_list_or_model_dict = processes
+        discretization = None  # not used
+
+    elif isinstance(parameters, dict):
+        assert isinstance(discretization, dict)
+        process_list_or_model_dict = discretization | parameters
+        process_list_or_model_dict["control"] = control
+        process_list_or_model_dict["model_order"] = [
+            pp.__name__ for pp in processes
+        ]
+        # all arr folded in to the above dict
+        control = None
+        discretization = None
+        parameters = None
+
+    else:
+        raise ValueError("what type is parameters?")
+
     # TODO: Eliminate potet and other variables from being used
     model = Model(
-        *processes,
+        process_list_or_model_dict,
         control=control,
+        discretization_dict=discretization,
+        parameters=parameters,
         input_dir=input_dir,
         budget_type=budget_type,
         load_n_time_batches=3,
@@ -177,7 +237,7 @@ def test_model(domain, control, processes, tmp_path):
             else:
                 nc_pth = input_dir / f"{vv}.nc"
             ans[unit_name][vv] = adapter_factory(
-                nc_pth, variable_name=vv, control=control
+                nc_pth, variable_name=vv, control=control_copy
             )
 
     # ---------------------------------
@@ -206,7 +266,7 @@ def test_model(domain, control, processes, tmp_path):
     all_success = True
     fail_prms_compare = False
     fail_regression = False
-    for istep in range(control.n_times):
+    for istep in range(control_copy.n_times):
         model.advance()
         model.calculate()
 

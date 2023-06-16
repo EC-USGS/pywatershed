@@ -5,6 +5,7 @@ from pywatershed.base.storageUnit import StorageUnit
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan, one, zero
+from ..parameters import Parameters
 
 
 class Starfit(StorageUnit):
@@ -28,6 +29,8 @@ class Starfit(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         lake_inflow: adaptable,
         budget_type: str = None,
         calc_method: str = None,
@@ -36,6 +39,8 @@ class Starfit(StorageUnit):
     ) -> "Starfit":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )

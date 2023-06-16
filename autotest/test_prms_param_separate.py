@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 import pywatershed
-from pywatershed.base.control import Control
 from pywatershed.base.data_model import open_datasetdict
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils import separate_domain_params_dis_to_ncdf
@@ -26,13 +25,8 @@ def params(domain):
     return PrmsParameters.load(domain["param_file"])
 
 
-@pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
-
-
 @pytest.mark.parametrize("use_xr", [True])  # TODO: add False
-def test_param_sep(domain, control, use_xr, tmp_path):
+def test_param_sep(domain, params, use_xr, tmp_path):
     tmp_path = pl.Path(tmp_path)
 
     domain_name = domain["domain_name"]
@@ -74,11 +68,11 @@ def test_param_sep(domain, control, use_xr, tmp_path):
         for param in params_file.variables.keys():
             np.testing.assert_equal(
                 params_file.variables[param],
-                control.params.parameters[param],
+                params.parameters[param],
             )
             np.testing.assert_equal(
                 params_file["metadata"][param]["dims"],
-                control.params.metadata[param]["dims"],
+                params.metadata[param]["dims"],
             )
 
     return

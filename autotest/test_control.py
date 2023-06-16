@@ -40,8 +40,8 @@ def params_simple():
 
 
 @pytest.fixture(scope="function")
-def control_simple(params_simple):
-    return Control(**time_dict, params=params_simple)
+def control_simple():
+    return Control(**time_dict)
 
 
 def test_control_simple(control_simple):
@@ -88,7 +88,7 @@ def test_control_simple(control_simple):
         control_simple.advance()
 
 
-def test_control_advance(control_simple):
+def test_control_advance(control_simple, params_simple):
     # common inputs for 2 canopies
     input_variables = {}
     for key in PRMSCanopy.get_inputs():
@@ -98,6 +98,8 @@ def test_control_advance(control_simple):
     # ntimes = control.n_times
     cnp1 = PRMSCanopy(
         control=control_simple,
+        discretization=None,
+        parameters=params_simple,
         **input_variables,
         verbose=True,
     )
@@ -105,6 +107,8 @@ def test_control_advance(control_simple):
 
     cnp2 = PRMSCanopy(
         control=control_simple,
+        discretization=None,
+        parameters=params_simple,
         **input_variables,
         verbose=True,
     )

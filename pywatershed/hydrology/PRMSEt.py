@@ -6,6 +6,7 @@ from pywatershed.base.storageUnit import StorageUnit
 from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import nan, one, zero
+from ..parameters import Parameters
 
 # THis class seems to be a sort of intermediate class that should
 # not exist in the future.
@@ -20,6 +21,8 @@ class PRMSEt(StorageUnit):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         potet: adaptable,
         hru_impervevap: adaptable,
         hru_intcpevap: adaptable,
@@ -31,6 +34,8 @@ class PRMSEt(StorageUnit):
     ) -> "PRMSEt":
         super().__init__(
             control=control,
+            discretization=discretization,
+            parameters=parameters,
             verbose=verbose,
         )
         self.name = "PRMSEt"

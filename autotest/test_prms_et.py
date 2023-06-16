@@ -5,8 +5,7 @@ import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSCanopy import PRMSCanopy
-from pywatershed.hydrology.PRMSRunoff import PRMSRunoff
+from pywatershed.hydrology.PRMSEt import PRMSEt
 from pywatershed.parameters import PrmsParameters
 
 
@@ -16,74 +15,53 @@ def params(domain):
 
 
 @pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+def control(domain):
+    return Control.load(domain["control_file"])
 
 
-class TestPRMSCanopyRunoffDomain:
-    def test_init(self, domain, control, tmp_path):
+class TestPRMSEt:
+    def test_init(self, domain, control, params, tmp_path):
         tmp_path = pl.Path(tmp_path)
-
-        # get the answer data
-
-        comparison_var_names = [
-            "infil",
-            "dprst_stor_hru",
-            "hru_impervstor",
-            "sroff",
-        ]
         output_dir = domain["prms_output_dir"]
+
+        et_inputs = {}
+        for key in PRMSEt.get_inputs():
+            nc_path = output_dir / f"{key}.nc"
+            et_inputs[key] = adapter_factory(nc_path, key, control)
+
+        et = PRMSEt(
+            control=control,
+            discretization=None,
+            parameters=params,
+            budget_type="strict",
+            **et_inputs,
+        )
+
+        # ---------------------------------
+        # get the answer data
+        comparison_vars = [
+            # "potet",
+            # "hru_impervevap",
+            # "hru_intcpevap",
+            # "snow_evap",
+            # "dprst_evap_hru",
+            # "perv_actet",
+            "hru_actet",
+        ]
 
         # Read PRMS output into ans for comparison with pywatershed results
         ans = {}
-        for key in comparison_var_names:
+        for key in comparison_vars:
             nc_pth = output_dir / f"{key}.nc"
             ans[key] = adapter_factory(
                 nc_pth, variable_name=key, control=control
             )
 
-        # instantiate canopy
-        input_variables = {}
-        for key in PRMSCanopy.get_inputs():
-            nc_pth = output_dir / f"{key}.nc"
-            input_variables[key] = nc_pth
-
-        canopy = PRMSCanopy(control=control, **input_variables)
-
-        # instantiate runoff
-        input_variables = {}
-        for key in PRMSRunoff.get_inputs():
-            nc_pth = output_dir / f"{key}.nc"
-            if "soil_moist" in str(nc_pth):
-                nc_pth = output_dir / "soil_moist_prev.nc"
-            input_variables[key] = nc_pth
-        input_variables["net_ppt"] = None
-        input_variables["net_rain"] = None
-        input_variables["net_snow"] = None
-        runoff = PRMSRunoff(control=control, **input_variables)
-
-        # wire up output from canopy as input to runoff
-        runoff.set_input_to_adapter(
-            "net_ppt",
-            adapter_factory(canopy.net_ppt, "net_ppt", control=control),
-        )
-        runoff.set_input_to_adapter(
-            "net_rain",
-            adapter_factory(canopy.net_rain, "net_rain", control=control),
-        )
-        runoff.set_input_to_adapter(
-            "net_snow",
-            adapter_factory(canopy.net_snow, "net_snow", control=control),
-        )
-
         all_success = True
         for istep in range(control.n_times):
             control.advance()
-            canopy.advance()
-            runoff.advance()
-
-            canopy.calculate(1.0)
-            runoff.calculate(1.0)
+            et.advance()
+            et.calculate(1.0)
 
             # advance the answer, which is being read from a netcdf file
             for key, val in ans.items():
@@ -96,14 +74,10 @@ class TestPRMSCanopyRunoffDomain:
             if check:
                 atol = 1.0e-5
                 success = self.check_timestep_results(
-                    runoff, istep, ans, atol, detailed
+                    et, istep, ans, atol, detailed, failfast
                 )
                 if not success:
                     all_success = False
-                    if failfast:
-                        assert success, "stopping..."
-
-        runoff.finalize()
 
         # check at the end and error if one or more steps didn't pass
         if not all_success:
@@ -112,7 +86,14 @@ class TestPRMSCanopyRunoffDomain:
         return
 
     @staticmethod
-    def check_timestep_results(storageunit, istep, ans, atol, detailed=False):
+    def check_timestep_results(
+        storageunit,
+        istep,
+        ans,
+        atol,
+        detailed=False,
+        failfast=False,
+    ):
         all_success = True
         for key in ans.keys():
             a1 = ans[key].current
@@ -133,6 +114,9 @@ class TestPRMSCanopyRunoffDomain:
                         idx = np.where(np.abs(diff) > atol)[0]
                         for i in idx:
                             print(
-                                f"hru {i} prms {a1[i]} pywatershed {a2[i]} diff {diff[i]}"
+                                f"hru {i} prms {a1[i]} pywatershed {a2[i]} "
+                                f"diff {diff[i]}"
                             )
+                if failfast:
+                    raise (ValueError)
         return all_success

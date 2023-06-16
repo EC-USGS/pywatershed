@@ -29,12 +29,13 @@ def test_drive_indiv_process(domain, tmp_path):
     nhm_output_dir = pl.Path(tmp_path) / "nhm_output"
 
     params = pws.parameters.PrmsParameters.load(domain["param_file"])
-    control = pws.Control.load(domain["control_file"], params=params)
+    control = pws.Control.load(domain["control_file"])
     control.edit_n_time_steps(n_time_steps)
 
     nhm = pws.Model(
-        *nhm_processes,
+        nhm_processes,
         control=control,
+        parameters=params,
         input_dir=domain["prms_run_dir"],
         budget_type="warn",
         calc_method="numba",
@@ -56,12 +57,13 @@ def test_drive_indiv_process(domain, tmp_path):
         proc_model_output_dir.mkdir()
 
         params = pws.parameters.PrmsParameters.load(domain["param_file"])
-        control = pws.Control.load(domain["control_file"], params=params)
+        control = pws.Control.load(domain["control_file"])
         control.edit_n_time_steps(n_time_steps)
 
         proc_model = pws.Model(
-            proc,
+            [proc],
             control=control,
+            parameters=params,
             input_dir=nhm_output_dir,
             budget_type="warn",
             calc_method="numba",

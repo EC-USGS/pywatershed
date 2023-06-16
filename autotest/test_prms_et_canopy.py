@@ -16,12 +16,12 @@ def params(domain):
 
 
 @pytest.fixture(scope="function")
-def control(domain, params):
-    return Control.load(domain["control_file"], params=params)
+def control(domain):
+    return Control.load(domain["control_file"])
 
 
 class TestPRMSEt:
-    def test_init(self, domain, control, tmp_path):
+    def test_init(self, domain, control, params, tmp_path):
         tmp_path = pl.Path(tmp_path)
         output_dir = domain["prms_output_dir"]
 
@@ -43,7 +43,13 @@ class TestPRMSEt:
                 nc_path = output_dir / f"{key}.nc"
                 et_inputs[key] = adapter_factory(nc_path, key, control)
 
-        et = PRMSEt(control=control, budget_type="error", **et_inputs)
+        et = PRMSEt(
+            control=control,
+            discretization=None,
+            parameters=params,
+            budget_type="error",
+            **et_inputs,
+        )
 
         # canopy
         canopy_inputs = {}
@@ -56,6 +62,8 @@ class TestPRMSEt:
 
         canopy = PRMSCanopy(
             control=control,
+            discretization=None,
+            parameters=params,
             budget_type="error",
             **canopy_inputs,
         )

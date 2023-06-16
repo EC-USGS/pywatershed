@@ -11,7 +11,7 @@ from pywatershed.utils.netcdf_utils import NetCdfCompare
 fail_fast = False
 
 calc_methods = ("numpy", "numba", "fortran")
-params = ["params_sep", "params_one"]
+params = ("params_sep", "params_one")
 
 
 @pytest.fixture(scope="function")

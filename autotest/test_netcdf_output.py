@@ -24,8 +24,8 @@ def params(domain):
 
 
 @pytest.fixture(scope="function")
-def control(domain, params):
-    control = Control.load(domain["control_file"], params=params)
+def control(domain):
+    control = Control.load(domain["control_file"])
     control.edit_n_time_steps(n_time_steps)
     return control
 
@@ -58,7 +58,7 @@ check_budget_sum_vars_params = [False, True, "some"]
     check_budget_sum_vars_params,
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
-def test_process_budgets(domain, control, tmp_path, budget_sum_param):
+def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
     model_procs = [pywatershed.PRMSCanopy, pywatershed.PRMSChannel]
@@ -81,8 +81,10 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
 
     # TODO: Eliminate potet and other variables from being used
     model = Model(
-        *model_procs,
+        model_procs,
         control=control,
+        discretization_dict=None,
+        parameters=params,
         input_dir=input_dir,
         budget_type=budget_type,
     )
@@ -159,7 +161,7 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
     [False, True],
     ids=["grp_by_process", "separate"],
 )
-def test_separate_together(domain, control, tmp_path, separate):
+def test_separate_together(domain, control, params, tmp_path, separate):
     tmp_dir = pl.Path(tmp_path)
 
     model_procs = [
@@ -181,8 +183,10 @@ def test_separate_together(domain, control, tmp_path, separate):
         shutil.copy(ff, input_dir / ff.name)
 
     model = Model(
-        *model_procs,
+        model_procs,
         control=control,
+        discretization_dict=None,
+        parameters=params,
         input_dir=input_dir,
         budget_type=budget_type,
     )

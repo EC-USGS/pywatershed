@@ -25,7 +25,7 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         config: dict = None,
-        dis: Parameters = None,
+        # dis: Parameters = None,
         verbosity: int = 0,
         **kwargs,
     ):
@@ -69,7 +69,7 @@ class Control(Accessor):
         self._itime_step = -1
 
         self.config = config
-        self.dis = dis
+        # self.dis = dis
 
         self.meta = meta
         # This will have the time dimension name
@@ -79,7 +79,7 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        dis: Parameters = None,
+        # dis: Parameters = None,
         verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file
@@ -99,7 +99,7 @@ class Control(Accessor):
             control.control["end_time"],
             control.control["initial_deltat"],
             config=control.control,
-            dis=dis,
+            # dis=dis,
             verbosity=verbosity,
         )
 

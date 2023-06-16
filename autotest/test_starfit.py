@@ -41,7 +41,6 @@ def test_regress(tmp_path):
         params.variables["start_time"].min(),
         np.datetime64("2019-09-30 00:00:00"),
         np.timedelta64(24, "h"),
-        params=params,
     )
 
     # # load csv files into dataframes
@@ -53,6 +52,8 @@ def test_regress(tmp_path):
 
     sf = Starfit(
         control,
+        discretization=None,
+        parameters=params,
         **input_variables,
         budget_type="warn",
     )

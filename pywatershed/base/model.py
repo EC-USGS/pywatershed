@@ -74,7 +74,7 @@ class Model:
 
         # This is for backwards compatibility
         msg = "Inputs are inconsistent"
-        if isinstance(process_list_or_model_dict, list):
+        if isinstance(process_list_or_model_dict, (list, tuple)):
             # take the old-school-style inputs and convert to new-school inputs
             assert control is not None, msg
             assert discretization_dict is None, msg

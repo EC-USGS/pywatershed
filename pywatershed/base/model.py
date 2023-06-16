@@ -156,7 +156,7 @@ class Model:
         assert len(cat_key_dict["order"]) == 1
         cat_key_dict["order"] = cat_key_dict["order"][0]
         self._order_name = cat_key_dict["order"]
-        self._process_order = self.model_dict[self._order_name]
+        self.process_order = self.model_dict[self._order_name]
         # * all processes are in order and vice-versa
         assert set(cat_key_dict["process"]) == set(
             self.model_dict[cat_key_dict["order"]]
@@ -256,7 +256,7 @@ class Model:
 
     def _connect_procs(self):
         self.process_input_from = {}
-        for process in self._process_order:
+        for process in self.process_order:
             self.process_input_from[process] = {}
             for input, frm in self._inputs_from[process].items():
                 if not frm:
@@ -286,7 +286,7 @@ class Model:
                 control=self.control,
                 load_n_time_batches=self._load_n_time_batches,
             )
-        for process in self._process_order:
+        for process in self.process_order:
             for input, frm in self._inputs_from[process].items():
                 if not frm:
                     fname = file_inputs[input]._fname
@@ -310,7 +310,7 @@ class Model:
             self._find_input_files()
 
         self._netcdf_dir = output_dir
-        for cls in self._process_order:
+        for cls in self.process_order:
             self.processes[cls].initialize_netcdf(
                 output_dir=output_dir,
                 separate_files=separate_files,
@@ -379,24 +379,24 @@ class Model:
             self._find_input_files()
 
         self.control.advance()
-        for cls in self._process_order:
+        for cls in self.process_order:
             self.processes[cls].advance()
         return
 
     def calculate(self):
         """Calculate the model."""
-        for cls in self._process_order:
+        for cls in self.process_order:
             self.processes[cls].calculate(1.0)
         return
 
     def output(self):
         """Output the model at the current time."""
-        for cls in self._process_order:
+        for cls in self.process_order:
             self.processes[cls].output()
         return
 
     def finalize(self):
         """Finalize the model."""
-        for cls in self._process_order:
+        for cls in self.process_order:
             self.processes[cls].finalize()
         return

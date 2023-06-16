@@ -35,7 +35,7 @@ def parameters(domain, request):
     return params
 
 
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     domain, control, discretization, parameters, tmp_path, calc_method

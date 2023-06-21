@@ -102,35 +102,6 @@ class PrmsParameters(Parameters):
 
         return
 
-    # deprecated by subset
-    # def get_parameters(self, keys: listish, dims: bool = False) -> dict:
-    #     """Get a subset of keys in the parameter dictionary
-
-    #     Args:
-    #         keys: keys to retrieve from the full PRMS parameter object
-    #         process: return a single process (all keys)
-    #         dims: return dims instead of values (default is False)
-
-    #     Returns:
-    #         dict: containing requested key:val pairs
-
-    #     """
-    #     if isinstance(keys, str):
-    #         keys = [keys]
-
-    #     if dims:
-    #         return {
-    #             key: self.parameter_dimensions.get(key)
-    #             for key in keys
-    #             if key in self.parameter_dimensions.keys()
-    #         }
-    #     else:
-    #         return {
-    #             key: self.parameters.get(key)
-    #             for key in keys
-    #             if key in self.parameters.keys()
-    #         }
-
     @property
     def dimensions(self) -> dict:
         """Get the dimensions from the parameters
@@ -144,53 +115,6 @@ class PrmsParameters(Parameters):
             if isinstance(value, int):
                 dimensions[key] = value
         return dimensions
-
-    @property
-    def nhm_hru_coordinate(self) -> np.ndarray:
-        """Get the nhm hru coordinate
-
-        Returns:
-            id: nhm coordinate for each hru
-
-        """
-        if "nhru" not in self.dims.keys():
-            return None
-
-        if "nhm_id" in self.parameters.keys():
-            nhm_id = self.parameters["nhm_id"]
-        else:
-            nhm_id = np.arange(1, self.dims["nhru"] + 1)
-        return nhm_id
-
-    @property
-    def nhm_segment_coordinate(self) -> np.ndarray:
-        """Get the nhm segment coordinate
-
-        Returns:
-            id: nhm coordinate for each segment
-
-        """
-        if "nsegment" not in self.dims.keys():
-            return None
-
-        if "nhm_seg" in self.parameters.keys():
-            nhm_seg = self.parameters["nhm_seg"]
-        else:
-            nhm_seg = np.arange(1, self.dims["nsegment"] + 1)
-        return nhm_seg
-
-    @property
-    def nhm_coordinates(self) -> dict:
-        """Get the nhm coordinates
-
-        Returns:
-            id: nhm coordinates
-
-        """
-        return {
-            "nhm_id": self.nhm_hru_coordinate,
-            "nhm_seg": self.nhm_segment_coordinate,
-        }
 
     def parameters_to_json(self, json_filename):
         """write the parameters dictionary out to a json file"""
@@ -359,8 +283,3 @@ class PrmsParameters(Parameters):
         )
 
         return prms_params
-
-    # def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
-    #     "Derived parameter converting inches to cfs on hrus."
-    #     time_step_seconds = time_step / np.timedelta64(1, "s")
-    #     return self.hru_in_to_cf / time_step_seconds

@@ -550,7 +550,7 @@ class StorageUnit(Accessor):
             pl.Path(output_dir).mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
                 output_dir / f"{self.name}.nc",
-                self.params.nhm_coordinates,
+                self.params.coords,
                 self.variables,
                 self.meta,
             )

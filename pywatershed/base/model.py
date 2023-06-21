@@ -362,8 +362,9 @@ class Model:
 
     @staticmethod
     def model_dict_from_yml(yml_file: Union[str, pl.Path]):
-        import pywatershed
         import yaml
+
+        import pywatershed
 
         with pl.Path(yml_file).open("r") as file_stream:
             model_dict = yaml.load(file_stream, Loader=yaml.Loader)

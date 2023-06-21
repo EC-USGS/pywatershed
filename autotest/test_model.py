@@ -1,7 +1,7 @@
-from itertools import product
 import pathlib as pl
-from pprint import pprint
 import shutil
+from itertools import product
+from pprint import pprint
 
 import numpy as np
 import pytest

@@ -57,7 +57,7 @@ def test_misc_netcdf(misc_nc_files_input):
         var = misc_nc_files_input.name
         ds = xr.open_dataset(data_dir / f"{var}.nc")
         ds = ds.rename({var: f"{var}_vol"})
-        ds = ds * params.hru_in_to_cf
+        ds = ds * params.data_vars["hru_in_to_cf"]
         ds.to_netcdf(data_dir / f"{var}_vol.nc")
         ds.close()
 

@@ -8,6 +8,7 @@ from ..base.adapter import adapter_factory
 from ..base.control import Control
 from ..constants import fileish
 from ..parameters import Parameters, PrmsParameters
+from ..utils.path import path_rel_to_yml
 
 process_order_nhm = [
     "PRMSSolarGeometry",
@@ -25,16 +26,59 @@ process_order_nhm = [
 class Model:
     """pywatershed model builder class.
 
-    Build a model from process classes. Model wires the inputs and outputs,
-    searching for unavailable inputs from file (input_dir).
+    Build a model in pywatershed.
+
+    Backwards compatibility (pre v0.2.0) is maintained with minor changes while
+    introducing a new way to specify models (in v0.2.0). These will be called
+    the "old" and "new" ways, respectively, in this description. The old way
+    only works for PRMS/NHM models and their submodels. The new way is
+    introduced to handle more aribtrary and subdry models. Both will work
+    and both are tested, but the old way may be deprecated in the future.
+    (The construction of both ways can be see in autotest/test_model.py in the
+    `model_args` fixture.)
+
+    Old way (subject to future deprecation):
+        process_list_or_model_dict: a process list of PRMS model components
+        control: a control object
+        discretization_dict: None
+        parameters: a PrmsParameters object
+
+    New way:
+        process_list_or_model_dict: a "model dictionary", detailed below.
+        control: None
+        discretization_dict: None
+        parameters: None
+
+    A model dictionary is a dictionary where aribtrary names may be applied
+    to the following kinds of objects: control, discretization, process, order,
+    and exchanges. (Exchanges not yet supported). Each of these is described
+    below. Model dictionaries can also be specfied via yaml files, see
+
+    control: Only one control object can be included in the model dictionary.
+        The name can be arbitrary, the value is either an instance of class
+        Control or a yaml file to be loaded by Control.from_yml() (link
+        to this staticmethod).
+        The control object supples two things for the model 1) the
+        global time discretization (start and stop times, as well as time
+        step), and 2) default global options for all model processes.
+    discretization: Multiple discretizations may be supplied to the model
+        dictionary, each with arbitrary names. These provide spatial
+        discretization information which may be shared by multiple processes
+        specified later. Each process will refer to its required discretization
+        using the name in the model dict. The value of each is an instance
+        of the class Parameters.
+    Process: Multiple processes with arbitrary names are to be supplied to
+        model dictionary. These are of class dict and have the required keys
+        ['class',
+    Exchange: Future.
 
     Args:
-        process_list_or_model_dict:
-          TODO: Document old-style vs new-style inputs
+        process_list_or_model_dict: see above.
         control: Control object.
+
         input_dir: A directory to search for input files.
         budget_type: None, "warn", or "error".
-        verbose: Boolean.
+        verbosity: Boolean.
         calc_method: Choice of available computational backend (where
           available): None and "numpy" are default, "numba" gives numba (env
           variables can control its behavior), and "fortran" uses compiled
@@ -57,25 +101,21 @@ class Model:
         discretization_dict: dict[Parameters] = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         input_dir: str = None,
-        budget_type: str = "error",  # todo: also pass dict
-        calc_method: str = "numpy",
-        verbose: bool = False,
+        budget_type: str = None,
+        calc_method: str = None,
+        verbosity: bool = None,
+        load_n_time_batches: int = None,
         find_input_files: bool = True,
-        load_n_time_batches: int = 1,
     ):
         self.control = control
         self.discretization_dict = discretization_dict
         self.parameters = parameters
-        self.input_dir = input_dir
-        self.budget_type = budget_type
-        self.calc_method = calc_method
-        self.verbose = verbose
-        self._load_n_time_batches = load_n_time_batches
 
         # This is for backwards compatibility
         msg = "Inputs are inconsistent"
         if isinstance(process_list_or_model_dict, (list, tuple)):
             # take the old-school-style inputs and convert to new-school inputs
+            # may be deprecated in the future.
             assert control is not None, msg
             assert discretization_dict is None, msg
             assert isinstance(parameters, PrmsParameters), msg
@@ -110,6 +150,27 @@ class Model:
 
         self._categorize_model_dict()
         self._validate_model_dict()
+
+        # why set these on model and not just leave in config?
+        #   -> A: to allow overriding the control when calling Model?
+        # but then how passing, why not edit the config?
+        #  -> that's bad style to edit the config.
+        #  Really just doing this to maintain these attrs on Model, maybe
+        #     drop and just put these on control as kwargs with defaults.
+        # sort out run-time optional inputs
+        config_attrs = [
+            "input_dir",
+            "budget_type",
+            "calc_method",
+            "verbosity",
+            "load_n_time_batches",
+        ]
+        for att in config_attrs:
+            if locals()[att] is None and att in self.control.config.keys():
+                setattr(self, att, self.control.config[att])
+            else:
+                setattr(self, att, locals()[att])
+
         self._solve_inputs()
         self._init_procs()
         self._connect_procs()
@@ -240,7 +301,7 @@ class Model:
                 "discretization": dis,
                 "parameters": proc_specs["parameters"],
                 **process_inputs,
-                "load_n_time_batches": self._load_n_time_batches,
+                "load_n_time_batches": self.load_n_time_batches,
             }
 
             proc_class_name = self._proc_dict[proc_name].__name__
@@ -271,7 +332,7 @@ class Model:
                         adapter_factory(
                             self.processes[frm[0]][input],
                             control=self.control,
-                            load_n_time_batches=self._load_n_time_batches,
+                            load_n_time_batches=self.load_n_time_batches,
                         ),  # drop list above
                     )
         #   <   <   <
@@ -285,7 +346,7 @@ class Model:
                 nc_path,
                 name,
                 control=self.control,
-                load_n_time_batches=self._load_n_time_batches,
+                load_n_time_batches=self.load_n_time_batches,
             )
         for process in self.process_order:
             for input, frm in self._inputs_from[process].items():
@@ -298,6 +359,92 @@ class Model:
 
         self._found_input_files = True
         return
+
+    @staticmethod
+    def model_dict_from_yml(yml_file: Union[str, pl.Path]):
+        import pywatershed
+        import yaml
+
+        with pl.Path(yml_file).open("r") as file_stream:
+            model_dict = yaml.load(file_stream, Loader=yaml.Loader)
+
+        for key, val in model_dict.items():
+            if isinstance(val, str):
+                val_pl = path_rel_to_yml(val, yml_file)
+                if val.endswith(".yml"):
+                    model_dict[key] = Control.from_yml(val_pl)
+                elif val.endswith(".nc"):
+                    model_dict[key] = Parameters.from_netcdf(val_pl)
+                else:
+                    msg = (
+                        "Unsupported file extension for control (.yml)"
+                        "and parameter (.nc) file paths in model yaml file"
+                    )
+                    raise ValueError(msg)
+
+            elif isinstance(val, dict):
+                # Until exchanges are introduced processes are the only
+                # accepted dictionaries
+                if "class" in val.keys():
+                    # processes
+                    cls = val["class"]
+                    val["class"] = getattr(pywatershed, cls)
+                    par = val["parameters"]
+                    par_pl = path_rel_to_yml(par, yml_file)
+                    val["parameters"] = Parameters.from_netcdf(
+                        par_pl, encoding=False
+                    )
+                    # dis = val["dis"]
+                    # val["dis"] = model_dict[dis]
+
+            elif isinstance(val, list):
+                pass
+
+        return model_dict
+
+    @staticmethod
+    def from_yml(yml_file: Union[str, pl.Path]):
+        """Instantiate a Model from a yaml file
+
+        A yaml file that specifies a model_dict as the first argument of Model.
+
+        Args:
+           yml_file: str or pathlib.Path
+
+        Returns:
+           An instance of Model.
+
+        Yaml file structure (strict order not required, but suggested):
+
+        Control object: Any name can be used but the value must be a control
+            yaml file specified with the suffix ".yml". E.g "name: control.yml"
+            would appear in the passed yaml file. Only one control
+            specification is allowed in the yml_file. For details on the
+            requirements of the control.yml file see `Control.from_yml`
+        Discretization objects: Any number of discretization objects can be
+            supplied with arbitrary (though unique) names. The values supplied
+            for each discretization must be a valid netcdf file with suffix
+            ".nc". These can generally be obtained by calling
+            `parameters.to_netcdf()` on subclasses of Parameters.
+        Process objects: Any number of processes may be specified with
+            arbitrary (though unique) names. Processes are specified as
+            dictionaries in the yaml file, they have additonal key:value pairs.
+            Required key:value pairs are:
+                class: a class that can be `from pywatershed import class`
+                parameters: a netcdf file that specifies the parameters for
+                    the class
+                dis: the name of the discretization for the class as given by
+                    a discretization object speficication above.
+            Optional key:value pairs:
+                TBD
+        Model order list: a list supplying the order in which the processes are
+            to be executed.
+
+        Note: To get a model_dict specfied by the yml_file, call
+        `model_dict_from_yml` instead.
+
+        """
+        return Model(Model.model_dict_from_yml(yml_file))
 
     def initialize_netcdf(
         self,

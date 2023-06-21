@@ -1,11 +1,13 @@
 """The control class."""
 import datetime
+import pathlib as pl
 
 import numpy as np
 
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
+from ..utils.path import assert_exists, path_rel_to_yml
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
@@ -39,6 +41,8 @@ class Control(Accessor):
             time_step: the length fo the time step
             config: a PRMS config file to read and use for control parameters
             verbosity: the level of verbosity in [0,10]
+
+
         """
         super().__init__(**kwargs)
         self.name = "Control"
@@ -67,7 +71,6 @@ class Control(Accessor):
         self._itime_step = -1
 
         self.config = config
-
         self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
@@ -215,3 +218,64 @@ class Control(Accessor):
             self._start_time + (self._n_times - 1) * self._time_step
         )
         return
+
+    @staticmethod
+    def from_yml(yml_file):
+        """Instantate a Control object from a yml file
+
+        Required key:value pairs:
+            start_time: ISO8601 string for numpy datetime64,
+                e.g. 1979-01-01T00:00:00
+            end_time: ISO8601 string for numpy datetime64,
+                e.g. 1980-12-31T00:00:00
+            time_step: The first argument to get a numpy.timedelta64, e.g. 24
+            time_step_units: The second argument to get a numpy.timedelta64,
+                e.g. 'h'
+            verbosity: integer 0-10
+            input_dir: path relative to this file.
+            budget_type: None | "warn" | "error"
+            calc_method: None | "numpy" | "numba" | "fortran" (
+                depending on availability)
+            load_n_time_batches: integer < total number of timesteps (
+                optionalize?)
+            init_vars_from_file: False (optionalize, rename restart)
+            dprst_flag: True (optionalize) only for PRMSSoilzone (should
+                be supplied in its process dictionary)
+
+        Optional key, value pairs:
+            netcdf_output: boolean
+            netcdf_output_var_names: list of variable names to output, e.g.
+                - albedo
+                - cap_infil_tot
+                - contrib_fraction
+
+        Returns:
+            Control object
+        """
+        import yaml
+
+        with pl.Path(yml_file).open("r") as file_stream:
+            control_dict = yaml.load(file_stream, Loader=yaml.Loader)
+
+        start_time = np.datetime64(control_dict["start_time"])
+        end_time = np.datetime64(control_dict["end_time"])
+        time_step = np.timedelta64(
+            control_dict["time_step"], control_dict["time_step_units"]
+        )
+        verbosity = control_dict["verbosity"]
+
+        paths_to_convert = ["input_dir"]
+        for path_name in paths_to_convert:
+            control_dict[path_name] = path_rel_to_yml(
+                control_dict[path_name], yml_file
+            )
+            assert_exists(control_dict[path_name])
+
+        control = Control(
+            start_time,
+            end_time,
+            time_step,
+            config=control_dict,
+            verbosity=verbosity,
+        )
+        return control

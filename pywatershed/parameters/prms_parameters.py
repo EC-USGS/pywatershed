@@ -5,7 +5,7 @@ import numpy as np
 
 from ..base import meta
 from ..base.parameters import Parameters
-from ..constants import fileish, ft2_per_acre, inches_per_foot, listish, ndoy
+from ..constants import fileish, ft2_per_acre, inches_per_foot, ndoy
 from ..utils.prms5_file_util import PrmsFile
 
 prms_dim_names = (
@@ -102,33 +102,34 @@ class PrmsParameters(Parameters):
 
         return
 
-    def get_parameters(self, keys: listish, dims: bool = False) -> dict:
-        """Get a subset of keys in the parameter dictionary
+    # deprecated by subset
+    # def get_parameters(self, keys: listish, dims: bool = False) -> dict:
+    #     """Get a subset of keys in the parameter dictionary
 
-        Args:
-            keys: keys to retrieve from the full PRMS parameter object
-            process: return a single process (all keys)
-            dims: return dims instead of values (default is False)
+    #     Args:
+    #         keys: keys to retrieve from the full PRMS parameter object
+    #         process: return a single process (all keys)
+    #         dims: return dims instead of values (default is False)
 
-        Returns:
-            dict: containing requested key:val pairs
+    #     Returns:
+    #         dict: containing requested key:val pairs
 
-        """
-        if isinstance(keys, str):
-            keys = [keys]
+    #     """
+    #     if isinstance(keys, str):
+    #         keys = [keys]
 
-        if dims:
-            return {
-                key: self.parameter_dimensions.get(key)
-                for key in keys
-                if key in self.parameter_dimensions.keys()
-            }
-        else:
-            return {
-                key: self.parameters.get(key)
-                for key in keys
-                if key in self.parameters.keys()
-            }
+    #     if dims:
+    #         return {
+    #             key: self.parameter_dimensions.get(key)
+    #             for key in keys
+    #             if key in self.parameter_dimensions.keys()
+    #         }
+    #     else:
+    #         return {
+    #             key: self.parameters.get(key)
+    #             for key in keys
+    #             if key in self.parameters.keys()
+    #         }
 
     @property
     def dimensions(self) -> dict:
@@ -242,6 +243,15 @@ class PrmsParameters(Parameters):
 
         return params
 
+    def to_netcdf(self, filename, use_xr=False) -> None:
+        """Write PrmsParameters to a netcdf file"""
+        self.data_vars
+        if use_xr:
+            self.to_xr_ds().to_netcdf(filename)
+        else:
+            self.to_nc4_ds(filename)
+        return
+
     def _process_file_input(
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,
@@ -325,6 +335,12 @@ class PrmsParameters(Parameters):
 
             parameter_dimensions_dict[cc] = {"dims": (dim_name,)}
 
+        # Derived parameter converting inches to cubic feet on hrus.
+        parameter_dict["hru_in_to_cf"] = (
+            parameter_dict["hru_area"] * ft2_per_acre / (inches_per_foot)
+        )
+        parameter_dimensions_dict["hru_in_to_cf"] = {"dims": ("nhru",)}
+
         for key, value in parameter_dimensions_dict.items():
             key_meta = deepcopy(meta.get_params(key)[key])
             _ = key_meta.pop("dims")
@@ -344,16 +360,7 @@ class PrmsParameters(Parameters):
 
         return prms_params
 
-    def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
-        "Derived parameter converting inches to cfs on hrus."
-        time_step_seconds = time_step / np.timedelta64(1, "s")
-        return self.hru_in_to_cf / time_step_seconds
-
-    @property
-    def hru_in_to_cf(self) -> np.ndarray:
-        "Derived parameter converting inches to cubic feet on hrus."
-        return (
-            self.get_parameters("hru_area")["hru_area"]
-            * ft2_per_acre
-            / (inches_per_foot)
-        )
+    # def hru_in_to_cfs(self, time_step: np.timedelta64) -> np.ndarray:
+    #     "Derived parameter converting inches to cfs on hrus."
+    #     time_step_seconds = time_step / np.timedelta64(1, "s")
+    #     return self.hru_in_to_cf / time_step_seconds

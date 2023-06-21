@@ -34,6 +34,7 @@ dis_hru_vars = [
     "hru_area",
     "hru_aspect",
     "hru_elev",
+    "hru_in_to_cf",
     "hru_lat",
     "hru_lon",
     "hru_slope",
@@ -126,5 +127,17 @@ def separate_domain_params_dis_to_ncdf(
         nc_out_file = out_dir / f"parameters_{domain_name}_{dis_name}.nc"
         dis_params.to_netcdf(nc_out_file, use_xr=use_xr)
         written_files[dis_name] = nc_out_file
+
+    # dis_both is both combined since PRMSchannel has to know about hrus & segs
+    # and it seems each process should only know about a single dis_both
+    # when we introduce exchanges, we can just use dis_seg for channel.
+
+    dis_both = PrmsParameters.merge(
+        prms_parameters.subset(dis_dict["dis_hru"]),
+        prms_parameters.subset(dis_dict["dis_seg"]),
+    )
+    nc_out_file = out_dir / f"parameters_{domain_name}_both.nc"
+    dis_both.to_netcdf(nc_out_file, use_xr=use_xr)
+    written_files["dis_both"] = nc_out_file
 
     return written_files

@@ -720,7 +720,7 @@ class PRMSAtmosphere(StorageUnit):
         # transp_on inited to 0 everywhere above
 
         # candidate for worst code lines
-        if self.params.get_parameters("temp_units")["temp_units"] == 0:
+        if self.params.parameters["temp_units"] == 0:
             transp_tmax_f = self.transp_tmax
         else:
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0

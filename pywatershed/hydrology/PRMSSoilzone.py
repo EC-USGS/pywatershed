@@ -87,6 +87,7 @@ class PRMSSoilzone(StorageUnit):
             "fastcoef_lin",
             "fastcoef_sq",
             "hru_area",
+            "hru_in_to_cf",
             "hru_percent_imperv",
             "hru_type",
             "pref_flow_den",
@@ -484,7 +485,7 @@ class PRMSSoilzone(StorageUnit):
                 hru_actet=self.hru_actet,
                 hru_frac_perv=self.hru_frac_perv,
                 hru_impervevap=self.hru_impervevap,
-                hru_in_to_cf=self.params.hru_in_to_cf,
+                hru_in_to_cf=self.hru_in_to_cf,
                 hru_intcpevap=self.hru_intcpevap,
                 hru_type=self.hru_type,
                 infil_hru=self.infil_hru,
@@ -607,7 +608,7 @@ class PRMSSoilzone(StorageUnit):
                 hru_actet=self.hru_actet,
                 hru_frac_perv=self.hru_frac_perv,
                 hru_impervevap=self.hru_impervevap,
-                hru_in_to_cf=self.params.hru_in_to_cf,
+                hru_in_to_cf=self.hru_in_to_cf,
                 hru_intcpevap=self.hru_intcpevap,
                 hru_type=self.hru_type,
                 infil_hru=self.infil_hru,
@@ -786,7 +787,7 @@ class PRMSSoilzone(StorageUnit):
 
         # This is obnoxious. i guess this should be an
         # optional input? should default to zero?
-        if dprst_flag == 1:
+        if dprst_flag:
             hru_actet = hru_actet + dprst_evap_hru
 
         # <
@@ -1093,7 +1094,7 @@ class PRMSSoilzone(StorageUnit):
         soil_moist_tot = ssres_stor + soil_moist * hru_frac_perv
         recharge = soil_to_gw + ssr_to_gw
 
-        if dprst_flag == 1:
+        if dprst_flag:
             recharge = recharge + dprst_seep_hru
 
         pref_flow_stor_change[:] = pref_flow_stor - pref_flow_stor_prev

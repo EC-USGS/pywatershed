@@ -32,7 +32,7 @@ test_models = {
 }
 
 
-params = ("params_sep", "params_one")
+params = ("params_sep", "params_one", "from_yml")
 
 
 @pytest.fixture(scope="function")
@@ -43,15 +43,12 @@ def control(domain):
 @pytest.fixture(scope="function")
 def discretization(domain):
     dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
-    dis_seg_file = domain["dir"] / "parameters_dis_seg.nc"
+    dis_both_file = domain["dir"] / "parameters_dis_both.nc"
     dis_hru = Parameters.from_netcdf(dis_hru_file, encoding=False)
+    dis_both = Parameters.from_netcdf(dis_both_file, encoding=False)
     # PRMSChannel needs both dis where as it should only need dis_seg
     # and will when we have exchanges
-    dis_combined = Parameters.merge(
-        Parameters.from_netcdf(dis_hru_file, encoding=False),
-        Parameters.from_netcdf(dis_seg_file, encoding=False),
-    )
-    dis = {"dis_hru": dis_hru, "dis_combined": dis_combined}
+    dis = {"dis_hru": dis_hru, "dis_both": dis_both}
 
     return dis
 
@@ -73,7 +70,7 @@ def model_args(domain, control, discretization, request):
             "parameters": PrmsParameters.load(domain["param_file"]),
         }
 
-    else:
+    elif params == "params_sep":
         # Constructing this model_dict is the new way
         model_dict = discretization
         model_dict["control"] = control
@@ -91,7 +88,7 @@ def model_args(domain, control, discretization, request):
             proc_param_file = domain["dir"] / f"parameters_{proc_name}.nc"
             proc["parameters"] = PrmsParameters.from_netcdf(proc_param_file)
             if proc_name_lower == "PRMSChannel".lower():
-                proc["dis"] = "dis_combined"
+                proc["dis"] = "dis_both"
             else:
                 proc["dis"] = "dis_hru"
 
@@ -104,14 +101,24 @@ def model_args(domain, control, discretization, request):
             "parameters": None,
         }
 
+    elif params == "from_yml":
+        yml_file = domain["dir"] / "nhm_model.yml"
+        model_dict = Model.model_dict_from_yml(yml_file)
+
+        args = {
+            "process_list_or_model_dict": model_dict,
+            "control": None,
+            "discretization_dict": None,
+            "parameters": None,
+        }
+
+    else:
+        msg = "invalid parameter value"
+        raise ValueError(msg)
+
     return args
 
 
-# @pytest.mark.parametrize(
-#     "processes",
-#     test_models.values(),
-#     ids=test_models.keys(),
-# )
 def test_model(domain, model_args, tmp_path):
     """Run the full NHM model"""
 
@@ -130,6 +137,7 @@ def test_model(domain, model_args, tmp_path):
         **model_args,
         input_dir=input_dir,
         budget_type=budget_type,
+        calc_method="numba",
         load_n_time_batches=3,
     )
 
@@ -318,6 +326,8 @@ def test_model(domain, model_args, tmp_path):
                 for vv, aa in var_ans.items():
                     if not is_old_style:
                         pp = pp.lower()
+                        if pp not in model.processes.keys():
+                            pp = pp[4:]
                     result = model.processes[pp][vv].mean()
                     reg_ans = aa[domain["domain_name"]]
                     if not reg_ans:
@@ -338,8 +348,8 @@ def test_model(domain, model_args, tmp_path):
     if not all_success:
         if fail_prms_compare and fail_regression:
             msg = (
-                "pywatershed results both failed regression test and comparison "
-                "with prms5.2.1"
+                "pywatershed results both failed regression test and "
+                "comparison with prms5.2.1"
             )
         elif fail_prms_compare:
             msg = "pywatershed results failed comparison with prms5.2.1"

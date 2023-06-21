@@ -73,6 +73,7 @@ class PRMSGroundwater(StorageUnit):
         """
         return (
             "hru_area",
+            "hru_in_to_cf",
             "gwflow_coef",
             "gwsink_coef",
             "gwstor_init",
@@ -174,7 +175,8 @@ class PRMSGroundwater(StorageUnit):
                         nb.float64[:],
                         nb.float64[:],
                         nb.float64[:],
-                        nb.float64[:],
+                        nb.types.Array(nb.types.float64, 1, "C", readonly=True)
+                        # nb.float64[:],
                     ),
                     parallel=False,
                 )(self._calculate_numpy)
@@ -194,7 +196,7 @@ class PRMSGroundwater(StorageUnit):
                 self._gwflow_coef,
                 self._gwsink_coef,
                 self.gwres_stor_old,
-                self.params.hru_in_to_cf,
+                self.hru_in_to_cf,
             )
 
         elif self._calc_method.lower() == "fortran":
@@ -213,7 +215,7 @@ class PRMSGroundwater(StorageUnit):
                 self.gwflow_coef,
                 self.gwsink_coef,
                 self.gwres_stor_old,
-                self.params.hru_in_to_cf,
+                self.hru_in_to_cf,
             )
 
         elif self._calc_method.lower() in ["none", "numpy"]:
@@ -232,7 +234,7 @@ class PRMSGroundwater(StorageUnit):
                 self.gwflow_coef,
                 self.gwsink_coef,
                 self.gwres_stor_old,
-                self.params.hru_in_to_cf,
+                self.hru_in_to_cf,
             )
 
         else:

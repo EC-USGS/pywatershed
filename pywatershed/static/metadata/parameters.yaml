@@ -920,6 +920,16 @@ hru_humidity_sta:
   - potet_pm_sta
   type: I
   units: none
+hru_in_to_cf:
+  default: None
+  desc: Conversion of inches of depth to cubic feet for each HRU
+  dims:
+    0: nhru
+  help: Conversion of inches of depth to cubic feet for each HRU
+  maximum: Large
+  minimum: zero
+  type: F
+  units: cubic feet
 hru_lat:
   default: 40.0
   desc: HRU latitude

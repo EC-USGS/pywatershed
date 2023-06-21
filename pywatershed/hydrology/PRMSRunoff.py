@@ -108,6 +108,7 @@ class PRMSRunoff(StorageUnit):
         return (
             "hru_type",
             "hru_area",
+            "hru_in_to_cf",
             "hru_percent_imperv",
             "imperv_stor_max",
             "dprst_frac",
@@ -596,7 +597,7 @@ class PRMSRunoff(StorageUnit):
             self.dprst_stor_hru - self.dprst_stor_hru_old
         )
 
-        self.sroff_vol[:] = self.sroff * self.params.hru_in_to_cf
+        self.sroff_vol[:] = self.sroff * self.hru_in_to_cf
 
         return
 

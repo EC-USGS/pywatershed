@@ -2,7 +2,6 @@ import pathlib as pl
 import shutil
 from typing import Union, Literal
 
-
 from . import _is_pws, parameterized, test_data_dir
 
 if _is_pws:
@@ -10,6 +9,10 @@ if _is_pws:
 else:
     import pynhm as pws
 
+# TODO remove backwards compatiability with pynhm once
+#      reported slows downs are sorted output
+# TODO remove backwards compatability with <0.2.0 once
+#      it is released.
 
 domains = ["hru_1", "drb_2yr", "ucb_2yr"]
 outputs = [None, "separate", "together"]
@@ -73,13 +76,25 @@ class PRMSModels:
 
         self.control_file = test_data_dir / f"{self.domain}/control.test"
         self.parameter_file = test_data_dir / f"{self.domain}/myparam.param"
-        print(f"model_setup_run tag: {self.tag}")
-        if _is_pws:
-            params = pws.parameters.PrmsParameters.load(self.parameter_file)
-        else:
-            params = pws.PrmsParameters.load(self.parameter_file)
 
-        self.control = pws.Control.load(self.control_file, params=params)
+        # backwards compatability pre pywatershed
+        if _is_pws:
+            self.params = pws.parameters.PrmsParameters.load(
+                self.parameter_file
+            )
+        else:
+            self.params = pws.PrmsParameters.load(self.parameter_file)
+
+        # backwards compatability
+        try:
+            self.control = pws.Control.load(
+                self.control_file, params=self.params
+            )
+            self.ge_v0_2_0 = False
+        except:
+            self.control = pws.Control.load(self.control_file)
+            self.ge_v0_2_0 = True
+
         self.control.edit_n_time_steps(n_time_steps)
 
         # setup input_dir with symlinked prms inputs and outputs
@@ -104,13 +119,25 @@ class PRMSModels:
         processes: tuple = None,
         write_output: Union[bool, Literal["separate", "together"]] = None,
     ):
-        model = pws.Model(
-            *self.processes,
-            control=self.control,
-            input_dir=self.tag_input_dir,
-            budget_type="warn",
-            calc_method="numba",
-        )
+        if self.ge_v0_2_0:
+            model = pws.Model(
+                self.processes,
+                control=self.control,
+                discretization_dict=None,
+                parameters=self.params,
+                input_dir=self.tag_input_dir,
+                budget_type="warn",
+                calc_method="numba",
+            )
+        else:
+            model = pws.Model(
+                *self.processes,
+                control=self.control,
+                input_dir=self.tag_input_dir,
+                budget_type="warn",
+                calc_method="numba",
+            )
+
         if write_output is not None:
             model.initialize_netcdf(
                 self.tag_dir, separate_files=(write_output == "separate")
@@ -131,6 +158,13 @@ class PRMSModels:
         processes: tuple,
         output: Union[None, Literal["separate", "together"]],
     ):
+        print(
+            "\nPRMSModels args: \n",
+            f"domain: {domain}\n",
+            f"processes:{processes}\n",
+            f"output: {output}\n",
+        )
+
         _ = self.model_setup_run(
             domain=domain, processes=processes, write_output=output
         )

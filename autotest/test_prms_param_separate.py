@@ -40,7 +40,7 @@ def test_param_sep(domain, params, use_xr, tmp_path):
         process_list=nhm_processes,
         use_xr=use_xr,
     )
-    assert len(proc_nc_files) == len(nhm_processes) + 2  # 2 dis
+    assert len(proc_nc_files) == len(nhm_processes) + 3  # hru, seg, both
 
     # check roundtrip: to file and back
     for proc_name, proc_file in proc_nc_files.items():

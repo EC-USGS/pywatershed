@@ -58,13 +58,10 @@ class PRMSRunoff(StorageUnit):
             load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSRunoff"
-
         self._calc_method = str(calc_method)
-
         self._set_inputs(locals())
-
         self._set_budget(budget_type)
-
+        self._init_calc_method()
         return
 
     def _set_initial_conditions(self):
@@ -358,6 +355,36 @@ class PRMSRunoff(StorageUnit):
                     )
         return
 
+    def _init_calc_method(self):
+        if self._calc_method.lower() == "numba":
+            import numba as nb
+
+            numba_msg = f"{self.name} jit compiling with numba "
+            nb_parallel = (numba_num_threads is not None) and (
+                numba_num_threads > 1
+            )
+            if nb_parallel:
+                numba_msg += f"and using {numba_num_threads} threads"
+            print(numba_msg, flush=True)
+
+            self._calculate_runoff = nb.njit(
+                self._calculate_numpy, parallel=nb_parallel
+            )
+            self.check_capacity = nb.njit(self.check_capacity)
+            self.perv_comp = nb.njit(self.perv_comp)
+            self.compute_infil = nb.njit(self.compute_infil)
+            self.dprst_comp = nb.njit(self.dprst_comp)
+            self.imperv_et = nb.njit(self.imperv_et)
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+            self._calculate_runoff = self._calculate_numpy
+
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
+        return
+
     def _advance_variables(self) -> None:
         """Advance the variables
         Returns:
@@ -378,214 +405,98 @@ class PRMSRunoff(StorageUnit):
 
         """
         # perform the core calculations
-        if self._calc_method.lower() == "numba":
-            import numba as nb
 
-            if not hasattr(self, "_calculate_numba"):
-                numba_msg = f"{self.name} jit compiling with numba "
-                nb_parallel = (numba_num_threads is not None) and (
-                    numba_num_threads > 1
-                )
-                if nb_parallel:
-                    numba_msg += f"and using {numba_num_threads} threads"
-                print(numba_msg, flush=True)
-
-                self._calculate_numba = nb.njit(
-                    self._calculate_numpy, parallel=nb_parallel
-                )
-                self.check_capacity_numba = nb.njit(self.check_capacity)
-                self.perv_comp_numba = nb.njit(self.perv_comp)
-                self.compute_infil_numba = nb.njit(self.compute_infil)
-                self.dprst_comp_numba = nb.njit(self.dprst_comp)
-                self.imperv_et_numba = nb.njit(self.imperv_et)
-
-            # <
-            (
-                self.infil[:],
-                self.contrib_fraction[:],
-                self.hru_sroffp[:],
-                self.hru_sroffi[:],
-                self.imperv_evap[:],
-                self.hru_impervevap[:],
-                self.imperv_stor[:],
-                self.dprst_in[:],
-                self.dprst_vol_open[:],
-                self.dprst_vol_clos[:],
-                self.dprst_sroff_hru[:],
-                self.dprst_evap_hru[:],
-                self.dprst_seep_hru[:],
-                self.dprst_insroff_hru[:],
-                self.dprst_vol_open_frac[:],
-                self.dprst_vol_clos_frac[:],
-                self.dprst_vol_frac[:],
-                self.dprst_stor_hru[:],
-                self.sroff[:],
-            ) = self._calculate_numba(
-                infil=self.infil,
-                nhru=self.nhru,
-                hru_area=self.hru_area,
-                hru_perv=self.hru_perv,
-                hru_frac_perv=self.hru_frac_perv,
-                hru_sroffp=self.hru_sroffp,
-                contrib_fraction=self.contrib_fraction,
-                hru_percent_imperv=self.hru_percent_imperv,
-                hru_sroffi=self.hru_sroffi,
-                imperv_evap=self.imperv_evap,
-                hru_imperv=self.hru_imperv,
-                hru_impervevap=self.hru_impervevap,
-                potet=self.potet,
-                snow_evap=self.snow_evap,
-                hru_intcpevap=self.hru_intcpevap,
-                soil_moist_prev=self.soil_moist_prev,
-                soil_moist_max=self.soil_moist_max,
-                carea_max=self.carea_max,
-                smidx_coef=self.smidx_coef,
-                smidx_exp=self.smidx_exp,
-                pptmix_nopack=self.pptmix_nopack,
-                net_rain=self.net_rain,
-                net_ppt=self.net_ppt,
-                imperv_stor=self.imperv_stor,
-                imperv_stor_max=self.imperv_stor_max,
-                snowmelt=self.snowmelt,
-                snowinfil_max=self.snowinfil_max,
-                net_snow=self.net_snow,
-                pkwater_equiv=self.pkwater_equiv,
-                hru_type=self.hru_type,
-                intcp_changeover=self.intcp_changeover,
-                dprst_in=self.dprst_in,
-                dprst_seep_hru=self.dprst_seep_hru,
-                dprst_area_max=self.dprst_area_max,
-                dprst_vol_open=self.dprst_vol_open,
-                dprst_vol_clos=self.dprst_vol_clos,
-                dprst_sroff_hru=self.dprst_sroff_hru,
-                dprst_evap_hru=self.dprst_evap_hru,
-                dprst_insroff_hru=self.dprst_insroff_hru,
-                dprst_vol_open_frac=self.dprst_vol_open_frac,
-                dprst_vol_clos_frac=self.dprst_vol_clos_frac,
-                dprst_vol_frac=self.dprst_vol_frac,
-                dprst_stor_hru=self.dprst_stor_hru,
-                dprst_area_clos_max=self.dprst_area_clos_max,
-                dprst_area_clos=self.dprst_area_clos,
-                dprst_vol_open_max=self.dprst_vol_open_max,
-                dprst_area_open_max=self.dprst_area_open_max,
-                dprst_area_open=self.dprst_area_open,
-                sro_to_dprst_perv=self.sro_to_dprst_perv,
-                sro_to_dprst_imperv=self.sro_to_dprst_imperv,
-                dprst_frac_open=self.dprst_frac_open,
-                dprst_frac_clos=self.dprst_frac_clos,
-                va_open_exp=self.va_open_exp,
-                dprst_vol_clos_max=self.dprst_vol_clos_max,
-                va_clos_exp=self.va_clos_exp,
-                snowcov_area=self.snowcov_area,
-                dprst_et_coef=self.dprst_et_coef,
-                dprst_seep_rate_open=self.dprst_seep_rate_open,
-                dprst_vol_thres_open=self.dprst_vol_thres_open,
-                dprst_flow_coef=self.dprst_flow_coef,
-                dprst_seep_rate_clos=self.dprst_seep_rate_clos,
-                sroff=self.sroff,
-                hru_impervstor=self.hru_impervstor,
-                check_capacity=self.check_capacity_numba,
-                perv_comp=self.perv_comp_numba,
-                compute_infil=self.compute_infil_numba,
-                dprst_comp=self.dprst_comp_numba,
-                imperv_et=self.imperv_et_numba,
-            )
-
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            (
-                self.infil[:],
-                self.contrib_fraction[:],
-                self.hru_sroffp[:],
-                self.hru_sroffi[:],
-                self.imperv_evap[:],
-                self.hru_impervevap[:],
-                self.imperv_stor[:],
-                self.dprst_in[:],
-                self.dprst_vol_open[:],
-                self.dprst_vol_clos[:],
-                self.dprst_sroff_hru[:],
-                self.dprst_evap_hru[:],
-                self.dprst_seep_hru[:],
-                self.dprst_insroff_hru[:],
-                self.dprst_vol_open_frac[:],
-                self.dprst_vol_clos_frac[:],
-                self.dprst_vol_frac[:],
-                self.dprst_stor_hru[:],
-                self.sroff[:],
-            ) = self._calculate_numpy(
-                infil=self.infil,
-                nhru=self.nhru,
-                hru_area=self.hru_area,
-                hru_perv=self.hru_perv,
-                hru_frac_perv=self.hru_frac_perv,
-                hru_sroffp=self.hru_sroffp,
-                contrib_fraction=self.contrib_fraction,
-                hru_percent_imperv=self.hru_percent_imperv,
-                hru_sroffi=self.hru_sroffi,
-                imperv_evap=self.imperv_evap,
-                hru_imperv=self.hru_imperv,
-                hru_impervevap=self.hru_impervevap,
-                potet=self.potet,
-                snow_evap=self.snow_evap,
-                hru_intcpevap=self.hru_intcpevap,
-                soil_moist_prev=self.soil_moist_prev,
-                soil_moist_max=self.soil_moist_max,
-                carea_max=self.carea_max,
-                smidx_coef=self.smidx_coef,
-                smidx_exp=self.smidx_exp,
-                pptmix_nopack=self.pptmix_nopack,
-                net_rain=self.net_rain,
-                net_ppt=self.net_ppt,
-                imperv_stor=self.imperv_stor,
-                imperv_stor_max=self.imperv_stor_max,
-                snowmelt=self.snowmelt,
-                snowinfil_max=self.snowinfil_max,
-                net_snow=self.net_snow,
-                pkwater_equiv=self.pkwater_equiv,
-                hru_type=self.hru_type,
-                intcp_changeover=self.intcp_changeover,
-                dprst_in=self.dprst_in,
-                dprst_seep_hru=self.dprst_seep_hru,
-                dprst_area_max=self.dprst_area_max,
-                dprst_vol_open=self.dprst_vol_open,
-                dprst_vol_clos=self.dprst_vol_clos,
-                dprst_sroff_hru=self.dprst_sroff_hru,
-                dprst_evap_hru=self.dprst_evap_hru,
-                dprst_insroff_hru=self.dprst_insroff_hru,
-                dprst_vol_open_frac=self.dprst_vol_open_frac,
-                dprst_vol_clos_frac=self.dprst_vol_clos_frac,
-                dprst_vol_frac=self.dprst_vol_frac,
-                dprst_stor_hru=self.dprst_stor_hru,
-                dprst_area_clos_max=self.dprst_area_clos_max,
-                dprst_area_clos=self.dprst_area_clos,
-                dprst_vol_open_max=self.dprst_vol_open_max,
-                dprst_area_open_max=self.dprst_area_open_max,
-                dprst_area_open=self.dprst_area_open,
-                sro_to_dprst_perv=self.sro_to_dprst_perv,
-                sro_to_dprst_imperv=self.sro_to_dprst_imperv,
-                dprst_frac_open=self.dprst_frac_open,
-                dprst_frac_clos=self.dprst_frac_clos,
-                va_open_exp=self.va_open_exp,
-                dprst_vol_clos_max=self.dprst_vol_clos_max,
-                va_clos_exp=self.va_clos_exp,
-                snowcov_area=self.snowcov_area,
-                dprst_et_coef=self.dprst_et_coef,
-                dprst_seep_rate_open=self.dprst_seep_rate_open,
-                dprst_vol_thres_open=self.dprst_vol_thres_open,
-                dprst_flow_coef=self.dprst_flow_coef,
-                dprst_seep_rate_clos=self.dprst_seep_rate_clos,
-                sroff=self.sroff,
-                hru_impervstor=self.hru_impervstor,
-                check_capacity=self.check_capacity,
-                perv_comp=self.perv_comp,
-                compute_infil=self.compute_infil,
-                dprst_comp=self.dprst_comp,
-                imperv_et=self.imperv_et,
-            )
-
-        else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+        # <
+        (
+            self.infil[:],
+            self.contrib_fraction[:],
+            self.hru_sroffp[:],
+            self.hru_sroffi[:],
+            self.imperv_evap[:],
+            self.hru_impervevap[:],
+            self.imperv_stor[:],
+            self.dprst_in[:],
+            self.dprst_vol_open[:],
+            self.dprst_vol_clos[:],
+            self.dprst_sroff_hru[:],
+            self.dprst_evap_hru[:],
+            self.dprst_seep_hru[:],
+            self.dprst_insroff_hru[:],
+            self.dprst_vol_open_frac[:],
+            self.dprst_vol_clos_frac[:],
+            self.dprst_vol_frac[:],
+            self.dprst_stor_hru[:],
+            self.sroff[:],
+        ) = self._calculate_runoff(
+            infil=self.infil,
+            nhru=self.nhru,
+            hru_area=self.hru_area,
+            hru_perv=self.hru_perv,
+            hru_frac_perv=self.hru_frac_perv,
+            hru_sroffp=self.hru_sroffp,
+            contrib_fraction=self.contrib_fraction,
+            hru_percent_imperv=self.hru_percent_imperv,
+            hru_sroffi=self.hru_sroffi,
+            imperv_evap=self.imperv_evap,
+            hru_imperv=self.hru_imperv,
+            hru_impervevap=self.hru_impervevap,
+            potet=self.potet,
+            snow_evap=self.snow_evap,
+            hru_intcpevap=self.hru_intcpevap,
+            soil_moist_prev=self.soil_moist_prev,
+            soil_moist_max=self.soil_moist_max,
+            carea_max=self.carea_max,
+            smidx_coef=self.smidx_coef,
+            smidx_exp=self.smidx_exp,
+            pptmix_nopack=self.pptmix_nopack,
+            net_rain=self.net_rain,
+            net_ppt=self.net_ppt,
+            imperv_stor=self.imperv_stor,
+            imperv_stor_max=self.imperv_stor_max,
+            snowmelt=self.snowmelt,
+            snowinfil_max=self.snowinfil_max,
+            net_snow=self.net_snow,
+            pkwater_equiv=self.pkwater_equiv,
+            hru_type=self.hru_type,
+            intcp_changeover=self.intcp_changeover,
+            dprst_in=self.dprst_in,
+            dprst_seep_hru=self.dprst_seep_hru,
+            dprst_area_max=self.dprst_area_max,
+            dprst_vol_open=self.dprst_vol_open,
+            dprst_vol_clos=self.dprst_vol_clos,
+            dprst_sroff_hru=self.dprst_sroff_hru,
+            dprst_evap_hru=self.dprst_evap_hru,
+            dprst_insroff_hru=self.dprst_insroff_hru,
+            dprst_vol_open_frac=self.dprst_vol_open_frac,
+            dprst_vol_clos_frac=self.dprst_vol_clos_frac,
+            dprst_vol_frac=self.dprst_vol_frac,
+            dprst_stor_hru=self.dprst_stor_hru,
+            dprst_area_clos_max=self.dprst_area_clos_max,
+            dprst_area_clos=self.dprst_area_clos,
+            dprst_vol_open_max=self.dprst_vol_open_max,
+            dprst_area_open_max=self.dprst_area_open_max,
+            dprst_area_open=self.dprst_area_open,
+            sro_to_dprst_perv=self.sro_to_dprst_perv,
+            sro_to_dprst_imperv=self.sro_to_dprst_imperv,
+            dprst_frac_open=self.dprst_frac_open,
+            dprst_frac_clos=self.dprst_frac_clos,
+            va_open_exp=self.va_open_exp,
+            dprst_vol_clos_max=self.dprst_vol_clos_max,
+            va_clos_exp=self.va_clos_exp,
+            snowcov_area=self.snowcov_area,
+            dprst_et_coef=self.dprst_et_coef,
+            dprst_seep_rate_open=self.dprst_seep_rate_open,
+            dprst_vol_thres_open=self.dprst_vol_thres_open,
+            dprst_flow_coef=self.dprst_flow_coef,
+            dprst_seep_rate_clos=self.dprst_seep_rate_clos,
+            sroff=self.sroff,
+            hru_impervstor=self.hru_impervstor,
+            check_capacity=self.check_capacity,
+            perv_comp=self.perv_comp,
+            compute_infil=self.compute_infil,
+            dprst_comp=self.dprst_comp,
+            imperv_et=self.imperv_et,
+        )
 
         # <
         self.infil_hru[:] = self.infil * self.hru_frac_perv

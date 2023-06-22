@@ -60,6 +60,7 @@ class PRMSSoilzone(StorageUnit):
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
+        self._init_calc_method()
 
         return
 
@@ -394,6 +395,42 @@ class PRMSSoilzone(StorageUnit):
 
         return
 
+    def _init_calc_method(self):
+        if self._calc_method.lower() == "numba":
+            import numba as nb
+
+            numba_msg = f"{self.name} jit compiling with numba "
+            nb_parallel = (numba_num_threads is not None) and (
+                numba_num_threads > 1
+            )
+            if nb_parallel:
+                numba_msg += f"and using {numba_num_threads} threads"
+            print(numba_msg, flush=True)
+
+            self._calculate_soilzone = nb.njit(
+                fastmath=True, parallel=nb_parallel
+            )(self._calculate_numpy)
+
+            self._compute_gwflow = nb.njit(fastmath=True)(self._compute_gwflow)
+            self._compute_interflow = nb.njit(fastmath=True)(
+                self._compute_interflow
+            )
+            self._compute_soilmoist = nb.njit(fastmath=True)(
+                self._compute_soilmoist
+            )
+            self._compute_szactet = nb.njit(fastmath=True)(
+                self._compute_szactet
+            )
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+            self._calculate_soilzone = self._calculate_numpy
+
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
+        return
+
     def _advance_variables(self) -> None:
         self.pref_flow_stor_prev[:] = self.pref_flow_stor
         self.soil_rechr_prev[:] = self.soil_rechr
@@ -402,277 +439,124 @@ class PRMSSoilzone(StorageUnit):
         return
 
     def _calculate(self, simulation_time):
-        if self._calc_method.lower() == "numba":
-            import numba as nb
+        (
+            self.soil_to_gw[:],
+            self.soil_to_ssr[:],
+            self.ssr_to_gw[:],
+            self.slow_flow[:],
+            self.ssres_flow[:],
+            self.potet_rechr[:],
+            self.potet_lower[:],
+            self.cap_waterin[:],
+            self.soil_moist[:],
+            self.soil_rechr[:],
+            self.soil_moist_prev[:],
+            self.hru_actet[:],
+            self.cap_infil_tot[:],
+            self.slow_stor[:],
+            self.pref_flow_in[:],
+            self.pref_flow_stor[:],
+            self.perv_actet[:],
+            self.soil_lower[:],
+            self.dunnian_flow[:],
+            self.perv_actet_hru[:],
+            self.pref_flow[:],
+            self.pref_flow_stor_change[:],
+            self.recharge[:],
+            self.slow_stor_change[:],
+            self.soil_lower_change[:],
+            self.soil_lower_change_hru[:],
+            self.soil_lower_ratio[:],
+            self.soil_moist_tot[:],
+            self.soil_rechr_change[:],
+            self.soil_rechr_change_hru[:],
+            self.sroff[:],
+            self.ssres_flow_vol[:],
+            self.ssres_in[:],
+            self.ssres_stor[:],
+            self.swale_actet[:],
+            self.unused_potet[:],
+        ) = self._calculate_soilzone(
+            _pref_flow_flag=self._pref_flow_flag,
+            _snow_free=self._snow_free,
+            _soil2gw_flag=self._soil2gw_flag,
+            cap_infil_tot=self.cap_infil_tot,
+            cap_waterin=self.cap_waterin,
+            compute_gwflow=self._compute_gwflow,
+            compute_interflow=self._compute_interflow,
+            compute_soilmoist=self._compute_soilmoist,
+            compute_szactet=self._compute_szactet,
+            cov_type=self.cov_type,
+            current_time=self.control.current_time,
+            dprst_evap_hru=self.dprst_evap_hru,
+            dprst_flag=self.control.config["dprst_flag"],
+            dprst_seep_hru=self.dprst_seep_hru,
+            dunnian_flow=self.dunnian_flow,
+            fastcoef_lin=self.fastcoef_lin,
+            fastcoef_sq=self.fastcoef_sq,
+            hru_actet=self.hru_actet,
+            hru_frac_perv=self.hru_frac_perv,
+            hru_impervevap=self.hru_impervevap,
+            hru_in_to_cf=self.hru_in_to_cf,
+            hru_intcpevap=self.hru_intcpevap,
+            hru_type=self.hru_type,
+            infil_hru=self.infil_hru,
+            nhru=self.nhru,
+            perv_actet=self.perv_actet,
+            perv_actet_hru=self.perv_actet_hru,
+            potet=self.potet,
+            potet_lower=self.potet_lower,
+            potet_rechr=self.potet_rechr,
+            pref_flow=self.pref_flow,
+            pref_flow_in=self.pref_flow_in,
+            pref_flow_infil=self.pref_flow_infil,
+            pref_flow_max=self.pref_flow_max,
+            pref_flow_stor=self.pref_flow_stor,
+            pref_flow_stor_change=self.pref_flow_stor_change,
+            pref_flow_stor_prev=self.pref_flow_stor_prev,
+            pref_flow_thrsh=self.pref_flow_thrsh,
+            recharge=self.recharge,
+            sat_threshold=self._sat_threshold,
+            slow_flow=self.slow_flow,
+            slow_stor=self.slow_stor,
+            slow_stor_change=self.slow_stor_change,
+            slow_stor_prev=self.slow_stor_prev,
+            slowcoef_lin=self.slowcoef_lin,
+            slowcoef_sq=self.slowcoef_sq,
+            snow_evap=self.snow_evap,
+            snowcov_area=self.snowcov_area,
+            soil2gw_max=self.soil2gw_max,
+            soil_lower=self.soil_lower,
+            soil_lower_change=self.soil_lower_change,
+            soil_lower_change_hru=self.soil_lower_change_hru,
+            soil_lower_max=self.soil_lower_max,
+            soil_lower_prev=self.soil_lower_prev,
+            soil_lower_ratio=self.soil_lower_ratio,
+            soil_moist=self.soil_moist,
+            soil_moist_max=self.soil_moist_max,
+            soil_moist_prev=self.soil_moist_prev,
+            soil_moist_tot=self.soil_moist_tot,
+            soil_rechr=self.soil_rechr,
+            soil_rechr_change=self.soil_rechr_change,
+            soil_rechr_change_hru=self.soil_rechr_change_hru,
+            soil_rechr_max=self.soil_rechr_max,
+            soil_rechr_prev=self.soil_rechr_prev,
+            soil_to_gw=self.soil_to_gw,
+            soil_to_ssr=self.soil_to_ssr,
+            soil_type=self.soil_type,
+            sroff=self.sroff,
+            ssr2gw_exp=self.ssr2gw_exp,
+            ssr2gw_rate=self.ssr2gw_rate,
+            ssr_to_gw=self.ssr_to_gw,
+            ssres_flow=self.ssres_flow,
+            ssres_flow_vol=self.ssres_flow_vol,
+            ssres_in=self.ssres_in,
+            ssres_stor=self.ssres_stor,
+            swale_actet=self.swale_actet,
+            transp_on=self.transp_on,
+            unused_potet=self.unused_potet,
+        )
 
-            if not hasattr(self, "_calculate_numba"):
-                numba_msg = f"{self.name} jit compiling with numba "
-                nb_parallel = (numba_num_threads is not None) and (
-                    numba_num_threads > 1
-                )
-                if nb_parallel:
-                    numba_msg += f"and using {numba_num_threads} threads"
-                print(numba_msg, flush=True)
-
-                self._calculate_numba = nb.njit(
-                    fastmath=True, parallel=nb_parallel
-                )(self._calculate_numpy)
-                self._compute_gwflow_numba = nb.njit(fastmath=True)(
-                    self._compute_gwflow
-                )
-                self._compute_interflow_numba = nb.njit(fastmath=True)(
-                    self._compute_interflow
-                )
-                self._compute_soilmoist_numba = nb.njit(fastmath=True)(
-                    self._compute_soilmoist
-                )
-                self._compute_szactet_numba = nb.njit(fastmath=True)(
-                    self._compute_szactet
-                )
-
-            # <
-            (
-                self.soil_to_gw[:],
-                self.soil_to_ssr[:],
-                self.ssr_to_gw[:],
-                self.slow_flow[:],
-                self.ssres_flow[:],
-                self.potet_rechr[:],
-                self.potet_lower[:],
-                self.cap_waterin[:],
-                self.soil_moist[:],
-                self.soil_rechr[:],
-                self.soil_moist_prev[:],
-                self.hru_actet[:],
-                self.cap_infil_tot[:],
-                self.slow_stor[:],
-                self.pref_flow_in[:],
-                self.pref_flow_stor[:],
-                self.perv_actet[:],
-                self.soil_lower[:],
-                self.dunnian_flow[:],
-                self.perv_actet_hru[:],
-                self.pref_flow[:],
-                self.pref_flow_stor_change[:],
-                self.recharge[:],
-                self.slow_stor_change[:],
-                self.soil_lower_change[:],
-                self.soil_lower_change_hru[:],
-                self.soil_lower_ratio[:],
-                self.soil_moist_tot[:],
-                self.soil_rechr_change[:],
-                self.soil_rechr_change_hru[:],
-                self.sroff[:],
-                self.ssres_flow_vol[:],
-                self.ssres_in[:],
-                self.ssres_stor[:],
-                self.swale_actet[:],
-                self.unused_potet[:],
-            ) = self._calculate_numba(
-                _pref_flow_flag=self._pref_flow_flag,
-                _snow_free=self._snow_free,
-                _soil2gw_flag=self._soil2gw_flag,
-                cap_infil_tot=self.cap_infil_tot,
-                cap_waterin=self.cap_waterin,
-                cov_type=self.cov_type,
-                current_time=self.control.current_time,
-                dprst_evap_hru=self.dprst_evap_hru,
-                dprst_flag=self.control.config["dprst_flag"],
-                dprst_seep_hru=self.dprst_seep_hru,
-                dunnian_flow=self.dunnian_flow,
-                fastcoef_lin=self.fastcoef_lin,
-                fastcoef_sq=self.fastcoef_sq,
-                hru_actet=self.hru_actet,
-                hru_frac_perv=self.hru_frac_perv,
-                hru_impervevap=self.hru_impervevap,
-                hru_in_to_cf=self.hru_in_to_cf,
-                hru_intcpevap=self.hru_intcpevap,
-                hru_type=self.hru_type,
-                infil_hru=self.infil_hru,
-                nhru=self.nhru,
-                perv_actet=self.perv_actet,
-                perv_actet_hru=self.perv_actet_hru,
-                potet=self.potet,
-                potet_lower=self.potet_lower,
-                potet_rechr=self.potet_rechr,
-                pref_flow=self.pref_flow,
-                pref_flow_in=self.pref_flow_in,
-                pref_flow_infil=self.pref_flow_infil,
-                pref_flow_max=self.pref_flow_max,
-                pref_flow_stor=self.pref_flow_stor,
-                pref_flow_stor_change=self.pref_flow_stor_change,
-                pref_flow_stor_prev=self.pref_flow_stor_prev,
-                pref_flow_thrsh=self.pref_flow_thrsh,
-                recharge=self.recharge,
-                sat_threshold=self._sat_threshold,
-                slow_flow=self.slow_flow,
-                slow_stor=self.slow_stor,
-                slow_stor_change=self.slow_stor_change,
-                slow_stor_prev=self.slow_stor_prev,
-                slowcoef_lin=self.slowcoef_lin,
-                slowcoef_sq=self.slowcoef_sq,
-                snow_evap=self.snow_evap,
-                snowcov_area=self.snowcov_area,
-                soil2gw_max=self.soil2gw_max,
-                soil_lower=self.soil_lower,
-                soil_lower_change=self.soil_lower_change,
-                soil_lower_change_hru=self.soil_lower_change_hru,
-                soil_lower_max=self.soil_lower_max,
-                soil_lower_prev=self.soil_lower_prev,
-                soil_lower_ratio=self.soil_lower_ratio,
-                soil_moist=self.soil_moist,
-                soil_moist_max=self.soil_moist_max,
-                soil_moist_prev=self.soil_moist_prev,
-                soil_moist_tot=self.soil_moist_tot,
-                soil_rechr=self.soil_rechr,
-                soil_rechr_change=self.soil_rechr_change,
-                soil_rechr_change_hru=self.soil_rechr_change_hru,
-                soil_rechr_max=self.soil_rechr_max,
-                soil_rechr_prev=self.soil_rechr_prev,
-                soil_to_gw=self.soil_to_gw,
-                soil_to_ssr=self.soil_to_ssr,
-                soil_type=self.soil_type,
-                sroff=self.sroff,
-                ssr2gw_exp=self.ssr2gw_exp,
-                ssr2gw_rate=self.ssr2gw_rate,
-                ssr_to_gw=self.ssr_to_gw,
-                ssres_flow=self.ssres_flow,
-                ssres_flow_vol=self.ssres_flow_vol,
-                ssres_in=self.ssres_in,
-                ssres_stor=self.ssres_stor,
-                swale_actet=self.swale_actet,
-                transp_on=self.transp_on,
-                unused_potet=self.unused_potet,
-                compute_gwflow=self._compute_gwflow_numba,
-                compute_interflow=self._compute_interflow_numba,
-                compute_soilmoist=self._compute_soilmoist_numba,
-                compute_szactet=self._compute_szactet_numba,
-            )
-
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            (
-                self.soil_to_gw[:],
-                self.soil_to_ssr[:],
-                self.ssr_to_gw[:],
-                self.slow_flow[:],
-                self.ssres_flow[:],
-                self.potet_rechr[:],
-                self.potet_lower[:],
-                self.cap_waterin[:],
-                self.soil_moist[:],
-                self.soil_rechr[:],
-                self.soil_moist_prev[:],
-                self.hru_actet[:],
-                self.cap_infil_tot[:],
-                self.slow_stor[:],
-                self.pref_flow_in[:],
-                self.pref_flow_stor[:],
-                self.perv_actet[:],
-                self.soil_lower[:],
-                self.dunnian_flow[:],
-                self.perv_actet_hru[:],
-                self.pref_flow[:],
-                self.pref_flow_stor_change[:],
-                self.recharge[:],
-                self.slow_stor_change[:],
-                self.soil_lower_change[:],
-                self.soil_lower_change_hru[:],
-                self.soil_lower_ratio[:],
-                self.soil_moist_tot[:],
-                self.soil_rechr_change[:],
-                self.soil_rechr_change_hru[:],
-                self.sroff[:],
-                self.ssres_flow_vol[:],
-                self.ssres_in[:],
-                self.ssres_stor[:],
-                self.swale_actet[:],
-                self.unused_potet[:],
-            ) = self._calculate_numpy(
-                _pref_flow_flag=self._pref_flow_flag,
-                _snow_free=self._snow_free,
-                _soil2gw_flag=self._soil2gw_flag,
-                cap_infil_tot=self.cap_infil_tot,
-                cap_waterin=self.cap_waterin,
-                compute_gwflow=self._compute_gwflow,
-                compute_interflow=self._compute_interflow,
-                compute_soilmoist=self._compute_soilmoist,
-                compute_szactet=self._compute_szactet,
-                cov_type=self.cov_type,
-                current_time=self.control.current_time,
-                dprst_evap_hru=self.dprst_evap_hru,
-                dprst_flag=self.control.config["dprst_flag"],
-                dprst_seep_hru=self.dprst_seep_hru,
-                dunnian_flow=self.dunnian_flow,
-                fastcoef_lin=self.fastcoef_lin,
-                fastcoef_sq=self.fastcoef_sq,
-                hru_actet=self.hru_actet,
-                hru_frac_perv=self.hru_frac_perv,
-                hru_impervevap=self.hru_impervevap,
-                hru_in_to_cf=self.hru_in_to_cf,
-                hru_intcpevap=self.hru_intcpevap,
-                hru_type=self.hru_type,
-                infil_hru=self.infil_hru,
-                nhru=self.nhru,
-                perv_actet=self.perv_actet,
-                perv_actet_hru=self.perv_actet_hru,
-                potet=self.potet,
-                potet_lower=self.potet_lower,
-                potet_rechr=self.potet_rechr,
-                pref_flow=self.pref_flow,
-                pref_flow_in=self.pref_flow_in,
-                pref_flow_infil=self.pref_flow_infil,
-                pref_flow_max=self.pref_flow_max,
-                pref_flow_stor=self.pref_flow_stor,
-                pref_flow_stor_change=self.pref_flow_stor_change,
-                pref_flow_stor_prev=self.pref_flow_stor_prev,
-                pref_flow_thrsh=self.pref_flow_thrsh,
-                recharge=self.recharge,
-                sat_threshold=self._sat_threshold,
-                slow_flow=self.slow_flow,
-                slow_stor=self.slow_stor,
-                slow_stor_change=self.slow_stor_change,
-                slow_stor_prev=self.slow_stor_prev,
-                slowcoef_lin=self.slowcoef_lin,
-                slowcoef_sq=self.slowcoef_sq,
-                snow_evap=self.snow_evap,
-                snowcov_area=self.snowcov_area,
-                soil2gw_max=self.soil2gw_max,
-                soil_lower=self.soil_lower,
-                soil_lower_change=self.soil_lower_change,
-                soil_lower_change_hru=self.soil_lower_change_hru,
-                soil_lower_max=self.soil_lower_max,
-                soil_lower_prev=self.soil_lower_prev,
-                soil_lower_ratio=self.soil_lower_ratio,
-                soil_moist=self.soil_moist,
-                soil_moist_max=self.soil_moist_max,
-                soil_moist_prev=self.soil_moist_prev,
-                soil_moist_tot=self.soil_moist_tot,
-                soil_rechr=self.soil_rechr,
-                soil_rechr_change=self.soil_rechr_change,
-                soil_rechr_change_hru=self.soil_rechr_change_hru,
-                soil_rechr_max=self.soil_rechr_max,
-                soil_rechr_prev=self.soil_rechr_prev,
-                soil_to_gw=self.soil_to_gw,
-                soil_to_ssr=self.soil_to_ssr,
-                soil_type=self.soil_type,
-                sroff=self.sroff,
-                ssr2gw_exp=self.ssr2gw_exp,
-                ssr2gw_rate=self.ssr2gw_rate,
-                ssr_to_gw=self.ssr_to_gw,
-                ssres_flow=self.ssres_flow,
-                ssres_flow_vol=self.ssres_flow_vol,
-                ssres_in=self.ssres_in,
-                ssres_stor=self.ssres_stor,
-                swale_actet=self.swale_actet,
-                transp_on=self.transp_on,
-                unused_potet=self.unused_potet,
-            )
-
-        else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
-
-        # <
         return
 
     @staticmethod

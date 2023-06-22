@@ -3,7 +3,7 @@ from typing import Tuple
 import networkx as nx
 import numpy as np
 
-from pywatershed.base.storageUnit import StorageUnit
+from pywatershed.base.storage_unit import StorageUnit
 
 from ..base.adapter import adaptable
 from ..base.control import Control

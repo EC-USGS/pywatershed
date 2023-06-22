@@ -5,7 +5,7 @@ from typing import Tuple
 import numpy as np
 
 # would like to not subclass storageUnit but it is much simpler to do so
-from pywatershed.base.storageUnit import StorageUnit
+from pywatershed.base.storage_unit import StorageUnit
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control

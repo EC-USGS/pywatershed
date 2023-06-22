@@ -4,5 +4,5 @@ from .budget import Budget
 from .control import Control
 from .model import Model
 from .parameters import Parameters
-from .storageUnit import StorageUnit
+from .storage_unit import StorageUnit
 from .timeseries import TimeseriesArray

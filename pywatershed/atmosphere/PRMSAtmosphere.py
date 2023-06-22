@@ -2,7 +2,7 @@ import pathlib as pl
 
 import numpy as np
 
-from pywatershed.base.storageUnit import StorageUnit
+from pywatershed.base.storage_unit import StorageUnit
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.adapter import adaptable

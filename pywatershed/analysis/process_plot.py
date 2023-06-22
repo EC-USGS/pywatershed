@@ -11,7 +11,7 @@ from matplotlib.patches import Polygon
 
 from ..base import meta
 from ..base.model import Model
-from ..base.storageUnit import StorageUnit
+from ..base.storage_unit import StorageUnit
 from ..utils.optional_import import import_optional_dependency
 
 

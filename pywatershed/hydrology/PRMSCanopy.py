@@ -64,6 +64,8 @@ class PRMSCanopy(StorageUnit):
         # set hrutype to LAND as this is only type supported in NHM
         self._hru_type = np.array(self.nhru * [LAND])
 
+        self._init_calc_method()
+
         return
 
     @staticmethod
@@ -144,6 +146,116 @@ class PRMSCanopy(StorageUnit):
     def _set_initial_conditions(self):
         return
 
+    def _init_calc_method(self):
+        if self._calc_method.lower() == "numba":
+            import numba as nb
+
+            numba_msg = f"{self.name} jit compiling with numba "
+            nb_parallel = (numba_num_threads is not None) and (
+                numba_num_threads > 1
+            )
+            if nb_parallel:
+                numba_msg += f"and using {numba_num_threads} threads"
+            print(numba_msg, flush=True)
+
+            # JLM: note. I gave up on specifying signatures because it
+            #      appears impossible/undocumented how to specify the type
+            #      of a passed function. The work is not in vain as then
+            #      types will be required for f90. The signatures remain
+            #      here commented for that reason and in case we can get it
+            #      to work in the future.
+
+            # self._intercept_numba = nb.njit(
+            #     nb.types.Tuple(
+            #         (
+            #             nb.float64[:],  # intcp_stor
+            #             nb.float64[:],  # net_precip
+            #         )
+            #     )(
+            #         nb.float64[:],  # precip
+            #         nb.float64[:],  # stor_max
+            #         nb.float64[:],  # cov
+            #         nb.float64[:],  # intcp_stor
+            #         nb.float64[:],  # net_precip
+            #     ),
+            #     fastmath=True,
+            # )(self._intercept)
+            self._intercept = nb.njit(fastmath=True)(self._intercept)
+
+            # self._calculate_numba = nb.njit(
+            #     nb.types.Tuple(
+            #         (
+            #             nb.float64[:],  # intcp_evap
+            #             nb.float64[:],  # intcp_stor
+            #             nb.float64[:],  # net_rain
+            #             nb.float64[:],  # net_snow
+            #             nb.float64[:],  # net_ppt
+            #             nb.float64[:],  # hru_intcpstor
+            #             nb.float64[:],  # hru_intcpevap
+            #             nb.float64[:],  # intcp_changeover
+            #             nb.int32[:],  # intcp_transp_on
+            #         )
+            #     )(
+            #         nb.int32,  # np.int32(self.nhru)
+            #         nb.int64[:],  # cov_type
+            #         nb.float64[:],  # covden_sum
+            #         nb.float64[:],  # covden_win
+            #         nb.float64[:],  # hru_intcpstor
+            #         nb.float64[:],  # hru_intcpevap
+            #         nb.float64[:],  # hru_ppt
+            #         nb.float64[:],  # hru_rain
+            #         nb.float64[:],  # hru_snow
+            #         nb.float64[:],  # intcp_changeover
+            #         nb.float64[:],  # intcp_evap
+            #         nb.int32[:],  # intcp_form
+            #         nb.float64[:],  # intcp_stor
+            #         nb.int32[:],  # intcp_transp_on
+            #         nb.float64[:],  # net_ppt
+            #         nb.float64[:],  # net_rain
+            #         nb.float64[:],  # net_snow
+            #         nb.float64[:],  # self.pkwater_ante
+            #         nb.float64[:],  # potet
+            #         nb.float64[:],  # potet_sublim
+            #         nb.float64[:],  # snow_intcp
+            #         nb.float64[:],  # srain_intcp
+            #         nb.float64[:],  # transp_on
+            #         nb.float64[:],  # wrain_intcp
+            #         nb.float64,  # np.float64(time_length),
+            #         nb.int64[:],  # self._hru_type
+            #         nb.float64,  # NEARZERO
+            #         nb.float64,  # DNEARZERO,
+            #         nb.int32,  # BARESOIL,
+            #         nb.int32,  # GRASSES,
+            #         nb.int32,  # LAND,
+            #         nb.int32,  # LAKE,
+            #         nb.int32,  # RAIN,
+            #         nb.int32,  # SNOW,
+            #         nb.int32,  # OFF,
+            #         nb.int32,  # ACTIVE,
+            #         nb.typeof(self._intercept_numba),  # function.
+            #     ),
+            #     fastmath=True,
+            # )(self._calculate_procedural)
+            self._calculate_canopy = nb.njit(
+                fastmath=True, parallel=nb_parallel
+            )(self._calculate_numpy)
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+            self._calculate_canopy = self._calculate_numpy
+
+        elif self._calc_method.lower() == "fortran":
+            pass
+            # fortran has a different call signature in the last agument
+            # because the intercept function is not passed.
+            # so it is handled with an if statement at call time.
+            # self._calculate_gw = _calculate_fortran
+
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
+        return
+
     def _advance_variables(self):
         """Advance canopy
         Returns:
@@ -163,101 +275,7 @@ class PRMSCanopy(StorageUnit):
             None
 
         """
-        if self._calc_method.lower() == "numba":
-            import numba as nb
-
-            if not hasattr(self, "_calculate_numba"):
-                numba_msg = f"{self.name} jit compiling with numba "
-                nb_parallel = (numba_num_threads is not None) and (
-                    numba_num_threads > 1
-                )
-                if nb_parallel:
-                    numba_msg += f"and using {numba_num_threads} threads"
-                print(numba_msg, flush=True)
-
-                # JLM: note. I gave up on specifying signatures because it
-                #      appears impossible/undocumented how to specify the type
-                #      of a passed function. The work is not in vain as then
-                #      types will be required for f90. The signatures remain
-                #      here commented for that reason and in case we can get it
-                #      to work in the future.
-
-                # self._intercept_numba = nb.njit(
-                #     nb.types.Tuple(
-                #         (
-                #             nb.float64[:],  # intcp_stor
-                #             nb.float64[:],  # net_precip
-                #         )
-                #     )(
-                #         nb.float64[:],  # precip
-                #         nb.float64[:],  # stor_max
-                #         nb.float64[:],  # cov
-                #         nb.float64[:],  # intcp_stor
-                #         nb.float64[:],  # net_precip
-                #     ),
-                #     fastmath=True,
-                # )(self._intercept)
-                self._intercept_numba = nb.njit(fastmath=True)(self._intercept)
-
-                # self._calculate_numba = nb.njit(
-                #     nb.types.Tuple(
-                #         (
-                #             nb.float64[:],  # intcp_evap
-                #             nb.float64[:],  # intcp_stor
-                #             nb.float64[:],  # net_rain
-                #             nb.float64[:],  # net_snow
-                #             nb.float64[:],  # net_ppt
-                #             nb.float64[:],  # hru_intcpstor
-                #             nb.float64[:],  # hru_intcpevap
-                #             nb.float64[:],  # intcp_changeover
-                #             nb.int32[:],  # intcp_transp_on
-                #         )
-                #     )(
-                #         nb.int32,  # np.int32(self.nhru)
-                #         nb.int64[:],  # cov_type
-                #         nb.float64[:],  # covden_sum
-                #         nb.float64[:],  # covden_win
-                #         nb.float64[:],  # hru_intcpstor
-                #         nb.float64[:],  # hru_intcpevap
-                #         nb.float64[:],  # hru_ppt
-                #         nb.float64[:],  # hru_rain
-                #         nb.float64[:],  # hru_snow
-                #         nb.float64[:],  # intcp_changeover
-                #         nb.float64[:],  # intcp_evap
-                #         nb.int32[:],  # intcp_form
-                #         nb.float64[:],  # intcp_stor
-                #         nb.int32[:],  # intcp_transp_on
-                #         nb.float64[:],  # net_ppt
-                #         nb.float64[:],  # net_rain
-                #         nb.float64[:],  # net_snow
-                #         nb.float64[:],  # self.pkwater_ante
-                #         nb.float64[:],  # potet
-                #         nb.float64[:],  # potet_sublim
-                #         nb.float64[:],  # snow_intcp
-                #         nb.float64[:],  # srain_intcp
-                #         nb.float64[:],  # transp_on
-                #         nb.float64[:],  # wrain_intcp
-                #         nb.float64,  # np.float64(time_length),
-                #         nb.int64[:],  # self._hru_type
-                #         nb.float64,  # NEARZERO
-                #         nb.float64,  # DNEARZERO,
-                #         nb.int32,  # BARESOIL,
-                #         nb.int32,  # GRASSES,
-                #         nb.int32,  # LAND,
-                #         nb.int32,  # LAKE,
-                #         nb.int32,  # RAIN,
-                #         nb.int32,  # SNOW,
-                #         nb.int32,  # OFF,
-                #         nb.int32,  # ACTIVE,
-                #         nb.typeof(self._intercept_numba),  # function.
-                #     ),
-                #     fastmath=True,
-                # )(self._calculate_procedural)
-                self._calculate_numba = nb.njit(
-                    fastmath=True, parallel=nb_parallel
-                )(self._calculate_procedural)
-
-            # <
+        if self._calc_method.lower() != "fortran":
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -268,58 +286,7 @@ class PRMSCanopy(StorageUnit):
                 self.hru_intcpevap[:],
                 self.intcp_changeover[:],
                 self.intcp_transp_on[:],
-            ) = self._calculate_numba(
-                nhru=np.int32(self.nhru),
-                cov_type=self.cov_type,
-                covden_sum=self.covden_sum,
-                covden_win=self.covden_win,
-                hru_intcpstor=self.hru_intcpstor,
-                hru_intcpevap=self.hru_intcpevap,
-                hru_ppt=self.hru_ppt,
-                hru_rain=self.hru_rain,
-                hru_snow=self.hru_snow,
-                intcp_changeover=self.intcp_changeover,
-                intcp_evap=self.intcp_evap,
-                intcp_form=self.intcp_form,
-                intcp_stor=self.intcp_stor,
-                intcp_transp_on=self.intcp_transp_on,
-                net_ppt=self.net_ppt,
-                net_rain=self.net_rain,
-                net_snow=self.net_snow,
-                pkwater_ante=self.pkwater_ante,
-                potet=self.potet,
-                potet_sublim=self.potet_sublim,
-                snow_intcp=self.snow_intcp,
-                srain_intcp=self.srain_intcp,
-                transp_on=self.transp_on,
-                wrain_intcp=self.wrain_intcp,
-                time_length=time_length,
-                hru_type=self._hru_type,
-                NEARZERO=np.float64(NEARZERO),
-                DNEARZERO=np.float64(DNEARZERO),
-                BARESOIL=np.int32(BARESOIL),
-                GRASSES=np.int32(GRASSES),
-                LAND=np.int32(LAND),
-                LAKE=np.int32(LAKE),
-                RAIN=np.int32(RAIN),
-                SNOW=np.int32(SNOW),
-                OFF=np.int32(OFF),
-                ACTIVE=np.int32(ACTIVE),
-                intercept=self._intercept_numba,
-            )
-
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            (
-                self.intcp_evap[:],
-                self.intcp_stor[:],
-                self.net_rain[:],
-                self.net_snow[:],
-                self.net_ppt[:],
-                self.hru_intcpstor[:],
-                self.hru_intcpevap[:],
-                self.intcp_changeover[:],
-                self.intcp_transp_on[:],
-            ) = self._calculate_procedural(
+            ) = self._calculate_canopy(
                 nhru=np.int32(self.nhru),
                 cov_type=self.cov_type,
                 covden_sum=self.covden_sum,
@@ -359,7 +326,7 @@ class PRMSCanopy(StorageUnit):
                 intercept=self._intercept,
             )
 
-        elif self._calc_method.lower() == "fortran":
+        else:
             (
                 self.intcp_evap[:],
                 self.intcp_stor[:],
@@ -408,10 +375,6 @@ class PRMSCanopy(StorageUnit):
                 np.int32(ACTIVE),
             )
 
-        else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
-
         # <
         self.hru_intcpstor_change[:] = (
             self.hru_intcpstor - self.hru_intcpstor_old
@@ -420,7 +383,7 @@ class PRMSCanopy(StorageUnit):
         return
 
     @staticmethod
-    def _calculate_procedural(
+    def _calculate_numpy(
         nhru,
         cov_type,
         covden_sum,

@@ -1,7 +1,7 @@
 import numpy as np
 from numba import prange
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -21,7 +21,7 @@ ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
 
 
-class PRMSSoilzone(StorageUnit):
+class PRMSSoilzone(Process):
     """PRMS soil zone.
 
     Args:

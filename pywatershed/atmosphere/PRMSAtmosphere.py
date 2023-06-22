@@ -2,7 +2,7 @@ import pathlib as pl
 
 import numpy as np
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.adapter import adaptable
@@ -23,7 +23,7 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
     return np.transpose(np.tile(arr, (n_space, 1)))
 
 
-class PRMSAtmosphere(StorageUnit):
+class PRMSAtmosphere(Process):
     """PRMS atmospheric boundary layer model.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation based on

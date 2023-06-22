@@ -9,7 +9,7 @@ from .base.budget import Budget
 from .base.control import Control
 from .base.model import Model
 from .base.parameters import Parameters
-from .base.storage_unit import StorageUnit
+from .base.process import Process
 from .base.timeseries import TimeseriesArray
 from .hydrology.PRMSCanopy import PRMSCanopy
 from .hydrology.PRMSChannel import PRMSChannel

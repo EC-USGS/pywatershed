@@ -3,7 +3,7 @@ from numba import prange
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..base.storage_unit import StorageUnit
+from ..base.process import Process
 from ..constants import CovType, HruType, numba_num_threads, zero
 from ..parameters import Parameters
 
@@ -28,7 +28,7 @@ OFF = 0
 ACTIVE = 1
 
 
-class PRMSCanopy(StorageUnit):
+class PRMSCanopy(Process):
     """PRMS canopy."""
 
     def __init__(

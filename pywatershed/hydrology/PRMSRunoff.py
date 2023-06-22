@@ -1,7 +1,7 @@
 import numpy as np
 from numba import prange
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -24,7 +24,7 @@ LAND = HruType.LAND.value
 LAKE = HruType.LAKE.value
 
 
-class PRMSRunoff(StorageUnit):
+class PRMSRunoff(Process):
     """PRMS surface runoff."""
 
     def __init__(

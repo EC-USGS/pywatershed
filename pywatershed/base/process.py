@@ -16,10 +16,10 @@ from .accessor import Accessor
 from .control import Control
 
 
-class StorageUnit(Accessor):
-    """StorageUnit base class
+class Process(Accessor):
+    """Process base class
 
-    The StorageUnit is a base class for conserving mass and energy.
+    Process is a base class for physical processes.
 
     It has budgets that can optionally be established for mass an energy and
     these can be enforced or simply diagnosed with the model run.
@@ -32,8 +32,8 @@ class StorageUnit(Accessor):
 
         inputs/get_inputs():
             List the names of variables required from external sources.
-            Still working on conventions if these are to be modified but
-            the storageUnit. For an input to be successfully inicluded,
+            Still working on conventions if these are to be modified.
+            For an input to be successfully inicluded,
             that variable must be defined in the metadata
             (pywatershed/static/metadata/variables.yaml).
             Efforts should be made to not use diagnostic variables as input
@@ -100,7 +100,7 @@ class StorageUnit(Accessor):
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
-        self.name = "StorageUnit"
+        self.name = "Process"
         self.control = control
 
         missing_params = set(self.parameters).difference(
@@ -152,7 +152,7 @@ class StorageUnit(Accessor):
         return
 
     def finalize(self) -> None:
-        """Finalize storageUnit
+        """Finalize Process
 
         Finalizes the object, including output methods.
 
@@ -381,7 +381,7 @@ class StorageUnit(Accessor):
 
         # Using a pointer between boxes means that the same pointer has to
         # be used for the budget, so there's no way to have a preestablished
-        # pointer between storageUnit and its budget. So this stuff...
+        # pointer between Process and its budget. So this stuff...
         if self.budget is not None:
             for comp in self.budget.components:
                 if input_variable_name in self.budget[comp].keys():
@@ -439,7 +439,7 @@ class StorageUnit(Accessor):
         raise Exception("This must be overridden")
 
     def calculate(self, time_length: float, **kwargs) -> None:
-        """Calculate storageUnit terms for a time step
+        """Calculate Process terms for a time step
 
         Args:
             simulation_time: current simulation time

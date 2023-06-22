@@ -1,6 +1,6 @@
 import numpy as np
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -8,7 +8,7 @@ from ..constants import nan, one, zero
 from ..parameters import Parameters
 
 
-class Starfit(StorageUnit):
+class Starfit(Process):
     """starfit: Storage Targets And Release Function Inference Tool
 
     Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,

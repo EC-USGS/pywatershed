@@ -3,7 +3,7 @@ from typing import Tuple
 import networkx as nx
 import numpy as np
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -18,7 +18,7 @@ except ImportError:
     has_prmschannel_f = False
 
 
-class PRMSChannel(StorageUnit):
+class PRMSChannel(Process):
     """PRMS channel flow (muskingum_mann).
 
     The muskingum module was originally developed for the Precipitation Runoff

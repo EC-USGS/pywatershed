@@ -1,6 +1,6 @@
 import numpy as np
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -15,7 +15,7 @@ except ImportError:
     has_prmsgroundwater_f = False
 
 
-class PRMSGroundwater(StorageUnit):
+class PRMSGroundwater(Process):
     """PRMS groundwater reservoir."""
 
     def __init__(

@@ -1,7 +1,7 @@
 import numpy as np
 from numba import prange
 
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -68,7 +68,7 @@ tcind = 0
 dbgind = 434
 
 
-class PRMSSnow(StorageUnit):
+class PRMSSnow(Process):
     """PRMS snow pack."""
 
     def __init__(

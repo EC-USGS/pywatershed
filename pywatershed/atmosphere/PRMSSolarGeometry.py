@@ -4,8 +4,7 @@ from typing import Tuple
 
 import numpy as np
 
-# would like to not subclass storageUnit but it is much simpler to do so
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
@@ -36,7 +35,7 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 #    return np.transpose(np.tile(arr, (n_hru, 1)))
 
 
-class PRMSSolarGeometry(StorageUnit):
+class PRMSSolarGeometry(Process):
     """PRMS solar geometry."""
 
     def __init__(
@@ -56,7 +55,7 @@ class PRMSSolarGeometry(StorageUnit):
         self._set_budget(budget_type)
         self.netcdf_output_dir = netcdf_output_dir
 
-        # self._time is needed by storageUnit for timeseries arrays
+        # self._time is needed by Process for timeseries arrays
         # TODO: this is redundant because the parameter doy is set
         #       on load of prms file. Could pass the name to use for
         #       self._time to super or come up with some other work around.

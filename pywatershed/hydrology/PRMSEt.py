@@ -1,7 +1,7 @@
 import numpy as np
 
 from pywatershed.base.budget import Budget
-from pywatershed.base.storage_unit import StorageUnit
+from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -17,7 +17,7 @@ from ..parameters import Parameters
 #       end of each time calculation.
 
 
-class PRMSEt(StorageUnit):
+class PRMSEt(Process):
     def __init__(
         self,
         control: Control,

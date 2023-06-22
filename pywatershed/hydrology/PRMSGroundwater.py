@@ -44,12 +44,7 @@ class PRMSGroundwater(StorageUnit):
 
         self._set_inputs(locals())
         self._set_budget(budget_type)
-
-        if calc_method == "numba":
-            # read-only arrays dont have numba signatures
-            self._hru_area = self.hru_area.copy()
-            self._gwflow_coef = self.gwflow_coef.copy()
-            self._gwsink_coef = self.gwsink_coef.copy()
+        self._init_calc_method()
 
         return
 
@@ -132,6 +127,46 @@ class PRMSGroundwater(StorageUnit):
         self.gwres_stor_old[:] = self.gwstor_init.copy()
         return
 
+    def _init_calc_method(self):
+        if self._calc_method.lower() == "numba":
+            import numba as nb
+
+            numba_msg = f"{self.name} jit compiling with numba "
+            nb_parallel = (numba_num_threads is not None) and (
+                numba_num_threads > 1
+            )
+            if nb_parallel:
+                numba_msg += f"and using {numba_num_threads} threads"
+            print(numba_msg, flush=True)
+
+            self._calculate_gw = nb.njit(
+                nb.types.UniTuple(nb.float64[:], 5)(
+                    nb.types.Array(nb.types.float64, 1, "C", readonly=True),
+                    nb.float64[:],
+                    nb.float64[:],
+                    nb.float64[:],
+                    nb.float64[:],
+                    nb.types.Array(nb.types.float64, 1, "C", readonly=True),
+                    nb.types.Array(nb.types.float64, 1, "C", readonly=True),
+                    nb.float64[:],
+                    nb.types.Array(nb.types.float64, 1, "C", readonly=True),
+                ),
+                fastmath=True,
+                parallel=False,
+            )(self._calculate_numpy)
+
+        elif self._calc_method.lower() in ["none", "numpy"]:
+            self._calculate_gw = self._calculate_numpy
+
+        elif self._calc_method.lower() == "fortran":
+            self._calculate_gw = _calculate_fortran
+
+        else:
+            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
+            raise ValueError(msg)
+
+        return
+
     def _advance_variables(self) -> None:
         """Advance the groundwater reservoir variables
         Returns:
@@ -150,97 +185,24 @@ class PRMSGroundwater(StorageUnit):
             None
 
         """
-
         self._simulation_time = simulation_time
-
-        if self._calc_method.lower() == "numba":
-            import numba as nb
-
-            if not hasattr(self, "_calculate_numba"):
-                numba_msg = f"{self.name} jit compiling with numba "
-                nb_parallel = (numba_num_threads is not None) and (
-                    numba_num_threads > 1
-                )
-                if nb_parallel:
-                    numba_msg += f"and using {numba_num_threads} threads"
-                print(numba_msg, flush=True)
-
-                self._calculate_numba = nb.njit(
-                    nb.types.UniTuple(nb.float64[:], 5)(
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.float64[:],
-                        nb.types.Array(nb.types.float64, 1, "C", readonly=True)
-                        # nb.float64[:],
-                    ),
-                    parallel=False,
-                )(self._calculate_numpy)
-
-            (
-                self.gwres_stor[:],
-                self.gwres_flow[:],
-                self.gwres_sink[:],
-                self.gwres_stor_change[:],
-                self.gwres_flow_vol[:],
-            ) = self._calculate_numba(
-                self._hru_area,
-                self.soil_to_gw,
-                self.ssr_to_gw,
-                self.dprst_seep_hru,
-                self.gwres_stor,
-                self._gwflow_coef,
-                self._gwsink_coef,
-                self.gwres_stor_old,
-                self.hru_in_to_cf,
-            )
-
-        elif self._calc_method.lower() == "fortran":
-            (
-                self.gwres_stor[:],
-                self.gwres_flow[:],
-                self.gwres_sink[:],
-                self.gwres_stor_change[:],
-                self.gwres_flow_vol[:],
-            ) = _calculate_fortran(
-                self.hru_area,
-                self.soil_to_gw,
-                self.ssr_to_gw,
-                self.dprst_seep_hru,
-                self.gwres_stor,
-                self.gwflow_coef,
-                self.gwsink_coef,
-                self.gwres_stor_old,
-                self.hru_in_to_cf,
-            )
-
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            (
-                self.gwres_stor[:],
-                self.gwres_flow[:],
-                self.gwres_sink[:],
-                self.gwres_stor_change[:],
-                self.gwres_flow_vol[:],
-            ) = self._calculate_numpy(
-                self.hru_area,
-                self.soil_to_gw,
-                self.ssr_to_gw,
-                self.dprst_seep_hru,
-                self.gwres_stor,
-                self.gwflow_coef,
-                self.gwsink_coef,
-                self.gwres_stor_old,
-                self.hru_in_to_cf,
-            )
-
-        else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
-
+        (
+            self.gwres_stor[:],
+            self.gwres_flow[:],
+            self.gwres_sink[:],
+            self.gwres_stor_change[:],
+            self.gwres_flow_vol[:],
+        ) = self._calculate_gw(
+            self.hru_area,
+            self.soil_to_gw,
+            self.ssr_to_gw,
+            self.dprst_seep_hru,
+            self.gwres_stor,
+            self.gwflow_coef,
+            self.gwsink_coef,
+            self.gwres_stor_old,
+            self.hru_in_to_cf,
+        )
         return
 
     @staticmethod

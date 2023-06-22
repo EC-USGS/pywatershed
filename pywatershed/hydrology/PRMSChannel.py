@@ -344,27 +344,26 @@ class PRMSChannel(StorageUnit):
         if self._calc_method.lower() == "numba":
             import numba as nb
 
-            if not hasattr(self, "_muskingum_mann_numba"):
-                numba_msg = f"{self.name} jit compiling with numba "
-                # this method can not be parallelized (? true?)
-                print(numba_msg, flush=True)
+            numba_msg = f"{self.name} jit compiling with numba "
+            # this method can not be parallelized (? true?)
+            print(numba_msg, flush=True)
 
-                self._muskingum_mann = nb.njit(
-                    nb.types.UniTuple(nb.float64[:], 7)(
-                        nb.int64[:],  # _segment_order
-                        nb.int64[:],  # _tosegment
-                        nb.float64[:],  # seg_lateral_inflow
-                        nb.float64[:],  # _seg_inflow0
-                        nb.float64[:],  # _outflow_ts
-                        nb.int64[:],  # _tsi
-                        nb.float64[:],  # _ts
-                        nb.float64[:],  # _c0
-                        nb.float64[:],  # _c1
-                        nb.float64[:],  # _c2
-                    ),
-                    fastmath=True,
-                    parallel=False,
-                )(self._muskingum_mann_numpy)
+            self._muskingum_mann = nb.njit(
+                nb.types.UniTuple(nb.float64[:], 7)(
+                    nb.int64[:],  # _segment_order
+                    nb.int64[:],  # _tosegment
+                    nb.float64[:],  # seg_lateral_inflow
+                    nb.float64[:],  # _seg_inflow0
+                    nb.float64[:],  # _outflow_ts
+                    nb.int64[:],  # _tsi
+                    nb.float64[:],  # _ts
+                    nb.float64[:],  # _c0
+                    nb.float64[:],  # _c1
+                    nb.float64[:],  # _c2
+                ),
+                fastmath=True,
+                parallel=False,
+            )(self._muskingum_mann_numpy)
 
         elif self._calc_method.lower() in ["none", "numpy"]:
             self._muskingum_mann = self._muskingum_mann_numpy

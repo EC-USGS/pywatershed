@@ -93,7 +93,6 @@ def test_compare_prms(domain, control, discretization, parameters, tmp_path):
         discretization=discretization,
         parameters=parameters,
         **input_variables,
-        budget_type=None,
         netcdf_output_dir=tmp_path,
     )
 
@@ -102,7 +101,6 @@ def test_compare_prms(domain, control, discretization, parameters, tmp_path):
         control.advance()
         atm.advance()
         atm.calculate(1.0)
-        # print(atm.budget)
 
         # compare along the way
         for key, val in ans.items():

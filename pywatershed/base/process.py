@@ -1,3 +1,4 @@
+import inspect
 import os
 import pathlib as pl
 from typing import Literal
@@ -72,12 +73,6 @@ class Process(Accessor):
 
         Args:
           control: a Control object
-          verbose: boolean controling the amount of information printed
-          load_n_time_batches: integer number of times the input data should
-            be loaded from file. Deafult is 1 or just once. If input data are
-            large in space, time, or total number of variables then increasing
-            this number can help reduce memory usage at the expense of reduced
-            performance due to more frequent IO.
 
     """
 
@@ -86,14 +81,13 @@ class Process(Accessor):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        verbose: bool,
-        load_n_time_batches: int = 1,
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
         self.name = "Process"
         self.control = control
 
+        # params from dis and params: methodize this
         missing_params = set(self.parameters).difference(
             set(parameters.variables.keys())
         )
@@ -101,9 +95,6 @@ class Process(Accessor):
             self.params = type(parameters).merge(parameters, discretization)
         else:
             self.params = parameters.subset(self.get_parameters())
-
-        self.verbose = verbose
-        self._load_n_time_batches = load_n_time_batches
 
         # netcdf output variables
         self._do_output_netcdf = False
@@ -134,7 +125,7 @@ class Process(Accessor):
 
         """
         if self._do_output_netcdf:
-            if self.verbose:
+            if self._verbose:
                 print(f"writing output for: {self.name}")
             self._output_netcdf()
         return
@@ -148,7 +139,7 @@ class Process(Accessor):
             None
 
         """
-        if self.verbose:
+        if self._verbose:
             print(f"finalizing: {self.name}")
 
         self._finalize_netcdf()
@@ -266,7 +257,7 @@ class Process(Accessor):
         """
         init_vals = self.get_init_values()
         if var_name not in init_vals.keys():
-            if self.verbose:
+            if self._verbose:
                 warn(
                     f"{var_name} not initialized (no initial value specified)"
                 )
@@ -321,14 +312,37 @@ class Process(Accessor):
                 control=args["control"],
                 variable_dim_sizes=ii_dim_sizes,
                 variable_type=ii_type,
-                load_n_time_batches=self._load_n_time_batches,
             )
             if self._input_variables_dict[ii]:
                 self[ii] = self._input_variables_dict[ii].current
 
         return
 
+    def _set_options(self, init_locals):
+        """Set options options on self if supplied on init, else take
+        from control"""
+        # some self and Process introspection reveals the option names
+        init_arg_names = set(
+            inspect.signature(self.__init__).parameters.keys()
+        )
+        process_init_args = set(
+            inspect.signature(Process.__init__).parameters.keys()
+        )
+        inputs_args = self.inputs
+        non_option_args = process_init_args.union(inputs_args)
+        option_names = init_arg_names.difference(non_option_args)
+
+        for opt in option_names:
+            if opt in init_locals.keys() and init_locals[opt] is not None:
+                setattr(self, f"_{opt}", init_locals[opt])
+            elif opt in self.control.config.keys():
+                setattr(self, f"_{opt}", self.control.config[opt])
+            else:
+                setattr(self, f"_{opt}", None)
+        return
+
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
+        # Todo: document
         self._input_variables_dict[input_variable_name] = adapter
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
@@ -346,7 +360,7 @@ class Process(Accessor):
         """
 
         if self._itime_step >= self.control.itime_step:
-            if self.verbose:
+            if self._verbose:
                 msg = (
                     f"{self.name} did not advance because "
                     f"it is not behind control time"
@@ -356,7 +370,7 @@ class Process(Accessor):
                 # is a warning sufficient? an error
             return
 
-        if self.verbose:
+        if self._verbose:
             print(f"advancing: {self.name}")
 
         self._advance_variables()
@@ -376,7 +390,7 @@ class Process(Accessor):
         Returns:
             None
         """
-        if self.verbose:
+        if self._verbose:
             print(f"calculating: {self.name}")
 
         # self._calculate must be implemented by the subclass
@@ -442,7 +456,7 @@ class Process(Accessor):
             None
 
         """
-        if self.verbose:
+        if self._verbose:
             print(f"initializing netcdf output for: {self.output_dir}")
 
         self._do_output_netcdf = True

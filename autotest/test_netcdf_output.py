@@ -27,13 +27,13 @@ def params(domain):
 def control(domain):
     control = Control.load(domain["control_file"])
     control.edit_n_time_steps(n_time_steps)
+    control.config["budget_type"] = "error"
     return control
 
 
 # Things to parameterize
 # optional variables to processes
 # optional variables to budgets
-budget_type = "error"  # vary this? shouldnt matter
 
 check_vars = {
     "PRMSCanopy": [
@@ -86,7 +86,6 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
         discretization_dict=None,
         parameters=params,
         input_dir=input_dir,
-        budget_type=budget_type,
     )
 
     check_dict = {proc: {} for proc in check_vars.keys()}
@@ -188,7 +187,6 @@ def test_separate_together(domain, control, params, tmp_path, separate):
         discretization_dict=None,
         parameters=params,
         input_dir=input_dir,
-        budget_type=budget_type,
     )
 
     model.initialize_netcdf(

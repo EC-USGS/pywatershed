@@ -77,20 +77,9 @@ class Model:
         control: Control object.
 
         input_dir: A directory to search for input files.
-        budget_type: None, "warn", or "error".
-        verbosity: Boolean.
-        calc_method: Choice of available computational backend (where
-          available): None and "numpy" are default, "numba" gives numba (env
-          variables can control its behavior), and "fortran" uses compiled
-          fortran if available.
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
-        load_n_time_batches: integer number of times the input data should
-           be loaded from file. Deafult is 1 or just once. If input data are
-           large in space, time, or total number of variables then increasing
-           this number can help reduce memory usage at the expense of reduced
-           performance due to more frequent IO.
 
     """
 
@@ -100,12 +89,8 @@ class Model:
         control: Control = None,
         discretization_dict: dict[Parameters] = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
-        input_dir: str = None,
-        budget_type: str = None,
-        calc_method: str = None,
-        verbosity: bool = None,
-        load_n_time_batches: int = None,
         find_input_files: bool = True,
+        input_dir: Union[str, pl.Path] = None,
     ):
         self.control = control
         self.discretization_dict = discretization_dict
@@ -151,25 +136,7 @@ class Model:
         self._categorize_model_dict()
         self._validate_model_dict()
 
-        # why set these on model and not just leave in config?
-        #   -> A: to allow overriding the control when calling Model?
-        # but then how passing, why not edit the config?
-        #  -> that's bad style to edit the config.
-        #  Really just doing this to maintain these attrs on Model, maybe
-        #     drop and just put these on control as kwargs with defaults.
-        # sort out run-time optional inputs
-        config_attrs = [
-            "input_dir",
-            "budget_type",
-            "calc_method",
-            "verbosity",
-            "load_n_time_batches",
-        ]
-        for att in config_attrs:
-            if locals()[att] is None and att in self.control.config.keys():
-                setattr(self, att, self.control.config[att])
-            else:
-                setattr(self, att, locals()[att])
+        self._set_input_dir(input_dir)
 
         self._solve_inputs()
         self._init_procs()
@@ -301,16 +268,8 @@ class Model:
                 "discretization": dis,
                 "parameters": proc_specs["parameters"],
                 **process_inputs,
-                "load_n_time_batches": self.load_n_time_batches,
             }
 
-            proc_class_name = self._proc_dict[proc_name].__name__
-            if proc_class_name not in ["PRMSSolarGeometry"]:
-                args["budget_type"] = self.budget_type
-            if proc_class_name not in ["PRMSSolarGeometry", "PRMSAtmosphere"]:
-                args["calc_method"] = self.calc_method
-
-            # init the process classes with the args
             self.processes[proc_name] = self._proc_dict[proc_name](**args)
 
         # <
@@ -332,21 +291,46 @@ class Model:
                         adapter_factory(
                             self.processes[frm[0]][input],
                             control=self.control,
-                            load_n_time_batches=self.load_n_time_batches,
                         ),  # drop list above
                     )
         #   <   <   <
         return
 
+    def _set_input_dir(self, input_dir_in):
+        if "input_dir" in self.control.config.keys():
+            control_input_dir = pl.Path(
+                self.control.config["input_dir"]
+            ).resolve()
+        else:
+            control_input_dir = None
+
+        if input_dir_in is not None:
+            input_dir_in = pl.Path(input_dir_in).resolve()
+        else:
+            input_dir_in = None
+
+        if control_input_dir is None and input_dir_in is None:
+            msg = "input_dir specified neither in control nor to Model"
+            raise ValueError(msg)
+        elif control_input_dir is not None and input_dir_in is not None:
+            assert control_input_dir == input_dir_in
+            input_dir = input_dir_in
+        elif control_input_dir is None:
+            input_dir = input_dir_in
+        else:
+            input_dir = control_input_dir
+
+        self._input_dir = input_dir
+        return
+
     def _find_input_files(self):
         file_inputs = {}
         for name in self._file_input_names:
-            nc_path = self.input_dir / f"{name}.nc"
+            nc_path = self._input_dir / f"{name}.nc"
             file_inputs[name] = adapter_factory(
                 nc_path,
                 name,
                 control=self.control,
-                load_n_time_batches=self.load_n_time_batches,
             )
         for process in self.process_order:
             for input, frm in self._inputs_from[process].items():

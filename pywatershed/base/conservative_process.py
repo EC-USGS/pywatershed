@@ -46,8 +46,6 @@ class ConservativeProcess(Process):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        verbose: bool,
-        load_n_time_batches: int = 1,
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
@@ -55,8 +53,6 @@ class ConservativeProcess(Process):
             control=control,
             discretization=discretization,
             parameters=parameters,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
             metadata_patches=metadata_patches,
             metadata_patch_conflicts=metadata_patch_conflicts,
         )
@@ -130,7 +126,7 @@ class ConservativeProcess(Process):
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
         super().set_input_to_adapter(
-            self, input_variable_name=input_variable_name, adapter=adapter
+            input_variable_name=input_variable_name, adapter=adapter
         )
         # Notes from the super()
         # can NOT use [:] on the LHS as we are relying on pointers between
@@ -233,7 +229,7 @@ class ConservativeProcess(Process):
         """
         super()._finalize_netcdf()
 
-        if self._do_output_netcdf:
+        if self.budget is not None and self._do_output_netcdf:
             self.budget._finalize_netcdf()
 
         return

@@ -99,15 +99,13 @@ class PRMSSnow(ConservativeProcess):
             control=control,
             discretization=discretization,
             parameters=parameters,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
         )
         self.name = "PRMSSnow"
 
-        self._calc_method = str(calc_method)
-        self._budget_type = budget_type
-
         self._set_inputs(locals())
+        self._set_options(locals())
+        self._calc_method = str(calc_method)
+
         self._set_budget()
         self._init_calc_method()
 
@@ -584,7 +582,7 @@ class PRMSSnow(ConservativeProcess):
             tminc=self.tminc,
             transp_on=self.transp_on,
             tstorm_mo=self.tstorm_mo,
-            verbose=self.verbose,
+            verbose=self._verbose,
         )
 
         return

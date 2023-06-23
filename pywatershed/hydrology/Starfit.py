@@ -1,6 +1,6 @@
 import numpy as np
 
-from pywatershed.base.process import Process
+from pywatershed.base.conservative_process import ConservativeProcess
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -8,7 +8,7 @@ from ..constants import nan, one, zero
 from ..parameters import Parameters
 
 
-class Starfit(Process):
+class Starfit(ConservativeProcess):
     """starfit: Storage Targets And Release Function Inference Tool
 
     Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,
@@ -41,14 +41,14 @@ class Starfit(Process):
             control=control,
             discretization=discretization,
             parameters=parameters,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
         )
         self.name = "Starfit"
 
         self._calc_method = str(calc_method)
 
         self._set_inputs(locals())
+        self._set_options(locals())
+
         self._set_budget(budget_type)
         return
 

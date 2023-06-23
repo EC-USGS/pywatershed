@@ -36,11 +36,11 @@ class PRMSEt(Process):
             control=control,
             discretization=discretization,
             parameters=parameters,
-            verbose=verbose,
         )
         self.name = "PRMSEt"
 
         self._set_inputs(locals())
+        self._set_options(locals())
 
         # Cant set the default budget for ET
         # self.set_budget(budget_type)

@@ -51,8 +51,6 @@ class PRMSSolarGeometry(Process):
         netcdf_separate_files: bool = True,
         netcdf_output_vars: list = None,
     ):
-        budget_type = None
-        self._set_budget(budget_type)
         self.netcdf_output_dir = netcdf_output_dir
 
         # self._time is needed by Process for timeseries arrays
@@ -65,10 +63,9 @@ class PRMSSolarGeometry(Process):
             control=control,
             discretization=discretization,
             parameters=parameters,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
         )
         self._set_inputs(locals())
+        self._set_options(locals())
         self.name = "PRMSSolarGeometry"
 
         if from_prms_file:
@@ -502,7 +499,7 @@ class PRMSSolarGeometry(Process):
 
     def output(self):
         if self._output_netcdf:
-            if self.verbose:
+            if self._verbose:
                 print(f"writing FULL timeseries output for: {self.name}")
             self._write_netcdf_timeseries()
         return

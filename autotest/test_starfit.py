@@ -42,6 +42,7 @@ def test_regress(tmp_path):
         np.datetime64("2019-09-30 00:00:00"),
         np.timedelta64(24, "h"),
     )
+    control.config["budget_type"] = "warn"
 
     # # load csv files into dataframes
     # output_dir = domain["prms_output_dir"]
@@ -55,7 +56,6 @@ def test_regress(tmp_path):
         discretization=None,
         parameters=params,
         **input_variables,
-        budget_type="warn",
     )
 
     sf.initialize_netcdf(tmp_path)

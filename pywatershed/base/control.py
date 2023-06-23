@@ -70,6 +70,8 @@ class Control(Accessor):
         self._previous_time = None
         self._itime_step = -1
 
+        if config is None:
+            config = {}
         self.config = config
         self.meta = meta
         # This will have the time dimension name
@@ -266,10 +268,11 @@ class Control(Accessor):
 
         paths_to_convert = ["input_dir"]
         for path_name in paths_to_convert:
-            control_dict[path_name] = path_rel_to_yml(
-                control_dict[path_name], yml_file
-            )
-            assert_exists(control_dict[path_name])
+            if path_name in control_dict.keys():
+                control_dict[path_name] = path_rel_to_yml(
+                    control_dict[path_name], yml_file
+                )
+                assert_exists(control_dict[path_name])
 
         control = Control(
             start_time,

@@ -17,7 +17,6 @@ failfast = True
 detailed = True
 
 n_time_steps = 101
-budget_type = None
 test_models = {
     "nhm": [
         pywatershed.PRMSSolarGeometry,
@@ -37,7 +36,12 @@ params = ("params_sep", "params_one", "from_yml")
 
 @pytest.fixture(scope="function")
 def control(domain):
-    return Control.load(domain["control_file"])
+    control = Control.load(domain["control_file"])
+    control.config["verbose"] = 10
+    control.config["budget_type"] = None
+    control.config["calc_method"] = "numba"
+    control.config["load_n_time_batches"] = 1
+    return control
 
 
 @pytest.fixture(scope="function")
@@ -133,13 +137,7 @@ def test_model(domain, model_args, tmp_path):
     for ff in output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    model = Model(
-        **model_args,
-        input_dir=input_dir,
-        budget_type=budget_type,
-        calc_method="numba",
-        load_n_time_batches=3,
-    )
+    model = Model(**model_args, input_dir=input_dir)
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1

@@ -31,14 +31,14 @@ def test_drive_indiv_process(domain, tmp_path):
     params = pws.parameters.PrmsParameters.load(domain["param_file"])
     control = pws.Control.load(domain["control_file"])
     control.edit_n_time_steps(n_time_steps)
+    control.config["budget_type"] = "warn"
+    control.config["calc_method"] = "numba"
+    control.config["input_dir"] = domain["prms_run_dir"]
 
     nhm = pws.Model(
         nhm_processes,
         control=control,
         parameters=params,
-        input_dir=domain["prms_run_dir"],
-        budget_type="warn",
-        calc_method="numba",
     )
     nhm.initialize_netcdf(output_dir=nhm_output_dir)
     nhm.run(finalize=True)
@@ -59,14 +59,14 @@ def test_drive_indiv_process(domain, tmp_path):
         params = pws.parameters.PrmsParameters.load(domain["param_file"])
         control = pws.Control.load(domain["control_file"])
         control.edit_n_time_steps(n_time_steps)
+        control.config["budget_type"] = "warn"
+        control.config["calc_method"] = "numba"
+        control.config["input_dir"] = nhm_output_dir
 
         proc_model = pws.Model(
             [proc],
             control=control,
             parameters=params,
-            input_dir=nhm_output_dir,
-            budget_type="warn",
-            calc_method="numba",
         )
         proc_model.initialize_netcdf(output_dir=proc_model_output_dir)
         proc_model.run(finalize=True)

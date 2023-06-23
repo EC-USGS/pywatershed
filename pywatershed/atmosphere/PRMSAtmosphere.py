@@ -86,7 +86,6 @@ class PRMSAtmosphere(Process):
             format
         soltab_horad_potsw: this is the potential shortwave on the horizontal
             plane at each HRU. See soltab_potsw comment on file format.
-        budget_type: [None | "warn" |  "error"].
         verbose: bool indicating amount of output to terminal.
         netcdf_output_dir: an existing directory to which to write all
             variables for all time.
@@ -106,11 +105,10 @@ class PRMSAtmosphere(Process):
         tmin: [str, pl.Path],
         soltab_potsw: adaptable,
         soltab_horad_potsw: adaptable,
-        budget_type: str = None,
         verbose: bool = False,
         netcdf_output_dir: [str, pl.Path] = None,
         netcdf_output_vars: list = None,
-        netcdf_separate_files: bool = True,
+        netcdf_separate_files: bool = None,
         # from_file_dir: [str, pl.Path] = None,
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
@@ -134,16 +132,13 @@ class PRMSAtmosphere(Process):
             control=control,
             discretization=discretization,
             parameters=parameters,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
             metadata_patches=metadata_patches,
             metadata_patch_conflicts="left",
         )
-        # need to override the initailization of self variables
-        self._set_inputs(locals())
-
         self.name = "PRMSAtmosphere"
-        self.budget = None
+
+        self._set_inputs(locals())
+        self._set_options(locals())
 
         self._calculated = False
 
@@ -192,16 +187,6 @@ class PRMSAtmosphere(Process):
         self.calculate_sw_rad_degree_day()
         self.calculate_potential_et_jh()
         self.calculate_transp_tindex()
-
-        # Budget is not for all time
-        # self.set_budget(budget_type)
-        # This is a nonstandard budget.
-        self.budget = None
-        # self.budget = {
-        #     "inputs": {"potet": self.potet},
-        #     "outputs": {"hru_actet": self.hru_actet},
-        #     "storage_changes": {"available_potet": self.available_potet},
-        # }
 
         # JLM todo: delete large variables on self for memory management
         self._calculated = True
@@ -880,7 +865,7 @@ class PRMSAtmosphere(Process):
 
     def output(self):
         if self._output_netcdf:
-            if self.verbose:
+            if self._verbose:
                 print(
                     f"Writing FULL timeseries output for: {self.name}",
                     flush=True,

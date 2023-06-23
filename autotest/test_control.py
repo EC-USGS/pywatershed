@@ -45,7 +45,7 @@ def control_simple():
 
 
 def test_control_simple(control_simple):
-    assert control_simple.config is None
+    assert control_simple.config == {}
     ts = time_dict["time_step"]
     assert control_simple.time_step == ts
     assert control_simple.start_time == time_dict["start_time"]

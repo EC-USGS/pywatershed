@@ -6,7 +6,7 @@ import pytest
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.constants import epsilon32, zero
-from pywatershed.hydrology.PRMSSnow import PRMSSnow
+from pywatershed.hydrology.prms_snow import PRMSSnow
 from pywatershed.parameters import Parameters, PrmsParameters
 
 calc_methods = ("numpy", "numba")

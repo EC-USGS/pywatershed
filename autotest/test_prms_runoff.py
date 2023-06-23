@@ -5,7 +5,7 @@ import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSRunoff import PRMSRunoff
+from pywatershed.hydrology.prms_runoff import PRMSRunoff
 from pywatershed.parameters import Parameters, PrmsParameters
 
 calc_methods = ("numpy", "numba")

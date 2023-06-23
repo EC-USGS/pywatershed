@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSCanopy import PRMSCanopy
+from pywatershed.hydrology.prms_canopy import PRMSCanopy
 from pywatershed.parameters import PrmsParameters  # # TODO: too specific
 
 time_dict = {

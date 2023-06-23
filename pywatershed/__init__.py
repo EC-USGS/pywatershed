@@ -12,12 +12,12 @@ from .base.parameters import Parameters
 from .base.process import Process
 from .base.timeseries import TimeseriesArray
 from .hydrology.prms_canopy import PRMSCanopy
-from .hydrology.PRMSChannel import PRMSChannel
-from .hydrology.PRMSEt import PRMSEt
-from .hydrology.PRMSGroundwater import PRMSGroundwater
-from .hydrology.PRMSRunoff import PRMSRunoff
-from .hydrology.PRMSSnow import PRMSSnow
-from .hydrology.PRMSSoilzone import PRMSSoilzone
+from .hydrology.prms_channel import PRMSChannel
+from .hydrology.prms_et import PRMSEt
+from .hydrology.prms_groundwater import PRMSGroundwater
+from .hydrology.prms_runoff import PRMSRunoff
+from .hydrology.prms_snow import PRMSSnow
+from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.starfit import Starfit
 from .utils import (
     ControlVariables,

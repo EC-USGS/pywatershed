@@ -5,7 +5,7 @@ import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSEt import PRMSEt
+from pywatershed.hydrology.prms_et import PRMSEt
 from pywatershed.parameters import PrmsParameters
 
 

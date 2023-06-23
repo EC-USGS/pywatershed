@@ -4,7 +4,7 @@ import pytest
 
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
-from pywatershed.hydrology.PRMSChannel import PRMSChannel, has_prmschannel_f
+from pywatershed.hydrology.prms_channel import PRMSChannel, has_prmschannel_f
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.netcdf_utils import NetCdfCompare
 

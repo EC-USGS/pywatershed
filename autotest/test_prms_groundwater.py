@@ -4,7 +4,7 @@ import pytest
 
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
-from pywatershed.hydrology.PRMSGroundwater import (
+from pywatershed.hydrology.prms_groundwater import (
     PRMSGroundwater,
     has_prmsgroundwater_f,
 )

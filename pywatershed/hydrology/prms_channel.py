@@ -10,7 +10,7 @@ from ..constants import SegmentType, nan, zero
 from ..parameters import Parameters
 
 try:
-    from ..PRMSChannel_f import calc_muskingum_mann as _calculate_fortran
+    from ..prms_channel_f import calc_muskingum_mann as _calculate_fortran
 
     has_prmschannel_f = True
 except ImportError:

@@ -7,7 +7,7 @@ from ..constants import nan, numba_num_threads
 from ..parameters import Parameters
 
 try:
-    from ..PRMSGroundwater_f import calc_groundwater as _calculate_fortran
+    from ..prms_groundwater_f import calc_groundwater as _calculate_fortran
 
     has_prmsgroundwater_f = True
 except ImportError:

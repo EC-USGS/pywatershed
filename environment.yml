@@ -27,6 +27,7 @@ dependencies:
   - pandas>=1.4.0
   - pint
   - pip
+  - pre-commit
   - pydot
   - pytest
   - pytest-cov

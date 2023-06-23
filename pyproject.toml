@@ -60,6 +60,7 @@ test = [
     "flopy",
     "filelock",
     "modflow-devtools",
+    "pre-commit",
     "pytest",
     "pytest-cov",
     "pytest-env",

@@ -3,11 +3,12 @@
 [![ci-badge](https://github.com/ec-usgs/pywatershed/workflows/CI/badge.svg?branch=develop)](https://github.com/ec-usgs/pywatershed/actions?query=workflow%3ACI)
 [![codecov-badge](https://codecov.io/gh/ec-usgs/pywatershed/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pywatershed)
 [![Documentation Status](https://readthedocs.org/projects/pywatershed/badge/?version=latest)](https://pywatershed.readthedocs.io/en/latest/?badge=latest)
-[![asv](http://img.shields.io/badge/benchmarked%20by-asv-blue.svg?style=flat)](https://github.com/ec-usgs/pywatershed)
+[![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](https://github.com/ec-usgs/pywatershed)
+[![Formatted with black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
 
-[![PyPI Version](https://img.shields.io/pypi/v/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
-[![PyPI Status](https://img.shields.io/pypi/status/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
-[![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.png)](https://pypi.python.org/pypi/pywatershed)
+[![Available on pypi](https://img.shields.io/pypi/v/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
+[![PyPI Status](https://img.shields.io/pypi/status/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
+[![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 
 [//]: # (<img src="https://raw.githubusercontent.com/ec-usgs/pywatershed/main/resources/images/prms_flow.png" alt="prms_flow" style="width:50;height:20">)
 

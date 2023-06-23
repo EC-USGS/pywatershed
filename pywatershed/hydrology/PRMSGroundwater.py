@@ -1,6 +1,5 @@
 import numpy as np
 
-
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control

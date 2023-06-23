@@ -2,8 +2,8 @@ import numpy as np
 from numba import prange
 
 from ..base.adapter import adaptable
-from ..base.control import Control
 from ..base.conservative_process import ConservativeProcess
+from ..base.control import Control
 from ..constants import CovType, HruType, numba_num_threads, zero
 from ..parameters import Parameters
 

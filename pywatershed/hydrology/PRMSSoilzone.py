@@ -1,7 +1,6 @@
 import numpy as np
 from numba import prange
 
-
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control

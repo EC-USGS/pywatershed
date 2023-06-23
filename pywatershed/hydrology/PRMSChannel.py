@@ -3,9 +3,8 @@ from typing import Tuple
 import networkx as nx
 import numpy as np
 
-from pywatershed.base.process import Process
-
 from ..base.adapter import adaptable
+from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import SegmentType, nan, zero
 from ..parameters import Parameters
@@ -18,7 +17,7 @@ except ImportError:
     has_prmschannel_f = False
 
 
-class PRMSChannel(Process):
+class PRMSChannel(ConservativeProcess):
     """PRMS channel flow (muskingum_mann).
 
     The muskingum module was originally developed for the Precipitation Runoff
@@ -95,14 +94,11 @@ class PRMSChannel(Process):
         self.name = "PRMSChannel"
 
         self._calc_method = str(calc_method)
+        self._budget_type = budget_type
 
         self._set_inputs(locals())
-        # override for now until the channel budget is sorted out
-        self._set_budget(budget_type, basis="global")
-
-        # process channel data
+        self._set_budget(basis="global")
         self._initialize_channel_data()
-
         self._init_calc_method()
 
         return

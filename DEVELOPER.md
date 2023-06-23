@@ -50,14 +50,15 @@ Python >= 3.9 is required.
 
 #### Creating a virtual environment
 
-A virtual Python environment is recommended, and can be created with Python's builtin `venv` or a conda distribution like Anaconda or Miniconda.
+We suggest Mamba over a Python virtual environment (venv), but a venv is better than nothing and can be created with Python's
+builtin `venv`.
 
-##### Conda
+##### Mamba
 
-To create a conda environment with all core, testing and optional dependencies, run from the project root:
+We highly recommend using Mamba. To create a conda environment with all core, testing and optional dependencies, run from the project root:
 
 ```
-conda env create -f environment.yml
+mamba env create -f environment.yml
 ```
 
 The conda `environment.yml` contains all dependencies needed to develop, test, and run example notebooks. More detailed Conda environment installation instructions can be found in `examples/00_python_virtual_env.ipynb`.
@@ -101,8 +102,15 @@ export PYWS_FORTRAN=true
 pip install -e .
 ```
 
-## Testing
+## Branching model  
+This project uses the [git flow](https://nvie.com/posts/a-successful-git-branching-model/): development occurs on the `develop` branch, while `main` is reserved for the state of the latest release. Development PRs are typically squashed to `develop`, to avoid merge commits. At release time, release branches are merged to `main`, and then `main` is merged back into `develop`.
 
+## CI  
+The automated practices of installing, linting, and testing described below are
+all formally encoded in `.github/workflows/ci.yaml` and
+`.github/workflows/ci_examples.yaml` files. 
+
+## Testing  
 Once the dependencies are available, we want to verify the software by running its test suite. The
 following testing procedures are also covered in the notebook `examples/01_automated_testing.ipynb`.
 To run the tests, we first need to generate the test data. This consists of running PRMS
@@ -121,9 +129,34 @@ pytest -v -n=8
 
 All tests should pass, XPASS, or XFAIL. XFAIL is an expected failure. Substitute `-n auto` to automatically use all available cores on your machine.
 
-## Branching model
 
-This project uses the [git flow](https://nvie.com/posts/a-successful-git-branching-model/): development occurs on the `develop` branch, while `main` is reserved for the state of the latest release. Development PRs are typically squashed to `develop`, to avoid merge commits. At release time, release branches are merged to `main`, and then `main` is merged back into `develop`.
+## Linting
+Automated linting procedures are performed in CI, these are roughly
+```
+isort ./autotest ./pywatershed
+black ./autotest ./pywatershed
+flake8 --count --show-source --exit-zero ./pywatershed ./autotest		
+pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
+```
+
+## Committing Jupyter Notebooks
+All outputs are required to be stripped from jupyter notebooks prior to
+committing. To facilitate this we have
+[pre-commit hooks](https://pre-commit.com/) which will strip
+outputs and metadata from jupyter notebooks.  When a `git commit` is attempted,
+the hook will check all staged `*.ipynb` files. If the file is modified after
+running the hook (which runs
+[nbstripout](https://github.com/kynan/nbstripout)), then the
+commit is abandoned and the changes resulting from the hook need added/staged
+before the commit can be attempted again.
+
+The pre-commit hook is highly recommended because it acts at the appropritae
+time to keep very large diffs out of the repository history. To enable the
+pre-commit hooks, run the following command in the root of the repository:
+```
+pre-commit install
+```
+
 
 ## Miscellaneous
 

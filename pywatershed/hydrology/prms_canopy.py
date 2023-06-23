@@ -8,7 +8,7 @@ from ..constants import CovType, HruType, numba_num_threads, zero
 from ..parameters import Parameters
 
 try:
-    from ..PRMSCanopy_f import canopy
+    from ..prms_canopy_f import canopy
 
     _calculate_fortran = canopy.calc_canopy
     has_prmscanopy_f = True
@@ -46,7 +46,7 @@ class PRMSCanopy(ConservativeProcess):
         calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ) -> "PRMSCanopy":
+    ):
         super().__init__(
             control=control,
             discretization=discretization,

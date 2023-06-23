@@ -5,7 +5,7 @@ import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSCanopy import PRMSCanopy, has_prmscanopy_f
+from pywatershed.hydrology.prms_canopy import PRMSCanopy, has_prmscanopy_f
 from pywatershed.parameters import Parameters, PrmsParameters
 
 calc_methods = ("numpy", "numba", "fortran")

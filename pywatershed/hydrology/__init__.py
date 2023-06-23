@@ -1,4 +1,4 @@
-from .PRMSCanopy import PRMSCanopy
+from .prms_canopy import PRMSCanopy
 from .PRMSChannel import PRMSChannel
 
 # from PRMSEt import PRMSEt

@@ -11,7 +11,7 @@ from .base.model import Model
 from .base.parameters import Parameters
 from .base.process import Process
 from .base.timeseries import TimeseriesArray
-from .hydrology.PRMSCanopy import PRMSCanopy
+from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.PRMSChannel import PRMSChannel
 from .hydrology.PRMSEt import PRMSEt
 from .hydrology.PRMSGroundwater import PRMSGroundwater

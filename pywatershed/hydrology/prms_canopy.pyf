@@ -1,12 +1,12 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module PRMSCanopy_f ! in 
-    interface  ! in :PRMSCanopy_f
-        module canopy ! in :PRMSCanopy_f:PRMSCanopy.f90
+python module prms_canopy_f ! in 
+    interface  ! in :prms_canopy_f
+        module canopy ! in :prms_canopy_f:prms_canopy.f90
             real(kind=8), parameter,optional :: zero=0.0
             real(kind=8), parameter,optional :: one=1.0
-            subroutine calc_canopy(nhru,cov_type,covden_sum,covden_win,hru_intcpstor,hru_intcpevap,hru_ppt,hru_rain,hru_snow,intcp_changeover,intcp_evap,intcp_form_in,intcp_stor,intcp_transp_on,net_ppt,net_rain,net_snow,pkwater_ante,potet,potet_sublim,snow_intcp,srain_intcp,transp_on,wrain_intcp,time_length,hru_type,nearzero,dnearzero,baresoil,grasses,land,lake,rain,snow,off,active,intcp_evap_out,intcp_stor_out,net_rain_out,net_snow_out,net_ppt_out,hru_intcpstor_out,hru_intcpevap_out,intcp_changeover_out,intcp_transp_on_out) ! in :PRMSCanopy_f:PRMSCanopy.f90:canopy
+            subroutine calc_canopy(nhru,cov_type,covden_sum,covden_win,hru_intcpstor,hru_intcpevap,hru_ppt,hru_rain,hru_snow,intcp_changeover,intcp_evap,intcp_form_in,intcp_stor,intcp_transp_on,net_ppt,net_rain,net_snow,pkwater_ante,potet,potet_sublim,snow_intcp,srain_intcp,transp_on,wrain_intcp,time_length,hru_type,nearzero,dnearzero,baresoil,grasses,land,lake,rain,snow,off,active,intcp_evap_out,intcp_stor_out,net_rain_out,net_snow_out,net_ppt_out,hru_intcpstor_out,hru_intcpevap_out,intcp_changeover_out,intcp_transp_on_out) ! in :prms_canopy_f:prms_canopy.f90:canopy
                 !integer(kind=4) intent(in) :: nhru
                 integer, optional,intent(in),check(len(cov_type)>=nhru),depend(cov_type) :: nhru=len(cov_type)                
                 integer(kind=8) dimension(nhru),intent(in) :: cov_type
@@ -54,7 +54,7 @@ python module PRMSCanopy_f ! in
                 real(kind=8) dimension(nhru),intent(out) :: intcp_changeover_out
                 integer(kind=4) dimension(nhru),intent(out) :: intcp_transp_on_out
             end subroutine calc_canopy
-            subroutine intercept(precip,stor_max,cov,intcp_stor,net_precip,intcp_stor_out,net_precip_out) ! in :PRMSCanopy_f:PRMSCanopy.f90:canopy
+            subroutine intercept(precip,stor_max,cov,intcp_stor,net_precip,intcp_stor_out,net_precip_out) ! in :prms_canopy_f:prms_canopy.f90:canopy
                 real(kind=8) intent(in) :: precip
                 real(kind=8) intent(in) :: stor_max
                 real(kind=8) intent(in) :: cov
@@ -65,7 +65,7 @@ python module PRMSCanopy_f ! in
             end subroutine intercept
         end module canopy
     end interface 
-end python module PRMSCanopy_f
+end python module prms_canopy_f
 
 ! This file was auto-generated with f2py (version:1.23.3).
 ! See:

@@ -3,7 +3,7 @@ from numba import prange
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..base.process import Process
+from ..base.conservative_process import ConservativeProcess
 from ..constants import CovType, HruType, numba_num_threads, zero
 from ..parameters import Parameters
 
@@ -28,7 +28,7 @@ OFF = 0
 ACTIVE = 1
 
 
-class PRMSCanopy(Process):
+class PRMSCanopy(ConservativeProcess):
     """PRMS canopy."""
 
     def __init__(
@@ -57,13 +57,12 @@ class PRMSCanopy(Process):
         self.name = "PRMSCanopy"
 
         self._calc_method = str(calc_method)
-
-        self._set_inputs(locals())
-        self._set_budget(budget_type)
-
+        self._budget_type = budget_type
         # set hrutype to LAND as this is only type supported in NHM
         self._hru_type = np.array(self.nhru * [LAND])
 
+        self._set_inputs(locals())
+        self._set_budget()
         self._init_calc_method()
 
         return

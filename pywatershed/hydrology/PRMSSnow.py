@@ -1,9 +1,8 @@
 import numpy as np
 from numba import prange
 
-from pywatershed.base.process import Process
-
 from ..base.adapter import adaptable
+from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import (
     HruType,
@@ -68,7 +67,7 @@ tcind = 0
 dbgind = 434
 
 
-class PRMSSnow(Process):
+class PRMSSnow(ConservativeProcess):
     """PRMS snow pack."""
 
     def __init__(
@@ -106,9 +105,10 @@ class PRMSSnow(Process):
         self.name = "PRMSSnow"
 
         self._calc_method = str(calc_method)
+        self._budget_type = budget_type
 
         self._set_inputs(locals())
-        self._set_budget(budget_type)
+        self._set_budget()
         self._init_calc_method()
 
         return

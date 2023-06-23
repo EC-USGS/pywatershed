@@ -1,7 +1,7 @@
 import numpy as np
 from numba import prange
 
-from pywatershed.base.process import Process
+from ..base.conservative_process import ConservativeProcess
 
 from ..base.adapter import adaptable
 from ..base.control import Control
@@ -24,7 +24,7 @@ LAND = HruType.LAND.value
 LAKE = HruType.LAKE.value
 
 
-class PRMSRunoff(Process):
+class PRMSRunoff(ConservativeProcess):
     """PRMS surface runoff."""
 
     def __init__(
@@ -57,10 +57,13 @@ class PRMSRunoff(Process):
             verbose=verbose,
             load_n_time_batches=load_n_time_batches,
         )
+
         self.name = "PRMSRunoff"
         self._calc_method = str(calc_method)
+        self._budget_type = budget_type
+
         self._set_inputs(locals())
-        self._set_budget(budget_type)
+        self._set_budget()
         self._init_calc_method()
         return
 

@@ -7,7 +7,6 @@ import numpy as np
 
 from ..base import meta
 from ..base.adapter import Adapter, adapter_factory
-from ..base.budget import Budget
 from ..base.data_model import _merge_dicts
 from ..base.timeseries import TimeseriesArray
 from ..parameters import Parameters
@@ -20,9 +19,6 @@ class Process(Accessor):
     """Process base class
 
     Process is a base class for physical processes.
-
-    It has budgets that can optionally be established for mass an energy and
-    these can be enforced or simply diagnosed with the model run.
 
     The  class aims to describe itself through it sstaticmethods and
     properties.
@@ -60,11 +56,6 @@ class Process(Accessor):
             are set when the variable is declared from metadata in
             _initialize_var(). Initization values should be nan as much as
             possible.
-        mass_budget_terms/get_mass_budget_terms():
-            These terms must all in in the same units across all components of
-            the budget (inputs, outputs, storage_changes). Diagnostic variables
-            should not appear in the budget terms, only prognostic variables
-            should.
         _advance_variables():
             This advance should exactly specify the prognostic variables in
             setting previous values to current values. When/if necessary to
@@ -146,9 +137,6 @@ class Process(Accessor):
             if self.verbose:
                 print(f"writing output for: {self.name}")
             self.__output_netcdf()
-
-        if self.budget is not None:
-            self.budget.output()
         return
 
     def finalize(self) -> None:
@@ -164,8 +152,6 @@ class Process(Accessor):
             print(f"finalizing: {self.name}")
 
         self._finalize_netcdf()
-        if self.budget is not None:
-            self.budget._finalize_netcdf()
         return
 
     @staticmethod
@@ -189,34 +175,11 @@ class Process(Accessor):
         return list(cls.get_init_values().keys())
 
     @classmethod
-    def get_mass_budget_terms(cls) -> dict:
-        """Get a dictionary of variable names for mass budget terms."""
-        mass_budget_terms = {
-            "inputs": list(
-                meta.filter_vars(
-                    cls.get_inputs(), "var_category", "mass flux"
-                ).keys()
-            ),
-            "outputs": list(
-                meta.filter_vars(
-                    cls.get_variables(), "var_category", "mass flux"
-                ).keys()
-            ),
-            "storage_changes": list(
-                meta.filter_vars(
-                    cls.get_variables(), "var_category", "mass storage change"
-                ).keys()
-            ),
-        }
-        return mass_budget_terms
-
-    @classmethod
     def description(cls) -> dict:
         """A description (all metadata) for all variables in inputs, variables,
         and parameters."""
         return {
             "class_name": cls.__name__,
-            "mass_budget_terms": cls.get_mass_budget_terms(),
             "inputs": meta.get_vars(cls.get_inputs()),
             "variables": meta.get_vars(cls.get_variables()),
             "parameters": meta.get_params(cls.get_parameters()),
@@ -262,11 +225,6 @@ class Process(Accessor):
     def init_values(self) -> dict:
         """A dictionary of initial values for each public variable."""
         return self.get_init_values()
-
-    @property
-    def mass_budget_terms(self) -> dict:
-        """A dictionary of variable names for the mass budget terms."""
-        return self.get_mass_budget_terms()
 
     def _initialize_self_variables(self, restart: bool = False):
         # dims
@@ -375,37 +333,8 @@ class Process(Accessor):
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
         # requires that the calculation of the input happens before the
-        # advance of this storage unit. But that gives the incorrect budget
-        # for et.
+        # advance of this storage unit.
         self[input_variable_name] = adapter.current
-
-        # Using a pointer between boxes means that the same pointer has to
-        # be used for the budget, so there's no way to have a preestablished
-        # pointer between Process and its budget. So this stuff...
-        if self.budget is not None:
-            for comp in self.budget.components:
-                if input_variable_name in self.budget[comp].keys():
-                    # can not use [:] on the LHS?
-                    self.budget[comp][input_variable_name] = self[
-                        input_variable_name
-                    ]
-
-        return
-
-    def _set_budget(self, behavior, basis: str = "unit"):
-        if behavior is None:
-            self.budget = None
-        elif behavior in ["error", "warn"]:
-            self.budget = Budget.from_storage_unit(
-                self,
-                time_unit="D",
-                description=self.name,
-                imbalance_fatal=(behavior == "error"),
-                basis=basis,
-            )
-        else:
-            raise ValueError(f"Illegal behavior: {behavior}")
-
         return
 
     def advance(self):
@@ -453,11 +382,6 @@ class Process(Accessor):
         # self._calculate must be implemented by the subclass
         self._calculate(time_length, *kwargs)
 
-        # move to a timestep finalization method at some future date.
-        if self.budget is not None:
-            self.budget.advance()
-            self.budget.calculate()
-
         return
 
     def _set_metadata(self):
@@ -503,7 +427,6 @@ class Process(Accessor):
         self,
         output_dir: [str, pl.Path],
         separate_files: bool = True,
-        budget_args: dict = None,
         output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
@@ -514,9 +437,6 @@ class Process(Accessor):
             separate_files: boolean indicating if storage component output
                 variables should be written to a separate file for each
                 variable
-            budget_args: a dict of argument key: values to pass to
-                initialize_netcdf on this storage unit's budget. see budget
-                object for options.
 
         Returns:
             None
@@ -556,14 +476,6 @@ class Process(Accessor):
             )
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
-
-        if self.budget is not None:
-            if budget_args is None:
-                budget_args = {}
-            budget_args["output_dir"] = output_dir
-            budget_args["params"] = self.params
-
-            self.budget.initialize_netcdf(**budget_args)
 
         return
 

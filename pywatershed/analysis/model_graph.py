@@ -3,6 +3,7 @@ import tempfile
 import warnings
 from pprint import pprint
 
+from ..base.conservative_process import ConservativeProcess
 from ..base.model import Model
 from ..utils import import_optional_dependency
 
@@ -142,11 +143,14 @@ class ModelGraph:
         if not show_params:
             _ = show_categories.pop("params")
 
-        mass_budget_vars = [
-            var
-            for comp, vars in process.get_mass_budget_terms().items()
-            for var in vars
-        ]
+        if isinstance(process, ConservativeProcess):
+            mass_budget_vars = [
+                var
+                for comp, vars in process.get_mass_budget_terms().items()
+                for var in vars
+            ]
+        else:
+            mass_budget_vars = []
 
         for varset_name, varset in show_categories.items():
             n_vars = len(varset)

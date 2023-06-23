@@ -51,7 +51,7 @@ class ProcessPlot:
         return
 
     def plot_seg_var(
-        self, var_name: str, process: pywatershed.StorageUnit, cmap="cool"
+        self, var_name: str, process: pywatershed.Process, cmap="cool"
     ):
         data_df = pd.DataFrame(
             {
@@ -127,7 +127,7 @@ class ProcessPlot:
 
         return
 
-    def plot_hru_var(self, var_name: str, process: pywatershed.StorageUnit):
+    def plot_hru_var(self, var_name: str, process: pywatershed.Process):
         data_df = pd.DataFrame(
             {
                 "nhm_id": process.params.parameters["nhm_id"],

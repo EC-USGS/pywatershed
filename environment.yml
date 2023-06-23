@@ -41,6 +41,7 @@ dependencies:
       - black
       - isort
       - flake8
+      - jupyter_black
       - pylint
       - git+https://github.com/modflowpy/flopy.git
       - modflow-devtools

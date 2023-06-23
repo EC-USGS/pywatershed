@@ -3,7 +3,7 @@ from warnings import warn
 import numpy as np
 import pytest
 
-from pywatershed.atmosphere.PRMSAtmosphere import PRMSAtmosphere
+from pywatershed.atmosphere.prms_atmosphere import PRMSAtmosphere
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters

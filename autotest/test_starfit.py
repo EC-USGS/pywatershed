@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from pywatershed.base.control import Control
-from pywatershed.hydrology.Starfit import Starfit
+from pywatershed.hydrology.starfit import Starfit
 from pywatershed.parameters import StarfitParameters
 
 

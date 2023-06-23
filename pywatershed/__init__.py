@@ -1,7 +1,7 @@
 from .analysis.model_graph import ModelGraph
 from .analysis.utils.colorbrewer import ColorBrewer
-from .atmosphere.PRMSAtmosphere import PRMSAtmosphere
-from .atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
+from .atmosphere.prms_atmosphere import PRMSAtmosphere
+from .atmosphere.prms_solar_geometry import PRMSSolarGeometry
 from .base import meta
 from .base.accessor import Accessor
 from .base.adapter import Adapter
@@ -18,6 +18,7 @@ from .hydrology.PRMSGroundwater import PRMSGroundwater
 from .hydrology.PRMSRunoff import PRMSRunoff
 from .hydrology.PRMSSnow import PRMSSnow
 from .hydrology.PRMSSoilzone import PRMSSoilzone
+from .hydrology.starfit import Starfit
 from .utils import (
     ControlVariables,
     NetCdfCompare,

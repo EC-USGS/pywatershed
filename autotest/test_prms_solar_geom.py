@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pywatershed.atmosphere.PRMSSolarGeometry import PRMSSolarGeometry
+from pywatershed.atmosphere.prms_solar_geometry import PRMSSolarGeometry
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters

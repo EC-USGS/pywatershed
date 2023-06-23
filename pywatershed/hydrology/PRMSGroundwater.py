@@ -1,8 +1,8 @@
 import numpy as np
 
-from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
+from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import nan, numba_num_threads
 from ..parameters import Parameters
@@ -15,7 +15,7 @@ except ImportError:
     has_prmsgroundwater_f = False
 
 
-class PRMSGroundwater(Process):
+class PRMSGroundwater(ConservativeProcess):
     """PRMS groundwater reservoir."""
 
     def __init__(
@@ -41,9 +41,10 @@ class PRMSGroundwater(Process):
         self.name = "PRMSGroundwater"
 
         self._calc_method = str(calc_method)
+        self._budget_type = budget_type
 
         self._set_inputs(locals())
-        self._set_budget(budget_type)
+        self._set_budget()
         self._init_calc_method()
 
         return

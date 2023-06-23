@@ -62,8 +62,6 @@ class ConservativeProcess(Process):
         )
 
         self.name = "ConservativeProcess"
-        self.control = control
-
         return
 
     def output(self) -> None:
@@ -75,13 +73,10 @@ class ConservativeProcess(Process):
             None
 
         """
-        if self._output_netcdf:
-            if self.verbose:
-                print(f"writing output for: {self.name}")
-            self.__output_netcdf()
-
+        super().output()
         if self.budget is not None:
             self.budget.output()
+
         return
 
     def finalize(self) -> None:
@@ -93,10 +88,7 @@ class ConservativeProcess(Process):
             None
 
         """
-        if self.verbose:
-            print(f"finalizing: {self.name}")
-
-        self._finalize_netcdf()
+        super().finalize()
         if self.budget is not None:
             self.budget._finalize_netcdf()
         return
@@ -132,22 +124,20 @@ class ConservativeProcess(Process):
     def description(cls) -> dict:
         """A description (all metadata) for all variables in inputs, variables,
         and parameters."""
-        return {
-            "class_name": cls.__name__,
-            "mass_budget_terms": cls.get_mass_budget_terms(),
-            "inputs": meta.get_vars(cls.get_inputs()),
-            "variables": meta.get_vars(cls.get_variables()),
-            "parameters": meta.get_params(cls.get_parameters()),
-        }
+        desc = super().description()
+        desc = desc | {"mass_budget_terms": cls.get_mass_budget_terms()}
+        return desc
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
-        self._input_variables_dict[input_variable_name] = adapter
+        super().set_input_to_adapter(
+            self, input_variable_name=input_variable_name, adapter=adapter
+        )
+        # Notes from the super()
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
         # requires that the calculation of the input happens before the
         # advance of this storage unit. But that gives the incorrect budget
         # for et.
-        self[input_variable_name] = adapter.current
 
         # Using a pointer between boxes means that the same pointer has to
         # be used for the budget, so there's no way to have a preestablished
@@ -187,11 +177,7 @@ class ConservativeProcess(Process):
         Returns:
             None
         """
-        if self.verbose:
-            print(f"calculating: {self.name}")
-
-        # self._calculate must be implemented by the subclass
-        self._calculate(time_length, *kwargs)
+        super().calculate(time_length=time_length)
 
         # move to a timestep finalization method at some future date.
         if self.budget is not None:
@@ -223,40 +209,11 @@ class ConservativeProcess(Process):
             None
 
         """
-        if self.verbose:
-            print(f"initializing netcdf output for: {self.output_dir}")
-
-        self._output_netcdf = True
-        self._output_vars = output_vars
-        self._netcdf = {}
-        if separate_files:
-            self._separate_netcdf = True
-            # make working directory
-            output_dir = pl.Path(output_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
-            for variable_name in self.variables:
-                if (self._output_vars is not None) and (
-                    variable_name not in self._output_vars
-                ):
-                    continue
-                nc_path = pl.Path(output_dir) / f"{variable_name}.nc"
-                self._netcdf[variable_name] = NetCdfWrite(
-                    nc_path,
-                    self.params.coords,
-                    [variable_name],
-                    {variable_name: self.meta[variable_name]},
-                )
-        else:
-            initial_variable = self.variables[0]
-            pl.Path(output_dir).mkdir(parents=True, exist_ok=True)
-            self._netcdf[initial_variable] = NetCdfWrite(
-                output_dir / f"{self.name}.nc",
-                self.params.coords,
-                self.variables,
-                self.meta,
-            )
-            for variable in self.variables[1:]:
-                self._netcdf[variable] = self._netcdf[initial_variable]
+        super().initialize_netcdf(
+            output_dir=output_dir,
+            separate_files=separate_files,
+            output_vars=output_vars,
+        )
 
         if self.budget is not None:
             if budget_args is None:
@@ -274,17 +231,9 @@ class ConservativeProcess(Process):
         Returns:
             None
         """
-        if self._output_netcdf:
-            for idx, variable in enumerate(self.variables):
-                if (self._output_vars is not None) and (
-                    variable not in self._output_vars
-                ):
-                    continue
+        super()._finalize_netcdf()
 
-                self._netcdf[variable].close()
-                if not self._separate_netcdf:
-                    break
-
-            self.budget.finalize_netcdf()
+        if self._do_output_netcdf:
+            self.budget._finalize_netcdf()
 
         return

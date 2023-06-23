@@ -1,9 +1,9 @@
 import numpy as np
 from numba import prange
 
-from pywatershed.base.process import Process
 
 from ..base.adapter import adaptable
+from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import (
     ETType,
@@ -21,7 +21,7 @@ ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
 
 
-class PRMSSoilzone(Process):
+class PRMSSoilzone(ConservativeProcess):
     """PRMS soil zone.
 
     Args:
@@ -57,9 +57,10 @@ class PRMSSoilzone(Process):
         self.name = "PRMSSoilzone"
 
         self._calc_method = str(calc_method)
+        self._budget_type = budget_type
 
         self._set_inputs(locals())
-        self._set_budget(budget_type)
+        self._set_budget()
         self._init_calc_method()
 
         return

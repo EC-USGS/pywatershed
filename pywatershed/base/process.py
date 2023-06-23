@@ -106,7 +106,7 @@ class Process(Accessor):
         self._load_n_time_batches = load_n_time_batches
 
         # netcdf output variables
-        self._output_netcdf = False
+        self._do_output_netcdf = False
         self._netcdf = None
         self._separate_netcdf = True
         self._itime_step = -1
@@ -133,10 +133,10 @@ class Process(Accessor):
             None
 
         """
-        if self._output_netcdf:
+        if self._do_output_netcdf:
             if self.verbose:
                 print(f"writing output for: {self.name}")
-            self.__output_netcdf()
+            self._output_netcdf()
         return
 
     def finalize(self) -> None:
@@ -445,7 +445,7 @@ class Process(Accessor):
         if self.verbose:
             print(f"initializing netcdf output for: {self.output_dir}")
 
-        self._output_netcdf = True
+        self._do_output_netcdf = True
         self._output_vars = output_vars
         self._netcdf = {}
         if separate_files:
@@ -479,14 +479,14 @@ class Process(Accessor):
 
         return
 
-    def __output_netcdf(self) -> None:
+    def _output_netcdf(self) -> None:
         """Output variable data to NetCDF for a time step.
 
         Returns:
             None
 
         """
-        if self._output_netcdf:
+        if self._do_output_netcdf:
             time_added = False
             for variable in self.variables:
                 if (self._output_vars is not None) and (
@@ -512,7 +512,7 @@ class Process(Accessor):
         Returns:
             None
         """
-        if self._output_netcdf:
+        if self._do_output_netcdf:
             for idx, variable in enumerate(self.variables):
                 if (self._output_vars is not None) and (
                     variable not in self._output_vars

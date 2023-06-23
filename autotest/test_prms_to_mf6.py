@@ -25,7 +25,7 @@ def lateral_flow_ans_ds(domain):
 
 
 # When we can point at modflow6 develop we'll un-xfail this
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])
 def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):

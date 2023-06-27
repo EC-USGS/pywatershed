@@ -41,15 +41,7 @@ class PRMSAtmosphere(Process):
     The boundary layer calculates and manages the following variables (given
     by PRMSAtmosphere.get_variables()):
 
-        tmaxf,
-        tminf,
-        prmx,
-        hru_ppt,
-        hru_rain,
-        hru_snow,
-        swrad,
-        potet,
-        transp_on,
+    *tmaxf, tminf, prmx, hru_ppt, hru_rain, hru_snow, swrad, potet, transp_on*
 
     PRMS adjustments to temperature and precipitation are applied here to
     the inputs. Shortwave radiation (using degree day method) and potential
@@ -62,7 +54,6 @@ class PRMSAtmosphere(Process):
     preprocessing of the input CBH files to the fields the model actually uses
     on initialization. If you just want to preprocess these variables, see
     `this notebook <https://github.com/EC-USGS/pywatershed/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
-
 
     The full time version of a variable is given by the "private" version of
     the variable which is named with a single-leading underscore (eg tmaxf for
@@ -77,21 +68,24 @@ class PRMSAtmosphere(Process):
     are changing).
 
     Args:
-        control: control object
-        prcp: precipitation cbh netcdf file
-        tmax: maximum daily temperature cbh netcdf file
-        tmin: minimum daily temperature cbh netcdf file
-        soltab_potsw: potential shortwave radiation special format file. Only
-            the versions of PRMS 5.2.1 shipped with pywatershed output soltab in this
-            format
-        soltab_horad_potsw: this is the potential shortwave on the horizontal
-            plane at each HRU. See soltab_potsw comment on file format.
-        verbose: bool indicating amount of output to terminal.
-        netcdf_output_dir: an existing directory to which to write all
-            variables for all time.
-        netcdf_output_vars: a list or subset of variables to output to netcdf
-        n_time_chunk: int = -1,
-        load_n_time_batches: int = 1,
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+
+        prcp: daily precipitation
+        tmax: daily maximum temperature
+        tmin: daily minimum temperature
+        soltab_potsw: the solar table of potential shortwave radiation
+        soltab_horad_potsw: the solar table of potential shortwave
+            radiation on a horizontal plane
+
+        verbose: Print extra information or not?
+        netcdf_output_dir: A directory to write netcdf outpuf files
+        netcdf_output_vars: A list of variables to output via netcdf.
+        netcdf_separate_files: Separate or a single netcdf output file
+        load_n_time_batches: How often to load from disk (not-implemented?)
+        n_time_chunk: the inverse of load_n_time_batches, the number of
+           times in a chunk/batch (implemented?)
 
     """
 
@@ -301,12 +295,6 @@ class PRMSAtmosphere(Process):
         return
 
     def _advance_variables(self):
-        """Advance the PRMSAtmosphere
-
-        Returns:
-            None
-
-        """
         if not self._calculated:
             self._calculate_all_time()
         for vv in self.variables:
@@ -314,17 +302,6 @@ class PRMSAtmosphere(Process):
         return
 
     def _calculate(self, time_length):
-        """Calculate PRMSAtmosphere"
-
-        Sets the current value to the precalculated values.
-
-        Args:
-            time_length: time step length
-
-        Returns:
-            None
-
-        """
         return
 
     def adjust_temperature(self):
@@ -364,6 +341,9 @@ class PRMSAtmosphere(Process):
 
         Snow/rain partitioning of total precip depends on adjusted temperature
         in addition to depending on additonal parameters.
+
+        Returns:
+            None
         """
 
         ivd = self._input_variables_dict
@@ -462,7 +442,12 @@ class PRMSAtmosphere(Process):
         return
 
     def calculate_sw_rad_degree_day(self) -> None:
-        """Calculate shortwave radiation using the degree day method."""
+        """Calculate shortwave radiation using the degree day method.
+
+        Returns:
+            None
+
+        """
 
         solar_params = {}
         solar_param_names = (
@@ -650,8 +635,12 @@ class PRMSAtmosphere(Process):
 
     def calculate_potential_et_jh(self) -> None:
         """Calculate potential evapotranspiration following Jensen and Haise
-        (1963)."""
 
+        Jensen and Haise (1963)
+
+        Returns:
+            None
+        """
         self.potet.data[:] = self._potet_jh_run(
             dates=self._time,
             tavgc=self.tavgc.data,
@@ -838,9 +827,6 @@ class PRMSAtmosphere(Process):
             print(f"Wrote file: {nc_path}")
 
         self._output_netcdf = False
-        return
-
-    def _finalize_netcdf(self) -> None:
         return
 
     def initialize_netcdf(

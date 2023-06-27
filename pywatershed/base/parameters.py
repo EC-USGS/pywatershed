@@ -11,26 +11,47 @@ from .data_model import DatasetDict, dd_to_nc4_ds, dd_to_xr_ds
 
 
 class Parameters(DatasetDict):
+    """Parameter base class
+
+    This is a subclass of data_model.DatasetDict, but all the data are
+    read-only by design.
+    Parameters has all the same methods as DatasetDict plus several new
+    ones that map to DatasetDict as follows:
+
+    * parameters: dd.variables
+    * get_param_values: get values from dd.variables
+    * get_dim_values: get values from dd.dims
+
+    Args:
+        dims: A dictionary of pairs of `dim_names: dim_len` where `dim_len` is
+            an integer value.
+        coords: A dictionary of pairs of `coord_names: coord_data` where
+            `coord_data` is an np.ndarray.
+        data_vars: A dictionary of pairs of `var_names: var_data` where
+            `coord_data` is an np.ndarray.
+        metadata: For all names in `coords` and `data_vars`, metadata entries
+            with the required fields:
+
+            - dims: tuple of names in dim,
+            - attrs: dictionary whose values may be strings, ints, floats
+
+            The metadata argument may also contain a special `global` key
+            paired with a dictionary of global metadata of arbitrary name and
+            values of string, integer, or float types.
+        encoding: (to document)
+        validate: A bool that defaults to True, enforcing the consistency
+            of the supplied dictionaries
+    """
+
     def __init__(
         self,
-        dims: dict = {},
-        coords: dict = {},
-        data_vars: dict = {},
-        metadata: dict = {},
-        encoding: dict = {},
+        dims: dict = None,
+        coords: dict = None,
+        data_vars: dict = None,
+        metadata: dict = None,
+        encoding: dict = None,
         validate: bool = True,
-    ) -> "Parameters":
-        """Parameter class
-
-        This is a subclass of data_model.DatasetDict, but that all the data are
-        read-only by design.
-        Parameters has all the same methods as DatasetDict plus several new
-        ones that map to DatasetDict as follows:
-            parameters: dd.variables
-            get_param_values: get values from dd.variables
-            get_dim_values: get values from dd.dims
-
-        """
+    ) -> None:
         super().__init__(
             dims=dims,
             coords=coords,

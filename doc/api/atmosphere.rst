@@ -1,11 +1,11 @@
 .. currentmodule:: pywatershed
 
-		   
+
 ##########
 Atmosphere
 ##########
 
-Atmospheric forcing models.
+Atmospheric process models.
 
 .. autosummary::
    :toctree: generated/

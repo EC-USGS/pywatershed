@@ -61,14 +61,18 @@ class PRMSChannel(ConservativeProcess):
     less than 0.01 are set to 0.01, and the value for lake HRUs is set to 24.0.
 
     Args:
-        control: control object
-        sroff_vol: surface runoff adapter object
-        ssres_flow_vol: subsurface (gravity) reservoir lateral flow adapter
-            object
-        gwres_flow_vol: groundwater reservoir baseflow adapter object
-        verbose: verbose output boolean (default is False)
-
-
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        sroff_vol: Surface runoff to the stream network for each HRU
+        ssres_flow_vol: Interflow volume from gravity and preferential-flow
+            reservoirs to the stream network for each HRU
+        gwres_flow_vol: Groundwater discharge volume from each GWR to the
+            stream network
+        budget_type: one of [None, "warn", "error"]
+        calc_method: one of [None = "numpy", "numba"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
     """
 
     def __init__(
@@ -79,11 +83,11 @@ class PRMSChannel(ConservativeProcess):
         sroff_vol: adaptable,
         ssres_flow_vol: adaptable,
         gwres_flow_vol: adaptable,
-        verbose: bool = False,
-        calc_method: str = None,
         budget_type: str = None,
+        calc_method: str = None,
+        verbose: bool = False,
         load_n_time_batches: int = 1,
-    ) -> "PRMSChannel":
+    ) -> None:
         super().__init__(
             control=control,
             discretization=discretization,
@@ -103,22 +107,10 @@ class PRMSChannel(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """Get channel segment dimensions
-
-        Returns:
-            dimensions: input dimensions
-
-        """
         return ("nhru", "nsegment")
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get channel segment parameters
-
-        Returns:
-            parameters: input parameters
-
-        """
         return (
             "hru_area",
             "hru_segment",
@@ -137,12 +129,6 @@ class PRMSChannel(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get channel segment input variables
-
-        Returns:
-            variables: input variables
-
-        """
         return (
             "sroff_vol",
             "ssres_flow_vol",
@@ -151,11 +137,6 @@ class PRMSChannel(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get channel segment initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
         return {
             "channel_sroff_vol": nan,
             "channel_ssres_flow_vol": nan,
@@ -370,24 +351,10 @@ class PRMSChannel(ConservativeProcess):
             raise ValueError(msg)
 
     def _advance_variables(self) -> None:
-        """Advance the channel segment variables
-        Returns:
-            None
-        """
         self._seg_inflow0[:] = self._seg_inflow
         return
 
     def _calculate(self, simulation_time: float) -> None:
-        """Calculate channel segment terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-
-        """
-
         self._simulation_time = simulation_time
 
         # This could vary with timestep so leave here

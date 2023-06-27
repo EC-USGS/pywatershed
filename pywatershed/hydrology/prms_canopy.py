@@ -29,7 +29,23 @@ ACTIVE = 1
 
 
 class PRMSCanopy(ConservativeProcess):
-    """PRMS canopy."""
+    """PRMS canopy class.
+
+    Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        pkwater_ante: Previous snowpack water equivalent on each HRU
+        transp_on: Flag indicating whether transpiration is occurring
+            (0=no;1=yes)
+        hru_ppt: Precipitation on each HRU
+        hru_rain: Rain on each HRU
+        hru_snow: Snow on each HRU
+        budget_type: one of [None, "warn", "error"]
+        calc_method: one of [None = "numpy", "numba", "fortran"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
+    """
 
     def __init__(
         self,
@@ -68,16 +84,10 @@ class PRMSCanopy(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """
-        Return a tuple the dimension names
-        """
         return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:
-        """
-        Return a tuple of parameters names
-        """
         return (
             "cov_type",
             "covden_sum",
@@ -90,12 +100,6 @@ class PRMSCanopy(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get canopy reservoir input variables
-
-        Returns:
-            variables: input variables
-
-        """
         return (
             "pkwater_ante",
             "transp_on",
@@ -107,12 +111,6 @@ class PRMSCanopy(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get canopy initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
-
         return {
             "net_ppt": zero,
             "net_rain": zero,

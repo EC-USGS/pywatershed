@@ -3,7 +3,6 @@ from .analysis.utils.colorbrewer import ColorBrewer
 from .atmosphere.prms_atmosphere import PRMSAtmosphere
 from .atmosphere.prms_solar_geometry import PRMSSolarGeometry
 from .base import meta
-from .base.accessor import Accessor
 from .base.adapter import Adapter
 from .base.budget import Budget
 from .base.control import Control

@@ -15,7 +15,24 @@ except ImportError:
 
 
 class PRMSGroundwater(ConservativeProcess):
-    """PRMS groundwater reservoir."""
+    """PRMS groundwater reservoir.
+
+    Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        soil_to_gw: Portion of excess flow to the capillary reservoir that
+            drains to the associated GWR for each HRU
+        ssr_to_gw: Drainage from the gravity-reservoir to the associated GWR
+            for each HRU
+        dprst_seep_hru: Seepage from surface-depression storage to associated
+            GWR for each HRU
+        budget_type: one of [None, "warn", "error"]
+        calc_method: one of [None = "numpy", "numba", "fortran"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
+
+    """
 
     def __init__(
         self,
@@ -29,7 +46,7 @@ class PRMSGroundwater(ConservativeProcess):
         calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ):
+    ) -> None:
         super().__init__(
             control=control,
             discretization=discretization,
@@ -48,22 +65,10 @@ class PRMSGroundwater(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """Get groundwater reservoir dimensions
-
-        Returns:
-            tuple of dimension names
-
-        """
         return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get groundwater reservoir parameters
-
-        Returns:
-            tuple of parameter name
-
-        """
         return (
             "hru_area",
             "hru_in_to_cf",
@@ -75,12 +80,6 @@ class PRMSGroundwater(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get groundwater reservoir input variables
-
-        Returns:
-            tuple: input variable name
-
-        """
         return (
             "soil_to_gw",
             "ssr_to_gw",
@@ -105,11 +104,6 @@ class PRMSGroundwater(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get groundwater initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
         return {
             "gwres_flow": nan,
             "gwres_flow_vol": nan,
@@ -166,23 +160,10 @@ class PRMSGroundwater(ConservativeProcess):
         return
 
     def _advance_variables(self) -> None:
-        """Advance the groundwater reservoir variables
-        Returns:
-            None
-        """
         self.gwres_stor_old[:] = self.gwres_stor
         return
 
     def _calculate(self, simulation_time):
-        """Calculate groundwater reservoir terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-
-        """
         self._simulation_time = simulation_time
         (
             self.gwres_stor[:],

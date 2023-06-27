@@ -5,13 +5,11 @@ from ..base import meta
 from ..base.adapter import Adapter
 from ..base.budget import Budget
 from ..parameters import Parameters
-from ..utils.netcdf_utils import NetCdfWrite
 from .control import Control
 from .process import Process
 
 
 class ConservativeProcess(Process):
-
     """ConservativeProcess base class
 
     ConservativeProcess is a base class for mass and energy conservation. This
@@ -46,6 +44,7 @@ class ConservativeProcess(Process):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
+        budget_type: Literal[None, "warn", "error"] = None,
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
@@ -61,14 +60,6 @@ class ConservativeProcess(Process):
         return
 
     def output(self) -> None:
-        """Output data to previously initialized output types.
-
-        Writes output for initalized output types.
-
-        Returns:
-            None
-
-        """
         super().output()
         if self.budget is not None:
             self.budget.output()
@@ -76,14 +67,6 @@ class ConservativeProcess(Process):
         return
 
     def finalize(self) -> None:
-        """Finalize Process
-
-        Finalizes the object, including output methods.
-
-        Returns:
-            None
-
-        """
         super().finalize()
         if self.budget is not None:
             self.budget._finalize_netcdf()
@@ -118,8 +101,12 @@ class ConservativeProcess(Process):
 
     @classmethod
     def description(cls) -> dict:
-        """A description (all metadata) for all variables in inputs, variables,
-        and parameters."""
+        """A dictionary description of this Process.
+
+        Returns:
+            All metadata for all variables in inputs, variables,parameters,
+            and mass_budget_terms for this Process.
+        """
         desc = super().description()
         desc = desc | {"mass_budget_terms": cls.get_mass_budget_terms()}
         return desc
@@ -165,14 +152,6 @@ class ConservativeProcess(Process):
         return
 
     def calculate(self, time_length: float, **kwargs) -> None:
-        """Calculate Process terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-        """
         super().calculate(time_length=time_length)
 
         # move to a timestep finalization method at some future date.
@@ -189,22 +168,6 @@ class ConservativeProcess(Process):
         budget_args: dict = None,
         output_vars: list = None,
     ) -> None:
-        """Initialize NetCDF output.
-
-        Args:
-            output_dir: base directory path or NetCDF file path if
-                separate_files is True
-            separate_files: boolean indicating if storage component output
-                variables should be written to a separate file for each
-                variable
-            budget_args: a dict of argument key: values to pass to
-                initialize_netcdf on this storage unit's budget. see budget
-                object for options.
-
-        Returns:
-            None
-
-        """
         super().initialize_netcdf(
             output_dir=output_dir,
             separate_files=separate_files,

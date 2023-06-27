@@ -24,7 +24,36 @@ LAKE = HruType.LAKE.value
 
 
 class PRMSRunoff(ConservativeProcess):
-    """PRMS surface runoff."""
+    """PRMS surface runoff.
+
+    Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        soil_moist_prev: Previous storage of capillary reservoir for each
+            HRU
+        net_ppt: Precipitation (rain and/or snow) that falls through the
+            canopy for each HRU
+        net_rain: Rain that falls through canopy for each HRU
+        net_snow: Snow that falls through canopy for each HRU
+        potet: Potential ET for each HRU
+        snowmelt: Snowmelt from snowpack on each HRU
+        snow_evap: Evaporation and sublimation from snowpack on each HRU
+        pkwater_equiv: Snowpack water equivalent on each HRU
+        pptmix_nopack: Flag indicating that a mixed precipitation event has
+            occurred with no snowpack
+        snowcov_area: Snow-covered area on each HRU prior to melt and
+            sublimation unless snowpack
+        through_rain: Rain that passes through snow when no snow present
+        hru_intcpevap: HRU area-weighted average evaporation from the
+            canopy for each HRU
+        intcp_changeover: Canopy throughfall caused by canopy density
+            change from winter to summer
+        budget_type: one of [None, "warn", "error"]
+        calc_method: one of [None = "numpy", "numba"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
+    """
 
     def __init__(
         self,
@@ -32,8 +61,8 @@ class PRMSRunoff(ConservativeProcess):
         discretization: Parameters,
         parameters: Parameters,
         soil_moist_prev: adaptable,
-        net_rain: adaptable,
         net_ppt: adaptable,
+        net_rain: adaptable,
         net_snow: adaptable,
         potet: adaptable,
         snowmelt: adaptable,
@@ -48,7 +77,7 @@ class PRMSRunoff(ConservativeProcess):
         calc_method: str = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ) -> "PRMSRunoff":
+    ) -> None:
         super().__init__(
             control=control,
             discretization=discretization,
@@ -91,18 +120,10 @@ class PRMSRunoff(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """
-        Return a list of the dimensions required for this process
-
-        """
         return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:
-        """
-        Return a list of the parameters required for this process
-
-        """
         return (
             "hru_type",
             "hru_area",
@@ -132,12 +153,6 @@ class PRMSRunoff(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get input variables
-
-        Returns:
-            variables: input variables
-
-        """
         return (
             "soil_moist_prev",
             "net_rain",
@@ -156,11 +171,6 @@ class PRMSRunoff(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
         return {
             "contrib_fraction": zero,
             "infil": zero,
@@ -387,27 +397,12 @@ class PRMSRunoff(ConservativeProcess):
         return
 
     def _advance_variables(self) -> None:
-        """Advance the variables
-        Returns:
-            None
-        """
         self.hru_impervstor_old[:] = self.hru_impervstor
         self.dprst_stor_hru_old[:] = self.dprst_stor_hru
         return None
 
     def _calculate(self, time_length, vectorized=False):
-        """Calculate terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-
-        """
-        # perform the core calculations
-
-        # <
+        """Perform the core calculations"""
         (
             self.infil[:],
             self.contrib_fraction[:],
@@ -499,7 +494,6 @@ class PRMSRunoff(ConservativeProcess):
             imperv_et=self.imperv_et,
         )
 
-        # <
         self.infil_hru[:] = self.infil * self.hru_frac_perv
 
         self.hru_impervstor_change[:] = (

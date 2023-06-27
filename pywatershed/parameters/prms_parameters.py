@@ -52,22 +52,20 @@ class PrmsParameters(Parameters):
     """
     PRMS parameter class
 
-    Parameters
-    ----------
-    parameter_dict : dict
-        parameters dictionary: either structure
-          * param: value
-          * process: {param: value ... }
-        where the later is a parameter dictionary grouped by process.
-        The keys for process should be either the class itself, class.name, or
-        type(class.__name__).
-    parameter_dimensions_dict : dict
-        parameters dimensions dictionary with a structure mirring the parameter
-        dict as described above but with shape tuples in place of parameter
-        value data.
+    Args:
+        parameter_dict : dict
+            parameters dictionary: either structure
 
-    Returns:
-        PrmsParameter object
+            * param: value
+            * process: {param: value ... }
+
+            where the later is a parameter dictionary grouped by process.
+            The keys for process should be either the class itself, class.name,
+            or type(class.__name__).
+        parameter_dimensions_dict : dict
+            parameters dimensions dictionary with a structure mirring the
+            parameter dict as described above but with shape tuples in place
+            of parameter value data.
 
     """
 
@@ -79,7 +77,7 @@ class PrmsParameters(Parameters):
         metadata: dict = None,
         encoding: dict = None,
         validate: bool = True,
-    ) -> "PrmsParameters":
+    ) -> None:
         if dims is None:
             dims = {}
         if coords is None:

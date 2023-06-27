@@ -21,7 +21,7 @@ class Process(Accessor):
 
     Process is a base class for physical processes.
 
-    The  class aims to describe itself through it sstaticmethods and
+    The  class aims to describe itself through it staticmethods and
     properties.
 
     Conventions are adopted through the use of the following
@@ -46,7 +46,7 @@ class Process(Accessor):
         parameters/get_parameters():
             List the names of parameters used by the subclass.
         description:
-            Return a dictionary of with the storage unit cubclass name and its
+            Return a dictionary of with the process subclass name and its
             metadata for all variables for each of inputs, variables, and
             parameters.
         get_init_values:
@@ -117,12 +117,8 @@ class Process(Accessor):
 
     def output(self) -> None:
         """Output data to previously initialized output types.
-
-        Writes output for initalized output types.
-
         Returns:
             None
-
         """
         if self._do_output_netcdf:
             if self._verbose:
@@ -131,13 +127,9 @@ class Process(Accessor):
         return
 
     def finalize(self) -> None:
-        """Finalize Process
-
-        Finalizes the object, including output methods.
-
+        """Finalizes the Process, including output methods.
         Returns:
             None
-
         """
         if self._verbose:
             print(f"finalizing: {self.name}")
@@ -147,28 +139,31 @@ class Process(Accessor):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """Get a tuple of parameter names."""
+        """Get a tuple of dimension names for this Process."""
         raise Exception("This must be overridden")
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get a tuple of parameter names."""
+        """Get a tuple of parameter names for this Process."""
         raise Exception("This must be overridden")
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get a tuple of input variable names."""
+        """Get a tuple of input variable names for this Process."""
         raise Exception("This must be overridden")
 
     @classmethod
     def get_variables(cls) -> tuple:
-        """Get a tuple of internal public variable names."""
+        """Get a tuple of (public) variable names for this Process."""
         return list(cls.get_init_values().keys())
 
     @classmethod
     def description(cls) -> dict:
-        """A description (all metadata) for all variables in inputs, variables,
-        and parameters."""
+        """A dictionary description of this Process.
+
+        Returns:
+            All metadata for all variables in inputs, variables,
+            and parameters."""
         return {
             "class_name": cls.__name__,
             "inputs": meta.get_vars(cls.get_inputs()),
@@ -347,13 +342,13 @@ class Process(Accessor):
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
         # requires that the calculation of the input happens before the
-        # advance of this storage unit.
+        # advance of this process.
         self[input_variable_name] = adapter.current
         return
 
     def advance(self):
         """
-        Advance the storage unit in time.
+        Advance the Process in time.
 
         Returns:
             None

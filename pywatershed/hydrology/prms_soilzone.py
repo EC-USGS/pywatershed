@@ -24,6 +24,30 @@ class PRMSSoilzone(ConservativeProcess):
     """PRMS soil zone.
 
     Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        dprst_evap_hru: Evaporation from surface-depression storage for each
+            HRU
+        dprst_seep_hru: Seepage from surface-depression storage to associated
+            GWR for each HRU
+        hru_impervevap: HRU area-weighted average evaporation from impervious
+            area for each HRU
+        hru_intcpevap: HRU area-weighted average evaporation from the
+            canopy for each HRU
+        infil_hru: Infiltration to the capillary and preferential-flow
+            reservoirs, depth on HRU area
+        sroff: Surface runoff to the stream network for each HRU
+        potet: Potential ET for each HRU
+        transp_on: Flag indicating whether transpiration is occurring
+            (0=no;1=yes)
+        snow_evap: Evaporation and sublimation from snowpack on each HRU
+        snowcov_area: Snow-covered area on each HRU prior to melt and
+            sublimation unless snowpack
+        budget_type: one of [None, "warn", "error"]
+        calc_method: one of [None = "numpy", "numba"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
     """
 
     def __init__(
@@ -64,22 +88,10 @@ class PRMSSoilzone(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """Get soil zone dimensions
-
-        Returns:
-            dimensions: input dimensions
-
-        """
         return ("nhru",)
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get soil zone parameters
-
-        Returns:
-            parameters: input parameters
-
-        """
         return (
             "dprst_frac",
             "cov_type",
@@ -106,12 +118,6 @@ class PRMSSoilzone(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get soil zone input variables
-
-        Returns:
-            variables: input variables
-
-        """
         return (
             "dprst_evap_hru",  # JLM ?? needs this stuff to calculate evap?
             "dprst_seep_hru",
@@ -128,22 +134,10 @@ class PRMSSoilzone(ConservativeProcess):
 
     @staticmethod
     def get_restart_variables() -> tuple:
-        """Get soil zone restart variables
-
-        Returns:
-            variables: restart variables
-        """
-
         return ()
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get soil zone inital values
-
-        Returns:
-            dict: inital values for named variables
-        """
-
         return {
             "cap_infil_tot": zero,
             "cap_waterin": zero,
@@ -213,8 +207,6 @@ class PRMSSoilzone(ConservativeProcess):
         }
 
     def _set_initial_conditions(self):
-        """Initialize PRMSSoilzone variables."""
-
         # Derived parameters
         # JLM: is this awkward here?
         # JLM: it's definitely awkward to edit a parameter. maybe

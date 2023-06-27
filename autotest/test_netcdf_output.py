@@ -83,7 +83,6 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     model = Model(
         model_procs,
         control=control,
-        discretization_dict=None,
         parameters=params,
         input_dir=input_dir,
     )
@@ -184,7 +183,6 @@ def test_separate_together(domain, control, params, tmp_path, separate):
     model = Model(
         model_procs,
         control=control,
-        discretization_dict=None,
         parameters=params,
         input_dir=input_dir,
     )

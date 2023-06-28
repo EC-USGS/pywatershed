@@ -134,7 +134,14 @@ def test_model(domain, model_args, tmp_path):
     for ff in output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    model = Model(**model_args, input_dir=input_dir)
+    if model_args["control"] is None:
+        control = model_args["process_list_or_model_dict"]["control"]
+    else:
+        control = model_args["control"]
+
+    control.config["input_dir"] = input_dir
+
+    model = Model(**model_args)
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1

@@ -78,13 +78,13 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
 
     # dont need any PRMS inputs for the model specified, so this is sufficient
     input_dir = domain["prms_output_dir"]
+    control.config["input_dir"] = input_dir
 
     # TODO: Eliminate potet and other variables from being used
     model = Model(
         model_procs,
         control=control,
         parameters=params,
-        input_dir=input_dir,
     )
 
     check_dict = {proc: {} for proc in check_vars.keys()}
@@ -174,6 +174,7 @@ def test_separate_together(domain, control, params, tmp_path, separate):
     domain_output_dir = domain["prms_output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
+    control.config["input_dir"] = input_dir
     # Could limit this to just the variables in model_procs
     for ff in domain_output_dir.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
@@ -184,7 +185,6 @@ def test_separate_together(domain, control, params, tmp_path, separate):
         model_procs,
         control=control,
         parameters=params,
-        input_dir=input_dir,
     )
 
     model.initialize_netcdf(

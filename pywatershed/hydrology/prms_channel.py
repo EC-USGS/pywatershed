@@ -97,7 +97,6 @@ class PRMSChannel(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
-        self._calc_method = str(calc_method)
 
         self._set_budget(basis="global")
         self._initialize_channel_data()
@@ -316,6 +315,9 @@ class PRMSChannel(ConservativeProcess):
         return
 
     def _init_calc_method(self):
+        if self._calc_method is None:
+            self._calc_method = "none"
+
         if self._calc_method.lower() == "numba":
             import numba as nb
 

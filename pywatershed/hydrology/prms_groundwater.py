@@ -56,7 +56,6 @@ class PRMSGroundwater(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
-        self._calc_method = str(calc_method)
 
         self._set_budget()
         self._init_calc_method()
@@ -120,6 +119,9 @@ class PRMSGroundwater(ConservativeProcess):
         return
 
     def _init_calc_method(self):
+        if self._calc_method is None:
+            self._calc_method = "none"
+
         if self._calc_method.lower() == "numba":
             import numba as nb
 

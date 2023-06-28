@@ -35,8 +35,6 @@ class Model:
         process_list_or_model_dict: a process list or a model dictionary,
             see ways of instatiation below.
         control: Control object or None, see below.
-        input_dir: A optional directory to search for input files if not
-            supplied in control.
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
@@ -135,14 +133,13 @@ class Model:
         # PRMS-native parameter file
         parameter_file = domain_dir / "myparam.param"
         control = pws.Control.load(control_file)
+        control.config['input_dir'] = domain_dir / "output"
         params = pws.parameters.PrmsParameters.load(parameter_file)
-        input_dir = domain_dir / "output"
         model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
         model = pws.Model(
             model_procs,
             control=control,
             parameters=params,
-            input_dir=input_dir
         )
         model.run()
 
@@ -154,14 +151,13 @@ class Model:
     >>> # PRMS-native parameter file
     >>> parameter_file = domain_dir / "myparam.param"
     >>> control = pws.Control.load(control_file)
+    >>> control.config['input_dir'] = domain_dir / "output"
     >>> params = pws.parameters.PrmsParameters.load(parameter_file)
-    >>> input_dir = domain_dir / "output"
     >>> model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
     >>> model = pws.Model(
     ...     model_procs,
     ...     control=control,
     ...     parameters=params,
-    ...     input_dir=input_dir
     ... )
     >>> model.run()
     model.run(): 0 % complete
@@ -177,7 +173,6 @@ class Model:
     model.run(): 100 % complete
     model.run(): finalizing
 
-
     Construct a model the pywatershed-centric way, in memory:
 
     ..
@@ -189,6 +184,7 @@ class Model:
         )
         control_file = domain_dir / "control.test"
         control = pws.Control.load(control_file)
+        control.config['input_dir'] = domain_dir
         params = {}
         for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
             param_file = domain_dir / f"parameters_PRMS{proc}.nc"
@@ -223,7 +219,7 @@ class Model:
                 'dis': 'dis_hru',
             }
         }
-        model = pws.Model(model_dict, input_dir=domain_dir)
+        model = pws.Model(model_dict)
         model.run()
 
     >>> import pywatershed as pws
@@ -234,6 +230,7 @@ class Model:
     ... )
     >>> control_file = domain_dir / "control.test"
     >>> control = pws.Control.load(control_file)
+    >>> control.config['input_dir'] = domain_dir
     >>> params = {}
     >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
     ...     param_file = domain_dir / f"parameters_PRMS{proc}.nc"
@@ -269,7 +266,7 @@ class Model:
     ...         'dis': 'dis_hru',
     ...     }
     ... }
-    >>> model = pws.Model(model_dict, input_dir=domain_dir)
+    >>> model = pws.Model(model_dict)
     >>> model.run()
     model.run(): 0 % complete
     model.run(): 10 % complete
@@ -283,6 +280,7 @@ class Model:
     model.run(): 90 % complete
     model.run(): 100 % complete
     model.run(): finalizing
+
 
     Construct a model the pywatershed-centric way, from a yaml file definition:
 
@@ -299,10 +297,12 @@ class Model:
             "verbosity": 0,
             "budget_type": "warn",
             "init_vars_from_file": 0,
-            "input_dir": "./",
+            "input_dir": str(domain_dir),
         }
+        control_file = domain_dir / "example_control.yml"
+
         model_dict = {
-            "control": "control.yml",
+            "control": str(control_file),
             "dis_hru": "parameters_dis_hru.nc",
             "dis_both": "parameters_dis_both.nc",
             "solargeometry": {
@@ -320,9 +320,13 @@ class Model:
                 "parameters": "parameters_PRMSCanopy.nc",
                 "dis": "dis_hru",
             },
-            "model_order": ["solargeometry", "atmosphere", "canopy"],
+            "snow": {
+                "class": "PRMSSnow",
+                "parameters": "parameters_PRMSSnow.nc",
+                "dis": "dis_hru",
+            },
+            "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
         }
-        control_file = domain_dir / "example_control.yml"
         model_dict_file = domain_dir / "example_model_dict.yml"
         dump_dict = {control_file: control, model_dict_file: model_dict}
         for key, val in dump_dict.items():
@@ -330,6 +334,7 @@ class Model:
                 documents = yaml.dump(val, file)
 
         model = pws.Model.from_yml(model_dict_file)
+        model.run()
         control_file.unlink()
         model_dict_file.unlink()
 
@@ -345,10 +350,11 @@ class Model:
     ...     "verbosity": 0,
     ...     "budget_type": "warn",
     ...     "init_vars_from_file": 0,
-    ...     "input_dir": "./",
+    ...     "input_dir": str(domain_dir),
     ... }
+    >>> control_file = domain_dir / "example_control.yml"
     >>> model_dict = {
-    ...     "control": "control.yml",
+    ...     "control": str(control_file),
     ...     "dis_hru": "parameters_dis_hru.nc",
     ...     "dis_both": "parameters_dis_both.nc",
     ...     "solargeometry": {
@@ -366,9 +372,13 @@ class Model:
     ...         "parameters": "parameters_PRMSCanopy.nc",
     ...         "dis": "dis_hru",
     ...     },
-    ...     "model_order": ["solargeometry", "atmosphere", "canopy"],
+    ...     "snow": {
+    ...         "class": "PRMSSnow",
+    ...         "parameters": "parameters_PRMSSnow.nc",
+    ...         "dis": "dis_hru",
+    ...     },
+    ...     "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
     ... }
-    >>> control_file = domain_dir / "example_control.yml"
     >>> model_dict_file = domain_dir / "example_model_dict.yml"
     >>> dump_dict = {control_file: control, model_dict_file: model_dict}
     >>> for key, val in dump_dict.items():
@@ -376,9 +386,24 @@ class Model:
     ...         documents = yaml.dump(val, file)
     ...
     >>> model = pws.Model.from_yml(model_dict_file)
-    ValueError: input_dir specified neither in control nor to Model
+    >>> model.run()
+    model.run(): 0 % complete
+    /Users/jmccreight/usgs/pywatershed/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
+      warn(msg, UserWarning)
+    model.run(): 10 % complete
+    model.run(): 20 % complete
+    model.run(): 30 % complete
+    model.run(): 40 % complete
+    model.run(): 50 % complete
+    model.run(): 60 % complete
+    model.run(): 70 % complete
+    model.run(): 80 % complete
+    model.run(): 90 % complete
+    model.run(): 100 % complete
+    model.run(): finalizing
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
+    >>>
 
     """
 
@@ -388,7 +413,6 @@ class Model:
         control: Control = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,
-        input_dir: Union[str, pl.Path] = None,
     ):
         self.control = control
         self.parameters = parameters
@@ -430,9 +454,7 @@ class Model:
 
         self._categorize_model_dict()
         self._validate_model_dict()
-
-        self._set_input_dir(input_dir)
-
+        self._set_input_dir()
         self._solve_inputs()
         self._init_procs()
         self._connect_procs()
@@ -591,31 +613,15 @@ class Model:
         #   <   <   <
         return
 
-    def _set_input_dir(self, input_dir_in):
-        if "input_dir" in self.control.config.keys():
-            control_input_dir = pl.Path(
+    def _set_input_dir(self):
+        if "input_dir" not in self.control.config.keys():
+            msg = "Required control config variable 'input_dir' not found"
+            raise ValueError(msg)
+        else:
+            self._input_dir = pl.Path(
                 self.control.config["input_dir"]
             ).resolve()
-        else:
-            control_input_dir = None
 
-        if input_dir_in is not None:
-            input_dir_in = pl.Path(input_dir_in).resolve()
-        else:
-            input_dir_in = None
-
-        if control_input_dir is None and input_dir_in is None:
-            msg = "input_dir specified neither in control nor to Model"
-            raise ValueError(msg)
-        elif control_input_dir is not None and input_dir_in is not None:
-            assert control_input_dir == input_dir_in
-            input_dir = input_dir_in
-        elif control_input_dir is None:
-            input_dir = input_dir_in
-        else:
-            input_dir = control_input_dir
-
-        self._input_dir = input_dir
         return
 
     def _find_input_files(self) -> None:

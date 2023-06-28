@@ -1,3 +1,5 @@
+from warnings import warn
+
 import numpy as np
 from numba import prange
 
@@ -135,7 +137,6 @@ class PRMSSnow(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
-        self._calc_method = str(calc_method)
 
         self._set_budget()
         self._init_calc_method()
@@ -392,6 +393,17 @@ class PRMSSnow(ConservativeProcess):
         return
 
     def _init_calc_method(self):
+        if self._calc_method is None:
+            self._calc_method = "none"
+
+        if self._calc_method.lower() not in ["none", "numpy", "numba"]:
+            msg = (
+                f"Invalid calc_method={self._calc_method} for {self.name}. "
+                f"Setting calc_method to 'numba' for {self.name}"
+            )
+            warn(msg)
+            self._calc_method = "numba"
+
         if self._calc_method.lower() == "numba":
             import numba as nb
 
@@ -425,12 +437,8 @@ class PRMSSnow(ConservativeProcess):
                     nb.njit(fastmath=True)(getattr(self, fn)),
                 )
 
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            self._calculate_snow = self._calculate_numpy
-
         else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+            self._calculate_snow = self._calculate_numpy
 
         return
 

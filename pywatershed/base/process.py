@@ -334,6 +334,7 @@ class Process(Accessor):
                 setattr(self, f"_{opt}", self.control.config[opt])
             else:
                 setattr(self, f"_{opt}", None)
+
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):

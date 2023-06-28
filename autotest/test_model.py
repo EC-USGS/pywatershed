@@ -31,7 +31,7 @@ test_models = {
 }
 
 
-params = ("params_sep", "params_one", "from_yml")
+invoke_style = ("prms", "model_dict", "model_dict_from_yml")
 
 
 @pytest.fixture(scope="function")
@@ -39,7 +39,7 @@ def control(domain):
     control = Control.load(domain["control_file"])
     control.config["verbose"] = 10
     control.config["budget_type"] = None
-    control.config["calc_method"] = "numba"
+    control.config["calc_method"] = "fortran"
     control.config["load_n_time_batches"] = 1
     return control
 
@@ -58,14 +58,14 @@ def discretization(domain):
 
 
 @pytest.fixture(
-    scope="function", params=list(product(params, test_models.keys()))
+    scope="function", params=list(product(invoke_style, test_models.keys()))
 )
 def model_args(domain, control, discretization, request):
-    params = request.param[0]
+    invoke_style = request.param[0]
     model_key = request.param[1]
     process_list = test_models[model_key]
 
-    if params == "params_one":
+    if invoke_style == "prms":
         # Single params is the backwards compatible way
         args = {
             "process_list_or_model_dict": process_list,
@@ -73,7 +73,7 @@ def model_args(domain, control, discretization, request):
             "parameters": PrmsParameters.load(domain["param_file"]),
         }
 
-    elif params == "params_sep":
+    elif invoke_style == "model_dict":
         # Constructing this model_dict is the new way
         model_dict = discretization
         model_dict["control"] = control
@@ -103,7 +103,7 @@ def model_args(domain, control, discretization, request):
             "parameters": None,
         }
 
-    elif params == "from_yml":
+    elif invoke_style == "model_dict_from_yml":
         yml_file = domain["dir"] / "nhm_model.yml"
         model_dict = Model.model_dict_from_yml(yml_file)
 
@@ -134,7 +134,21 @@ def test_model(domain, model_args, tmp_path):
     for ff in output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    model = Model(**model_args, input_dir=input_dir)
+    if model_args["control"] is None:
+        control = model_args["process_list_or_model_dict"]["control"]
+    else:
+        control = model_args["control"]
+
+    control.config["input_dir"] = input_dir
+
+    model = Model(**model_args)
+
+    # Test passing of control calc_method option
+    for proc in model.processes.keys():
+        if proc.lower() in ["prmssnow", "prmsrunoff", "prmssoilzone"]:
+            assert model.processes[proc]._calc_method == "numba"
+        elif proc.lower() in ["prmscanopy", "prmsgroundwater", "prmschannel"]:
+            assert model.processes[proc]._calc_method == "fortran"
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1

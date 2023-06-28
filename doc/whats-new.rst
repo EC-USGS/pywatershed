@@ -76,11 +76,11 @@ New Features
 Breaking changes
 ~~~~~~~~~~~~~~~~
 - `Control` no longer takes a `Parameter` object as an initialization argument.
-  `Process` subclasses now require arguments `dis` and `parameters`.  The first
-  argument of `Model` not a indefinite number of processes, it is now either a
-  list of `Process` subclasses or a model dictionary (see `Model` documentation.
-  Removed initialization options from `Model` except for `input_dir`, all other
-  global options managed by control. (:pull:`188`)
+  `Process` subclasses now require arguments `discretization` and `parameters`.
+  The firstargument of `Model` not a indefinite number of processes, it is now
+  either a list of `Process` subclasses or a model dictionary (see `Model`
+  documentation. Removed initialization options from `Model` except for
+  `input_dir`, all other global options managed by control. (:pull:`188`)
   By `James McCreight <https://github.com/jmccreight>`_.
   
 

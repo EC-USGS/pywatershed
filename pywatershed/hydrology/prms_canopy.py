@@ -142,7 +142,10 @@ class PRMSCanopy(ConservativeProcess):
         return
 
     def _init_calc_method(self):
-        if self._calc_method.lower() == "numba":
+        if self._calc_method is None:
+            self._calc_method = "none"
+
+        if self._calc_method.lower() in ["none", "numba"]:
             import numba as nb
 
             numba_msg = f"{self.name} jit compiling with numba "
@@ -235,7 +238,7 @@ class PRMSCanopy(ConservativeProcess):
                 fastmath=True, parallel=nb_parallel
             )(self._calculate_numpy)
 
-        elif self._calc_method.lower() in ["none", "numpy"]:
+        elif self._calc_method.lower() in ["numpy"]:
             self._calculate_canopy = self._calculate_numpy
 
         elif self._calc_method.lower() == "fortran":

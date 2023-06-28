@@ -393,6 +393,9 @@ class PRMSSnow(ConservativeProcess):
         return
 
     def _init_calc_method(self):
+        if self._calc_method is None:
+            self._calc_method = "none"
+
         if self._calc_method.lower() not in ["none", "numpy", "numba"]:
             msg = (
                 f"Invalid calc_method={self._calc_method} for {self.name}. "

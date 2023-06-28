@@ -297,10 +297,12 @@ class Model:
             "verbosity": 0,
             "budget_type": "warn",
             "init_vars_from_file": 0,
-            "input_dir": "./",
+            "input_dir": str(domain_dir),
         }
+        control_file = domain_dir / "example_control.yml"
+
         model_dict = {
-            "control": "control.yml",
+            "control": str(control_file),
             "dis_hru": "parameters_dis_hru.nc",
             "dis_both": "parameters_dis_both.nc",
             "solargeometry": {
@@ -318,9 +320,13 @@ class Model:
                 "parameters": "parameters_PRMSCanopy.nc",
                 "dis": "dis_hru",
             },
-            "model_order": ["solargeometry", "atmosphere", "canopy"],
+            "snow": {
+                "class": "PRMSSnow",
+                "parameters": "parameters_PRMSSnow.nc",
+                "dis": "dis_hru",
+            },
+            "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
         }
-        control_file = domain_dir / "example_control.yml"
         model_dict_file = domain_dir / "example_model_dict.yml"
         dump_dict = {control_file: control, model_dict_file: model_dict}
         for key, val in dump_dict.items():
@@ -328,6 +334,7 @@ class Model:
                 documents = yaml.dump(val, file)
 
         model = pws.Model.from_yml(model_dict_file)
+        model.run()
         control_file.unlink()
         model_dict_file.unlink()
 
@@ -343,10 +350,11 @@ class Model:
     ...     "verbosity": 0,
     ...     "budget_type": "warn",
     ...     "init_vars_from_file": 0,
-    ...     "input_dir": "./",
+    ...     "input_dir": str(domain_dir),
     ... }
+    >>> control_file = domain_dir / "example_control.yml"
     >>> model_dict = {
-    ...     "control": "control.yml",
+    ...     "control": str(control_file),
     ...     "dis_hru": "parameters_dis_hru.nc",
     ...     "dis_both": "parameters_dis_both.nc",
     ...     "solargeometry": {
@@ -364,9 +372,13 @@ class Model:
     ...         "parameters": "parameters_PRMSCanopy.nc",
     ...         "dis": "dis_hru",
     ...     },
-    ...     "model_order": ["solargeometry", "atmosphere", "canopy"],
+    ...     "snow": {
+    ...         "class": "PRMSSnow",
+    ...         "parameters": "parameters_PRMSSnow.nc",
+    ...         "dis": "dis_hru",
+    ...     },
+    ...     "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
     ... }
-    >>> control_file = domain_dir / "example_control.yml"
     >>> model_dict_file = domain_dir / "example_model_dict.yml"
     >>> dump_dict = {control_file: control, model_dict_file: model_dict}
     >>> for key, val in dump_dict.items():
@@ -374,9 +386,24 @@ class Model:
     ...         documents = yaml.dump(val, file)
     ...
     >>> model = pws.Model.from_yml(model_dict_file)
-    ValueError: input_dir specified neither in control nor to Model
+    >>> model.run()
+    model.run(): 0 % complete
+    /Users/jmccreight/usgs/pywatershed/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
+      warn(msg, UserWarning)
+    model.run(): 10 % complete
+    model.run(): 20 % complete
+    model.run(): 30 % complete
+    model.run(): 40 % complete
+    model.run(): 50 % complete
+    model.run(): 60 % complete
+    model.run(): 70 % complete
+    model.run(): 80 % complete
+    model.run(): 90 % complete
+    model.run(): 100 % complete
+    model.run(): finalizing
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
+    >>>
 
     """
 

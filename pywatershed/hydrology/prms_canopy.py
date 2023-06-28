@@ -75,7 +75,6 @@ class PRMSCanopy(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
-        self._calc_method = str(calc_method)
 
         self._set_budget()
         self._init_calc_method()

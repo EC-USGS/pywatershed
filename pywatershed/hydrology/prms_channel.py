@@ -97,7 +97,6 @@ class PRMSChannel(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
-        self._calc_method = str(calc_method)
 
         self._set_budget(basis="global")
         self._initialize_channel_data()

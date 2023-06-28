@@ -15,7 +15,7 @@ What's New
 .. _whats-new.0.3.0:
 
 v0.3.0 (unreleased)
------------------------
+-------------------
 
 New Features
 ~~~~~~~~~~~~
@@ -47,12 +47,21 @@ Internal Changes
 
 .. _whats-new.0.2.0:
 
-v0.2.0 (13 June 2023)
------------------------
+v0.2.0 (28 June 2023)
+---------------------
 
 New Features
 ~~~~~~~~~~~~
-
+- New way to specify `Model` instantiation either in-memory or from yaml files
+  using a model dictionary. The approach is loosely based on MODFLOW 6 input
+  organization. See `Model` documentation. Introduced the concept of
+  discretizations for PRMS, defining "dis_hru" and "dis_seg". These are
+  components of how model dictionaries are specified.
+  (:pull:`188`) By `James McCreight <https://github.com/jmccreight>`_.
+- New `Control.from_yaml()` method. (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- What's new workflow (behold!) per :issue:`180` and :pull:`181`
+  By `James McCreight <https://github.com/jmccreight>`_.
 - Add automatic release workflow to PyPi as per :issue:`178`. Associated
   implementation of gitflow and semver conventions. Overhauled
   `CONTRIBUTING.md`, `DEVELOPER.md`, `README.md`, and `.github/RELEASE.md`
@@ -62,13 +71,18 @@ New Features
   `/usr/local/lib` on macOS CI so PRMS binaries included in this repo can find
   them. (:pull:`179`)
   By `Wes Bonelli <https://github.com/w-bonelli>`_.
-- What's new workflow (behold!) per :issue:`180` and :pull:`181`
-  By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-
+- `Control` no longer takes a `Parameter` object as an initialization argument.
+  `Process` subclasses now require arguments `dis` and `parameters`.  The first
+  argument of `Model` not a indefinite number of processes, it is now either a
+  list of `Process` subclasses or a model dictionary (see `Model` documentation.
+  Removed initialization options from `Model` except for `input_dir`, all other
+  global options managed by control. (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+  
 
 Deprecations
 ~~~~~~~~~~~~
@@ -76,7 +90,6 @@ Deprecations
 
 Performance
 ~~~~~~~~~~~
-
 - Introduce ASV performance benchmarks for import and various NHM configurations
   in pywatershed. (:issue:`170` and :pull:`184`)
   By `James McCreight <https://github.com/jmccreight>`_.
@@ -84,26 +97,49 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
-
+- Add doc building requirements to environment.yml (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- Revive fortran compiling for editable installs (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 - Made the Parameter class data completely private by converting dicts to
   MappingProxyTypes and setting numpy.ndarrays to read-only. (:issue:`177`
   and :pull:`183`)
   By `James McCreight <https://github.com/jmccreight>`_.
+- ModelGraph improvements and fixes (however result are platform dependent)
+  (:pull:`162`) By `James McCreight <https://github.com/jmccreight>`_.  
 
 
 Documentation
 ~~~~~~~~~~~~~
+- Model class, DatasetDict and general documentation overhaul (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Internal Changes
 ~~~~~~~~~~~~~~~~
-- Refactor dependencies for standard pypi installation. (:pull:`164`, :issue:`178`)
+- Rename StorageUnit to ConservativeProcess that subclasses from a new Process
+  class that contains most of the StorageUnit functionality. (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- New set_options() method on Process and ConservativeProcess to set their
+  initialization options as '_` atrributes. (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- Clean up of how the `calc_method` option assigns function names to reduce
+  the total amount of code and do it upon initialization. (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- Rename many modules to use lower case names including those in base/,
+  atmoshpere/, and hydrology/ (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- NHM "self-driving" tests
+  (:pull:`160`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- Refactor dependencies for standard pypi installation. (:pull:`164`,
+  :issue:`178`)
   By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
 
   
 .. _whats-new.0.1.1:
 
 v0.1.1 (27 April 2023)
---------------------
+----------------------
 
 Initial release.

@@ -24,62 +24,361 @@ process_order_nhm = [
 
 
 class Model:
-    """pywatershed model builder class.
+    """Build a model in pywatershed.
 
-    Build a model in pywatershed.
+    This is the class that helps execute sets of Processes in order.
 
-    Backwards compatibility (pre v0.2.0) is maintained with minor changes while
-    introducing a new way to specify models (in v0.2.0). These will be called
-    the "old" and "new" ways, respectively, in this description. The old way
-    only works for PRMS/NHM models and their submodels. The new way is
-    introduced to handle more aribtrary and subdry models. Both will work
-    and both are tested, but the old way may be deprecated in the future.
-    (The construction of both ways can be see in autotest/test_model.py in the
-    `model_args` fixture.)
-
-    Old way (subject to future deprecation):
-        process_list_or_model_dict: a process list of PRMS model components
-        control: a control object
-        discretization_dict: None
-        parameters: a PrmsParameters object
-
-    New way:
-        process_list_or_model_dict: a "model dictionary", detailed below.
-        control: None
-        discretization_dict: None
-        parameters: None
-
-    A model dictionary is a dictionary where aribtrary names may be applied
-    to the following kinds of objects: control, discretization, process, order,
-    and exchanges. (Exchanges not yet supported). Each of these is described
-    below. Model dictionaries can also be specfied via yaml files, see
-
-    control: Only one control object can be included in the model dictionary.
-        The name can be arbitrary, the value is either an instance of class
-        Control or a yaml file to be loaded by Control.from_yml() (link
-        to this staticmethod).
-        The control object supples two things for the model 1) the
-        global time discretization (start and stop times, as well as time
-        step), and 2) default global options for all model processes.
-    discretization: Multiple discretizations may be supplied to the model
-        dictionary, each with arbitrary names. These provide spatial
-        discretization information which may be shared by multiple processes
-        specified later. Each process will refer to its required discretization
-        using the name in the model dict. The value of each is an instance
-        of the class Parameters.
-    Process: Multiple processes with arbitrary names are to be supplied to
-        model dictionary. These are of class dict and have the required keys
-        ['class',
-    Exchange: Future.
+    There are two distinct ways of instatniating the Model class described
+    below.
 
     Args:
-        process_list_or_model_dict: see above.
-        control: Control object.
-
-        input_dir: A directory to search for input files.
+        process_list_or_model_dict: a process list or a model dictionary,
+            see ways of instatiation below.
+        control: Control object or None, see below.
+        input_dir: A optional directory to search for input files if not
+            supplied in control.
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
+
+    PRMS-legacy instantiation
+    -----------------------------
+
+    This method of instantiation may be deprecated in the future. It is
+    intended to support PRMS files with few modifications.
+
+    Note: Pywatershed v0.2.0 has a minor break to backwards compatibility (pre
+    v0.2.0) where the list of processes is not passed as a list rather than an
+    upacked list or a number of arguments.
+
+    Old way, first three args:
+
+    - **process_list_or_model_dict** - A process list of PRMS model components
+    - **control** - A control object
+    - **parameters** - A PrmsParameters object
+
+    See first example below for more details.
+    There are variations of this where
+
+    pywatershed-centric instatiation
+    ------------------------------------
+
+    The new/pywatershed way was introduced to handle more aribtrary and subdry
+    models. It is loosely based on how MF6 structures its inputs. All of the
+    work is contained in the first argument, the model dictionary, and the
+    control and parameters are both None.
+
+    New way, only one of first three args:
+
+    - **process_list_or_model_dict** - a "model dictionary", detailed below.
+    - (*control* - None is default)
+    - (*parameters* - None is default)
+
+    This means that the user must understand the model dictionary supplied. A
+    model dictionary has aribtrary keys but prescribed values. Values may be
+    the following kinds of objects: Control, discretization dictionary, process
+    dictionary, process order list, and exchanges dictionaries. (Exchanges are
+    not yet supported). Each of these is described below. Model dictionaries
+    can also be specfied via yaml files. Notes on yaml versus in-memory
+    requirements for the values are described as they are (necessarily)
+    different.
+
+    Model dictionary values description:
+    ====================================
+
+    - **control** - The control object supplies two things for the model 1) the
+      global time discretization (start and stop times, as well as time
+      step), and 2) default global options for all model processes.
+      Only one control object can be included in the model dictionary. Though
+      the key for the control can be arbitrary, the value is either an instance
+      of class Control or, in the case of a yaml model dictionary, a control
+      yaml file to be loaded by Control.from_yml() (todo: link to this
+      staticmethod).
+    - **discretizations** - Multiple discretizations may be supplied to the
+      model dictionary, each with arbitrary names. These provide spatial
+      discretization information which may be shared by multiple processes
+      specified later in `process_list`. Each process will refer to its
+      required discretization using the key for that discretization in the
+      model dict. The value of each is an instance of the class Parameters. In
+      a yaml model dictionary, the value of each discretization is a path
+      to a netcdf file for that discretization.
+    - **processes** - Multiple processes with arbitrary keys are to be
+      supplied to model dictionary (if running just one process, there's no
+      need for the Model class). The values for each process are dictionaries
+      and have the required keys:
+
+      - *class* - The desired class, in the case of a yaml model dictionary,
+        the string name of a class in the pywatershed namespace
+      - *parameters* - Either a Parameters object or, in the case of a yaml
+        model dictionary, the path of a netcdf file with the parameters
+      - *dis* - The key of the dis to use as specified at the top level of
+        model dictionary.
+
+    - **model_order** - A list of the processess *keys* in the order the model
+      is to be executed.
+    - **exchanges** - Future.
+
+    Examples:
+    ---------
+
+    These examples will work if you have an editable install of the repository
+    (not installed from pypi).
+
+    Construct a PRMS-legacy based model:
+
+    ..
+        import pywatershed as pws
+        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
+        domain_dir = test_data_dir / "drb_2yr"
+        # A PRMS-native control file
+        control_file = domain_dir / "control.test"
+        # PRMS-native parameter file
+        parameter_file = domain_dir / "myparam.param"
+        control = pws.Control.load(control_file)
+        params = pws.parameters.PrmsParameters.load(parameter_file)
+        input_dir = domain_dir / "output"
+        model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
+        model = pws.Model(
+            model_procs,
+            control=control,
+            parameters=params,
+            input_dir=input_dir
+        )
+        model.run()
+
+    >>> import pywatershed as pws
+    >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
+    >>> domain_dir = test_data_dir / "drb_2yr"
+    >>> # A PRMS-native control file
+    >>> control_file = domain_dir / "control.test"
+    >>> # PRMS-native parameter file
+    >>> parameter_file = domain_dir / "myparam.param"
+    >>> control = pws.Control.load(control_file)
+    >>> params = pws.parameters.PrmsParameters.load(parameter_file)
+    >>> input_dir = domain_dir / "output"
+    >>> model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
+    >>> model = pws.Model(
+    ...     model_procs,
+    ...     control=control,
+    ...     parameters=params,
+    ...     input_dir=input_dir
+    ... )
+    >>> model.run()
+    model.run(): 0 % complete
+    model.run(): 10 % complete
+    model.run(): 20 % complete
+    model.run(): 30 % complete
+    model.run(): 40 % complete
+    model.run(): 50 % complete
+    model.run(): 60 % complete
+    model.run(): 70 % complete
+    model.run(): 80 % complete
+    model.run(): 90 % complete
+    model.run(): 100 % complete
+    model.run(): finalizing
+
+
+    Construct a model the pywatershed-centric way, in memory:
+
+    ..
+        import pywatershed as pws
+        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
+        domain_dir = test_data_dir / "drb_2yr"
+        dis_hru = pws.Parameters.from_netcdf(
+            domain_dir / "parameters_dis_hru.nc", encoding=False
+        )
+        control_file = domain_dir / "control.test"
+        control = pws.Control.load(control_file)
+        params = {}
+        for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
+            param_file = domain_dir / f"parameters_PRMS{proc}.nc"
+            params[proc.lower()] = pws.Parameters.from_netcdf(param_file)
+        model_dict = {
+           'control': control,
+           'dis_hru': dis_hru,
+           'model_order': [
+                'prmssolargeometry',
+                'prmsatmosphere',
+                'prmscanopy',
+                'prmssnow',
+            ],
+            'prmssolargeometry': {
+                'class': pws.PRMSSolarGeometry,
+                'parameters': params['solargeometry'],
+                'dis': 'dis_hru',
+            },
+            'prmsatmosphere': {
+                'class': pws.PRMSAtmosphere,
+                'parameters': params['atmosphere'],
+                'dis': 'dis_hru',
+            },
+            'prmscanopy': {
+                'class': pws.PRMSCanopy,
+                'parameters': params['canopy'],
+                'dis': 'dis_hru',
+            },
+            'prmssnow': {
+                'class': pws.PRMSSnow,
+                'parameters': params['snow'],
+                'dis': 'dis_hru',
+            }
+        }
+        model = pws.Model(model_dict, input_dir=domain_dir)
+        model.run()
+
+    >>> import pywatershed as pws
+    >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
+    >>> domain_dir = test_data_dir / "drb_2yr"
+    >>> dis_hru = pws.Parameters.from_netcdf(
+    ...     domain_dir / "parameters_dis_hru.nc", encoding=False
+    ... )
+    >>> control_file = domain_dir / "control.test"
+    >>> control = pws.Control.load(control_file)
+    >>> params = {}
+    >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
+    ...     param_file = domain_dir / f"parameters_PRMS{proc}.nc"
+    ...     params[proc.lower()] = pws.Parameters.from_netcdf(param_file)
+    ...
+    >>> model_dict = {
+    ...    'control': control,
+    ...    'dis_hru': dis_hru,
+    ...    'model_order': [
+    ...         'prmssolargeometry',
+    ...         'prmsatmosphere',
+    ...         'prmscanopy',
+    ...         'prmssnow',
+    ...     ],
+    ...     'prmssolargeometry': {
+    ...         'class': pws.PRMSSolarGeometry,
+    ...         'parameters': params['solargeometry'],
+    ...         'dis': 'dis_hru',
+    ...     },
+    ...     'prmsatmosphere': {
+    ...         'class': pws.PRMSAtmosphere,
+    ...         'parameters': params['atmosphere'],
+    ...         'dis': 'dis_hru',
+    ...     },
+    ...     'prmscanopy': {
+    ...         'class': pws.PRMSCanopy,
+    ...         'parameters': params['canopy'],
+    ...         'dis': 'dis_hru',
+    ...     },
+    ...     'prmssnow': {
+    ...         'class': pws.PRMSSnow,
+    ...         'parameters': params['snow'],
+    ...         'dis': 'dis_hru',
+    ...     }
+    ... }
+    >>> model = pws.Model(model_dict, input_dir=domain_dir)
+    >>> model.run()
+    model.run(): 0 % complete
+    model.run(): 10 % complete
+    model.run(): 20 % complete
+    model.run(): 30 % complete
+    model.run(): 40 % complete
+    model.run(): 50 % complete
+    model.run(): 60 % complete
+    model.run(): 70 % complete
+    model.run(): 80 % complete
+    model.run(): 90 % complete
+    model.run(): 100 % complete
+    model.run(): finalizing
+
+    Construct a model the pywatershed-centric way, from a yaml file definition:
+
+    ..
+        import yaml
+        import pywatershed as pws
+        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
+        domain_dir = test_data_dir / "drb_2yr"
+        control = {
+            "start_time": "1979-01-01T00:00:00",
+            "end_time": "1980-12-31T00:00:00",
+            "time_step": 24,
+            "time_step_units": "h",
+            "verbosity": 0,
+            "budget_type": "warn",
+            "init_vars_from_file": 0,
+            "input_dir": "./",
+        }
+        model_dict = {
+            "control": "control.yml",
+            "dis_hru": "parameters_dis_hru.nc",
+            "dis_both": "parameters_dis_both.nc",
+            "solargeometry": {
+                "class": "PRMSSolarGeometry",
+                "parameters": "parameters_PRMSSolarGeometry.nc",
+                "dis": "dis_hru",
+            },
+            "atmosphere": {
+                "class": "PRMSAtmosphere",
+                "parameters": "parameters_PRMSAtmosphere.nc",
+                "dis": "dis_hru",
+            },
+            "canopy": {
+                "class": "PRMSCanopy",
+                "parameters": "parameters_PRMSCanopy.nc",
+                "dis": "dis_hru",
+            },
+            "model_order": ["solargeometry", "atmosphere", "canopy"],
+        }
+        control_file = domain_dir / "example_control.yml"
+        model_dict_file = domain_dir / "example_model_dict.yml"
+        dump_dict = {control_file: control, model_dict_file: model_dict}
+        for key, val in dump_dict.items():
+            with open(key, "w") as file:
+                documents = yaml.dump(val, file)
+
+        model = pws.Model.from_yml(model_dict_file)
+        control_file.unlink()
+        model_dict_file.unlink()
+
+    >>> import yaml
+    >>> import pywatershed as pws
+    >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
+    >>> domain_dir = test_data_dir / "drb_2yr"
+    >>> control = {
+    ...     "start_time": "1979-01-01T00:00:00",
+    ...     "end_time": "1980-12-31T00:00:00",
+    ...     "time_step": 24,
+    ...     "time_step_units": "h",
+    ...     "verbosity": 0,
+    ...     "budget_type": "warn",
+    ...     "init_vars_from_file": 0,
+    ...     "input_dir": "./",
+    ... }
+    >>> model_dict = {
+    ...     "control": "control.yml",
+    ...     "dis_hru": "parameters_dis_hru.nc",
+    ...     "dis_both": "parameters_dis_both.nc",
+    ...     "solargeometry": {
+    ...         "class": "PRMSSolarGeometry",
+    ...         "parameters": "parameters_PRMSSolarGeometry.nc",
+    ...         "dis": "dis_hru",
+    ...     },
+    ...     "atmosphere": {
+    ...         "class": "PRMSAtmosphere",
+    ...         "parameters": "parameters_PRMSAtmosphere.nc",
+    ...         "dis": "dis_hru",
+    ...     },
+    ...     "canopy": {
+    ...         "class": "PRMSCanopy",
+    ...         "parameters": "parameters_PRMSCanopy.nc",
+    ...         "dis": "dis_hru",
+    ...     },
+    ...     "model_order": ["solargeometry", "atmosphere", "canopy"],
+    ... }
+    >>> control_file = domain_dir / "example_control.yml"
+    >>> model_dict_file = domain_dir / "example_model_dict.yml"
+    >>> dump_dict = {control_file: control, model_dict_file: model_dict}
+    >>> for key, val in dump_dict.items():
+    ...     with open(key, "w") as file:
+    ...         documents = yaml.dump(val, file)
+    ...
+    >>> model = pws.Model.from_yml(model_dict_file)
+    ValueError: input_dir specified neither in control nor to Model
+    >>> control_file.unlink()
+    >>> model_dict_file.unlink()
 
     """
 
@@ -87,13 +386,11 @@ class Model:
         self,
         process_list_or_model_dict,
         control: Control = None,
-        discretization_dict: dict[Parameters] = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,
         input_dir: Union[str, pl.Path] = None,
     ):
         self.control = control
-        self.discretization_dict = discretization_dict
         self.parameters = parameters
 
         # This is for backwards compatibility
@@ -102,7 +399,6 @@ class Model:
             # take the old-school-style inputs and convert to new-school inputs
             # may be deprecated in the future.
             assert control is not None, msg
-            assert discretization_dict is None, msg
             assert isinstance(parameters, PrmsParameters), msg
 
             # eventually handle a file for parameters?
@@ -126,7 +422,6 @@ class Model:
 
         elif isinstance(process_list_or_model_dict, dict):
             assert control is None, msg
-            assert discretization_dict is None, msg
             assert parameters is None, msg
             self.model_dict = process_list_or_model_dict
 
@@ -323,7 +618,7 @@ class Model:
         self._input_dir = input_dir
         return
 
-    def _find_input_files(self):
+    def _find_input_files(self) -> None:
         file_inputs = {}
         for name in self._file_input_names:
             nc_path = self._input_dir / f"{name}.nc"
@@ -345,7 +640,18 @@ class Model:
         return
 
     @staticmethod
-    def model_dict_from_yml(yml_file: Union[str, pl.Path]):
+    def model_dict_from_yml(yml_file: Union[str, pl.Path]) -> dict:
+        """Generate a model dictionary from a yaml file.
+
+        Instead of Model.from_yml() it can be useful to get the model
+        dictionary before passing it to Model.
+
+        Args:
+            yml_file: a yml file
+
+        Returns:
+            A model dictionary.
+        """
         import yaml
 
         import pywatershed

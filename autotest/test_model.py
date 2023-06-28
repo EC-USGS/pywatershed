@@ -70,7 +70,6 @@ def model_args(domain, control, discretization, request):
         args = {
             "process_list_or_model_dict": process_list,
             "control": control,
-            "discretization_dict": None,
             "parameters": PrmsParameters.load(domain["param_file"]),
         }
 
@@ -101,7 +100,6 @@ def model_args(domain, control, discretization, request):
         args = {
             "process_list_or_model_dict": model_dict,
             "control": None,
-            "discretization_dict": None,
             "parameters": None,
         }
 
@@ -112,7 +110,6 @@ def model_args(domain, control, discretization, request):
         args = {
             "process_list_or_model_dict": model_dict,
             "control": None,
-            "discretization_dict": None,
             "parameters": None,
         }
 

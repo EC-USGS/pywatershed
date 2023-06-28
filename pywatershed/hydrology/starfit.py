@@ -1,3 +1,5 @@
+from typing import Literal
+
 import numpy as np
 
 from pywatershed.base.conservative_process import ConservativeProcess
@@ -24,6 +26,14 @@ class Starfit(ConservativeProcess):
     Noah Knowles (USGS) and James McCreight (UCAR/USGS)
 
     Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        lake_inflow: Daily lake inflow
+        budget_type: one of [None, "warn", "error"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
+
     """
 
     def __init__(
@@ -32,19 +42,16 @@ class Starfit(ConservativeProcess):
         discretization: Parameters,
         parameters: Parameters,
         lake_inflow: adaptable,
-        budget_type: str = None,
-        calc_method: str = None,
+        budget_type: Literal[None, "warn", "error"] = None,
         verbose: bool = False,
         load_n_time_batches: int = 1,
-    ) -> "Starfit":
+    ) -> None:
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
         self.name = "Starfit"
-
-        self._calc_method = str(calc_method)
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -58,12 +65,6 @@ class Starfit(ConservativeProcess):
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get starfit parameters
-
-        Returns:
-            parameters: input parameters
-
-        """
         return (
             "grand_id",
             "initial_storage",
@@ -95,12 +96,6 @@ class Starfit(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get starfit input variables
-
-        Returns:
-            variables: input variables
-
-        """
         return ("lake_inflow",)
 
     @staticmethod
@@ -120,11 +115,6 @@ class Starfit(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get starfit initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
         return {
             "lake_storage": nan,
             "lake_storage_old": nan,

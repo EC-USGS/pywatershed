@@ -68,7 +68,38 @@ dbgind = 434
 
 
 class PRMSSnow(ConservativeProcess):
-    """PRMS snow pack."""
+    """PRMS snow pack.
+
+    Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        orad_hru: Solar radiation on a horizontal surface for each HRU
+        soltab_horad_potsw: Potential solar radiation on a horizontal plane
+            for each Julian Day for each
+        swrad: Shortwave radiation distributed to each HRU
+        hru_intcpevap: HRU area-weighted average evaporation from the
+            canopy for each HRU
+        hru_ppt: Precipitation distributed to each HRU
+        potet: Potential ET for each HRU
+        pptmix: Flag to indicate if precipitation is a mixture of rain and
+            snow for each HRU
+        prmx: Fraction of rain in a mixed precipitation event for each HRU
+        tavgc: Average air temperature distributed to each HRU
+        tmaxc: Maximum air temperature distributed to each HRU
+        tminc: Minimum air temperature distributed to each HRU
+        net_ppt: Precipitation (rain and/or snow) that falls through the
+            canopy for each HRU
+        net_rain: Rain that falls through canopy for each HRU
+        net_snow: Snow that falls through canopy for each HRU
+        transp_on: Flag indicating whether transpiration is occurring
+            (0=no;1=yes)
+        budget_type: one of [None, "warn", "error"]
+        calc_method: one of [None = "numpy", "numba"]
+        verbose: Print extra information or not?
+        load_n_time_batches: not-implemented
+
+    """
 
     def __init__(
         self,
@@ -113,22 +144,10 @@ class PRMSSnow(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        """Get snow pack dimensions
-
-        Returns:
-            dimensions: input dimensions
-
-        """
         return ("nhru", "nmonth", "ndoy", "ndeplval")
 
     @staticmethod
     def get_parameters() -> tuple:
-        """Get snow pack parameters
-
-        Returns:
-            parameters: input parameters
-
-        """
         return (
             "doy",
             "cov_type",
@@ -159,12 +178,6 @@ class PRMSSnow(ConservativeProcess):
 
     @staticmethod
     def get_inputs() -> tuple:
-        """Get snow pack input variables
-
-        Returns:
-            variables: input variables
-
-        """
         return (
             "hru_ppt",
             "hru_intcpevap",
@@ -185,12 +198,6 @@ class PRMSSnow(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
-        """Get snow pack initial values
-
-        Returns:
-            dict: initial values for named variables
-        """
-
         return {
             "ai": zero,
             "albedo": zero,
@@ -254,12 +261,6 @@ class PRMSSnow(ConservativeProcess):
 
     @staticmethod
     def get_restart_variables() -> tuple:
-        """Get snow pack restart variables
-
-        Returns:
-            variables: restart variables
-        """
-
         return (
             "albedo",
             "freeh2o",
@@ -286,8 +287,6 @@ class PRMSSnow(ConservativeProcess):
         )
 
     def _set_initial_conditions(self):
-        """Initialize PRMSSnow snowpack variables."""
-
         # Derived parameters
         self.tmax_allsnow_c = (self.tmax_allsnow - 32.0) / 1.8
         del self.tmax_allsnow
@@ -442,15 +441,6 @@ class PRMSSnow(ConservativeProcess):
         return
 
     def _calculate(self, simulation_time):
-        """Calculate canopy terms for a time step
-
-        Args:
-            simulation_time: current simulation time
-
-        Returns:
-            None
-
-        """
         (
             self.ai[:],
             self.albedo[:],

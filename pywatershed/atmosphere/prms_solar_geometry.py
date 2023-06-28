@@ -17,11 +17,6 @@ epsilon = epsilon32
 
 doy = np.arange(ndoy) + 1
 
-# The solar geometry model for NHM/PRMS
-# Primary reference
-# * Appendix E of Dingman, S. L., 1994,
-#   Physical Hydrology. Englewood Cliffs, NJ: Prentice Hall, 575 p.
-
 # Dimensions
 # The cyclic time dimension is ndoy (known apriori)
 # The spatial dimension n_hru (only known on init from parameters)
@@ -36,7 +31,28 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 
 
 class PRMSSolarGeometry(Process):
-    """PRMS solar geometry."""
+    """PRMS solar geometry.
+
+    Swift's daily potential solar radiation and number of hours
+    of duration on a sloping surface in [cal/cm2/day].
+    Swift, 1976, equation 6.
+
+    Primary reference: Appendix E of Dingman, S. L., 1994, Physical Hydrology.
+    Englewood Cliffs, NJ: Prentice Hall, 575 p.
+
+    Args:
+        control: a Control object
+        discretization: a discretization of class Parameters
+        parameters: a parameter object of class Parameters
+        verbose: Print extra information or not?
+        from_prms_file: Load from a PRMS output file?
+        from_nc_files_dir: [str, pl.Path] = None,
+        load_n_time_batches: How often to load from disk (not-implemented?)
+        netcdf_output_dir: A directory to write netcdf outpuf files
+        netcdf_separate_files: Separate or a single netcdf output file
+        netcdf_output_vars: A list of variables to output via netcdf.
+
+    """
 
     def __init__(
         self,
@@ -99,12 +115,6 @@ class PRMSSolarGeometry(Process):
 
     @staticmethod
     def get_variables():
-        """Get solar geometry variables
-
-        Returns:
-            variables: output variables
-
-        """
         return (
             "soltab_horad_potsw",
             "soltab_potsw",
@@ -165,12 +175,6 @@ class PRMSSolarGeometry(Process):
         return
 
     def _advance_variables(self):
-        """Advance solar geometry
-
-        Returns:
-            None
-
-        """
         if not self._calculated:
             self._calculate_all_time()
         for vv in self.variables:
@@ -178,17 +182,6 @@ class PRMSSolarGeometry(Process):
         return
 
     def _calculate(self, time_length):
-        """Calculate solar_geom"
-
-        Sets the current value to the precalculated values.
-
-        Args:
-            time_length: time step length
-
-        Returns:
-            None
-
-        """
         return
 
     # @jit
@@ -200,18 +193,14 @@ class PRMSSolarGeometry(Process):
         compute_t: callable,
         func3: callable,
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """
-        Swift's daily potential solar radiation and number of hours
-        of duration on a sloping surface in [cal/cm2/day].
-        Swift, 1976, equation 6.
-
-        Arguments:
+        """Calculate the solar table
+        Args:
           cossl: cos(atan(hru_slope)) [nhru] ?
           slope: slope [nhru]
           aspect: aspect [nhru]
           latitude: latitude [nhru]
 
-        Return Values: (solt, sunh)
+        Returns: (solt, sunh)
           solt: Swift's potential solar radiation on a sloping surface in
             [cal/cm2/day]. Swift, 1976, equation 6.
             Dimensions: [ndoy, nhru]
@@ -345,15 +334,14 @@ class PRMSSolarGeometry(Process):
     def compute_t(
         lats: np.ndarray, solar_declination: np.ndarray
     ) -> np.ndarray:
-        # This function is
-        #   * named as in prms for historical purposes
-        #   * is for numba compilation
         # JLM: why is division by earth's angular velocity not done here?
-        """
-        The "sunrise" equation
-        lats - latitudes of the hrus
-        solar_declination: the declination of the sun on all julian days
-        result: the angle hour from the local meridian (local solar noon) to
+        """The "sunrise" equation
+
+        Args:
+            lats - latitudes of the hrus
+            solar_declination: the declination of the sun on all julian days
+        Returns:
+            The angle hour from the local meridian (local solar noon) to
             the sunrise (negative) or sunset (positive).  The Earth rotates at
             the angular speed of 15 degrees/hour (2 pi / 24 hour in radians)
             and, therefore, result*(24/(2pi) radians gives the time of sunrise
@@ -362,7 +350,7 @@ class PRMSSolarGeometry(Process):
             noon indicates the local time when the sun is exactly to the
             south or north or exactly overhead.
 
-        https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
+        See reference: https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
         """
         nhru = len(lats)
         lats_mat = np.tile(-1 * np.tan(lats), (ndoy, 1))
@@ -391,21 +379,28 @@ class PRMSSolarGeometry(Process):
         x: np.ndarray,
         y: np.ndarray,
     ) -> np.ndarray:
-        """
-        This is the radian angle version of FUNC3 (eqn 6) from Swift, 1976
-        or Lee, 1963 equation 5.
-        result: (R4) is potential solar radiation on the surface cal/cm2/day [ndoy, nhru]
-        v: (L2) latitude angle hour offset between actual and equivalent slope [nhru]
-        w: (L1) latitude of the equivalent slope [nhru]
-        x: (T3) hour angle of sunset on equivalent slope [ndoy, nhru]
-        y: (T2) hour angle of sunrise on equivalent slope [ndoy, nhru]
+        """Potential solar radiation on the surface cal/cm2/day
 
-        # Constants
-        r1: solar constant for 60 minutes [ndoy]
-        solar_declination: declination of sun [ndoy]
+        Radian angle version of FUNC3 (eqn 6) from Swift, 1976
+        or Lee, 1963 equation 5. (Names in parens below from Swift?)
 
-        https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
+        Args:
+            v: (L2) latitude angle hour offset between actual and equivalent
+               slope [nhru]
+            w: (L1) latitude of the equivalent slope [nhru]
+            x: (T3) hour angle of sunset on equivalent slope [ndoy, nhru]
+            y: (T2) hour angle of sunrise on equivalent slope [ndoy, nhru]
+
+        Returns:
+            (R4) is potential solar radiation on the surface cal/cm2/day [ndoy, nhru]
+
+        Constants
+            r1: solar constant for 60 minutes [ndoy]
+            solar_declination: declination of sun [ndoy]
+
+        See also: https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/sm_solar_radiation.f90
         """
+
         # Must alter the dimensions of the inputs to get the outputs.
         nhru = len(v)
         vv = np.tile(v, (ndoy, 1))

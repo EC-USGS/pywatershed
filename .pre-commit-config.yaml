@@ -3,3 +3,12 @@ repos:
   rev: 0.6.1
   hooks:
     - id: nbstripout
+repos:
+-   repo: https://github.com/thlorenz/doctoc
+    rev: v2.2.0
+    hooks:
+    -   id: doctoc
+- repo: https://github.com/keewis/blackdoc
+  rev: v0.3.8
+  hooks:
+    - id: blackdoc

@@ -10,7 +10,11 @@ from ..utils.netcdf_utils import NetCdfRead
 
 
 class Adapter:
-    """Adapter base class for getting data from a variety of sources."""
+    """Adapter base class for getting data from a variety of sources.
+
+    Args:
+        variable: string name ov variable
+    """
 
     def __init__(
         self,
@@ -21,6 +25,7 @@ class Adapter:
         return None
 
     def advance(self):
+        "Advance the adapter in time"
         raise NotImplementedError("Must be overridden")
 
     @property
@@ -29,6 +34,18 @@ class Adapter:
 
 
 class AdapterNetcdf(Adapter):
+    """Adapter class for a netcdf file
+
+    Args:
+        fname: filename of netcdf as string or Path
+        variable: variable name string
+        dim_sizes: a tuple of dimension sizes
+        type: a variable dtype
+        control: a Control object
+        load_n_time_batches: number of times to read from file.
+
+    """
+
     def __init__(
         self,
         fname: fileish,

@@ -1,4 +1,5 @@
 from warnings import warn
+
 import numpy as np
 from numba import prange
 

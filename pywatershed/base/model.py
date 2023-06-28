@@ -143,7 +143,7 @@ class Model:
         )
         model.run()
 
-    >>> import pywatershed as pws
+     >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
     >>> # A PRMS-native control file
@@ -151,9 +151,12 @@ class Model:
     >>> # PRMS-native parameter file
     >>> parameter_file = domain_dir / "myparam.param"
     >>> control = pws.Control.load(control_file)
-    >>> control.config['input_dir'] = domain_dir / "output"
+    >>> control.config["input_dir"] = domain_dir / "output"
     >>> params = pws.parameters.PrmsParameters.load(parameter_file)
-    >>> model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
+    >>> model_procs = [
+    ...     pws.PRMSGroundwater,
+    ...     pws.PRMSChannel,
+    ... ]
     >>> model = pws.Model(
     ...     model_procs,
     ...     control=control,
@@ -230,41 +233,41 @@ class Model:
     ... )
     >>> control_file = domain_dir / "control.test"
     >>> control = pws.Control.load(control_file)
-    >>> control.config['input_dir'] = domain_dir
+    >>> control.config["input_dir"] = domain_dir
     >>> params = {}
     >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
     ...     param_file = domain_dir / f"parameters_PRMS{proc}.nc"
     ...     params[proc.lower()] = pws.Parameters.from_netcdf(param_file)
     ...
     >>> model_dict = {
-    ...    'control': control,
-    ...    'dis_hru': dis_hru,
-    ...    'model_order': [
-    ...         'prmssolargeometry',
-    ...         'prmsatmosphere',
-    ...         'prmscanopy',
-    ...         'prmssnow',
+    ...     "control": control,
+    ...     "dis_hru": dis_hru,
+    ...     "model_order": [
+    ...         "prmssolargeometry",
+    ...         "prmsatmosphere",
+    ...         "prmscanopy",
+    ...         "prmssnow",
     ...     ],
-    ...     'prmssolargeometry': {
-    ...         'class': pws.PRMSSolarGeometry,
-    ...         'parameters': params['solargeometry'],
-    ...         'dis': 'dis_hru',
+    ...     "prmssolargeometry": {
+    ...         "class": pws.PRMSSolarGeometry,
+    ...         "parameters": params["solargeometry"],
+    ...         "dis": "dis_hru",
     ...     },
-    ...     'prmsatmosphere': {
-    ...         'class': pws.PRMSAtmosphere,
-    ...         'parameters': params['atmosphere'],
-    ...         'dis': 'dis_hru',
+    ...     "prmsatmosphere": {
+    ...         "class": pws.PRMSAtmosphere,
+    ...         "parameters": params["atmosphere"],
+    ...         "dis": "dis_hru",
     ...     },
-    ...     'prmscanopy': {
-    ...         'class': pws.PRMSCanopy,
-    ...         'parameters': params['canopy'],
-    ...         'dis': 'dis_hru',
+    ...     "prmscanopy": {
+    ...         "class": pws.PRMSCanopy,
+    ...         "parameters": params["canopy"],
+    ...         "dis": "dis_hru",
     ...     },
-    ...     'prmssnow': {
-    ...         'class': pws.PRMSSnow,
-    ...         'parameters': params['snow'],
-    ...         'dis': 'dis_hru',
-    ...     }
+    ...     "prmssnow": {
+    ...         "class": pws.PRMSSnow,
+    ...         "parameters": params["snow"],
+    ...         "dis": "dis_hru",
+    ...     },
     ... }
     >>> model = pws.Model(model_dict)
     >>> model.run()

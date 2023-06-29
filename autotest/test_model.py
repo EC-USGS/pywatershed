@@ -37,10 +37,10 @@ invoke_style = ("prms", "model_dict", "model_dict_from_yml")
 @pytest.fixture(scope="function")
 def control(domain):
     control = Control.load(domain["control_file"])
-    control.config["verbose"] = 10
-    control.config["budget_type"] = None
-    control.config["calc_method"] = "fortran"
-    control.config["load_n_time_batches"] = 1
+    control.options["verbose"] = 10
+    control.options["budget_type"] = None
+    control.options["calc_method"] = "fortran"
+    control.options["load_n_time_batches"] = 1
     return control
 
 
@@ -139,7 +139,7 @@ def test_model(domain, model_args, tmp_path):
     else:
         control = model_args["control"]
 
-    control.config["input_dir"] = input_dir
+    control.options["input_dir"] = input_dir
 
     model = Model(**model_args)
 
@@ -148,7 +148,14 @@ def test_model(domain, model_args, tmp_path):
         if proc.lower() in ["prmssnow", "prmsrunoff", "prmssoilzone"]:
             assert model.processes[proc]._calc_method == "numba"
         elif proc.lower() in ["prmscanopy", "prmsgroundwater", "prmschannel"]:
-            assert model.processes[proc]._calc_method == "fortran"
+            # check if has fortran (has_f) because results depend on that
+            mod_name = "prms_" + proc.lower()[4:]
+            var_name = "has_" + proc.lower() + "_f"
+            has_f = getattr(getattr(pywatershed.hydrology, mod_name), var_name)
+            if has_f:
+                assert model.processes[proc]._calc_method == "fortran"
+            else:
+                assert model.processes[proc]._calc_method == "numba"
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1

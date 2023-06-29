@@ -42,7 +42,7 @@ def test_regress(tmp_path):
         np.datetime64("2019-09-30 00:00:00"),
         np.timedelta64(24, "h"),
     )
-    control.config["budget_type"] = "warn"
+    control.options["budget_type"] = "warn"
 
     # # load csv files into dataframes
     # output_dir = domain["prms_output_dir"]

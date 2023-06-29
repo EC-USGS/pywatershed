@@ -1,3 +1,5 @@
+from warnings import warn
+
 import numpy as np
 
 from ..base.adapter import adaptable
@@ -122,6 +124,21 @@ class PRMSGroundwater(ConservativeProcess):
         if self._calc_method is None:
             self._calc_method = "none"
 
+        avail_methods = ["none", "numpy", "numba", "fortran"]
+        fortran_msg = ""
+        if self._calc_method == "fortran" and not has_prmsgroundwater_f:
+            _ = avail_methods.remove("fortran")
+            fortran_msg = "\n(Fortran not available as installed)\n"
+
+        if self._calc_method.lower() not in avail_methods:
+            msg = (
+                f"Invalid calc_method={self._calc_method} for {self.name}. "
+                f"{fortran_msg}"
+                f"Setting calc_method to 'numba' for {self.name}"
+            )
+            warn(msg)
+            self._calc_method = "numba"
+
         if self._calc_method.lower() == "numba":
             import numba as nb
 
@@ -149,15 +166,11 @@ class PRMSGroundwater(ConservativeProcess):
                 parallel=False,
             )(self._calculate_numpy)
 
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            self._calculate_gw = self._calculate_numpy
-
         elif self._calc_method.lower() == "fortran":
             self._calculate_gw = _calculate_fortran
 
         else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+            self._calculate_gw = self._calculate_numpy
 
         return
 

@@ -19,35 +19,29 @@ from .accessor import Accessor
 
 
 class Control(Accessor):
+    """Initialize the control class
+
+    The Control class manages global time and options, and provides metadata.
+
+    Args:
+        start_time: this is the first time of integration NOT the restart
+            time
+        end_time: the last integration time
+        time_step: the length fo the time step
+        options: a dictionary of global Process options
+
+    """
+
     def __init__(
         self,
         start_time: np.datetime64,
         end_time: np.datetime64,
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
-        config: dict = None,
-        verbosity: int = 0,
-        **kwargs,
+        options: dict = None,
     ):
-        """Initialize the control class
-
-        The Control class manages input passed at run time, metadata, and
-        keeps track of time.
-
-        Args:
-            start_time: this is the first time of integration NOT the restart
-                time
-            end_time: the last integration time
-            time_step: the length fo the time step
-            config: a PRMS config file to read and use for control parameters
-            verbosity: the level of verbosity in [0,10]
-
-
-        """
-        super().__init__(**kwargs)
+        super().__init__()
         self.name = "Control"
-
-        self.verbosity = verbosity
 
         if end_time <= start_time:
             raise ValueError("end_time <= start_time")
@@ -70,9 +64,9 @@ class Control(Accessor):
         self._previous_time = None
         self._itime_step = -1
 
-        if config is None:
-            config = {}
-        self.config = config
+        if options is None:
+            options = {}
+        self.options = options
         self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
@@ -81,13 +75,11 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file
 
         Args:
             control_file: PRMS control file
-            verbosity: output verbosity level
 
         Returns:
             Time: Time object initialized from a PRMS control file
@@ -99,8 +91,7 @@ class Control(Accessor):
             control.control["start_time"],
             control.control["end_time"],
             control.control["initial_deltat"],
-            config=control.control,
-            verbosity=verbosity,
+            options=control.control,
         )
 
     @property
@@ -264,7 +255,10 @@ class Control(Accessor):
         time_step = np.timedelta64(
             control_dict["time_step"], control_dict["time_step_units"]
         )
-        verbosity = control_dict["verbosity"]
+        del control_dict["start_time"]
+        del control_dict["end_time"]
+        del control_dict["time_step"]
+        del control_dict["time_step_units"]
 
         paths_to_convert = ["input_dir"]
         for path_name in paths_to_convert:
@@ -278,7 +272,6 @@ class Control(Accessor):
             start_time,
             end_time,
             time_step,
-            config=control_dict,
-            verbosity=verbosity,
+            options=control_dict,
         )
         return control

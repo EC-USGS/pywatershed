@@ -226,7 +226,7 @@ def test_dd_netcdf(tmp_path):
     # read using nc4
     # apparently netcdf4 doesnt do any coordinate level organization
     # so we'll have to implement this.
-    dd3 = DatasetDict.from_netcdf(ds1_file, use_xr=False)
+    dd3 = DatasetDict.from_netcdf(ds1_file, use_xr=False, encoding=True)
     dd3 = coord_atts_sort(dd3)
     dd3 = del_encodings(dd3, ["source", "_FillValue"])
     np.testing.assert_equal(dd3.data, dd1.data)

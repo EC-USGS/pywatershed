@@ -132,11 +132,13 @@ class DatasetDict(Accessor):
     >>> import pywatershed as pws
     >>> import numpy as np
     >>> coords = {
-    ...     'time': np.arange('2005-02-01', '2005-02-03', dtype='datetime64[D]'),
-    ...     'space': np.arange(3)
+    ...     "time": np.arange(
+    ...         "2005-02-01", "2005-02-03", dtype="datetime64[D]"
+    ...     ),
+    ...     "space": np.arange(3),
     ... }
-    >>> dims = {'ntime': len(coords['time']), 'nspace': len(coords['space'])}
-    >>> data = {'precip': 10 * np.random.rand(dims['ntime'], dims['nspace'])}
+    >>> dims = {"ntime": len(coords["time"]), "nspace": len(coords["space"])}
+    >>> data = {"precip": 10 * np.random.rand(dims["ntime"], dims["nspace"])}
     >>> metadata = {
     ...     "time": {"dims": ("ntime",), "attrs": {"description": "days"}},
     ...     "space": {
@@ -328,7 +330,7 @@ class DatasetDict(Accessor):
 
     @classmethod
     def from_netcdf(
-        cls, nc_file: fileish, use_xr: bool = False, encoding=True
+        cls, nc_file: fileish, use_xr: bool = False, encoding=False
     ) -> "DatasetDict":
         """Load this class from a netcdf file."""
         # handle more than one file?
@@ -763,12 +765,18 @@ def xr_dd_to_dd(xr_dd: dict) -> dict:
     dd["data_vars"] = {}
     for key, val in var_metadata.items():
         dd["data_vars"][key] = val.pop("data")
-        dd["encoding"][key] = val.pop("encoding")
+        if "encoding" in val.keys():
+            dd["encoding"][key] = val.pop("encoding")
+        else:
+            dd["encoding"][key] = {}
 
     dd["coords"] = {}
     for key, val in coord_metadata.items():
         dd["coords"][key] = val.pop("data")
-        dd["encoding"][key] = val.pop("encoding")
+        if "encoding" in val.keys():
+            dd["encoding"][key] = val.pop("encoding")
+        else:
+            dd["encoding"][key] = {}
 
     dd["metadata"] = {**coord_metadata, **var_metadata}
     dd["metadata"]["global"] = dd.pop("attrs")

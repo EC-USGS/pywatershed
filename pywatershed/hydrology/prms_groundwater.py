@@ -33,8 +33,6 @@ class PRMSGroundwater(ConservativeProcess):
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
-        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
-            "numba".
         verbose: Print extra information or not?
 
     """

@@ -1,3 +1,4 @@
+from typing import Literal
 from warnings import warn
 
 import numpy as np
@@ -30,9 +31,11 @@ class PRMSGroundwater(ConservativeProcess):
         dprst_seep_hru: Seepage from surface-depression storage to associated
             GWR for each HRU
         budget_type: one of [None, "warn", "error"]
-        calc_method: one of [None = "numpy", "numba", "fortran"]
+        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+            "numba".
+        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+            "numba".
         verbose: Print extra information or not?
-        load_n_time_batches: not-implemented
 
     """
 
@@ -44,10 +47,9 @@ class PRMSGroundwater(ConservativeProcess):
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
-        budget_type: str = None,
-        calc_method: str = None,
-        verbose: bool = False,
-        load_n_time_batches: int = 1,
+        budget_type: Literal[None, "warn", "error"] = None,
+        calc_method: Literal["fortran", "numba", "numpy"] = None,
+        verbose: bool = None,
     ) -> None:
         super().__init__(
             control=control,
@@ -122,9 +124,9 @@ class PRMSGroundwater(ConservativeProcess):
 
     def _init_calc_method(self):
         if self._calc_method is None:
-            self._calc_method = "none"
+            self._calc_method = "numba"
 
-        avail_methods = ["none", "numpy", "numba", "fortran"]
+        avail_methods = ["numpy", "numba", "fortran"]
         fortran_msg = ""
         if self._calc_method == "fortran" and not has_prmsgroundwater_f:
             _ = avail_methods.remove("fortran")

@@ -19,9 +19,7 @@ from .accessor import Accessor
 
 
 class Control(Accessor):
-    """Initialize the control class
-
-    The Control class manages global time and options, and provides metadata.
+    """Control manages global time and options, and provides metadata.
 
     Args:
         start_time: this is the first time of integration NOT the restart

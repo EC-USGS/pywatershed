@@ -1,3 +1,4 @@
+from typing import Literal
 from warnings import warn
 
 import numpy as np
@@ -44,7 +45,8 @@ class PRMSCanopy(ConservativeProcess):
         hru_rain: Rain on each HRU
         hru_snow: Snow on each HRU
         budget_type: one of [None, "warn", "error"]
-        calc_method: one of [None = "numpy", "numba", "fortran"]
+        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+            "numba".
         verbose: Print extra information or not?
         load_n_time_batches: not-implemented
     """
@@ -60,10 +62,9 @@ class PRMSCanopy(ConservativeProcess):
         hru_rain: adaptable,
         hru_snow: adaptable,
         potet: adaptable,
-        budget_type: str = None,
-        calc_method: str = None,
-        verbose: bool = False,
-        load_n_time_batches: int = 1,
+        budget_type: Literal[None, "warn", "error"] = None,
+        calc_method: Literal["fortran", "numba", "numpy"] = None,
+        verbose: bool = None,
     ):
         super().__init__(
             control=control,
@@ -145,9 +146,9 @@ class PRMSCanopy(ConservativeProcess):
 
     def _init_calc_method(self):
         if self._calc_method is None:
-            self._calc_method = "none"
+            self._calc_method = "numba"
 
-        avail_methods = ["none", "numpy", "numba", "fortran"]
+        avail_methods = ["numpy", "numba", "fortran"]
         fortran_msg = ""
         if self._calc_method == "fortran" and not has_prmscanopy_f:
             _ = avail_methods.remove("fortran")

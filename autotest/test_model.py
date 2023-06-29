@@ -37,10 +37,10 @@ invoke_style = ("prms", "model_dict", "model_dict_from_yml")
 @pytest.fixture(scope="function")
 def control(domain):
     control = Control.load(domain["control_file"])
-    control.config["verbose"] = 10
-    control.config["budget_type"] = None
-    control.config["calc_method"] = "fortran"
-    control.config["load_n_time_batches"] = 1
+    control.options["verbose"] = 10
+    control.options["budget_type"] = None
+    control.options["calc_method"] = "fortran"
+    control.options["load_n_time_batches"] = 1
     return control
 
 
@@ -139,7 +139,7 @@ def test_model(domain, model_args, tmp_path):
     else:
         control = model_args["control"]
 
-    control.config["input_dir"] = input_dir
+    control.options["input_dir"] = input_dir
 
     model = Model(**model_args)
 

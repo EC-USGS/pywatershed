@@ -330,8 +330,8 @@ class Process(Accessor):
         for opt in option_names:
             if opt in init_locals.keys() and init_locals[opt] is not None:
                 setattr(self, f"_{opt}", init_locals[opt])
-            elif opt in self.control.config.keys():
-                setattr(self, f"_{opt}", self.control.config[opt])
+            elif opt in self.control.options.keys():
+                setattr(self, f"_{opt}", self.control.options[opt])
             else:
                 setattr(self, f"_{opt}", None)
 

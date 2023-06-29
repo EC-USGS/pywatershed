@@ -133,7 +133,7 @@ class Model:
         # PRMS-native parameter file
         parameter_file = domain_dir / "myparam.param"
         control = pws.Control.load(control_file)
-        control.config['input_dir'] = domain_dir / "output"
+        control.options['input_dir'] = domain_dir / "output"
         params = pws.parameters.PrmsParameters.load(parameter_file)
         model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
         model = pws.Model(
@@ -151,7 +151,7 @@ class Model:
     >>> # PRMS-native parameter file
     >>> parameter_file = domain_dir / "myparam.param"
     >>> control = pws.Control.load(control_file)
-    >>> control.config['input_dir'] = domain_dir / "output"
+    >>> control.options['input_dir'] = domain_dir / "output"
     >>> params = pws.parameters.PrmsParameters.load(parameter_file)
     >>> model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
     >>> model = pws.Model(
@@ -184,7 +184,7 @@ class Model:
         )
         control_file = domain_dir / "control.test"
         control = pws.Control.load(control_file)
-        control.config['input_dir'] = domain_dir
+        control.options['input_dir'] = domain_dir
         params = {}
         for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
             param_file = domain_dir / f"parameters_PRMS{proc}.nc"
@@ -230,7 +230,7 @@ class Model:
     ... )
     >>> control_file = domain_dir / "control.test"
     >>> control = pws.Control.load(control_file)
-    >>> control.config['input_dir'] = domain_dir
+    >>> control.options['input_dir'] = domain_dir
     >>> params = {}
     >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
     ...     param_file = domain_dir / f"parameters_PRMS{proc}.nc"
@@ -614,12 +614,12 @@ class Model:
         return
 
     def _set_input_dir(self):
-        if "input_dir" not in self.control.config.keys():
+        if "input_dir" not in self.control.options.keys():
             msg = "Required control config variable 'input_dir' not found"
             raise ValueError(msg)
         else:
             self._input_dir = pl.Path(
-                self.control.config["input_dir"]
+                self.control.options["input_dir"]
             ).resolve()
 
         return

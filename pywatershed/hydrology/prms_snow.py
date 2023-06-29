@@ -319,7 +319,7 @@ class PRMSSnow(ConservativeProcess):
         sd = int(self.ndeplval / 11)
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
 
-        if self.control.config["init_vars_from_file"] in [0, 2, 3]:
+        if self.control.options["init_vars_from_file"] in [0, 2, 3]:
             # The super().__init__ already set_initial_conditions using its
             # set_initial_conditions
             # Below Im just following PRMS6, will reconcile later with the

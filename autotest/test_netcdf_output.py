@@ -27,7 +27,7 @@ def params(domain):
 def control(domain):
     control = Control.load(domain["control_file"])
     control.edit_n_time_steps(n_time_steps)
-    control.config["budget_type"] = "error"
+    control.options["budget_type"] = "error"
     return control
 
 
@@ -78,7 +78,7 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
 
     # dont need any PRMS inputs for the model specified, so this is sufficient
     input_dir = domain["prms_output_dir"]
-    control.config["input_dir"] = input_dir
+    control.options["input_dir"] = input_dir
 
     # TODO: Eliminate potet and other variables from being used
     model = Model(
@@ -174,7 +174,7 @@ def test_separate_together(domain, control, params, tmp_path, separate):
     domain_output_dir = domain["prms_output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
-    control.config["input_dir"] = input_dir
+    control.options["input_dir"] = input_dir
     # Could limit this to just the variables in model_procs
     for ff in domain_output_dir.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)

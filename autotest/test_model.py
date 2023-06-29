@@ -148,7 +148,14 @@ def test_model(domain, model_args, tmp_path):
         if proc.lower() in ["prmssnow", "prmsrunoff", "prmssoilzone"]:
             assert model.processes[proc]._calc_method == "numba"
         elif proc.lower() in ["prmscanopy", "prmsgroundwater", "prmschannel"]:
-            assert model.processes[proc]._calc_method == "fortran"
+            # check if has fortran (has_f) because results depend on that
+            mod_name = "prms_" + proc.lower()[4:]
+            var_name = "has_" + proc.lower() + "_f"
+            has_f = getattr(getattr(pywatershed.hydrology, mod_name), var_name)
+            if has_f:
+                assert model.processes[proc]._calc_method == "fortran"
+            else:
+                assert model.processes[proc]._calc_method == "numba"
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1

@@ -1,4 +1,5 @@
 from typing import Tuple
+from warnings import warn
 
 import networkx as nx
 import numpy as np
@@ -318,6 +319,21 @@ class PRMSChannel(ConservativeProcess):
         if self._calc_method is None:
             self._calc_method = "none"
 
+        avail_methods = ["none", "numpy", "numba", "fortran"]
+        fortran_msg = ""
+        if self._calc_method == "fortran" and not has_prmschannel_f:
+            _ = avail_methods.remove("fortran")
+            fortran_msg = "\n(Fortran not available as installed)\n"
+
+        if self._calc_method.lower() not in avail_methods:
+            msg = (
+                f"Invalid calc_method={self._calc_method} for {self.name}. "
+                f"{fortran_msg}"
+                f"Setting calc_method to 'numba' for {self.name}"
+            )
+            warn(msg)
+            self._calc_method = "numba"
+
         if self._calc_method.lower() == "numba":
             import numba as nb
 
@@ -342,15 +358,11 @@ class PRMSChannel(ConservativeProcess):
                 parallel=False,
             )(self._muskingum_mann_numpy)
 
-        elif self._calc_method.lower() in ["none", "numpy"]:
-            self._muskingum_mann = self._muskingum_mann_numpy
-
         elif self._calc_method.lower() == "fortran":
             self._muskingum_mann = _calculate_fortran
 
         else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+            self._muskingum_mann = self._muskingum_mann_numpy
 
     def _advance_variables(self) -> None:
         self._seg_inflow0[:] = self._seg_inflow

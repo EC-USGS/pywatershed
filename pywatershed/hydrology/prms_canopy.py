@@ -1,3 +1,5 @@
+from warnings import warn
+
 import numpy as np
 from numba import prange
 
@@ -145,7 +147,22 @@ class PRMSCanopy(ConservativeProcess):
         if self._calc_method is None:
             self._calc_method = "none"
 
-        if self._calc_method.lower() in ["none", "numba"]:
+        avail_methods = ["none", "numpy", "numba", "fortran"]
+        fortran_msg = ""
+        if self._calc_method == "fortran" and not has_prmscanopy_f:
+            _ = avail_methods.remove("fortran")
+            fortran_msg = "\n(Fortran not available as installed)\n"
+
+        if self._calc_method.lower() not in avail_methods:
+            msg = (
+                f"Invalid calc_method={self._calc_method} for {self.name}. "
+                f"{fortran_msg}"
+                f"Setting calc_method to 'numba' for {self.name}"
+            )
+            warn(msg)
+            self._calc_method = "numba"
+
+        if self._calc_method.lower() in ["numba"]:
             import numba as nb
 
             numba_msg = f"{self.name} jit compiling with numba "
@@ -238,9 +255,6 @@ class PRMSCanopy(ConservativeProcess):
                 fastmath=True, parallel=nb_parallel
             )(self._calculate_numpy)
 
-        elif self._calc_method.lower() in ["numpy"]:
-            self._calculate_canopy = self._calculate_numpy
-
         elif self._calc_method.lower() == "fortran":
             pass
             # fortran has a different call signature in the last agument
@@ -249,8 +263,7 @@ class PRMSCanopy(ConservativeProcess):
             # self._calculate_gw = _calculate_fortran
 
         else:
-            msg = f"Invalid calc_method={self._calc_method} for {self.name}"
-            raise ValueError(msg)
+            self._calculate_canopy = self._calculate_numpy
 
         return
 

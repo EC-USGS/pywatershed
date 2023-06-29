@@ -82,7 +82,7 @@ doc = [
     "ipython",
     "jinja2<3.1",
     "sphinx",
-    "sphinx-book-theme",
+    "sphinx-book-theme>=0.3.3",
     "sphinx-autosummary-accessors",
     "sphinx-copybutton"
 ]
@@ -108,6 +108,7 @@ include = ["pywatershed", "pywatershed.*"]
 
 [tool.setuptools.package-data]
 "pywatershed.static.metadata" = ["*.yaml"]
+"pywatershed.data" = ["*.nc"]
 
 [tool.black]
 line-length = 79

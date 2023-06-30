@@ -37,9 +37,9 @@ dependencies = [
     "numba",
     "pandas >= 1.4.0",
     "pint",
+    "pyyaml",
     "xarray >= 2023.5.0",
     "xmltodict",
-    "pyyaml",
 ]
 dynamic = ["version", "readme"]
 
@@ -52,6 +52,7 @@ lint = [
     "flake8",
     "pylint",
     "flynt",
+    "pre-commit",
 ]
 test = [
     "pywatershed[lint]",
@@ -60,6 +61,7 @@ test = [
     "flopy",
     "filelock",
     "modflow-devtools",
+    "pre-commit",
     "pytest",
     "pytest-cov",
     "pytest-env",
@@ -81,7 +83,7 @@ doc = [
     "ipython",
     "jinja2<3.1",
     "sphinx",
-    "sphinx-book-theme",
+    "sphinx-book-theme>=0.3.3",
     "sphinx-autosummary-accessors",
     "sphinx-copybutton"
 ]
@@ -107,6 +109,7 @@ include = ["pywatershed", "pywatershed.*"]
 
 [tool.setuptools.package-data]
 "pywatershed.static.metadata" = ["*.yaml"]
+"pywatershed.data" = ["*.nc"]
 
 [tool.black]
 line-length = 79

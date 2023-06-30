@@ -115,7 +115,7 @@ class AdapterOnedarray(Adapter):
         return None
 
 
-adaptable = Union[str, np.ndarray, Adapter]
+adaptable = Union[str, pl.Path, np.ndarray, Adapter]
 
 
 def adapter_factory(

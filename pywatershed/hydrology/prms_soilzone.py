@@ -1,3 +1,4 @@
+from typing import Literal
 from warnings import warn
 
 import numpy as np
@@ -47,9 +48,9 @@ class PRMSSoilzone(ConservativeProcess):
         snowcov_area: Snow-covered area on each HRU prior to melt and
             sublimation unless snowpack
         budget_type: one of [None, "warn", "error"]
-        calc_method: one of [None = "numpy", "numba"]
+        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+            "numba".
         verbose: Print extra information or not?
-        load_n_time_batches: not-implemented
     """
 
     def __init__(
@@ -67,10 +68,9 @@ class PRMSSoilzone(ConservativeProcess):
         transp_on: adaptable,
         snow_evap: adaptable,
         snowcov_area: adaptable,
-        budget_type: str = None,
-        calc_method: str = None,
-        verbose: bool = False,
-        load_n_time_batches: int = 1,
+        budget_type: Literal[None, "warn", "error"] = None,
+        calc_method: Literal["numba", "numpy"] = None,
+        verbose: bool = None,
     ) -> "PRMSSoilzone":
         super().__init__(
             control=control,
@@ -388,9 +388,9 @@ class PRMSSoilzone(ConservativeProcess):
 
     def _init_calc_method(self):
         if self._calc_method is None:
-            self._calc_method = "none"
+            self._calc_method = "numba"
 
-        if self._calc_method.lower() not in ["none", "numpy", "numba"]:
+        if self._calc_method.lower() not in ["numpy", "numba"]:
             msg = (
                 f"Invalid calc_method={self._calc_method} for {self.name}. "
                 f"Setting calc_method to 'numba' for {self.name}"

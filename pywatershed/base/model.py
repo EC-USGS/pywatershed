@@ -29,7 +29,7 @@ class Model:
     This is the class that helps execute sets of Processes in order.
 
     There are two distinct ways of instatniating the Model class described
-    below.
+    below: 1) PRMS-legacy instantation, 2) pywatershed-centric instatiation.
 
     Args:
         process_list_or_model_dict: a process list or a model dictionary,
@@ -143,7 +143,7 @@ class Model:
         )
         model.run()
 
-    >>> import pywatershed as pws
+     >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
     >>> # A PRMS-native control file
@@ -151,9 +151,12 @@ class Model:
     >>> # PRMS-native parameter file
     >>> parameter_file = domain_dir / "myparam.param"
     >>> control = pws.Control.load(control_file)
-    >>> control.options['input_dir'] = domain_dir / "output"
+    >>> control.options["input_dir"] = domain_dir / "output"
     >>> params = pws.parameters.PrmsParameters.load(parameter_file)
-    >>> model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
+    >>> model_procs = [
+    ...     pws.PRMSGroundwater,
+    ...     pws.PRMSChannel,
+    ... ]
     >>> model = pws.Model(
     ...     model_procs,
     ...     control=control,
@@ -230,41 +233,41 @@ class Model:
     ... )
     >>> control_file = domain_dir / "control.test"
     >>> control = pws.Control.load(control_file)
-    >>> control.options['input_dir'] = domain_dir
+    >>> control.options["input_dir"] = domain_dir
     >>> params = {}
     >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
     ...     param_file = domain_dir / f"parameters_PRMS{proc}.nc"
     ...     params[proc.lower()] = pws.Parameters.from_netcdf(param_file)
     ...
     >>> model_dict = {
-    ...    'control': control,
-    ...    'dis_hru': dis_hru,
-    ...    'model_order': [
-    ...         'prmssolargeometry',
-    ...         'prmsatmosphere',
-    ...         'prmscanopy',
-    ...         'prmssnow',
+    ...     "control": control,
+    ...     "dis_hru": dis_hru,
+    ...     "model_order": [
+    ...         "prmssolargeometry",
+    ...         "prmsatmosphere",
+    ...         "prmscanopy",
+    ...         "prmssnow",
     ...     ],
-    ...     'prmssolargeometry': {
-    ...         'class': pws.PRMSSolarGeometry,
-    ...         'parameters': params['solargeometry'],
-    ...         'dis': 'dis_hru',
+    ...     "prmssolargeometry": {
+    ...         "class": pws.PRMSSolarGeometry,
+    ...         "parameters": params["solargeometry"],
+    ...         "dis": "dis_hru",
     ...     },
-    ...     'prmsatmosphere': {
-    ...         'class': pws.PRMSAtmosphere,
-    ...         'parameters': params['atmosphere'],
-    ...         'dis': 'dis_hru',
+    ...     "prmsatmosphere": {
+    ...         "class": pws.PRMSAtmosphere,
+    ...         "parameters": params["atmosphere"],
+    ...         "dis": "dis_hru",
     ...     },
-    ...     'prmscanopy': {
-    ...         'class': pws.PRMSCanopy,
-    ...         'parameters': params['canopy'],
-    ...         'dis': 'dis_hru',
+    ...     "prmscanopy": {
+    ...         "class": pws.PRMSCanopy,
+    ...         "parameters": params["canopy"],
+    ...         "dis": "dis_hru",
     ...     },
-    ...     'prmssnow': {
-    ...         'class': pws.PRMSSnow,
-    ...         'parameters': params['snow'],
-    ...         'dis': 'dis_hru',
-    ...     }
+    ...     "prmssnow": {
+    ...         "class": pws.PRMSSnow,
+    ...         "parameters": params["snow"],
+    ...         "dis": "dis_hru",
+    ...     },
     ... }
     >>> model = pws.Model(model_dict)
     >>> model.run()
@@ -463,6 +466,9 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
+        if "netcdf_output_dir" in self.control.options.keys():
+            self.initialize_netcdf(self.control.options["netcdf_output_dir"])
+
         return
 
     def _categorize_model_dict(self):
@@ -615,7 +621,7 @@ class Model:
 
     def _set_input_dir(self):
         if "input_dir" not in self.control.options.keys():
-            msg = "Required control config variable 'input_dir' not found"
+            msg = "Required control option 'input_dir' not found"
             raise ValueError(msg)
         else:
             self._input_dir = pl.Path(
@@ -754,10 +760,10 @@ class Model:
         if not self._found_input_files:
             self._find_input_files()
 
-        self._netcdf_dir = output_dir
+        self._netcdf_dir = pl.Path(output_dir)
         for cls in self.process_order:
             self.processes[cls].initialize_netcdf(
-                output_dir=output_dir,
+                output_dir=self._netcdf_dir,
                 separate_files=separate_files,
                 budget_args=budget_args,
                 output_vars=output_vars,

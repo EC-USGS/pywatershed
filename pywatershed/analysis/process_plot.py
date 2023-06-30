@@ -67,7 +67,7 @@ class ProcessPlot:
 
         data_df = pd.DataFrame(
             {
-                "nhm_seg": process.control.params.parameters["nhm_seg"],
+                "nhm_seg": process.params.coords["nhm_seg"],
                 var_name: process[var_name],
             }
         ).set_index("nhm_seg")
@@ -149,7 +149,7 @@ class ProcessPlot:
 
         data_df = pd.DataFrame(
             {
-                "nhm_id": process.control.params.parameters["nhm_id"],
+                "nhm_id": process.params.coords["nhm_id"],
                 var_name: process[var_name],
             }
         ).set_index("nhm_id")
@@ -169,14 +169,14 @@ class ProcessPlot:
             # data_df = self.get_hru_var(var_name, model)
             data_df = pd.DataFrame(
                 {
-                    "nhm_id": process.control.params.parameters["nhm_id"],
+                    "nhm_id": process.params.coords["nhm_id"],
                     var_name: process[var_name],
                 }
             ).set_index("nhm_id")
 
         else:
             if nhm_id is None:
-                nhm_id = model.control.params.parameters["nhm_id"]
+                nhm_id = model.parameters["nhm_id"]
             data_df = pd.DataFrame(
                 {
                     "nhm_id": nhm_id,

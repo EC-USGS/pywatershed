@@ -16,7 +16,9 @@ dependencies:
   - git
   - ipython
   - ipywidgets
+  - jupyter
   - jupyter_contrib_nbextensions
+  - jupyterlab
   - nb_conda_kernels
   - nbconvert
   - netCDF4

@@ -38,7 +38,7 @@ class Parameters(DatasetDict):
             The metadata argument may also contain a special `global` key
             paired with a dictionary of global metadata of arbitrary name and
             values of string, integer, or float types.
-        encoding: (to document)
+        encoding: The encoding attributes to/from file when reading/writing.
         validate: A bool that defaults to True, enforcing the consistency
             of the supplied dictionaries
     """

@@ -12,12 +12,17 @@ and example notebooks.
   - [Compilers](#compilers)
   - [Python](#python)
     - [Creating a virtual environment](#creating-a-virtual-environment)
-      - [Conda](#conda)
+      - [Mamba](#mamba)
       - [Pip](#pip)
     - [Installing `pywatershed` in development mode](#installing-pywatershed-in-development-mode)
     - [F2PY](#f2py)
-- [Testing](#testing)
 - [Branching model](#branching-model)
+- [CI](#ci)
+- [Testing](#testing)
+- [Linting](#linting)
+- [Committing Jupyter Notebooks](#committing-jupyter-notebooks)
+- [pre-commit hooks](#pre-commit-hooks)
+- [Documentation](#documentation)
 - [Miscellaneous](#miscellaneous)
   - [Locating the root](#locating-the-root)
 
@@ -54,16 +59,16 @@ Python >= 3.9 is required.
 
 #### Creating a virtual environment
 
-A virtual Python environment is recommended, and can be created with Python's
-builtin `venv` or a conda distribution like Anaconda or Miniconda.
+We suggest Mamba over a Python virtual environment (venv), but a venv is better
+than nothing and can be created with Python's builtin `venv`.
 
-##### Conda
+##### Mamba
 
-To create a conda environment with all core, testing and optional dependencies,
-run from the project root:
+We highly recommend using Mamba. To create a mamba/conda environment with all
+core, testing and optional dependencies, run from the project root:
 
 ```
-conda env create -f environment.yml
+mamba env create -f environment.yml
 ```
 
 The conda `environment.yml` contains all dependencies needed to develop, test,
@@ -96,6 +101,7 @@ with:
 
 ``` pip install -e .  ```
 
+
 #### F2PY
 
 The numpy extension F2PY is used to provide fortran compiled kernels of core
@@ -117,13 +123,28 @@ pip install -e .
 
 Note that an editable (`-e` above) is required to compile the fotran code.
 
-## Testing
 
+## Branching model  
+This project uses the [git
+flow](https://nvie.com/posts/a-successful-git-branching-model/): development
+occurs on the `develop` branch, while `main` is reserved for the state of the
+latest release. Development PRs are typically squashed to `develop`, to avoid
+merge commits. At release time, release branches are merged to `main`, and then
+`main` is merged back into `develop`.
+
+
+## CI  
+The automated practices of installing, linting, and testing described below are
+all formally encoded in `.github/workflows/ci.yaml` and
+`.github/workflows/ci_examples.yaml` files.
+
+
+## Testing  
 Once the dependencies are available, we want to verify the software by running
 its test suite. The following testing procedures are also covered in the
-notebook `examples/01_automated_testing.ipynb`.  To run the tests, we first
-need to generate the test data. This consists of running PRMS and then
-converting the output to netcdf. From `test_data/scripts`:
+notebook `examples/01_automated_testing.ipynb`.  To run the tests, we first need
+to generate the test data. This consists of running PRMS and then converting the
+output to netcdf. From `test_data/scripts`:
 
 ```
 pytest -v -n=4 test_run_domains.py
@@ -138,20 +159,62 @@ All tests should pass, XPASS, or XFAIL. XFAIL is an expected
 failure. Substitute `-n auto` to automatically use all available cores on your
 machine.
 
-## Branching model
 
-This project uses the [git
-flow](https://nvie.com/posts/a-successful-git-branching-model/): development
-occurs on the `develop` branch, while `main` is reserved for the state of the
-latest release. Development PRs are typically squashed to `develop`, to avoid
-merge commits. At release time, release branches are merged to `main`, and then
-`main` is merged back into `develop`.
+## Linting
+Automated linting procedures are performed in CI and enforced, these are
+```
+isort ./autotest ./pywatershed
+black ./autotest ./pywatershed
+flake8 --count --show-source --exit-zero ./pywatershed ./autotest		
+pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
+```
+
+And you'll need to run these locally to pass CI checks.
+
+
+## Committing Jupyter Notebooks
+All outputs are required to be stripped from jupyter notebooks prior to
+committing. To facilitate this we have
+[pre-commit hooks](https://pre-commit.com/) which will strip
+outputs and metadata from jupyter notebooks.  When a `git commit` is attempted,
+the hook will check all staged `*.ipynb` files. If the file is modified after
+running the hook (which runs
+[nbstripout](https://github.com/kynan/nbstripout)), then the
+commit is abandoned and the changes resulting from the hook need added/staged
+before the commit can be attempted again.
+
+The pre-commit hook is highly recommended because it acts at the appropritae
+time to keep very large diffs out of the repository history. If you are using
+`environment.yml` this will be installed. Othewise, 
+
+## pre-commit hooks
+Pre-commit hooks apply actionas at commit-time. These are available when
+`pre-commit` is installed in the environment, as in the `environment.yml`
+supplied. To install yourself
+
+```
+pre-commit install
+```
+
+As specified in `.pre-commit-config.yaml`, we adopt the following pre-commit
+hooks
+
+* [nbstripout](https://github.com/kynan/nbstripout):
+  strip outputs from jupyter notebooks
+* [blackdoc](https://github.com/keewis/blackdoc):
+  apply black within documentation 
+* [doctoc](https://github.com/thlorenz/doctoc): auto generate tables of
+  contents in markdown docs
+
 
 ## Documentation
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-are used for documenting source code.
+are used for documenting source code. 
+
+
 
 ## Miscellaneous
+
 
 ### Locating the root
 

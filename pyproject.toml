@@ -37,9 +37,9 @@ dependencies = [
     "numba",
     "pandas >= 1.4.0",
     "pint",
+    "pyyaml",
     "xarray >= 2023.5.0",
     "xmltodict",
-    "pyyaml",
 ]
 dynamic = ["version", "readme"]
 
@@ -52,6 +52,7 @@ lint = [
     "flake8",
     "pylint",
     "flynt",
+    "pre-commit",
 ]
 test = [
     "pywatershed[lint]",

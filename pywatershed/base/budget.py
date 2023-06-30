@@ -489,8 +489,14 @@ class Budget(Accessor):
         )
 
         def balance_line_col_wise():
+            # TODO(JLM): This is a hack until i have some time to sort this out
             bal_line = "Balance: "
             for oper, vals_sum, col_width, col_key_width in term_data:
+                if vals_sum.sum() > 0:
+                    sign_extra = 0
+                else:
+                    sign_extra = 1
+
                 bal_line += (
                     oper
                     + (" " * (col_key_width + col_extra_colon - len(oper)))
@@ -500,7 +506,8 @@ class Budget(Accessor):
                             precision=col_width
                             - col_key_width
                             - col_extra_colon
-                            - 6,
+                            - 6
+                            - sign_extra,
                         ),
                         col_width - col_key_width - col_extra_colon,
                     )

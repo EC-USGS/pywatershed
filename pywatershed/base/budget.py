@@ -12,6 +12,7 @@ from ..constants import zero
 from ..utils.formatting import pretty_print
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
+from .parameters import Parameters
 
 # Todo
 # * documentation
@@ -574,6 +575,7 @@ class Budget(Accessor):
 
     def initialize_netcdf(
         self,
+        params: Parameters,
         output_dir: str,
         write_sum_vars: Union[list, bool] = True,
         write_individual_vars: bool = False,
@@ -636,7 +638,7 @@ class Budget(Accessor):
         for key in self.terms.keys():
             global_attrs[key] = "[" + ", ".join(self.terms[key]) + "]"
 
-        coordinates = {"one": 0, **self.control.params.nhm_coordinates}
+        coordinates = {"one": 0, **params.coords}
 
         self._netcdf = NetCdfWrite(
             nc_path,
@@ -645,9 +647,7 @@ class Budget(Accessor):
             self.meta,
             global_attrs=global_attrs,
         )
-
         # todo jlm: put terms in to metadata
-
         return
 
     def __output_netcdf(self) -> None:

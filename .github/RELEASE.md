@@ -1,16 +1,26 @@
+#  -----------------------------------------------------------------------------
 # Release guide
 
-This document describes release procedures, conventions, and utilities for `pywatershed`.
+This document describes release procedures, conventions, and utilities for
+`pywatershed`.
 
 ## Conventions
 
-- Releases follow the [git flow](https://nvie.com/posts/a-successful-git-branching-model/).
+- Releases follow the
+  [git flow](https://nvie.com/posts/a-successful-git-branching-model/).
 - Release numbers follow [semantic version](https://semver.org/) conventions.
 - Minor and major releases branch from `develop`. Patches branch from `main`.
 
 ## Releasing `pywatershed`
 
-The release procedure is mostly automated. The workflow is defined in `.github/workflows/release.yaml` and triggers when a release or patch branch is pushed to this repo.
+The release procedure is mostly automated. The workflow is defined in
+`.github/workflows/release.yaml` and triggers when a release or patch branch is
+pushed to this repo.
+
+Prior to release:
+1. Run asv tests without asv, perform an asv regression test: 
+1. On develop update the `what's new.rst` to include  the date of the release
+
 
 To release a new version:
 
@@ -43,7 +53,7 @@ To release a new version:
     - Update `version.txt` and `pywatershed/version.py` to match the just-released version, with a '+' appended to the version number in `version.txt` to indicate preliminary/development status.
     - Draft a PR against `develop` with the updated version files and the updates previously merged to `main`.
 
- 5. Merge the PR to `develop`. As above, it is important to *merge* the PR, not squash, to preserve history and keep `develop` and `main` from diverging. 
+ 5. Merge the PR to `develop`. As above, it is important to *merge* the PR, not squash, to preserve history and keep `develop` and `main` from diverging.
 
  ## Utility scripts
 

@@ -1,5 +1,6 @@
 import numpy as np
 
+from ..base.data_model import DatasetDict
 from ..base.parameters import Parameters
 from ..constants import fileish
 
@@ -66,8 +67,8 @@ class StarfitParameters(Parameters):
         grand_ids: fileish = None,
         param_names: list = None,
     ) -> dict:
-        resops_dd = Parameters.from_netcdf(resops_domain)
-        istarf_conus_dd = Parameters.from_netcdf(istarf_conus)
+        resops_dd = DatasetDict.from_netcdf(resops_domain)
+        istarf_conus_dd = DatasetDict.from_netcdf(istarf_conus)
         istarf_rename = {"GRanD_ID": "grand_id"}
         istarf_conus_dd.rename_dim(istarf_rename)
         istarf_conus_dd.rename_var(istarf_rename)
@@ -84,7 +85,7 @@ class StarfitParameters(Parameters):
         del istarf_conus_dd.encoding["grand_id"]["original_shape"]
         # params_dd = DatasetDict.merge(istarf_conus_dd, resops_dd)
 
-        grand_dams_dd = Parameters.from_netcdf(grand_dams)
+        grand_dams_dd = DatasetDict.from_netcdf(grand_dams)
         grand_rename = {"GRAND_ID": "grand_id"}
         grand_dams_dd.rename_dim(grand_rename)
         grand_dams_dd.rename_var(grand_rename)
@@ -103,7 +104,9 @@ class StarfitParameters(Parameters):
         istarf_conus_dd.drop_var("subset_inds")
         grand_dams_dd.drop_var("subset_inds")
 
-        params_dd = Parameters.merge(resops_dd, istarf_conus_dd, grand_dams_dd)
+        params_dd = DatasetDict.merge(
+            resops_dd, istarf_conus_dd, grand_dams_dd
+        )
         # probably should have named the spatial dim nreservoirs when
         # I created the netcdf file
         _ = params_dd.rename_dim({"grand_id": "nreservoirs"})

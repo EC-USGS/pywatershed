@@ -33,14 +33,20 @@ dependencies:
   - pytest-env
   - pytest-order
   - pytest-xdist
+  - python<3.11,>=3.9
   - pyyaml
   - shapely<2.0.0
+  - sphinx
+  - sphinx-book-theme>=0.3.3
+  - sphinx-autosummary-accessors
+  - sphinx-copybutton
   - xarray>=2023.05.0
   - pip:
       - click != 8.1.0
       - black
       - isort
       - flake8
+      - jupyter_black
       - pylint
       - git+https://github.com/modflowpy/flopy.git
       - modflow-devtools

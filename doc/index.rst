@@ -4,10 +4,6 @@
 pywatershed: a hydrologic model in Python
 ####################################################
 
-
-.. image:: _static/prms_flow.png
-
-
 .. toctree::
    :hidden:
    :caption: API Reference
@@ -15,6 +11,7 @@ pywatershed: a hydrologic model in Python
     API Reference <api.rst>
     Atmosphere <api/atmosphere>
     Hydrology <api/hydrology>
+    Parameters <api/parameters>
     Base <api/base>
     Utils <api/utils>
 
@@ -32,4 +29,4 @@ pywatershed: a hydrologic model in Python
 
     Index <genindex>
 ..
-  Module Index <modindex>
+    Module Index <modindex>

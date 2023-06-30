@@ -68,9 +68,15 @@ all core and optional dependencies can be created from the project root with:
 
 ``` mamba env create -f environment_w_jupyter.yml ```
 
+(The environment `environment.yml` does not contain jupyter or jupyterlab
+in order to not interfere with installation in WholeTale, see Example
+Notebooks seection below.)
 
 The `pywatershed` package is [available on
-PyPI](https://pypi.org/project/pywatershed/) and can be installed with:
+PyPI](https://pypi.org/project/pywatershed/). At the moment, the installation
+may not be reliable on all platforms and we are working to fix this.
+
+Using PyPI (with the above caveat), `pywatershed` can be installed with:
 
 ``` pip install pywatershed ```
 
@@ -91,13 +97,23 @@ contribute to this project.
 
 ## Example Notebooks
 
-Jupyter notebooks containing examples are found in the
-[examples/](https://github.com/EC-USGS/pywatershed/tree/main/examples)
-directory. Numbered notebooks are tested.  Notebooks 00 and 01 walk the user
-through the setting the python environment and running the software tests.
-Notebook 02 demonstrates modeling with pywatershed. Non-numbered notebooks cover
-additional topics. These notebooks are note yet covered by testing and so may be
-expected to have some issues until they are added to testing.
+Jupyter notebooks containing examples are found in the `examples/` directory.
+Numbered notebooks in this directory are tested in CI. The notebooks may be run
+using [WholeTale](https://wholetale.org/). Non-numbered notebooks
+coveradditional topics. These notebooks are note yet covered by testing and so
+may be expected to have some issues until they are added to testing. There are
+containers for both the `main` and `develop` branches. The develop container may
+require the user to update the repository to stay current with
+development. WholeTale will give you a jupyter-lab running in the root of this
+repository. You can navigate to `examples` and then open and run the notebooks
+of your choice. This is a very easy and quick way to get started without needing
+to install pywatershed requirements yourself. However, it does require
+registering for or loging into WholeTale. WholeTale is an NSF funded project and
+supports logins from many institutions, e.g. the USGS, and you may not need to
+register.
+
+In `examples/developer/` there are notebooks of interest to developers who may
+want to learn about running the software tests.
 
 ## Overview of Repository Contents
 

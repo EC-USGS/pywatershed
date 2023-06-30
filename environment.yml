@@ -13,9 +13,9 @@ dependencies:
   - geoviews
   - holoviews
   - hvplot
-  - ipywidgets
   - git
   - ipython
+  - ipywidgets
   - jupyter_contrib_nbextensions
   - nb_conda_kernels
   - nbconvert

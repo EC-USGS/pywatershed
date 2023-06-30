@@ -15,7 +15,9 @@ dependencies:
   - hvplot
   - git
   - ipython
+  - jupyter
   - jupyter_contrib_nbextensions
+  - jupyterlab
   - nb_conda_kernels
   - nbconvert
   - netCDF4

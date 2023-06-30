@@ -29,7 +29,7 @@ class Model:
     This is the class that helps execute sets of Processes in order.
 
     There are two distinct ways of instatniating the Model class described
-    below.
+    below: 1) PRMS-legacy instantation, 2) pywatershed-centric instatiation.
 
     Args:
         process_list_or_model_dict: a process list or a model dictionary,
@@ -466,6 +466,9 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
+        if "netcdf_output_dir" in self.control.options.keys():
+            self.initialize_netcdf(self.control.options["netcdf_output_dir"])
+
         return
 
     def _categorize_model_dict(self):
@@ -618,7 +621,7 @@ class Model:
 
     def _set_input_dir(self):
         if "input_dir" not in self.control.options.keys():
-            msg = "Required control config variable 'input_dir' not found"
+            msg = "Required control option 'input_dir' not found"
             raise ValueError(msg)
         else:
             self._input_dir = pl.Path(
@@ -757,10 +760,10 @@ class Model:
         if not self._found_input_files:
             self._find_input_files()
 
-        self._netcdf_dir = output_dir
+        self._netcdf_dir = pl.Path(output_dir)
         for cls in self.process_order:
             self.processes[cls].initialize_netcdf(
-                output_dir=output_dir,
+                output_dir=self._netcdf_dir,
                 separate_files=separate_files,
                 budget_args=budget_args,
                 output_vars=output_vars,

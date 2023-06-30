@@ -369,7 +369,7 @@ class PRMSRunoff(ConservativeProcess):
 
     def _init_calc_method(self):
         if self._calc_method is None:
-            self._calc_method = "none"
+            self._calc_method = "numba"
 
         if self._calc_method.lower() not in ["numpy", "numba"]:
             msg = (

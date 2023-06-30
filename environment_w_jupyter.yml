@@ -15,6 +15,7 @@ dependencies:
   - hvplot
   - git
   - ipython
+  - ipywidgets
   - jupyter
   - jupyter_contrib_nbextensions
   - jupyterlab
@@ -41,6 +42,7 @@ dependencies:
   - sphinx-book-theme>=0.3.3
   - sphinx-autosummary-accessors
   - sphinx-copybutton
+  - tqdm
   - xarray>=2023.05.0
   - pip:
       - click != 8.1.0

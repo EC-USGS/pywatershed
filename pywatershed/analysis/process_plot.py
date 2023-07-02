@@ -1,6 +1,7 @@
 import pathlib as pl
 from textwrap import wrap
 
+import hvplot.pandas  # noqa
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np

@@ -1,7 +1,6 @@
 import pathlib as pl
 from textwrap import wrap
 
-import hvplot.pandas  # noqa
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -164,6 +163,8 @@ class ProcessPlot:
         data_units: str = None,
         nhm_id: np.ndarray = None,
     ):
+        _ = import_optional_dependency("hvplot.pandas")
+
         ccrs = import_optional_dependency("cartopy.crs")
 
         if data is None:
@@ -215,6 +216,7 @@ class ProcessPlot:
             line_width=0,
             alpha=0.75,
             # clim=stat_lims[stat],
+            hover_cols=["nhm_id"],
             title=title,
             clabel=clabel,
             xlabel="Longitude (degrees East)",

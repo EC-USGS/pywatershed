@@ -449,6 +449,7 @@ class Process(Accessor):
             separate_files: boolean indicating if storage component output
                 variables should be written to a separate file for each
                 variable
+            output_vars: list of variable names to outuput.
 
         Returns:
             None
@@ -467,7 +468,17 @@ class Process(Accessor):
 
         self._netcdf_initialized = True
         self._netcdf_output_dir = pl.Path(output_dir)
-        self._output_vars = output_vars
+        if output_vars is None:
+            self._output_vars = self.variables
+        else:
+            self._output_vars = list(
+                set(output_vars).intersection(set(self.variables))
+            )
+
+        if self._output_vars is None:
+            self._netcdf_initialized = False
+            return
+
         self._netcdf = {}
 
         if separate_files:

@@ -1,3 +1,4 @@
+from itertools import product
 import pathlib as pl
 import shutil
 
@@ -161,12 +162,24 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     return
 
 
-@pytest.mark.parametrize(
-    "separate",
-    [False, True],
-    ids=["grp_by_process", "separate"],
+separate_outputs = [False, True]
+output_vars = [None, [var for kk, vv in check_vars.items() for var in vv]]
+
+
+@pytest.fixture(
+    scope="function",
+    params=list(product(separate_outputs, output_vars)),
 )
-def test_separate_together(domain, control, params, tmp_path, separate):
+def sep_vars(request):
+    return (request.param[0], request.param[1])
+
+
+def test_separate_together_var_list(
+    domain, control, params, tmp_path, sep_vars
+):
+    separate = sep_vars[0]
+    output_vars = sep_vars[1]
+
     tmp_dir = pl.Path(tmp_path)
 
     model_procs = [
@@ -182,6 +195,10 @@ def test_separate_together(domain, control, params, tmp_path, separate):
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     control.options["input_dir"] = input_dir
+    control.options["netcdf_output_dir"] = test_output_dir
+    control.options["netcdf_output_var_names"] = output_vars
+    control.options["netcdf_output_separate_files"] = separate
+
     # Could limit this to just the variables in model_procs
     for ff in domain_output_dir.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
@@ -194,11 +211,6 @@ def test_separate_together(domain, control, params, tmp_path, separate):
         parameters=params,
     )
 
-    model.initialize_netcdf(
-        output_dir=test_output_dir,
-        separate_files=separate,
-    )
-
     for tt in range(n_time_steps):
         model.advance()
         model.calculate()
@@ -209,6 +221,8 @@ def test_separate_together(domain, control, params, tmp_path, separate):
     if separate:
         for proc_key, proc in model.processes.items():
             for vv in proc.variables:
+                if output_vars is not None and vv not in output_vars:
+                    continue
                 nc_file = test_output_dir / f"{vv}.nc"
                 assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
@@ -225,21 +239,26 @@ def test_separate_together(domain, control, params, tmp_path, separate):
         for proc_key, proc in model.processes.items():
             # non-budget
             nc_file = test_output_dir / f"{proc_key}.nc"
-            assert nc_file.exists()
-            ds = xr.open_dataset(nc_file, decode_timedelta=False)
-            proc_vars = set(proc.get_variables())
-            nc_vars = set(ds.data_vars)
-            assert proc_vars == nc_vars
-            for vv in proc.variables:
-                if isinstance(
-                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
-                ):
-                    assert (ds[vv].values == proc[vv].data).all()
+            if output_vars is None or proc_key in check_vars.keys():
+                assert nc_file.exists()
 
-                else:
-                    assert (ds[vv][-1, :] == proc[vv]).all()
+                ds = xr.open_dataset(nc_file, decode_timedelta=False)
+                proc_vars = set(proc.get_variables())
+                nc_vars = set(ds.data_vars)
+                assert proc_vars == nc_vars
+                for vv in proc.variables:
+                    if output_vars is not None and vv not in output_vars:
+                        continue
 
-            del ds
+                    if isinstance(
+                        proc[vv], pywatershed.base.timeseries.TimeseriesArray
+                    ):
+                        assert (ds[vv].values == proc[vv].data).all()
+
+                    else:
+                        assert (ds[vv][-1, :] == proc[vv]).all()
+
+                del ds
 
             # budget
             # no budgets for solar or atmosphere

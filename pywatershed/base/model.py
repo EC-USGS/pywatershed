@@ -471,9 +471,25 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
+        # methodize this netcdf section
         self._netcdf_initialized = False
         if "netcdf_output_dir" in self.control.options.keys():
-            self.initialize_netcdf(self.control.options["netcdf_output_dir"])
+            if "netcdf_output_var_names" in self.control.options.keys():
+                output_vars = self.control.options["netcdf_output_var_names"]
+            else:
+                output_vars = None
+            if "netcdf_output_separate_files" in self.control.options.keys():
+                separate_files = self.control.options[
+                    "netcdf_output_separate_files"
+                ]
+            else:
+                separate_files = None
+
+            self.initialize_netcdf(
+                self.control.options["netcdf_output_dir"],
+                output_vars=output_vars,
+                separate_files=separate_files,
+            )
 
         return
 

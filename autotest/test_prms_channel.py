@@ -69,6 +69,9 @@ def test_compare_prms(
     )
     nc_parent = tmp_path / domain["domain_name"]
     channel.initialize_netcdf(nc_parent)
+    # test that init netcdf twice raises a warning
+    with pytest.warns(UserWarning):
+        channel.initialize_netcdf(nc_parent)
 
     for istep in range(control.n_times):
         control.advance()

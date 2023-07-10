@@ -1,5 +1,6 @@
 import pathlib as pl
 from typing import Literal
+from warnings import warn
 
 from ..base import meta
 from ..base.adapter import Adapter
@@ -168,6 +169,14 @@ class ConservativeProcess(Process):
         budget_args: dict = None,
         output_vars: list = None,
     ) -> None:
+        if self._netcdf_initialized:
+            msg = (
+                f"{self.name} class previously initialized netcdf output "
+                f"in {self._netcdf_output_dir}"
+            )
+            warn(msg)
+            return
+
         super().initialize_netcdf(
             output_dir=output_dir,
             separate_files=separate_files,
@@ -192,7 +201,7 @@ class ConservativeProcess(Process):
         """
         super()._finalize_netcdf()
 
-        if self.budget is not None and self._do_output_netcdf:
+        if self.budget is not None and self._netcdf_initialized:
             self.budget._finalize_netcdf()
 
         return

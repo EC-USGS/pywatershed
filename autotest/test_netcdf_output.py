@@ -101,6 +101,13 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
         output_vars=output_vars,
     )
 
+    with pytest.warns(UserWarning):
+        model.initialize_netcdf(
+            tmp_dir,
+            budget_args=budget_args,
+            output_vars=output_vars,
+        )
+
     for tt in range(n_time_steps):
         model.advance()
         model.calculate()

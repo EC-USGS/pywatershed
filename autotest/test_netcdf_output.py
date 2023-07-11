@@ -1,6 +1,6 @@
-from itertools import product
 import pathlib as pl
 import shutil
+from itertools import product
 
 import numpy as np
 import pytest

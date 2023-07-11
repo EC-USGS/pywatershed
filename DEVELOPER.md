@@ -185,7 +185,9 @@ before the commit can be attempted again.
 
 The pre-commit hook is highly recommended because it acts at the appropritae
 time to keep very large diffs out of the repository history. If you are using
-`environment.yml` this will be installed. Othewise, 
+`environment.yml` this will be installed. Othewise, your commits will be bloating teh repository and versions of noteboks may need removed from the history. 
+
+The maximal amount of metadata can be stripped from Jupyter notebooks by following the example configuration found in the [nbstripout section on stripping metadata](https://github.com/kynan/nbstripout#stripping-metadata).
 
 ## pre-commit hooks
 Pre-commit hooks apply actionas at commit-time. These are available when

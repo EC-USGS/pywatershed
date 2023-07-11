@@ -1,13 +1,19 @@
-Examples
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [`examples/`: Example Notebooks](#examples-example-notebooks)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+`examples/`: Example Notebooks
 ========
 
-Notebooks starting with numbers are "offical" and are tested using continuous integration.
-These are listed below. The remaning notebooks are informal and may be out of date, use
-with caution and lowered expectations.
+The "formal" example notebooks start with numbers (starting from 00). These notebooks are
+intended to be followed sequentially. They are tested and so are expected to work.
 
-The first two notebooks (00 and 01) setup the environment and testing data that may be used
-in later notebooks and should be executed first.
+The other notebooks in this directory are "informal" and are a random collection which may be out of date and are not tested. These notebooks are not necessarily expected to work.
 
-* `00_python_virtual_env.ipynb`: Get up and running using conda to get all the dependencies.
-* `01_automated_testing.ipynb`: Run PRMS and convert outputs to NetCDF to have input data.
-* `02_process_models.ipynb`: Use pywatershed to model!
+The notebooks in `developer/` are intended as an introduction to `pywatershed` development, 
+specifically setting up and running the `autotest/` tests. At the moment, these notebooks are
+not tested and may be out of date. 

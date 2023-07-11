@@ -825,6 +825,7 @@ class PRMSAtmosphere(Process):
             assert nc_path.exists()
             print(f"Wrote file: {nc_path}")
 
+        self._finalize_netcdf()
         return
 
     def initialize_netcdf(
@@ -858,6 +859,7 @@ class PRMSAtmosphere(Process):
         return
 
     def _finalize_netcdf(self) -> None:
+        self._netcdf_initialized = False
         return
 
     def output(self):

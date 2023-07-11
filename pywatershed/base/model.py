@@ -483,7 +483,7 @@ class Model:
                     "netcdf_output_separate_files"
                 ]
             else:
-                separate_files = None
+                separate_files = True
 
             self.initialize_netcdf(
                 self.control.options["netcdf_output_dir"],

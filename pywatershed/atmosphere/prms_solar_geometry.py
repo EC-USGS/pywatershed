@@ -467,10 +467,11 @@ class PRMSSolarGeometry(Process):
             assert nc_path.exists()
             print(f"Wrote file: {nc_path}")
 
-        # un-init netcdf here?
+        self._finalize_netcdf()
         return
 
     def _finalize_netcdf(self) -> None:
+        self._netcdf_initialized = False
         return
 
     def initialize_netcdf(

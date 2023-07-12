@@ -119,11 +119,11 @@ class PRMSModels:
         processes: tuple = None,
         write_output: Union[bool, Literal["separate", "together"]] = None,
     ):
-        self.control.options["input_dir"] = self.tag_input_dir
-        self.control.options["budget_type"] = "warn"
-        self.control.options["calc_method"] = "numba"
-
         if self.ge_v0_2_0:
+            self.control.options["input_dir"] = self.tag_input_dir
+            self.control.options["budget_type"] = "warn"
+            self.control.options["calc_method"] = "numba"
+
             model = pws.Model(
                 self.processes,
                 control=self.control,

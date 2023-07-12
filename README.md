@@ -66,7 +66,7 @@ We currently recommend dependencies be installed with
 Ananconda (but the conda command can also be used). An environment containing
 all core and optional dependencies can be created from the project root with:
 
-``` mamba env create -f environment_w_jupyter.yml ```
+```mamba env create -f environment_w_jupyter.yml```
 
 (The environment `environment.yml` does not contain jupyter or jupyterlab
 in order to not interfere with installation in WholeTale, see Example
@@ -131,19 +131,21 @@ repository (`git pull origin`) to stay current with development.
 The contents of directories at this level is described. Therein you may discover
 another README.md for more information.
 
-`.github/` Github actions, scripts and Python environments for continuous
-integration (CI) and releasing, 
-`asv_benchmarks` preformance benchmarking by ASV
-`autotest/` pywatershed package testing using pytest 
-`bin/` PRMS executables distributed 
-`doc/` Package/code documentation source code 
-`examples/` How to use the package, mostly jupyter notebooks 
-`prms_src/` PRMS source used for generating executables in bin/ 
-`pywatershed/` Package source
-`reference/` Ancillary materials for development 
-`resources/` Static stuff like images 
-`test_data/` Data used for automated testing
-
+```
+.github/: Github actions, scripts and Python environments for continuous integration (CI) and releasing,
+asv_benchmarks/: preformance benchmarking by ASV
+autotest/: pywatershed package testing using pytest
+autotest_exs/: pywatershed example notebook testing using pytest
+bin/:PRMS executables distributed
+doc/:Package/code documentation source code
+evaluation/: tools for evaluation of pywatershed
+examples/:How to use the package, mostly jupyter notebooks
+prms_src/:PRMS source used for generating executables in bin/
+pywatershed/:Package source
+reference/:Ancillary materials for development
+resources/:Static stuff like images
+test_data/:Data used for automated testing
+```
 
 ## Disclaimer
 

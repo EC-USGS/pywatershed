@@ -148,7 +148,7 @@ class Model:
         )
         model.run()
 
-     >>> import pywatershed as pws
+    >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
     >>> # A PRMS-native control file
@@ -167,19 +167,12 @@ class Model:
     ...     control=control,
     ...     parameters=params,
     ... )
+    PRMSGroundwater jit compiling with numba
+    PRMSChannel jit compiling with numba
     >>> model.run()
-    model.run(): 0 % complete
-    model.run(): 10 % complete
-    model.run(): 20 % complete
-    model.run(): 30 % complete
-    model.run(): 40 % complete
-    model.run(): 50 % complete
-    model.run(): 60 % complete
-    model.run(): 70 % complete
-    model.run(): 80 % complete
-    model.run(): 90 % complete
-    model.run(): 100 % complete
+    100%|█████████████████████████████████████████████████████████| 731/731 [00:00<00:00, 1249.26it/s]
     model.run(): finalizing
+
 
     Construct a model the pywatershed-centric way, in memory:
 
@@ -275,20 +268,14 @@ class Model:
     ...     },
     ... }
     >>> model = pws.Model(model_dict)
+    PRMSCanopy jit compiling with numba
+    PRMSSnow jit compiling with numba
     >>> model.run()
-    model.run(): 0 % complete
-    model.run(): 10 % complete
-    model.run(): 20 % complete
-    model.run(): 30 % complete
-    model.run(): 40 % complete
-    model.run(): 50 % complete
-    model.run(): 60 % complete
-    model.run(): 70 % complete
-    model.run(): 80 % complete
-    model.run(): 90 % complete
-    model.run(): 100 % complete
+      0%|                                                                     | 0/731 [00:00<?, ?it/s]
+    /Users/jmccreight/usgs/pywatershed2/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
+        through_rain[:] = np.where(wh_through, net_rain, zero)
+    100%|███████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 96.76it/s]
     model.run(): finalizing
-
 
     Construct a model the pywatershed-centric way, from a yaml file definition:
 
@@ -394,24 +381,19 @@ class Model:
     ...         documents = yaml.dump(val, file)
     ...
     >>> model = pws.Model.from_yml(model_dict_file)
+    PRMSCanopy jit compiling with numba
+    PRMSSnow jit compiling with numba
     >>> model.run()
-    model.run(): 0 % complete
-    /Users/jmccreight/usgs/pywatershed/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
+      0%|                                                                     | 0/731 [00:00<?, ?it/s]
+    /Users/jmccreight/usgs/pywatershed2/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
+      through_rain[:] = np.where(wh_through, net_rain, zero)
+      0%|                                                           | 1/731 [00:05<1:08:27,  5.63s/it]
+    /Users/jmccreight/usgs/pywatershed2/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
       warn(msg, UserWarning)
-    model.run(): 10 % complete
-    model.run(): 20 % complete
-    model.run(): 30 % complete
-    model.run(): 40 % complete
-    model.run(): 50 % complete
-    model.run(): 60 % complete
-    model.run(): 70 % complete
-    model.run(): 80 % complete
-    model.run(): 90 % complete
-    model.run(): 100 % complete
+    100%|██████████████████████████████████████████████████████████| 731/731 [00:06<00:00, 119.95it/s]
     model.run(): finalizing
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
-    >>>
 
     """
 

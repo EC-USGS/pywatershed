@@ -97,9 +97,11 @@ class Process(Accessor):
             self.params = parameters.subset(self.get_parameters())
 
         # netcdf output variables
-        self._do_output_netcdf = False
+        self._netcdf_initialized = False
+        self._netcdf_output_dir = None
         self._netcdf = None
         self._separate_netcdf = True
+
         self._itime_step = -1
 
         # TODO metadata patching.
@@ -120,7 +122,7 @@ class Process(Accessor):
         Returns:
             None
         """
-        if self._do_output_netcdf:
+        if self._netcdf_initialized:
             if self._verbose:
                 print(f"writing output for: {self.name}")
             self._output_netcdf()
@@ -447,42 +449,64 @@ class Process(Accessor):
             separate_files: boolean indicating if storage component output
                 variables should be written to a separate file for each
                 variable
+            output_vars: list of variable names to outuput.
 
         Returns:
             None
 
         """
+        if self._netcdf_initialized:
+            msg = (
+                f"{self.name} class previously initialized netcdf output "
+                f"in {self._netcdf_output_dir}"
+            )
+            warn(msg)
+            return
+
         if self._verbose:
             print(f"initializing netcdf output for: {self.output_dir}")
 
-        self._do_output_netcdf = True
-        self._output_vars = output_vars
+        self._netcdf_initialized = True
+        self._netcdf_output_dir = pl.Path(output_dir)
+        if output_vars is None:
+            self._output_vars = self.variables
+        else:
+            self._output_vars = list(
+                set(output_vars).intersection(set(self.variables))
+            )
+
+        if self._output_vars is None:
+            self._netcdf_initialized = False
+            return
+
         self._netcdf = {}
+
         if separate_files:
             self._separate_netcdf = True
             # make working directory
-            output_dir = pl.Path(output_dir)
-            output_dir.mkdir(parents=True, exist_ok=True)
+            self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             for variable_name in self.variables:
                 if (self._output_vars is not None) and (
                     variable_name not in self._output_vars
                 ):
                     continue
-                nc_path = pl.Path(output_dir) / f"{variable_name}.nc"
+                nc_path = self._netcdf_output_dir / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
                     self.params.coords,
                     [variable_name],
                     {variable_name: self.meta[variable_name]},
+                    {"process class": self.name},
                 )
         else:
             initial_variable = self.variables[0]
-            pl.Path(output_dir).mkdir(parents=True, exist_ok=True)
+            self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                output_dir / f"{self.name}.nc",
+                self._netcdf_output_dir / f"{self.name}.nc",
                 self.params.coords,
                 self.variables,
                 self.meta,
+                {"process class": self.name},
             )
             for variable in self.variables[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
@@ -496,7 +520,7 @@ class Process(Accessor):
             None
 
         """
-        if self._do_output_netcdf:
+        if self._netcdf_initialized:
             time_added = False
             for variable in self.variables:
                 if (self._output_vars is not None) and (
@@ -522,7 +546,7 @@ class Process(Accessor):
         Returns:
             None
         """
-        if self._do_output_netcdf:
+        if self._netcdf_initialized:
             for idx, variable in enumerate(self.variables):
                 if (self._output_vars is not None) and (
                     variable not in self._output_vars

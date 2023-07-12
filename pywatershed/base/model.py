@@ -1,8 +1,10 @@
-import math
 import pathlib as pl
 from copy import deepcopy
 from pprint import pprint
 from typing import Union
+from warnings import warn
+
+from tqdm.auto import tqdm
 
 from ..base.adapter import adapter_factory
 from ..base.control import Control
@@ -10,6 +12,7 @@ from ..constants import fileish
 from ..parameters import Parameters, PrmsParameters
 from ..utils.path import path_rel_to_yml
 
+# This is a convenience
 process_order_nhm = [
     "PRMSSolarGeometry",
     "PRMSAtmosphere",
@@ -35,6 +38,8 @@ class Model:
         process_list_or_model_dict: a process list or a model dictionary,
             see ways of instatiation below.
         control: Control object or None, see below.
+        parameters: A Parameters object of a dictionary of Parameters objects.
+            Default is None. See ways of instatnation below.
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
@@ -466,8 +471,25 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
+        # methodize this netcdf section
+        self._netcdf_initialized = False
         if "netcdf_output_dir" in self.control.options.keys():
-            self.initialize_netcdf(self.control.options["netcdf_output_dir"])
+            if "netcdf_output_var_names" in self.control.options.keys():
+                output_vars = self.control.options["netcdf_output_var_names"]
+            else:
+                output_vars = None
+            if "netcdf_output_separate_files" in self.control.options.keys():
+                separate_files = self.control.options[
+                    "netcdf_output_separate_files"
+                ]
+            else:
+                separate_files = True
+
+            self.initialize_netcdf(
+                self.control.options["netcdf_output_dir"],
+                output_vars=output_vars,
+                separate_files=separate_files,
+            )
 
         return
 
@@ -757,6 +779,15 @@ class Model:
         output_vars: list = None,
     ):
         """Initialize NetCDF output files for model (all processes)."""
+
+        if self._netcdf_initialized:
+            msg = (
+                "Model class previously initialized netcdf output "
+                f"in {self._netcdf_dir}"
+            )
+            warn(msg)
+            return
+
         if not self._found_input_files:
             self._find_input_files()
 
@@ -768,6 +799,7 @@ class Model:
                 budget_args=budget_args,
                 output_vars=output_vars,
             )
+        self._netcdf_initialized = True
         return
 
     def run(
@@ -807,13 +839,8 @@ class Model:
 
         if not n_time_steps:
             n_time_steps = self.control.n_times
-        for istep in range(n_time_steps):
-            # progress for the impatient
-            pct_complete = math.floor((istep + 1) / n_time_steps * 100)
-            if not (pct_complete % 10) and pct_complete != last_pct_comp:
-                last_pct_comp = pct_complete
-                print(f"model.run(): {pct_complete} % complete")
 
+        for istep in tqdm(range(n_time_steps)):
             self.advance()
             self.calculate()
             self.output()

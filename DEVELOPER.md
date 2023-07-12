@@ -124,7 +124,7 @@ pip install -e .
 Note that an editable (`-e` above) is required to compile the fotran code.
 
 
-## Branching model  
+## Branching model
 This project uses the [git
 flow](https://nvie.com/posts/a-successful-git-branching-model/): development
 occurs on the `develop` branch, while `main` is reserved for the state of the
@@ -133,13 +133,13 @@ merge commits. At release time, release branches are merged to `main`, and then
 `main` is merged back into `develop`.
 
 
-## CI  
+## CI
 The automated practices of installing, linting, and testing described below are
 all formally encoded in `.github/workflows/ci.yaml` and
 `.github/workflows/ci_examples.yaml` files.
 
 
-## Testing  
+## Testing
 Once the dependencies are available, we want to verify the software by running
 its test suite. The following testing procedures are also covered in the
 notebook `examples/01_automated_testing.ipynb`.  To run the tests, we first need
@@ -165,7 +165,7 @@ Automated linting procedures are performed in CI and enforced, these are
 ```
 isort ./autotest ./pywatershed
 black ./autotest ./pywatershed
-flake8 --count --show-source --exit-zero ./pywatershed ./autotest		
+flake8 --count --show-source --exit-zero ./pywatershed ./autotest
 pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 ```
 
@@ -185,7 +185,9 @@ before the commit can be attempted again.
 
 The pre-commit hook is highly recommended because it acts at the appropritae
 time to keep very large diffs out of the repository history. If you are using
-`environment.yml` this will be installed. Othewise, 
+`environment.yml` this will be installed. Othewise, your commits will be bloating the repository and versions of noteboks may need removed from the history.
+
+The maximal amount of metadata can be stripped from Jupyter notebooks by following the example configuration found in the [nbstripout section on stripping metadata](https://github.com/kynan/nbstripout#stripping-metadata).
 
 ## pre-commit hooks
 Pre-commit hooks apply actionas at commit-time. These are available when
@@ -202,14 +204,14 @@ hooks
 * [nbstripout](https://github.com/kynan/nbstripout):
   strip outputs from jupyter notebooks
 * [blackdoc](https://github.com/keewis/blackdoc):
-  apply black within documentation 
+  apply black within documentation
 * [doctoc](https://github.com/thlorenz/doctoc): auto generate tables of
   contents in markdown docs
 
 
 ## Documentation
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-are used for documenting source code. 
+are used for documenting source code.
 
 
 

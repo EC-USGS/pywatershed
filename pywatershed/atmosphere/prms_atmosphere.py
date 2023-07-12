@@ -1,4 +1,5 @@
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 
@@ -136,6 +137,7 @@ class PRMSAtmosphere(Process):
 
         self._calculated = False
 
+        self._netcdf_initialized = False
         self.netcdf_output_dir = netcdf_output_dir
         if self.netcdf_output_dir:
             self.initialize_netcdf(
@@ -143,9 +145,6 @@ class PRMSAtmosphere(Process):
                 separate_variables=netcdf_separate_files,
                 output_vars=netcdf_output_vars,
             )
-
-        else:
-            self._output_netcdf = False
 
         return
 
@@ -781,12 +780,12 @@ class PRMSAtmosphere(Process):
         return
 
     def _write_netcdf_timeseries(self) -> None:
-        if not self._output_netcdf:
+        if not self._netcdf_initialized:
             return
 
         if self.netcdf_separate_files:
             for var in self.variables:
-                if var not in self.netcdf_output_vars:
+                if var not in self._netcdf_output_vars:
                     continue
                 nc_path = self.netcdf_output_dir / f"{var}.nc"
 
@@ -810,11 +809,11 @@ class PRMSAtmosphere(Process):
             nc = NetCdfWrite(
                 nc_path,
                 self.params.coords,
-                self.netcdf_output_vars,
+                self._netcdf_output_vars,
                 self.meta,
             )
             for var in self.variables:
-                if var not in self.netcdf_output_vars:
+                if var not in self._netcdf_output_vars:
                     continue
                 nc.add_all_data(
                     var,
@@ -826,7 +825,7 @@ class PRMSAtmosphere(Process):
             assert nc_path.exists()
             print(f"Wrote file: {nc_path}")
 
-        self._output_netcdf = False
+        self._finalize_netcdf()
         return
 
     def initialize_netcdf(
@@ -836,21 +835,35 @@ class PRMSAtmosphere(Process):
         output_vars: list = None,
         **kwargs,
     ):
-        self._output_netcdf = True
+        if self._netcdf_initialized:
+            msg = (
+                f"{self.name} class previously initialized netcdf output "
+                f"in {self._netcdf_output_dir}"
+            )
+            warn(msg)
+            return
+
+        self._netcdf_initialized = True
         self.netcdf_separate_files = separate_files
         self.netcdf_output_dir = output_dir
         if output_vars is None:
-            self.netcdf_output_vars = self.variables
+            self._netcdf_output_vars = self.variables
         else:
-            self.netcdf_output_vars = output_vars
+            self._netcdf_output_vars = list(
+                set(output_vars).intersection(set(self.variables))
+            )
+
+        if self._netcdf_output_vars is None:
+            self._netcdf_initialized = False
 
         return
 
     def _finalize_netcdf(self) -> None:
+        self._netcdf_initialized = False
         return
 
     def output(self):
-        if self._output_netcdf:
+        if self._netcdf_initialized:
             if self._verbose:
                 print(
                     f"Writing FULL timeseries output for: {self.name}",

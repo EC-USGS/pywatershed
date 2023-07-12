@@ -17,7 +17,7 @@ What's New
 v0.3.0 (unreleased)
 -------------------
 
-New Features
+New features
 ~~~~~~~~~~~~
 
 
@@ -41,17 +41,20 @@ Documentation
 ~~~~~~~~~~~~~
 
 
-Internal Changes
+Internal changes
 ~~~~~~~~~~~~~~~~
 
 
 .. _whats-new.0.2.0:
 
-v0.2.0 (28 June 2023)
+v0.2.0 (12 July 2023)
 ---------------------
 
-New Features
+New features
 ~~~~~~~~~~~~
+- New example notebooks. Moved old notebooks to `examples/developer`.
+  (:pull:`204`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 - New way to specify `Model` instantiation either in-memory or from yaml files
   using a model dictionary. The approach is loosely based on MODFLOW 6 input
   organization. See `Model` documentation. Introduced the concept of
@@ -75,14 +78,20 @@ New Features
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
+- Move Control attribute "config" to "options" for handling global options.
+  (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
+- Remove arguments from `Model` initialization. Options pass via control, new
+  `set_options()` method on Process and ConservativeProcess
+  (:pull:`188`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 - `Control` no longer takes a `Parameter` object as an initialization argument.
   `Process` subclasses now require arguments `discretization` and `parameters`.
   The firstargument of `Model` not a indefinite number of processes, it is now
   either a list of `Process` subclasses or a model dictionary (see `Model`
-  documentation. Removed initialization options from `Model` except for
-  `input_dir`, all other global options managed by control. (:pull:`188`)
+  documentation. (:pull:`188`)
   By `James McCreight <https://github.com/jmccreight>`_.
-  
+
 
 Deprecations
 ~~~~~~~~~~~~
@@ -97,6 +106,8 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
+- Remove non-pep-compliant post-release reset PR steps. (:pull:`203`)
+  By `Wes Bonelli <https://github.com/w-bonelli>`_.
 - Add doc building requirements to environment.yml (:pull:`188`)
   By `James McCreight <https://github.com/jmccreight>`_.
 - Revive fortran compiling for editable installs (:pull:`188`)
@@ -106,7 +117,7 @@ Bug fixes
   and :pull:`183`)
   By `James McCreight <https://github.com/jmccreight>`_.
 - ModelGraph improvements and fixes (however result are platform dependent)
-  (:pull:`162`) By `James McCreight <https://github.com/jmccreight>`_.  
+  (:pull:`162`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Documentation
@@ -115,8 +126,11 @@ Documentation
   By `James McCreight <https://github.com/jmccreight>`_.
 
 
-Internal Changes
+Internal changes
 ~~~~~~~~~~~~~~~~
+- Introduce precommit hooks: `nbstripout`, `blackdoc`, and `doctoc`.
+  (:pull:`197`)
+  By `James McCreight <https://github.com/jmccreight>`_.
 - Rename StorageUnit to ConservativeProcess that subclasses from a new Process
   class that contains most of the StorageUnit functionality. (:pull:`188`)
   By `James McCreight <https://github.com/jmccreight>`_.
@@ -126,7 +140,7 @@ Internal Changes
 - Clean up of how the `calc_method` option assigns function names to reduce
   the total amount of code and do it upon initialization. (:pull:`188`)
   By `James McCreight <https://github.com/jmccreight>`_.
-- Rename many modules to use lower case names including those in base/,
+- Rename many modules to use lower-snake-case names including those in base/,
   atmoshpere/, and hydrology/ (:pull:`188`)
   By `James McCreight <https://github.com/jmccreight>`_.
 - NHM "self-driving" tests
@@ -136,7 +150,7 @@ Internal Changes
   :issue:`178`)
   By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
 
-  
+
 .. _whats-new.0.1.1:
 
 v0.1.1 (27 April 2023)

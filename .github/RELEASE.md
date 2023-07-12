@@ -43,7 +43,8 @@ Prior to release:
 
 To release a new version:
 
-0. Perform ASV performance benchmarks against previous release.
+0. Perform ASV performance benchmarks against previous release on Windows,
+   Linux, and Mac. Gather results.
 
 1. On your local machine, create a release branch from `develop` or a patch
    branch from `main`.  The branch's name must follow format
@@ -81,7 +82,11 @@ To release a new version:
     not yet publicly visible at this point. The release notes are autofilled as
     the changelog since the last release.
 
-4. Inspect the GitHub release. If needed, make any manual edits to the release
+4. Manually add the following to the Github release.
+    - Frozen environments for all platforms.
+    - Attach ASV results for all platforms.
+
+   Inspect the GitHub release. If needed, make any manual edits to the release
    notes. If the release looks good, publish it via GitHub UI or CLI. This tags
    the head of `main` with the release version number (**Note**: release tags,
    unlike branches, don't include an initial `v`, as is common in some projects)

@@ -14,8 +14,8 @@ else:
 # TODO remove backwards compatability with <0.2.0 once
 #      it is released.
 
-domains = ["hru_1", "drb_2yr", "ucb_2yr"]
-outputs = [None, "separate", "together"]
+domains = ["hru_1", "drb_2yr", "ucb_2yr"][1:2]
+outputs = [None, "separate", "together"][0:1]
 n_time_steps = 183
 
 model_tests = {
@@ -119,15 +119,15 @@ class PRMSModels:
         processes: tuple = None,
         write_output: Union[bool, Literal["separate", "together"]] = None,
     ):
+        self.control.options["input_dir"] = self.tag_input_dir
+        self.control.options["budget_type"] = "warn"
+        self.control.options["calc_method"] = "numba"
+
         if self.ge_v0_2_0:
             model = pws.Model(
                 self.processes,
                 control=self.control,
-                discretization_dict=None,
                 parameters=self.params,
-                input_dir=self.tag_input_dir,
-                budget_type="warn",
-                calc_method="numba",
             )
         else:
             model = pws.Model(

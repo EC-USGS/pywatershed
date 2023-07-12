@@ -834,9 +834,6 @@ class Model:
             print("model.run(): initializing NetCDF output")
             self.initialize_netcdf(netcdf_dir, output_vars=output_vars)
 
-        last_pct_comp = 0
-        print(f"model.run(): {last_pct_comp} % complete")
-
         if not n_time_steps:
             n_time_steps = self.control.n_times
 

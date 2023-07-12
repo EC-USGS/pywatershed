@@ -1,16 +1,3 @@
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**
-
-- [pywatershed](#pywatershed)
-  - [Purpose](#purpose)
-  - [Installation](#installation)
-  - [Contributing](#contributing)
-  - [Example Notebooks](#example-notebooks)
-  - [Overview of Repository Contents](#overview-of-repository-contents)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 # pywatershed
 
 [![ci-badge](https://github.com/ec-usgs/pywatershed/workflows/CI/badge.svg?branch=develop)](https://github.com/ec-usgs/pywatershed/actions?query=workflow%3ACI)
@@ -24,6 +11,19 @@
 [![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/649f02f1a887f48b9f172805?tab=metadata)
+
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Purpose](#purpose)
+- [Installation](#installation)
+- [Contributing](#contributing)
+- [Example Notebooks](#example-notebooks)
+- [Overview of Repository Contents](#overview-of-repository-contents)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Purpose
 
@@ -96,23 +96,34 @@ contribute to this project.
 
 ## Example Notebooks
 
-Jupyter notebooks containing examples are found in the `examples/` directory.
-Numbered notebooks in this directory are tested in CI. The notebooks may be run
-using [WholeTale](https://wholetale.org/). Non-numbered notebooks
-coveradditional topics. These notebooks are note yet covered by testing and so
-may be expected to have some issues until they are added to testing. There are
-containers for both the `main` and `develop` branches. The develop container may
-require the user to update the repository to stay current with
-development. WholeTale will give you a jupyter-lab running in the root of this
-repository. You can navigate to `examples` and then open and run the notebooks
-of your choice. This is a very easy and quick way to get started without needing
-to install pywatershed requirements yourself. However, it does require
-registering for or loging into WholeTale. WholeTale is an NSF funded project and
-supports logins from many institutions, e.g. the USGS, and you may not need to
-register.
+For introductory example notebooks, look in the
+[`examples/`](https://github.com/EC-USGS/pywatershed/tree/main/examples>)
+directory in the repository. Numbered starting at 00, these are meant to be
+completed in order. Non-numbered notebooks coveradditional topics. These
+notebooks are note yet covered by testing and so may be expected to have some
+issues until they are added to testing. In `examples/developer/` there are
+notebooks of interest to developers who may want to learn about running the
+software tests.
 
-In `examples/developer/` there are notebooks of interest to developers who may
-want to learn about running the software tests.
+Though no notebook outputs are saved in Github, these notebooks can easily
+navigated to and run in WholeTale containers (free but sign-up or log-in
+required). This is a very easy and quick way to get started without needing to
+install pywatershed requirements yourself. WholeTale is an NSF funded project
+and supports logins from many institutions, e.g. the USGS, and you may not need
+to register.
+
+There are containers for both the `main` and `develop` branches.
+
+[![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org)
+* [WholeTale container for latest release (main
+  branch)](https://dashboard.wholetale.org/run/649fa6c2a887f48b9f172e99?tab=metadata)
+* [WholeTale container for develop
+  branch](https://dashboard.wholetale.org/run/649f1d86a887f48b9f172aa7?tab=metadata)
+
+WholeTale will give you a jupyter-lab running in the root of this
+repository. You can navigate to `examples/` and then open and run the notebooks
+of your choice.  The develop container may require the user to update the
+repository (`git pull origin`) to stay current with development.
 
 ## Overview of Repository Contents
 

@@ -10,7 +10,7 @@
 [![PyPI Status](https://img.shields.io/pypi/status/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 [![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 
-[![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/649f02f1a887f48b9f172805?tab=metadata)
+[![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
 
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -22,6 +22,7 @@
 - [Contributing](#contributing)
 - [Example Notebooks](#example-notebooks)
 - [Overview of Repository Contents](#overview-of-repository-contents)
+- [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -116,9 +117,9 @@ There are containers for both the `main` and `develop` branches.
 
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org)
 * [WholeTale container for latest release (main
-  branch)](https://dashboard.wholetale.org/run/649fa6c2a887f48b9f172e99?tab=metadata)
+  branch)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
 * [WholeTale container for develop
-  branch](https://dashboard.wholetale.org/run/649f1d86a887f48b9f172aa7?tab=metadata)
+  branch](https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata)
 
 WholeTale will give you a jupyter-lab running in the root of this
 repository. You can navigate to `examples/` and then open and run the notebooks
@@ -130,13 +131,19 @@ repository (`git pull origin`) to stay current with development.
 The contents of directories at this level is described. Therein you may discover
 another README.md for more information.
 
-``` .github/ Github actions, scripts and Python environments for continuous
-integration (CI) and releasing, autotest/ pywatershed package testing using
-pytest bin/ PRMS executables distributed doc/ Package/code documentation source
-code examples/ How to use the package, mostly jupyter notebooks prms_src/ PRMS
-source used for generating executables in bin/ pywatershed/ Package source
-reference/ Ancillary materials for development resources/ Static stuff like
-images test_data/ Data used for automated testing ```
+`.github/` Github actions, scripts and Python environments for continuous
+integration (CI) and releasing, 
+`asv_benchmarks` preformance benchmarking by ASV
+`autotest/` pywatershed package testing using pytest 
+`bin/` PRMS executables distributed 
+`doc/` Package/code documentation source code 
+`examples/` How to use the package, mostly jupyter notebooks 
+`prms_src/` PRMS source used for generating executables in bin/ 
+`pywatershed/` Package source
+`reference/` Ancillary materials for development 
+`resources/` Static stuff like images 
+`test_data/` Data used for automated testing
+
 
 ## Disclaimer
 

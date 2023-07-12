@@ -36,6 +36,8 @@ Prior to release:
 
 To release a new version:
 
+0. Perform ASV performance benchmarks against previous release.
+
 1. On your local machine, create a release branch from `develop` or a patch
    branch from `main`.  The branch's name must follow format
    `v{major}.{minor}.{patch}` ([semantic version](https://semver.org/) number

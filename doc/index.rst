@@ -14,8 +14,8 @@ contents on the left.
 .. image:: https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg
    :target: https://dashboard.wholetale.org
 
-| `WholeTale container for latest release (main branch) <https://dashboard.wholetale.org/run/649fa6c2a887f48b9f172e99?tab=metadata>`_
-| `WholeTale container for develop branch <https://dashboard.wholetale.org/run/649f1d86a887f48b9f172aa7?tab=metadata>`_
+| `WholeTale container for latest release (main branch) <https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata>`_
+| `WholeTale container for develop branch <https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata>`_
 
 See `README.md <https://github.com/EC-USGS/pywatershed/tree/develop/README.md>`_ for more details on using WholeTale.
 

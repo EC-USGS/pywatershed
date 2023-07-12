@@ -211,7 +211,8 @@ hooks
 
 ## Documentation
 [Google-style docstrings](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings)
-are used for documenting source code.
+are used for documenting source code. (Though numpy style is supposedly handled
+as well by Napolean, preference is for google-style.)
 
 
 

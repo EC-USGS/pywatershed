@@ -1,6 +1,5 @@
-# Release guide
-This document describes release procedures, conventions, and utilities for
-`pywatershed`.
+# Release guide This document describes release procedures, conventions, and
+utilities for `pywatershed`.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -17,9 +16,9 @@ Contents**
 ## Conventions
 
 - Releases follow the [git
-  flow](https://nvie.com/posts/a-successful-git-branching-model/).
-- Release numbers follow [semantic version](https://semver.org/) conventions.
-- Minor and major releases branch from `develop`. Patches branch from `main`.
+  flow](https://nvie.com/posts/a-successful-git-branching-model/).  - Release
+  numbers follow [semantic version](https://semver.org/) conventions.  - Minor
+  and major releases branch from `develop`. Patches branch from `main`.
 
 ## Releasing `pywatershed`
 
@@ -48,16 +47,13 @@ To release a new version:
 1. Push the branch to this repo. For instance, if this repo is an `upstream`
    remote: `git push -u upstream vx.y.z`. This starts a job to:
 
-    - Check out the release branch
-    - Update version number in `version.txt` and `pywatershed/version.py` to
-      match the version in the branch name
-    - Build and check the Python package
-    - Generate a changelog since the last release
-    - Prepend the changelog to the cumulative `HISTORY.md`
-    - Upload the package and changelog as artifacts
-    - Draft a PR against `main` with the updated version files and cumulative
-      changelog. The cumulative `HISTORY.md` is version-controlled, release
-      changelogs are not.
+    - Check out the release branch Update version number in `version.txt` and
+    - `pywatershed/version.py` to match the version in the branch name Build and
+    - check the Python package Generate a changelog since the last release
+    - Prepend the changelog to the cumulative `HISTORY.md` Upload the package
+    - and changelog as artifacts Draft a PR against `main` with the updated
+    - version files and cumulative changelog. The cumulative `HISTORY.md` is
+    - version-controlled, release changelogs are not.
 
 1. On all platforms, pull the release from upstream and perform ASV performance
 	benchmarks against previous release , e.g., ``` asv continuous --verbose
@@ -108,8 +104,7 @@ To release a new version:
 The automated release procedure uses a few scripts, located in
 `.github/scripts`:
 
-- `update_version.py`
-- `pull_request_prepare.py`
+- `update_version.py` `pull_request_prepare.py`
 
 The former should never need to be run manually. The latter is convenient for
 formatting source files before opening PRs.
@@ -124,22 +119,16 @@ set the version number, use the `--version` (short `-v`) option.
 
 For instance, to set the version number before a release:
 
-```shell
-python .github/scripts/update_version.py -a -v 0.1.3
-```
+```shell python .github/scripts/update_version.py -a -v 0.1.3 ```
 
 Or to set the version number on `develop` following a release:
 
-```shell
-python .github/scripts/update_version.py -a -v 0.2.0.dev0
-```
+```shell python .github/scripts/update_version.py -a -v 0.2.0.dev0 ```
 
 To get the current version number without writing any changes to the
 repository's files, use the `--get` (short `-g`) flag:
 
-```shell
-python .github/scripts/update_version.py -g
-```
+```shell python .github/scripts/update_version.py -g ```
 
 ### Preparing for PRs
 
@@ -148,6 +137,4 @@ The `pull_request_prepare.py` script lints Python source code files by running
 before opening a pull request, as CI will fail if the code is not properly
 formatted. For instance, from the project root:
 
-```shell
-python .github/scripts/pull_request_prepare.py
-```
+```shell python .github/scripts/pull_request_prepare.py ```

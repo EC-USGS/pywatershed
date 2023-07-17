@@ -1,4 +1,3 @@
-major = 0
-minor = 1
-micro = 2
-__version__ = f"{major}.{minor}.{micro}"
+# pywatershed version file automatically created using update_version.py on July 12, 2023 10:58:55
+
+__version__ = "0.1.2"

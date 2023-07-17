@@ -258,9 +258,7 @@ def get_units(vars: varoptions, to_pint: bool = False) -> dict:
         dictionary will be returned if the select variable names are not
         found.
     """
-    units_dict = {
-        key: val["units"] for key, val in find_variables(vars).items()
-    }
+    units_dict = {key: val["units"] for key, val in find_variables(vars).items()}
     if to_pint:
         units_dict = prms_to_pint(units_dict)
     return units_dict

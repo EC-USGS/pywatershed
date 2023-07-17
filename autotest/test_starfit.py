@@ -18,8 +18,7 @@ def test_regress(tmp_path):
     tmp_path = pl.Path(tmp_path)
     print(tmp_path)
     data_dir = pl.Path(
-        "/Users/jmccreight/usgs/pywatershed/pywatershed/"
-        "hydrology/starfit_minimal"
+        "/Users/jmccreight/usgs/pywatershed/pywatershed/" "hydrology/starfit_minimal"
     )
 
     # TODO: make this work with the original source files
@@ -100,9 +99,7 @@ def test_regress(tmp_path):
             # make sure no times simulated that were not requested
             assert len(np.where(~np.isnan(res))[0]) == len(ans)
             tol = 1.0e-6
-            wh_abs_diff = np.where(
-                (abs(diff) > tol) & ((abs(diff) / ans) > tol)
-            )
+            wh_abs_diff = np.where((abs(diff) > tol) & ((abs(diff) / ans) > tol))
             assert len(wh_abs_diff[0]) == 0
 
     return

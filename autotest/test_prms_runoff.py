@@ -91,9 +91,7 @@ def test_compare_prms(
         detailed = True
         if check:
             atol = 1.0e-5
-            success = check_timestep_results(
-                runoff, istep, ans, atol, detailed
-            )
+            success = check_timestep_results(runoff, istep, ans, atol, detailed)
             if not success:
                 all_success = False
                 if failfast:

@@ -150,9 +150,7 @@ def test_nc4_dd_nc4(tmp_path):
     # round trip via file and compare in xarray
     out_file = pl.Path(tmp_path / "rt_2.nc")
     nc_file_ds = nc4.Dataset(nc_file)
-    _ = dm.dd_to_nc4_ds(
-        dm.nc4_ds_to_dd(nc_file_ds, use_xr_enc=False), out_file
-    )
+    _ = dm.dd_to_nc4_ds(dm.nc4_ds_to_dd(nc_file_ds, use_xr_enc=False), out_file)
     ds1 = xr.open_dataset(nc_file)
     ds2 = xr.open_dataset(out_file)
     xr.testing.assert_identical(ds1, ds2)

@@ -461,9 +461,7 @@ class Model:
             else:
                 output_vars = None
             if "netcdf_output_separate_files" in self.control.options.keys():
-                separate_files = self.control.options[
-                    "netcdf_output_separate_files"
-                ]
+                separate_files = self.control.options["netcdf_output_separate_files"]
             else:
                 separate_files = True
 
@@ -586,8 +584,7 @@ class Model:
                 dis = self.model_dict[proc_specs["dis"]]
 
             process_inputs = {
-                input: None
-                for input in self._proc_dict[proc_name].get_inputs()
+                input: None for input in self._proc_dict[proc_name].get_inputs()
             }
 
             args = {
@@ -608,9 +605,7 @@ class Model:
             self.process_input_from[process] = {}
             for input, frm in self._inputs_from[process].items():
                 if not frm:
-                    self.process_input_from[process][
-                        input
-                    ] = self._file_inputs[input]
+                    self.process_input_from[process][input] = self._file_inputs[input]
                 else:
                     self.process_input_from[process][input] = frm[0]
                     self.processes[process].set_input_to_adapter(
@@ -628,9 +623,7 @@ class Model:
             msg = "Required control option 'input_dir' not found"
             raise ValueError(msg)
         else:
-            self._input_dir = pl.Path(
-                self.control.options["input_dir"]
-            ).resolve()
+            self._input_dir = pl.Path(self.control.options["input_dir"]).resolve()
 
         return
 
@@ -698,9 +691,7 @@ class Model:
                     val["class"] = getattr(pywatershed, cls)
                     par = val["parameters"]
                     par_pl = path_rel_to_yml(par, yml_file)
-                    val["parameters"] = Parameters.from_netcdf(
-                        par_pl, encoding=False
-                    )
+                    val["parameters"] = Parameters.from_netcdf(par_pl, encoding=False)
                     # dis = val["dis"]
                     # val["dis"] = model_dict[dis]
 

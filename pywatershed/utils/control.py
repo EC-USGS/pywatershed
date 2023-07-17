@@ -33,11 +33,7 @@ class ControlVariables:
             keys = [keys]
 
         return ControlVariables(
-            {
-                key: self.control.get(key)
-                for key in keys
-                if key in self.control.keys()
-            }
+            {key: self.control.get(key) for key in keys if key in self.control.keys()}
         )
 
     @staticmethod
@@ -51,6 +47,4 @@ class ControlVariables:
             ControlVariables: full PRMS control variable dictionary
 
         """
-        return ControlVariables(
-            PrmsFile(control_file, file_type="control").get_data()
-        )
+        return ControlVariables(PrmsFile(control_file, file_type="control").get_data())

@@ -139,9 +139,7 @@ def test_compare_prms(
             pkwater_equiv_one_zero = np.where(
                 iso_censor_mask, True, pkwater_equiv_one_zero
             )
-        print(
-            f"pkwater_equiv_one_zero.sum(): " f"{pkwater_equiv_one_zero.sum()}"
-        )
+        print(f"pkwater_equiv_one_zero.sum(): " f"{pkwater_equiv_one_zero.sum()}")
 
         # iso ---
         # iso has a memory of packwater equiv which can cause about
@@ -173,9 +171,7 @@ def test_compare_prms(
         pkwater_both_zero_and_iso = (
             (pkwe <= epsilon32) & (pkwe_ans <= epsilon32) & (iso == iso_ans)
         )
-        iso_censor_mask = np.where(
-            pkwater_both_zero_and_iso, False, iso_censor_mask
-        )
+        iso_censor_mask = np.where(pkwater_both_zero_and_iso, False, iso_censor_mask)
         print(f"iso_censor_mask.sum(): {iso_censor_mask.sum()}")
         assert np.where(~iso_censor_mask, iso - iso_ans == 0, True).all()
 
@@ -215,8 +211,7 @@ def test_compare_prms(
                 print(f"prms: {a1[wh_max_diff]}")
                 print(f"pywatershed: {a2[wh_max_diff]}")
                 print(
-                    f"pkwater_absdiff[wh_max_diff]: "
-                    f"{pkwater_absdiff[wh_max_diff]}"
+                    f"pkwater_absdiff[wh_max_diff]: " f"{pkwater_absdiff[wh_max_diff]}"
                 )
                 print(f"pkwe[wh_max_diff]: {pkwe[wh_max_diff]}")
                 print(f"pkwe_ans[wh_max_diff]: {pkwe_ans[wh_max_diff]}")

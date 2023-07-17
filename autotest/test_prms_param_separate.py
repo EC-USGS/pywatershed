@@ -50,13 +50,11 @@ def test_param_sep(domain, params, use_xr, tmp_path):
         if isinstance(proc_name, type):
             # some coords in the file may not be in the class' parameters. In
             # that case, assert these coords are in file coords
-            coords_not_in_params = set(
-                params_file.variables.keys()
-            ).difference(set(proc_name.get_parameters()))
+            coords_not_in_params = set(params_file.variables.keys()).difference(
+                set(proc_name.get_parameters())
+            )
             assert not len(
-                coords_not_in_params.difference(
-                    set(params_file["coords"].keys())
-                )
+                coords_not_in_params.difference(set(params_file["coords"].keys()))
             )
 
         # checking dim equality is not necessary, it is covered by the

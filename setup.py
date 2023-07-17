@@ -12,9 +12,7 @@ if pyws_fortran.lower() == "true":
     pyws_fortran = True
     if platform.system() == "Windows":
         pyws_fortran = False
-        warnings.warn(
-            "Fortran source compilation not enabled on Windows", Warning
-        )
+        warnings.warn("Fortran source compilation not enabled on Windows", Warning)
 
 else:
     pyws_fortran = False

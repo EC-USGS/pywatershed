@@ -104,9 +104,7 @@ class StarfitParameters(Parameters):
         istarf_conus_dd.drop_var("subset_inds")
         grand_dams_dd.drop_var("subset_inds")
 
-        params_dd = DatasetDict.merge(
-            resops_dd, istarf_conus_dd, grand_dams_dd
-        )
+        params_dd = DatasetDict.merge(resops_dd, istarf_conus_dd, grand_dams_dd)
         # probably should have named the spatial dim nreservoirs when
         # I created the netcdf file
         _ = params_dd.rename_dim({"grand_id": "nreservoirs"})

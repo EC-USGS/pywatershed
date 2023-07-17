@@ -91,9 +91,7 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     check_dict = {proc: {} for proc in check_vars.keys()}
 
     # test outputting specific vars by only using check_vars
-    output_vars = [
-        item for sublist in list(check_vars.values()) for item in sublist
-    ]
+    output_vars = [item for sublist in list(check_vars.values()) for item in sublist]
     output_vars = None
 
     model.initialize_netcdf(
@@ -134,9 +132,7 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
                         )
                     )
 
-                check_dict[pp][bb][tt, :] = model.processes[pp].budget[
-                    f"_{bb}"
-                ]
+                check_dict[pp][bb][tt, :] = model.processes[pp].budget[f"_{bb}"]
 
     model.finalize()
 
@@ -152,9 +148,7 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
 
         if budget_sum_param == "some":
             nc_data = xr.open_dataset(tmp_dir / f"{pp}_budget.nc")
-            for nn in set(budget_sum_vars_all).difference(
-                set(check_budget_sum_vars)
-            ):
+            for nn in set(budget_sum_vars_all).difference(set(check_budget_sum_vars)):
                 assert nn not in nc_data.variables
         elif not budget_sum_param:
             assert not (tmp_dir / f"{pp}_budget.nc").exists()
@@ -174,9 +168,7 @@ def sep_vars(request):
     return (request.param[0], request.param[1])
 
 
-def test_separate_together_var_list(
-    domain, control, params, tmp_path, sep_vars
-):
+def test_separate_together_var_list(domain, control, params, tmp_path, sep_vars):
     separate = sep_vars[0]
     output_vars = sep_vars[1]
 
@@ -226,9 +218,7 @@ def test_separate_together_var_list(
                 nc_file = test_output_dir / f"{vv}.nc"
                 assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
-                if isinstance(
-                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
-                ):
+                if isinstance(proc[vv], pywatershed.base.timeseries.TimeseriesArray):
                     assert (ds[vv].values == proc[vv].data).all()
                 else:
                     assert (ds[vv][-1, :] == proc[vv]).all()

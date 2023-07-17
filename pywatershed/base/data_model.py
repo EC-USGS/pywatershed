@@ -422,9 +422,7 @@ class DatasetDict(Accessor):
             if not data:
                 result[vv] = dim_names
             else:
-                dim_data = {
-                    kk: vv for kk, vv in self._dims.items() if kk in dim_names
-                }
+                dim_data = {kk: vv for kk, vv in self._dims.items() if kk in dim_names}
                 result[vv] = dim_data
 
         return result
@@ -441,9 +439,7 @@ class DatasetDict(Accessor):
         if not data:
             return coords_out
 
-        coord_data = {
-            ck: cv for ck, cv in self._coords.items() if ck in coords_out
-        }
+        coord_data = {ck: cv for ck, cv in self._coords.items() if ck in coords_out}
 
         if copy:
             coord_data = deepcopy(coord_data)
@@ -597,9 +593,7 @@ class DatasetDict(Accessor):
             if vk == wh_data_name:
                 continue
             var_dims = self.metadata[vk]["dims"]
-            var_wh = tuple(
-                [dim_where[dd] for dd in var_dims if dd in dim_where.keys()]
-            )
+            var_wh = tuple([dim_where[dd] for dd in var_dims if dd in dim_where.keys()])
             if vk in self.coords.keys():
                 self["coords"][vk] = self.variables[vk][var_wh]
             else:
@@ -622,9 +616,7 @@ class DatasetDict(Accessor):
         )
 
         # can not have same names in coords and data_vars
-        common_keys = set(self.coords.keys()).intersection(
-            set(self.data_vars.keys())
-        )
+        common_keys = set(self.coords.keys()).intersection(set(self.data_vars.keys()))
         assert len(common_keys) == 0
 
         # metadata and encoding keys against variable keys
@@ -701,9 +693,7 @@ def _merge_dicts(
             if key not in merged:
                 merged[key] = value
             elif isinstance(value, dict) and isinstance(merged[key], dict):
-                merged[key] = _merge_dicts(
-                    [value, merged[key]], conflicts=conflicts
-                )
+                merged[key] = _merge_dicts([value, merged[key]], conflicts=conflicts)
             elif _is_equal(value, merged[key]):
                 pass
             else:
@@ -719,9 +709,7 @@ def _merge_dicts(
                 elif conflicts == "left":
                     pass
                 else:
-                    raise ValueError(
-                        f"Argument 'conflicts' can not be '{conflicts}'"
-                    )
+                    raise ValueError(f"Argument 'conflicts' can not be '{conflicts}'")
 
     return merged
 
@@ -969,9 +957,7 @@ def _get_xr_encoding(nc_file) -> dict:
     return encoding
 
 
-def nc4_ds_to_dd(
-    nc4_file_ds, subset: np.ndarray = None, use_xr_enc=True
-) -> dict:
+def nc4_ds_to_dd(nc4_file_ds, subset: np.ndarray = None, use_xr_enc=True) -> dict:
     """netCDF4 dataset to a pywatershed dataset dict."""
     xr_enc = None
     if not isinstance(nc4_file_ds, nc4.Dataset):

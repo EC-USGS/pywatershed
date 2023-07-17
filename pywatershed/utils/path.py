@@ -4,9 +4,7 @@ from typing import Union
 # A module for path/file utilities
 
 
-def path_rel_to_yml(
-    file_in_yml: Union[pl.Path, str], yml: Union[pl.Path, str]
-):
+def path_rel_to_yml(file_in_yml: Union[pl.Path, str], yml: Union[pl.Path, str]):
     """Resolve a path from a yaml file
 
     Given a yaml file (yml) and a file specified within that yaml file,

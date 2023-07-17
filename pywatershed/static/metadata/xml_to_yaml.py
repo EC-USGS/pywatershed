@@ -92,8 +92,7 @@ for xml_key, xml_file in xml_files.items():
             # related variables
             if "related_variables" in data.keys():
                 data["related_variables"] = [
-                    dict(od)["@name"]
-                    for od in data["related_variables"]["variable"]
+                    dict(od)["@name"] for od in data["related_variables"]["variable"]
                 ]
 
     elif xml_key == "parameters":

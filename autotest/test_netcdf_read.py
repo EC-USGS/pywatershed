@@ -13,9 +13,7 @@ def test_netcdf(domain):
 
     for idx in range(ntimes):
         arr = nc_data.advance(variable)
-        assert (
-            arr.shape == shape
-        ), f"shape is {arr.shape} but should be {shape}"
+        assert arr.shape == shape, f"shape is {arr.shape} but should be {shape}"
 
     shape = (ntimes, nhru)
     arr = nc_data.get_data(variable)

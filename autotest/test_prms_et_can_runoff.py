@@ -145,19 +145,13 @@ def test_et_can_runoff(domain, control, params, tmp_path):
         "dprst_evap_hru",
         adapter_factory(runoff.dprst_evap_hru, control=control),
     )
-    et.set_input_to_adapter(
-        "snow_evap", adapter_factory(common_inputs["snow_evap"])
-    )
+    et.set_input_to_adapter("snow_evap", adapter_factory(common_inputs["snow_evap"]))
 
     # canopy
-    canopy.set_input_to_adapter(
-        "potet", adapter_factory(et.potet, control=control)
-    )
+    canopy.set_input_to_adapter("potet", adapter_factory(et.potet, control=control))
 
     # runoff
-    runoff.set_input_to_adapter(
-        "potet", adapter_factory(et.potet, control=control)
-    )
+    runoff.set_input_to_adapter("potet", adapter_factory(et.potet, control=control))
     runoff.set_input_to_adapter(
         "snow_evap", adapter_factory(common_inputs["snow_evap"])
     )

@@ -197,17 +197,13 @@ class Control(Accessor):
 
         self._end_time = new_end_time
         assert self._end_time - self._start_time > 0
-        self._n_times = (
-            int((self._end_time - self._start_time) / self._time_step) + 1
-        )
+        self._n_times = int((self._end_time - self._start_time) / self._time_step) + 1
         return
 
     def edit_n_time_steps(self, new_n_time_steps: int):
         "Supply a new number of timesteps to change the simulation end time."
         self._n_times = new_n_time_steps
-        self._end_time = (
-            self._start_time + (self._n_times - 1) * self._time_step
-        )
+        self._end_time = self._start_time + (self._n_times - 1) * self._time_step
         return
 
     @staticmethod

@@ -42,9 +42,7 @@ def test_compare_prms(
     domain, control, discretization, parameters, tmp_path, calc_method
 ):
     if not has_prmsgroundwater_f and calc_method == "fortran":
-        pytest.skip(
-            "PRMSGroundwater fortran code not available, skipping its test."
-        )
+        pytest.skip("PRMSGroundwater fortran code not available, skipping its test.")
 
     tmp_path = pl.Path(tmp_path)
 

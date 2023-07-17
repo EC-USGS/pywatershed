@@ -1,6 +1,6 @@
 import pathlib as pl
 import shutil
-from typing import Union, Literal
+from typing import Literal, Union
 
 from . import _is_pws, parameterized, test_data_dir
 
@@ -79,17 +79,13 @@ class PRMSModels:
 
         # backwards compatability pre pywatershed
         if _is_pws:
-            self.params = pws.parameters.PrmsParameters.load(
-                self.parameter_file
-            )
+            self.params = pws.parameters.PrmsParameters.load(self.parameter_file)
         else:
             self.params = pws.PrmsParameters.load(self.parameter_file)
 
         # backwards compatability
         try:
-            self.control = pws.Control.load(
-                self.control_file, params=self.params
-            )
+            self.control = pws.Control.load(self.control_file, params=self.params)
             self.ge_v0_2_0 = False
         except:
             self.control = pws.Control.load(self.control_file)

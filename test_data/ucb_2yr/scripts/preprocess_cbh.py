@@ -22,8 +22,7 @@ for ff in (
 
 for fd_key in ("cbh_inputs",):
     domain_dict[fd_key] = {
-        key: (domain_dict["dir"] / val)
-        for key, val in domain_dict[fd_key].items()
+        key: (domain_dict["dir"] / val) for key, val in domain_dict[fd_key].items()
     }
 
 # Construct a dictionary that gets used in CBH
@@ -32,9 +31,7 @@ domain_dict["input_files_dict"] = {
 }
 
 parameter_file = domain_dict["param_file"]
-parameters = pywatershed.parameters.PrmsParameters.load(
-    domain_dict["param_file"]
-)
+parameters = pywatershed.parameters.PrmsParameters.load(domain_dict["param_file"])
 
 
 cbh = pywatershed.CBH(

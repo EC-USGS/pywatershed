@@ -6,7 +6,6 @@ from pathlib import Path
 from filelock import FileLock
 from packaging.version import Version
 
-
 _project_name = "pywatershed"
 _project_root_path = Path(__file__).parent.parent.parent
 _version_txt_path = _project_root_path / "version.txt"
@@ -86,13 +85,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.get:
-        print(
-            Version((_project_root_path / "version.txt").read_text().strip())
-        )
+        print(Version((_project_root_path / "version.txt").read_text().strip()))
     else:
         update_version(
             timestamp=datetime.now(),
-            version=Version(args.version)
-            if args.version
-            else _current_version,
+            version=Version(args.version) if args.version else _current_version,
         )

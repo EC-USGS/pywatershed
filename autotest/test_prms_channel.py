@@ -46,9 +46,7 @@ def test_compare_prms(
     domain, control, discretization, parameters, tmp_path, calc_method
 ):
     if not has_prmschannel_f and calc_method == "fortran":
-        pytest.skip(
-            "PRMSChannel fortran code not available, skipping its test."
-        )
+        pytest.skip("PRMSChannel fortran code not available, skipping its test.")
 
     tmp_path = pl.Path(tmp_path)
 

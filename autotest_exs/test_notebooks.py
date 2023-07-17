@@ -3,6 +3,7 @@ import subprocess
 import sys
 
 import pytest
+
 from pywatershed.constants import __pywatershed_root__
 
 # "Official" notebooks are numbered
@@ -15,7 +16,6 @@ notebook_ids = [nb.name for nb in notebooks]
 
 @pytest.mark.parametrize("notebook", notebooks, ids=notebook_ids)
 def test_notebooks(notebook):
-
     # Convert the notebook to a .py version of itself using jupyter nbconvert
     # this formats magics in a way that ipython can run
     cmd = [
@@ -26,9 +26,7 @@ def test_notebooks(notebook):
         str(notebook),
     ]
     proc = subprocess.run(cmd)
-    assert (
-        proc.returncode == 0
-    ), f"Failed to convert notebook to script: {notebook}"
+    assert proc.returncode == 0, f"Failed to convert notebook to script: {notebook}"
     nb_py = notebook.with_suffix(".py")
     assert nb_py.exists(), f"Expected script does not exists: {nb_py}"
 

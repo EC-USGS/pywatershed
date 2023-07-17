@@ -3,7 +3,7 @@ utilities for `pywatershed`.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-Contents**
+**Contents**
 
 - [Conventions](#conventions)
 - [Releasing `pywatershed`](#releasing-pywatershed)

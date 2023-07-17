@@ -17,6 +17,8 @@ all_tests = list(
 all_tests = all_tests
 
 for args in all_tests:
+    print("\n======================")
+    print(args)
     mm = PRMSModels()
     mm.setup(*args)
     mm.time_prms_run(*args)

@@ -90,7 +90,7 @@ jobs:
         run: |
           ref="${{ github.ref_name }}"
           version="${ref#"v"}"
-          python .github/scripts/update_version.py -v "$version" -a
+          python .github/scripts/update_version.py -v "$version"
           python .github/scripts/pull_request_prepare.py
           python -c "import pywatershed; print('Version: ', pywatershed.__version__)"
           echo "version=$version" >> $GITHUB_OUTPUT

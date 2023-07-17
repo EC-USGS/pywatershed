@@ -3,7 +3,7 @@ utilities for `pywatershed`.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**
+**Contents**
 
 - [Conventions](#conventions)
 - [Releasing `pywatershed`](#releasing-pywatershed)
@@ -12,7 +12,6 @@ utilities for `pywatershed`.
   - [Preparing for PRs](#preparing-for-prs)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
 
 ## Conventions
 
@@ -27,14 +26,10 @@ The release procedure is mostly automated. The workflow is defined in
 `.github/workflows/release.yaml` and triggers when a release or patch branch is
 pushed to this repo.
 
-Prior to release: 1. Run asv tests without asv, perform an asv regression test:
-1. On develop update the `what's new.rst` to include the date of the release
-
-
 To release a new version:
 
-0. Perform ASV performance benchmarks against previous release on Windows,
-   Linux, and Mac. Gather results.
+1. Test asv benchmarking with the `-q` flag to ensure it is working (multiple
+    platformas a bonus).
 
 1. On your local machine, create a release branch from `develop` or a patch
    branch from `main`.  The branch's name must follow format
@@ -43,10 +38,13 @@ To release a new version:
    `upstream` remote and one's local `develop` is up to date with upstream
    `develop`, then from `develop` run `git switch -c vx.y.z`.
 
-2. If this is a patch release, make changes/fixes locally. If this is a major or
-   minor release, no changes are needed.
+1. If this is a patch release, make changes/fixes locally. If this is a major or
+    minor release, no changes are needed.
 
-3. Push the branch to this repo. For instance, if this repo is an `upstream`
+	In either case, add the release version and date to the top of
+    `doc/whats-new.rst`. If a patch, put it below the pending minor release.
+
+1. Push the branch to this repo. For instance, if this repo is an `upstream`
    remote: `git push -u upstream vx.y.z`. This starts a job to:
 
     - Check out the release branch Update version number in `version.txt` and
@@ -57,7 +55,14 @@ To release a new version:
     - version files and cumulative changelog. The cumulative `HISTORY.md` is
     - version-controlled, release changelogs are not.
 
-4. Inspect the package and changelog. If they look good, merge the PR to `main`.
+1. On all platforms, pull the release from upstream and perform ASV performance
+	benchmarks against previous release , e.g., ``` asv continuous --verbose
+	--show-stderr --factor 1.3 previous_release this_release ``` Collect
+	performance reports from various machines into a single report and use `asv
+	publish` to generate the static webpages to be included with the release as
+	artifacts in that step below.
+
+1. Inspect the package and changelog. If they look good, merge the PR to `main`.
 
     **Note**: it is critical to *merge* the PR to `main`, not squash as is
     conventional for development PRs. Squashing causes `develop` and `main` to
@@ -69,28 +74,30 @@ To release a new version:
     not yet publicly visible at this point. The release notes are autofilled as
     the changelog since the last release.
 
-5. Manually add the following to the Github release.
+1. Inspect the GitHub release. If needed, make any manual edits to the release
+   notes. If the release looks good, publish it via GitHub UI or CLI. Manually
+   add the asv static web pages and frozen conda dependencies for each platform.
 
-    - Frozen environments for all platforms.
-    - Attach ASV results for all platforms.
+   Publishing the release on GitHub automatically tags the head of `main` with
+   the release version number (**Note**: release tags, unlike branches, don't
+   include an initial `v`, as is common in some projects) and triggers jobs to:
 
-   Inspect the GitHub release. If needed, make any manual edits to the release
-   notes. If the release looks good, publish it via GitHub UI or CLI. This tags
-   the head of `main` with the release version number (**Note**: release tags,
-   unlike branches, don't include an initial `v`, as is common in some projects)
-   and triggers jobs to:
-
-    - Publish the package to PyPI Check out `main` Run
-    - `.github/scripts/update_version.py -v x.y+1.0.dev0` to update
-    - `version.txt` and `pywatershed/version.py` with the minor version number
-    - incremented. The `.dev0` suffix indicates preliminary development status.
+    - Publish the package to PyPI
+    - Check out `main`
+    - Run `.github/scripts/update_version.py -v x.y+1.0.dev0` to update
+      `version.txt` and `pywatershed/version.py` with the minor version number
+      incremented. The `.dev0` suffix indicates preliminary development status.
     - Draft a PR against `develop` with the updated version files and the
-    - updates previously merged to `main`.
+      updates previously merged to `main`.
 
-6. Merge the PR to `develop`. As above, it is important to *merge* the PR, not
+1. In the case of a minor or major release, a couple of manual steps:
+    - Update the PR against `develop` to add a new minor or major release to
+      the top of `doc/whats-new.rst`
+    - Update `main` image on WholeTale to have the current release.
+
+1. Merge the PR to `develop`. As above, it is important to *merge* the PR, not
    squash, to preserve history and keep `develop` and `main` from diverging.
 
-7. Manually update `main` image on WholeTale to have the current release.
 
 ## Utility scripts
 

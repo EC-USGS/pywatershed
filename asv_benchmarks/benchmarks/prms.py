@@ -14,8 +14,8 @@ else:
 # TODO remove backwards compatability with <0.2.0 once
 #      it is released.
 
-domains = ["hru_1", "drb_2yr", "ucb_2yr"][1:2]
-outputs = [None, "separate", "together"][0:1]
+domains = ["hru_1", "drb_2yr", "ucb_2yr"]
+outputs = [None, "separate", "together"]
 n_time_steps = 183
 
 model_tests = {

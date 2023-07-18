@@ -91,12 +91,15 @@ jobs:
           ref="${{ github.ref_name }}"
           version="${ref#"v"}"
           python .github/scripts/update_version.py -v "$version"
-          python .github/scripts/pull_request_prepare.py
           python -c "import pywatershed; print('Version: ', pywatershed.__version__)"
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Format files
-        run: python .github/scripts/pull_request_prepare.py
+        run: |
+          isort --check --diff ./pywatershed
+          black --check --diff ./pywatershed
+          flake8 --count --show-source --exit-zero ./pywatershed ./autotest
+          pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 
       - name: Touch changelog
         run: touch HISTORY.md

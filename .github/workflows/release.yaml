@@ -96,8 +96,6 @@ jobs:
         run: |
           isort --check --diff ./pywatershed
           black --check --diff ./pywatershed
-          flake8 --count --show-source --exit-zero ./pywatershed ./autotest
-          pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 
       - name: Touch changelog
         working-directory: pywatershed
@@ -110,7 +108,7 @@ jobs:
           config: pywatershed/cliff.toml
           args: --verbose --unreleased --tag ${{ steps.version.outputs.version }}
         env:
-          OUTPUT: pywatershed/CHANGELOG.md
+          OUTPUT: CHANGELOG.md
 
       - name: Update changelog
         working-directory: pywatershed

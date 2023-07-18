@@ -1,5 +1,6 @@
 from itertools import product
-from benchmarks.prms import domains, outputs, model_tests, PRMSModels
+
+from benchmarks.prms import PRMSModels, domains, model_tests, outputs
 
 # Just running the PRMSModels benchmarks
 

@@ -78,9 +78,7 @@ def model_args(domain, control, discretization, request):
         model_dict = discretization
         model_dict["control"] = control
         # could use any names
-        model_dict["model_order"] = [
-            pp.__name__.lower() for pp in process_list
-        ]
+        model_dict["model_order"] = [pp.__name__.lower() for pp in process_list]
 
         for process in test_models["nhm"]:
             proc_name = process.__name__
@@ -260,9 +258,7 @@ def test_model(domain, model_args, tmp_path):
         control = model_args["control"]
     else:
         is_old_style = False
-        processes = [
-            vv["class"] for vv in plomd.values() if isinstance(vv, dict)
-        ]
+        processes = [vv["class"] for vv in plomd.values() if isinstance(vv, dict)]
         control = plomd["control"]
 
     for cls in processes:
@@ -347,9 +343,7 @@ def test_model(domain, model_args, tmp_path):
                     result = model.processes[pp][vv].mean()
                     reg_ans = aa[domain["domain_name"]]
                     if not reg_ans:
-                        print(
-                            f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}"
-                        )
+                        print(f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}")
                         success = False
                     else:
                         success = (abs(result - reg_ans) / abs(reg_ans)) < 1e-5

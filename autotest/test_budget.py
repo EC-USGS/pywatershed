@@ -71,8 +71,7 @@ def test_budget(control_simple):
     for component in budget.components:
         for var in budget[component].keys():
             assert (
-                budget.accumulations[component][var]
-                == terms[component][var] * 1
+                budget.accumulations[component][var] == terms[component][var] * 1
             ).all()
 
     control_simple.advance()
@@ -87,8 +86,7 @@ def test_budget(control_simple):
     for component in budget.components:
         for var in budget[component].keys():
             assert (
-                budget.accumulations[component][var]
-                == terms[component][var] * 2
+                budget.accumulations[component][var] == terms[component][var] * 2
             ).all()
 
     # change inputs
@@ -121,8 +119,7 @@ def test_budget(control_simple):
     for component in budget.components:
         for var in budget[component].keys():
             assert (
-                budget.accumulations[component][var]
-                == accum_answers[component][var]
+                budget.accumulations[component][var] == accum_answers[component][var]
             ).all()
 
     with pytest.warns(UserWarning):

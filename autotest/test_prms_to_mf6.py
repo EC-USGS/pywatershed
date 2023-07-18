@@ -80,9 +80,7 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
             assert ((comp < 1e-5) | ((comp / ans_tt) < 1e-5)).all()
 
     else:
-        sim = flopy.mf6.MFSimulation.load(
-            "sim", "mfsim.nam", sim_ws=str(tmp_path)
-        )
+        sim = flopy.mf6.MFSimulation.load("sim", "mfsim.nam", sim_ws=str(tmp_path))
         model = sim.get_model(domain_name)
         flw_spds = {}
         for flow_name in flow_names:

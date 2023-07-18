@@ -110,8 +110,7 @@ class Parameters(DatasetDict):
     @classmethod
     def merge(cls, *param_list, copy=True, del_global_src=True):
         dd_list = [
-            DatasetDict.from_dict(_set_dict_read_write(pp.data))
-            for pp in param_list
+            DatasetDict.from_dict(_set_dict_read_write(pp.data)) for pp in param_list
         ]
         merged = super().merge(*dd_list, copy=copy, del_global_src=True)
         return merged

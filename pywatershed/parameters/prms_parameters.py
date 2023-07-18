@@ -201,9 +201,7 @@ class PrmsParameters(Parameters):
 
                 common_params = set(param_dim_names) & set(dims)
                 if not len(common_params):
-                    parameter_dimensions_dict[key] = {
-                        "dims": tuple(["unknown"])
-                    }
+                    parameter_dimensions_dict[key] = {"dims": tuple(["unknown"])}
                     continue
 
                 param_dims = {kk: dims[kk] for kk in common_params}
@@ -268,9 +266,7 @@ class PrmsParameters(Parameters):
             _ = key_meta.pop("dims")
             parameter_dimensions_dict[key]["attrs"] = key_meta
 
-        parameter_dimensions_dict["global"] = {
-            "Description": "Parameter data for PRMS"
-        }
+        parameter_dimensions_dict["global"] = {"Description": "Parameter data for PRMS"}
 
         prms_params = PrmsParameters(
             dims=dims,

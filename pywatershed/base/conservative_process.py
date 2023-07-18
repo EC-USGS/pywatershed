@@ -78,9 +78,7 @@ class ConservativeProcess(Process):
         """Get a dictionary of variable names for mass budget terms."""
         mass_budget_terms = {
             "inputs": list(
-                meta.filter_vars(
-                    cls.get_inputs(), "var_category", "mass flux"
-                ).keys()
+                meta.filter_vars(cls.get_inputs(), "var_category", "mass flux").keys()
             ),
             "outputs": list(
                 meta.filter_vars(
@@ -130,9 +128,7 @@ class ConservativeProcess(Process):
             for comp in self.budget.components:
                 if input_variable_name in self.budget[comp].keys():
                     # can not use [:] on the LHS?
-                    self.budget[comp][input_variable_name] = self[
-                        input_variable_name
-                    ]
+                    self.budget[comp][input_variable_name] = self[input_variable_name]
 
         return
 

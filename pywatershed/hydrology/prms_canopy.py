@@ -167,9 +167,7 @@ class PRMSCanopy(ConservativeProcess):
             import numba as nb
 
             numba_msg = f"{self.name} jit compiling with numba "
-            nb_parallel = (numba_num_threads is not None) and (
-                numba_num_threads > 1
-            )
+            nb_parallel = (numba_num_threads is not None) and (numba_num_threads > 1)
             if nb_parallel:
                 numba_msg += f"and using {numba_num_threads} threads"
             print(numba_msg, flush=True)
@@ -252,9 +250,9 @@ class PRMSCanopy(ConservativeProcess):
             #     ),
             #     fastmath=True,
             # )(self._calculate_procedural)
-            self._calculate_canopy = nb.njit(
-                fastmath=True, parallel=nb_parallel
-            )(self._calculate_numpy)
+            self._calculate_canopy = nb.njit(fastmath=True, parallel=nb_parallel)(
+                self._calculate_numpy
+            )
 
         elif self._calc_method.lower() == "fortran":
             pass
@@ -388,9 +386,7 @@ class PRMSCanopy(ConservativeProcess):
             )
 
         # <
-        self.hru_intcpstor_change[:] = (
-            self.hru_intcpstor - self.hru_intcpstor_old
-        )
+        self.hru_intcpstor_change[:] = self.hru_intcpstor - self.hru_intcpstor_old
 
         return
 
@@ -511,10 +507,7 @@ class PRMSCanopy(ConservativeProcess):
                             # if there is no snowpack and no snowfall, then apparently, grasses
                             # can intercept rain.
                             # IF ( pkwater_ante(i)<DNEARZERO .AND. netsnow<NEARZERO ) THEN
-                            if (
-                                pkwater_ante[i] < DNEARZERO
-                                and netsnow < NEARZERO
-                            ):
+                            if pkwater_ante[i] < DNEARZERO and netsnow < NEARZERO:
                                 intcpstor, netrain = intercept(
                                     hru_rain[i],
                                     stor_max_rain,
@@ -616,9 +609,7 @@ class PRMSCanopy(ConservativeProcess):
         return intcp_stor, net_precip
 
     @staticmethod
-    def update_net_precip(
-        precip, stor_max, covden, intcp_stor, net_precip, idx
-    ):
+    def update_net_precip(precip, stor_max, covden, intcp_stor, net_precip, idx):
         net_precip[idx] = precip[idx] * (1.0 - covden[idx])
         intcp_stor[idx] += precip[idx]
         for i in idx[0]:

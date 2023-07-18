@@ -293,8 +293,7 @@ class PRMSSolarGeometry(Process):
         wh_t7_gt_t0 = np.where(t7 > t0)
         if len(wh_t7_gt_t0[0]):
             solt[wh_t7_gt_t0] = (
-                func3(x2, x1, t3, t2)[wh_t7_gt_t0]
-                + func3(x2, x1, t7, t0)[wh_t7_gt_t0]
+                func3(x2, x1, t3, t2)[wh_t7_gt_t0] + func3(x2, x1, t7, t0)[wh_t7_gt_t0]
             )
             sunh[wh_t7_gt_t0] = (t3 - t2 + t7 - t0)[wh_t7_gt_t0] * pi_12
 
@@ -302,8 +301,7 @@ class PRMSSolarGeometry(Process):
         wh_t6_lt_t1 = np.where(t6 < t1)
         if len(wh_t6_lt_t1[0]):
             solt[wh_t6_lt_t1] = (
-                func3(x2, x1, t3, t2)[wh_t6_lt_t1]
-                + func3(x2, x1, t1, t6)[wh_t6_lt_t1]
+                func3(x2, x1, t3, t2)[wh_t6_lt_t1] + func3(x2, x1, t1, t6)[wh_t6_lt_t1]
             )
             sunh[wh_t6_lt_t1] = (t3 - t2 + t1 - t6)[wh_t6_lt_t1] * pi_12
 
@@ -329,9 +327,7 @@ class PRMSSolarGeometry(Process):
         return solt, sunh
 
     @staticmethod
-    def compute_t(
-        lats: np.ndarray, solar_declination: np.ndarray
-    ) -> np.ndarray:
+    def compute_t(lats: np.ndarray, solar_declination: np.ndarray) -> np.ndarray:
         # JLM: why is division by earth's angular velocity not done here?
         """The "sunrise" equation
 
@@ -352,18 +348,14 @@ class PRMSSolarGeometry(Process):
         """
         nhru = len(lats)
         lats_mat = np.tile(-1 * np.tan(lats), (ndoy, 1))
-        sol_dec_mat = np.transpose(
-            np.tile(np.tan(solar_declination), (nhru, 1))
-        )
+        sol_dec_mat = np.transpose(np.tile(np.tan(solar_declination), (nhru, 1)))
         tx = lats_mat * sol_dec_mat
         # result = np.copy(tx)
         # result[np.where((tx >= (-1 * one)) & (tx <= one))] = np.arccos(
         #    tx[np.where((tx >= (-1 * one)) & (tx <= one))]
         # )
         with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore", r"invalid value encountered in arccos"
-            )
+            warnings.filterwarnings("ignore", r"invalid value encountered in arccos")
             result = np.arccos(np.copy(tx))
 
         result[np.where(tx < (-1 * one))] = pi

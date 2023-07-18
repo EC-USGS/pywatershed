@@ -1,12 +1,11 @@
 import argparse
 import textwrap
-import yaml
 from datetime import datetime
 from pathlib import Path
 
+import yaml
 from filelock import FileLock
 from packaging.version import Version
-
 
 _project_name = "pywatershed"
 _project_root_path = Path(__file__).parent.parent.parent
@@ -39,13 +38,18 @@ def update_version_py(timestamp: datetime, version: Version):
         f.write(f'__version__ = "{version}"\n')
         f.writelines(
             [
-                f"__pakname__ = \"{_project_name}\"\n",
+                f'__pakname__ = "{_project_name}"\n',
                 "\n",
                 "author_dict = {\n",
-            ] + [f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n" for a in authors] + [
+            ]
+            + [
+                f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n"
+                for a in authors
+            ]
+            + [
                 "}\n",
-                "__author__ = \", \".join(author_dict.keys())\n",
-                "__author_email__ = \", \".join(s for _, s in author_dict.items())\n",
+                '__author__ = ", ".join(author_dict.keys())\n',
+                '__author_email__ = ", ".join(s for _, s in author_dict.items())\n',
             ]
         )
         f.close()
@@ -106,13 +110,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.get:
-        print(
-            Version((_project_root_path / "version.txt").read_text().strip())
-        )
+        print(Version((_project_root_path / "version.txt").read_text().strip()))
     else:
         update_version(
             timestamp=datetime.now(),
-            version=Version(args.version)
-            if args.version
-            else _current_version,
+            version=Version(args.version) if args.version else _current_version,
         )

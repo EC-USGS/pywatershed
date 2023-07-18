@@ -2,10 +2,10 @@ import pathlib as pl
 
 import numpy as np
 import pytest
+from utils import assert_or_print
 
 from pywatershed import Parameters, PRMSCanopy
 from pywatershed.parameters import PrmsParameters
-from utils import assert_or_print
 
 
 def test_parameter_init():
@@ -22,9 +22,7 @@ def test_parameter_init():
     answers = {"nhru": 2, "nmonths": 12, "nsegment": 10}
 
     results = {
-        key: val
-        for key, val in param_obj.parameters.items()
-        if key in answers.keys()
+        key: val for key, val in param_obj.parameters.items() if key in answers.keys()
     }
     assert_or_print(results, answers)
 

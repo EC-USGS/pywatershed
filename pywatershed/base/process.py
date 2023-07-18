@@ -255,18 +255,14 @@ class Process(Accessor):
         init_vals = self.get_init_values()
         if var_name not in init_vals.keys():
             if self._verbose:
-                warn(
-                    f"{var_name} not initialized (no initial value specified)"
-                )
+                warn(f"{var_name} not initialized (no initial value specified)")
             return
 
         dims = [self[vv] for vv in self.meta[var_name]["dims"]]
         init_type = self.meta[var_name]["type"]
 
         if len(dims) == 1:
-            self[var_name] = np.full(
-                dims, init_vals[var_name], dtype=init_type
-            )
+            self[var_name] = np.full(dims, init_vals[var_name], dtype=init_type)
         else:
             self[var_name] = TimeseriesArray(
                 var_name=var_name,
@@ -319,12 +315,8 @@ class Process(Accessor):
         """Set options options on self if supplied on init, else take
         from control"""
         # some self and Process introspection reveals the option names
-        init_arg_names = set(
-            inspect.signature(self.__init__).parameters.keys()
-        )
-        process_init_args = set(
-            inspect.signature(Process.__init__).parameters.keys()
-        )
+        init_arg_names = set(inspect.signature(self.__init__).parameters.keys())
+        process_init_args = set(inspect.signature(Process.__init__).parameters.keys())
         inputs_args = self.inputs
         non_option_args = process_init_args.union(inputs_args)
         option_names = init_arg_names.difference(non_option_args)
@@ -418,9 +410,7 @@ class Process(Accessor):
         patch_meta_on_self = {
             kk: vv for kk, vv in patches.items() if kk in self.meta.keys()
         }
-        self.meta = _merge_dicts(
-            [self.meta, patch_meta_on_self], conflicts=conflicts
-        )
+        self.meta = _merge_dicts([self.meta, patch_meta_on_self], conflicts=conflicts)
         return
 
     def output_to_csv(self, pth):
@@ -471,9 +461,7 @@ class Process(Accessor):
         if output_vars is None:
             self._output_vars = self.variables
         else:
-            self._output_vars = list(
-                set(output_vars).intersection(set(self.variables))
-            )
+            self._output_vars = list(set(output_vars).intersection(set(self.variables)))
 
         if self._output_vars is None:
             self._netcdf_initialized = False

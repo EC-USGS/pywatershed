@@ -143,9 +143,7 @@ class PRMSGroundwater(ConservativeProcess):
             import numba as nb
 
             numba_msg = f"{self.name} jit compiling with numba "
-            nb_parallel = (numba_num_threads is not None) and (
-                numba_num_threads > 1
-            )
+            nb_parallel = (numba_num_threads is not None) and (numba_num_threads > 1)
             if nb_parallel:
                 numba_msg += f"and using {numba_num_threads} threads"
             print(numba_msg, flush=True)

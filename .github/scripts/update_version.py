@@ -1,5 +1,6 @@
 import argparse
 import textwrap
+import yaml
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,7 @@ from packaging.version import Version
 _project_name = "pywatershed"
 _project_root_path = Path(__file__).parent.parent.parent
 _version_txt_path = _project_root_path / "version.txt"
+_citation_cff_path = _project_root_path / "CITATION.cff"
 _version_py_path = _project_root_path / _project_name / "version.py"
 _initial_version = Version("0.0.1")
 _current_version = Version(_version_txt_path.read_text().strip())
@@ -21,13 +23,31 @@ def update_version_txt(version: Version):
     print(f"Updated {_version_txt_path} to version {version}")
 
 
+def get_authors():
+    citation = yaml.safe_load(_citation_cff_path.read_text())
+    return citation["authors"]
+
+
 def update_version_py(timestamp: datetime, version: Version):
+    lines = open(_version_py_path, "r").readlines() if _version_py_path.exists() else []
+    authors = get_authors()
     with open(_version_py_path, "w") as f:
         f.write(
             f"# {_project_name} version file automatically created using "
             f"{Path(__file__).name} on {timestamp:%B %d, %Y %H:%M:%S}\n\n"
         )
         f.write(f'__version__ = "{version}"\n')
+        f.writelines(
+            [
+                f"__pakname__ = \"{_project_name}\"\n",
+                "\n",
+                "author_dict = {\n",
+            ] + [f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n" for a in authors] + [
+                "}\n",
+                "__author__ = \", \".join(author_dict.keys())\n",
+                "__author_email__ = \", \".join(s for _, s in author_dict.items())\n",
+            ]
+        )
         f.close()
     print(f"Updated {_version_py_path} to version {version}")
 

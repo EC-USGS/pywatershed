@@ -17,9 +17,9 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.abspath("../"))
 
-import sphinx_autosummary_accessors
+import sphinx_autosummary_accessors  # noqa
 
-import pywatershed
+import pywatershed  # noqa
 
 # -- Project information -----------------------------------------------------
 
@@ -41,7 +41,7 @@ extensions = [
     # "nbsphinx",
     "sphinx_autosummary_accessors",
     "sphinx.ext.intersphinx",
-    # "sphinx.ext.extlinks",
+    "sphinx.ext.extlinks",
     # "sphinx_copybutton",
     # "sphinx.ext.mathjax",
     # "numpydoc",
@@ -49,20 +49,25 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
 ]
 
+extlinks = {
+    "issue": ("https://github.com/EC-USGS/pywatershed/issues/%s", "GH%s"),
+    "pull": ("https://github.com/EC-USGS/pywatershed/pull/%s", "PR%s"),
+}
+
 
 autosummary_generate = True
 autodoc_typehints = "none"
 # autosummary_imported_members = True
 
-autodoc_default_options = {
-    "members": False,
-    # "imported-members": True,
-    # "inherited-members": True,
-    #     "undoc-members": True,
-    #     "private-members": True,  #
-    # "special-members": [],
-    "exclude-members": "__init__",
-}
+# autodoc_default_options = {
+#     #     "members": False,
+#     #     # "imported-members": True,
+#     #     # "inherited-members": True,
+#     #     #     "undoc-members": True,
+#     #     #     "private-members": True,  #
+#     "special-members": "",
+#     "exclude-members": "__init__",
+# }
 
 
 # Napoleon configurations
@@ -73,9 +78,6 @@ napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_preprocess_types = True
 
-
-# Add any paths that contain templates here, relative to this directory.
-# templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -131,7 +133,4 @@ html_theme_options = dict(
     # home_page_in_toc=True,
     # show_navbar_depth=1,
     # show_toc_level=1,
-    extra_navbar="",
-    navbar_footer_text="",
-    extra_footer="",
 )

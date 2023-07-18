@@ -32,7 +32,9 @@ domain_dict["input_files_dict"] = {
 }
 
 parameter_file = domain_dict["param_file"]
-parameters = pywatershed.PrmsParameters.load(domain_dict["param_file"])
+parameters = pywatershed.parameters.PrmsParameters.load(
+    domain_dict["param_file"]
+)
 
 
 cbh = pywatershed.CBH(

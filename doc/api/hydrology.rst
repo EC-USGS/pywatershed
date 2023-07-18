@@ -16,3 +16,4 @@ Hydrologic model components.
    PRMSSoilzone
    PRMSGroundwater
    PRMSChannel
+   Starfit

@@ -22,6 +22,7 @@
 from typing import Union
 
 from ...base.model import Model
+from ...utils.optional_import import import_optional_dependency
 
 
 class ColorBrewer:
@@ -2345,21 +2346,23 @@ def nhm_process_colors(model: Model = None):
     if not model:
         return process_colors
     else:
-        model_processes = list(model.processes.keys())
+        model_proc_cls = {
+            key: val.__class__.__name__ for key, val in model.processes.items()
+        }
         model_process_colors = {
-            key: val
-            for key, val in process_colors.items()
-            if key in [cc for cc in model_processes]
+            name: process_colors[cls]
+            for name, cls in model_proc_cls.items()
+            if cls in model_proc_cls.values()
         }
         return model_process_colors
 
 
 def jupyter_palette(palette: Union[list, dict]):
-    from IPython.display import Markdown, display
+    ipdisplay = import_optional_dependency("IPython.display")
 
     if isinstance(palette, list):
-        display(
-            Markdown(
+        ipdisplay.display(
+            ipdisplay.Markdown(
                 "<br>".join(
                     f'<span style="font-family: monospace">{color} <span style="color: {color}">████████</span></span>'
                     for color in palette
@@ -2367,8 +2370,8 @@ def jupyter_palette(palette: Union[list, dict]):
             )
         )
     else:
-        display(
-            Markdown(
+        ipdisplay.display(
+            ipdisplay.Markdown(
                 "<br>".join(
                     f'<span style="font-family: monospace">{key} <span style="color: {color}">████████</span></span>'
                     for key, color in palette.items()

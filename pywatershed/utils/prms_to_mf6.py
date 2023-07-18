@@ -10,7 +10,7 @@ import xarray as xr
 from pywatershed import Control, meta
 
 from ..constants import SegmentType, fileish, zero
-from .parameters import PrmsParameters
+from ..parameters import PrmsParameters
 
 # try:
 #     import geopandas as gpd
@@ -207,7 +207,7 @@ class MMRToMF6:
         vertices = None
         cell2d = None
 
-        nsegment = parameters["nsegment"]
+        nsegment = self.params.dims["nsegment"]
         hru_segment = parameters["hru_segment"] - 1
         tosegment = parameters["tosegment"] - 1
 
@@ -279,20 +279,21 @@ class MMRToMF6:
                 ["mann_n", "seg_slope", "seg_depth"], to_pint=True
             ).items()
         }
+        vel_terms = {}
         for var in vel_units:
-            parameters[var] *= vel_units[var]
+            vel_terms[var] = parameters[var] * vel_units[var]
 
         velocity = (
-            (1.0 / parameters["mann_n"])
-            * np.sqrt(parameters["seg_slope"])
-            * parameters["seg_depth"] ** (2.0 / 3.0)
+            (1.0 / vel_terms["mann_n"])
+            * np.sqrt(vel_terms["seg_slope"])
+            * vel_terms["seg_depth"] ** (2.0 / 3.0)
             * (3600.0 * self.units("seconds/hour"))
         )
 
         # JLM: This is a bad idea and should throw an error rather than edit
         # inputs in place during run
         # Shouldnt this ALSO BE ABOVE the velocity calculation?
-        parameters["seg_slope"] = np.where(
+        seg_slope = np.where(
             parameters["seg_slope"] < 1e-7, 0.0001, parameters["seg_slope"]
         )  # this is from prms5.2.1, it is not in prms6
 
@@ -391,7 +392,7 @@ class MMRToMF6:
             # calculate lateral flow term to the REACH/segment from HRUs
             lat_inflow = np.zeros((self.nper, nsegment)) * new_inflow_unit
 
-            for ihru in range(parameters["nhru"]):
+            for ihru in range(self.params.dims["nhru"]):
                 iseg = hru_segment[ihru]
                 if iseg < 0:
                     # This is bad, selective handling of fluxes is not cool,

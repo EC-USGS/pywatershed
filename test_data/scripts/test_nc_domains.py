@@ -1,13 +1,12 @@
 from time import sleep
 
 import numpy as np
-
-from pywatershed import CsvFile, Soltab
-from pywatershed.parameters import PrmsParameters
-from pywatershed.constants import epsilon64, zero
-
 import pytest
 import xarray as xr
+
+from pywatershed import CsvFile, Soltab
+from pywatershed.constants import epsilon64, zero
+from pywatershed.parameters import PrmsParameters
 
 
 def test_csv_to_netcdf(csv_files):
@@ -58,7 +57,7 @@ def test_misc_netcdf(misc_nc_files_input):
         var = misc_nc_files_input.name
         ds = xr.open_dataset(data_dir / f"{var}.nc")
         ds = ds.rename({var: f"{var}_vol"})
-        ds = ds * params.hru_in_to_cf
+        ds = ds * params.data_vars["hru_in_to_cf"]
         ds.to_netcdf(data_dir / f"{var}_vol.nc")
         ds.close()
 

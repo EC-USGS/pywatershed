@@ -1,2 +1,2 @@
-from .PRMSAtmosphere import PRMSAtmosphere
-from .PRMSSolarGeometry import PRMSSolarGeometry
+from .prms_atmosphere import PRMSAtmosphere
+from .prms_solar_geometry import PRMSSolarGeometry

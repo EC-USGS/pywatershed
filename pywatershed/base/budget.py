@@ -12,6 +12,7 @@ from ..constants import zero
 from ..utils.formatting import pretty_print
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
+from .parameters import Parameters
 
 # Todo
 # * documentation
@@ -488,8 +489,14 @@ class Budget(Accessor):
         )
 
         def balance_line_col_wise():
+            # TODO(JLM): This is a hack until i have some time to sort this out
             bal_line = "Balance: "
             for oper, vals_sum, col_width, col_key_width in term_data:
+                if vals_sum.sum() > 0:
+                    sign_extra = 0
+                else:
+                    sign_extra = 1
+
                 bal_line += (
                     oper
                     + (" " * (col_key_width + col_extra_colon - len(oper)))
@@ -499,7 +506,8 @@ class Budget(Accessor):
                             precision=col_width
                             - col_key_width
                             - col_extra_colon
-                            - 6,
+                            - 6
+                            - sign_extra,
                         ),
                         col_width - col_key_width - col_extra_colon,
                     )
@@ -574,6 +582,7 @@ class Budget(Accessor):
 
     def initialize_netcdf(
         self,
+        params: Parameters,
         output_dir: str,
         write_sum_vars: Union[list, bool] = True,
         write_individual_vars: bool = False,
@@ -629,14 +638,14 @@ class Budget(Accessor):
 
         global_attrs = {
             "Description": (
-                f"PYNHM ({self.basis}) budget for {self.description}"
+                f"pywatershed ({self.basis}) budget for {self.description}"
             ),
             "Budget basis": f"{self.basis} (unit or global)",
         }
         for key in self.terms.keys():
             global_attrs[key] = "[" + ", ".join(self.terms[key]) + "]"
 
-        coordinates = {"one": 0, **self.control.params.nhm_coordinates}
+        coordinates = {"one": 0, **params.coords}
 
         self._netcdf = NetCdfWrite(
             nc_path,
@@ -645,9 +654,7 @@ class Budget(Accessor):
             self.meta,
             global_attrs=global_attrs,
         )
-
         # todo jlm: put terms in to metadata
-
         return
 
     def __output_netcdf(self) -> None:

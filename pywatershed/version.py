@@ -1,12 +1,8 @@
-major = 0
-minor = 1
-micro = 1
-__version__ = f"{major}.{minor}.{micro}"
+# pywatershed version file automatically created using update_version.py on July 18, 2023 16:50:45
 
+__version__ = "0.2.0"
 __pakname__ = "pywatershed"
 
-# edit author dictionary as necessary (
-# in order of commits after Bakker and Post
 author_dict = {
     "James McCreight": "jmccreight@usgs.gov",
     "Christian D. Langevin": "langevin@usgs.gov",

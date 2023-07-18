@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from pywatershed.base.control import Control
-from pywatershed.hydrology.PRMSCanopy import PRMSCanopy
+from pywatershed.hydrology.prms_canopy import PRMSCanopy
 from pywatershed.parameters import PrmsParameters  # # TODO: too specific
 
 time_dict = {
@@ -40,12 +40,12 @@ def params_simple():
 
 
 @pytest.fixture(scope="function")
-def control_simple(params_simple):
-    return Control(**time_dict, params=params_simple)
+def control_simple():
+    return Control(**time_dict)
 
 
 def test_control_simple(control_simple):
-    assert control_simple.config is None
+    assert control_simple.options == {}
     ts = time_dict["time_step"]
     assert control_simple.time_step == ts
     assert control_simple.start_time == time_dict["start_time"]
@@ -88,7 +88,7 @@ def test_control_simple(control_simple):
         control_simple.advance()
 
 
-def test_control_advance(control_simple):
+def test_control_advance(control_simple, params_simple):
     # common inputs for 2 canopies
     input_variables = {}
     for key in PRMSCanopy.get_inputs():
@@ -98,6 +98,8 @@ def test_control_advance(control_simple):
     # ntimes = control.n_times
     cnp1 = PRMSCanopy(
         control=control_simple,
+        discretization=None,
+        parameters=params_simple,
         **input_variables,
         verbose=True,
     )
@@ -105,6 +107,8 @@ def test_control_advance(control_simple):
 
     cnp2 = PRMSCanopy(
         control=control_simple,
+        discretization=None,
+        parameters=params_simple,
         **input_variables,
         verbose=True,
     )

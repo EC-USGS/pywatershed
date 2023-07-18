@@ -81,7 +81,7 @@ jobs:
           echo "and run"
           echo "  isort ./pywatershed ./autotest"
           echo "and then commit the changes."
-          isort --check --diff ./pywatershed
+          isort --check --diff ./pywatershed ./autotest
 
       - name: Run black
         run: |
@@ -90,7 +90,7 @@ jobs:
           echo "and run"
           echo "  black ./pywatershed ./autotest"
           echo "and then commit the changes."
-          black --check --diff ./pywatershed
+          black --check --diff ./pywatershed ./autotest
 
       - name: Run flake8
         run: |

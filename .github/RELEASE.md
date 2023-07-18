@@ -9,7 +9,6 @@ utilities for `pywatershed`.
 - [Releasing `pywatershed`](#releasing-pywatershed)
 - [Utility scripts](#utility-scripts)
   - [Updating version numbers](#updating-version-numbers)
-  - [Preparing for PRs](#preparing-for-prs)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -102,12 +101,7 @@ To release a new version:
 ## Utility scripts
 
 The automated release procedure uses a few scripts, located in
-`.github/scripts`:
-
-- `update_version.py` `pull_request_prepare.py`
-
-The former should never need to be run manually. The latter is convenient for
-formatting source files before opening PRs.
+`.github/scripts`.
 
 ### Updating version numbers
 
@@ -130,11 +124,4 @@ repository's files, use the `--get` (short `-g`) flag:
 
 ```shell python .github/scripts/update_version.py -g ```
 
-### Preparing for PRs
-
-The `pull_request_prepare.py` script lints Python source code files by running
-`black` and `isort` on the `pywatershed` subdirectory. This script should be run
-before opening a pull request, as CI will fail if the code is not properly
-formatted. For instance, from the project root:
-
-```shell python .github/scripts/pull_request_prepare.py ```
+**Note**: this script should not need to be run manually, as it is run automatically in the release automation.

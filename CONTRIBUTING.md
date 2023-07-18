@@ -5,6 +5,7 @@ We welcome community development! We ask  contributors to follow a few guideline
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+
 - [Found a bug?](#found-a-bug)
 - [Missing a feature?](#missing-a-feature)
 - [Submission guidelines](#submission-guidelines)
@@ -49,13 +50,22 @@ To submit a pull request (PR) please follow these steps:
 
 3. Make your changes in a new branch. Be sure to include test cases.
 
-4. Run `isort` and `black` on the `pywatershed` module. The `.github/scripts/pull_request_prepare.py` Python script is a convenient wrapper for this.
+4. Run `isort` and `black` on the `pywatershed` module.
 
-**Note**:  PRs must pass format checks in GitHub Actions before they can be accepted.
+    Python source code files should be formatted by running `black` and `isort` on the
+    `pywatershed` subdirectory before opening a pull request, as CI will fail if the code
+    is not properly formatted. For instance, from the project root:
+
+    ```shell
+    black --check --diff pywatershed
+    isort --check --diff pywatershed
+    ```
+
+    **Note**:  PRs must pass format checks in GitHub Actions before they can be accepted.
 
 5. Run the full test suite and make sure all tests pass.
 
-**Note**: PRs must pass all tests in GitHub Actions before they can be accepted.
+    **Note**: PRs must pass all tests in GitHub Actions before they can be accepted.
 
 6. Commit your changes with a descriptive message that follows [conventional commit](https://github.com/modflowpy/flopy/blob/develop/CONTRIBUTING.md#commit) guidelines. Adherence to these conventions allows changelogs and release notes to be generated automatically from the commit history.
 

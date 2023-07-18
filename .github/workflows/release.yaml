@@ -89,8 +89,8 @@ jobs:
 
       - name: Format files
         run: |
-          isort --check --diff ./pywatershed
-          black --check --diff ./pywatershed
+          isort ./pywatershed
+          black ./pywatershed
 
       - name: Touch changelog
         run: touch HISTORY.md

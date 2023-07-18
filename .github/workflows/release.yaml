@@ -24,18 +24,12 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-          cache: 'pip'
-          cache-dependency-path: pyproject.toml
+          path: pywatershed
 
       - name: Install Dependencies via Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: environment.yml
+          environment-file: pywatershed/environment.yml
           cache-environment: true
           cache-downloads: true
           create-args: >-
@@ -55,27 +49,29 @@ jobs:
           python update_flopy.py
 
       - name: Install pywatershed
+        working-directory: pywatershed
         run: |
           pip install .
 
       - name: Version info
+        working-directory: pywatershed
         run: |
           pip -V
           pip list
 
       - name: Run available domains with PRMS and convert csv output to NetCDF
-        working-directory: test_data/scripts
+        working-directory: pywatershed/test_data/scripts
         run: |
           pytest -v -n=auto --durations=0 test_run_domains.py
           pytest -v -n=auto --durations=0 test_nc_domains.py
 
       - name: List all NetCDF files in test_data directory
-        working-directory: test_data
+        working-directory: pywatershed/test_data
         run: |
           find . -name "*.nc"
 
       - name: Run tests
-        working-directory: autotest
+        working-directory: pywatershed/autotest
         run: pytest
           -v
           -n=auto
@@ -86,6 +82,7 @@ jobs:
           --junitxml=pytest.xml
 
       - name: Update version
+        working-directory: pywatershed
         id: version
         run: |
           ref="${{ github.ref_name }}"
@@ -95,6 +92,7 @@ jobs:
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Format files
+        working-directory: pywatershed
         run: |
           isort --check --diff ./pywatershed
           black --check --diff ./pywatershed
@@ -102,18 +100,20 @@ jobs:
           pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 
       - name: Touch changelog
+        working-directory: pywatershed
         run: touch HISTORY.md
 
       - name: Generate changelog
         id: cliff
         uses: orhun/git-cliff-action@v1
         with:
-          config: cliff.toml
+          config: pywatershed/cliff.toml
           args: --verbose --unreleased --tag ${{ steps.version.outputs.version }}
         env:
-          OUTPUT: CHANGELOG.md
+          OUTPUT: pywatershed/CHANGELOG.md
 
       - name: Update changelog
+        working-directory: pywatershed
         id: update-changelog
         run: |
           # move changelog
@@ -144,6 +144,7 @@ jobs:
           path: ${{ steps.update-changelog.outputs.changelog }}
 
       - name: Update release branch, draft PR to main
+        working-directory: pywatershed
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |

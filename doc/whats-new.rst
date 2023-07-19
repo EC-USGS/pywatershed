@@ -12,37 +12,17 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.0.3.0:
+.. _whats-new.0.2.1:
 
-v0.3.0 (unreleased)
+v0.2.1 (19 July 2023)
 ---------------------
-
-New features
-~~~~~~~~~~~~
-
-
-Breaking changes
-~~~~~~~~~~~~~~~~
-
-
-Deprecations
-~~~~~~~~~~~~
-
-
-Performance
-~~~~~~~~~~~
-
 
 Bug fixes
 ~~~~~~~~~
-
-
-Documentation
-~~~~~~~~~~~~~
-
-
-Internal changes
-~~~~~~~~~~~~~~~~
+- Package data was not properly installed.
+  (:pull:`219`) By `James McCreight <https://github.com/jmccreight>`_.
+- Small addition to notebook 02
+  (:pull:`219`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 .. _whats-new.0.2.0:

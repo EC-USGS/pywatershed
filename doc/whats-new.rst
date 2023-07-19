@@ -15,7 +15,7 @@ What's New
 .. _whats-new.0.3.0:
 
 v0.3.0 (unreleased)
--------------------
+---------------------
 
 New features
 ~~~~~~~~~~~~
@@ -47,7 +47,7 @@ Internal changes
 
 .. _whats-new.0.2.0:
 
-v0.2.0 (12 July 2023)
+v0.2.0 (18 July 2023)
 ---------------------
 
 New features

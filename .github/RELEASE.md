@@ -47,19 +47,21 @@ To release a new version:
    remote: `git push -u upstream vx.y.z`. This starts a job to:
 
     - Check out the release branch Update version number in `version.txt` and
-    - `pywatershed/version.py` to match the version in the branch name Build and
-    - check the Python package Generate a changelog since the last release
-    - Prepend the changelog to the cumulative `HISTORY.md` Upload the package
-    - and changelog as artifacts Draft a PR against `main` with the updated
-    - version files and cumulative changelog. The cumulative `HISTORY.md` is
-    - version-controlled, release changelogs are not.
+      `pywatershed/version.py` to match the version in the branch name
+    - Build and check the Python package Generate a changelog since the last
+	  release
+    - Prepend the changelog to the cumulative `HISTORY.md`. The cumulative
+	  `HISTORY.md` is version-controlled, release changelogs are not.
+	- Upload the package and changelog as artifacts Draft a PR against `main`
+	  with the updated version files and cumulative changelog.
 
 1. On all platforms, pull the release from upstream and perform ASV performance
-	benchmarks against previous release , e.g., ``` asv continuous --verbose
-	--show-stderr --factor 1.3 previous_release this_release ``` Collect
-	performance reports from various machines into a single report and use `asv
-	publish` to generate the static webpages to be included with the release as
-	artifacts in that step below.
+	benchmarks against previous release , e.g., ```asv run --verbose
+	--show-stderr HASHFILE:pws_refs_for_asv.txt``` after editing the file to
+	contain the previous and current release. Collect performance results from
+	various machines into a single report and use `asv publish` to generate
+	the static webpages to be included with the release as artifacts in that
+	step below.
 
 1. Inspect the package and changelog. If they look good, merge the PR to `main`.
 

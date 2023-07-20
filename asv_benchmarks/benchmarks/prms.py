@@ -85,17 +85,17 @@ class PRMSModels:
         else:
             self.params = pws.PrmsParameters.load(self.parameter_file)
 
-        # backwards compatability
+        # backwards compatability pre 0.2.0
         try:
+            self.ge_v0_2_0 = False
             self.control = pws.Control.load(
                 self.control_file, params=self.params
             )
-            self.ge_v0_2_0 = False
         except:
-            self.control = pws.Control.load(self.control_file)
             self.ge_v0_2_0 = True
 
-        self.control.edit_n_time_steps(n_time_steps)
+        if hasattr(self, "control"):
+            del self.control
 
         # setup input_dir with symlinked prms inputs and outputs
         self.domain_dir = pl.Path(f"PRMSModels_{self.domain}")
@@ -119,17 +119,28 @@ class PRMSModels:
         processes: tuple = None,
         write_output: Union[bool, Literal["separate", "together"]] = None,
     ):
+        # seem to need to load control inside the model setup run bc
+        # results are strange/inconsistent
+
         if self.ge_v0_2_0:
+            self.control = pws.Control.load(self.control_file)
             self.control.options["input_dir"] = self.tag_input_dir
             self.control.options["budget_type"] = "warn"
             self.control.options["calc_method"] = "numba"
+            self.control.edit_n_time_steps(n_time_steps)
 
             model = pws.Model(
                 self.processes,
                 control=self.control,
                 parameters=self.params,
             )
+
         else:
+            self.control = pws.Control.load(
+                self.control_file, params=self.params
+            )
+            self.control.edit_n_time_steps(n_time_steps)
+
             model = pws.Model(
                 *self.processes,
                 control=self.control,
@@ -143,6 +154,8 @@ class PRMSModels:
                 self.tag_dir, separate_files=(write_output == "separate")
             )
         model.run(finalize=True)
+        del model
+        del self.control
 
     @parameterized(
         ["domain", "processes", "output"],

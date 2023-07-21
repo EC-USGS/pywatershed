@@ -19,7 +19,9 @@ v0.3.0 (unreleased)
 
 New features
 ~~~~~~~~~~~~
-
+- `Conda feedstock for pywatershed <https://github.com/conda-forge/staged-recipes/pull/23428>`_.
+  By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
+  
 
 Breaking changes
 ~~~~~~~~~~~~~~~~

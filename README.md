@@ -10,6 +10,9 @@
 [![PyPI Status](https://img.shields.io/pypi/status/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 [![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/version.svg)](https://anaconda.org/conda-forge/pywatershed)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/platforms.svg)](https://anaconda.org/conda-forge/pywatershed)
+
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
 
 
@@ -71,14 +74,22 @@ Prototype an EC watershed model: "pywatershed"
 `pywatershed` uses Python 3.9 or 3.10.
 
 The `pywatershed` package is [available on
-PyPI](https://pypi.org/project/pywatershed/) but installation of dependencies
-may not be reliable on all platforms. 
+PyPI](https://pypi.org/project/pywatershed/) but installation of all
+dependencies sets (lint, test, optional, doc, and all) may not be reliable on
+all platforms. 
 
-We recommend dependencies be first installed with
-[Mamba](https://mamba.readthedocs.io/en/latest/). This will be much faster than
-Ananconda (but the conda command could also be used). We hope to provide
-`pywatershed` installation with all its dependencies on conda-forge in the 
-near future.
+The `pywatershed` package is [available on
+conda-forge](https://anaconda.org/conda-forge/pywatershed). The installation
+is the quickest way to get up and running by provides only the minimal set of
+dependencies (not including jupyter nor all packages needed for running the
+example notebooks, also not suitable for development purposes). 
+
+We recommend the following installation procedures to get fully-functional
+environments for running `pywatershed` and its example notebooks. We strongly
+recommend using [Mamba](https://mamba.readthedocs.io/en/latest/)to first
+instal dependencies from the `environment_y_jupyter.yml` file in the
+repository before installing `pywatershed` itself. Mamba will be much faster
+than Ananconda (but the conda command could also be used). 
 
 If you wish to use the stable release, you will use `main` in place of 
 `<branch>` in the following commands. If you want to follow developemnt, you'll

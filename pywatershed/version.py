@@ -1,6 +1,6 @@
-# pywatershed version file automatically created using update_version.py on July 18, 2023 14:36:23
+# pywatershed version file automatically created using update_version.py on July 21, 2023 02:12:07
 
-__version__ = "0.3.0.dev0"
+__version__ = "0.2.1"
 __pakname__ = "pywatershed"
 
 author_dict = {

@@ -12,6 +12,39 @@ What's New
     np.random.seed(123456)
 
 
+.. _whats-new.0.3.0:
+
+v0.3.0 (unreleased)
+---------------------
+
+New features
+~~~~~~~~~~~~
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+
+Deprecations
+~~~~~~~~~~~~
+
+
+Performance
+~~~~~~~~~~~
+
+
+Bug fixes
+~~~~~~~~~
+
+
+Documentation
+~~~~~~~~~~~~~
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+
 .. _whats-new.0.2.1:
 
 v0.2.1 (19 July 2023)

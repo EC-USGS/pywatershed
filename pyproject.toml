@@ -110,7 +110,7 @@ include = ["pywatershed", "pywatershed.*"]
 
 [tool.setuptools.package-data]
 "pywatershed.static.metadata" = ["*.yaml"]
-"pywatershed.data" = ["*.nc"]
+"pywatershed.data.drb_2yr" = ["*"]
 
 [tool.black]
 line-length = 79

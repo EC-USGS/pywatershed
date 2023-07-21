@@ -1,4 +1,4 @@
-name: pywatershed
+name: pws
 channels:
   - conda-forge
   - nodefaults
@@ -11,13 +11,12 @@ dependencies:
   - filelock
   - geopandas
   - geoviews
+  - git
   - holoviews
   - hvplot
-  - git
   - ipython
   - ipywidgets
   - jupyter
-  - jupyter_contrib_nbextensions
   - jupyterlab
   - nb_conda_kernels
   - nbconvert
@@ -45,11 +44,12 @@ dependencies:
   - tqdm
   - xarray>=2023.05.0
   - pip:
-      - click != 8.1.0
+      - asv
       - black
+      - click != 8.1.0
       - isort
       - flake8
-      - jupyter_black
-      - pylint
       - git+https://github.com/modflowpy/flopy.git
+      - jupyter_black
       - modflow-devtools
+      - pylint

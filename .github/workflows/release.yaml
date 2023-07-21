@@ -193,7 +193,14 @@ jobs:
         run: |
           version=$(cat version.txt | xargs)
           title="pywatershed $version"
-          notes=$(cat "changelog/CHANGELOG_$version.md" | grep -v "### Version $version")
+
+          # don't fail if the changelog is empty
+          if [[ -s "changelog/CHANGELOG_$version.md" ]]; then
+            notes=$(cat "changelog/CHANGELOG_$version.md" | grep -v "### Version $version")
+          else
+            notes="No changes found, are recent commits conventional?"
+          fi
+          
           gh release create "$version" \
             --target main \
             --title "$title" \

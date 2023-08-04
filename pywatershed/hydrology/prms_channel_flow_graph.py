@@ -306,24 +306,21 @@ class PRMSChannelFlowGraph(FlowGraph):
             print(numba_msg, flush=True)
 
             self._muskingum_mann = nb.njit(
-                nb.types.UniTuple(nb.float64[:], 7)(
-                    nb.int64[:],  # _segment_order
-                    nb.int64[:],  # _tosegment
-                    nb.float64[:],  # seg_lateral_inflow
-                    nb.float64[:],  # _seg_inflow0
-                    nb.float64[:],  # _outflow_ts
-                    nb.int64[:],  # _tsi
-                    nb.float64[:],  # _ts
-                    nb.float64[:],  # _c0
-                    nb.float64[:],  # _c1
-                    nb.float64[:],  # _c2
+                nb.types.UniTuple(nb.float64, 4)(
+                    nb.int64,  # ihr
+                    nb.float64,  # _seg_inflow0
+                    nb.float64,  # _seg_outflow
+                    nb.float64,  # _inflow_ts
+                    nb.float64,  # _outflow_ts
+                    nb.int64,  # _tsi
+                    nb.float64,  # _ts
+                    nb.float64,  # _c0
+                    nb.float64,  # _c1
+                    nb.float64,  # _c2
                 ),
                 fastmath=True,
                 parallel=False,
             )(self._muskingum_mann_numpy)
-
-        elif self._calc_method.lower() == "fortran":
-            self._muskingum_mann = _calculate_fortran
 
         else:
             self._muskingum_mann = self._muskingum_mann_numpy
@@ -367,28 +364,57 @@ class PRMSChannelFlowGraph(FlowGraph):
 
             self.seg_lateral_inflow[iseg] += lateral_inflow
 
+        # <
         # solve muskingum_mann routing
+        self._seg_inflow[:] = zero
+        self.seg_outflow[:] = zero
+        self._inflow_ts[:] = zero
 
-        (
-            self.seg_upstream_inflow[:],
-            self._seg_inflow0[:],
-            self._seg_inflow[:],
-            self.seg_outflow[:],
-            self._inflow_ts[:],
-            self._outflow_ts[:],
-            self._seg_current_sum[:],
-        ) = self._muskingum_mann(
-            self._segment_order,
-            self._tosegment,
-            self.seg_lateral_inflow,
-            self._seg_inflow0,
-            self._outflow_ts,
-            self._tsi,
-            self._ts,
-            self._c0,
-            self._c1,
-            self._c2,
-        )
+        self._seg_current_sum[:] = zero
+
+        for ihr in range(24):
+            # This works because the first nodes calculated do
+            # not have upstream reaches
+            self.seg_upstream_inflow = self._seg_inflow * zero
+
+            for jseg in self._segment_order:
+                seg_current_inflow = (
+                    self.seg_lateral_inflow[jseg]
+                    + self.seg_upstream_inflow[jseg]
+                )
+
+                self._seg_inflow[jseg] += seg_current_inflow
+                self._inflow_ts[jseg] += seg_current_inflow
+                self._seg_current_sum[jseg] += self.seg_upstream_inflow[jseg]
+
+                (
+                    self._seg_inflow0[jseg],
+                    self.seg_outflow[jseg],
+                    self._inflow_ts[jseg],
+                    self._outflow_ts[jseg],
+                ) = self._muskingum_mann(
+                    ihr,
+                    self._seg_inflow0[jseg],
+                    self.seg_outflow[jseg],
+                    self._inflow_ts[jseg],
+                    self._outflow_ts[jseg],
+                    self._tsi[jseg],
+                    self._ts[jseg],
+                    self._c0[jseg],
+                    self._c1[jseg],
+                    self._c2[jseg],
+                )
+
+                if self._tosegment[jseg] >= 0:
+                    self.seg_upstream_inflow[
+                        self._tosegment[jseg]
+                    ] += self._outflow_ts[jseg]
+
+            # asdf
+
+        self.seg_outflow[:] = self.seg_outflow / 24.0
+        self._seg_inflow[:] = self._seg_inflow / 24.0
+        self.seg_upstream_inflow[:] = self._seg_current_sum / 24.0
 
         self.seg_stor_change[:] = (
             self._seg_inflow - self.seg_outflow
@@ -402,33 +428,23 @@ class PRMSChannelFlowGraph(FlowGraph):
 
     @staticmethod
     def _muskingum_mann_numpy(
-        segment_order: np.ndarray,
-        to_segment: np.ndarray,
-        seg_lateral_inflow: np.ndarray,
-        seg_inflow0: np.ndarray,
-        outflow_ts: np.ndarray,
-        tsi: np.ndarray,
-        ts: np.ndarray,
-        c0: np.ndarray,
-        c1: np.ndarray,
-        c2: np.ndarray,
-    ) -> Tuple[
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-        np.ndarray,
-    ]:
+        ihr: np.int64,
+        seg_inflow0: np.float64,
+        seg_outflow: np.float64,
+        inflow_ts: np.float64,
+        outflow_ts: np.float64,
+        tsi: np.int64,
+        ts: np.float64,
+        c0: np.float64,
+        c1: np.float64,
+        c2: np.float64,
+    ) -> Tuple[np.float64, np.float64, np.float64, np.float64,]:
         """
         Muskingum routing function that calculates the upstream inflow and
         outflow for each segment
 
         Args:
-            segment_order: segment routing order
-            to_segment: downstream segment for each segment
-            seg_lateral_inflow: segment lateral inflow
+            ihr: the hour of the day from 0-23
             seg_inflow0: previous segment inflow variable (internal calculations)
             outflow_ts: outflow timeseries variable (internal calculations)
             tsi: integer flood wave travel time
@@ -438,100 +454,33 @@ class PRMSChannelFlowGraph(FlowGraph):
             c2: Muskingum c2 variable
 
         Returns:
-            seg_upstream_inflow: inflow for each segment for the current day
             seg_inflow0: segment inflow variable
-            seg_inflow: segment inflow variable
             seg_outflow: outflow for each segment for the current day
             inflow_ts: inflow timeseries variable
             outflow_ts: outflow timeseries variable (internal calculations)
-            seg_current_sum: summation variable
         """
-        # initialize variables for the day
 
-        seg_inflow = seg_inflow0 * zero
-        seg_outflow = seg_inflow0 * zero
-        seg_outflow0 = seg_inflow0 * zero
-        inflow_ts = seg_inflow0 * zero
-        seg_current_sum = seg_inflow0 * zero
+        remainder = (ihr + 1) % tsi
+        if remainder == 0:
+            # segment routed on current hour
+            inflow_ts /= ts
 
-        for ihr in range(24):
-            seg_upstream_inflow = seg_inflow * zero
-
-            for jseg in segment_order:
-                # current inflow to the segment is the time-weighted average
-                # of the outflow of the upstream segments and the lateral HRU
-                # inflow plus any gains
-                seg_current_inflow = (
-                    seg_lateral_inflow[jseg] + seg_upstream_inflow[jseg]
+            if tsi > 0:
+                # Muskingum routing equation
+                outflow_ts = (
+                    inflow_ts * c0 + seg_inflow0 * c1 + outflow_ts * c2
                 )
+            else:
+                outflow_ts = inflow_ts
 
-                # todo: evaluate if obsin_segment needs to be implemented -
-                #  would be needed needed if headwater basins are not included
-                #  in a simulation
-                # seg_current_inflow += seg_upstream_inflow[jseg]
+            seg_inflow0 = inflow_ts
+            inflow_ts = 0.0
 
-                seg_inflow[jseg] += seg_current_inflow
-                inflow_ts[jseg] += seg_current_inflow
-                seg_current_sum[jseg] += seg_upstream_inflow[jseg]
-
-                remainder = (ihr + 1) % tsi[jseg]
-                if remainder == 0:
-                    # segment routed on current hour
-                    inflow_ts[jseg] /= ts[jseg]
-
-                    if tsi[jseg] > 0:
-                        # todo: evaluated if denormal results should be dealt with
-
-                        # Muskingum routing equation
-                        outflow_ts[jseg] = (
-                            inflow_ts[jseg] * c0[jseg]
-                            + seg_inflow0[jseg] * c1[jseg]
-                            + outflow_ts[jseg] * c2[jseg]
-                        )
-                    else:
-                        # travel time is 1 hour or less so outflow is set
-                        # equal to the inflow - outflow_ts is the value for
-                        # the previous hour
-                        outflow_ts[jseg] = inflow_ts[jseg]
-
-                    # previous inflow is equal to inflow_ts from the previous
-                    # routed time step
-                    seg_inflow0[jseg] = inflow_ts[jseg]
-
-                    # upstream inflow is used, reset it to zero so a new
-                    # average can be calculated next routing time step
-                    inflow_ts[jseg] = 0.0
-
-                # todo: evaluate if obsout_segment needs to be implemented -
-                #  would be needed needed fixing ourflow to observed data is
-                #  required in a simulation
-
-                # todo: water use
-
-                # segment outflow (the mean daily flow rate for each segment)
-                # will be the average of hourly values
-                seg_outflow[jseg] += outflow_ts[jseg]
-
-                # previous segment outflow is equal to the inflow_ts on the
-                # previous routed timestep
-                seg_outflow0[jseg] = outflow_ts[jseg]
-
-                # add current time step flow rate to the upstream flow rate
-                # for the segment this segment is connected to
-                to_seg = to_segment[jseg]
-                if to_seg >= 0:
-                    seg_upstream_inflow[to_seg] += outflow_ts[jseg]
-
-        seg_outflow /= 24.0
-        seg_inflow /= 24.0
-        seg_upstream_inflow = seg_current_sum.copy() / 24.0
+        seg_outflow += outflow_ts
 
         return (
-            seg_upstream_inflow,
             seg_inflow0,
-            seg_inflow,
             seg_outflow,
             inflow_ts,
             outflow_ts,
-            seg_current_sum,
         )

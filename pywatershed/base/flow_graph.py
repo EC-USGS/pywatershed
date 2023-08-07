@@ -52,18 +52,51 @@ class FlowGraph(ConservativeProcess):
             metadata_patches=metadata_patches,
             metadata_patch_conflicts=metadata_patch_conflicts,
         )
-
         self.name = "FlowGraph"
+
+        self._construct_graph()
+
         return
 
-    def insert_notes(self, connectivity: list):
+    def _construct_graph(self):
+        # self._to_segment =  # int64
+        # self._outflow_mask
+        # self._segment_order
+        # self.flow_nodes objects
+        return
+
+    def insert_nodes(self, connectivity: list):
         pass
 
     def replace_nodes(self, replacements: list):
         pass
 
-    def compute(self):
-        pass
+    def calculate_graph(self, istep):
+        # rename eventually
+
+        # freeze graph upon calculate
+
+        for step in self.substeps:
+            self._zero_inflow()
+
+            for seg in self.segments:
+                outflow = self.flow_nodes[seg].calculate(self.inflows[seg])
+                self._sum_outflows_to_inflow(seg, outflow)
+
+        self._finalize_time_step()
+
+    def _sum_outflows_to_inflow(self, seg, outflow):
+        if self._tosegment[seg] >= 0:
+            self.seg_upstream_inflow[self._tosegment[seg]] += self._outflow_ts[
+                seg
+            ]
+
+    def _zero_inflows():
+        self.inflows[:] = zero
+        return
+
+    # def save()
+    # def load()
 
 
 """

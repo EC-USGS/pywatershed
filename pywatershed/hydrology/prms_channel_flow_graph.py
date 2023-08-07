@@ -20,6 +20,80 @@ except ImportError:
     has_prmschannel_f = False
 
 
+class PRMSChannelFlowNode(FlowNode):
+    def __init__(self, control, tsi, ts, c0, c1, c2):
+        self.control = control
+
+        self._tsi = tsi
+        self._ts = ts
+        self._c0 = c0
+        self._c1 = c1
+        self._c2 = c2
+
+        pass
+
+    def calculate_subtimestep(self, inflow_upstream, inflow_lateral):
+        self._seg_upstream_inflow = zero
+        self._seg_current_sum[jseg] += inflow_upstream
+        self._total_inflow = inflow_lateral + inflow_upstream
+        self._seg_inflow[jseg] += seg_current_inflow
+        self._inflow_ts[jseg] += seg_current_inflow
+
+        (
+            self._seg_inflow0,
+            self._seg_outflow,
+            self._inflow_ts,
+            self._outflow_ts,
+        ) = _muskingum_mann_numpy(
+            ihr,
+            self._seg_inflow0,
+            self.seg_outflow,
+            self._inflow_ts,
+            self._outflow_ts,
+            self._tsi,
+            self._ts,
+            self._c0,
+            self._c1,
+            self._c2,
+        )
+
+    def finalize_timestep(self):
+        self.seg_outflow = self._seg_outflow / 24.0
+        self._seg_inflow = self._seg_inflow / 24.0
+        self.seg_upstream_inflow = self._seg_current_sum / 24.0
+
+        self.seg_stor_change = (
+            self._seg_inflow - self.seg_outflow
+        ) * self._s_per_time
+
+        self.channel_outflow_vol = (
+            np.where(self._outflow_mask, self.seg_outflow, zero)
+        ) * self._s_per_time
+
+        self.outflow = self.seg_outflow
+        self.storage_change = self.seg_stor_change
+        pass
+
+    def advance(self):
+        self._s_per_time = self.control.time_step_seconds
+
+        self.seg_upstream_inflow = zero
+        self._seg_inflow = zero
+        self.seg_outflow = zero
+        self._inflow_ts = zero
+        self._seg_current_sum = zero
+
+        return
+
+    @property
+    def outflow(self):
+        return self.seg_outflow
+
+    @property
+    def storage_change(self):
+        return self.storage_change
+
+
 class PRMSChannelFlowGraph(FlowGraph):
     """PRMS channel flow (muskingum_mann) using a FlowGraph.
 
@@ -64,6 +138,7 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._set_options(locals())
 
         self._set_budget(basis="global")
+        self._construct_graph()
         self._initialize_channel_data()
         self._init_calc_method()
 
@@ -71,13 +146,13 @@ class PRMSChannelFlowGraph(FlowGraph):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        return ("nhru", "nsegment")
+        return ("nhru", "nsegment")  # nhru to be removed via exchange
 
     @staticmethod
     def get_parameters() -> tuple:
         return (
             "hru_area",
-            "hru_segment",
+            "hru_segment",  # to be removed via exchange
             "mann_n",
             "seg_depth",
             "seg_length",
@@ -136,11 +211,11 @@ class PRMSChannelFlowGraph(FlowGraph):
         self.seg_outflow[:] = self.segment_flow_init
         return
 
-    def _initialize_channel_data(self) -> None:
+    def _construct_graph(self) -> None:
         """Initialize internal variables from raw channel data"""
 
         # convert prms data to zero-based
-        self._hru_segment = self.hru_segment - 1
+        self._hru_segment = self.hru_segment - 1  # to be removed via exchange
         self._tosegment = self.tosegment - 1
         self._tosegment = self._tosegment.astype("int64")
 
@@ -179,6 +254,9 @@ class PRMSChannelFlowGraph(FlowGraph):
             #    assert (tosegment[pp] == -1) and (not pp in tosegment)
 
         self._segment_order = np.array(segment_order, dtype="int64")
+
+    def _initialize_channel_data(self) -> None:
+        """Initialize internal variables from raw channel data"""
 
         # calculate the Muskingum parameters
         velocity = (
@@ -320,26 +398,22 @@ class PRMSChannelFlowGraph(FlowGraph):
                 ),
                 fastmath=True,
                 parallel=False,
-            )(self._muskingum_mann_numpy)
+            )(_muskingum_mann_numpy)
 
         else:
-            self._muskingum_mann = self._muskingum_mann_numpy
+            self._muskingum_mann = _muskingum_mann_numpy
 
     def _advance_variables(self) -> None:
         self._seg_inflow0[:] = self._seg_inflow
         return
 
-    def _calculate(self, simulation_time: float) -> None:
-        self._simulation_time = simulation_time
-
+    def _calculate_lateral_inflows(self):
         # This could vary with timestep so leave here
-        s_per_time = self.control.time_step_seconds
+        self._s_per_time = self.control.time_step_seconds
 
-        # WRITE a function for this?
-        # calculate lateral flow term
         self.seg_lateral_inflow[:] = 0.0
         for ihru in range(self.nhru):
-            iseg = self._hru_segment[ihru]
+            iseg = self._hru_segment[ihru]  # to be removed via exchange
             if iseg < 0:
                 # This is bad, selective handling of fluxes is not cool,
                 # mass is being discarded in a way that has to be coordinated
@@ -360,9 +434,15 @@ class PRMSChannelFlowGraph(FlowGraph):
                 self.channel_sroff_vol[ihru]
                 + self.channel_ssres_flow_vol[ihru]
                 + self.channel_gwres_flow_vol[ihru]
-            ) / (s_per_time)
-
+            ) / (self._s_per_time)
             self.seg_lateral_inflow[iseg] += lateral_inflow
+
+        return
+
+    def _calculate(self, simulation_time: float) -> None:
+        self._simulation_time = simulation_time
+
+        self._calculate_lateral_inflows()
 
         # <
         # solve muskingum_mann routing
@@ -378,109 +458,114 @@ class PRMSChannelFlowGraph(FlowGraph):
             self.seg_upstream_inflow = self._seg_inflow * zero
 
             for jseg in self._segment_order:
-                seg_current_inflow = (
-                    self.seg_lateral_inflow[jseg]
-                    + self.seg_upstream_inflow[jseg]
-                )
+                self._calculate_segment_substep(ihr, jseg)
 
-                self._seg_inflow[jseg] += seg_current_inflow
-                self._inflow_ts[jseg] += seg_current_inflow
-                self._seg_current_sum[jseg] += self.seg_upstream_inflow[jseg]
+        self._finalize_timestep()
 
-                (
-                    self._seg_inflow0[jseg],
-                    self.seg_outflow[jseg],
-                    self._inflow_ts[jseg],
-                    self._outflow_ts[jseg],
-                ) = self._muskingum_mann(
-                    ihr,
-                    self._seg_inflow0[jseg],
-                    self.seg_outflow[jseg],
-                    self._inflow_ts[jseg],
-                    self._outflow_ts[jseg],
-                    self._tsi[jseg],
-                    self._ts[jseg],
-                    self._c0[jseg],
-                    self._c1[jseg],
-                    self._c2[jseg],
-                )
+        return
 
-                if self._tosegment[jseg] >= 0:
-                    self.seg_upstream_inflow[
-                        self._tosegment[jseg]
-                    ] += self._outflow_ts[jseg]
+    def _calculate_segment_substep(self, ihr, jseg):
+        self._seg_current_sum[jseg] += self.seg_upstream_inflow[jseg]
 
-            # asdf
+        seg_current_inflow = (
+            self.seg_lateral_inflow[jseg] + self.seg_upstream_inflow[jseg]
+        )
+        self._seg_inflow[jseg] += seg_current_inflow
+        self._inflow_ts[jseg] += seg_current_inflow
 
+        (
+            self._seg_inflow0[jseg],
+            self.seg_outflow[jseg],
+            self._inflow_ts[jseg],
+            self._outflow_ts[jseg],
+        ) = self._muskingum_mann(
+            ihr,
+            self._seg_inflow0[jseg],
+            self.seg_outflow[jseg],
+            self._inflow_ts[jseg],
+            self._outflow_ts[jseg],
+            self._tsi[jseg],
+            self._ts[jseg],
+            self._c0[jseg],
+            self._c1[jseg],
+            self._c2[jseg],
+        )
+
+        if self._tosegment[jseg] >= 0:
+            self.seg_upstream_inflow[
+                self._tosegment[jseg]
+            ] += self._outflow_ts[jseg]
+
+        return
+
+    def _finalize_timestep(self):
         self.seg_outflow[:] = self.seg_outflow / 24.0
         self._seg_inflow[:] = self._seg_inflow / 24.0
         self.seg_upstream_inflow[:] = self._seg_current_sum / 24.0
 
         self.seg_stor_change[:] = (
             self._seg_inflow - self.seg_outflow
-        ) * s_per_time
+        ) * self._s_per_time
 
         self.channel_outflow_vol[:] = (
             np.where(self._outflow_mask, self.seg_outflow, zero)
-        ) * s_per_time
+        ) * self._s_per_time
 
         return
 
-    @staticmethod
-    def _muskingum_mann_numpy(
-        ihr: np.int64,
-        seg_inflow0: np.float64,
-        seg_outflow: np.float64,
-        inflow_ts: np.float64,
-        outflow_ts: np.float64,
-        tsi: np.int64,
-        ts: np.float64,
-        c0: np.float64,
-        c1: np.float64,
-        c2: np.float64,
-    ) -> Tuple[np.float64, np.float64, np.float64, np.float64,]:
-        """
-        Muskingum routing function that calculates the upstream inflow and
-        outflow for each segment
 
-        Args:
-            ihr: the hour of the day from 0-23
-            seg_inflow0: previous segment inflow variable (internal calculations)
-            outflow_ts: outflow timeseries variable (internal calculations)
-            tsi: integer flood wave travel time
-            ts: float version of integer flood wave travel time
-            c0: Muskingum c0 variable
-            c1: Muskingum c1 variable
-            c2: Muskingum c2 variable
+def _muskingum_mann_numpy(
+    ihr: np.int64,
+    seg_inflow0: np.float64,
+    seg_outflow: np.float64,
+    inflow_ts: np.float64,
+    outflow_ts: np.float64,
+    tsi: np.int64,
+    ts: np.float64,
+    c0: np.float64,
+    c1: np.float64,
+    c2: np.float64,
+) -> Tuple[np.float64, np.float64, np.float64, np.float64,]:
+    """
+    Muskingum routing function that calculates the upstream inflow and
+    outflow for each segment
 
-        Returns:
-            seg_inflow0: segment inflow variable
-            seg_outflow: outflow for each segment for the current day
-            inflow_ts: inflow timeseries variable
-            outflow_ts: outflow timeseries variable (internal calculations)
-        """
+    Args:
+        ihr: the hour of the day from 0-23
+        seg_inflow0: previous segment inflow variable (internal calculations)
+        outflow_ts: outflow timeseries variable (internal calculations)
+        tsi: integer flood wave travel time
+        ts: float version of integer flood wave travel time
+        c0: Muskingum c0 variable
+        c1: Muskingum c1 variable
+        c2: Muskingum c2 variable
 
-        remainder = (ihr + 1) % tsi
-        if remainder == 0:
-            # segment routed on current hour
-            inflow_ts /= ts
+    Returns:
+        seg_inflow0: segment inflow variable
+        seg_outflow: outflow for each segment for the current day
+        inflow_ts: inflow timeseries variable
+        outflow_ts: outflow timeseries variable (internal calculations)
+    """
 
-            if tsi > 0:
-                # Muskingum routing equation
-                outflow_ts = (
-                    inflow_ts * c0 + seg_inflow0 * c1 + outflow_ts * c2
-                )
-            else:
-                outflow_ts = inflow_ts
+    remainder = (ihr + 1) % tsi
+    if remainder == 0:
+        # segment routed on current hour
+        inflow_ts /= ts
 
-            seg_inflow0 = inflow_ts
-            inflow_ts = 0.0
+        if tsi > 0:
+            # Muskingum routing equation
+            outflow_ts = inflow_ts * c0 + seg_inflow0 * c1 + outflow_ts * c2
+        else:
+            outflow_ts = inflow_ts
 
-        seg_outflow += outflow_ts
+        seg_inflow0 = inflow_ts
+        inflow_ts = 0.0
 
-        return (
-            seg_inflow0,
-            seg_outflow,
-            inflow_ts,
-            outflow_ts,
-        )
+    seg_outflow += outflow_ts
+
+    return (
+        seg_inflow0,
+        seg_outflow,
+        inflow_ts,
+        outflow_ts,
+    )

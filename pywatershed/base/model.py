@@ -872,8 +872,9 @@ class Model:
 
         if output_dir is None and any_netcdf_options:
             raise RuntimeError(
-                "All netcdf options should be in control.options or passed"
-                "to Model.initialize_netcdf() but not mixed."
+                "All netcdf options should be in control.options or passed "
+                "to Model.initialize_netcdf() but not mixed. You have not "
+                "supplied 'netcdf_output_dir' in control.options."
             )
 
         self._netcdf_opts = {

@@ -454,24 +454,10 @@ class Model:
             self._find_input_files()
 
         # methodize this netcdf section
+        self._parse_netcdf_control_options()
         self._netcdf_initialized = False
         if "netcdf_output_dir" in self.control.options.keys():
-            if "netcdf_output_var_names" in self.control.options.keys():
-                output_vars = self.control.options["netcdf_output_var_names"]
-            else:
-                output_vars = None
-            if "netcdf_output_separate_files" in self.control.options.keys():
-                separate_files = self.control.options[
-                    "netcdf_output_separate_files"
-                ]
-            else:
-                separate_files = True
-
-            self.initialize_netcdf(
-                self.control.options["netcdf_output_dir"],
-                output_vars=output_vars,
-                separate_files=separate_files,
-            )
+            self.initialize_netcdf(**self._netcdf_opts)
 
         return
 
@@ -856,4 +842,45 @@ class Model:
         """Finalize the model."""
         for cls in self.process_order:
             self.processes[cls].finalize()
+        return
+
+    def _parse_netcdf_control_options(self):
+        # defaults
+        output_dir = None
+        output_vars = None
+        separate_files = True
+        budget_args = None
+
+        if "netcdf_output_dir" in self.control.options.keys():
+            output_dir = self.control.options["netcdf_output_dir"]
+
+        if "netcdf_output_var_names" in self.control.options.keys():
+            output_vars = self.control.options["netcdf_output_var_names"]
+
+        if "netcdf_output_separate_files" in self.control.options.keys():
+            separate_files = self.control.options[
+                "netcdf_output_separate_files"
+            ]
+
+        if "netcdf_budget_args" in self.control.options.keys():
+            budget_args = self.control.options["netcdf_budget_args"]
+
+        any_netcdf_options = False
+        for kk in self.control.options.keys():
+            if "netcdf" in kk:
+                any_netcdf_options = True
+
+        if output_dir is None and any_netcdf_options:
+            raise RuntimeError(
+                "All netcdf options should be in control.options or passed"
+                "to Model.initialize_netcdf() but not mixed."
+            )
+
+        self._netcdf_opts = {
+            "output_dir": output_dir,
+            "output_vars": output_vars,
+            "separate_files": separate_files,
+            "budget_args": budget_args,
+        }
+
         return

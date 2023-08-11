@@ -55,12 +55,11 @@ class Parameters(DatasetDict):
         copy: bool = True,
     ) -> None:
         if copy:
-            dims = deepcopy(dims)
-            coords = deepcopy(coords)
-            data_vars = deepcopy(data_vars)
-            metadata = deepcopy(metadata)
-            encoding = deepcopy(encoding)
-            validate = deepcopy(validate)
+            dims = deepcopy(_set_dict_read_write(dims))
+            coords = deepcopy(_set_dict_read_write(coords))
+            data_vars = deepcopy(_set_dict_read_write(data_vars))
+            metadata = deepcopy(_set_dict_read_write(metadata))
+            encoding = deepcopy(_set_dict_read_write(encoding))
 
         super().__init__(
             dims=dims,
@@ -128,6 +127,8 @@ class Parameters(DatasetDict):
 
 # TODO: test that these dont modify in place
 def _set_dict_read_write(mp: MappingProxyType):
+    if mp is None:
+        mp = {}
     dd = mp | {}
     for kk, vv in dd.items():
         if isinstance(vv, (dict, MappingProxyType)):

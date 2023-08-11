@@ -116,9 +116,6 @@ def test_compare_prms(
 
         try:
             assert check1 & check2
-            # assert xr.testing.assert_allclose(
-            #     answer, result, rtol=1e-3, atol=1e-4
-            # )
             success = True
         except AssertionError:
             success = False

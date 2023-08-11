@@ -484,7 +484,6 @@ class PRMSChannel(ConservativeProcess):
 
         seg_inflow = seg_inflow0 * zero
         seg_outflow = seg_inflow0 * zero
-        seg_outflow0 = seg_inflow0 * zero
         inflow_ts = seg_inflow0 * zero
         seg_current_sum = seg_inflow0 * zero
 
@@ -546,9 +545,6 @@ class PRMSChannel(ConservativeProcess):
                 # will be the average of hourly values
                 seg_outflow[jseg] += outflow_ts[jseg]
 
-                # previous routed timestep - apparently unused, remove
-                seg_outflow0[jseg] = outflow_ts[jseg]
-
                 # add current time step flow rate to the upstream flow rate
                 # for the segment this segment is connected to
                 to_seg = to_segment[jseg]
@@ -557,6 +553,7 @@ class PRMSChannel(ConservativeProcess):
 
         seg_outflow /= 24.0
         seg_inflow /= 24.0
+        seg_upstream_inflow = seg_current_sum.copy() / 24.0
 
         return (
             seg_upstream_inflow,

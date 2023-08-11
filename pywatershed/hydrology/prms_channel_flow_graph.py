@@ -36,7 +36,6 @@ class PRMSChannelFlowNode(FlowNode):
         self._inflow_ts = zero
         self._seg_current_sum = zero
 
-        self.counter = 0  # debugging
         return
 
     def prepare_timestep(self):
@@ -55,30 +54,11 @@ class PRMSChannelFlowNode(FlowNode):
     def calculate_subtimestep(
         self, ihr, inflow_upstream, inflow_lateral, seg_ind=None
     ):
-        self.seg_upstream_inflow = zero  ## correct ? or in _calculate?
-
-        self._seg_current_sum += inflow_upstream
+        # self.seg_upstream_inflow = zero  ## correct ? or in _calculate?
+        # self._seg_current_sum += inflow_upstream
         seg_current_inflow = inflow_lateral + inflow_upstream
         self._seg_inflow += seg_current_inflow
         self._inflow_ts += seg_current_inflow
-
-        # (
-        #     self._seg_inflow0,
-        #     self._seg_outflow,
-        #     self._inflow_ts,
-        #     self._outflow_ts,
-        # ) = _muskingum_mann_numpy(
-        #     ihr,
-        #     self._seg_inflow0,
-        #     self._seg_outflow,
-        #     self._inflow_ts,
-        #     self._outflow_ts,
-        #     self._tsi,
-        #     self._ts,
-        #     self._c0,
-        #     self._c1,
-        #     self._c2,
-        # )
 
         remainder = (ihr + 1) % self._tsi
         if remainder == 0:
@@ -100,35 +80,12 @@ class PRMSChannelFlowNode(FlowNode):
 
         self._seg_outflow += self._outflow_ts
 
-        # if seg_ind == 19:  # 389 -> 406, 18 -> 19
-        #     print()
-        #     print("seg_diag: ", seg_ind)
-        #     print("counter: ", self.counter)
-        #     print("seg_upstream_inflow_after: ", inflow_upstream)
-        #     print("inflow_upstream: ", inflow_upstream)
-        #     print("_seg_current_sum: ", self._seg_current_sum)
-        #     print("inflow_lateral: ", inflow_lateral)
-        #     print("remainder: ", remainder)
-        #     print("seg_current_inflow: ", seg_current_inflow)
-        #     print("seg_inflow0: ", self._seg_inflow0)
-        #     print("inflow_ts: ", self._inflow_ts)
-        #     print("outflow_ts: ", self._outflow_ts)
-        #     print("tsi: ", self._tsi)
-        #     print("ts: ", self._ts)
-        #     print("c0: ", self._c0)
-        #     print("seg_outflow: ", self._seg_outflow)
-
-        #     if self.counter == (23 + 0 * 24):
-        #         breakpoint()
-
-        self.counter += 1
-
         return
 
     def finalize_timestep(self):
         self._seg_outflow = self._seg_outflow / 24.0
         self._seg_inflow = self._seg_inflow / 24.0
-        self.seg_upstream_inflow = self._seg_current_sum / 24.0
+        # self.seg_upstream_inflow = self._seg_current_sum / 24.0
 
         self.seg_stor_change = (
             self._seg_inflow - self._seg_outflow
@@ -204,7 +161,7 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._set_budget(basis="global")
         self._initialize_channel_data()
         self._construct_graph()
-        self._init_calc_method()
+        # self._init_calc_method()
 
         return
 
@@ -437,51 +394,51 @@ class PRMSChannelFlowGraph(FlowGraph):
 
         return
 
-    def _init_calc_method(self):
-        if self._calc_method is None:
-            self._calc_method = "numba"
+    # def _init_calc_method(self):
+    #     if self._calc_method is None:
+    #         self._calc_method = "numba"
 
-        avail_methods = ["numpy", "numba", "fortran"]
-        fortran_msg = ""
-        if self._calc_method == "fortran" and not has_prmschannel_f:
-            _ = avail_methods.remove("fortran")
-            fortran_msg = "\n(Fortran not available as installed)\n"
+    #     avail_methods = ["numpy", "numba", "fortran"]
+    #     fortran_msg = ""
+    #     if self._calc_method == "fortran" and not has_prmschannel_f:
+    #         _ = avail_methods.remove("fortran")
+    #         fortran_msg = "\n(Fortran not available as installed)\n"
 
-        if self._calc_method.lower() not in avail_methods:
-            msg = (
-                f"Invalid calc_method={self._calc_method} for {self.name}. "
-                f"{fortran_msg}"
-                f"Setting calc_method to 'numba' for {self.name}"
-            )
-            warn(msg)
-            self._calc_method = "numba"
+    #     if self._calc_method.lower() not in avail_methods:
+    #         msg = (
+    #             f"Invalid calc_method={self._calc_method} for {self.name}. "
+    #             f"{fortran_msg}"
+    #             f"Setting calc_method to 'numba' for {self.name}"
+    #         )
+    #         warn(msg)
+    #         self._calc_method = "numba"
 
-        if self._calc_method.lower() == "numba":
-            import numba as nb
+    #     if self._calc_method.lower() == "numba":
+    #         import numba as nb
 
-            numba_msg = f"{self.name} jit compiling with numba "
-            # this method can not be parallelized (? true?)
-            print(numba_msg, flush=True)
+    #         numba_msg = f"{self.name} jit compiling with numba "
+    #         # this method can not be parallelized (? true?)
+    #         print(numba_msg, flush=True)
 
-            self._muskingum_mann = nb.njit(
-                nb.types.UniTuple(nb.float64, 4)(
-                    nb.int64,  # ihr
-                    nb.float64,  # _seg_inflow0
-                    nb.float64,  # seg_outflow
-                    nb.float64,  # _inflow_ts
-                    nb.float64,  # _outflow_ts
-                    nb.int64,  # _tsi
-                    nb.float64,  # _ts
-                    nb.float64,  # _c0
-                    nb.float64,  # _c1
-                    nb.float64,  # _c2
-                ),
-                fastmath=True,
-                parallel=False,
-            )(_muskingum_mann_numpy)
+    #         self._muskingum_mann = nb.njit(
+    #             nb.types.UniTuple(nb.float64, 4)(
+    #                 nb.int64,  # ihr
+    #                 nb.float64,  # _seg_inflow0
+    #                 nb.float64,  # seg_outflow
+    #                 nb.float64,  # _inflow_ts
+    #                 nb.float64,  # _outflow_ts
+    #                 nb.int64,  # _tsi
+    #                 nb.float64,  # _ts
+    #                 nb.float64,  # _c0
+    #                 nb.float64,  # _c1
+    #                 nb.float64,  # _c2
+    #             ),
+    #             fastmath=True,
+    #             parallel=False,
+    #         )(_muskingum_mann_numpy)
 
-        else:
-            self._muskingum_mann = _muskingum_mann_numpy
+    #     else:
+    #         self._muskingum_mann = _muskingum_mann_numpy
 
     def _advance_variables(self) -> None:
         self._seg_inflow0[:] = self._seg_inflow
@@ -527,14 +484,19 @@ class PRMSChannelFlowGraph(FlowGraph):
         return
 
     def _calculate(self, simulation_time: float) -> None:
+        # what in here should be the responsibility of the nodes?
         self._simulation_time = simulation_time
 
         self._calculate_lateral_inflows()
+
+        # The upstream inflow and its accumulation dont belog to nodes
+        self._seg_upstream_inflow_acc = self.seg_upstream_inflow * zero
 
         for ii in range(self.nsegment):
             self.flow_nodes[ii].advance()
             self.flow_nodes[ii].prepare_timestep()
 
+        # Should probably pass time lengths to nodes
         for ihr in range(24):
             # This works because the first nodes calculated do
             # not have upstream reaches
@@ -545,68 +507,37 @@ class PRMSChannelFlowGraph(FlowGraph):
                     ihr,
                     self.seg_upstream_inflow[jseg],
                     self.seg_lateral_inflow[jseg],
-                    jseg,
+                    # jseg,
                 )
                 self.seg_outflow_substep[jseg] = self.flow_nodes[
                     jseg
                 ].outflow_substep
                 self._sum_outflows_to_inflow(jseg)
 
-        # seg_diag = 19
-        # print("self._tosegment[seg_diag]", self._tosegment[seg_diag])
-        # print(
-        #     "self.seg_upstream_inflow[self._tosegment[seg_diag]]",
-        #     self.seg_upstream_inflow[self._tosegment[seg_diag]],
-        # )
+            # <
+            self._seg_upstream_inflow_acc += self.seg_upstream_inflow
 
         for ii in range(self.nsegment):
             self.flow_nodes[ii].finalize_timestep()
-
-        # print("self._tosegment[seg_diag]", self._tosegment[seg_diag])
-        # print(
-        #     "self.seg_upstream_inflow[self._tosegment[seg_diag]]",
-        #     self.seg_upstream_inflow[self._tosegment[seg_diag]],
-        # )
 
         for ii in range(self.nsegment):
             self.seg_outflow[ii] = self.flow_nodes[ii].outflow
             self.seg_stor_change[ii] = self.flow_nodes[ii].storage_change
 
-        # print("self._tosegment[seg_diag]", self._tosegment[seg_diag])
-        # print(
-        #     "self.seg_upstream_inflow[self._tosegment[seg_diag]]",
-        #     self.seg_upstream_inflow[self._tosegment[seg_diag]],
-        # )
-        # breakpoint()
+        # global mass balance term needed
+        s_per_time = self.control.time_step_seconds
+        self.channel_outflow_vol[:] = (
+            np.where(self._outflow_mask, self.seg_outflow, zero)
+        ) * s_per_time
+
+        # <
+        # PRMS uses the same variable for two different things
+        # and we are continuing the bad practice here.
+        # The next timestep apparently needs the average upstream
+        # inflow from the previous timestep
+        self.seg_upstream_inflow = self._seg_upstream_inflow_acc / 24.0
 
         return
-
-    def _calculate_segment_substep(self, ihr, jseg):
-        self._seg_current_sum[jseg] += self.seg_upstream_inflow[jseg]
-
-        seg_current_inflow = (
-            self.seg_lateral_inflow[jseg] + self.seg_upstream_inflow[jseg]
-        )
-        self._seg_inflow[jseg] += seg_current_inflow
-        self._inflow_ts[jseg] += seg_current_inflow
-
-        (
-            self._seg_inflow0[jseg],
-            self.seg_outflow[jseg],
-            self._inflow_ts[jseg],
-            self._outflow_ts[jseg],
-        ) = self._muskingum_mann(
-            ihr,
-            self._seg_inflow0[jseg],
-            self.seg_outflow[jseg],
-            self._inflow_ts[jseg],
-            self._outflow_ts[jseg],
-            self._tsi[jseg],
-            self._ts[jseg],
-            self._c0[jseg],
-            self._c1[jseg],
-            self._c2[jseg],
-        )
 
     def _sum_outflows_to_inflow(self, jseg):
         if self._tosegment[jseg] >= 0:
@@ -614,83 +545,4 @@ class PRMSChannelFlowGraph(FlowGraph):
                 self._tosegment[jseg]
             ] += self.seg_outflow_substep[jseg]
 
-        # if jseg == 19:
-        #     print("self._tosegment[jseg]", self._tosegment[jseg])
-        #     print(
-        #         "self.seg_upstream_inflow[self._tosegment[jseg]]",
-        #         self.seg_upstream_inflow[self._tosegment[jseg]],
-        #     )
-
         return
-
-    def _finalize_timestep(self):
-        self.seg_outflow[:] = self.seg_outflow / 24.0
-        self._seg_inflow[:] = self._seg_inflow / 24.0
-        self.seg_upstream_inflow[:] = self._seg_current_sum / 24.0
-
-        self.seg_stor_change[:] = (
-            self._seg_inflow - self.seg_outflow
-        ) * self._s_per_time
-
-        self.channel_outflow_vol[:] = (
-            np.where(self._outflow_mask, self.seg_outflow, zero)
-        ) * self._s_per_time
-
-        return
-
-
-def _muskingum_mann_numpy(
-    ihr: np.int64,
-    seg_inflow0: np.float64,
-    seg_outflow: np.float64,
-    inflow_ts: np.float64,
-    outflow_ts: np.float64,
-    tsi: np.int64,
-    ts: np.float64,
-    c0: np.float64,
-    c1: np.float64,
-    c2: np.float64,
-) -> Tuple[np.float64, np.float64, np.float64, np.float64,]:
-    """
-    Muskingum routing function that calculates the upstream inflow and
-    outflow for each segment
-
-    Args:
-        ihr: the hour of the day from 0-23
-        seg_inflow0: previous segment inflow variable (internal calculations)
-        outflow_ts: outflow timeseries variable (internal calculations)
-        tsi: integer flood wave travel time
-        ts: float version of integer flood wave travel time
-        c0: Muskingum c0 variable
-        c1: Muskingum c1 variable
-        c2: Muskingum c2 variable
-
-    Returns:
-        seg_inflow0: segment inflow variable
-        seg_outflow: outflow for each segment for the current day
-        inflow_ts: inflow timeseries variable
-        outflow_ts: outflow timeseries variable (internal calculations)
-    """
-
-    remainder = (ihr + 1) % tsi
-    if remainder == 0:
-        # segment routed on current hour
-        inflow_ts /= ts
-
-        if tsi > 0:
-            # Muskingum routing equation
-            outflow_ts = inflow_ts * c0 + seg_inflow0 * c1 + outflow_ts * c2
-        else:
-            outflow_ts = inflow_ts
-
-        seg_inflow0 = inflow_ts
-        inflow_ts = 0.0
-
-    seg_outflow += outflow_ts
-
-    return (
-        seg_inflow0,
-        seg_outflow,
-        inflow_ts,
-        outflow_ts,
-    )

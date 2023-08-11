@@ -1,5 +1,6 @@
 import pathlib as pl
 
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -64,7 +65,7 @@ def test_compare_prms(
         discretization,
         parameters,
         **input_variables,
-        budget_type="warn",
+        budget_type="error",
         calc_method=calc_method,
     )
     nc_parent = tmp_path / domain["domain_name"]
@@ -99,17 +100,22 @@ def test_compare_prms(
         print(f"\nbase_nc_path: {base}")
         print(f"compare_nc_path: {compare}")
 
-        answer = xr.open_dataset(base)[key]
-        result = xr.open_dataset(compare)[key]
+        answer = xr.open_dataset(base)[key].values
+        result = xr.open_dataset(compare)[key].values
 
         dd = result - answer
         ddz = dd / answer
+        wh = np.where(~np.isnan(ddz))
+        whna = np.where(np.isnan(ddz))
+        assert (answer[whna] < 1e-12).all()
+
         atol = 1.0e-7
         rtol = 1.0e-6
-        check = (abs(dd) <= atol) | (abs(ddz) <= rtol)
+        check1 = ((abs(dd[wh]) <= atol) | (abs(ddz[wh]) <= rtol)).all()
+        check2 = (abs(dd[whna]) <= atol).all()
 
         try:
-            assert check.all()
+            assert check1 & check2
             # assert xr.testing.assert_allclose(
             #     answer, result, rtol=1e-3, atol=1e-4
             # )

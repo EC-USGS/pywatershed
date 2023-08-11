@@ -1,3 +1,4 @@
+from copy import deepcopy
 from types import MappingProxyType
 from typing import Union
 
@@ -51,7 +52,16 @@ class Parameters(DatasetDict):
         metadata: dict = None,
         encoding: dict = None,
         validate: bool = True,
+        copy: bool = True,
     ) -> None:
+        if copy:
+            dims = deepcopy(dims)
+            coords = deepcopy(coords)
+            data_vars = deepcopy(data_vars)
+            metadata = deepcopy(metadata)
+            encoding = deepcopy(encoding)
+            validate = deepcopy(validate)
+
         super().__init__(
             dims=dims,
             coords=coords,
@@ -95,17 +105,16 @@ class Parameters(DatasetDict):
             return {kk: self.dims[kk] for kk in keys}
 
     def to_xr_ds(self) -> xr.Dataset:
-        # must pass as dictionary not a mapping proxy: dict = mp | {}
         return dd_to_xr_ds(_set_dict_read_write(self.data))
 
     def to_nc4_ds(self, filename) -> None:
-        # must pass as dictionary not a mapping proxy: dict = mp | {}
         dd_to_nc4_ds(_set_dict_read_write(self.data), filename)
         return
 
-    def to_dd(self) -> DatasetDict:
-        # must pass as dictionary not a mapping proxy: dict = mp | {}
-        return DatasetDict(_set_dict_read_write(self.data))
+    def to_dd(self, copy=True) -> DatasetDict:
+        return DatasetDict.from_dict(
+            _set_dict_read_write(self.data), copy=copy
+        )
 
     @classmethod
     def merge(cls, *param_list, copy=True, del_global_src=True):
@@ -121,10 +130,12 @@ class Parameters(DatasetDict):
 def _set_dict_read_write(mp: MappingProxyType):
     dd = mp | {}
     for kk, vv in dd.items():
-        if isinstance(vv, MappingProxyType):
-            dd[kk] = _set_dict_read_write(dd[kk] | {})
+        if isinstance(vv, (dict, MappingProxyType)):
+            dd[kk] = _set_dict_read_write(vv)
         elif isinstance(vv, np.ndarray):
-            vv.flags.writeable = True
+            # copy is sufficient to make writeable
+            # https://numpy.org/doc/stable/reference/generated/numpy.copy.html
+            dd[kk] = dd[kk].copy()
 
     return dd
 

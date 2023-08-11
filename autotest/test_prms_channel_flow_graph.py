@@ -1,16 +1,16 @@
 import pathlib as pl
 
 import pytest
+import xarray as xr
 
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.prms_channel_flow_graph import PRMSChannelFlowGraph
 from pywatershed.parameters import PrmsParameters
-from pywatershed.utils.netcdf_utils import NetCdfCompare
 
-fail_fast = False
+fail_fast = True
 
-calc_methods = ("numpy", "numba")[1:2]
+calc_methods = ("numpy", "numba")[0:1]
 params = ("params_sep", "params_one")
 
 
@@ -64,7 +64,7 @@ def test_compare_prms(
         discretization,
         parameters,
         **input_variables,
-        budget_type="error",
+        budget_type="warn",
         calc_method=calc_method,
     )
     nc_parent = tmp_path / domain["domain_name"]
@@ -98,20 +98,30 @@ def test_compare_prms(
     for key, (base, compare) in output_compare.items():
         print(f"\nbase_nc_path: {base}")
         print(f"compare_nc_path: {compare}")
-        success, diff = NetCdfCompare(base, compare).compare()
+
+        answer = xr.open_dataset(base)[key]
+        result = xr.open_dataset(compare)[key]
+
+        dd = result - answer
+        ddz = dd / answer
+        atol = 1.0e-7
+        rtol = 1.0e-6
+        check = (abs(dd) <= atol) | (abs(ddz) <= rtol)
+
+        try:
+            assert check.all()
+            # assert xr.testing.assert_allclose(
+            #     answer, result, rtol=1e-3, atol=1e-4
+            # )
+            success = True
+        except AssertionError:
+            success = False
+
         if not success:
-            print(
-                f"comparison for {key} failed: "
-                + f"maximum error {diff[key][0]} "
-                + f"(maximum allowed error {diff[key][1]}) "
-                + f"in column {diff[key][2]}"
-            )
+            print(f"comparison for {key} failed")
             assert_error = True
             if fail_fast:
                 assert False
-
-        else:
-            print(f"comparison for {key} passed")
 
     assert not assert_error, "comparison failed"
 

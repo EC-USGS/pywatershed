@@ -2411,6 +2411,13 @@ seg_outflow:
   type: float64
   units: cfs
   var_category: mass flux
+seg_outflow_substep:
+  desc: Streamflow leaving a segment on a time substep
+  dims:
+    0: nsegment
+  type: float64
+  units: cfs
+  var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
   dims:

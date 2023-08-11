@@ -21,7 +21,7 @@ except ImportError:
 
 
 class PRMSChannelFlowNode(FlowNode):
-    def __init__(self, control, tsi, ts, c0, c1, c2):
+    def __init__(self, control, tsi, ts, c0, c1, c2, outflow):
         self.control = control
 
         self._tsi = tsi
@@ -29,69 +29,133 @@ class PRMSChannelFlowNode(FlowNode):
         self._c0 = c0
         self._c1 = c1
         self._c2 = c2
+        self._outflow = outflow
+        self._outflow_ts = zero
+        self._seg_inflow0 = zero
+        self._seg_inflow = zero
+        self._inflow_ts = zero
+        self._seg_current_sum = zero
 
-        pass
+        self.counter = 0  # debugging
+        return
 
-    def calculate_subtimestep(self, inflow_upstream, inflow_lateral):
-        self._seg_upstream_inflow = zero
-        self._seg_current_sum[jseg] += inflow_upstream
-        self._total_inflow = inflow_lateral + inflow_upstream
-        self._seg_inflow[jseg] += seg_current_inflow
-        self._inflow_ts[jseg] += seg_current_inflow
+    def prepare_timestep(self):
+        # self._simulation_time = simulation_time  # add argument?
 
-        (
-            self._seg_inflow0,
-            self._seg_outflow,
-            self._inflow_ts,
-            self._outflow_ts,
-        ) = _muskingum_mann_numpy(
-            ihr,
-            self._seg_inflow0,
-            self.seg_outflow,
-            self._inflow_ts,
-            self._outflow_ts,
-            self._tsi,
-            self._ts,
-            self._c0,
-            self._c1,
-            self._c2,
-        )
-
-    def finalize_timestep(self):
-        self.seg_outflow = self._seg_outflow / 24.0
-        self._seg_inflow = self._seg_inflow / 24.0
-        self.seg_upstream_inflow = self._seg_current_sum / 24.0
-
-        self.seg_stor_change = (
-            self._seg_inflow - self.seg_outflow
-        ) * self._s_per_time
-
-        self.channel_outflow_vol = (
-            np.where(self._outflow_mask, self.seg_outflow, zero)
-        ) * self._s_per_time
-
-        self.outflow = self.seg_outflow
-        self.storage_change = self.seg_stor_change
-        pass
-
-    def advance(self):
         self._s_per_time = self.control.time_step_seconds
 
-        self.seg_upstream_inflow = zero
         self._seg_inflow = zero
-        self.seg_outflow = zero
+        self._seg_outflow = zero
+        self._seg_outflow0 = zero
         self._inflow_ts = zero
         self._seg_current_sum = zero
 
         return
 
+    def calculate_subtimestep(
+        self, ihr, inflow_upstream, inflow_lateral, seg_ind=None
+    ):
+        self.seg_upstream_inflow = zero  ## correct ? or in _calculate?
+
+        self._seg_current_sum += inflow_upstream
+        seg_current_inflow = inflow_lateral + inflow_upstream
+        self._seg_inflow += seg_current_inflow
+        self._inflow_ts += seg_current_inflow
+
+        # (
+        #     self._seg_inflow0,
+        #     self._seg_outflow,
+        #     self._inflow_ts,
+        #     self._outflow_ts,
+        # ) = _muskingum_mann_numpy(
+        #     ihr,
+        #     self._seg_inflow0,
+        #     self._seg_outflow,
+        #     self._inflow_ts,
+        #     self._outflow_ts,
+        #     self._tsi,
+        #     self._ts,
+        #     self._c0,
+        #     self._c1,
+        #     self._c2,
+        # )
+
+        remainder = (ihr + 1) % self._tsi
+        if remainder == 0:
+            # segment routed on current hour
+            self._inflow_ts /= self._ts
+
+            if self._tsi > 0:
+                # Muskingum routing equation
+                self._outflow_ts = (
+                    self._inflow_ts * self._c0
+                    + self._seg_inflow0 * self._c1
+                    + self._outflow_ts * self._c2
+                )
+            else:
+                self._outflow_ts = self._inflow_ts
+
+            self._seg_inflow0 = self._inflow_ts
+            self._inflow_ts = 0.0
+
+        self._seg_outflow += self._outflow_ts
+
+        # if seg_ind == 19:  # 389 -> 406, 18 -> 19
+        #     print()
+        #     print("seg_diag: ", seg_ind)
+        #     print("counter: ", self.counter)
+        #     print("seg_upstream_inflow_after: ", inflow_upstream)
+        #     print("inflow_upstream: ", inflow_upstream)
+        #     print("_seg_current_sum: ", self._seg_current_sum)
+        #     print("inflow_lateral: ", inflow_lateral)
+        #     print("remainder: ", remainder)
+        #     print("seg_current_inflow: ", seg_current_inflow)
+        #     print("seg_inflow0: ", self._seg_inflow0)
+        #     print("inflow_ts: ", self._inflow_ts)
+        #     print("outflow_ts: ", self._outflow_ts)
+        #     print("tsi: ", self._tsi)
+        #     print("ts: ", self._ts)
+        #     print("c0: ", self._c0)
+        #     print("seg_outflow: ", self._seg_outflow)
+
+        #     if self.counter == (23 + 0 * 24):
+        #         breakpoint()
+
+        self.counter += 1
+
+        return
+
+    def finalize_timestep(self):
+        self._seg_outflow = self._seg_outflow / 24.0
+        self._seg_inflow = self._seg_inflow / 24.0
+        self.seg_upstream_inflow = self._seg_current_sum / 24.0
+
+        self.seg_stor_change = (
+            self._seg_inflow - self._seg_outflow
+        ) * self._s_per_time
+
+        self.channel_outflow_vol = zero
+        if self._outflow:
+            self.channel_outflow_vol = self._seg_outflow * self._s_per_time
+
+        return
+
+    def advance(self):
+        self._seg_inflow0 = self._seg_inflow.copy()
+
+        return
+
     @property
     def outflow(self):
-        return self.seg_outflow
+        return self._seg_outflow
+
+    @property
+    def outflow_substep(self):
+        return self._outflow_ts
 
     @property
     def storage_change(self):
-        return self.storage_change
+        return self.seg_stor_change
 
 
 class PRMSChannelFlowGraph(FlowGraph):
@@ -138,8 +202,8 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._set_options(locals())
 
         self._set_budget(basis="global")
-        self._construct_graph()
         self._initialize_channel_data()
+        self._construct_graph()
         self._init_calc_method()
 
         return
@@ -184,6 +248,7 @@ class PRMSChannelFlowGraph(FlowGraph):
             "seg_lateral_inflow": zero,
             "seg_upstream_inflow": zero,
             "seg_outflow": zero,
+            "seg_outflow_substep": zero,
             "seg_stor_change": zero,
         }
 
@@ -254,6 +319,28 @@ class PRMSChannelFlowGraph(FlowGraph):
             #    assert (tosegment[pp] == -1) and (not pp in tosegment)
 
         self._segment_order = np.array(segment_order, dtype="int64")
+        self.flow_nodes = []
+        for ii in range(self.nsegment):
+            self.flow_nodes.append(
+                PRMSChannelFlowNode(
+                    control=self.control,
+                    tsi=self._tsi[ii],
+                    ts=self._ts[ii],
+                    c0=self._c0[ii],
+                    c1=self._c1[ii],
+                    c2=self._c2[ii],
+                    outflow=self._outflow_mask[ii],
+                )
+            )
+
+        # initialize internal self_inflow variable
+        for iseg in range(self.nsegment):
+            jseg = self._tosegment[iseg]
+            if jseg < 0:
+                continue
+            self._seg_inflow[jseg] = self.seg_outflow[iseg]
+
+        return
 
     def _initialize_channel_data(self) -> None:
         """Initialize internal variables from raw channel data"""
@@ -348,13 +435,6 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._outflow_ts = np.zeros(self.nsegment, dtype=float)
         self._seg_current_sum = np.zeros(self.nsegment, dtype=float)
 
-        # initialize internal self_inflow variable
-        for iseg in range(self.nsegment):
-            jseg = self._tosegment[iseg]
-            if jseg < 0:
-                continue
-            self._seg_inflow[jseg] = self.seg_outflow[iseg]
-
         return
 
     def _init_calc_method(self):
@@ -387,7 +467,7 @@ class PRMSChannelFlowGraph(FlowGraph):
                 nb.types.UniTuple(nb.float64, 4)(
                     nb.int64,  # ihr
                     nb.float64,  # _seg_inflow0
-                    nb.float64,  # _seg_outflow
+                    nb.float64,  # seg_outflow
                     nb.float64,  # _inflow_ts
                     nb.float64,  # _outflow_ts
                     nb.int64,  # _tsi
@@ -405,6 +485,13 @@ class PRMSChannelFlowGraph(FlowGraph):
 
     def _advance_variables(self) -> None:
         self._seg_inflow0[:] = self._seg_inflow
+
+        self._seg_inflow[:] = zero
+        self.seg_outflow[:] = zero
+        self._inflow_ts[:] = zero
+
+        self._seg_current_sum[:] = zero
+
         return
 
     def _calculate_lateral_inflows(self):
@@ -444,23 +531,53 @@ class PRMSChannelFlowGraph(FlowGraph):
 
         self._calculate_lateral_inflows()
 
-        # <
-        # solve muskingum_mann routing
-        self._seg_inflow[:] = zero
-        self.seg_outflow[:] = zero
-        self._inflow_ts[:] = zero
-
-        self._seg_current_sum[:] = zero
+        for ii in range(self.nsegment):
+            self.flow_nodes[ii].advance()
+            self.flow_nodes[ii].prepare_timestep()
 
         for ihr in range(24):
             # This works because the first nodes calculated do
             # not have upstream reaches
-            self.seg_upstream_inflow = self._seg_inflow * zero
+            self.seg_upstream_inflow[:] = zero
 
             for jseg in self._segment_order:
-                self._calculate_segment_substep(ihr, jseg)
+                self.flow_nodes[jseg].calculate_subtimestep(
+                    ihr,
+                    self.seg_upstream_inflow[jseg],
+                    self.seg_lateral_inflow[jseg],
+                    jseg,
+                )
+                self.seg_outflow_substep[jseg] = self.flow_nodes[
+                    jseg
+                ].outflow_substep
+                self._sum_outflows_to_inflow(jseg)
 
-        self._finalize_timestep()
+        # seg_diag = 19
+        # print("self._tosegment[seg_diag]", self._tosegment[seg_diag])
+        # print(
+        #     "self.seg_upstream_inflow[self._tosegment[seg_diag]]",
+        #     self.seg_upstream_inflow[self._tosegment[seg_diag]],
+        # )
+
+        for ii in range(self.nsegment):
+            self.flow_nodes[ii].finalize_timestep()
+
+        # print("self._tosegment[seg_diag]", self._tosegment[seg_diag])
+        # print(
+        #     "self.seg_upstream_inflow[self._tosegment[seg_diag]]",
+        #     self.seg_upstream_inflow[self._tosegment[seg_diag]],
+        # )
+
+        for ii in range(self.nsegment):
+            self.seg_outflow[ii] = self.flow_nodes[ii].outflow
+            self.seg_stor_change[ii] = self.flow_nodes[ii].storage_change
+
+        # print("self._tosegment[seg_diag]", self._tosegment[seg_diag])
+        # print(
+        #     "self.seg_upstream_inflow[self._tosegment[seg_diag]]",
+        #     self.seg_upstream_inflow[self._tosegment[seg_diag]],
+        # )
+        # breakpoint()
 
         return
 
@@ -491,10 +608,18 @@ class PRMSChannelFlowGraph(FlowGraph):
             self._c2[jseg],
         )
 
+    def _sum_outflows_to_inflow(self, jseg):
         if self._tosegment[jseg] >= 0:
             self.seg_upstream_inflow[
                 self._tosegment[jseg]
-            ] += self._outflow_ts[jseg]
+            ] += self.seg_outflow_substep[jseg]
+
+        # if jseg == 19:
+        #     print("self._tosegment[jseg]", self._tosegment[jseg])
+        #     print(
+        #         "self.seg_upstream_inflow[self._tosegment[jseg]]",
+        #         self.seg_upstream_inflow[self._tosegment[jseg]],
+        #     )
 
         return
 

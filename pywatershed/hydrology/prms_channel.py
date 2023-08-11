@@ -403,7 +403,9 @@ class PRMSChannel(ConservativeProcess):
             self.seg_lateral_inflow[iseg] += lateral_inflow
 
         # solve muskingum_mann routing
-
+        # ind = 406
+        # seg_inflow0_before = self._seg_inflow0[ind]
+        # seg_upstream_inflow_before = self.seg_upstream_inflow[ind]
         (
             self.seg_upstream_inflow[:],
             self._seg_inflow0[:],
@@ -424,6 +426,15 @@ class PRMSChannel(ConservativeProcess):
             self._c1,
             self._c2,
         )
+
+        # print("seg_inflow0_before: ", seg_inflow0_before)
+        # print("seg_upstream_inflow_before: ", seg_upstream_inflow_before)
+        # print("seg_upstream_inflow_after: ", self.seg_upstream_inflow[ind])
+        # print("seg_outflow: ", self.seg_outflow[ind])
+        # print("seg_lateral_inflow: ", self.seg_lateral_inflow[ind])
+        # print("tsi: ", self._tsi[ind])
+        # print("ts: ", self._ts[ind])
+        # print("c0: ", self._c0[ind])
 
         self.seg_stor_change[:] = (
             self._seg_inflow - self.seg_outflow
@@ -547,8 +558,7 @@ class PRMSChannel(ConservativeProcess):
                 # will be the average of hourly values
                 seg_outflow[jseg] += outflow_ts[jseg]
 
-                # previous segment outflow is equal to the inflow_ts on the
-                # previous routed timestep
+                # previous routed timestep - apparently unused, remove
                 seg_outflow0[jseg] = outflow_ts[jseg]
 
                 # add current time step flow rate to the upstream flow rate
@@ -557,9 +567,41 @@ class PRMSChannel(ConservativeProcess):
                 if to_seg >= 0:
                     seg_upstream_inflow[to_seg] += outflow_ts[jseg]
 
+                seg_diag = 19
+                if jseg == seg_diag:
+                    print()
+                    print("seg_diag: ", seg_diag)
+                    print(ihr)
+                    print(
+                        "seg_upstream_inflow_after: ",
+                        seg_upstream_inflow[jseg],
+                    )
+                    print("seg_upstream_inflow: ", seg_upstream_inflow[jseg])
+                    print("seg_lateral_inflow: ", seg_lateral_inflow[jseg])
+                    print("seg_current_sum: ", seg_current_sum[jseg])
+                    print("remainder: ", remainder)
+                    print("seg_current_inflow: ", seg_current_inflow)
+                    print("seg_inflow0: ", seg_inflow0[jseg])
+                    print("inflow_ts: ", inflow_ts[jseg])
+                    print("outflow_ts: ", outflow_ts[jseg])
+                    print("tsi: ", tsi[jseg])
+                    print("ts: ", ts[jseg])
+                    print("c0: ", c0[jseg])
+                    print("seg_outflow: ", seg_outflow[jseg])
+
+                    if ihr == 23:
+                        breakpoint()
+
         seg_outflow /= 24.0
         seg_inflow /= 24.0
         seg_upstream_inflow = seg_current_sum.copy() / 24.0
+
+        print("to_segment[seg_diag]", to_segment[seg_diag])
+        print(
+            "seg_upstream_inflow[to_segment[seg_diag]]",
+            seg_upstream_inflow[to_segment[seg_diag]],
+        )
+        breakpoint()
 
         return (
             seg_upstream_inflow,

@@ -12,13 +12,13 @@ class FlowNode(Accessor):
     def __init__(self, control, calc_function):
         pass
 
-    def calculate(inflow):
+    def calculate(self, inflow):
         # self._outflow =
         # self._storage_change =
         # self._storage =
         pass
 
-    def advance():
+    def advance(self):
         pass
 
     @property
@@ -54,7 +54,7 @@ class FlowGraph(ConservativeProcess):
         )
         self.name = "FlowGraph"
 
-        self._construct_graph()
+        # self._construct_graph()
 
         return
 
@@ -77,7 +77,7 @@ class FlowGraph(ConservativeProcess):
         # freeze graph upon calculate
 
         for step in self.substeps:
-            self._zero_inflow()
+            self._zero_upstream_inflows()
 
             for seg in self.segments:
                 outflow = self.flow_nodes[seg].calculate(self.inflows[seg])
@@ -91,7 +91,7 @@ class FlowGraph(ConservativeProcess):
                 seg
             ]
 
-    def _zero_inflows():
+    def _zero_upstream_inflows():
         self.inflows[:] = zero
         return
 

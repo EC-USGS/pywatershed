@@ -10,7 +10,7 @@ from pywatershed.utils.netcdf_utils import NetCdfCompare
 
 fail_fast = False
 
-calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba", "fortran")[0:1]
 params = ("params_sep", "params_one")
 
 

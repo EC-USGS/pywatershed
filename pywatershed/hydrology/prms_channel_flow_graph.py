@@ -5,10 +5,10 @@ import networkx as nx
 import numpy as np
 
 from ..base.adapter import adaptable
+from ..base.control import Control
 
 # from ..base.conservative_process import ConservativeProcess
 from ..base.flow_graph import FlowGraph, FlowNode
-from ..base.control import Control
 from ..constants import SegmentType, nan, zero
 from ..parameters import Parameters
 

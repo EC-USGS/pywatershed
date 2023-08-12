@@ -49,5 +49,5 @@ dependencies:
       - flake8
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
-      - modflow-devtools
+      - modflow-devtools < 1.0.0
       - pylint

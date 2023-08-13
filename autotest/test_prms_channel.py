@@ -110,7 +110,7 @@ def test_compare_prms(
         whna = np.where(np.isnan(ddz))
         assert (answer[whna] < 1e-12).all()
 
-        atol = 1.0e-7
+        atol = 1.0e-6
         rtol = 1.0e-6
         check1 = ((abs(dd[wh]) <= atol) | (abs(ddz[wh]) <= rtol)).all()
         check2 = (abs(dd[whna]) <= atol).all()

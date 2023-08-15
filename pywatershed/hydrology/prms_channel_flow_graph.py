@@ -159,9 +159,6 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._set_options(locals())
 
         self._set_budget(basis="global")
-        self._initialize_channel_data()
-        self._construct_graph()
-        # self._init_calc_method()
 
         return
 
@@ -233,73 +230,7 @@ class PRMSChannelFlowGraph(FlowGraph):
         self.seg_outflow[:] = self.segment_flow_init
         return
 
-    def _construct_graph(self) -> None:
-        """Initialize internal variables from raw channel data"""
-
-        # convert prms data to zero-based
-        self._hru_segment = self.hru_segment - 1  # to be removed via exchange
-        self._tosegment = self.tosegment - 1
-        self._tosegment = self._tosegment.astype("int64")
-
-        # calculate connectivity
-        self._outflow_mask = np.full((len(self._tosegment)), False)
-        connectivity = []
-        for iseg in range(self.nsegment):
-            tosegment = self._tosegment[iseg]
-            if tosegment < 0:
-                self._outflow_mask[iseg] = True
-                continue
-            connectivity.append(
-                (
-                    iseg,
-                    tosegment,
-                )
-            )
-
-        # use networkx to calculate the Directed Acyclic Graph
-        if self.nsegment > 1:
-            graph = nx.DiGraph()
-            graph.add_edges_from(connectivity)
-            segment_order = list(nx.topological_sort(graph))
-        else:
-            segment_order = [0]
-
-        # if the domain contains links with no upstream or
-        # downstream reaches, we just throw these back at the
-        # top of the order since networkx wont handle such nonsense
-        wh_mask_set = set(np.where(self._outflow_mask)[0])
-        seg_ord_set = set(segment_order)
-        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
-        if len(mask_not_seg_ord):
-            segment_order = mask_not_seg_ord + segment_order
-            # for pp in mask_not_seg_ord:
-            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
-
-        self._segment_order = np.array(segment_order, dtype="int64")
-        self.flow_nodes = []
-        for ii in range(self.nsegment):
-            self.flow_nodes.append(
-                PRMSChannelFlowNode(
-                    control=self.control,
-                    tsi=self._tsi[ii],
-                    ts=self._ts[ii],
-                    c0=self._c0[ii],
-                    c1=self._c1[ii],
-                    c2=self._c2[ii],
-                    outflow=self._outflow_mask[ii],
-                )
-            )
-
-        # initialize internal self_inflow variable
-        for iseg in range(self.nsegment):
-            jseg = self._tosegment[iseg]
-            if jseg < 0:
-                continue
-            self._seg_inflow[jseg] = self.seg_outflow[iseg]
-
-        return
-
-    def _initialize_channel_data(self) -> None:
+    def _initialize_data(self) -> None:
         """Initialize internal variables from raw channel data"""
 
         # calculate the Muskingum parameters
@@ -451,6 +382,72 @@ class PRMSChannelFlowGraph(FlowGraph):
 
         return
 
+    def _construct_graph(self) -> None:
+        """Initialize internal variables from raw channel data"""
+
+        # convert prms data to zero-based
+        self._hru_segment = self.hru_segment - 1  # to be removed via exchange
+        self._tosegment = self.tosegment - 1
+        self._tosegment = self._tosegment.astype("int64")
+
+        # calculate connectivity
+        self._outflow_mask = np.full((len(self._tosegment)), False)
+        connectivity = []
+        for iseg in range(self.nsegment):
+            tosegment = self._tosegment[iseg]
+            if tosegment < 0:
+                self._outflow_mask[iseg] = True
+                continue
+            connectivity.append(
+                (
+                    iseg,
+                    tosegment,
+                )
+            )
+
+        # use networkx to calculate the Directed Acyclic Graph
+        if self.nsegment > 1:
+            graph = nx.DiGraph()
+            graph.add_edges_from(connectivity)
+            segment_order = list(nx.topological_sort(graph))
+        else:
+            segment_order = [0]
+
+        # if the domain contains links with no upstream or
+        # downstream reaches, we just throw these back at the
+        # top of the order since networkx wont handle such nonsense
+        wh_mask_set = set(np.where(self._outflow_mask)[0])
+        seg_ord_set = set(segment_order)
+        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
+        if len(mask_not_seg_ord):
+            segment_order = mask_not_seg_ord + segment_order
+            # for pp in mask_not_seg_ord:
+            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
+
+        self._segment_order = np.array(segment_order, dtype="int64")
+        self._flow_nodes = []
+        for ii in range(self.nsegment):
+            self._flow_nodes.append(
+                PRMSChannelFlowNode(
+                    control=self.control,
+                    tsi=self._tsi[ii],
+                    ts=self._ts[ii],
+                    c0=self._c0[ii],
+                    c1=self._c1[ii],
+                    c2=self._c2[ii],
+                    outflow=self._outflow_mask[ii],
+                )
+            )
+
+        # initialize internal self_inflow variable
+        for iseg in range(self.nsegment):
+            jseg = self._tosegment[iseg]
+            if jseg < 0:
+                continue
+            self._seg_inflow[jseg] = self.seg_outflow[iseg]
+
+        return
+
     def _calculate_lateral_inflows(self):
         # This could vary with timestep so leave here
         self._s_per_time = self.control.time_step_seconds
@@ -493,8 +490,8 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._seg_upstream_inflow_acc = self.seg_upstream_inflow * zero
 
         for ii in range(self.nsegment):
-            self.flow_nodes[ii].advance()
-            self.flow_nodes[ii].prepare_timestep()
+            self._flow_nodes[ii].advance()
+            self._flow_nodes[ii].prepare_timestep()
 
         # Should probably pass time lengths to nodes
         for ihr in range(24):
@@ -503,13 +500,13 @@ class PRMSChannelFlowGraph(FlowGraph):
             self.seg_upstream_inflow[:] = zero
 
             for jseg in self._segment_order:
-                self.flow_nodes[jseg].calculate_subtimestep(
+                self._flow_nodes[jseg].calculate_subtimestep(
                     ihr,
                     self.seg_upstream_inflow[jseg],
                     self.seg_lateral_inflow[jseg],
                     # jseg,
                 )
-                self.seg_outflow_substep[jseg] = self.flow_nodes[
+                self.seg_outflow_substep[jseg] = self._flow_nodes[
                     jseg
                 ].outflow_substep
                 self._sum_outflows_to_inflow(jseg)
@@ -518,13 +515,13 @@ class PRMSChannelFlowGraph(FlowGraph):
             self._seg_upstream_inflow_acc += self.seg_upstream_inflow
 
         for ii in range(self.nsegment):
-            self.flow_nodes[ii].finalize_timestep()
+            self._flow_nodes[ii].finalize_timestep()
 
         for ii in range(self.nsegment):
-            self.seg_outflow[ii] = self.flow_nodes[ii].outflow
-            self.seg_stor_change[ii] = self.flow_nodes[ii].storage_change
+            self.seg_outflow[ii] = self._flow_nodes[ii].outflow
+            self.seg_stor_change[ii] = self._flow_nodes[ii].storage_change
 
-        # global mass balance term needed
+        # global mass balance term
         s_per_time = self.control.time_step_seconds
         self.channel_outflow_vol[:] = (
             np.where(self._outflow_mask, self.seg_outflow, zero)
@@ -535,6 +532,8 @@ class PRMSChannelFlowGraph(FlowGraph):
         # and we are continuing the bad practice here.
         # The next timestep apparently needs the average upstream
         # inflow from the previous timestep
+        # It appears inconsistent to use substep flows except for the
+        # initial substep...
         self.seg_upstream_inflow = self._seg_upstream_inflow_acc / 24.0
 
         return

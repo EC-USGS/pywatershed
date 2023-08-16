@@ -12,13 +12,6 @@ from ..base.flow_graph import FlowGraph, FlowNode
 from ..constants import SegmentType, nan, zero
 from ..parameters import Parameters
 
-try:
-    from ..prms_channel_f import calc_muskingum_mann as _calculate_fortran
-
-    has_prmschannel_f = True
-except ImportError:
-    has_prmschannel_f = False
-
 
 class PRMSChannelFlowNode(FlowNode):
     def __init__(self, control, tsi, ts, c0, c1, c2, outflow):
@@ -230,7 +223,7 @@ class PRMSChannelFlowGraph(FlowGraph):
         self.seg_outflow[:] = self.segment_flow_init
         return
 
-    def _initialize_data(self) -> None:
+    def _init_data(self) -> None:
         """Initialize internal variables from raw channel data"""
 
         # calculate the Muskingum parameters
@@ -382,7 +375,7 @@ class PRMSChannelFlowGraph(FlowGraph):
 
         return
 
-    def _construct_graph(self) -> None:
+    def _init_graph(self) -> None:
         """Initialize internal variables from raw channel data"""
 
         # convert prms data to zero-based
@@ -405,11 +398,16 @@ class PRMSChannelFlowGraph(FlowGraph):
                 )
             )
 
+        self._graph = nx.DiGraph()
+        self._graph.add_edges_from(connectivity)
+        return
+
+    def finalize_graph(self) -> None:
+        self._graph_finalized = True
+
         # use networkx to calculate the Directed Acyclic Graph
         if self.nsegment > 1:
-            graph = nx.DiGraph()
-            graph.add_edges_from(connectivity)
-            segment_order = list(nx.topological_sort(graph))
+            segment_order = list(nx.topological_sort(self._graph))
         else:
             segment_order = [0]
 
@@ -481,6 +479,9 @@ class PRMSChannelFlowGraph(FlowGraph):
         return
 
     def _calculate(self, simulation_time: float) -> None:
+        if not self._graph_finalized:
+            self.finalize_graph()
+
         # what in here should be the responsibility of the nodes?
         self._simulation_time = simulation_time
 

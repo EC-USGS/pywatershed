@@ -13,7 +13,18 @@ from ..parameters import Parameters
 
 
 class PRMSChannelFlowNode(FlowNode):
-    def __init__(self, control, tsi, ts, c0, c1, c2, graph_outflow):
+    def __init__(
+        self,
+        control,
+        tsi,
+        ts,
+        c0,
+        c1,
+        c2,
+        graph_outflow,
+        lateral_flow_ref,
+        lateral_flow_ind,
+    ):
         self.control = control
 
         self._tsi = tsi
@@ -22,6 +33,8 @@ class PRMSChannelFlowNode(FlowNode):
         self._c1 = c1
         self._c2 = c2
         self._graph_outflow = graph_outflow
+        self._lateral_flow_ref = lateral_flow_ref
+        self._lateral_flow_ind = lateral_flow_ind
 
         self._outflow_ts = zero
         self._seg_inflow0 = zero
@@ -44,11 +57,11 @@ class PRMSChannelFlowNode(FlowNode):
 
         return
 
-    def calculate_subtimestep(
-        self, ihr, inflow_upstream, inflow_lateral, seg_ind=None
-    ):
+    def calculate_subtimestep(self, ihr, inflow_upstream, seg_ind=None):
         # self.seg_upstream_inflow = zero  ## correct ? or in _calculate?
         # self._seg_current_sum += inflow_upstream
+        inflow_lateral = self._lateral_flow_ref[self._lateral_flow_ind]
+
         seg_current_inflow = inflow_lateral + inflow_upstream
         self._seg_inflow += seg_current_inflow
         self._inflow_ts += seg_current_inflow
@@ -415,6 +428,8 @@ class PRMSChannelFlowGraph(FlowGraph):
                     c1=self._c1[ii],
                     c2=self._c2[ii],
                     graph_outflow=self._outflow_mask[ii],
+                    lateral_flow_ref=self.seg_lateral_inflow,
+                    lateral_flow_ind=ii,
                 )
             )
 

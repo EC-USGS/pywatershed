@@ -7,14 +7,13 @@ import numpy as np
 from ..base.adapter import adaptable
 from ..base.control import Control
 
-# from ..base.conservative_process import ConservativeProcess
 from ..base.flow_graph import FlowGraph, FlowNode
 from ..constants import SegmentType, nan, zero
 from ..parameters import Parameters
 
 
 class PRMSChannelFlowNode(FlowNode):
-    def __init__(self, control, tsi, ts, c0, c1, c2, outflow):
+    def __init__(self, control, tsi, ts, c0, c1, c2, graph_outflow):
         self.control = control
 
         self._tsi = tsi
@@ -22,7 +21,8 @@ class PRMSChannelFlowNode(FlowNode):
         self._c0 = c0
         self._c1 = c1
         self._c2 = c2
-        self._outflow = outflow
+        self._graph_outflow = graph_outflow
+
         self._outflow_ts = zero
         self._seg_inflow0 = zero
         self._seg_inflow = zero
@@ -85,7 +85,7 @@ class PRMSChannelFlowNode(FlowNode):
         ) * self._s_per_time
 
         self.channel_outflow_vol = zero
-        if self._outflow:
+        if self._graph_outflow:
             self.channel_outflow_vol = self._seg_outflow * self._s_per_time
 
         return
@@ -383,8 +383,8 @@ class PRMSChannelFlowGraph(FlowGraph):
         self._tosegment = self.tosegment - 1
         self._tosegment = self._tosegment.astype("int64")
 
-        # calculate connectivity
         self._outflow_mask = np.full((len(self._tosegment)), False)
+
         connectivity = []
         for iseg in range(self.nsegment):
             tosegment = self._tosegment[iseg]
@@ -398,31 +398,12 @@ class PRMSChannelFlowGraph(FlowGraph):
                 )
             )
 
+        # use networkx to calculate the Directed Acyclic Graph
         self._graph = nx.DiGraph()
         self._graph.add_edges_from(connectivity)
-        return
 
-    def finalize_graph(self) -> None:
-        self._graph_finalized = True
+        self._calculate_node_order()
 
-        # use networkx to calculate the Directed Acyclic Graph
-        if self.nsegment > 1:
-            segment_order = list(nx.topological_sort(self._graph))
-        else:
-            segment_order = [0]
-
-        # if the domain contains links with no upstream or
-        # downstream reaches, we just throw these back at the
-        # top of the order since networkx wont handle such nonsense
-        wh_mask_set = set(np.where(self._outflow_mask)[0])
-        seg_ord_set = set(segment_order)
-        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
-        if len(mask_not_seg_ord):
-            segment_order = mask_not_seg_ord + segment_order
-            # for pp in mask_not_seg_ord:
-            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
-
-        self._segment_order = np.array(segment_order, dtype="int64")
         self._flow_nodes = []
         for ii in range(self.nsegment):
             self._flow_nodes.append(
@@ -433,7 +414,7 @@ class PRMSChannelFlowGraph(FlowGraph):
                     c0=self._c0[ii],
                     c1=self._c1[ii],
                     c2=self._c2[ii],
-                    outflow=self._outflow_mask[ii],
+                    graph_outflow=self._outflow_mask[ii],
                 )
             )
 
@@ -445,6 +426,29 @@ class PRMSChannelFlowGraph(FlowGraph):
             self._seg_inflow[jseg] = self.seg_outflow[iseg]
 
         return
+
+    def _calculate_node_order(self):
+        if self.nsegment > 1:
+            node_order = list(nx.topological_sort(self._graph))
+        else:
+            node_order = [0]
+
+        # if the domain contains links with no upstream or
+        # downstream reaches, we just throw these back at the
+        # top of the order since networkx wont handle such nonsense
+        wh_mask_set = set(np.where(self._outflow_mask)[0])
+        seg_ord_set = set(node_order)
+        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
+        if len(mask_not_seg_ord):
+            node_order = mask_not_seg_ord + node_order
+            # for pp in mask_not_seg_ord:
+            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
+
+        self._node_order = np.array(node_order, dtype="int64")
+        return
+
+    def finalize_graph(self) -> None:
+        self._graph_finalized = True
 
     def _calculate_lateral_inflows(self):
         # This could vary with timestep so leave here
@@ -500,7 +504,7 @@ class PRMSChannelFlowGraph(FlowGraph):
             # not have upstream reaches
             self.seg_upstream_inflow[:] = zero
 
-            for jseg in self._segment_order:
+            for jseg in self._node_order:
                 self._flow_nodes[jseg].calculate_subtimestep(
                     ihr,
                     self.seg_upstream_inflow[jseg],

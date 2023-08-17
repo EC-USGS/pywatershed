@@ -50,6 +50,10 @@ class FlowGraph(ConservativeProcess):
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
+        self._graph = None
+        self._flow_nodes = None
+        self._node_order = None
+
         super().__init__(
             control=control,
             discretization=discretization,
@@ -75,15 +79,22 @@ class FlowGraph(ConservativeProcess):
     def finalize_graph(self):
         self._graph_finalized = True
         raise Exception("This must be overridden")
-        raise
+        return
+
+    def _calculate_node_order(self):
+        self._node_order = None
+        raise Exception("This must be overridden")
+        return
 
     # def insert_nodes(self, connectivity: list):
-    def insert_node(self, new_node_id, up_id, down_id):
+    def insert_node(self, new_node, up_id, down_id):
         self._check_graph_editable()
-        assert new_node_id not in list(self._graph.nodes)
         assert (up_id, down_id) in list(self._graph.edges)
-        self.graph.remove_edge(up_id, down_id)
-        nx.add_path(self._graph, [up_id, new_node_id, down_id])
+        self._flow_nodes.append(new_node)
+        new_node_ind = len(self._flow_nodes) - 1
+        self._graph.remove_edge(up_id, down_id)
+        nx.add_path(self._graph, [up_id, new_node_ind, down_id])
+        self._calculate_node_order()
         return
 
     def replace_nodes(self, replacements: list):

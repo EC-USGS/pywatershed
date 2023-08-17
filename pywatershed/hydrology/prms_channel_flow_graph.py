@@ -523,7 +523,6 @@ class PRMSChannelFlowGraph(FlowGraph):
                 self._flow_nodes[jseg].calculate_subtimestep(
                     ihr,
                     self.seg_upstream_inflow[jseg],
-                    self.seg_lateral_inflow[jseg],
                     # jseg,
                 )
                 self.seg_outflow_substep[jseg] = self._flow_nodes[

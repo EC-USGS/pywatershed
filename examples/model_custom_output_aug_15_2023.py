@@ -69,9 +69,6 @@ model = pws.Model(
 
 var_list = [
     "hru_actet",
-    "sroff_vol",
-    "ssres_flow_vol",
-    "gwres_flow_vol",
     "seg_outflow",
 ]
 
@@ -98,6 +95,7 @@ diagnostic_var_dict = {
         "inputs": ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"],
         "function": sum_hru_flows,
         "like_var": "sroff_vol",
+        "metadata": {"desc": "something or other", "units": "parsecs"},
     },
 }
 
@@ -140,6 +138,8 @@ time_coord = np.arange(
     control.start_time, control.end_time, dtype="datetime64[D]"
 )
 n_time_steps = len(time_coord)
+out_subset_ds["time"] = xr.Variable(["time"], time_coord)
+out_subset_ds = out_subset_ds.set_coords("time")
 
 # annoying to have to hard-code this
 dim_coord = {"nhru": "nhm_id", "nsegment": "nhm_seg"}
@@ -147,6 +147,12 @@ dim_coord = {"nhru": "nhm_id", "nsegment": "nhm_seg"}
 
 # declare memory for the outputs
 for var in var_list + diagnostic_vars:
+    # impostor approach
+    orig_diag_var = None
+    if var in diagnostic_vars:
+        orig_diag_var = var
+        var = diagnostic_var_dict[var]["like_var"]
+
     proc = model.processes[var_proc[var]]
     dim_name = needed_metadata[var]["dims"][0]
     dim_len = proc.params.dims[dim_name]
@@ -154,13 +160,27 @@ for var in var_list + diagnostic_vars:
     coord_data = proc.params.coords[dim_coord[dim_name]]
     type = needed_metadata[var]["type"]
 
+    var_meta = {
+        kk: vv
+        for kk, vv in needed_metadata[var].items()
+        if kk in ["desc", "units"]
+    }
+
+    if orig_diag_var is not None:
+        var = orig_diag_var
+        del var_meta["desc"]
+        if "metadata" in diagnostic_var_dict[var]:
+            var_meta = diagnostic_var_dict[var]["metadata"]
+        if "desc" not in var_meta.keys():
+            var_meta["desc"] = "Custom output diagnostic variable"
+
     if var in subset_vars:
         subset_key = var_subset_key[var]
         subset_info = spatial_subsets[subset_key]
         dim_name = f"n{subset_key}"
         coord_name = subset_key
         dim_len = len(subset_info["indices"][0])
-        coord_data = coord_data[subset_info["indices"]]
+        coord_data = subset_info["new_coord"]
 
     if coord_name not in list(out_subset_ds.variables):
         out_subset_ds[coord_name] = xr.DataArray(coord_data, dims=[dim_name])
@@ -175,11 +195,6 @@ for var in var_list + diagnostic_vars:
         ),
     )
 
-    var_meta = {
-        kk: vv
-        for kk, vv in needed_metadata[var].items()
-        if kk in ["desc", "units"]
-    }
     out_subset_ds[var].attrs = var_meta
 
 
@@ -198,6 +213,14 @@ for istep in range(n_time_steps):
             indices = spatial_subsets[var_subset_key[var]]["indices"]
             out_subset_ds[var][istep, :] = proc[var][indices]
 
+    for diag_key, diag_val in diagnostic_var_dict.items():
+        input_dict = {}
+        for ii in diag_val["inputs"]:
+            proc = model.processes[var_proc[ii]]
+            input_dict[ii] = proc[ii]
+
+        out_subset_ds[diag_key][istep, :] = diag_val["function"](**input_dict)
+
 
 out_subset_ds.to_netcdf(custom_output_file)
 
@@ -209,29 +232,24 @@ if model_output_netcdf:
 
     for vv in var_list:
         default_output_file = out_dir / f"{vv}.nc"
-        print(vv)
-        if default_output_file.exists():
-            print("checking variable: ", vv)
-            answer = xr.open_dataset(default_output_file)[vv]
-            result = out_subset_ds[vv]
+        print("checking variable: ", vv)
+        answer = xr.open_dataset(default_output_file)[vv]
+        result = out_subset_ds[vv]
 
-            if vv in subset_vars:
-                indices = spatial_subsets[var_subset_key[vv]]["indices"]
-                answer = answer[:, indices[0]]
+        if vv in subset_vars:
+            indices = spatial_subsets[var_subset_key[vv]]["indices"]
+            answer = answer[:, indices[0]]
 
-            np.testing.assert_allclose(answer, result)
+        np.testing.assert_allclose(answer, result)
 
+    for diag_key, diag_val in diagnostic_var_dict.items():
+        print("checking diagnostic variable: ", diag_key)
+        input_dict = {}
+        for ii in diag_val["inputs"]:
+            default_output_file = out_dir / f"{ii}.nc"
+            input_dict[ii] = xr.open_dataset(default_output_file)[ii]
 
-adf
+        answer = diag_val["function"](**input_dict)
+        result = out_subset_ds[diag_key]
 
-#     # collect desired output for timestep
-#     for proc_name, var in hru_proc_var_dict.items():
-#         proc = model.processes[proc_name]
-#         if var == "hru_streamflow_out":
-#             out_subset_ds[var][istep, :] = (
-#                 proc["sroff_vol"]
-#                 + proc["ssres_flow_vol"]
-#                 + proc["gwres_flow_vol"]
-#             )
-#         else:
-#             out_subset_ds[var][istep, :] = proc[var]
+        np.testing.assert_allclose(answer, result)

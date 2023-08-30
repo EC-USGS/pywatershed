@@ -21,15 +21,6 @@ init_vars_from_file: 0
 
 dprst_flag: True
 
-# boolean
-netcdf_output: True
-
-netcdf_output_var_names:
-  - albedo
-  - cap_infil_tot
-  - contrib_fraction
-
-
 # candidates from PRMS style control files to HONOR or keep
 # modules listing: could be used to create model_dict
 # parameter_file: single (multiple?) parameter file

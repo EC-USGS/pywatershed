@@ -195,7 +195,6 @@ def test_separate_together_var_list(
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     control.options["input_dir"] = input_dir
-    control.options["netcdf_output_dir"] = test_output_dir
     control.options["netcdf_output_var_names"] = output_vars
     control.options["netcdf_output_separate_files"] = separate
 
@@ -205,6 +204,14 @@ def test_separate_together_var_list(
     for ff in domain_output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
+    with pytest.raises(RuntimeError):
+        model = Model(
+            model_procs,
+            control=control,
+            parameters=params,
+        )
+
+    control.options["netcdf_output_dir"] = test_output_dir
     model = Model(
         model_procs,
         control=control,

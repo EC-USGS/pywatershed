@@ -2079,7 +2079,7 @@ ppt_zero_thresh:
   help: The minimum/zero threhold for precipitation
   maximum: 0.0
   minimum: 0.0
-  modules:
+  modules: None
   type: F
   units: inches
 precip_units:
@@ -3057,7 +3057,7 @@ stream_tave_init:
   help: Cold-start stream average stream temperature
   maximum: unbounded
   minimum: unbounded
-  modules:
+  modules: None
   type: F
   units: unknown
 subbasin_down:

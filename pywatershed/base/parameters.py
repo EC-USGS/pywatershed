@@ -1,3 +1,5 @@
+import pathlib as pl
+from copy import deepcopy
 from types import MappingProxyType
 from typing import Union
 
@@ -51,7 +53,15 @@ class Parameters(DatasetDict):
         metadata: dict = None,
         encoding: dict = None,
         validate: bool = True,
+        copy: bool = True,
     ) -> None:
+        if copy:
+            dims = deepcopy(_set_dict_read_write(dims))
+            coords = deepcopy(_set_dict_read_write(coords))
+            data_vars = deepcopy(_set_dict_read_write(data_vars))
+            metadata = deepcopy(_set_dict_read_write(metadata))
+            encoding = deepcopy(_set_dict_read_write(encoding))
+
         super().__init__(
             dims=dims,
             coords=coords,
@@ -95,23 +105,43 @@ class Parameters(DatasetDict):
             return {kk: self.dims[kk] for kk in keys}
 
     def to_xr_ds(self) -> xr.Dataset:
-        # must pass as dictionary not a mapping proxy: dict = mp | {}
+        """Export Parameters to an xarray dataset"""
         return dd_to_xr_ds(_set_dict_read_write(self.data))
 
-    def to_nc4_ds(self, filename) -> None:
-        # must pass as dictionary not a mapping proxy: dict = mp | {}
+    def to_nc4_ds(self, filename: Union[str, pl.Path]) -> None:
+        """Export Parameters to a netcdf4 dataset
+
+        Args:
+            filename: a file to write to as nc4 is not in memory
+        """
         dd_to_nc4_ds(_set_dict_read_write(self.data), filename)
         return
 
-    def to_dd(self) -> DatasetDict:
-        # must pass as dictionary not a mapping proxy: dict = mp | {}
-        return DatasetDict(_set_dict_read_write(self.data))
+    def to_dd(self, copy=True) -> DatasetDict:
+        """Export Parameters to a DatasetDict (for editing).
+
+        Parameters can NOT be edited, but DatasetDicts can.
+        To convert back ``pws.Parameters(**dataset_dict.data)``.
+
+        Args:
+            copy: return a copy or a reference?
+        """
+        return DatasetDict.from_dict(
+            _set_dict_read_write(self.data), copy=copy
+        )
 
     @classmethod
-    def merge(cls, *param_list, copy=True, del_global_src=True):
+    def merge(cls, *args, copy=True, del_global_src=True):
+        """Merge Parameter classes
+
+        Args:
+            *args: several Parameters objects as individual objects.
+            copy: bool if the args should be copied?
+            del_golbal_src: bool delete the file source attribute to avoid
+                meaningless merge conflicts?
+        """
         dd_list = [
-            DatasetDict.from_dict(_set_dict_read_write(pp.data))
-            for pp in param_list
+            DatasetDict.from_dict(_set_dict_read_write(pp.data)) for pp in args
         ]
         merged = super().merge(*dd_list, copy=copy, del_global_src=True)
         return merged
@@ -119,12 +149,16 @@ class Parameters(DatasetDict):
 
 # TODO: test that these dont modify in place
 def _set_dict_read_write(mp: MappingProxyType):
+    if mp is None:
+        mp = {}
     dd = mp | {}
     for kk, vv in dd.items():
-        if isinstance(vv, MappingProxyType):
-            dd[kk] = _set_dict_read_write(dd[kk] | {})
+        if isinstance(vv, (dict, MappingProxyType)):
+            dd[kk] = _set_dict_read_write(vv)
         elif isinstance(vv, np.ndarray):
-            vv.flags.writeable = True
+            # copy is sufficient to make writeable
+            # https://numpy.org/doc/stable/reference/generated/numpy.copy.html
+            dd[kk] = dd[kk].copy()
 
     return dd
 

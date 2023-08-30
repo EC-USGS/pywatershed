@@ -19,7 +19,9 @@ v0.3.0 (unreleased)
 
 New features
 ~~~~~~~~~~~~
-- `Conda feedstock for pywatershed <https://github.com/conda-forge/staged-recipes/pull/23428>`_.
+- Example notebook of how to edit Parameters with associated bug fixes to do so.
+  (:pull:`232`) By `James McCreight <https://github.com/jmccreight>`_.
+- Conda feedstock for pywatershed `<https://github.com/conda-forge/staged-recipes/pull/23428>`_.
   By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
   
 
@@ -37,6 +39,8 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
+- Resolve issues with different ways of specifiying netcdf output options.
+  (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Documentation

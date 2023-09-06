@@ -173,7 +173,7 @@ class PRMSRunoff(StorageUnit):
             "hru_impervstor_change": zero,
             "dprst_vol_frac": zero,
             "dprst_vol_clos": zero,
-            "dprst_vol_open": zero,
+            "dprst_vol_open": nan,
             "dprst_vol_clos_frac": zero,
             "dprst_vol_open_frac": zero,
             "dprst_area_clos": zero,

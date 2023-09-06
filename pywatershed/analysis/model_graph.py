@@ -3,6 +3,7 @@ import tempfile
 import warnings
 from pprint import pprint
 
+from ..base.conservative_process import ConservativeProcess
 from ..base.model import Model
 from ..utils import import_optional_dependency
 
@@ -42,7 +43,9 @@ class ModelGraph:
         self.process_nodes = {}
         for process in self.model.process_order:
             self.process_nodes[process] = self._process_node(
-                self.model.processes[process], show_params=self.show_params
+                process,
+                self.model.processes[process],
+                show_params=self.show_params,
             )
 
         # Solve the connections
@@ -67,7 +70,11 @@ class ModelGraph:
                     if self.process_colors:
                         color = self.process_colors[frm]
                     self.connections += [
-                        (f"{frm}{var_con}", f"{process}{var_con}", color)
+                        (
+                            f"{frm}{var_con}",
+                            f"{process}{var_con}",
+                            color,
+                        )
                     ]
 
                 else:
@@ -117,7 +124,7 @@ class ModelGraph:
         ipdisplay.display(ipdisplay.SVG(tmp_file))
         return
 
-    def _process_node(self, process, show_params: bool = False):
+    def _process_node(self, process_name, process, show_params: bool = False):
         inputs = process.get_inputs()
         variables = process.get_variables()
         params = process.get_parameters()
@@ -125,6 +132,7 @@ class ModelGraph:
 
         label = (
             f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
+            f'    <TR><TD COLSPAN="6">"{process_name}"</TD></TR>\n'
             f'    <TR><TD COLSPAN="6">{cls}</TD></TR>\n'
         )
 
@@ -142,11 +150,14 @@ class ModelGraph:
         if not show_params:
             _ = show_categories.pop("params")
 
-        mass_budget_vars = [
-            var
-            for comp, vars in process.get_mass_budget_terms().items()
-            for var in vars
-        ]
+        if isinstance(process, ConservativeProcess):
+            mass_budget_vars = [
+                var
+                for comp, vars in process.get_mass_budget_terms().items()
+                for var in vars
+            ]
+        else:
+            mass_budget_vars = []
 
         for varset_name, varset in show_categories.items():
             n_vars = len(varset)
@@ -179,13 +190,12 @@ class ModelGraph:
 
         color_str = ""
         if self.process_colors:
-            color_str = f'"{self.process_colors[cls]}"'
+            color_str = f'"{self.process_colors[process_name]}"'
 
         node = self.pydot.Node(
-            cls,
+            process_name,
             label=label,
             pos=f'"{self._current_pos},0!"',
-            # shape="process",
             shape="box",
             color=color_str,
             penwidth=f'"{self.node_penwidth}"',

@@ -2,11 +2,12 @@ import os
 import platform
 import warnings
 
-import setuptools
+import setuptools  # noqa
 from numpy.distutils.core import setup
 from numpy.distutils.misc_util import Configuration
 
 pyws_fortran = str(os.getenv("PYWS_FORTRAN"))
+
 if pyws_fortran.lower() == "true":
     pyws_fortran = True
     if platform.system() == "Windows":
@@ -23,7 +24,7 @@ config = Configuration("pywatershed")
 
 if pyws_fortran:
     source_dir_names = {
-        "hydrology": ["PRMSGroundwater", "PRMSCanopy", "PRMSChannel"]
+        "hydrology": ["prms_groundwater", "prms_canopy", "prms_channel"]
     }
     for dir_name, names in source_dir_names.items():
         for name in names:
@@ -35,5 +36,4 @@ if pyws_fortran:
                 ],
             )
 
-
-setup(name="pywatershed")
+setup(**config.todict(), packages=setuptools.find_packages())

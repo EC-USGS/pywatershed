@@ -25,13 +25,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-          cache: 'pip'
-          cache-dependency-path: pyproject.toml
-
       - name: Install Dependencies via Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -90,13 +83,14 @@ jobs:
         run: |
           ref="${{ github.ref_name }}"
           version="${ref#"v"}"
-          python .github/scripts/update_version.py -v "$version" -a
-          python .github/scripts/pull_request_prepare.py
+          python .github/scripts/update_version.py -v "$version"
           python -c "import pywatershed; print('Version: ', pywatershed.__version__)"
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Format files
-        run: python .github/scripts/pull_request_prepare.py
+        run: |
+          isort ./pywatershed
+          black ./pywatershed
 
       - name: Touch changelog
         run: touch HISTORY.md
@@ -156,7 +150,9 @@ jobs:
           git config core.sharedRepository true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add HISTORY.md
+          git add pywatershed
+          git add version.txt
           git commit -m "ci(release): set version to ${{ steps.version.outputs.version }}, update changelog"
           git push origin "${{ github.ref_name }}"
 
@@ -195,9 +191,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          version=$(python .github/scripts/update_version.py -g)
+          version=$(cat version.txt | xargs)
           title="pywatershed $version"
-          notes=$(cat "changelog/CHANGELOG_$version.md" | grep -v "### Version $version")
+
+          # don't fail if the changelog is empty
+          if [[ -s "changelog/CHANGELOG_$version.md" ]]; then
+            notes=$(cat "changelog/CHANGELOG_$version.md" | grep -v "### Version $version")
+          else
+            notes="No changes found, are recent commits conventional?"
+          fi
+          
           gh release create "$version" \
             --target main \
             --title "$title" \
@@ -253,64 +256,3 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           verbose: true
-
-  reset:
-    name: Draft reset PR
-    if: ${{ github.event_name == 'release' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-
-      - name: Checkout main branch
-        uses: actions/checkout@v3
-        with:
-          ref: main
-
-      - name: Get release tag
-        uses: oprypin/find-latest-tag@v1
-        id: latest_tag
-        with:
-          repository: ${{ github.repository }}
-          releases-only: true
-      
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-
-      - name: Install Python dependencies
-        run: |
-          pip install --upgrade pip
-          pip install black isort filelock
-
-      - name: Draft reset PR
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          # create reset branch from main
-          reset_branch="post-release-${{ steps.latest_tag.outputs.tag }}-reset"
-          git switch -c $reset_branch
-          
-          # update version (add + to version.txt to indicate development status)
-          python .github/scripts/update_version.py
-          
-          # format files
-          python .github/scripts/pull_request_prepare.py
-          
-          # commit and push reset branch
-          git config core.sharedRepository true
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "ci(release): update to development version $version"
-          git push -u origin $reset_branch
-          
-          # create PR into develop
-          body='
-          # Reinitialize for development
-          
-          Updates the `develop` branch from `main` following a successful release.
-          '
-          gh pr create -B "develop" -H "$reset_branch" --title "Reinitialize develop branch" --draft --body "$body"

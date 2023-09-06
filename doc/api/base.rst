@@ -1,6 +1,5 @@
 .. currentmodule:: pywatershed
 
-
 ##########
 Base
 ##########
@@ -10,10 +9,12 @@ Base classes for the modeling system.
 .. autosummary::
    :toctree: generated/
 
-   Accessor
+   base.Accessor
    Adapter
    Control
+   base.DatasetDict
    meta
-   Budget
-   StorageUnit
+   base.Budget
+   base.Process
+   base.ConservativeProcess
    Model

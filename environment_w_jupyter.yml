@@ -1,0 +1,55 @@
+name: pws
+channels:
+  - conda-forge
+  - nodefaults
+  - pyviz
+  - bioconda
+dependencies:
+  - bash_kernel
+  - cartopy
+  - epiweeks
+  - filelock
+  - geopandas
+  - geoviews
+  - git
+  - holoviews
+  - hvplot
+  - ipython
+  - ipywidgets
+  - jupyter
+  - jupyterlab
+  - nb_conda_kernels
+  - nbconvert
+  - netCDF4
+  - networkx
+  - numpy
+  - numba
+  - pandas>=1.4.0
+  - pint
+  - pip
+  - pre-commit
+  - pydot
+  - pytest
+  - pytest-cov
+  - pytest-env
+  - pytest-order
+  - pytest-xdist
+  - python<3.11,>=3.9
+  - pyyaml
+  - shapely<2.0.0
+  - sphinx
+  - sphinx-book-theme>=0.3.3
+  - sphinx-autosummary-accessors
+  - sphinx-copybutton
+  - tqdm
+  - xarray>=2023.05.0
+  - pip:
+      - asv
+      - black
+      - click != 8.1.0
+      - isort
+      - flake8
+      - git+https://github.com/modflowpy/flopy.git
+      - jupyter_black
+      - modflow-devtools
+      - pylint

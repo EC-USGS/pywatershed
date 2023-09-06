@@ -11,7 +11,7 @@ from matplotlib.patches import Polygon
 
 from ..base import meta
 from ..base.model import Model
-from ..base.storageUnit import StorageUnit
+from ..base.process import Process
 from ..utils.optional_import import import_optional_dependency
 
 
@@ -51,7 +51,7 @@ class ProcessPlot:
 
         return
 
-    def plot(self, var_name: str, process: StorageUnit, cmap: str = None):
+    def plot(self, var_name: str, process: Process, cmap: str = None):
         var_dims = list(meta.get_vars(var_name)[var_name]["dims"])
         if "nsegment" in var_dims:
             if not cmap:
@@ -62,12 +62,12 @@ class ProcessPlot:
         else:
             raise ValueError()
 
-    def plot_seg_var(self, var_name: str, process: StorageUnit, cmap="cool"):
+    def plot_seg_var(self, var_name: str, process: Process, cmap="cool"):
         ccrs = import_optional_dependency("cartopy.crs")
 
         data_df = pd.DataFrame(
             {
-                "nhm_seg": process.control.params.parameters["nhm_seg"],
+                "nhm_seg": process.params.coords["nhm_seg"],
                 var_name: process[var_name],
             }
         ).set_index("nhm_seg")
@@ -149,7 +149,7 @@ class ProcessPlot:
 
         data_df = pd.DataFrame(
             {
-                "nhm_id": process.control.params.parameters["nhm_id"],
+                "nhm_id": process.params.coords["nhm_id"],
                 var_name: process[var_name],
             }
         ).set_index("nhm_id")
@@ -158,25 +158,27 @@ class ProcessPlot:
     def plot_hru_var(
         self,
         var_name: str,
-        process: StorageUnit,
+        process: Process,
         data: np.ndarray = None,
         data_units: str = None,
         nhm_id: np.ndarray = None,
     ):
+        _ = import_optional_dependency("hvplot.pandas")
+
         ccrs = import_optional_dependency("cartopy.crs")
 
         if data is None:
             # data_df = self.get_hru_var(var_name, model)
             data_df = pd.DataFrame(
                 {
-                    "nhm_id": process.control.params.parameters["nhm_id"],
+                    "nhm_id": process.params.coords["nhm_id"],
                     var_name: process[var_name],
                 }
             ).set_index("nhm_id")
 
         else:
             if nhm_id is None:
-                nhm_id = model.control.params.parameters["nhm_id"]
+                nhm_id = model.parameters["nhm_id"]
             data_df = pd.DataFrame(
                 {
                     "nhm_id": nhm_id,
@@ -214,6 +216,7 @@ class ProcessPlot:
             line_width=0,
             alpha=0.75,
             # clim=stat_lims[stat],
+            hover_cols=["nhm_id"],
             title=title,
             clabel=clabel,
             xlabel="Longitude (degrees East)",

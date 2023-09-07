@@ -79,6 +79,8 @@ misc_nc_file_vars = [
 
 final_nc_file_vars = [
     "through_rain",
+    "pk_ice",
+    "freeh2o",
 ]
 
 

@@ -130,3 +130,15 @@ def test_misc_final(misc_nc_final_input):
         through_rain.close()
         for vv in data_vars:
             data[vv].close()
+
+    if misc_nc_final_input.name in ["pk_ice", "freeh2o"]:
+        var_name = misc_nc_final_input.name
+        var_prev_name = f"{var_name}_prev"
+        parent_dir = misc_nc_final_input.parent
+        current_file = parent_dir / f"{var_name}.nc"
+        prev_file = parent_dir / f"{var_prev_name}.nc"
+        current = xr.open_dataset(current_file)[var_name]
+        previous = xr.open_dataset(prev_file)[var_prev_name]
+        change_file = parent_dir / f"{var_name}_change.nc"
+        (current - previous).to_netcdf(change_file)
+        assert change_file.exists()

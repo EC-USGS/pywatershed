@@ -1,12 +1,13 @@
 """The control class."""
 import datetime
-from types import MappingProxyType
+import pathlib as pl
 
 import numpy as np
 
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
+from ..utils.path import assert_exists, path_rel_to_yml
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
@@ -15,11 +16,19 @@ from ..utils.time_utils import (
     datetime_year,
 )
 from .accessor import Accessor
-from .parameters import Parameters
 
 
 class Control(Accessor):
-    """The control class."""
+    """Control manages global time and options, and provides metadata.
+
+    Args:
+        start_time: this is the first time of integration NOT the restart
+            time
+        end_time: the last integration time
+        time_step: the length fo the time step
+        options: a dictionary of global Process options
+
+    """
 
     def __init__(
         self,
@@ -27,25 +36,10 @@ class Control(Accessor):
         end_time: np.datetime64,
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
-        config: dict = None,
-        params: Parameters = None,
-        verbosity: int = 0,
-        **kwargs,
+        options: dict = None,
     ):
-        """Initialize time with data and parameters.
-
-        Args:
-            start_time: this is the first time of integration NOT the restart
-                time
-            end_time: the last integration time
-            time_step: the length fo the time step
-            config: a PRMS config file to read and use for contorl
-            verbosity: the level of verbosity in [0,10]
-        """
-        super().__init__(**kwargs)
+        super().__init__()
         self.name = "Control"
-
-        self.verbosity = verbosity
 
         if end_time <= start_time:
             raise ValueError("end_time <= start_time")
@@ -68,12 +62,9 @@ class Control(Accessor):
         self._previous_time = None
         self._itime_step = -1
 
-        self.config = config
-        self.params = params
-        if params is not None:
-            # this should be a super private method on parameters
-            self.edit_n_time_steps(self.n_times)
-
+        if options is None:
+            options = {}
+        self.options = options
         self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
@@ -82,14 +73,11 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
-        params: Parameters = None,
-        verbosity: int = 0,
     ) -> "Control":
         """Initialize a control object from a PRMS control file
 
         Args:
             control_file: PRMS control file
-            verbosity: output verbosity level
 
         Returns:
             Time: Time object initialized from a PRMS control file
@@ -101,9 +89,7 @@ class Control(Accessor):
             control.control["start_time"],
             control.control["end_time"],
             control.control["initial_deltat"],
-            config=control.control,
-            params=params,
-            verbosity=verbosity,
+            options=control.control,
         )
 
     @property
@@ -206,31 +192,14 @@ class Control(Accessor):
 
         return None
 
-    def get_var_nans(self, var_name: str, drop_time_dim: bool = None):
-        """Get an array filled with nans for a given variable"""
-        var_dims = self.meta.get_dimensions(var_name)[var_name]
-        if drop_time_dim:
-            # This accomodates Timeseries like objects that need to init both
-            # full rank and reduced rank versions of their data
-            # this is pretty adhoc
-            check_list = ["time", "doy"]
-            if len([mm for mm in check_list if mm in var_dims[0]]):
-                var_dims = var_dims[1:]
-
-        var_dim_sizes = self.params.get_dim_values(var_dims)
-        var_dim_shape = [var_dim_sizes[vv] for vv in var_dims]
-        var_type = self.meta.get_numpy_types(var_name)[var_name]
-        return np.full(var_dim_shape, np.nan, var_type)
-
     def edit_end_time(self, new_end_time: np.datetime64):
         "Supply a new end time for the simulation."
 
         self._end_time = new_end_time
         assert self._end_time - self._start_time > 0
         self._n_times = (
-            (self._end_time - self._start_time) / self._time_step
-        ) + 1
-        self.params.dims["ntime"] = self._n_times
+            int((self._end_time - self._start_time) / self._time_step) + 1
+        )
         return
 
     def edit_n_time_steps(self, new_n_time_steps: int):
@@ -239,7 +208,68 @@ class Control(Accessor):
         self._end_time = (
             self._start_time + (self._n_times - 1) * self._time_step
         )
-        self.params._dims = MappingProxyType(
-            self.params.dims | {"ntime": self._n_times}
-        )
         return
+
+    @staticmethod
+    def from_yml(yml_file):
+        """Instantate a Control object from a yml file
+
+        Required key:value pairs:
+            start_time: ISO8601 string for numpy datetime64,
+                e.g. 1979-01-01T00:00:00
+            end_time: ISO8601 string for numpy datetime64,
+                e.g. 1980-12-31T00:00:00
+            time_step: The first argument to get a numpy.timedelta64, e.g. 24
+            time_step_units: The second argument to get a numpy.timedelta64,
+                e.g. 'h'
+            verbosity: integer 0-10
+            input_dir: path relative to this file.
+            budget_type: None | "warn" | "error"
+            calc_method: None | "numpy" | "numba" | "fortran" (
+                depending on availability)
+            load_n_time_batches: integer < total number of timesteps (
+                optionalize?)
+            init_vars_from_file: False (optionalize, rename restart)
+            dprst_flag: True (optionalize) only for PRMSSoilzone (should
+                be supplied in its process dictionary)
+
+        Optional key, value pairs:
+            netcdf_output: boolean
+            netcdf_output_var_names: list of variable names to output, e.g.
+                - albedo
+                - cap_infil_tot
+                - contrib_fraction
+
+        Returns:
+            Control object
+        """
+        import yaml
+
+        with pl.Path(yml_file).open("r") as file_stream:
+            control_dict = yaml.load(file_stream, Loader=yaml.Loader)
+
+        start_time = np.datetime64(control_dict["start_time"])
+        end_time = np.datetime64(control_dict["end_time"])
+        time_step = np.timedelta64(
+            control_dict["time_step"], control_dict["time_step_units"]
+        )
+        del control_dict["start_time"]
+        del control_dict["end_time"]
+        del control_dict["time_step"]
+        del control_dict["time_step_units"]
+
+        paths_to_convert = ["input_dir"]
+        for path_name in paths_to_convert:
+            if path_name in control_dict.keys():
+                control_dict[path_name] = path_rel_to_yml(
+                    control_dict[path_name], yml_file
+                )
+                assert_exists(control_dict[path_name])
+
+        control = Control(
+            start_time,
+            end_time,
+            time_step,
+            options=control_dict,
+        )
+        return control

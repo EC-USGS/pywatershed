@@ -1,0 +1,72 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module prms_canopy_f ! in 
+    interface  ! in :prms_canopy_f
+        module canopy ! in :prms_canopy_f:prms_canopy.f90
+            real(kind=8), parameter,optional :: zero=0.0
+            real(kind=8), parameter,optional :: one=1.0
+            subroutine calc_canopy(nhru,cov_type,covden_sum,covden_win,hru_intcpstor,hru_intcpevap,hru_ppt,hru_rain,hru_snow,intcp_changeover,intcp_evap,intcp_form_in,intcp_stor,intcp_transp_on,net_ppt,net_rain,net_snow,pkwater_ante,potet,potet_sublim,snow_intcp,srain_intcp,transp_on,wrain_intcp,time_length,hru_type,nearzero,dnearzero,baresoil,grasses,land,lake,rain,snow,off,active,intcp_evap_out,intcp_stor_out,net_rain_out,net_snow_out,net_ppt_out,hru_intcpstor_out,hru_intcpevap_out,intcp_changeover_out,intcp_transp_on_out) ! in :prms_canopy_f:prms_canopy.f90:canopy
+                !integer(kind=4) intent(in) :: nhru
+                integer, optional,intent(in),check(len(cov_type)>=nhru),depend(cov_type) :: nhru=len(cov_type)                
+                integer(kind=8) dimension(nhru),intent(in) :: cov_type
+                real(kind=8) dimension(nhru),intent(in) :: covden_sum
+                real(kind=8) dimension(nhru),intent(in) :: covden_win
+                real(kind=8) dimension(nhru),intent(in) :: hru_intcpstor
+                real(kind=8) dimension(nhru),intent(in) :: hru_intcpevap
+                real(kind=8) dimension(nhru),intent(in) :: hru_ppt
+                real(kind=8) dimension(nhru),intent(in) :: hru_rain
+                real(kind=8) dimension(nhru),intent(in) :: hru_snow
+                real(kind=8) dimension(nhru),intent(in) :: intcp_changeover
+                real(kind=8) dimension(nhru),intent(in) :: intcp_evap
+                integer(kind=4) dimension(nhru),intent(in) :: intcp_form_in
+                real(kind=8) dimension(nhru),intent(in) :: intcp_stor
+                integer(kind=4) dimension(nhru),intent(in) :: intcp_transp_on
+                real(kind=8) dimension(nhru),intent(in) :: net_ppt
+                real(kind=8) dimension(nhru),intent(in) :: net_rain
+                real(kind=8) dimension(nhru),intent(in) :: net_snow
+                real(kind=8) dimension(nhru),intent(in) :: pkwater_ante
+                real(kind=8) dimension(nhru),intent(in) :: potet
+                real(kind=8) dimension(nhru),intent(in) :: potet_sublim
+                real(kind=8) dimension(nhru),intent(in) :: snow_intcp
+                real(kind=8) dimension(nhru),intent(in) :: srain_intcp
+                real(kind=8) dimension(nhru),intent(in) :: transp_on
+                real(kind=8) dimension(nhru),intent(in) :: wrain_intcp
+                real(kind=8) intent(in) :: time_length
+                integer(kind=8) dimension(nhru),intent(in) :: hru_type
+                real(kind=8) intent(in) :: nearzero
+                real(kind=8) intent(in) :: dnearzero
+                integer(kind=4) intent(in) :: baresoil
+                integer(kind=4) intent(in) :: grasses
+                integer(kind=4) intent(in) :: land
+                integer(kind=4) intent(in) :: lake
+                integer(kind=4) intent(in) :: rain
+                integer(kind=4) intent(in) :: snow
+                integer(kind=4) intent(in) :: off
+                integer(kind=4) intent(in) :: active
+                real(kind=8) dimension(nhru),intent(out) :: intcp_evap_out
+                real(kind=8) dimension(nhru),intent(out) :: intcp_stor_out
+                real(kind=8) dimension(nhru),intent(out) :: net_rain_out
+                real(kind=8) dimension(nhru),intent(out) :: net_snow_out
+                real(kind=8) dimension(nhru),intent(out) :: net_ppt_out
+                real(kind=8) dimension(nhru),intent(out) :: hru_intcpstor_out
+                real(kind=8) dimension(nhru),intent(out) :: hru_intcpevap_out
+                real(kind=8) dimension(nhru),intent(out) :: intcp_changeover_out
+                integer(kind=4) dimension(nhru),intent(out) :: intcp_transp_on_out
+            end subroutine calc_canopy
+            subroutine intercept(precip,stor_max,cov,intcp_stor,net_precip,intcp_stor_out,net_precip_out) ! in :prms_canopy_f:prms_canopy.f90:canopy
+                real(kind=8) intent(in) :: precip
+                real(kind=8) intent(in) :: stor_max
+                real(kind=8) intent(in) :: cov
+                real(kind=8) intent(in) :: intcp_stor
+                real(kind=8) intent(in) :: net_precip
+                real(kind=8) intent(out) :: intcp_stor_out
+                real(kind=8) intent(out) :: net_precip_out
+            end subroutine intercept
+        end module canopy
+    end interface 
+end python module prms_canopy_f
+
+! This file was auto-generated with f2py (version:1.23.3).
+! See:
+! https://web.archive.org/web/20140822061353/http://cens.ioc.ee/projects/f2py2e

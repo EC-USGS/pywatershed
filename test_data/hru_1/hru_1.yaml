@@ -35,14 +35,6 @@ test_ans:
     ndoy: 366
 
   preprocess_cbh:
-    files_to_df:
-      prcp: 0.13502103505843072
-    df_concat: 34.968545798553144
-    np_dict:
-      prcp: 0.13502103505843072
-      tmax: 61.986048747913195
-      tmin: 42.78456761268781
-      datetime: 930873600.0
     adj:
       no_params:
         prcp: 0.13502103505843072

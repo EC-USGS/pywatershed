@@ -1396,13 +1396,13 @@ gw2sm_grav:
 gw_in_soil:
   desc: Drainage from capillary reservoir excess water for each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: acre-inches
 gw_in_ssr:
   desc: Drainage from gravity reservoir excess water for each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: acre-inches
 gw_seep_lakein:
@@ -1414,7 +1414,7 @@ gw_seep_lakein:
 gw_upslope:
   desc: Groundwater flow received from upslope GWRs for each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: acre-inches
 gwr_gain:
@@ -1445,14 +1445,14 @@ gwr_transfer_tot:
 gwres_flow:
   desc: Groundwater discharge from each GWR to the stream network
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
   var_category: mass flux
 gwres_flow_vol:
   desc: Groundwater discharge volume from each GWR to the stream network
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: cubicfeet
   var_category: mass flux
@@ -1460,35 +1460,35 @@ gwres_sink:
   desc: Outflow from GWRs to the groundwater sink; water is considered underflow or
     flow to deep aquifers and does not flow to the stream network
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
   var_category: mass flux
 gwres_stor:
   desc: Storage in each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
   var_category: mass storage
 gwres_stor_change:
   desc: Change is storage in each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
   var_category: mass storage change
 gwres_stor_old:
   desc: Previous storage in each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
   var_category: mass storage
 gwstor_minarea_wb:
   desc: Storage added to each GWR when storage is less than gwstor_min
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
 hortonian_flow:
@@ -1524,7 +1524,7 @@ hru_frac_perv:
 hru_gw_cascadeflow:
   desc: Cascading groundwater flow from each GWR
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
 hru_hortn_cascflow:
@@ -1898,7 +1898,7 @@ lake_seepage:
 lake_seepage_gwr:
   desc: Net lake-bed seepage to associated GWRs
   dims:
-    0: ngw
+    0: nhru
   type: float64
   units: inches
 lake_spill:
@@ -2831,7 +2831,7 @@ sroff_vol:
 ssr_to_gw:
   desc: Drainage from the gravity-reservoir to the associated GWR for each HRU
   dims:
-    0: nssr
+    0: nhru
   type: float64
   units: inches
   var_category: mass flux
@@ -2839,26 +2839,26 @@ ssres_flow:
   desc: Interflow from gravity and preferential-flow reservoirs to the stream network
     for each HRU
   dims:
-    0: nssr
+    0: nhru
   type: float64
   units: inches
 ssres_flow_vol:
   desc: Interflow volume from gravity and preferential-flow reservoirs to the stream network
     for each HRU
   dims:
-    0: nssr
+    0: nhru
   type: float64
   units: cubicfeet
 ssres_in:
   desc: Inflow to the gravity and preferential-flow reservoirs for each HRU
   dims:
-    0: nssr
+    0: nhru
   type: float64
   units: inches
 ssres_stor:
   desc: Storage in the gravity and preferential-flow reservoirs for each HRU
   dims:
-    0: nssr
+    0: nhru
   type: float64
   units: inches
 streamflow_cfs:

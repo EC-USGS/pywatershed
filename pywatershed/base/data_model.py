@@ -9,7 +9,7 @@ import netCDF4 as nc4
 import numpy as np
 import xarray as xr
 
-from ..constants import fill_values_dict, listish, np_type_to_netcdf_type_dict
+from ..constants import fileish, fill_values_dict, np_type_to_netcdf_type_dict
 from .accessor import Accessor
 
 # This file defines the data model for pywatershed. It is called a
@@ -43,22 +43,149 @@ template_xr_dd = {
 }
 
 
+# Note: Methods do not deep copy by default, but not all references may be
+# preserved. use with caution and test.
+
+
 class DatasetDict(Accessor):
+    """DatasetDict class maps between netcdf conventions
+
+    This is the core class in the data model adopted by pywatershed.
+
+    Where typically metadata is stored on a variable, we maintain metadata
+    on a collocated dictionary. The data model is a DatasetDict with dims,
+    coords, data_vars, and metadata keys. The dims track the length of each
+    dimension. The coordinates are the discrete locations along dimensions or
+    sets of dimensions. The data_vars contain the data located on dims and
+    coordinates. The metadata describes the relationship between both coords
+    and data_vars and their dims. Together the coords and data_vars are the
+    variables of the DatasetDict. All keys in the variables must be present
+    in the metadata dictionary and each ke contains two more keys: dims and
+    attrs. The dims is a tuple of the variable's dimensions and attrs are
+    more general attributes.
+
+    When a netcdf file is read from disk, it has encoding properties that may
+    come along. Alternatively, encodings may be specified before writing to
+    file.
+
+    Args:
+        dims: A dictionary of pairs of `dim_names: dim_len` where `dim_len` is
+            an integer value.
+        coords: A dictionary of pairs of `coord_names: coord_data` where
+            `coord_data` is an np.ndarray.
+        data_vars: A dictionary of pairs of `var_names: var_data` where
+            `coord_data` is an np.ndarray.
+        metadata: For all names in `coords` and `data_vars`, metadata entries
+            with the required fields:
+
+            - dims: tuple of names in dim,
+            - attrs: dictionary whose values may be strings, ints, floats
+
+            The metadata argument may also contain a special `global` key
+            paired with a dictionary of global metadata of arbitrary name and
+            values of string, integer, or float types.
+        encoding: (to document)
+        validate: A bool that defaults to True, enforcing the consistency
+            of the supplied dictionaries
+
+
+    Examples:
+
+    ..
+        # This code is commented, copy and paste in to python, then paste the
+        # output below to keep it clean
+        from pprint import pprint
+        import pywatershed as pws
+        import numpy as np
+        coords = {
+            'time': np.arange('2005-02-01', '2005-02-03', dtype='datetime64[D]'),
+            'space': np.arange(3)
+        }
+        dims = {'ntime': len(coords['time']), 'nspace': len(coords['space'])}
+        data = {'precip': 10 * np.random.rand(dims['ntime'], dims['nspace'])}
+        metadata = {
+            "time": {"dims": ("ntime",), "attrs": {"description": "days"}},
+            "space": {
+                "dims": ("nspace",),
+                "attrs": {"description": "points of interest"},
+            },
+            "precip": {
+                "dims": (
+                    "ntime",
+                    "nspace",
+                ),
+                "attrs": {
+                    "description": "precipitation rate of all phases",
+                    "units": "mm/day",
+                },
+            },
+        }
+        dd = pws.base.DatasetDict(
+            dims=dims, coords=coords, data_vars=data, metadata=metadata
+        )
+        dd.dims.keys()
+        dd.variables.keys()
+        ds = dd.to_xr_ds()
+        print(ds)
+
+
+    >>> from pprint import pprint
+    >>> import pywatershed as pws
+    >>> import numpy as np
+    >>> coords = {
+    ...     "time": np.arange(
+    ...         "2005-02-01", "2005-02-03", dtype="datetime64[D]"
+    ...     ),
+    ...     "space": np.arange(3),
+    ... }
+    >>> dims = {"ntime": len(coords["time"]), "nspace": len(coords["space"])}
+    >>> data = {"precip": 10 * np.random.rand(dims["ntime"], dims["nspace"])}
+    >>> metadata = {
+    ...     "time": {"dims": ("ntime",), "attrs": {"description": "days"}},
+    ...     "space": {
+    ...         "dims": ("nspace",),
+    ...         "attrs": {"description": "points of interest"},
+    ...     },
+    ...     "precip": {
+    ...         "dims": (
+    ...             "ntime",
+    ...             "nspace",
+    ...         ),
+    ...         "attrs": {
+    ...             "description": "precipitation rate of all phases",
+    ...             "units": "mm/day",
+    ...         },
+    ...     },
+    ... }
+    >>> dd = pws.base.DatasetDict(
+    ...     dims=dims, coords=coords, data_vars=data, metadata=metadata
+    ... )
+    >>> dd.dims.keys()
+    dict_keys(['ntime', 'nspace'])
+    >>> dd.variables.keys()
+    dict_keys(['time', 'space', 'precip'])
+    >>> ds = dd.to_xr_ds()
+    >>> print(ds)
+    <xarray.Dataset>
+    Dimensions:  (ntime: 2, nspace: 3)
+    Coordinates:
+        time     (ntime) datetime64[ns] 2005-02-01 2005-02-02
+        space    (nspace) int64 0 1 2
+    Dimensions without coordinates: ntime, nspace
+    Data variables:
+        precip   (ntime, nspace) float64 8.835 5.667 9.593 7.239 3.92 0.4195
+
+    """
+
     def __init__(
         self,
-        dims: dict = None,
+        dims: dict[int] = None,
         coords: dict = None,
         data_vars: dict = None,
         metadata: dict = None,
         encoding: dict = None,
         validate: bool = True,
-    ) -> "DatasetDict":
-        """DatasetDict class which maps between netcdf conventions
-
-        Note: Methods do not deep copy by default, but not all
-              references may be preserved. use with caution
-        """
-
+    ) -> None:
         if dims is None:
             dims = {}
         if coords is None:
@@ -129,6 +256,14 @@ class DatasetDict(Accessor):
 
     @property
     def data(self, copy=False) -> dict:
+        """Return a dict of dicts: dims, coords, data_vars, metadata, encoding
+
+        Args:
+            copy: boolean if a deepcopy is desired
+
+        Returns:
+            A dict of dicts containing all the data
+        """
         data = {
             "dims": self._dims,
             "coords": self._coords,
@@ -162,32 +297,46 @@ class DatasetDict(Accessor):
     def from_yaml(cls, the_file: Union[str, pl.Path]) -> dict:
         """Read from a YAML file"""
         import yaml
-           
+
         with pl.Path(the_file).open("r") as file_stream:
             dd = yaml.load(file_stream, Loader=yaml.Loader)
-            
+
         for cv in ["coords", "data_vars"]:
             for vv in dd[cv].keys():
                 # TODO, introduce dims for shape if necessary
                 if not isinstance(dd[cv][vv], np.ndarray):
                     dd[cv][vv] = np.array(dd[cv][vv])
-                    
+
         return cls(**dd)
 
     @classmethod
     def from_dict(cls, dict_in, copy=False):
+        """Return this class from a passed dictionary.
+        Args:
+            dict_in: a dictionary from which to create an instance of this
+                class
+            copy: boolean if the passed dictionary should be deep copied
+        Returns:
+            A object of this class.
+        """
         if copy:
             return cls(**deepcopy(dict_in))
         return cls(**dict_in)
 
     @property
     def spatial_coord_names(self) -> dict:
-        """Return the spatial coordinate names."""
+        """Return the spatial coordinate names.
+        Args:
+           None
+        Returns:
+           Dictionary of spatial coordinates with names.
+        """
         attrs = self._metadata["global"]
         return {kk: vv for kk, vv in attrs.items() if "spatial" in kk}
 
     @classmethod
     def from_ds(cls, ds):
+        """Get this class from a dataset (nc4 or xarray)."""
         # detect typ as xr or nc4
         if isinstance(ds, xr.Dataset):
             return cls(**xr_ds_to_dd(ds))
@@ -197,21 +346,26 @@ class DatasetDict(Accessor):
             raise ValueError("Passed dataset neither from xarray nor netCDF4")
 
     @classmethod
-    def from_netcdf(cls, nc_file, use_xr=False) -> "DatasetDict":
-        """Load from a netcdf file"""
+    def from_netcdf(
+        cls, nc_file: fileish, use_xr: bool = False, encoding=False
+    ) -> "DatasetDict":
+        """Load this class from a netcdf file."""
         # handle more than one file?
         if use_xr:
-            return cls(**xr_ds_to_dd(nc_file))
+            return cls(**xr_ds_to_dd(nc_file, encoding=encoding))
         else:
-            return cls(**nc4_ds_to_dd(nc_file))
+            return cls(**nc4_ds_to_dd(nc_file, use_xr_enc=encoding))
 
     def to_xr_ds(self) -> xr.Dataset:
+        """Export to an xarray Dataset"""
         return dd_to_xr_ds(self.data)
 
     def to_xr_dd(self) -> dict:
+        """Export to an xarray DatasetDict (xr.Dataset.to_dict())."""
         return dd_to_xr_dd(self.data)
 
     def to_nc4_ds(self, filename) -> None:
+        """Export to a netcdf file via netcdf4"""
         return dd_to_nc4_ds(self.data, filename)
 
     def to_netcdf(self, filename, use_xr=False) -> None:
@@ -223,6 +377,7 @@ class DatasetDict(Accessor):
         return
 
     def rename_dim(self, name_maps: dict, in_place: bool = True):
+        """Rename dimensions."""
         if not in_place:
             raise NotImplementedError
         for old_name, new_name in name_maps.items():
@@ -237,6 +392,7 @@ class DatasetDict(Accessor):
         return
 
     def rename_var(self, name_maps: dict, in_place=True):
+        """Rename variables."""
         if not in_place:
             raise NotImplementedError
         for old_name, new_name in name_maps.items():
@@ -250,7 +406,7 @@ class DatasetDict(Accessor):
         return
 
     def drop_var(self, var_names):
-        """Drop variables from the dd"""
+        """Drop variables"""
         if not isinstance(var_names, list):
             var_names = [var_names]
         for vv in var_names:
@@ -312,13 +468,27 @@ class DatasetDict(Accessor):
 
     def subset(
         self,
-        keys: listish = None,
-        copy=False,
+        keys: Iterable,
+        copy: bool = False,
         keep_global: bool = False,
         keep_global_metadata: bool = None,
         keep_global_encoding: bool = None,
+        strict: bool = False,
     ) -> "DatasetDict":
-        """Subset a DatasetDict to keys in data_vars or coordinates."""
+        """Subset a DatasetDict to keys in data_vars or coordinates
+
+        Args:
+            keys: Iterable to subset on
+            copy: bool to copy the input or edit it
+            keep_global: bool that sets both keep_global_metadata and
+                keep_global_encoding
+            keep_global_metadata: bool retain the global metadata in the subset
+            keep_global_encoding: bool retain the global encoding in the subset
+
+        Returns:
+          A subset Parameter object on the passed keys.
+
+        """
         # Instantiate the DatasetDict at end as deepcopy will be used
         # on the constructed subset dict (if requested)
 
@@ -327,6 +497,8 @@ class DatasetDict(Accessor):
 
         for kk in keys:
             if kk not in self.variables.keys():
+                if not strict:
+                    continue
                 msg = f"key '{kk}' not in this {type(self).__name__} object"
                 raise KeyError(msg)
 
@@ -392,8 +564,17 @@ class DatasetDict(Accessor):
         self,
         coord_name: str,
         where: np.ndarray,
-        in_place=True,
-    ):
+    ) -> None:
+        """Subset DatasetDict to a np.where along a named coordinate in-place
+
+        Args:
+            coord_name: string name of a coordinate
+            where: the result of an np.where along that coordinate (or likewise
+                constructed)
+
+        Returns:
+            None
+        """
         # only doing it in place for now
 
         # TODO: should almost work for 2+D? just linearizes np.where
@@ -445,7 +626,13 @@ class DatasetDict(Accessor):
 
         return
 
-    def validate(self):
+    def validate(self) -> None:
+        """Check that a DatasetDict is internally consistent.
+
+        Returns:
+            None
+        """
+
         # required keys
         assert sorted(self.data.keys()) == sorted(
             ["dims", "coords", "data_vars", "metadata", "encoding"]
@@ -479,6 +666,17 @@ class DatasetDict(Accessor):
 
     @classmethod
     def merge(cls, *dd_list, copy=True, del_global_src=True):
+        """Merge a list of this class in to a single instance
+
+        Args:
+            dd_list: a list of object of this class
+            copy: boolean if a deep copy of inputs is desired
+            del_global_src: boolean to delete encodings' global source
+                attribute prior to merging (as these often conflict)
+
+        Returns:
+            An object of this class.
+        """
         if del_global_src or copy:
             dd_list = [deepcopy(dd.data) for dd in dd_list]
             if del_global_src:
@@ -500,7 +698,7 @@ class DatasetDict(Accessor):
 
 
 def _is_equal(aa, bb):
-    """How sketchy is this?"""
+    # How sketchy is this? (honest question)
     try:
         np.testing.assert_equal(aa, bb)
         return True
@@ -545,7 +743,7 @@ def _merge_dicts(
     return merged
 
 
-def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
+def xr_ds_to_dd(file_or_ds, schema_only=False, encoding=True) -> dict:
     """Xarray dataset to a pywatershed dataset dict
 
     The pyws data model moves metadata off the variables to a separate
@@ -561,7 +759,8 @@ def xr_ds_to_dd(file_or_ds, schema_only=False) -> dict:
         data_arg = False
     else:
         data_arg = "array"
-    dd = xr_ds.to_dict(data=data_arg, encoding=True)
+
+    dd = xr_ds.to_dict(data=data_arg, encoding=encoding)
 
     dd = xr_dd_to_dd(dd)
 
@@ -583,12 +782,18 @@ def xr_dd_to_dd(xr_dd: dict) -> dict:
     dd["data_vars"] = {}
     for key, val in var_metadata.items():
         dd["data_vars"][key] = val.pop("data")
-        dd["encoding"][key] = val.pop("encoding")
+        if "encoding" in val.keys():
+            dd["encoding"][key] = val.pop("encoding")
+        else:
+            dd["encoding"][key] = {}
 
     dd["coords"] = {}
     for key, val in coord_metadata.items():
         dd["coords"][key] = val.pop("data")
-        dd["encoding"][key] = val.pop("encoding")
+        if "encoding" in val.keys():
+            dd["encoding"][key] = val.pop("encoding")
+        else:
+            dd["encoding"][key] = {}
 
     dd["metadata"] = {**coord_metadata, **var_metadata}
     dd["metadata"]["global"] = dd.pop("attrs")
@@ -615,7 +820,8 @@ def dd_to_xr_dd(dd: dict) -> dict:
         elif key in dd["coords"].keys():
             cv = "coords"
 
-        key_enc = None
+        key_enc = {}
+
         if key in encoding.keys():
             key_enc = encoding[key]
         dd[cv][key] = {
@@ -793,7 +999,7 @@ def nc4_ds_to_dd(
     else:
         if use_xr_enc:
             raise ValueError(
-                "Must pass a file and not an nc4.Dataset to use_xr_enc argument"
+                "Pass a file and not an nc4.Dataset to use_xr_enc argument"
             )
 
     xr_dd = nc4_ds_to_xr_dd(nc4_file_ds, xr_enc=xr_enc)
@@ -910,3 +1116,7 @@ def dd_to_nc4_ds(dd, nc_file):
                 var.setncattr("dtype", "bool")
 
     return
+
+
+def open_datasetdict(nc_file: fileish, use_xr=True):
+    return DatasetDict.from_netcdf(nc_file, use_xr=use_xr)

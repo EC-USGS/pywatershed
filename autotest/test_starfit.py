@@ -6,7 +6,7 @@ import pytest
 import xarray as xr
 
 from pywatershed.base.control import Control
-from pywatershed.hydrology.Starfit import Starfit
+from pywatershed.hydrology.starfit import Starfit
 from pywatershed.parameters import StarfitParameters
 
 
@@ -18,7 +18,8 @@ def test_regress(tmp_path):
     tmp_path = pl.Path(tmp_path)
     print(tmp_path)
     data_dir = pl.Path(
-        "/Users/jmccreight/usgs/pywatershed/pywatershed/hydrology/starfit_minimal"
+        "/Users/jmccreight/usgs/pywatershed/pywatershed/"
+        "hydrology/starfit_minimal"
     )
 
     # TODO: make this work with the original source files
@@ -40,8 +41,8 @@ def test_regress(tmp_path):
         params.variables["start_time"].min(),
         np.datetime64("2019-09-30 00:00:00"),
         np.timedelta64(24, "h"),
-        params=params,
     )
+    control.options["budget_type"] = "warn"
 
     # # load csv files into dataframes
     # output_dir = domain["prms_output_dir"]
@@ -52,8 +53,9 @@ def test_regress(tmp_path):
 
     sf = Starfit(
         control,
+        discretization=None,
+        parameters=params,
         **input_variables,
-        budget_type="warn",
     )
 
     sf.initialize_netcdf(tmp_path)

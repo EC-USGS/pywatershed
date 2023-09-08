@@ -59,10 +59,13 @@ autotest/temp
 # sphinx
 generated/
 
-# gis data
+# example output data and gis data
+examples/0*/
 examples/pynhm_gis
 examples/pywatershed_gis
 examples/model_loop_custom_output
+pywatershed/data/pynhm_gis
+pywatershed/data/pywatershed_gis
 
 # graphics
 *.png

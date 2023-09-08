@@ -1,5 +1,6 @@
 import pathlib as pl
 import shutil
+from itertools import product
 
 import numpy as np
 import pytest
@@ -24,16 +25,16 @@ def params(domain):
 
 
 @pytest.fixture(scope="function")
-def control(domain, params):
-    control = Control.load(domain["control_file"], params=params)
+def control(domain):
+    control = Control.load(domain["control_file"])
     control.edit_n_time_steps(n_time_steps)
+    control.options["budget_type"] = "error"
     return control
 
 
 # Things to parameterize
 # optional variables to processes
 # optional variables to budgets
-budget_type = "error"  # vary this? shouldnt matter
 
 check_vars = {
     "PRMSCanopy": [
@@ -58,7 +59,7 @@ check_budget_sum_vars_params = [False, True, "some"]
     check_budget_sum_vars_params,
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
-def test_process_budgets(domain, control, tmp_path, budget_sum_param):
+def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
     model_procs = [pywatershed.PRMSCanopy, pywatershed.PRMSChannel]
@@ -78,13 +79,13 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
 
     # dont need any PRMS inputs for the model specified, so this is sufficient
     input_dir = domain["prms_output_dir"]
+    control.options["input_dir"] = input_dir
 
     # TODO: Eliminate potet and other variables from being used
     model = Model(
-        *model_procs,
+        model_procs,
         control=control,
-        input_dir=input_dir,
-        budget_type=budget_type,
+        parameters=params,
     )
 
     check_dict = {proc: {} for proc in check_vars.keys()}
@@ -100,6 +101,13 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
         budget_args=budget_args,
         output_vars=output_vars,
     )
+
+    with pytest.warns(UserWarning):
+        model.initialize_netcdf(
+            tmp_dir,
+            budget_args=budget_args,
+            output_vars=output_vars,
+        )
 
     for tt in range(n_time_steps):
         model.advance()
@@ -154,12 +162,24 @@ def test_process_budgets(domain, control, tmp_path, budget_sum_param):
     return
 
 
-@pytest.mark.parametrize(
-    "separate",
-    [False, True],
-    ids=["grp_by_process", "separate"],
+separate_outputs = [False, True]
+output_vars = [None, [var for kk, vv in check_vars.items() for var in vv]]
+
+
+@pytest.fixture(
+    scope="function",
+    params=list(product(separate_outputs, output_vars)),
 )
-def test_separate_together(domain, control, tmp_path, separate):
+def sep_vars(request):
+    return (request.param[0], request.param[1])
+
+
+def test_separate_together_var_list(
+    domain, control, params, tmp_path, sep_vars
+):
+    separate = sep_vars[0]
+    output_vars = sep_vars[1]
+
     tmp_dir = pl.Path(tmp_path)
 
     model_procs = [
@@ -174,22 +194,28 @@ def test_separate_together(domain, control, tmp_path, separate):
     domain_output_dir = domain["prms_output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
+    control.options["input_dir"] = input_dir
+    control.options["netcdf_output_var_names"] = output_vars
+    control.options["netcdf_output_separate_files"] = separate
+
     # Could limit this to just the variables in model_procs
     for ff in domain_output_dir.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
     for ff in domain_output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    model = Model(
-        *model_procs,
-        control=control,
-        input_dir=input_dir,
-        budget_type=budget_type,
-    )
+    with pytest.raises(RuntimeError):
+        model = Model(
+            model_procs,
+            control=control,
+            parameters=params,
+        )
 
-    model.initialize_netcdf(
-        output_dir=test_output_dir,
-        separate_files=separate,
+    control.options["netcdf_output_dir"] = test_output_dir
+    model = Model(
+        model_procs,
+        control=control,
+        parameters=params,
     )
 
     for tt in range(n_time_steps):
@@ -202,6 +228,8 @@ def test_separate_together(domain, control, tmp_path, separate):
     if separate:
         for proc_key, proc in model.processes.items():
             for vv in proc.variables:
+                if output_vars is not None and vv not in output_vars:
+                    continue
                 nc_file = test_output_dir / f"{vv}.nc"
                 assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
@@ -218,21 +246,26 @@ def test_separate_together(domain, control, tmp_path, separate):
         for proc_key, proc in model.processes.items():
             # non-budget
             nc_file = test_output_dir / f"{proc_key}.nc"
-            assert nc_file.exists()
-            ds = xr.open_dataset(nc_file, decode_timedelta=False)
-            proc_vars = set(proc.get_variables())
-            nc_vars = set(ds.data_vars)
-            assert proc_vars == nc_vars
-            for vv in proc.variables:
-                if isinstance(
-                    proc[vv], pywatershed.base.timeseries.TimeseriesArray
-                ):
-                    assert (ds[vv].values == proc[vv].data).all()
+            if output_vars is None or proc_key in check_vars.keys():
+                assert nc_file.exists()
 
-                else:
-                    assert (ds[vv][-1, :] == proc[vv]).all()
+                ds = xr.open_dataset(nc_file, decode_timedelta=False)
+                proc_vars = set(proc.get_variables())
+                nc_vars = set(ds.data_vars)
+                assert proc_vars == nc_vars
+                for vv in proc.variables:
+                    if output_vars is not None and vv not in output_vars:
+                        continue
 
-            del ds
+                    if isinstance(
+                        proc[vv], pywatershed.base.timeseries.TimeseriesArray
+                    ):
+                        assert (ds[vv].values == proc[vv].data).all()
+
+                    else:
+                        assert (ds[vv][-1, :] == proc[vv]).all()
+
+                del ds
 
             # budget
             # no budgets for solar or atmosphere

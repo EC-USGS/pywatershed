@@ -23,11 +23,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set environment variables
-        run: |
-          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
-          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
-
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
@@ -86,7 +81,7 @@ jobs:
           echo "and run"
           echo "  isort ./pywatershed ./autotest"
           echo "and then commit the changes."
-          isort --check --diff ./pywatershed
+          isort --check --diff ./pywatershed ./autotest
 
       - name: Run black
         run: |
@@ -95,7 +90,7 @@ jobs:
           echo "and run"
           echo "  black ./pywatershed ./autotest"
           echo "and then commit the changes."
-          black --check --diff ./pywatershed
+          black --check --diff ./pywatershed ./autotest
 
       - name: Run flake8
         run: |

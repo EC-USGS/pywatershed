@@ -18,7 +18,7 @@ def test_init(domain, tmp_path):
     # params.to_netcdf(nc_file, use_xr=True)
 
     # Set information from the control file
-    control = Control.load(domain["control_file"], params=params)
+    control = Control.load(domain["control_file"])
 
     # load csv files into dataframes
     swb_output_dir = domain["swb_output_dir"]
@@ -30,6 +30,8 @@ def test_init(domain, tmp_path):
 
     swb_rz = SWBRootZone(
         control,
+        None,
+        params,
         **input_variables,
         budget_type="warn",
     )
@@ -38,15 +40,16 @@ def test_init(domain, tmp_path):
     swb_rz.initialize_netcdf(nc_parent)
 
     output_compare = {}
-    vars_compare = (
-        "swb_soil_storage",
-    )
+    vars_compare = ("swb_soil_storage",)
 
     for key in SWBRootZone.get_variables():
         if key not in vars_compare:
             continue
-    
-        base_nc_path = pl.Path(swb_output_dir) / f"hru_1_5000__{key.removeprefix('swb_')}__1979-01-01_to_2019-12-31__1_by_1.nc"
+
+        base_nc_path = (
+            pl.Path(swb_output_dir)
+            / f"hru_1_5000__{key.removeprefix('swb_')}__1979-01-01_to_2019-12-31__1_by_1.nc"
+        )
         compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
         output_compare[key] = (base_nc_path, compare_nc_path)
 
@@ -61,7 +64,7 @@ def test_init(domain, tmp_path):
 
     swb_rz.finalize()
 
-    #breakpoint()
+    # breakpoint()
 
     assert_error = False
     for key, (base, compare) in output_compare.items():
@@ -77,6 +80,6 @@ def test_init(domain, tmp_path):
             assert_error = True
     assert not assert_error, "comparison failed"
 
-    #breakpoint()
+    # breakpoint()
 
     return

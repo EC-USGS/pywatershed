@@ -1,4 +1,5 @@
 from ..base.conservative_process import ConservativeProcess
+from ..parameters import Parameters
 
 from pywatershed.base.adapter import adaptable
 from pywatershed.base.control import Control
@@ -18,6 +19,8 @@ class SWBRootZone(ConservativeProcess):
     def __init__(
         self,
         control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
         net_rain: adaptable,
         snowmelt: adaptable,
         potet: adaptable,
@@ -28,15 +31,17 @@ class SWBRootZone(ConservativeProcess):
     ):
         super().__init__(
             control=control,
-            verbose=verbose,
-            load_n_time_batches=load_n_time_batches,
+            discretization=discretization,
+            parameters=parameters,
         )
         self.name = "SWBRootZone"
 
-        self._calc_method = str(calc_method)
-
         self._set_inputs(locals())
+        self._set_options(locals())
+
         self._set_budget(budget_type)
+        # self._init_calc_method()
+        self._calc_method = str(calc_method)
 
     @staticmethod
     def get_dimensions() -> tuple:

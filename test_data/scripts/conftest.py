@@ -37,7 +37,7 @@ def exe():
         exe_name += "_win.exe"
     elif platform == "darwin":
         if processor() == "arm":
-            exe_name += "_mac_m1_intel"
+            exe_name += "_mac_m1_intel_dbl_prec"
         else:
             exe_name += "_mac"
     elif platform == "linux":

@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-77
+78
 ####
 nhruOut_freq
 1
@@ -251,12 +251,13 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-77
+78
 4
 albedo
 cap_infil_tot
 contrib_fraction
 dprst_evap_hru
+dprst_insroff_hru
 dprst_seep_hru
 dprst_stor_hru
 dprst_sroff_hru

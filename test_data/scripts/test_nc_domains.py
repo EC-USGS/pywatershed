@@ -5,7 +5,7 @@ import pytest
 import xarray as xr
 
 from pywatershed import CsvFile, Soltab
-from pywatershed.constants import epsilon64, zero
+from pywatershed.constants import epsilon32, zero
 from pywatershed.parameters import PrmsParameters
 
 
@@ -117,7 +117,7 @@ def test_misc_final(misc_nc_final_input):
             data[vv] = result
 
         wh_through = (
-            ((data["pk_ice_prev"] + data["freeh2o_prev"]) <= epsilon64)
+            ((data["pk_ice_prev"] + data["freeh2o_prev"]) <= epsilon32)
             & ~(data["newsnow"] == 1)
         ) | (data["pptmix_nopack"] == 1)
 
@@ -139,6 +139,8 @@ def test_misc_final(misc_nc_final_input):
         prev_file = parent_dir / f"{var_prev_name}.nc"
         current = xr.open_dataset(current_file)[var_name]
         previous = xr.open_dataset(prev_file)[var_prev_name]
-        change_file = parent_dir / f"{var_name}_change.nc"
-        (current - previous).to_netcdf(change_file)
+        var_change_name = f"{var_name}_change"
+        change = (current - previous).rename(var_change_name).to_dataset()
+        change_file = parent_dir / f"{var_change_name}.nc"
+        change.to_netcdf(change_file)
         assert change_file.exists()

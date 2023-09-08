@@ -249,6 +249,7 @@ class Soltab(Accessor):
         soltab_file: fileish,
         output_dir: fileish = None,
         nhm_ids: np.ndarray = None,
+        chunk_sizes: dict = {"doy": 0, "nhm_id": 0},
     ):
         self.soltab_file = soltab_file
         self.output_dir = output_dir
@@ -273,7 +274,7 @@ class Soltab(Accessor):
         ) = load_soltab_debug(self.soltab_file)
 
         if self.output_dir:
-            self.to_netcdf()
+            self.to_netcdf(chunk_sizes=chunk_sizes)
 
         return
 
@@ -283,7 +284,7 @@ class Soltab(Accessor):
         nhm_ids: np.ndarray = None,
         zlib: bool = True,
         complevel: int = 4,
-        chunk_sizes: dict = {"doy": 0, "hruid": 0},
+        chunk_sizes: dict = {"doy": 0, "nhm_id": 0},
     ):
         # This is just different enough to make it it's own thing compared
         # to the CSV outputs of PRMS.
@@ -320,14 +321,17 @@ class Soltab(Accessor):
             )
             hruid[:] = self.spatial_coord
 
+            dims = ("doy", self.spatial_coord_name)
+            chunk_sizes_var = [chunk_sizes[vv] for vv in dims]
+
             variables[vv] = ds.createVariable(
                 vv,
                 "f4",
-                ("doy", self.spatial_coord_name),
+                dims,
                 fill_value=nc4.default_fillvals["f4"],
                 zlib=zlib,
                 complevel=complevel,
-                chunksizes=tuple(chunk_sizes.values()),
+                chunksizes=tuple(chunk_sizes_var),
             )
             variables[vv][:] = self[vv]
             ds.close()

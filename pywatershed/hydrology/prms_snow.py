@@ -1081,7 +1081,7 @@ class PRMSSnow(ConservativeProcess):
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
         wh_through = (
-            ((pk_ice_prev + freeh2o_prev) <= epsilon64) & ~newsnow
+            ((pk_ice_prev + freeh2o_prev) <= epsilon32) & ~(newsnow == 1)
         ) | (pptmix_nopack == 1)
         through_rain[:] = np.where(wh_through, net_rain, zero)
 

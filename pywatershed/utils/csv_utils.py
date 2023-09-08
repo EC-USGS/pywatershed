@@ -124,7 +124,7 @@ class CsvFile:
         clobber: bool = True,
         zlib: bool = True,
         complevel: int = 4,
-        chunk_sizes: dict = {"time": 30, "hruid": 0},
+        chunk_sizes: dict = {"time": 30, "nhm_id": 0, "nhm_seg": 0},
     ) -> None:
         """Output the csv output data to a netcdf file
 
@@ -192,14 +192,17 @@ class CsvFile:
             ids = self._coordinates[dim_name]
             nids = len(ids)
 
+            dims = ("time", dim_name)
+            chunk_sizes_var = [chunk_sizes[vv] for vv in dims]
+
             var = ds.createVariable(
                 variable_name,
                 variable_type,
-                ("time", dim_name),
+                dims,
                 fill_value=nc4.default_fillvals[variable_type],  # JLM: sus
                 zlib=zlib,
                 complevel=complevel,
-                chunksizes=tuple(chunk_sizes.values()),
+                chunksizes=tuple(chunk_sizes_var),
             )
             # add additional meta data
             if self.meta.is_available(variable_name):

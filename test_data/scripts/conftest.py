@@ -37,9 +37,9 @@ def exe():
         exe_name += "_win.exe"
     elif platform == "darwin":
         if processor() == "arm":
-            exe_name += "_mac_m1_intel_dbl_prec"
+            exe_name += "_mac_m1_dbl_prec"
         else:
-            exe_name += "_mac"
+            exe_name += "_mac_intel_dbl_prec"
     elif platform == "linux":
         exe_name += "_linux"
     exe_pth = pl.Path(f"../../bin/{exe_name}").resolve()

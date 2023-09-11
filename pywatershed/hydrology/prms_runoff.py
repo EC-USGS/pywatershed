@@ -1048,7 +1048,9 @@ class PRMSRunoff(ConservativeProcess):
             if sri < 0.0:
                 if sri < -NEARZERO:
                     sri = 0.0
-            dprst_insroff_hru = dprst_srp + dprst_sri
+
+        # <<<
+        dprst_insroff_hru = dprst_srp + dprst_sri
 
         dprst_area_open = 0.0
         if dprst_vol_open > 0.0:

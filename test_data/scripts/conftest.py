@@ -40,7 +40,7 @@ def exe():
         else:
             exe_name = "prms_mac_intel_gfort_dbl_prec"
     elif platform == "linux":
-        exe_name = "prms_linux_gfort_mixed_prec"
+        exe_name = "prms_linux_gfort_dbl_prec"
     exe_pth = pl.Path(f"../../bin/{exe_name}").resolve()
     return exe_pth
 

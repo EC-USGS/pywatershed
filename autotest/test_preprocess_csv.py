@@ -7,6 +7,8 @@ import pandas as pd
 
 from pywatershed import CsvFile
 
+# these CSV files are protected from deletion in CI by
+# test_data/scripts/test_remove_csvs.py
 csv_test_vars = ["hru_ppt", "intcp_stor", "potet", "gwres_stor"]
 
 

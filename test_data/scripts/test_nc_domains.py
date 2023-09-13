@@ -80,7 +80,6 @@ def test_misc_netcdf(misc_nc_files_input):
     assert True
 
 
-@pytest.mark.order(after=["test_misc_netcdf", "test_csv_to_previous_netcdf"])
 def test_misc_final(misc_nc_final_input):
     if misc_nc_final_input.name == "through_rain":
         data_dir = misc_nc_final_input.parent

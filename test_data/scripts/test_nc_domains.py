@@ -85,11 +85,13 @@ def test_misc_final(misc_nc_final_input):
     if misc_nc_final_input.name == "through_rain":
         data_dir = misc_nc_final_input.parent
         data_vars = [
-            "net_rain",
-            "pk_ice_prev",
-            "freeh2o_prev",
-            "newsnow",
+            "net_ppt",
             "pptmix_nopack",
+            "snowmelt",
+            "pkwater_equiv",
+            "snow_evap",
+            "net_snow",
+            "net_rain",
         ]
 
         data = {}
@@ -116,13 +118,26 @@ def test_misc_final(misc_nc_final_input):
 
             data[vv] = result
 
-        wh_through = (
-            ((data["pk_ice_prev"] + data["freeh2o_prev"]) <= epsilon32)
-            & ~(data["newsnow"] == 1)
-        ) | (data["pptmix_nopack"] == 1)
+        nearzero = 1.0e-6
 
-        through_rain = data["net_rain"].copy()
-        through_rain[:] = np.where(wh_through, data["net_rain"], zero)
+        cond1 = data["net_ppt"] > zero
+        cond2 = data["pptmix_nopack"] != 0
+        cond3 = data["snowmelt"] < nearzero
+        cond4 = data["pkwater_equiv"] < epsilon32
+        cond5 = data["snow_evap"] < nearzero
+        cond6 = data["net_snow"] < nearzero
+
+        through_rain = data["net_rain"] * zero
+        # these are in reverse order
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond6, data["net_rain"], zero
+        )
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond5, data["net_ppt"], through_rain
+        )
+        through_rain[:] = np.where(
+            cond1 & cond2, data["net_rain"], through_rain
+        )
 
         through_rain.to_dataset(name="through_rain").to_netcdf(
             misc_nc_final_input.parent / "through_rain.nc"
@@ -131,7 +146,12 @@ def test_misc_final(misc_nc_final_input):
         for vv in data_vars:
             data[vv].close()
 
-    if misc_nc_final_input.name in ["pk_ice", "freeh2o"]:
+    if misc_nc_final_input.name in [
+        "pk_ice",
+        "freeh2o",
+        "hru_impervstor",
+        "dprst_stor_hru",
+    ]:
         var_name = misc_nc_final_input.name
         var_prev_name = f"{var_name}_prev"
         parent_dir = misc_nc_final_input.parent

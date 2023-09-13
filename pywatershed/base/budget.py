@@ -316,9 +316,9 @@ class Budget(Accessor):
             self._zero_sum = False
             wh_not_cond = np.where(~cond)
             msg = (
-                "The flux unit balance not equal to the change in unit storage"
-                f"at time {self.control.current_time} and at the following "
-                f"locations for {self.description}: {wh_not_cond}"
+                "The flux unit balance not equal to the change in unit "
+                f"storage at time {self.control.current_time} and at the "
+                f"following locations for {self.description}: {wh_not_cond}"
             )
             if self.imbalance_fatal:
                 raise ValueError(msg)

@@ -1080,10 +1080,21 @@ class PRMSSnow(ConservativeProcess):
         freeh2o_change[:] = freeh2o - freeh2o_prev
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
-        wh_through = (
-            ((pk_ice_prev + freeh2o_prev) <= epsilon32) & ~(newsnow == 1)
-        ) | (pptmix_nopack == 1)
-        through_rain[:] = np.where(wh_through, net_rain, zero)
+        nearzero = 1.0e-6
+        cond1 = net_ppt > zero
+        cond2 = pptmix_nopack != 0
+        cond3 = snowmelt < nearzero
+        cond4 = pkwater_equiv < epsilon32
+        cond5 = snow_evap < nearzero
+        cond6 = net_snow < nearzero
+        # reverse order from the if statements
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond6, net_rain, zero
+        )
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond5, net_ppt, through_rain
+        )
+        through_rain[:] = np.where(cond1 & cond2, net_rain, through_rain)
 
         return (
             ai,

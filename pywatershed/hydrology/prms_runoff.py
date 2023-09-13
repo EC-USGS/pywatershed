@@ -209,6 +209,7 @@ class PRMSRunoff(ConservativeProcess):
         return {
             "inputs": [
                 # "net_rain",
+                # "net_snow",
                 "through_rain",
                 "snowmelt",
                 "intcp_changeover",

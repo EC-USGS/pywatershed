@@ -80,6 +80,8 @@ final_nc_file_vars = [
     "through_rain",
     "pk_ice",
     "freeh2o",
+    "hru_impervstor",
+    "dprst_stor_hru",
 ]
 
 

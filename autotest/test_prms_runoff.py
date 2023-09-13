@@ -51,6 +51,15 @@ def test_compare_prms(
         "sroff",
         "dprst_evap_hru",
         "hru_impervevap",
+        "dprst_insroff_hru",
+        "dprst_stor_hru",
+        "contrib_fraction",
+        "hru_sroffp",
+        "hru_sroffi",
+        # "hru_impervstor_change",
+        "dprst_sroff_hru",
+        "dprst_insroff_hru",
+        # "dprst_stor_hru_change",
     ]
     output_dir = domain["prms_output_dir"]
 
@@ -72,7 +81,7 @@ def test_compare_prms(
         parameters=parameters,
         calc_method=calc_method,
         **input_variables,
-        budget_type="warn",  # intermittent errors currently
+        budget_type="error",
     )
 
     all_success = True
@@ -90,7 +99,7 @@ def test_compare_prms(
         failfast = True
         detailed = True
         if check:
-            atol = 1.0e-5
+            atol = 1.0e-10
             success = check_timestep_results(
                 runoff, istep, ans, atol, detailed
             )
@@ -113,7 +122,7 @@ def check_timestep_results(storageunit, istep, ans, atol, detailed=False):
     for key in ans.keys():
         a1 = ans[key].current
         a2 = storageunit[key]
-        success = np.isclose(a1, a2, atol=atol).all()
+        success = np.isclose(a1, a2, atol=atol, rtol=atol).all()
         if not success:
             all_success = False
             diff = a1 - a2

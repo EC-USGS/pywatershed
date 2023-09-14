@@ -4,11 +4,8 @@ import sys
 from fnmatch import fnmatch
 from platform import processor
 from typing import List
-import numpy as np
 
 import pytest
-
-from pywatershed import CsvFile, Soltab
 
 
 def pytest_addoption(parser):
@@ -80,13 +77,15 @@ def enforce_scheduler(test_dir):
     return None
 
 
-def collect_simulations(domain_list: list, force: bool = True, verbose: bool = False):
+def collect_simulations(
+    domain_list: list, force: bool = True, verbose: bool = False
+):
     simulations = {}
     for test_dir in test_dirs:
         # ensure this is a self-contained run (all files in repo)
         if not (test_dir / "prcp.cbh").exists():
             continue
-    
+
         # filter selected domains
         if len(domain_list) and (test_dir.name not in domain_list):
             continue
@@ -96,7 +95,16 @@ def collect_simulations(domain_list: list, force: bool = True, verbose: bool = F
             enforce_scheduler(test_dir)
 
         # if control file is found, add simulation
-        ctrl_file = next(iter([p for p in test_dir.iterdir() if p.is_file() and p.name == "control.test"]), None)
+        ctrl_file = next(
+            iter(
+                [
+                    p
+                    for p in test_dir.iterdir()
+                    if p.is_file() and p.name == "control.test"
+                ]
+            ),
+            None,
+        )
         if ctrl_file:
             simulations[str(test_dir)] = ctrl_file.name
 
@@ -127,38 +135,29 @@ def collect_csv_files(simulations: list) -> List[pl.Path]:
     return csv_files
 
 
-def collect_nc_files(simulations: list, var_list: list):
-    sim_dirs = list(simulations.keys())
-    nc_files = []
-    for var in var_list:
-        for sim in sim_dirs:
-            nc_files += [(pl.Path(sim) / f"output/{var}.nc")]
-    return nc_files
-
-
 def pytest_generate_tests(metafunc):
     domain_list = metafunc.config.getoption("domain")
     force = metafunc.config.getoption("force")
     simulations = collect_simulations(domain_list, force)
     csv_files = collect_csv_files(simulations)
 
-    key = "simulation"
-    if key in metafunc.fixturenames:
-        sims = [
-            {"ws": key, "control_file": val} for key, val in simulations.items()
+    if "csv_file" in metafunc.fixturenames:
+        ids = [ff.parent.name + ":" + ff.name for ff in csv_files]
+        metafunc.parametrize("csv_file", csv_files, ids=ids)
+
+    if "soltab_file" in metafunc.fixturenames:
+        soltab_files = [
+            pl.Path(kk) / "soltab_debug" for kk in simulations.keys()
         ]
-        ids = [pl.Path(k).name for k in simulations.keys()]
-        metafunc.parametrize(key, sims, ids=ids, scope="session")
+        ids = [ff.parent.name + ":" + ff.name for ff in soltab_files]
+        metafunc.parametrize(
+            "soltab_file", soltab_files, ids=ids, scope="session"
+        )
 
-    key = "soltab_file"
-    if key in metafunc.fixturenames:
-        soltab_files = [pl.Path(k) / "soltab_debug" for k in simulations.keys()]
-        ids = [f.parent.name + ":" + f.name for f in soltab_files]
-        metafunc.parametrize(key, soltab_files, ids=ids, scope="session")
-
-    key = "csv_file"
-    if key in metafunc.fixturenames:
-        ids = [f.parent.name + ":" + f.name for f in csv_files]
-        metafunc.parametrize(key, csv_files, ids=ids)
-
-    
+    if "simulation" in metafunc.fixturenames:
+        sims = [
+            {"ws": key, "control_file": val}
+            for key, val in simulations.items()
+        ]
+        ids = [pl.Path(kk).name for kk in simulations.keys()]
+        metafunc.parametrize("simulation", sims, ids=ids, scope="session")

@@ -25,18 +25,6 @@ previous_vars = [
     "ssres_stor",
 ]
 
-misc_nc_file_vars = [
-    "infil",
-    "sroff",
-    "ssres_flow",
-    "gwres_flow",
-]
-
-
-final_nc_file_vars = [
-    "through_rain",
-]
-
 
 @pytest.fixture
 def netcdf_file(csv_file) -> Path:
@@ -67,9 +55,9 @@ def netcdf_file(csv_file) -> Path:
     if nc_path.stem in ["sroff", "ssres_flow", "gwres_flow"]:
         params = PrmsParameters.load(domain_dir / "myparam.param")
         var = nc_path.stem
-        ds = xr.open_dataset(data_dir / f"{var}.nc")
+        ds = xr.open_dataset(nc_path)
         ds = ds.rename({var: f"{var}_vol"})
-        ds = ds * params.metadata["hru_in_to_cf"]
+        ds = ds * params.data_vars["hru_in_to_cf"]
         ds.to_netcdf(data_dir / f"{var}_vol.nc")
         ds.close()
 
@@ -80,8 +68,6 @@ def netcdf_file(csv_file) -> Path:
         perv_frac = 1.0 - imperv_frac - dprst_frac
         ds = xr.open_dataset(nc_path.with_suffix(".nc"))
         ds = ds.rename(infil="infil_hru")
-        # not necessary
-        # perv_frac = np.tile(perv_frac, (ds["infil_hru"].shape[0], 1))
         ds["infil_hru"] = ds["infil_hru"] * perv_frac
         ds.to_netcdf(data_dir / "infil_hru.nc")
         ds.close()
@@ -91,6 +77,43 @@ def netcdf_file(csv_file) -> Path:
 
 def make_netcdf_files(netcdf_file):
     print(f"Created NetCDF from CSV: {netcdf_file}")
+
+
+@pytest.fixture(scope="session")
+def soltab_netcdf_file(tmp_path_factory, soltab_file) -> Path:
+    """Convert soltab files to NetCDF, one file for each variable"""
+
+    # the nhm_ids are not available in the solta_debug file currently, so get
+    # them from the domain parameters
+    domain_dir = soltab_file.parent
+    output_dir = domain_dir / "output"
+    output_dir.mkdir(exist_ok=True)
+    root_tmpdir = tmp_path_factory.getbasetemp().parent
+    nc_paths = []
+
+    with FileLock(root_tmpdir / "soltab_nc.lock"):
+        yield soltab_file  # wait til session cleanup
+
+        # this is a hack that should probably rely on the yaml if/when this
+        # fails
+        params = PrmsParameters.load(domain_dir / "myparam.param")
+        nhm_ids = params.parameters["nhm_id"]
+        soltab = Soltab(soltab_file, nhm_ids=nhm_ids)
+
+        already_created = (output_dir / "soltab_potsw.nc").is_file()
+        if not already_created:
+            soltab.to_netcdf(output_dir=output_dir)
+            print(f"Created NetCDF files from soltab file {soltab_file}:")
+
+        for var in soltab.variables:
+            nc_path = output_dir / f"{var}.nc"
+            nc_paths.append(nc_path)
+            assert nc_path.exists()
+            print(f"\t{nc_path}")
+
+
+def make_soltab_netcdf_files(soltab_netcdf_file):
+    print(f"Creating NetCDF files for soltab file {soltab_netcdf_file}")
 
 
 @pytest.fixture(scope="session")
@@ -137,39 +160,6 @@ def final_netcdf_file(tmp_path_factory, simulation) -> Path:
             for vv in data_vars:
                 data[vv].close()
 
-@pytest.fixture(scope="session")
-def soltab_netcdf_file(tmp_path_factory, soltab_file) -> Path:
-    """Convert soltab files to NetCDF, one file for each variable"""
-
-    # the nhm_ids are not available in the solta_debug file currently, so get
-    # them from the domain parameters
-    domain_dir = soltab_file.parent
-    output_dir = domain_dir / "output"
-    output_dir.mkdir(exist_ok=True)
-    root_tmpdir = tmp_path_factory.getbasetemp().parent
-    nc_paths = []
-
-    with FileLock(root_tmpdir / "soltab_nc.lock"):
-        yield soltab_file  # wait til session cleanup
-
-        # this is a hack that should probably rely on the yaml if/when this fails
-        params = PrmsParameters.load(domain_dir / "myparam.param")
-        nhm_ids = params.parameters["nhm_id"]
-        soltab = Soltab(soltab_file, nhm_ids=nhm_ids)
-
-        already_created = (output_dir / "soltab_potsw.nc").is_file()
-        if not already_created:
-            soltab.to_netcdf(output_dir=output_dir)
-            print(f"Created NetCDF files from soltab file {soltab_file}:")
-
-        for var in soltab.variables:
-            nc_path = output_dir / f"{var}.nc" 
-            nc_paths.append(nc_path)
-            assert nc_path.exists()
-            print(f"\t{nc_path}")
-
-def make_soltab_netcdf_files(soltab_netcdf_file):
-    print(f"Creating NetCDF files for soltab file {soltab_netcdf_file}")
 
 def make_final_netcdf_files(final_netcdf_file):
     print(f"Creating final NetCDF file {final_netcdf_file}")

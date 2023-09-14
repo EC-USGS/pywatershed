@@ -3,6 +3,7 @@ import pathlib as pl
 import sys
 from fnmatch import fnmatch
 from platform import processor
+from typing import List
 
 import pytest
 
@@ -55,32 +56,6 @@ test_dirs = sorted(
 # This would change to handle other/additional schedulers
 domain_globs_schedule = ["*conus*"]
 
-# For generating timeseries of previous states
-previous_vars = [
-    "dprst_stor_hru",
-    "freeh2o",
-    "hru_impervstor",
-    "pk_ice",
-    "pref_flow_stor",
-    "slow_stor",
-    "soil_lower",
-    "soil_moist",
-    "soil_rechr",
-    "ssres_stor",
-]
-
-misc_nc_file_vars = [
-    "infil",
-    "sroff",
-    "ssres_flow",
-    "gwres_flow",
-]
-
-
-final_nc_file_vars = [
-    "through_rain",
-]
-
 
 def scheduler_active():
     slurm = os.getenv("SLURM_JOB_ID") is not None
@@ -102,26 +77,38 @@ def enforce_scheduler(test_dir):
     return None
 
 
-def collect_simulations(domain_list: list, force: bool):
+def collect_simulations(
+    domain_list: list, force: bool = True, verbose: bool = False
+):
     simulations = {}
     for test_dir in test_dirs:
-        for pth in test_dir.iterdir():
-            # checking for prcp.cbh ensure this is a self-contained run (all
-            # files in repo)
-            if (
-                (test_dir / "prcp.cbh").exists()
-                and pth.is_file()
-                and pth.name == "control.test"
-            ):
-                if len(domain_list) and (test_dir.name not in domain_list):
-                    continue
+        # ensure this is a self-contained run (all files in repo)
+        if not (test_dir / "prcp.cbh").exists():
+            continue
 
-                if not force:
-                    enforce_scheduler(test_dir)
+        # filter selected domains
+        if len(domain_list) and (test_dir.name not in domain_list):
+            continue
 
-                # add simulation
-                simulations[str(test_dir)] = pth.name
+        # optionally enforce scheduler
+        if not force:
+            enforce_scheduler(test_dir)
 
+        # if control file is found, add simulation
+        ctrl_file = next(
+            iter(
+                [
+                    p
+                    for p in test_dir.iterdir()
+                    if p.is_file() and p.name == "control.test"
+                ]
+            ),
+            None,
+        )
+        if ctrl_file:
+            simulations[str(test_dir)] = ctrl_file.name
+
+    # make sure all requested domains were found
     if len(domain_list) and (len(simulations) < len(domain_list)):
         requested = set(domain_list)
         found = [pl.Path(dd).name for dd in simulations.keys()]
@@ -132,13 +119,14 @@ def collect_simulations(domain_list: list, force: bool):
         )
         pytest.exit(msg)
 
-    print("\nrun_domains.py found the following domains to run:\n")
-    print(f"{list(simulations.keys())}")
+    if verbose:
+        print("\nrun_domains.py found the following domains to run:\n")
+        print(f"{list(simulations.keys())}")
+
     return simulations
 
 
-def collect_csv_files(domain_list: list, force: bool):
-    simulations = collect_simulations(domain_list, force)
+def collect_csv_files(simulations: list) -> List[pl.Path]:
     csv_files = []
     for key, value in simulations.items():
         output_pth = pl.Path(key) / "output"
@@ -147,63 +135,29 @@ def collect_csv_files(domain_list: list, force: bool):
     return csv_files
 
 
-def collect_misc_nc_files(domain_list: list, var_list: list, force: bool):
-    simulations = collect_simulations(domain_list, force)
-    sim_dirs = list(simulations.keys())
-    misc_nc_files = []
-    for var in var_list:
-        for sim in sim_dirs:
-            the_file = pl.Path(sim) / f"output/{var}.nc"
-            # assert the_file.exists()
-            misc_nc_files += [the_file.with_suffix("")]
-
-    return misc_nc_files
-
-
 def pytest_generate_tests(metafunc):
     domain_list = metafunc.config.getoption("domain")
     force = metafunc.config.getoption("force")
+    simulations = collect_simulations(domain_list, force)
+    csv_files = collect_csv_files(simulations)
 
-    if "simulations" in metafunc.fixturenames:
-        simulations = collect_simulations(domain_list, force)
-        sim_list = [
-            {"ws": key, "control_file": val}
-            for key, val in simulations.items()
-        ]
-        ids = [pl.Path(ss).name for ss in simulations.keys()]
-        metafunc.parametrize("simulations", sim_list, ids=ids)
-
-    if "csv_files" in metafunc.fixturenames:
-        csv_files = collect_csv_files(domain_list, force)
+    if "csv_file" in metafunc.fixturenames:
         ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
-        metafunc.parametrize("csv_files", csv_files, ids=ids)
-
-    if "csv_files_prev" in metafunc.fixturenames:
-        csv_files = collect_csv_files(domain_list, force)
-        csv_files = [
-            ff for ff in csv_files if ff.with_suffix("").name in previous_vars
-        ]
-        ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
-        metafunc.parametrize("csv_files_prev", csv_files, ids=ids)
-
-    if "misc_nc_files_input" in metafunc.fixturenames:
-        misc_nc_files = collect_misc_nc_files(
-            domain_list, misc_nc_file_vars, force
-        )
-        ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
-        metafunc.parametrize("misc_nc_files_input", misc_nc_files, ids=ids)
-
-    if "misc_nc_final_input" in metafunc.fixturenames:
-        misc_nc_files = collect_misc_nc_files(
-            domain_list, final_nc_file_vars, force
-        )
-        ids = [ff.parent.parent.name + ":" + ff.name for ff in misc_nc_files]
-        metafunc.parametrize("misc_nc_final_input", misc_nc_files, ids=ids)
+        metafunc.parametrize("csv_file", csv_files, ids=ids)
 
     if "soltab_file" in metafunc.fixturenames:
-        simulations = collect_simulations(domain_list, force)
         soltab_files = [
             pl.Path(kk) / "soltab_debug" for kk in simulations.keys()
         ]
         ids = [ff.parent.name + ":" + ff.name for ff in soltab_files]
-        metafunc.parametrize("soltab_file", soltab_files, ids=ids)
+        metafunc.parametrize(
+            "soltab_file", soltab_files, ids=ids, scope="session"
+        )
+
+    if "simulation" in metafunc.fixturenames:
+        sims = [
+            {"ws": key, "control_file": val}
+            for key, val in simulations.items()
+        ]
+        ids = [pl.Path(kk).name for kk in simulations.keys()]
+        metafunc.parametrize("simulation", sims, ids=ids, scope="session")

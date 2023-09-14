@@ -142,7 +142,7 @@ def pytest_generate_tests(metafunc):
     csv_files = collect_csv_files(simulations)
 
     if "csv_file" in metafunc.fixturenames:
-        ids = [ff.parent.name + ":" + ff.name for ff in csv_files]
+        ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
         metafunc.parametrize("csv_file", csv_files, ids=ids)
 
     if "soltab_file" in metafunc.fixturenames:

@@ -92,7 +92,7 @@ def soltab_netcdf_file(tmp_path_factory, soltab_file) -> Path:
     nc_paths = []
 
     with FileLock(root_tmpdir / "soltab_nc.lock"):
-        yield soltab_file  # wait til session cleanup
+        yield  # postpone the work until session cleanup
 
         # this is a hack that should probably rely on the yaml if/when this
         # fails
@@ -126,7 +126,7 @@ def final_netcdf_file(tmp_path_factory, simulation) -> Path:
     nc_path = data_dir / "through_rain.nc"
 
     with FileLock(root_tmpdir / "final_nc.lock"):
-        yield nc_path  # wait til session cleanup
+        yield  # do this in session cleanup
 
         if nc_path.is_file():
             return

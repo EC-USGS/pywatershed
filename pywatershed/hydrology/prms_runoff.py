@@ -616,8 +616,7 @@ class PRMSRunoff(ConservativeProcess):
                 hru_impervevap[i] = 0.0
 
             avail_et = potet[i] - snow_evap[i] - hru_intcpevap[i]
-            # apparently not used
-            # availh2o = intcp_changeover[i] + net_rain[i]
+            availh2o = intcp_changeover[i] + net_rain[i]
 
             (
                 sri,
@@ -710,7 +709,7 @@ class PRMSRunoff(ConservativeProcess):
                             dprst_flow_coef=dprst_flow_coef[i],
                             dprst_seep_rate_clos=dprst_seep_rate_clos[i],
                             avail_et=avail_et,
-                            net_rain=net_rain[i],
+                            net_rain=availh2o,  # net_rain[i],
                             dprst_in=dprst_in[i],
                             srp=srp,
                             sri=sri,
@@ -874,7 +873,7 @@ class PRMSRunoff(ConservativeProcess):
             avail_water = avail_water + snowmelt
             infil = infil + snowmelt
             if hru_flag == 1:
-                if pkwater_equiv > 0.0 or net_ppt - net_snow < NEARZERO:
+                if pkwater_equiv > 0.0 or net_rain < NEARZERO:
                     # Pervious area computations
                     infil, srp = check_capacity(
                         soil_moist_prev,

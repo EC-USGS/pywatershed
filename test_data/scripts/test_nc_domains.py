@@ -5,7 +5,7 @@ import numpy as np
 
 from pywatershed import CsvFile, Soltab
 from pywatershed.parameters import PrmsParameters
-from pywatershed.constants import epsilon64, zero
+from pywatershed.constants import epsilon32, zero
 
 import pytest
 import xarray as xr
@@ -143,23 +143,36 @@ def final_netcdf_file(tmp_path_factory, simulation) -> Path:
         data = {}
         for vv in data_vars:
             data_file = data_dir / f"{vv}.nc"
-            result = xr.open_dataset(data_file)[vv]
-            data[vv] = result
+            data[vv] = xr.open_dataset(data_file)[vv]
 
-        try:
-            wh_through = (
-                ((data["pk_ice_prev"] + data["freeh2o_prev"]) <= epsilon64)
-                & ~(data["newsnow"] == 1)
-            ) | (data["pptmix_nopack"] == 1)
+        nearzero = 1.0e-6
 
-            through_rain = data["net_rain"].copy()
-            through_rain[:] = np.where(wh_through, data["net_rain"], zero)
-            through_rain.to_dataset(name="through_rain").to_netcdf(nc_path)
-            through_rain.close()
-            assert nc_path.exists()
-        finally:
-            for vv in data_vars:
-                data[vv].close()
+        cond1 = data["net_ppt"] > zero
+        cond2 = data["pptmix_nopack"] != 0
+        cond3 = data["snowmelt"] < nearzero
+        cond4 = data["pkwater_equiv"] < epsilon32
+        cond5 = data["snow_evap"] < nearzero
+        cond6 = data["net_snow"] < nearzero
+
+        through_rain = data["net_rain"] * zero
+        # these are in reverse order
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond6, data["net_rain"], zero
+        )
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond5, data["net_ppt"], through_rain
+        )
+        through_rain[:] = np.where(
+            cond1 & cond2, data["net_rain"], through_rain
+        )
+
+        through_rain.to_dataset(name="through_rain").to_netcdf(
+            data_dir / "through_rain.nc"
+        )
+        through_rain.close()
+
+        for vv in data_vars:
+            data[vv].close()
 
 
 def make_final_netcdf_files(final_netcdf_file):

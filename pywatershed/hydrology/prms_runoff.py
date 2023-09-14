@@ -819,10 +819,11 @@ class PRMSRunoff(ConservativeProcess):
         perv_comp,
     ):
         isglacier = False  # todo -- hardwired
-        cascade_active = False
         hru_flag = 0
         if hru_type == LAND or isglacier:
             hru_flag = 1
+
+        cascade_active = False
         if cascade_active:
             raise Exception("bad bad bad")
         else:

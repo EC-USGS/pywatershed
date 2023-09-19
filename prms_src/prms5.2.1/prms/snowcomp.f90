@@ -1435,7 +1435,8 @@
             ENDIF
           ENDIF
 
-        ENDIF
+        ENDIF  ! ends iff statement between steps 3 and 4 about 265 lines above
+
 
 ! LAST check to clear out all arrays if packwater is gone
         IF ( Pkwater_equiv(i)<=0.0D0 ) THEN
@@ -2613,17 +2614,22 @@
         Pkwater_equiv = Pkwater_equiv - ez
         Snow_evap = ez
       ENDIF
+
       IF ( Snow_evap<0.0 ) THEN
         Pkwater_equiv = Pkwater_equiv - DBLE(Snow_evap)
+
         IF ( Pkwater_equiv<0.0D0 ) THEN
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv<-DNEARZERO ) &
      &           PRINT *, 'snowpack issue, negative pkwater_equiv in snowevap', Pkwater_equiv
-            Pkwater_equiv = 0.0D0
+            Pkwater_equiv = 0.0D0  ! JLM: this is INSIDE a debug statement? will change the answers
+            !  is this in the originial source
           ENDIF
         ENDIF
+
         Snow_evap = 0.0
       ENDIF
+
       avail_et = Potet - Hru_intcpevap - Snow_evap
       IF ( avail_et<0.0 ) THEN
 !        PRINT *, 'snow evap', snow_evap, avail_et, pkwater_equiv

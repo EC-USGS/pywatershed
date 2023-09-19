@@ -108,19 +108,19 @@ class Control(Accessor):
         return datetime_year(self._current_time)
 
     @property
-    def current_month(self):
-        """Get the current month."""
-        return datetime_month(self._current_time)
+    def current_month(self, zero_based: bool = False):
+        """Get the current month in 1-12 (unless zero based)."""
+        return datetime_month(self._current_time, zero_based=zero_based)
 
     @property
-    def current_doy(self):
-        """Get the current day of year."""
-        return datetime_doy(self._current_time)
+    def current_doy(self, zero_based: bool = False):
+        """Get the current day of year in 1-366 (unless zero based)."""
+        return datetime_doy(self._current_time, zero_based=zero_based)
 
     @property
-    def current_dowy(self):
-        """Get the current day of water year."""
-        return datetime_dowy(self._current_time)
+    def current_dowy(self, zero_based: bool = False):
+        """Get the current day of water year in 1-366 (unless zero-based)."""
+        return datetime_dowy(self._current_time, zero_based=zero_based)
 
     @property
     def current_epiweek(self):

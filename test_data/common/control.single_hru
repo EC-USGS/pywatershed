@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-78
+81
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 5
 ####
 nhruOutVar_names
-78
+81
 4
 albedo
 cap_infil_tot
@@ -289,6 +289,9 @@ net_snow
 newsnow
 orad_hru
 perv_actet
+pk_def
+pk_den
+pk_depth
 pk_ice
 pk_temp
 pkwater_ante

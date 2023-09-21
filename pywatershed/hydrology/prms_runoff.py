@@ -857,11 +857,11 @@ class PRMSRunoff(ConservativeProcess):
         # if rain/snow event with no antecedent snowpack,
         # compute the runoff from the rain first and then proceed with the
         # snowmelt computations
-        double_counting = 0
+        # double_counting = 0
         cond2 = pptmix_nopack != 0
         # if pptmix_nopack == ACTIVE:
         if cond2:
-            double_counting += 1
+            # double_counting += 1
             avail_water = avail_water + through_rain
             infil = infil + through_rain
             if hru_flag == 1:
@@ -905,9 +905,9 @@ class PRMSRunoff(ConservativeProcess):
                 else:
                     # Snowmelt occurred and depleted the snowpack
                     # this frequently gets counted along with pptmix_nopack
-                    double_counting += 1
-                    if double_counting > 1:
-                        print("snowmelt")
+                    # double_counting += 1
+                    # if double_counting > 1:
+                    #     print("snowmelt")
 
                     infil, srp, contrib_fraction = perv_comp(
                         soil_moist_prev,
@@ -930,9 +930,9 @@ class PRMSRunoff(ConservativeProcess):
                 # this is through_rain's top/most narrow case
                 avail_water = avail_water + through_rain
                 infil = infil + through_rain
-                double_counting += 1
-                if double_counting > 1:
-                    print("cond4")
+                # double_counting += 1
+                # if double_counting > 1:
+                #     print("cond4")
                 if hru_flag == 1:
                     infil, srp, contrib_fraction = perv_comp(
                         soil_moist_prev,

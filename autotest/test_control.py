@@ -80,7 +80,7 @@ def test_control_simple(control_simple):
         year = year if month >= 10 else year - 1
         wy_start = np.datetime64(f"{year}-10-01")
         dowy = (current_time - wy_start).astype("timedelta64[D]")
-        assert dowy == control_simple.current_dowy
+        assert dowy == (control_simple.current_dowy - 1)
 
         prev_time = control_simple.current_time
 

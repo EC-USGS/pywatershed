@@ -2509,7 +2509,6 @@ class PRMSSnow(ConservativeProcess):
             # the albedo (some is reflected back into the atmoshphere) and the
             # transmission coefficient (some is intercepted by the winter
             # vegetative canopy)
-            # JLM: this is out or order 9/18/23
             swn = (
                 swrad * (one - albedo) * rad_trncf
             )  # [cal/cm^2] or [Langleys]
@@ -3107,6 +3106,10 @@ class PRMSSnow(ConservativeProcess):
                 # RAPCOMMENT - CHANGED TO CHECK FOR NEGATIVE PACK ICE
                 # If all pack ice is removed, then there cannot be a heat
                 # deficit.
+
+                # JLM: mass balance fix only in our 5.2.1 prms version
+                freeh2o = freeh2o + pk_ice
+
                 pk_ice = zero
                 pk_def = zero
                 pk_temp = zero

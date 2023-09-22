@@ -2601,7 +2601,7 @@
           ! heat deficit
           ! JLM mass balance fix, if we take pkwater_equiv - ez below
           ! JLM we need to take ez from both pk_ice and freeh2o here
-          freeh2o = freeh2o - pk_ice
+          freeh2o = freeh2o + pk_ice
           Pk_ice = 0.0
           Pk_def = 0.0
           Pk_temp = 0.0

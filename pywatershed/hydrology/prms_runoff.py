@@ -9,11 +9,11 @@ from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import (
     HruType,
+    epsilon32,
+    epsilon64,
     nan,
     numba_num_threads,
     zero,
-    epsilon32,
-    epsilon64,
 )
 from ..parameters import Parameters
 

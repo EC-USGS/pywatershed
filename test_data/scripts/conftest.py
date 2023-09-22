@@ -34,7 +34,7 @@ def pytest_addoption(parser):
 def exe():
     platform = sys.platform.lower()
     if platform == "win32":
-        exe_name = "prms_win_ifort_mixed_prec.exe"
+        exe_name = "prms_win_gfort_dbl_prec.exe"
     elif platform == "darwin":
         if processor() == "arm":
             exe_name = "prms_mac_m1_ifort_dbl_prec"

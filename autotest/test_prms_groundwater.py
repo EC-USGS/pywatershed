@@ -2,10 +2,8 @@ import pathlib as pl
 
 import pytest
 
-from pywatershed.base.control import Control
-from pywatershed.base.parameters import Parameters
+from pywatershed import Control, PRMSGroundwater, Parameters
 from pywatershed.hydrology.prms_groundwater import (
-    PRMSGroundwater,
     has_prmsgroundwater_f,
 )
 from pywatershed.parameters import PrmsParameters
@@ -67,13 +65,7 @@ def test_compare_prms(
     gw.initialize_netcdf(nc_parent)
 
     output_compare = {}
-    vars_compare = (
-        "gwres_flow",
-        "gwres_sink",
-        "gwres_stor",
-        "ssr_to_gw",
-        "soil_to_gw",
-    )
+    vars_compare = PRMSGroundwater.get_variables()
     for key in PRMSGroundwater.get_variables():
         if key not in vars_compare:
             continue

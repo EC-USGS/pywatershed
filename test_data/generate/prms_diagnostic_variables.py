@@ -1,15 +1,12 @@
-from pathlib import Path
-from filelock import FileLock
-
-import numpy as np
+import pathlib as pl
 
 import pywatershed as pws
-from pywatershed import CsvFile, Soltab
-from pywatershed.parameters import PrmsParameters
 from pywatershed.constants import epsilon32, nan, zero
 
-import pytest
+import numpy as np
 import xarray as xr
+
+"""This module is for generating PRMS diagnostic variables"""
 
 # For generating timeseries of previous states
 previous_vars = {
@@ -33,16 +30,37 @@ prev_rename = {
 change_rename = {}
 
 
-@pytest.fixture
-def netcdf_file(csv_file) -> Path:
-    """Convert CSV files from model output to NetCDF"""
+def diagnose_simple_vars_to_nc(
+    var_name: str,
+    data_dir: pl.Path,
+    domain_dir: pl.Path = None,
+    output_dir: pl.Path = None,
+):
+    """Diagnose variables from PRMS output with only dependencies on var_name
 
-    var_name = csv_file.stem
-    nc_path = csv_file.with_suffix(".nc")
-    data_dir = csv_file.parent
-    domain_dir = data_dir.parent
-    CsvFile(csv_file).to_netcdf(nc_path)
-    assert nc_path.exists()
+    These variables are "simple" because they do not have any dependencies
+    besides the "var_name" variable which is a PRMS output variable.
+
+    This is not to say that PRMS dosent output diagnostic variables, it
+    just dosent output these natively.
+
+    Args:
+        var_name: str name of the variable to create
+        data_dir: where the netcdf file will be written, also where to look
+            for necessary inputs to create the diagnostic variable.
+        domain_dir: defaults to the parent dir of output_dir, this is where
+            domain files (parameter & control) for the domain can be found
+        output_dir: defaults to data_dir unless otherwise specified
+
+    """
+
+    if domain_dir is None:
+        domain_dir = data_dir.parent
+
+    if output_dir is None:
+        output_dir = data_dir
+
+    nc_path = data_dir / f"{var_name}.nc"
 
     if var_name in previous_vars.keys():
         # the _prev is the desired suffix but PRMS legacy is inconsistent
@@ -57,7 +75,9 @@ def netcdf_file(csv_file) -> Path:
         control.options = control.options | {
             "input_dir": domain_dir / "output",
         }
-        params = PrmsParameters.load(domain_dir / "myparam.param")
+        params = pws.parameters.PrmsParameters.load(
+            domain_dir / "myparam.param"
+        )
         proc_class = previous_vars[var_name]
         inputs = {}
         for input_name in proc_class.get_inputs():
@@ -96,8 +116,8 @@ def netcdf_file(csv_file) -> Path:
             nc_name = f"{prev_rename[var_name]}.nc"
         else:
             nc_name = f"{var_name}_prev.nc"
-        nc_path = data_dir / nc_name
-        prev.rename(nc_path.stem).to_netcdf(nc_path)
+        out_nc_path = output_dir / nc_name
+        prev.rename(out_nc_path.stem).to_netcdf(out_nc_path)
         assert nc_path.exists()
 
         # write the change file
@@ -105,81 +125,65 @@ def netcdf_file(csv_file) -> Path:
             nc_name = f"{change_rename[var_name]}.nc"
         else:
             nc_name = f"{var_name}_change.nc"
-        nc_path = data_dir / nc_name
-        change.rename(nc_path.stem).to_netcdf(nc_path)
+        out_nc_path = output_dir / nc_name
+        change.rename(out_nc_path.stem).to_netcdf(out_nc_path)
         assert nc_path.exists()
+        return nc_path
 
     if var_name in ["sroff", "ssres_flow", "gwres_flow"]:
-        params = PrmsParameters.load(domain_dir / "myparam.param")
+        params = pws.parameters.PrmsParameters.load(
+            domain_dir / "myparam.param"
+        )
         ds = xr.open_dataset(nc_path)
         ds = ds.rename({var_name: f"{var_name}_vol"})
         ds = ds * params.data_vars["hru_in_to_cf"]
-        ds.to_netcdf(data_dir / f"{var_name}_vol.nc")
+        ds.to_netcdf(output_dir / f"{var_name}_vol.nc")
         ds.close()
 
     if var_name == "infil":
-        params = PrmsParameters.load(domain_dir / "myparam.param").parameters
+        params = pws.parameters.PrmsParameters.load(
+            domain_dir / "myparam.param"
+        ).parameters
         imperv_frac = params["hru_percent_imperv"]
         dprst_frac = params["dprst_frac"]
         perv_frac = 1.0 - imperv_frac - dprst_frac
         ds = xr.open_dataset(nc_path.with_suffix(".nc"))
         ds = ds.rename(infil="infil_hru")
         ds["infil_hru"] = ds["infil_hru"] * perv_frac
-        ds.to_netcdf(data_dir / "infil_hru.nc")
+        ds.to_netcdf(output_dir / "infil_hru.nc")
         ds.close()
 
-    return nc_path
 
+def diagnose_final_vars_to_nc(
+    var_name: str,
+    data_dir: pl.Path,
+    domain_dir: pl.Path = None,
+    output_dir: pl.Path = None,
+):
+    """Diagnose variables from multiple PRMS outputs
 
-def make_netcdf_files(netcdf_file):
-    print(f"Created NetCDF from CSV: {netcdf_file}")
+    In this case "var_name" is not a PRMS output variable, the variable is a
+    new variable which requires much/all of the PRMS output to be already
+    present in netcdf output format. This is why this is a final diagnostic
 
+    Currently only: "through_rain"
 
-@pytest.fixture(scope="session")
-def soltab_netcdf_file(tmp_path_factory, soltab_file) -> Path:
-    """Convert soltab files to NetCDF, one file for each variable"""
+    Args:
+        var_name: str name of the variable to create, not a PRMS variable.
+        output_dir: where the netcdf file will be written, also where to look
+            for necessary inputs to create the diagnostic variable.
+        domain_dir: defaults to the parent dir of output_dir, this is where
+            domain files (parameter & control) for the domain can be found
 
-    # the nhm_ids are not available in the solta_debug file currently, so get
-    # them from the domain parameters
-    domain_dir = soltab_file.parent
-    output_dir = domain_dir / "output"
-    output_dir.mkdir(exist_ok=True)
+    """
+    if domain_dir is None:
+        domain_dir = data_dir.parent
 
-    # with FileLock(root_tmpdir / "soltab_nc.lock"):
-    #     yield  # postpone the work until session cleanup
+    if output_dir is None:
+        output_dir = data_dir
 
-    # this is a hack that should probably rely on the yaml if/when this
-    # fails
-    params = PrmsParameters.load(domain_dir / "myparam.param")
-    nhm_ids = params.parameters["nhm_id"]
-    soltab = Soltab(soltab_file, nhm_ids=nhm_ids)
-
-    soltab.to_netcdf(output_dir=output_dir)
-    print(f"Created NetCDF files from soltab file {soltab_file}:")
-
-    for var in soltab.variables:
-        nc_path = output_dir / f"{var}.nc"
-        assert nc_path.exists()
-
-
-def make_soltab_netcdf_files(soltab_netcdf_file):
-    print(f"Creating NetCDF files for soltab file {soltab_netcdf_file}")
-
-
-@pytest.fixture(scope="session")
-def final_netcdf_file(tmp_path_factory, simulation) -> Path:
-    """Create the final NetCDF file (through_rain.nc) from other NetCDFs"""
-
-    root_tmpdir = tmp_path_factory.getbasetemp().parent
-    data_dir = Path(simulation["ws"]) / "output"
-    data_dir.mkdir(exist_ok=True)
-    nc_path = data_dir / "through_rain.nc"
-
-    with FileLock(root_tmpdir / "final_nc.lock"):
-        yield  # do this in session cleanup
-
-        if nc_path.is_file():
-            return
+    if var_name == "through_rain":
+        out_file = output_dir / "through_rain.nc"
 
         data_vars = [
             "net_ppt",
@@ -217,14 +221,10 @@ def final_netcdf_file(tmp_path_factory, simulation) -> Path:
             cond1 & cond2, data["net_rain"], through_rain
         )
 
-        through_rain.to_dataset(name="through_rain").to_netcdf(
-            data_dir / "through_rain.nc"
-        )
+        through_rain.to_dataset(name="through_rain").to_netcdf(out_file)
         through_rain.close()
 
         for vv in data_vars:
             data[vv].close()
 
-
-def make_final_netcdf_files(final_netcdf_file):
-    print(f"Creating final NetCDF file {final_netcdf_file}")
+        assert out_file.exists()

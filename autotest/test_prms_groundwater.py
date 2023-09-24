@@ -2,10 +2,8 @@ import pathlib as pl
 
 import pytest
 
-from pywatershed import Control, PRMSGroundwater, Parameters
-from pywatershed.hydrology.prms_groundwater import (
-    has_prmsgroundwater_f,
-)
+from pywatershed import Control, Parameters, PRMSGroundwater
+from pywatershed.hydrology.prms_groundwater import has_prmsgroundwater_f
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.netcdf_utils import NetCdfCompare
 

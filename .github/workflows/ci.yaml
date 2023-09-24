@@ -177,7 +177,7 @@ jobs:
       - name: Run available domains with PRMS and convert csv output to NetCDF
         working-directory: test_data/generate
         run: |
-          pytest -v -n=auto --durations=0 run_prms.py
+          pytest -v -n=auto --durations=0 run_prms_domains.py
           pytest -v -n=auto --durations=0 convert_prms_output_to_nc.py
           pytest -v -n=auto --durations=0 remove_prms_csvs.py
 

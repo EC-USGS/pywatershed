@@ -74,10 +74,17 @@ def compare_in_memory(
     error_message: str = None,
 ):
     # TODO: docstring
+
     for var in process.get_variables():
         answers[var].advance()
+
+        if isinstance(process[var], pws.base.timeseries.TimeseriesArray):
+            actual = process[var].current
+        else:
+            actual = process[var]
+
         assert_allclose(
-            process[var],
+            actual,
             answers[var].current.data,
             atol=atol,
             rtol=rtol,
@@ -103,8 +110,12 @@ def compare_netcdfs(
     # TODO: improve error message
     # TODO: collect failures in a try and report at end
     for var in var_list:
-        answer = xr.open_dataarray(answers_dir / f"{var}.nc")
-        result = xr.open_dataarray(results_dir / f"{var}.nc")
+        answer = xr.open_dataarray(
+            answers_dir / f"{var}.nc", decode_timedelta=False
+        )
+        result = xr.open_dataarray(
+            results_dir / f"{var}.nc", decode_timedelta=False
+        )
 
         if error_message is None:
             error_message = f"Comparison of variable '{var}' was unsuccessful"

@@ -7,9 +7,9 @@ from pywatershed.base.adapter import adapter_factory
 from pywatershed.hydrology.prms_groundwater import has_prmsgroundwater_f
 from pywatershed.parameters import PrmsParameters
 
-from utils_compare import assert_allclose, compare_in_memory, compare_netcdfs
+from utils_compare import compare_in_memory, compare_netcdfs
 
-# compare in memory (faster) or full output files
+# compare in memory (faster) or full output files?
 compare_output_files = False
 rtol = atol = 1.0e-13
 

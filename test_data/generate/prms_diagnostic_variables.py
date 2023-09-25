@@ -198,7 +198,7 @@ def diagnose_final_vars_to_nc(
         data = {}
         for vv in data_vars:
             data_file = data_dir / f"{vv}.nc"
-            data[vv] = xr.open_dataset(data_file)[vv]
+            data[vv] = xr.open_dataarray(data_file)
 
         nearzero = 1.0e-6
 
@@ -228,3 +228,105 @@ def diagnose_final_vars_to_nc(
             data[vv].close()
 
         assert out_file.exists()
+
+    if var_name in [
+        "channel_sroff_vol",
+        "channel_ssres_flow_vol",
+        "channel_gwres_flow_vol",
+        "seg_lateral_inflow",
+    ]:
+        if var_name != "seg_lateral_inflow":
+            return
+
+        data_vars = [
+            "sroff_vol",
+            "ssres_flow_vol",
+            "gwres_flow_vol",
+            "seg_outflow",
+            "seg_inflow",
+        ]
+        data = {}
+        for vv in data_vars:
+            data_file = data_dir / f"{vv}.nc"
+            data[vv] = xr.open_dataarray(data_file)
+
+        control = pws.Control.load(domain_dir / "control.test")
+        s_per_time = control.time_step_seconds
+        params = pws.parameters.PrmsParameters.load(
+            domain_dir / "myparam.param"
+        )
+
+        ntimes = control.n_times
+        nseg = params.dims["nsegment"]
+        nhru = params.dims["nhru"]
+        hru_segment = params.parameters["hru_segment"] - 1
+        to_segment = (params.parameters["tosegment"] - 1).astype("int64")
+
+        outflow_mask = np.full((len(to_segment)), False)
+        for iseg in range(nseg):
+            if to_segment[iseg] < 0:
+                outflow_mask[iseg] = True
+                continue
+
+        seg_stor_change = (
+            data["seg_inflow"] - data["seg_outflow"]
+        ) * s_per_time
+
+        channel_outflow_vol = (
+            np.where(outflow_mask, data["seg_outflow"], zero)
+        ) * s_per_time
+
+        seg_lateral_inflow = np.zeros((ntimes, nseg))
+        channel_sroff_vol = np.zeros((ntimes, nhru))
+        channel_ssres_flow_vol = np.zeros((ntimes, nhru))
+        channel_gwres_flow_vol = np.zeros((ntimes, nhru))
+
+        for ihru in range(nhru):
+            iseg = hru_segment[ihru]
+            if iseg < 0:
+                # This is bad, selective handling of fluxes is not cool,
+                # mass is being discarded in a way that has to be coordinated
+                # with other parts of the code.
+                # This code shuold be removed evenutally.
+                continue
+
+            else:
+                channel_sroff_vol[:, ihru] = data["sroff_vol"].values[:, ihru]
+                channel_ssres_flow_vol[:, ihru] = data[
+                    "ssres_flow_vol"
+                ].values[:, ihru]
+                channel_gwres_flow_vol[:, ihru] = data[
+                    "gwres_flow_vol"
+                ].values[:, ihru]
+
+            # cubicfeet to cfs
+            lateral_inflow = (
+                channel_sroff_vol[:, ihru]
+                + channel_ssres_flow_vol[:, ihru]
+                + channel_gwres_flow_vol[:, ihru]
+            ) / (s_per_time)
+
+            seg_lateral_inflow[:, iseg] += lateral_inflow
+
+        for hvar in [
+            "channel_sroff_vol",
+            "channel_ssres_flow_vol",
+            "channel_gwres_flow_vol",
+            "seg_lateral_inflow",
+            "seg_stor_change",
+            "channel_outflow_vol",
+        ]:
+            if hvar in [
+                "seg_lateral_inflow",
+                "seg_stor_change",
+                "channel_outflow_vol",
+            ]:
+                dum = data["seg_outflow"].rename(hvar) * np.nan
+            else:
+                dum = data["sroff_vol"].rename(hvar) * np.nan
+
+            dum[:, :] = locals()[hvar]
+            out_file = data_dir / f"{hvar}.nc"
+            dum.to_netcdf(out_file)
+            print(out_file)
+            assert out_file.exists()

@@ -160,3 +160,16 @@ def pytest_generate_tests(metafunc):
         ]
         ids = [pl.Path(kk).name for kk in simulations.keys()]
         metafunc.parametrize("simulation", sims, ids=ids, scope="session")
+
+    if "final_file" in metafunc.fixturenames:
+        final_var_names = ["through_rain", "seg_lateral_inflow"]
+        final_files = [
+            pl.Path(kk) / var
+            for kk in simulations.keys()
+            for var in final_var_names
+        ]
+        ids = [ff.parent.name + ":" + ff.name for ff in final_files]
+        # these are not really file names they are domain/key_var
+        metafunc.parametrize(
+            "final_file", final_files, ids=ids, scope="session"
+        )

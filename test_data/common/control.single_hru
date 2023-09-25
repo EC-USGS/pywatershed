@@ -348,7 +348,7 @@ nsegmentOutON_OFF
 nsegmentOutVars
 1
 1
-9
+10
 ####
 nsegmentOut_freq
 1
@@ -356,8 +356,9 @@ nsegmentOut_freq
 1
 ####
 nsegmentOutVar_names
-9
+10
 4
+seg_inflow
 seg_outflow
 seg_gwflow
 seg_sroff

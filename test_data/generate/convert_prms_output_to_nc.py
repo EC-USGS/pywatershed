@@ -11,7 +11,7 @@ from prms_diagnostic_variables import (
 
 
 @pytest.fixture
-def netcdf_file(csv_file) -> Path:
+def netcdf_file(csv_file):
     """Convert CSV files from model output to NetCDF"""
 
     var_name = csv_file.stem
@@ -27,8 +27,8 @@ def make_netcdf_files(netcdf_file):
     print(f"Created NetCDF from CSV: {netcdf_file}")
 
 
-@pytest.fixture(scope="session")
-def soltab_netcdf_file(tmp_path_factory, soltab_file) -> Path:
+@pytest.fixture()
+def soltab_netcdf_file(tmp_path_factory, soltab_file):
     """Convert soltab files to NetCDF, one file for each variable"""
     domain_dir = soltab_file.parent
     output_dir = domain_dir / "output"
@@ -40,18 +40,18 @@ def make_soltab_netcdf_files(soltab_netcdf_file):
 
 
 @pytest.fixture(scope="session")
-def final_netcdf_file(tmp_path_factory, simulation) -> Path:
-    """Create the final NetCDF file (through_rain.nc) from other NetCDFs"""
+def final_netcdf_file(tmp_path_factory, final_file):
+    """Create NetCDF files that depend on multiple other NetCDFs"""
 
-    # Currently there is only a single final variable
-    var_name = "through_rain"
-    data_dir = Path(simulation["ws"]) / "output"
+    domain_dir = final_file.parent
+    var_name = final_file.name
+    data_dir = domain_dir / "output"
 
     root_tmpdir = tmp_path_factory.getbasetemp().parent
     with FileLock(root_tmpdir / "final_nc.lock"):
         yield  # do this in session cleanup
 
-        diagnose_final_vars_to_nc(var_name, data_dir)
+        diagnose_final_vars_to_nc(var_name, data_dir, domain_dir)
 
 
 def make_final_netcdf_files(final_netcdf_file):

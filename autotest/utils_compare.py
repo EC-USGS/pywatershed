@@ -1,8 +1,9 @@
 import pathlib as pl
 
 import numpy as np
-import pywatershed as pws
 import xarray as xr
+
+import pywatershed as pws
 
 
 def assert_allclose(

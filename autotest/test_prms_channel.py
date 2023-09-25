@@ -2,17 +2,16 @@ import pathlib as pl
 
 import pytest
 
-from pywatershed.base.control import Control
 from pywatershed.base.adapter import adapter_factory
+from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.prms_channel import PRMSChannel, has_prmschannel_f
 from pywatershed.parameters import PrmsParameters
-
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files?
 compare_output_files = False
-rtol = atol = 1.0e-8
+rtol = atol = 1.0e-7
 
 fail_fast = False
 

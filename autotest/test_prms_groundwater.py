@@ -6,7 +6,6 @@ from pywatershed import Control, Parameters, PRMSGroundwater
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.hydrology.prms_groundwater import has_prmsgroundwater_f
 from pywatershed.parameters import PrmsParameters
-
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files?

@@ -52,7 +52,8 @@ def assert_allclose(
         assert (actual_nan == desired_nan).all()
 
     abs_diff = abs(actual - desired)
-    rel_abs_diff = abs_diff / desired
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rel_abs_diff = abs_diff / desired
 
     abs_close = abs_diff < atol
     rel_close = rel_abs_diff < rtol

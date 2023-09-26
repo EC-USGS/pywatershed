@@ -395,7 +395,7 @@ class PRMSSoilzone(ConservativeProcess):
                 f"Invalid calc_method={self._calc_method} for {self.name}. "
                 f"Setting calc_method to 'numba' for {self.name}"
             )
-            warn(msg)
+            warn(msg, UserWarning)
             self._calc_method = "numba"
 
         if self._calc_method.lower() == "numba":

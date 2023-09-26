@@ -32,17 +32,16 @@ def pytest_addoption(parser):
 
 @pytest.fixture()
 def exe():
-    exe_name = "prms"
     platform = sys.platform.lower()
     if platform == "win32":
-        exe_name += "_win.exe"
+        exe_name = "prms_win_gfort_dbl_prec.exe"
     elif platform == "darwin":
         if processor() == "arm":
-            exe_name += "_mac_m1_intel"
+            exe_name = "prms_mac_m1_ifort_dbl_prec"
         else:
-            exe_name += "_mac"
+            exe_name = "prms_mac_intel_gfort_dbl_prec"
     elif platform == "linux":
-        exe_name += "_linux"
+        exe_name = "prms_linux_gfort_dbl_prec"
     exe_pth = pl.Path(f"../../bin/{exe_name}").resolve()
     return exe_pth
 
@@ -161,3 +160,16 @@ def pytest_generate_tests(metafunc):
         ]
         ids = [pl.Path(kk).name for kk in simulations.keys()]
         metafunc.parametrize("simulation", sims, ids=ids, scope="session")
+
+    if "final_file" in metafunc.fixturenames:
+        final_var_names = ["through_rain", "seg_lateral_inflow"]
+        final_files = [
+            pl.Path(kk) / var
+            for kk in simulations.keys()
+            for var in final_var_names
+        ]
+        ids = [ff.parent.name + ":" + ff.name for ff in final_files]
+        # these are not really file names they are domain/key_var
+        metafunc.parametrize(
+            "final_file", final_files, ids=ids, scope="session"
+        )

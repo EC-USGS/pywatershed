@@ -64,6 +64,7 @@ amlt_init = np.array(
 
 maxalb = 15
 ONETHIRD = 1.0 / 3.0
+tiny_snowpack = 1.0e-12
 
 tcind = 0
 
@@ -697,21 +698,23 @@ class PRMSSnow(ConservativeProcess):
 
         # cals = zero  # JLM this is unnecessary.
 
-        # newsnow
-        newsnow[:] = False
-        net_snow_gt_zero = net_snow > zero
-        wh_net_snow_gt_zero = np.where(net_snow_gt_zero)
-        newsnow[wh_net_snow_gt_zero] = True
+        # newsnow is a doganostic for prms_snow, so it lives here
+        newsnow = np.where(net_snow > zero, True, False)
 
-        # default assumption
-        pptmix_nopack[:] = False
+        # JLM TODO: there's a conditional here we dont have
+        #  in fotran trd is scalar and the RHS terms are vector?
+        trd = orad_hru / soltab_horad_potsw
+
+        frac_swe[:] = zero
+        pk_precip[:] = zero  # [inches]
+        snowmelt[:] = zero  # [inches]
+        snow_evap[:] = zero  # [inches]
+        tcal[:] = zero
+        ai[:] = zero
 
         for jj in prange(nhru):
             if hru_type[jj] == HruType.LAKE.value:
                 continue
-
-            # <
-            trd = orad_hru[jj] / soltab_horad_potsw[jj]
 
             # If it's the first julian day of the water year, several
             # variables need to be reset:
@@ -733,15 +736,8 @@ class PRMSSnow(ConservativeProcess):
             # TIME PERIOD
             # **************************************************************
 
-            # By default, the precipitation added to snowpack, snowmelt,
-            # and snow evaporation are 0.
-            # JLM: this could happen outside the loop
-            pk_precip[jj] = zero  # [inches]
-            snowmelt[jj] = zero  # [inches]
-            snow_evap[jj] = zero  # [inches]
-            frac_swe[jj] = zero
-            ai[jj] = zero
-            tcal[jj] = zero
+            # default assumption
+            pptmix_nopack[jj] = False
 
             # If the day of the water year is beyond the forced melt day
             # indicated by the parameter, then set the flag indicating melt
@@ -764,20 +760,15 @@ class PRMSSnow(ConservativeProcess):
             #     print(f"pk_ice 0 : {pk_ice[dbgind]}")
             #     print(f"tcal 0 : {tcal[dbgind]}")
 
-            if pkwater_equiv[jj] < epsilon64:
-                # No existing snowpack
-                if not newsnow[jj]:
-                    # Skip the HRU if there is no snowpack and no new snow
-                    # Reset to be sure it is zero if snowpack melted on last
-                    # timestep.
-                    snowcov_area[jj] = zero
-                    continue
-                else:
-                    # We ahave new snow; the initial snow-covered area is
-                    # complete (1)
-                    # JLM: why set this here? just for the case of no existing
-                    # snow? This might be removable.
-                    snowcov_area[jj] = one  # [fraction of area]
+            if (pkwater_equiv[jj] < epsilon64) and (newsnow[jj] == 0):
+                # Skip the HRU if there is no snowpack and no new snow
+                # Reset to be sure it is zero if snowpack melted on last
+                # timestep.
+                snowcov_area[jj] = zero
+                continue
+
+            if newsnow[jj] and (pkwater_equiv[jj] < epsilon64):
+                snowcov_area[jj] = one
 
             # <<
             # HRU STEP 1 - DEAL WITH PRECIPITATION AND ITS EFFECT ON THE WATER
@@ -785,6 +776,7 @@ class PRMSSnow(ConservativeProcess):
             # ****************************************************************
             month_ind = current_month - 1
 
+            # PRMS conditonal moved inside function
             (
                 freeh2o[jj],
                 iasw[jj],
@@ -906,13 +898,16 @@ class PRMSSnow(ConservativeProcess):
                 #     )
                 #     print(f"tcal 3 : {tcal[dbgind]}")
 
+            if pkwater_equiv[jj] > zero:
                 # HRU STEP 4 - DETERMINE RADIATION FLUXES AND SNOWPACK
                 #              STATES NECESSARY FOR ENERGY BALANCE
                 # **********************************************************
                 (
                     freeh2o[jj],
+                    iasw[jj],
                     iso[jj],
                     lso[jj],
+                    mso[jj],
                     pk_def[jj],
                     pk_den[jj],
                     pk_depth[jj],
@@ -921,8 +916,9 @@ class PRMSSnow(ConservativeProcess):
                     pkwater_equiv[jj],
                     pss[jj],
                     tcal[jj],
+                    snowmelt[jj],
                 ) = calc_step_4(
-                    trd,
+                    trd[jj],
                     calc_calin=calc_calin,
                     calc_caloss=calc_caloss,
                     calc_snowbal=calc_snowbal,
@@ -1035,13 +1031,13 @@ class PRMSSnow(ConservativeProcess):
                     # insufficient to reset albedo, then reduce the cumulative
                     # new snow by the amount melted during the period (but
                     # don't let it be negative).
-                    if lst[jj]:
+                    if lst[jj] > 0:
                         snsv[jj] = snsv[jj] - snowmelt[jj]
 
                         if snsv[jj] < zero:
                             snsv[jj] = zero
 
-            # <<<<
+            # <<<<  The if starting between steps 3 & 4 ends here
             # LAST check to clear out all arrays if packwater is gone
             if pkwater_equiv[jj] <= zero:
                 # if verbose:
@@ -1073,17 +1069,30 @@ class PRMSSnow(ConservativeProcess):
                 snowcov_areasv[jj] = zero  # rsr, not in original code
                 ai[jj] = zero
                 frac_swe[jj] = zero
+                scrv[jj] = zero
+                pksv[jj] = zero
 
-        # <<
+        # << end of space loop and previous if
 
         pkwater_equiv_change[:] = pkwater_equiv - pkwater_ante
         freeh2o_change[:] = freeh2o - freeh2o_prev
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
-        wh_through = (
-            ((pk_ice_prev + freeh2o_prev) <= epsilon64) & ~newsnow
-        ) | (pptmix_nopack == 1)
-        through_rain[:] = np.where(wh_through, net_rain, zero)
+        nearzero = 1.0e-6
+        cond1 = net_ppt > zero
+        cond2 = pptmix_nopack != 0
+        cond3 = snowmelt < nearzero
+        cond4 = pkwater_equiv < epsilon32
+        cond5 = snow_evap < nearzero
+        cond6 = net_snow < nearzero
+        # reverse order from the if statements
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond6, net_rain, zero
+        )
+        through_rain[:] = np.where(
+            cond1 & cond3 & cond4 & cond5, net_ppt, through_rain
+        )
+        through_rain[:] = np.where(cond1 & cond2, net_rain, through_rain)
 
         return (
             ai,
@@ -1203,10 +1212,10 @@ class PRMSSnow(ConservativeProcess):
                 snowmelt,
             )
 
-        caln = zero
-        calpr = zero
-        calps = zero
-        pndz = zero
+        # caln = zero
+        # calpr = zero
+        # calps = zero
+        # pndz = zero
 
         tsnow = tavgc  # [degrees C]
 
@@ -1575,16 +1584,6 @@ class PRMSSnow(ConservativeProcess):
             pk_def = pk_def - cal  # [cal/cm^2]
             pk_temp = -1 * pk_def / (pkwater_equiv * 1.27)  # [degrees C]
 
-        elif abs(dif) < epsilon32:
-            # JLM: I moved this from an else at the bottom to this
-            #      point in the conditional chain.
-            # JLM: The test had been equality with zero, changed to
-            #      less than epsilon32.
-            # (2) Just enough heat to overcome heat deficit
-            # Set temperature and heat deficit to zero. the pack is "ripe"
-            pk_temp = zero  # [degrees C]
-            pk_def = zero  # [cal/cm^2]
-
         elif dif > zero:
             # (3) More than enough heat to overcome heat deficit (melt ice)...
             # Calculate the potential amount of snowmelt from excess heat in
@@ -1701,6 +1700,17 @@ class PRMSSnow(ConservativeProcess):
                     pss = pkwater_equiv  # [inches]
 
         # <<<
+        else:  # abs(dif) < epsilon64:
+            # JLM: The test had been equality with zero, changed to
+            #      less than epsilon64.
+            # (2) Just enough heat to overcome heat deficit
+            # Set temperature and heat deficit to zero. the pack is "ripe"
+            pk_temp = zero  # [degrees C]
+            pk_def = zero  # [cal/cm^2]
+
+        if not (pkwater_equiv > zero):
+            pk_den = zero
+
         return (
             freeh2o,
             iasw,
@@ -1854,10 +1864,11 @@ class PRMSSnow(ConservativeProcess):
         # <
         # Calculate the ratio of the current packwater equivalent to the
         # maximum packwater equivalent for the given snowpack.
-        if ai == zero:
-            frac_swe = zero
-        else:
+        if ai > epsilon64:
             frac_swe = pkwater_equiv / ai  # [fraction]
+            frac_swe = min(one, frac_swe)
+        else:
+            frac_swe = zero
 
         # <
         # There are 3 potential conditions for the snow area curve:
@@ -2204,7 +2215,6 @@ class PRMSSnow(ConservativeProcess):
                         # reset the albedo.
                         # Reset the albedo states.
                         slst = zero  # [days]
-                        # lst = 0  # [flag]
                         lst = False  # [flag]
                         snsv = zero  # [inches]
 
@@ -2235,7 +2245,7 @@ class PRMSSnow(ConservativeProcess):
             # threshold.
             # 4 options below (if-then, elseif, elseif, else)
 
-            if pptmix < one:
+            if pptmix == 0:
                 # (3.1) This is not a mixed event...
                 # During the accumulation season, the threshold for resetting
                 # the albedo does not apply if there is a snow-only event.
@@ -2439,12 +2449,6 @@ class PRMSSnow(ConservativeProcess):
         # Save the current value of emissivity
         esv = emis  # [fraction of radiation]
 
-        # The incoming shortwave radiation is the HRU radiation adjusted by the
-        # albedo (some is reflected back into the atmoshphere) and the
-        # transmission coefficient (some is intercepted by the winter
-        # vegetative canopy)
-        swn = swrad * (one - albedo) * rad_trncf  # [cal/cm^2] or [Langleys]
-
         # Set the convection-condensation for a half-day interval
         cec = cecn_coef * 0.5  # [cal/(cm^2 degC)] or [Langleys/degC]
 
@@ -2453,49 +2457,6 @@ class PRMSSnow(ConservativeProcess):
         if cov_type > 2:
             # RSR: cov_type==4 is valid for trees (coniferous)
             cec = cec * 0.5  # [cal/(cm^2 degC)] or [Langleys/degC]
-
-        # <
-        # Calculate the new snow depth (Riley et al. 1973)
-        # RSR: the following 3 lines of code were developed by Rob Payn,
-        # on 7/10/2013
-        # The snow depth depends on the previous snow pack water equivalent
-        # plus the current net snow.
-        pss = pss + net_snow  # [inches]
-        dpt_before_settle = pk_depth + net_snow * deninv
-        dpt1 = dpt_before_settle + settle_const * (
-            (pss * denmaxinv) - dpt_before_settle
-        )
-
-        # RAPCOMMENT - CHANGED TO THE APPROPRIATE FINITE DIFFERENCE
-        # APPROXIMATION OF SNOW DEPTH
-        # JLM: pk_depth is prognostic here
-        pk_depth = dpt1  # [inches]
-
-        # Calculate the snowpack density
-        if dpt1 > zero:
-            pk_den = pkwater_equiv / dpt1
-        else:
-            pk_den = zero  # [inch water equiv / inch depth]
-
-        # <
-        # The effective thermal conductivity is approximated (empirically)
-        # as zero077 times (snowpack density)^2 [cal / (sec g degC)] Therefore,
-        # the effective conductivity term (inside the square root) in the
-        # equation for conductive heat exchange can be calculated as follows:
-        #   (zero077 * pk_den^2) / (pk_den * 0.5)
-        # where 0.5 is the specific heat of ice [cal / (g degC)]
-        # this simplifies to the following
-        effk = 0.0154 * pk_den  # [unitless]
-
-        # 13751 is the number of seconds in 12 hours over pi
-        # So for a half day, to calculate the conductive heat exchange per cm
-        # of snow per cm^2 area per degree temperature difference is the
-        # following
-        # In effect, multiplying cst times the temperature gradient gives the
-        # heatexchange by heat conducted (calories) per square cm of snowpack
-        cst = pk_den * (
-            np.sqrt(effk * 13751.0)
-        )  # [cal/(cm^2 degC)] or [Langleys / degC]
 
         # Check whether to force spring melt
         # Spring melt is forced if time is before the melt-force day and after
@@ -2539,75 +2500,139 @@ class PRMSSnow(ConservativeProcess):
         # Set the flag indicating night time
         niteda = 1  # [flag]
 
-        # No shortwave (solar) radiation at night.
-        sw = zero  # [cal / cm^2] or [Langleys]
-
         # Temperature is halfway between the minimum and average temperature
         # for the day.
         temp = (tminc + tavgc) * 0.5
 
-        # Track total heat flux from both night and day periods
+        if pkwater_equiv > zero:
+            # The incoming shortwave radiation is the HRU radiation adjusted by
+            # the albedo (some is reflected back into the atmoshphere) and the
+            # transmission coefficient (some is intercepted by the winter
+            # vegetative canopy)
+            swn = (
+                swrad * (one - albedo) * rad_trncf
+            )  # [cal/cm^2] or [Langleys]
 
-        # Calculate the night time energy balance
-        (
-            tcal,
-            freeh2o,
-            pk_def,
-            pk_ice,
-            pk_temp,
-            pkwater_equiv,
-        ) = calc_snowbal(
-            niteda=niteda,
-            cec=cec,
-            cst=cst,
-            esv=esv,
-            sw=sw,
-            temp=temp,
-            trd=trd,
-            calc_calin=calc_calin,
-            calc_caloss=calc_caloss,
-            canopy_covden=canopy_covden,
-            den_max=den_max,
-            denmaxinv=denmaxinv,
-            emis_noppt=emis_noppt,
-            freeh2o=freeh2o,
-            freeh2o_cap=freeh2o_cap,
-            hru_ppt=hru_ppt,
-            iasw=iasw,
-            pk_def=pk_def,
-            pk_den=pk_den,
-            pk_depth=pk_depth,
-            pk_ice=pk_ice,
-            pk_temp=pk_temp,
-            pkwater_equiv=pkwater_equiv,
-            pss=pss,
-            pst=pst,
-            snowcov_area=snowcov_area,
-            snowmelt=snowmelt,
-            tcal=tcal,
-            tstorm_mo=tstorm_mo,
-        )
+            # Calculate the new snow depth (Riley et al. 1973)
+            # RSR: the following 3 lines of code were developed by Rob Payn,
+            # on 7/10/2013
+            # The snow depth depends on the previous snow pack water equivalent
+            # plus the current net snow.
+            pss = pss + net_snow  # [inches]
+            # deninv is the inverse of den_init
+            dpt_before_settle = pk_depth + net_snow * deninv
+            dpt1 = dpt_before_settle + settle_const * (
+                (pss * denmaxinv) - dpt_before_settle
+            )
 
-        # [cal/cm^2] or [Langleys]
+            # RAPCOMMENT - CHANGED TO THE APPROPRIATE FINITE DIFFERENCE
+            # APPROXIMATION OF SNOW DEPTH
+            # JLM: pk_depth is prognostic here
+            pk_depth = dpt1  # [inches]
+
+            # Calculate the snowpack density
+            if dpt1 > zero:
+                pk_den = pkwater_equiv / dpt1
+            else:
+                pk_den = zero  # [inch water equiv / inch depth]
+
+            # <
+            # The effective thermal conductivity is approximated (empirically)
+            # as zero077 times (snowpack density)^2 [cal / (sec g degC)] Therefore,
+            # the effective conductivity term (inside the square root) in the
+            # equation for conductive heat exchange can be calculated as follows:
+            #   (zero077 * pk_den^2) / (pk_den * 0.5)
+            # where 0.5 is the specific heat of ice [cal / (g degC)]
+            # this simplifies to the following
+            effk = 0.0154 * pk_den  # [unitless]
+
+            # 13751 is the number of seconds in 12 hours over pi
+            # So for a half day, to calculate the conductive heat exchange per cm
+            # of snow per cm^2 area per degree temperature difference is the
+            # following
+            # In effect, multiplying cst times the temperature gradient gives the
+            # heatexchange by heat conducted (calories) per square cm of snowpack
+            cst = pk_den * (
+                np.sqrt(effk * 13751.0)
+            )  # [cal/(cm^2 degC)] or [Langleys / degC]
+
+            # No shortwave (solar) radiation at night.
+            sw = zero  # [cal / cm^2] or [Langleys]
+
+            # Calculate the night time energy balance
+            (
+                tcal,
+                freeh2o,
+                iasw,
+                pk_def,
+                pk_den,
+                pk_ice,
+                pk_depth,
+                pk_temp,
+                pss,
+                pst,
+                snowmelt,
+                pkwater_equiv,
+            ) = calc_snowbal(
+                niteda=niteda,
+                cec=cec,
+                cst=cst,
+                esv=esv,
+                sw=sw,
+                temp=temp,
+                trd=trd,
+                calc_calin=calc_calin,
+                calc_caloss=calc_caloss,
+                canopy_covden=canopy_covden,
+                den_max=den_max,
+                denmaxinv=denmaxinv,
+                emis_noppt=emis_noppt,
+                freeh2o=freeh2o,
+                freeh2o_cap=freeh2o_cap,
+                hru_ppt=hru_ppt,
+                iasw=iasw,
+                pk_def=pk_def,
+                pk_den=pk_den,
+                pk_depth=pk_depth,
+                pk_ice=pk_ice,
+                pk_temp=pk_temp,
+                pkwater_equiv=pkwater_equiv,
+                pss=pss,
+                pst=pst,
+                snowcov_area=snowcov_area,
+                snowmelt=snowmelt,
+                tcal=tcal,
+                tstorm_mo=tstorm_mo,
+            )
+            # tcal set directly by calc_snowbal above [cal/cm^2] or [Langleys]
+
+        # <
+        # iswn = zero on ly a glacier variable
 
         # Compute energy balance for day period (if the snowpack still exists)
         # THIS SHOULD HAPPEN IN SNOBAL
-        if pkwater_equiv > zero:
-            # Set the flag indicating daytime
-            niteda = 2  # [flag]
+        # Set the flag indicating daytime
+        niteda = 2  # [flag]
+        # Temperature is halfway between the maximum and average
+        # temperature for the day.
+        temp = (tmaxc + tavgc) * 0.5  # [degrees C]
 
+        if pkwater_equiv > zero:
             # Set shortwave radiation as calculated earlier
             sw = swn  # [cal/cm^2] or [Langleys]
 
-            # Temperature is halfway between the maximum and average
-            # temperature for the day.
-            temp = (tmaxc + tavgc) * 0.5  # [degrees C]
             (
                 cals,
                 freeh2o,
+                iasw,
                 pk_def,
+                pk_den,
                 pk_ice,
+                pk_depth,
                 pk_temp,
+                pss,
+                pst,
+                snowmelt,
                 pkwater_equiv,
             ) = calc_snowbal(
                 niteda=niteda,
@@ -2647,8 +2672,10 @@ class PRMSSnow(ConservativeProcess):
         # <
         return (
             freeh2o,
+            iasw,
             iso,
             lso,
+            mso,
             pk_def,
             pk_den,
             pk_depth,
@@ -2657,6 +2684,7 @@ class PRMSSnow(ConservativeProcess):
             pkwater_equiv,
             pss,
             tcal,
+            snowmelt,
         )
 
     @staticmethod
@@ -2832,9 +2860,15 @@ class PRMSSnow(ConservativeProcess):
             return (
                 cal,
                 freeh2o,
+                iasw,
                 pk_def,
+                pk_den,
                 pk_ice,
+                pk_depth,
                 pk_temp,
+                pss,
+                pst,
+                snowmelt,
                 pkwater_equiv,
             )
 
@@ -3003,9 +3037,15 @@ class PRMSSnow(ConservativeProcess):
         return (
             cal,
             freeh2o,
+            iasw,
             pk_def,
+            pk_den,
             pk_ice,
+            pk_depth,
             pk_temp,
+            pss,
+            pst,
+            snowmelt,
             pkwater_equiv,
         )
 
@@ -3049,8 +3089,6 @@ class PRMSSnow(ConservativeProcess):
             # snowpack
             # variables to no-snowpack values.
             snow_evap = pkwater_equiv  # [inches]
-
-            snow_evap = pkwater_equiv  # [inches]
             pkwater_equiv = zero  # [inches]
             pk_ice = zero  # [inches]
             pk_def = zero  # [cal/cm^2]
@@ -3068,6 +3106,10 @@ class PRMSSnow(ConservativeProcess):
                 # RAPCOMMENT - CHANGED TO CHECK FOR NEGATIVE PACK ICE
                 # If all pack ice is removed, then there cannot be a heat
                 # deficit.
+
+                # JLM: mass balance fix only in our 5.2.1 prms version
+                freeh2o = freeh2o + pk_ice
+
                 pk_ice = zero
                 pk_def = zero
                 pk_temp = zero
@@ -3095,8 +3137,10 @@ class PRMSSnow(ConservativeProcess):
                 #             f"snowevap: {pkwater_equiv}"
                 #         )
                 # #  <<
-
-                pkwater_equiv = zero
+                # zero of pkwater_equiv is inside a debug statement that
+                # is dosent seem to be triggered in test runs
+                # pkwater_equiv = zero
+                pass
 
             # <
             snow_evap = zero
@@ -3114,12 +3158,11 @@ class PRMSSnow(ConservativeProcess):
                     # if verbose:
                     #     if pkwater_equiv < -epsilon64:
                     #         print(
-                    #             "snowpack issue 2, negative pkwater_equiv in "
+                    #             "snowpack issue 2, negative pkwater_equiv in"
                     #             f"snowevap: {pkwater_equiv}"
                     #         )
                     # # <<
-
-                    # To be sure negative snowpack is ignored
+                    # This zero of pkwater IS NOT in the debug statement
                     pkwater_equiv = zero
 
                 # <

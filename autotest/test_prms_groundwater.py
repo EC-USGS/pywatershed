@@ -2,14 +2,15 @@ import pathlib as pl
 
 import pytest
 
-from pywatershed.base.control import Control
-from pywatershed.base.parameters import Parameters
-from pywatershed.hydrology.prms_groundwater import (
-    PRMSGroundwater,
-    has_prmsgroundwater_f,
-)
+from pywatershed import Control, Parameters, PRMSGroundwater
+from pywatershed.base.adapter import adapter_factory
+from pywatershed.hydrology.prms_groundwater import has_prmsgroundwater_f
 from pywatershed.parameters import PrmsParameters
-from pywatershed.utils.netcdf_utils import NetCdfCompare
+from utils_compare import compare_in_memory, compare_netcdfs
+
+# compare in memory (faster) or full output files?
+compare_output_files = False
+rtol = atol = 1.0e-13
 
 calc_methods = ("numpy", "numba", "fortran")
 params = ("params_sep", "params_one")
@@ -48,7 +49,6 @@ def test_compare_prms(
 
     tmp_path = pl.Path(tmp_path)
 
-    # load csv files into dataframes
     output_dir = domain["prms_output_dir"]
     input_variables = {}
     for key in PRMSGroundwater.get_inputs():
@@ -63,49 +63,36 @@ def test_compare_prms(
         budget_type="error",
         calc_method=calc_method,
     )
-    nc_parent = tmp_path / domain["domain_name"]
-    gw.initialize_netcdf(nc_parent)
 
-    output_compare = {}
-    vars_compare = (
-        "gwres_flow",
-        "gwres_sink",
-        "gwres_stor",
-        "ssr_to_gw",
-        "soil_to_gw",
-    )
-    for key in PRMSGroundwater.get_variables():
-        if key not in vars_compare:
-            continue
-        base_nc_path = output_dir / f"{key}.nc"
-        compare_nc_path = tmp_path / domain["domain_name"] / f"{key}.nc"
-        output_compare[key] = (base_nc_path, compare_nc_path)
-
-    print(f"base_nc_path: {base_nc_path}")
-    print(f"compare_nc_path: {compare_nc_path}")
+    if compare_output_files:
+        nc_parent = tmp_path / domain["domain_name"]
+        gw.initialize_netcdf(nc_parent)
+    else:
+        answers = {}
+        for var in PRMSGroundwater.get_variables():
+            var_pth = output_dir / f"{var}.nc"
+            answers[var] = adapter_factory(
+                var_pth, variable_name=var, control=control
+            )
 
     for istep in range(control.n_times):
         control.advance()
-
         gw.advance()
-
         gw.calculate(float(istep))
-
         gw.output()
+
+        if not compare_output_files:
+            compare_in_memory(gw, answers, atol=atol, rtol=rtol)
 
     gw.finalize()
 
-    assert_error = False
-    for key, (base, compare) in output_compare.items():
-        success, diff = NetCdfCompare(base, compare).compare()
-        if not success:
-            print(
-                f"comparison for {key} failed: "
-                + f"maximum error {diff[key][0]} "
-                + f"(maximum allowed error {diff[key][1]}) "
-                + f"in column {diff[key][2]}"
-            )
-            assert_error = True
-    assert not assert_error, "comparison failed"
+    if compare_output_files:
+        compare_netcdfs(
+            PRMSGroundwater.get_variables(),
+            tmp_path / domain["domain_name"],
+            output_dir,
+            atol=atol,
+            rtol=rtol,
+        )
 
     return

@@ -175,10 +175,11 @@ jobs:
           pip list
 
       - name: Run available domains with PRMS and convert csv output to NetCDF
-        working-directory: test_data/scripts
+        working-directory: test_data/generate
         run: |
-          pytest -v -n=auto --durations=0 test_run_domains.py
-          pytest -v -n=auto --durations=0 test_nc_domains.py
+          pytest -v -n=auto --durations=0 run_prms_domains.py
+          pytest -v -n=auto --durations=0 convert_prms_output_to_nc.py
+          pytest -v -n=auto --durations=0 remove_prms_csvs.py
 
       - name: List all NetCDF files in test_data directory
         working-directory: test_data
@@ -198,13 +199,13 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
           path: ./autotest/pytest.xml
 
       - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
           file: ./autotest/coverage.xml
           # flags: unittests

@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-78
+83
 ####
 nhruOut_freq
 1
@@ -251,13 +251,14 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-78
+83
 4
 albedo
 cap_infil_tot
 contrib_fraction
 dprst_seep_hru
 dprst_evap_hru
+dprst_insroff_hru
 dprst_sroff_hru
 dprst_stor_hru
 freeh2o
@@ -288,7 +289,11 @@ net_snow
 newsnow
 orad_hru
 perv_actet
+pk_def
+pk_den
+pk_depth
 pk_ice
+pk_temp
 pkwater_ante
 pkwater_equiv
 potet
@@ -345,7 +350,7 @@ nsegmentOutON_OFF
 nsegmentOutVars
 1
 1
-9
+10
 ####
 nsegmentOut_freq
 1
@@ -353,8 +358,9 @@ nsegmentOut_freq
 1
 ####
 nsegmentOutVar_names
-9
+10
 4
+seg_inflow
 seg_outflow
 seg_gwflow
 seg_sroff

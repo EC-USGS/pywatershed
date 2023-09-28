@@ -249,7 +249,7 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_den[wh_not_land] = zero
 
         # variables
-        if self.control.options["init_vars_from_file"] in [0, 2, 5]:
+        if self.control.options["restart"] in [0, 2, 5]:
             # these are set in sm_climateflow
             self.soil_moist[:] = (
                 self.soil_moist_init_frac * self.soil_moist_max
@@ -269,7 +269,7 @@ class PRMSSoilzone(ConservativeProcess):
         # expectations. Move this parameter business to __init__
 
         # ssres_stor
-        if self.control.options["init_vars_from_file"] in [0, 2, 5]:
+        if self.control.options["restart"] in [0, 2, 5]:
             self.ssres_stor = self.ssstor_init_frac * self._sat_threshold
             wh_inactive_or_lake = np.where(
                 (self.hru_type == HruType.INACTIVE.value)
@@ -341,7 +341,7 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_flag[wh_land_and_prf_den] = True
 
         # can this one be combined with the restart read logic above?
-        if self.control.options["init_vars_from_file"] in [0, 2, 5]:
+        if self.control.options["restart"] in [0, 2, 5]:
             wh_land_or_swale = np.where(
                 (self.hru_type == HruType.LAND.value)
                 | (self.hru_type == HruType.SWALE.value)

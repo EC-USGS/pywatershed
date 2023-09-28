@@ -4,6 +4,7 @@ import sys
 from fnmatch import fnmatch
 from platform import processor
 from typing import List
+from warnings import warn
 
 import pytest
 
@@ -70,10 +71,14 @@ def enforce_scheduler(test_dir):
         fnmatch(str(test_dir), gg) for gg in domain_globs_schedule
     )
     if any(glob_match):
-        raise RuntimeError(
-            f"Domain '{test_dir}' must be scheduled (use --force to override)"
+        msg = (
+            f"Skipping domain '{test_dir}' which must be scheduled or use "
+            "--force to override skip"
         )
-    return None
+        warn(msg, UserWarning)
+        return True
+
+    return False
 
 
 def collect_simulations(
@@ -91,7 +96,9 @@ def collect_simulations(
 
         # optionally enforce scheduler
         if not force:
-            enforce_scheduler(test_dir)
+            skip = enforce_scheduler(test_dir)
+            if skip:
+                continue
 
         # if control file is found, add simulation
         ctrl_file = next(

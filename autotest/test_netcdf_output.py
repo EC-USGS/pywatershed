@@ -26,9 +26,12 @@ def params(domain):
 
 @pytest.fixture(scope="function")
 def control(domain):
-    control = Control.load(domain["control_file"])
+    control = Control.load_prms(
+        domain["control_file"], warn_unused_options=False
+    )
     control.edit_n_time_steps(n_time_steps)
     control.options["budget_type"] = "error"
+    del control.options["netcdf_output_var_names"]
     return control
 
 
@@ -96,13 +99,14 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     ]
     output_vars = None
 
-    model.initialize_netcdf(
-        tmp_dir,
-        budget_args=budget_args,
-        output_vars=output_vars,
-    )
-
     with pytest.warns(UserWarning):
+        model.initialize_netcdf(
+            tmp_dir,
+            budget_args=budget_args,
+            output_vars=output_vars,
+        )
+
+    with pytest.raises(RuntimeError):
         model.initialize_netcdf(
             tmp_dir,
             budget_args=budget_args,
@@ -197,6 +201,7 @@ def test_separate_together_var_list(
     control.options["input_dir"] = input_dir
     control.options["netcdf_output_var_names"] = output_vars
     control.options["netcdf_output_separate_files"] = separate
+    del control.options["netcdf_output_dir"]
 
     # Could limit this to just the variables in model_procs
     for ff in domain_output_dir.resolve().glob("*.nc"):
@@ -204,12 +209,14 @@ def test_separate_together_var_list(
     for ff in domain_output_dir.parent.resolve().glob("*.nc"):
         shutil.copy(ff, input_dir / ff.name)
 
-    with pytest.raises(RuntimeError):
-        model = Model(
-            model_procs,
-            control=control,
-            parameters=params,
-        )
+    model = Model(
+        model_procs,
+        control=control,
+        parameters=params,
+    )
+    with pytest.raises(ValueError):
+        # passing no output_dir arg and none in opts throws an error
+        model.initialize_netcdf()
 
     control.options["netcdf_output_dir"] = test_output_dir
     model = Model(

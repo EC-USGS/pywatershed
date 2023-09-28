@@ -1,6 +1,6 @@
-"""The control class."""
 import datetime
 import pathlib as pl
+from warnings import warn
 
 import numpy as np
 
@@ -17,6 +17,56 @@ from ..utils.time_utils import (
 )
 from .accessor import Accessor
 
+# This is the list of control variables currently used by pywatershed
+# It is important to maintain this list to issue warnings about what
+# variables are unrecognized/ignored in legacy and non-legacy control
+# files
+# TODO: where should these be documented?
+# TODO: identify which are PRMS-legacy?
+pws_control_options_avail = [
+    "budget_type",
+    "calc_method",
+    "dprst_flag",  # to remove?
+    "restart",
+    "input_dir",
+    "load_n_time_batches",
+    "netcdf_output_dir",
+    "netcdf_output_var_names",
+    # "netcdf_output_separate_files",
+    # "netcdf_budget_args",
+    "start_time",
+    "time_step_units",
+    "verbosity",
+]
+
+prms_legacy_options_avail = [
+    "dprst_flag",
+    "end_time",
+    "init_vars_from_file",
+    "initial_deltat",
+    "nhruOutBaseFileName",
+    "nhruOutVar_names",
+    "nsegmentOutBaseFileName",
+    "nsegmentOutVar_names",
+    "start_time",
+    "print_debug",
+]
+
+prms_to_pws_option_map = {
+    "init_vars_from_file": "restart",
+    "initial_deltat": "time_step",
+    "nhruOutBaseFileName": "netcdf_output_dir",
+    "nhruOutVar_names": "netcdf_output_var_names",
+    "nsegmentOutBaseFileName": "netcdf_output_dir",
+    "nsegmentOutVar_names": "netcdf_output_var_names",
+    "print_debug": "verbosity",
+}
+
+assert (
+    len(set(prms_to_pws_option_map.keys()) - set(prms_legacy_options_avail))
+    == 0
+)
+
 
 class Control(Accessor):
     """Control manages global time and options, and provides metadata.
@@ -26,7 +76,7 @@ class Control(Accessor):
             time
         end_time: the last integration time
         time_step: the length fo the time step
-        options: a dictionary of global Process options
+        options: a dictionary of global Process options.
 
     """
 
@@ -64,7 +114,8 @@ class Control(Accessor):
 
         if options is None:
             options = {}
-        self.options = options
+        self.options = {}
+        self._set_options(options)
         self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
@@ -74,23 +125,87 @@ class Control(Accessor):
         cls,
         control_file: fileish,
     ) -> "Control":
+        msg = "Control.load will be deprecated for Control.load_prms"
+        warn(msg, PendingDeprecationWarning)
+        return Control.load_prms(control_file)
+
+    @classmethod
+    def load_prms(
+        cls,
+        control_file: fileish,
+        warn_unused_options: bool = True,
+    ) -> "Control":
         """Initialize a control object from a PRMS control file
 
         Args:
             control_file: PRMS control file
+            warn_unused_options: bool if warnings are to be issued for unused
+                options from the PRMS control file. Recommended and True by
+                default. See below for a list of used/available legacy options.
 
         Returns:
             Time: Time object initialized from a PRMS control file
 
+
+
+        Available PRMS legacy options :
+            nhruOutVar_names: mapped to netcdf_output_var_names
+            nsegmentOutVar_names: mapped to netcdf_output_var_names
+
+
         """
         control = ControlVariables.load(control_file)
 
+        if warn_unused_options:
+            for vv in control.control.keys():
+                if vv not in prms_legacy_options_avail:
+                    msg = (
+                        f"Option '{vv}' in supplied control file is not used "
+                        "by pywatershed"
+                    )
+                    warn(msg, RuntimeWarning)
+
+        opts = control.control
+        opt_names = list(opts.keys())
+
+        for oo in opt_names:
+            if oo not in prms_legacy_options_avail:
+                del opts[oo]
+            if oo in prms_to_pws_option_map.keys():
+                pws_option_key = prms_to_pws_option_map[oo]
+                val = opts[oo]
+                del opts[oo]
+                if pws_option_key in opts.keys():
+                    # combine to a list with only unique entries
+                    # use value instead of list if only one value in list
+                    opts[pws_option_key] = list(
+                        set(opts[pws_option_key].tolist() + val.tolist())
+                    )
+                    if len(opts[pws_option_key]) == 1:
+                        opts[pws_option_key] = opts[pws_option_key][0]
+                else:
+                    opts[pws_option_key] = val
+
+        start_time = control.control["start_time"]
+        end_time = control.control["end_time"]
+        time_step = control.control["time_step"]
+        del control.control["start_time"]
+        del control.control["end_time"]
+        del control.control["time_step"]
+
         return cls(
-            control.control["start_time"],
-            control.control["end_time"],
-            control.control["initial_deltat"],
+            start_time=start_time,
+            end_time=end_time,
+            time_step=time_step,
             options=control.control,
         )
+
+    def _set_options(self, options):
+        for okey, oval in options.items():
+            if okey not in pws_control_options_avail:
+                msg = f"'{okey}' is not an available control option"
+                raise ValueError(msg)
+            self.options[okey] = oval
 
     @property
     def current_time(self):

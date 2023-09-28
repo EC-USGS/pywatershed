@@ -17,6 +17,6 @@ calc_method: numba
 load_n_time_batches: 1
 
 # still used by snow and soilzone, but should be removed
-init_vars_from_file: 0
+restart: 0
 
 dprst_flag: True

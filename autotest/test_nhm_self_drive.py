@@ -1,5 +1,6 @@
 import pathlib as pl
 
+import pytest
 import xarray as xr
 
 import pywatershed as pws
@@ -33,18 +34,23 @@ def test_drive_indiv_process(domain, tmp_path):
     nhm_output_dir = pl.Path(tmp_path) / "nhm_output"
 
     params = pws.parameters.PrmsParameters.load(domain["param_file"])
-    control = pws.Control.load(domain["control_file"])
+    control = pws.Control.load_prms(
+        domain["control_file"], warn_unused_options=False
+    )
     control.edit_n_time_steps(n_time_steps)
     control.options["budget_type"] = "warn"
     control.options["calc_method"] = "numba"
     control.options["input_dir"] = domain["prms_run_dir"]
+    del control.options["netcdf_output_var_names"]
 
     nhm = pws.Model(
         nhm_processes,
         control=control,
         parameters=params,
     )
-    nhm.initialize_netcdf(output_dir=nhm_output_dir)
+    with pytest.warns(UserWarning):
+        nhm.initialize_netcdf(output_dir=nhm_output_dir)
+
     nhm.run(finalize=True)
     del nhm, params, control
 
@@ -60,7 +66,9 @@ def test_drive_indiv_process(domain, tmp_path):
         proc_model_output_dir.mkdir()
 
         params = pws.parameters.PrmsParameters.load(domain["param_file"])
-        control = pws.Control.load(domain["control_file"])
+        control = pws.Control.load_prms(
+            domain["control_file"], warn_unused_options=False
+        )
         control.edit_n_time_steps(n_time_steps)
         control.options["budget_type"] = "warn"
         control.options["calc_method"] = "numba"

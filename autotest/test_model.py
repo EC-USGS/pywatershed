@@ -36,11 +36,14 @@ invoke_style = ("prms", "model_dict", "model_dict_from_yml")
 
 @pytest.fixture(scope="function")
 def control(domain):
-    control = Control.load(domain["control_file"])
+    control = Control.load_prms(
+        domain["control_file"], warn_unused_options=False
+    )
     control.options["verbose"] = 10
     control.options["budget_type"] = None
     control.options["calc_method"] = "fortran"
     control.options["load_n_time_batches"] = 1
+    del control.options["netcdf_output_var_names"]
     return control
 
 

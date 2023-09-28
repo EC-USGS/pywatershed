@@ -453,11 +453,12 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
-        # methodize this netcdf section
-        self._parse_netcdf_control_options()
         self._netcdf_initialized = False
-        if "netcdf_output_dir" in self.control.options.keys():
-            self.initialize_netcdf(**self._netcdf_opts)
+        opts = self.control.options
+        if "netcdf_output_dir" in opts.keys():
+            self._default_nc_out_dir = opts["netcdf_output_dir"]
+        else:
+            self._default_nc_out_dir = None
 
         return
 
@@ -741,23 +742,49 @@ class Model:
 
     def initialize_netcdf(
         self,
-        output_dir: str,
-        separate_files: bool = True,
+        output_dir: str = None,
+        separate_files: bool = None,
         budget_args: dict = None,
         output_vars: list = None,
     ):
-        """Initialize NetCDF output files for model (all processes)."""
+        """Initialize NetCDF output files for model (all processes).
 
+        Args:
+            output_dir: pl.Path or str of the directory where to write files
+            separate_files: For a given Process, write a single file or
+                separate files for the process' variables. DEFAULTS to True
+                for performance reasons.
+            budget_args: see Budget.initialize_netcdf(). defaults to None
+            output_vars: A list of variables to write. Unrecognized variable
+                names are silently skipped. Defaults to None which writes
+                all variables for all Processes.
+        """
         if self._netcdf_initialized:
             msg = (
                 "Model class previously initialized netcdf output "
                 f"in {self._netcdf_dir}"
             )
-            warn(msg)
-            return
+            raise RuntimeError(msg)
+
+        print("model initializing NetCDF output")
 
         if not self._found_input_files:
             self._find_input_files()
+
+        (
+            output_dir,
+            output_vars,
+            separate_files,
+        ) = self._reconcile_nc_args_w_control_opts(
+            output_dir, output_vars, separate_files
+        )
+
+        # apply defaults if necessary
+        if output_dir is None:
+            msg = "An output directory is required to be specified for netcdf initialization."
+            raise ValueError(msg)
+        if separate_files is None:
+            separate_files = True
 
         self._netcdf_dir = pl.Path(output_dir)
         for cls in self.process_order:
@@ -795,11 +822,13 @@ class Model:
             n_time_steps: the number of timesteps to run
             output_vars: the vars to output to the netcdf_dir
         """
-        if not self._found_input_files:
-            self._find_input_files()
-
-        if netcdf_dir:
-            print("model.run(): initializing NetCDF output")
+        # Can supply options ton initialize netcdf on .run but not with
+        # .advance. However, the first advance takes care of finding
+        # the input files.
+        if netcdf_dir or (
+            not self._netcdf_initialized
+            and self._default_nc_out_dir is not None
+        ):
             self.initialize_netcdf(netcdf_dir, output_vars=output_vars)
 
         if not n_time_steps:
@@ -820,6 +849,12 @@ class Model:
         """Advance the model in time."""
         if not self._found_input_files:
             self._find_input_files()
+
+        if (
+            not self._netcdf_initialized
+            and self._default_nc_out_dir is not None
+        ):
+            self.initialize_netcdf()
 
         self.control.advance()
         for cls in self.process_order:
@@ -844,44 +879,49 @@ class Model:
             self.processes[cls].finalize()
         return
 
-    def _parse_netcdf_control_options(self):
-        # defaults
-        output_dir = None
-        output_vars = None
-        separate_files = True
-        budget_args = None
+    def _reconcile_nc_args_w_control_opts(
+        self, output_dir, output_vars, separate_files
+    ):
+        # can treat the other args but they are not yet in the available opts
+        arg_opt_name_map = {
+            "output_dir": "netcdf_output_dir",
+            "output_vars": "netcdf_output_var_names",
+            "separate_files": "netcdf_output_separate_files",
+        }
 
-        if "netcdf_output_dir" in self.control.options.keys():
-            output_dir = self.control.options["netcdf_output_dir"]
-
-        if "netcdf_output_var_names" in self.control.options.keys():
-            output_vars = self.control.options["netcdf_output_var_names"]
-
-        if "netcdf_output_separate_files" in self.control.options.keys():
-            separate_files = self.control.options[
-                "netcdf_output_separate_files"
-            ]
-
-        if "netcdf_budget_args" in self.control.options.keys():
-            budget_args = self.control.options["netcdf_budget_args"]
-
-        any_netcdf_options = False
-        for kk in self.control.options.keys():
-            if "netcdf" in kk:
-                any_netcdf_options = True
-
-        if output_dir is None and any_netcdf_options:
-            raise RuntimeError(
-                "All netcdf options should be in control.options or passed "
-                "to Model.initialize_netcdf() but not mixed. You have not "
-                "supplied 'netcdf_output_dir' in control.options."
-            )
-
-        self._netcdf_opts = {
+        args = {
             "output_dir": output_dir,
             "output_vars": output_vars,
             "separate_files": separate_files,
-            "budget_args": budget_args,
         }
 
-        return
+        for vv in args.keys():
+            arg_val = args[vv]
+            opt_name = arg_opt_name_map[vv]
+            opts = self.control.options
+            if opt_name in opts.keys():
+                opt_val = opts[opt_name]
+            else:
+                opt_val = None
+
+            # set the arg vals to return
+
+            if opt_val is None and arg_val is None:
+                pass
+
+            elif opt_val is None:
+                pass
+
+            elif arg_val is None:
+                args[vv] = opt_val
+
+            else:
+                msg = (
+                    f"control.option '{opt_name}' being superceeded by "
+                    f"model.initialize_netcdf argument {vv}"
+                )
+                # TODO: should this edit control? and then model writes control
+                # at the end of run to the output dir?
+                warn(msg)
+
+        return args["output_dir"], args["output_vars"], args["separate_files"]

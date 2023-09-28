@@ -152,5 +152,6 @@ def test_control_advance(control_simple, params_simple):
 
 
 def test_init_load(domain):
-    control = Control.load(domain["control_file"])
+    with pytest.warns(RuntimeWarning):
+        _ = Control.load_prms(domain["control_file"])
     return None

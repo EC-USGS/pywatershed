@@ -6,7 +6,6 @@ from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
-
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # in this case we'll compare netcdf files and in memory

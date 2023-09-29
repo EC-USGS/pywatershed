@@ -1,3 +1,5 @@
+from collections import UserDict
+from copy import deepcopy
 import datetime
 import pathlib as pl
 from warnings import warn
@@ -32,8 +34,8 @@ pws_control_options_avail = [
     "load_n_time_batches",
     "netcdf_output_dir",
     "netcdf_output_var_names",
-    # "netcdf_output_separate_files",
-    # "netcdf_budget_args",
+    "netcdf_output_separate_files",
+    "netcdf_budget_args",
     "start_time",
     "time_step_units",
     "verbosity",
@@ -113,9 +115,8 @@ class Control(Accessor):
         self._itime_step = -1
 
         if options is None:
-            options = {}
-        self.options = {}
-        self._set_options(options)
+            options = OptsDict()
+        self.options = options
         self.meta = meta
         # This will have the time dimension name
         # This will have the time coordimate name
@@ -200,12 +201,46 @@ class Control(Accessor):
             options=control.control,
         )
 
-    def _set_options(self, options):
-        for okey, oval in options.items():
-            if okey not in pws_control_options_avail:
-                msg = f"'{okey}' is not an available control option"
-                raise ValueError(msg)
-            self.options[okey] = oval
+    def _set_options(self, options: dict):
+        if not isinstance(options, (OptsDict, dict)):
+            raise ValueError("control.options must be a dictionary")
+        valid_options = OptsDict()
+        for key, val in options.items():
+            valid_options[key] = val
+
+        return valid_options
+
+    def __setitem__(self, key, value) -> None:
+        if key == "options":
+            value = self._set_options(value)
+
+        super().__setitem__(key, value)
+        return None
+
+    def __setattr__(self, name, value) -> None:
+        if name == "options":
+            value = self._set_options(value)
+
+        super().__setattr__(name, value)
+        return None
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    def __deepcopy__(self, memo):
+        del self.meta
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+
+        self.meta = meta
+        result.meta = meta
+        return result
 
     @property
     def current_time(self):
@@ -388,3 +423,12 @@ class Control(Accessor):
             options=control_dict,
         )
         return control
+
+
+class OptsDict(UserDict):
+    def __setitem__(self, key, value):
+        if key not in pws_control_options_avail:
+            msg = f"'{key}' is not an available control option"
+            raise NameError(msg)
+        super().__setitem__(key, value)
+        return None

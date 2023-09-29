@@ -1,3 +1,4 @@
+from copy import copy, deepcopy
 from datetime import datetime
 
 import numpy as np
@@ -155,3 +156,40 @@ def test_init_load(domain):
     with pytest.warns(RuntimeWarning):
         _ = Control.load_prms(domain["control_file"])
     return None
+
+
+def test_deepcopy(domain):
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+    ctl_sh = copy(ctl)
+    ctl_dp = deepcopy(ctl)
+
+    opt_restart_orig = ctl.options["restart"]
+    opt_restart_new = "something_else"
+    ctl.options["restart"] = opt_restart_new
+    assert ctl_sh.options["restart"] == opt_restart_new
+    assert ctl_dp.options["restart"] == opt_restart_orig
+
+    return None
+
+
+def test_setitem_setattr(domain):
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+
+    # __setitem__ on OptsDict
+    ctl.options["restart"] = 12
+    with pytest.raises(NameError):
+        ctl.options["foobar"] = 12
+
+    # __setattr__ on Control
+    ctl.options = {"restart": 45}
+    with pytest.raises(NameError):
+        ctl.options = {"foobar": 12}
+
+    # __setitem__ on Control
+    ctl["options"] = {"restart": 45}
+    with pytest.raises(NameError):
+        ctl["options"] = {"foobar": 12}
+
+    # The value for options must be a dictionary
+    with pytest.raises(ValueError):
+        ctl.options = None

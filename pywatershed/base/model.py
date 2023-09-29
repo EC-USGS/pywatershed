@@ -404,7 +404,7 @@ class Model:
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,
     ):
-        self.control = control
+        self.control = deepcopy(control)
         self.parameters = parameters
 
         # This is for backwards compatibility

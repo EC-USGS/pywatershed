@@ -1,7 +1,7 @@
-from collections import UserDict
-from copy import deepcopy
 import datetime
 import pathlib as pl
+from collections import UserDict
+from copy import deepcopy
 from warnings import warn
 
 import numpy as np

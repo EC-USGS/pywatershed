@@ -167,6 +167,7 @@ def test_nc4_dd_nc4(tmp_path):
         "contiguous",
         "chunksizes",
         "coordinates",
+        "preferred_chunks",
     ]:
         for vv in sorted(ds1.variables):
             for dd in [ds1, ds2]:

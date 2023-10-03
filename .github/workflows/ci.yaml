@@ -138,7 +138,7 @@ jobs:
         with:
           compiler: gcc
           version: 11
-      
+
       - name: Link gfortran dylibs on Mac
         if: runner.os == 'macOS'
         run: .github/scripts/symlink_gfortran_mac.sh
@@ -174,40 +174,92 @@ jobs:
           pip -V
           pip list
 
-      - name: Run available domains with PRMS and convert csv output to NetCDF
+      - name: hru_1 domain, run PRMS and convert csv output to NetCDF
         working-directory: test_data/generate
         run: |
-          pytest -v -n=auto --durations=0 run_prms_domains.py
-          pytest -v -n=auto --durations=0 convert_prms_output_to_nc.py
-          pytest -v -n=auto --durations=0 remove_prms_csvs.py
+          pytest -vv -n=2 --durations=0 run_prms_domains.py --domain=hru_1
+          pytest -vv -n=auto --durations=0 convert_prms_output_to_nc.py  --domain=hru_1
+          pytest -vv -n=auto --durations=0 remove_prms_csvs.py
 
-      - name: List all NetCDF files in test_data directory
-        working-directory: test_data
+      - name: hru_1 domain, list all NetCDF files in test_data directory
+        working-directory: test_data/hru_1/output
         run: |
           find . -name "*.nc"
 
-      - name: Run tests
+      - name: hru_1 domain , run tests
         working-directory: autotest
         run: pytest
-          -v
+          -vv
           -n=auto
+          --domain_yaml=../test_data/hru_1/hru_1.yaml
           --durations=0
-          --all_domains
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest.xml
+          --junitxml=pytest_hru_1.xml
+
+
+      - name: drb_2yr domain, run PRMS and convert csv output to NetCDF
+        working-directory: test_data/generate
+        run: |
+          pytest -vv remove_output_dirs.py --domain=hru_1
+          pytest -vv -n=2 run_prms_domains.py --domain=drb_2yr
+          pytest -vv -n=auto convert_prms_output_to_nc.py --domain=drb_2yr
+          pytest -vv -n=auto remove_prms_csvs.py
+
+      - name: drb_2yr domain, list all NetCDF files in test_data directory
+        working-directory: test_data/drb_2yr/output
+        run: |
+          find . -name "*.nc"
+
+      - name: drb_2yr domain , run tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          --domain_yaml=../test_data/drb_2yr/drb_2yr.yaml
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr.xml
+
+      - name: ucb_2yr domain, run PRMS and convert csv output to NetCDF
+        working-directory: test_data/generate
+        run: |
+          pytest -vv remove_output_dirs.py --domain=drb_2yr
+          pytest -vv -n=2 run_prms_domains.py --domain=ucb_2yr
+          pytest -vv -n=auto convert_prms_output_to_nc.py --domain=ucb_2yr
+          pytest -vv -n=auto remove_prms_csvs.py
+
+      - name: ucb_2yr domain, list all NetCDF files in test_data directory
+        working-directory: test_data/ucb_2yr/output
+        run: |
+          find . -name "*.nc"
+
+      - name: ucb_2yr domain , run tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          --domain_yaml=../test_data/ucb_2yr/ucb_2yr.yaml
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_ucb_2yr.xml
 
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v3
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
-          path: ./autotest/pytest.xml
+          path: |
+            ./autotest/pytest_hru_1.xml
+            ./autotest/pytest_drb_2yr.xml
+            ./autotest/pytest_ucb_2yr.xml
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./autotest/coverage.xml
+          file: ./autotest/coverage.xml  # should be just the ucb result
           # flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           # name: codecov-umbrella

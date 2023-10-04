@@ -2,9 +2,14 @@ import numpy as np
 import pytest
 
 from pywatershed.atmosphere.prms_solar_geometry import PRMSSolarGeometry
+from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
+from utils_compare import compare_in_memory, compare_netcdfs
+
+# in this case we'll compare netcdf files and in memory
+atol = rtol = np.finfo(np.float32).resolution
 
 params = ("params_sep", "params_one")
 
@@ -37,6 +42,7 @@ def parameters(domain, request):
 def test_compare_prms(
     domain, control, discretization, parameters, tmp_path, from_prms_file
 ):
+    output_dir = domain["prms_output_dir"]
     prms_soltab_file = domain["prms_run_dir"] / "soltab_debug"
     if from_prms_file:
         from_prms_file = prms_soltab_file
@@ -50,48 +56,33 @@ def test_compare_prms(
         from_prms_file=from_prms_file,
         netcdf_output_dir=tmp_path,
     )
+    solar_geom.output()
     solar_geom.finalize()
 
-    ans = PRMSSolarGeometry(
-        control,
-        discretization=discretization,
-        parameters=parameters,
-        from_prms_file=prms_soltab_file,
+    compare_netcdfs(
+        PRMSSolarGeometry.get_variables(),
+        tmp_path,
+        output_dir,
+        atol=atol,
+        rtol=rtol,
     )
 
-    # check the shapes
-    for vv in solar_geom.variables:
-        assert ans[vv].data.shape == solar_geom[vv].data.shape
-
-    # check the 2D values
-    atol = np.finfo(np.float32).resolution
-    rtol = atol
-
-    for vv in solar_geom.variables:
-        assert np.allclose(
-            solar_geom[vv].data,
-            ans[vv].data,
-            atol=atol,
-            rtol=rtol,
+    answers = {}
+    for var in PRMSSolarGeometry.get_variables():
+        var_pth = output_dir / f"{var}.nc"
+        answers[var] = adapter_factory(
+            var_pth, variable_name=var, control=control
         )
 
     # check the advance/calculate the state
     sunhrs_id = id(solar_geom.soltab_sunhrs)
 
-    for ii in range(4):
+    for ii in range(control.n_times):
         control.advance()
         solar_geom.advance()
         solar_geom.calculate(1.0)
 
-        for vv in solar_geom.variables:
-            ans[vv].advance()
-
-            assert solar_geom[vv].current.shape == ans[vv].current.shape
-            assert np.allclose(solar_geom[vv].current, ans[vv].current)
-            assert np.allclose(
-                solar_geom[vv].current, ans[vv].current, atol=atol, rtol=rtol
-            )
-
+        compare_in_memory(solar_geom, answers, atol=atol, rtol=rtol)
         assert id(solar_geom.soltab_sunhrs) == sunhrs_id
 
     return

@@ -6,6 +6,7 @@ import netCDF4 as nc4
 import numpy as np
 import pandas as pd
 
+from ..base import meta
 from ..base.accessor import Accessor
 
 fileish = Union[str, pl.Path]
@@ -304,11 +305,12 @@ class Soltab(Accessor):
         variables = {}
         for vv in self.variables:
             out_file = self.output_dir / f"{vv}.nc"
+            var_meta = meta.find_variables(vv)[vv]
 
             ds = nc4.Dataset(out_file, "w", clobber=True)
             ds.setncattr("Description", "PRMS soltab data")
 
-            # time dime and coord
+            # time dim and coord
             ds.createDimension("doy", ndoy)
             doy = ds.createVariable("doy", "i4", ("doy",))
             doy.units = "Day of year"
@@ -326,14 +328,15 @@ class Soltab(Accessor):
 
             variables[vv] = ds.createVariable(
                 vv,
-                "f4",
+                "f8",
                 dims,
-                fill_value=nc4.default_fillvals["f4"],
+                fill_value=nc4.default_fillvals["f8"],
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes_var),
             )
             variables[vv][:] = self[vv]
+            variables[vv].setncatts(var_meta)
             ds.close()
             print(f"Wrote: {out_file}")
         return

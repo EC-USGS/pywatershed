@@ -9,6 +9,14 @@ on:
       - "*"
       - "!v[0-9]+.[0-9]+.[0-9]+*"
 
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
 jobs:
 
   pyws_setup:
@@ -101,7 +109,7 @@ jobs:
           pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 
   test:
-    name: ${{ matrix.os}} py${{ matrix.python-version }}
+    name: ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -112,8 +120,13 @@ jobs:
         os: [ "ubuntu-latest", "macos-latest", "windows-latest" ]
         python-version: ["3.9", "3.10"]
     steps:
+
       - name: Checkout repo
         uses: actions/checkout@v3
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Set environment variables
         run: |
@@ -181,10 +194,12 @@ jobs:
           pytest -vv -n=auto --durations=0 convert_prms_output_to_nc.py  --domain=hru_1
           pytest -vv -n=auto --durations=0 remove_prms_csvs.py
 
+
+
       - name: hru_1 - list netcdf input files
-        working-directory: test_data/hru_1/output
+        working-directory: test_data
         run: |
-          find . -name '*.nc'
+          find hru_1/output/ -name '*.nc'
 
       - name: hru_1 - pywatershed tests
         working-directory: autotest
@@ -207,9 +222,9 @@ jobs:
           pytest -vv -n=auto remove_prms_csvs.py
 
       - name: drb_2yr - list netcdf input files
-        working-directory: test_data/drb_2yr/output
+        working-directory: test_data
         run: |
-          find . -name '*.nc'
+          find drb_2yr/output/ -name '*.nc'
 
       - name: drb_2yr - pywatershed tests
         working-directory: autotest
@@ -231,9 +246,9 @@ jobs:
           pytest -vv -n=auto remove_prms_csvs.py
 
       - name: ucb_2yr - list netcdf input files
-        working-directory: test_data/ucb_2yr/output
+        working-directory: test_data
         run: |
-          find . -name '*.nc'
+          find ucb_2yr/output/ -name '*.nc'
 
       - name: ucb_2yr - pywatershed tests
         working-directory: autotest

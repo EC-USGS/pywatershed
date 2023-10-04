@@ -174,19 +174,19 @@ jobs:
           pip -V
           pip list
 
-      - name: hru_1: generate and manage test data domain, run PRMS and convert csv output to NetCDF
+      - name: hru_1 - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: test_data/generate
         run: |
           pytest -vv -n=2 --durations=0 run_prms_domains.py --domain=hru_1
           pytest -vv -n=auto --durations=0 convert_prms_output_to_nc.py  --domain=hru_1
           pytest -vv -n=auto --durations=0 remove_prms_csvs.py
 
-      - name: hru_1: list netcdf input files
+      - name: hru_1 - list netcdf input files
         working-directory: test_data/hru_1/output
         run: |
           find . -name '*.nc'
 
-      - name: hru_1: pywatershed tests
+      - name: hru_1 - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv
@@ -198,7 +198,7 @@ jobs:
           --junitxml=pytest_hru_1.xml
 
 
-      - name: drb_2yr: generate and manage test data
+      - name: drb_2yr - generate and manage test data
         working-directory: test_data/generate
         run: |
           pytest -vv remove_output_dirs.py --domain=hru_1
@@ -206,12 +206,12 @@ jobs:
           pytest -vv -n=auto convert_prms_output_to_nc.py --domain=drb_2yr
           pytest -vv -n=auto remove_prms_csvs.py
 
-      - name: drb_2yr: list netcdf input files
+      - name: drb_2yr - list netcdf input files
         working-directory: test_data/drb_2yr/output
         run: |
           find . -name '*.nc'
 
-      - name: drb_2yr: pywatershed tests
+      - name: drb_2yr - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv
@@ -222,7 +222,7 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_drb_2yr.xml
 
-      - name: ucb_2yr: generate and manage test data
+      - name: ucb_2yr - generate and manage test data
         working-directory: test_data/generate
         run: |
           pytest -vv remove_output_dirs.py --domain=drb_2yr
@@ -230,12 +230,12 @@ jobs:
           pytest -vv -n=auto convert_prms_output_to_nc.py --domain=ucb_2yr
           pytest -vv -n=auto remove_prms_csvs.py
 
-      - name: ucb_2yr: list netcdf input files
+      - name: ucb_2yr - list netcdf input files
         working-directory: test_data/ucb_2yr/output
         run: |
           find . -name '*.nc'
 
-      - name: ucb_2yr: pywatershed tests
+      - name: ucb_2yr - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv

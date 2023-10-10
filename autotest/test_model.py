@@ -31,7 +31,7 @@ test_models = {
 }
 
 
-invoke_style = ("prms", "model_dict", "model_dict_from_yml")
+invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
 
 
 @pytest.fixture(scope="function")
@@ -106,9 +106,9 @@ def model_args(domain, control, discretization, request):
             "parameters": None,
         }
 
-    elif invoke_style == "model_dict_from_yml":
-        yml_file = domain["dir"] / "nhm_model.yml"
-        model_dict = Model.model_dict_from_yml(yml_file)
+    elif invoke_style == "model_dict_from_yaml":
+        yaml_file = domain["dir"] / "nhm_model.yml"
+        model_dict = Model.model_dict_from_yaml(yaml_file)
 
         args = {
             "process_list_or_model_dict": model_dict,
@@ -143,6 +143,7 @@ def test_model(domain, model_args, tmp_path):
         control = model_args["control"]
 
     control.options["input_dir"] = input_dir
+    control.options["netcdf_output_dir"] = tmp_path / "output"
 
     model = Model(**model_args)
 

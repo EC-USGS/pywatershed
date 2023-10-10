@@ -10,7 +10,7 @@ from ..base.adapter import adapter_factory
 from ..base.control import Control
 from ..constants import fileish
 from ..parameters import Parameters, PrmsParameters
-from ..utils.path import path_rel_to_yml
+from ..utils.path import path_rel_to_yaml
 
 # This is a convenience
 process_order_nhm = [
@@ -95,7 +95,7 @@ class Model:
       Only one control object can be included in the model dictionary. Though
       the key for the control can be arbitrary, the value is either an instance
       of class Control or, in the case of a yaml model dictionary, a control
-      yaml file to be loaded by Control.from_yml() (todo: link to this
+      yaml file to be loaded by Control.from_yaml() (todo: link to this
       staticmethod).
     - **discretizations** - Multiple discretizations may be supplied to the
       model dictionary, each with arbitrary names. These provide spatial
@@ -328,7 +328,7 @@ class Model:
             with open(key, "w") as file:
                 documents = yaml.dump(val, file)
 
-        model = pws.Model.from_yml(model_dict_file)
+        model = pws.Model.from_yaml(model_dict_file)
         model.run()
         control_file.unlink()
         model_dict_file.unlink()
@@ -643,14 +643,14 @@ class Model:
         return
 
     @staticmethod
-    def model_dict_from_yml(yml_file: Union[str, pl.Path]) -> dict:
+    def model_dict_from_yaml(yaml_file: Union[str, pl.Path]) -> dict:
         """Generate a model dictionary from a yaml file.
 
-        Instead of Model.from_yml() it can be useful to get the model
+        Instead of Model.from_yaml() it can be useful to get the model
         dictionary before passing it to Model.
 
         Args:
-            yml_file: a yml file
+            yaml_file: a yaml file
 
         Returns:
             A model dictionary.
@@ -659,19 +659,19 @@ class Model:
 
         import pywatershed
 
-        with pl.Path(yml_file).open("r") as file_stream:
+        with pl.Path(yaml_file).open("r") as file_stream:
             model_dict = yaml.load(file_stream, Loader=yaml.Loader)
 
         for key, val in model_dict.items():
             if isinstance(val, str):
-                val_pl = path_rel_to_yml(val, yml_file)
-                if val.endswith(".yml"):
-                    model_dict[key] = Control.from_yml(val_pl)
+                val_pl = path_rel_to_yaml(val, yaml_file)
+                if (val.endswith(".yml")) or (val.endswith(".yaml")):
+                    model_dict[key] = Control.from_yaml(val_pl)
                 elif val.endswith(".nc"):
                     model_dict[key] = Parameters.from_netcdf(val_pl)
                 else:
                     msg = (
-                        "Unsupported file extension for control (.yml)"
+                        "Unsupported file extension for control (.yml/.yaml)"
                         "and parameter (.nc) file paths in model yaml file"
                     )
                     raise ValueError(msg)
@@ -684,7 +684,7 @@ class Model:
                     cls = val["class"]
                     val["class"] = getattr(pywatershed, cls)
                     par = val["parameters"]
-                    par_pl = path_rel_to_yml(par, yml_file)
+                    par_pl = path_rel_to_yaml(par, yaml_file)
                     val["parameters"] = Parameters.from_netcdf(
                         par_pl, encoding=False
                     )
@@ -697,13 +697,13 @@ class Model:
         return model_dict
 
     @staticmethod
-    def from_yml(yml_file: Union[str, pl.Path]):
+    def from_yaml(yaml_file: Union[str, pl.Path]):
         """Instantiate a Model from a yaml file
 
         A yaml file that specifies a model_dict as the first argument of Model.
 
         Args:
-           yml_file: str or pathlib.Path
+           yaml_file: str or pathlib.Path
 
         Returns:
            An instance of Model.
@@ -711,10 +711,11 @@ class Model:
         Yaml file structure (strict order not required, but suggested):
 
         Control object: Any name can be used but the value must be a control
-            yaml file specified with the suffix ".yml". E.g "name: control.yml"
+            yaml file specified with the suffix ".yaml". E.g
+            "name: control.yaml"
             would appear in the passed yaml file. Only one control
-            specification is allowed in the yml_file. For details on the
-            requirements of the control.yml file see `Control.from_yml`
+            specification is allowed in the yaml_file. For details on the
+            requirements of the control.yaml file see `Control.from_yaml`
         Discretization objects: Any number of discretization objects can be
             supplied with arbitrary (though unique) names. The values supplied
             for each discretization must be a valid netcdf file with suffix
@@ -734,11 +735,11 @@ class Model:
         Model order list: a list supplying the order in which the processes are
             to be executed.
 
-        Note: To get a model_dict specfied by the yml_file, call
-        `model_dict_from_yml` instead.
+        Note: To get a model_dict specfied by the yaml_file, call
+        `model_dict_from_yaml` instead.
 
         """
-        return Model(Model.model_dict_from_yml(yml_file))
+        return Model(Model.model_dict_from_yaml(yaml_file))
 
     def initialize_netcdf(
         self,

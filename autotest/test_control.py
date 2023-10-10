@@ -193,3 +193,11 @@ def test_setitem_setattr(domain):
     # The value for options must be a dictionary
     with pytest.raises(ValueError):
         ctl.options = None
+
+
+def test_yaml_roundtrip(domain, tmp_path):
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+    yml_file = tmp_path / "control.yaml"
+    ctl.to_yaml(yml_file)
+    ctl_2 = Control.from_yaml(yml_file)
+    np.testing.assert_equal(ctl.to_dict(), ctl_2.to_dict())

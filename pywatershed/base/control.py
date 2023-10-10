@@ -2,14 +2,16 @@ import datetime
 import pathlib as pl
 from collections import UserDict
 from copy import deepcopy
+from typing import Union
 from warnings import warn
 
 import numpy as np
+import yaml
 
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
-from ..utils.path import assert_exists, path_rel_to_yml
+from ..utils.path import assert_exists, dict_pl_to_str, path_rel_to_yaml
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
@@ -360,9 +362,74 @@ class Control(Accessor):
         )
         return
 
+    def __str__(self):
+        from pprint import pformat
+
+        return pformat(self.to_dict())
+
+    def __repr__(self):
+        # TODO: this is not really an object representation
+        return self.__str__()
+
+    def to_dict(self, deep_copy=True):
+        """Export a control object to a dictionary
+
+        Args:
+            None.
+        """
+
+        control_dict = {}
+
+        # I suppose this list could grow with time but these are
+        # the only non .option items in __dict__ required to reconstitute a
+        # Control instance
+        control_dict["start_time"] = str(self.start_time)
+        control_dict["end_time"] = str(self.end_time)
+        control_dict["time_step"] = str(self.time_step)[0:2]
+        control_dict["time_step_units"] = str(self.time_step)[3:4]
+
+        if deep_copy:
+            control = deepcopy(self)
+        else:
+            control = self
+
+        control_dict["options"] = {}
+        for kk, vv in control.options.items():
+            control_dict["options"][kk] = control.options[kk]
+
+        return control_dict
+
+    def to_yaml(self, yaml_file: Union[pl.Path, str]):
+        """Export to a yaml file
+
+        Note: This flattens .options to the top level of the yaml/dict
+            so that option keys are all at the same level as "start_time",
+            "end_time", "time_step", and "time_step_units". Using .from_yaml
+            will restore options to a nested dictionary.
+
+        Args:
+            yaml_file: pl.Path or str to designate the output path/file.
+        """
+        control_dict = dict_pl_to_str(self.to_dict())
+        opts = control_dict["options"]
+        for kk, vv in opts.items():
+            if kk in control_dict.keys():
+                msg = "Control option keys collide with non-option keys"
+                raise ValueError(msg)
+            control_dict[kk] = vv
+
+        del control_dict["options"]
+
+        yaml_file = pl.Path(yaml_file)
+        with open(yaml_file, "w") as file:
+            _ = yaml.dump(control_dict, file)
+
+        assert yaml_file.exists()
+        return None
+
     @staticmethod
-    def from_yml(yml_file):
-        """Instantate a Control object from a yml file
+    def from_yaml(yaml_file):
+        """Instantate a Control object from a yaml file
 
         Required key:value pairs:
             start_time: ISO8601 string for numpy datetime64,
@@ -395,7 +462,7 @@ class Control(Accessor):
         """
         import yaml
 
-        with pl.Path(yml_file).open("r") as file_stream:
+        with pl.Path(yaml_file).open("r") as file_stream:
             control_dict = yaml.load(file_stream, Loader=yaml.Loader)
 
         start_time = np.datetime64(control_dict["start_time"])
@@ -411,8 +478,8 @@ class Control(Accessor):
         paths_to_convert = ["input_dir"]
         for path_name in paths_to_convert:
             if path_name in control_dict.keys():
-                control_dict[path_name] = path_rel_to_yml(
-                    control_dict[path_name], yml_file
+                control_dict[path_name] = path_rel_to_yaml(
+                    control_dict[path_name], yaml_file
                 )
                 assert_exists(control_dict[path_name])
 

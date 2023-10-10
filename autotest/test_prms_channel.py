@@ -10,7 +10,8 @@ from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files?
-compare_output_files = False
+do_compare_output_files = True
+do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
 fail_fast = False
@@ -73,14 +74,14 @@ def test_compare_prms(
         calc_method=calc_method,
     )
 
-    if compare_output_files:
+    if do_compare_output_files:
         nc_parent = tmp_path / domain["domain_name"]
         channel.initialize_netcdf(nc_parent)
         # test that init netcdf twice raises a warning
         with pytest.warns(UserWarning):
             channel.initialize_netcdf(nc_parent)
 
-    else:
+    if do_compare_in_memory:
         answers = {}
         for var in PRMSChannel.get_variables():
             var_pth = output_dir / f"{var}.nc"
@@ -93,12 +94,12 @@ def test_compare_prms(
         channel.advance()
         channel.calculate(float(istep))
         channel.output()
-        if not compare_output_files:
+        if do_compare_in_memory:
             compare_in_memory(channel, answers, atol=atol, rtol=rtol)
 
     channel.finalize()
 
-    if compare_output_files:
+    if do_compare_output_files:
         compare_netcdfs(
             PRMSChannel.get_variables(),
             tmp_path / domain["domain_name"],

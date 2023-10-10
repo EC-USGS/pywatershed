@@ -9,7 +9,8 @@ from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files?
-compare_output_files = False
+do_compare_output_files = False
+do_compare_in_memory = True
 rtol = atol = 1.0e-13
 
 calc_methods = ("numpy", "numba", "fortran")
@@ -64,10 +65,11 @@ def test_compare_prms(
         calc_method=calc_method,
     )
 
-    if compare_output_files:
+    if do_compare_output_files:
         nc_parent = tmp_path / domain["domain_name"]
         gw.initialize_netcdf(nc_parent)
-    else:
+
+    if do_compare_in_memory:
         answers = {}
         for var in PRMSGroundwater.get_variables():
             var_pth = output_dir / f"{var}.nc"
@@ -81,12 +83,12 @@ def test_compare_prms(
         gw.calculate(float(istep))
         gw.output()
 
-        if not compare_output_files:
+        if do_compare_in_memory:
             compare_in_memory(gw, answers, atol=atol, rtol=rtol)
 
     gw.finalize()
 
-    if compare_output_files:
+    if do_compare_output_files:
         compare_netcdfs(
             PRMSGroundwater.get_variables(),
             tmp_path / domain["domain_name"],

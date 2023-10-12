@@ -1,5 +1,5 @@
 from .cbh_utils import cbh_file_to_netcdf
-from .control import ControlVariables
+from .control import ControlVariables, compare_control_files
 from .csv_utils import CsvFile
 from .netcdf_utils import NetCdfCompare, NetCdfRead, NetCdfWrite
 from .prms5_file_util import PrmsFile

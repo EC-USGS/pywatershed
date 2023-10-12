@@ -194,8 +194,6 @@ jobs:
           pytest -vv -n=auto --durations=0 convert_prms_output_to_nc.py  --domain=hru_1
           pytest -vv -n=auto --durations=0 remove_prms_csvs.py
 
-
-
       - name: hru_1 - list netcdf input files
         working-directory: test_data
         run: |

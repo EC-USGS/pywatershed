@@ -1,7 +1,8 @@
 import warnings
 from copy import deepcopy
+import pathlib as pl
 from pprint import pprint
-from typing import Iterable, Literal
+from typing import Iterable, Literal, Union
 
 import cftime
 import netCDF4 as nc4
@@ -194,7 +195,7 @@ class DatasetDict(Accessor):
         if metadata is None:
             metadata = {}
         if encoding is None:
-            encoding = {}
+            encoding = {kk: {} for kk in metadata.keys()}
 
         self._data_vars = data_vars
         self._dims = dims
@@ -291,6 +292,22 @@ class DatasetDict(Accessor):
 
     # def __str__(self):
     #     return
+
+    @classmethod
+    def from_yaml(cls, the_file: Union[str, pl.Path]) -> dict:
+        """Read from a YAML file"""
+        import yaml
+
+        with pl.Path(the_file).open("r") as file_stream:
+            dd = yaml.load(file_stream, Loader=yaml.Loader)
+
+        for cv in ["coords", "data_vars"]:
+            for vv in dd[cv].keys():
+                # TODO, introduce dims for shape if necessary
+                if not isinstance(dd[cv][vv], np.ndarray):
+                    dd[cv][vv] = np.array(dd[cv][vv])
+
+        return cls(**dd)
 
     @classmethod
     def from_dict(cls, dict_in, copy=False):
@@ -804,6 +821,7 @@ def dd_to_xr_dd(dd: dict) -> dict:
             cv = "coords"
 
         key_enc = {}
+
         if key in encoding.keys():
             key_enc = encoding[key]
         dd[cv][key] = {

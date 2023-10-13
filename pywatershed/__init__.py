@@ -18,6 +18,7 @@ from .hydrology.prms_runoff import PRMSRunoff
 from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.starfit import Starfit
+from .hydrology.SWBRootZone import SWBRootZone
 from .utils import (
     ControlVariables,
     NetCdfCompare,
@@ -33,5 +34,6 @@ __all__ = [
     "atmosphere",
     "base",
     "hydrology",
+    "functions",
     "utils",
 ]

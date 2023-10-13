@@ -2,7 +2,6 @@ import pathlib
 
 import yaml
 
-
 def pytest_addoption(parser):
     parser.addoption(
         "--domain_yaml",

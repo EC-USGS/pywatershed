@@ -50,7 +50,7 @@ class NetCdfRead(Accessor):
         nc_read_vars: list = None,
         load_n_times: int = None,
         load_n_time_batches: int = 1,
-    ) -> "NetCdfRead":
+    ):
         self.name = "NetCdfRead"
         self._nc_file = name
         self._nc_read_vars = nc_read_vars

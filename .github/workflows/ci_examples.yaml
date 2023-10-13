@@ -31,8 +31,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v2.4.0
 
-      - name: Install gfortran
-        uses: modflowpy/install-gfortran-action@v1
+      - name: Setup gfortran
+        uses: awvwgk/setup-fortran@v1
+        with:
+          compiler: gcc
+          version: 11
 
       - name: Download GIS files
         working-directory: examples

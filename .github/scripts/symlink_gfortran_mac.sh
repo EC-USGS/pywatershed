@@ -2,7 +2,7 @@
 
 # get full gfortran version string
 # assumes installed via brew as by
-# https://github.com/awvwgk/setup-fortran
+# https://github.com/fortran-lang/setup-fortran
 #
 # sed not head for first line, avoid ruby broken pipe issues
 # (https://stackoverflow.com/a/2845541/6514033)

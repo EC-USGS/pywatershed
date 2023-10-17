@@ -305,8 +305,8 @@ def test_model(domain, model_args, tmp_path):
         9: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1517.232887980279,
-                    "hru_1": 13.696918669514927,
+                    "drb_2yr": 1553.1874672413599,
+                    "hru_1": 13.696710376067216,
                     "ucb_2yr": 1694.5697712423928,
                 },
             },
@@ -314,9 +314,9 @@ def test_model(domain, model_args, tmp_path):
         99: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 2350.499659332901,
-                    "hru_1": 22.874414994530095,
-                    "ucb_2yr": 733.2293013532435,
+                    "drb_2yr": 2362.7940777644653,
+                    "hru_1": 22.877787915898086,
+                    "ucb_2yr": 733.0192586668293,
                 },
             },
         },

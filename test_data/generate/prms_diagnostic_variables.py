@@ -16,7 +16,6 @@ previous_vars = {
     "pref_flow_stor": pws.PRMSSoilzone,
     "slow_stor": pws.PRMSSoilzone,
     "soil_lower": pws.PRMSSoilzone,
-    "soil_moist": pws.PRMSSoilzone,
     "soil_rechr": pws.PRMSSoilzone,
     "ssres_stor": pws.PRMSSoilzone,
     "freeh2o": pws.PRMSSnow,
@@ -25,6 +24,8 @@ previous_vars = {
 
 prev_rename = {
     "gwres_stor": "gwres_stor_old",
+    "hru_impervstor": "hru_impervstor_old",
+    "dprst_stor_hru": "dprst_stor_hru_old",
 }
 
 change_rename = {}

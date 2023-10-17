@@ -73,10 +73,18 @@ def compare_in_memory(
     strict: bool = False,
     also_check_w_np: bool = True,
     error_message: str = None,
+    skip_missing_ans: bool = False,
 ):
     # TODO: docstring
 
     for var in process.get_variables():
+        if var not in answers.keys():
+            if skip_missing_ans:
+                continue
+            else:
+                msg = f"Variable '{var}' not found in the answers provided."
+                raise KeyError(msg)
+
         answers[var].advance()
 
         if isinstance(process[var], pws.base.timeseries.TimeseriesArray):

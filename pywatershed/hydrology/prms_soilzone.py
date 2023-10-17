@@ -168,7 +168,6 @@ class PRMSSoilzone(ConservativeProcess):
             "soil_lower_ratio": zero,
             "soil_lower_max": nan,  # completely set later
             "soil_moist": nan,  # sm_climateflow
-            "soil_moist_prev": zero,  # sm_climateflow
             "soil_moist_tot": nan,  # completely set later
             "soil_rechr": nan,  # sm_climateflow
             "soil_rechr_change": nan,  # sm_climateflow
@@ -448,7 +447,6 @@ class PRMSSoilzone(ConservativeProcess):
             self.cap_waterin[:],
             self.soil_moist[:],
             self.soil_rechr[:],
-            self.soil_moist_prev[:],
             self.hru_actet[:],
             self.cap_infil_tot[:],
             self.slow_stor[:],
@@ -532,7 +530,6 @@ class PRMSSoilzone(ConservativeProcess):
             soil_lower_ratio=self.soil_lower_ratio,
             soil_moist=self.soil_moist,
             soil_moist_max=self.soil_moist_max,
-            soil_moist_prev=self.soil_moist_prev,
             soil_moist_tot=self.soil_moist_tot,
             soil_rechr=self.soil_rechr,
             soil_rechr_change=self.soil_rechr_change,
@@ -591,7 +588,6 @@ class PRMSSoilzone(ConservativeProcess):
         slow_stor,
         soil_moist,
         soil_moist_max,
-        soil_moist_prev,
         soil_rechr,
         soil_to_gw,
         soil_to_ssr,
@@ -661,8 +657,9 @@ class PRMSSoilzone(ConservativeProcess):
 
         _snow_free[:] = one - snowcov_area
 
-        # Do this here and not in advance as this is not an individual storage
-        soil_moist_prev[:] = soil_moist
+        # we dont track soil_moist_prev as it's not prognostic
+        # soil_moist_prev = soil_rechr and soil_lower
+        # soil_moist_prev[:] = soil_moist
 
         # JLM: ET calculations to be removed from soilzone.
         hru_actet = hru_impervevap + hru_intcpevap + snow_evap
@@ -1005,7 +1002,6 @@ class PRMSSoilzone(ConservativeProcess):
             cap_waterin,
             soil_moist,
             soil_rechr,
-            soil_moist_prev,
             hru_actet,
             cap_infil_tot,
             slow_stor,

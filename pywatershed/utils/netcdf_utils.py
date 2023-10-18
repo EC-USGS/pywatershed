@@ -375,7 +375,7 @@ class NetCdfWrite(Accessor):
         clobber: bool = True,
         zlib: bool = True,
         complevel: int = 4,
-        chunk_sizes: dict = {"time": 30, "hruid": 0},
+        chunk_sizes: dict = {"time": 1, "hruid": 0},
     ):
         if isinstance(variables, dict):
             group_variables = []

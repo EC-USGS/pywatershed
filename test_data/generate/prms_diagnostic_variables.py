@@ -167,8 +167,6 @@ def diagnose_final_vars_to_nc(
     new variable which requires much/all of the PRMS output to be already
     present in netcdf output format. This is why this is a final diagnostic
 
-    Currently only: "through_rain"
-
     Args:
         var_name: str name of the variable to create, not a PRMS variable.
         output_dir: where the netcdf file will be written, also where to look

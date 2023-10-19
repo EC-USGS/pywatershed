@@ -8,7 +8,11 @@ from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
-# in this case we'll compare netcdf files and in memory
+# compare in memory (faster) or full output files? or both!
+do_compare_output_files = True
+do_compare_in_memory = True
+rtol = atol = 1.0e-10
+
 atol = rtol = np.finfo(np.float32).resolution
 
 params = ("params_sep", "params_one")
@@ -43,6 +47,7 @@ def test_compare_prms(
     domain, control, discretization, parameters, tmp_path, from_prms_file
 ):
     output_dir = domain["prms_output_dir"]
+
     prms_soltab_file = domain["prms_run_dir"] / "soltab_debug"
     if from_prms_file:
         from_prms_file = prms_soltab_file
@@ -56,33 +61,37 @@ def test_compare_prms(
         from_prms_file=from_prms_file,
         netcdf_output_dir=tmp_path,
     )
-    solar_geom.output()
-    solar_geom.finalize()
 
-    compare_netcdfs(
-        PRMSSolarGeometry.get_variables(),
-        tmp_path,
-        output_dir,
-        atol=atol,
-        rtol=rtol,
-    )
+    if do_compare_in_memory:
+        answers = {}
+        for var in PRMSSolarGeometry.get_variables():
+            var_pth = output_dir / f"{var}.nc"
+            answers[var] = adapter_factory(
+                var_pth, variable_name=var, control=control
+            )
 
-    answers = {}
-    for var in PRMSSolarGeometry.get_variables():
-        var_pth = output_dir / f"{var}.nc"
-        answers[var] = adapter_factory(
-            var_pth, variable_name=var, control=control
+        sunhrs_id = id(solar_geom.soltab_sunhrs)
+
+        # Though the data is all calculate on the initial advance,
+        # we step through it using the timeseries array.
+        # we only need to output at time 0
+        for ii in range(control.n_times):
+            control.advance()
+            solar_geom.advance()
+            if ii == 0:
+                solar_geom.output()
+            solar_geom.calculate(1.0)
+
+            compare_in_memory(solar_geom, answers, atol=atol, rtol=rtol)
+            assert id(solar_geom.soltab_sunhrs) == sunhrs_id
+
+    if do_compare_output_files:
+        compare_netcdfs(
+            PRMSSolarGeometry.get_variables(),
+            tmp_path,
+            output_dir,
+            atol=atol,
+            rtol=rtol,
         )
-
-    # check the advance/calculate the state
-    sunhrs_id = id(solar_geom.soltab_sunhrs)
-
-    for ii in range(control.n_times):
-        control.advance()
-        solar_geom.advance()
-        solar_geom.calculate(1.0)
-
-        compare_in_memory(solar_geom, answers, atol=atol, rtol=rtol)
-        assert id(solar_geom.soltab_sunhrs) == sunhrs_id
 
     return

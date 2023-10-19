@@ -15,6 +15,8 @@ def assert_allclose(
     strict: bool = False,
     also_check_w_np: bool = True,
     error_message: str = "Comparison unsuccessful (default message)",
+    print_max_errs: bool = False,
+    var_name: str = "",
 ):
     """Reinvent np.testing.assert_allclose to get useful diagnostincs in debug
 
@@ -29,6 +31,7 @@ def assert_allclose(
             handling of scalars mentioned in the Notes section is disabled.
         also_check_w_np: first check using np.testing.assert_allclose using
             the same options.
+        print_max_errs: bool=False. Print max abs and rel err for each var.
     """
 
     if also_check_w_np:
@@ -60,6 +63,11 @@ def assert_allclose(
     rel_close = np.where(np.isnan(rel_close), False, rel_close)
 
     close = abs_close | rel_close
+
+    if print_max_errs:
+        sp = "" if len(var_name) == 0 else " "
+        print(f"{var_name}{sp}max abs err: {abs_diff.max()}")
+        print(f"{var_name}{sp}max rel err: {rel_abs_diff.max()}")
 
     assert close.all()
 
@@ -114,6 +122,7 @@ def compare_netcdfs(
     strict: bool = False,
     also_check_w_np: bool = True,
     error_message: str = None,
+    print_var_max_errs: bool = False,
 ):
     # TODO: docstring
     # TODO: improve error message
@@ -138,4 +147,6 @@ def compare_netcdfs(
             strict=strict,
             also_check_w_np=also_check_w_np,
             error_message=error_message,
+            print_max_errs=print_var_max_errs,
+            var_name=var,
         )

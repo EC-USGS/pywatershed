@@ -4,6 +4,7 @@ import sys
 from fnmatch import fnmatch
 from platform import processor
 from typing import List
+from warnings import warn
 
 import pytest
 
@@ -64,16 +65,28 @@ def scheduler_active():
 
 
 def enforce_scheduler(test_dir):
+    """Enforce the use of scheduler
+
+    Args:
+        test_dir: the domain directory to run or schedule
+
+    Return:
+        True if must use a scheduler, False if not
+    """
+
     if scheduler_active():
-        return None
+        return False
     glob_match = list(
         fnmatch(str(test_dir), gg) for gg in domain_globs_schedule
     )
     if any(glob_match):
-        raise RuntimeError(
+        msg = (
             f"Domain '{test_dir}' must be scheduled (use --force to override)"
         )
-    return None
+        warn(msg, RuntimeWarning)
+        return True
+
+    return False
 
 
 def collect_simulations(
@@ -91,7 +104,9 @@ def collect_simulations(
 
         # optionally enforce scheduler
         if not force:
-            enforce_scheduler(test_dir)
+            schedule = enforce_scheduler(test_dir)
+            if schedule:
+                continue
 
         # if control file is found, add simulation
         ctrl_file = next(

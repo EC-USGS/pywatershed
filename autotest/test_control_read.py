@@ -1,7 +1,8 @@
+import pathlib as pl
+
 import numpy as np
 import pytest
 
-from pywatershed.constants import __pywatershed_root__ as pws_root
 from pywatershed.utils import ControlVariables, compare_control_files
 from utils import assert_or_print
 
@@ -43,7 +44,7 @@ def test_control_read(domain, control_keys):
 
 
 def test_control_compare():
-    common_dir = pws_root.parent / "test_data/common"
+    common_dir = pl.Path("../test_data/common")
     n_diffs = compare_control_files(
         common_dir / "control.single_hru",
         common_dir / "control.multi_hru",

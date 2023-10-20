@@ -20,7 +20,6 @@ from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.starfit import Starfit
 from .utils import (
     ControlVariables,
-    NetCdfCompare,
     NetCdfRead,
     NetCdfWrite,
     Soltab,

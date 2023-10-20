@@ -238,7 +238,7 @@ nhruOutON_OFF
 nhruOutVars
 1
 1
-101
+102
 ####
 nhruOut_freq
 1
@@ -251,7 +251,7 @@ nhruOut_format
 4
 ####
 nhruOutVar_names
-101
+102
 4
 albedo
 cap_infil_tot
@@ -294,6 +294,7 @@ imperv_stor
 infil
 intcp_changeover
 intcp_evap
+intcp_form
 intcp_stor
 iso
 net_ppt

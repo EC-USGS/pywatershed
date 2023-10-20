@@ -55,7 +55,6 @@ def test_compare_prms(
 
     output_dir = domain["prms_output_dir"]
 
-    # instantiate runoff
     input_variables = {}
     for key in PRMSRunoff.get_inputs():
         nc_pth = output_dir / f"{key}.nc"

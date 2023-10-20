@@ -213,6 +213,7 @@ class PRMSSoilzone(ConservativeProcess):
         #      changes/checks on params should throw errors so
         #      parameter values remain the responsibility of the users
         #      and their deficiencies are transparent?
+
         self.hru_area_imperv = self.hru_percent_imperv * self.hru_area
         self.hru_area_perv = self.hru_area - self.hru_area_imperv
 
@@ -286,32 +287,72 @@ class PRMSSoilzone(ConservativeProcess):
         # JLM: some of these should just be runtime/value errors
         # JLM: These are for "ACTIVE and non-lake" hrus....
         # JLM check that.
-        self.soil_moist_max = np.where(
-            self.soil_moist_max < 0.00001, 0.00001, self.soil_moist_max
-        )
+
+        mask = self.soil_moist_max < 1.0e-5
+        if mask.any():
+            msg = "soil_moist_max < 1.0e-5, set to 1.0e-5"
+            warn(msg, UserWarning)
+        self.soil_moist_max = np.where(mask, 1.0e-5, self.soil_moist_max)
+
+        mask = self.soil_rechr_max < 1.0e-5
+        if mask.any():
+            msg = "soil_rechr_max < 1.0e-5, set to 1.0e-5"
+            warn(msg, UserWarning)
+        self.soil_rechr_max = np.where(mask, 1.0e-5, self.soil_rechr_max)
+
+        mask = self.soil_rechr_max > self.soil_moist_max
+        if mask.any():
+            msg = (
+                "soil_rechr_max > soil_moist_max, "
+                "soil_rechr_max set to soil_moist_max"
+            )
+            warn(msg, UserWarning)
         self.soil_rechr_max = np.where(
-            self.soil_rechr_max < 0.00001, 0.00001, self.soil_rechr_max
-        )
-        self.soil_rechr_max = np.where(
-            self.soil_rechr_max > self.soil_moist_max,
+            mask,
             self.soil_moist_max,
             self.soil_rechr_max,
         )
+
+        mask = self.soil_rechr > self.soil_rechr_max
+        if mask.any():
+            msg = (
+                "soil_rechr_init > soil_rechr_max, "
+                "setting soil_rechr_init to soil_rechr_max"
+            )
+            warn(msg, UserWarning)
         self.soil_rechr = np.where(
-            self.soil_rechr > self.soil_rechr_max,
+            mask,
             self.soil_rechr_max,
             self.soil_rechr,
         )
+
+        mask = self.soil_moist > self.soil_moist_max
+        if mask.any():
+            msg = (
+                "soil_moist_init > soil_moist_max, "
+                "setting soil_moist to soil_moist max"
+            )
+            warn(msg, UserWarning)
         self.soil_moist = np.where(
-            self.soil_moist > self.soil_moist_max,
+            mask,
             self.soil_moist_max,
             self.soil_moist,
         )
-        self.soil_rechr = np.where(
-            self.soil_rechr > self.soil_moist, self.soil_moist, self.soil_rechr
-        )
+
+        mask = self.soil_rechr > self.soil_moist
+        if mask.any():
+            msg = "soil_rechr > soil_moist, setting soil_rechr to soil_moist"
+            warn(msg, UserWarning)
+        self.soil_rechr = np.where(mask, self.soil_moist, self.soil_rechr)
+
+        mask = self.ssres_stor > self._sat_threshold
+        if mask.any():
+            msg = (
+                "ssres_stor > _sat_threshold, "
+                "setting ssres_stor to _sat_threshold"
+            )
         self.ssres_stor = np.where(
-            self.ssres_stor > self._sat_threshold,
+            mask,
             self._sat_threshold,
             self.ssres_stor,
         )

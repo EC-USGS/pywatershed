@@ -227,8 +227,13 @@ class PRMSChannel(ConservativeProcess):
         )
         # JLM: This is a bad idea and should throw an error rather than edit
         # inputs in place during run
+        # should also be done before computing velocity
+        mask_too_flat = self.seg_slope < 1e-7
+        if mask_too_flat.any():
+            msg = "seg_slope < 1.0e-7, set to 1.0e-4"
+            warn(msg, UserWarning)
         self.seg_slope = np.where(
-            self.seg_slope < 1e-7, 0.0001, self.seg_slope
+            self.seg_slope < 1e-7, 1.0e-4, self.seg_slope
         )  # not in prms6
 
         # initialize Kcoef to 24.0 for segments with zero velocities

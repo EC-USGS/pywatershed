@@ -7,7 +7,7 @@ from numba import prange
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..constants import CovType, HruType, numba_num_threads, zero, nan
+from ..constants import CovType, HruType, nan, numba_num_threads, zero
 from ..parameters import Parameters
 
 try:
@@ -440,7 +440,7 @@ class PRMSCanopy(ConservativeProcess):
         #       Keep the f90 call signature consistent with the args in
         #       python/numba.
 
-        intcp_form = np.full_like(hru_rain, np.nan, dtype='int32')
+        intcp_form = np.full_like(hru_rain, np.nan, dtype="int32")
         for i in prange(nhru):
             netrain = hru_rain[i]
             netsnow = hru_snow[i]

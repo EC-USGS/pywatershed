@@ -23,7 +23,7 @@ New features
   (:pull:`232`) By `James McCreight <https://github.com/jmccreight>`_.
 - Conda feedstock for pywatershed `<https://github.com/conda-forge/staged-recipes/pull/23428>`_.
   By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
-  
+
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
@@ -45,10 +45,15 @@ Bug fixes
 
 Documentation
 ~~~~~~~~~~~~~
+- Add about section for version 1.0 to describe how pywatershed matches PRMS'
+  NHM configuration and how to perform the comparison.
+  (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Internal changes
 ~~~~~~~~~~~~~~~~
+- Refactor tests against PRMS for consistency, flexibility, and thoroughness.
+  (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 .. _whats-new.0.2.1:

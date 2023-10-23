@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from pywatershed.atmosphere.prms_solar_geometry import PRMSSolarGeometry
@@ -12,8 +11,7 @@ from utils_compare import compare_in_memory, compare_netcdfs
 do_compare_output_files = False
 do_compare_in_memory = True
 
-# rtol = atol = 1.0e-10
-atol = rtol = np.finfo(np.float32).resolution
+rtol = atol = 1.0e-10
 
 params = ("params_sep", "params_one")
 

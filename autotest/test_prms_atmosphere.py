@@ -1,6 +1,3 @@
-from warnings import warn
-
-import numpy as np
 import pytest
 
 from pywatershed.atmosphere.prms_atmosphere import PRMSAtmosphere

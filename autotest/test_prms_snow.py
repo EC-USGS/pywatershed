@@ -1,11 +1,9 @@
 import pathlib as pl
 
-import numpy as np
 import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.constants import epsilon32, zero
 from pywatershed.hydrology.prms_snow import PRMSSnow
 from pywatershed.parameters import Parameters, PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs

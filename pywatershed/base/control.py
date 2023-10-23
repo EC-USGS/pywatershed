@@ -30,9 +30,9 @@ from .accessor import Accessor
 pws_control_options_avail = [
     "budget_type",
     "calc_method",
-    "restart",
+    # "restart",
     "input_dir",
-    "load_n_time_batches",
+    # "load_n_time_batches",
     "netcdf_output_dir",
     "netcdf_output_var_names",
     "netcdf_output_separate_files",
@@ -44,7 +44,7 @@ pws_control_options_avail = [
 
 prms_legacy_options_avail = [
     "end_time",
-    "init_vars_from_file",
+    # "init_vars_from_file",
     "initial_deltat",
     "nhruOutBaseFileName",
     "nhruOutVar_names",
@@ -55,7 +55,7 @@ prms_legacy_options_avail = [
 ]
 
 prms_to_pws_option_map = {
-    "init_vars_from_file": "restart",
+    # "init_vars_from_file": "restart",
     "initial_deltat": "time_step",
     "nhruOutBaseFileName": "netcdf_output_dir",
     "nhruOutVar_names": "netcdf_output_var_names",
@@ -79,6 +79,33 @@ class Control(Accessor):
         end_time: the last integration time
         time_step: the length fo the time step
         options: a dictionary of global Process options.
+
+
+    Available pywatershed options:
+      * budget_type: one of [None, "warn", "error"]
+      * calc_method: one of ["numpy", "numba", "fortran"]
+      * input_dir: str or pathlib.path directory to search for input data
+      * netcdf_output_dir: str or pathlib.Path directory for output
+      * netcdf_output_var_names: a list of variable names to output
+      * netcdf_output_separate_files: bool if output is grouped by Process or if each variable is written to an individual file
+      * netcdf_budget_args:
+      * start_time: np.datetime64
+      * end_time: np.datetime64
+      * time_step_units: str containing single character code for np.timedelta64
+      * verbosity: 0-10
+
+    Available PRMS legacy options:
+      Either used as-is or mapped to pywatershed options as indicated below.
+
+      * start_time
+      * end_time
+      * initial_deltat: translates to "time_step"
+      * init_vars_from_file: translates to "restart"
+      * nhruOutBaseFileName: translates to "netcdf_output_dir"
+      * nhruOutVar_names: translates to a subset of "netcdf_output_var_names"
+      * nsegmentOutBaseFileName: translates to "netcdf_output_dir"
+      * nsegmentOutVar_names: translates to a subset of "netcdf_output_var_names"
+      * print_debug: translates to "verbosity"
 
     """
 

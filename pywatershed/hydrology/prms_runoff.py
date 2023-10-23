@@ -61,6 +61,7 @@ class PRMSRunoff(ConservativeProcess):
             canopy for each HRU
         intcp_changeover: Canopy throughfall caused by canopy density
             change from winter to summer
+        dprst_flag: bool=True by default, use depression storage or not?
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
@@ -85,10 +86,13 @@ class PRMSRunoff(ConservativeProcess):
         through_rain: adaptable,
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
+        dprst_flag: bool = True,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
+        self.dprst_flag = dprst_flag
+
         super().__init__(
             control=control,
             discretization=discretization,
@@ -102,6 +106,10 @@ class PRMSRunoff(ConservativeProcess):
 
         self._set_budget()
         self._init_calc_method()
+
+        self.basin_init()
+        self.dprst_init()
+
         return
 
     def _set_initial_conditions(self):
@@ -118,13 +126,6 @@ class PRMSRunoff(ConservativeProcess):
         self.dprst_vol_clos_max = np.zeros(self.nhru, dtype=float)
         self.dprst_frac_clos = np.zeros(self.nhru, dtype=float)
         self.dprst_vol_thres_open = np.zeros(self.nhru, dtype=float)
-
-        # call the basin_init hack to calculate basin
-        # variables
-        self.basin_init()
-
-        # call the depression storage init
-        self.dprst_init()
 
         return
 
@@ -246,7 +247,7 @@ class PRMSRunoff(ConservativeProcess):
         probably go somewhere else at some point as I suspect other components
         may need similar information.
         """
-        dprst_flag = ACTIVE
+        # dprst_flag = ACTIVE
         self.hru_perv = np.zeros(self.nhru, float)
         self.hru_frac_perv = np.zeros(self.nhru, float)
         self.hru_imperv = np.zeros(self.nhru, float)
@@ -259,7 +260,7 @@ class PRMSRunoff(ConservativeProcess):
                 self.hru_imperv[i] = self.hru_percent_imperv[i] * harea
                 perv_area = perv_area - self.hru_imperv[i]
 
-            if dprst_flag == ACTIVE:
+            if self.dprst_flag == ACTIVE:
                 self.dprst_area_max[i] = self.dprst_frac[i] * harea
                 if self.dprst_area_max[i] > 0.0:
                     self.dprst_area_open_max[i] = (
@@ -511,6 +512,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_comp=self.dprst_comp,
             imperv_et=self.imperv_et,
             through_rain=self.through_rain,
+            dprst_flag=self.dprst_flag,
         )
 
         self.infil_hru[:] = self.infil * self.hru_frac_perv
@@ -598,6 +600,7 @@ class PRMSRunoff(ConservativeProcess):
         dprst_comp,
         imperv_et,
         through_rain,
+        dprst_flag,
     ):
         dprst_chk = 0
         infil[:] = 0.0
@@ -659,7 +662,6 @@ class PRMSRunoff(ConservativeProcess):
                 through_rain=through_rain[i],
             )
 
-            dprst_flag = ACTIVE  # cdl todo: hardwired
             frzen = OFF  # cdl todo: hardwired
 
             if dprst_flag == ACTIVE:

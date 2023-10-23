@@ -25,12 +25,11 @@ from .accessor import Accessor
 # It is important to maintain this list to issue warnings about what
 # variables are unrecognized/ignored in legacy and non-legacy control
 # files
-# TODO: where should these be documented?
-# TODO: identify which are PRMS-legacy?
+# The following are duplicated in the Control docstring below and that
+# docstring needs updated whenever any of these change.
 pws_control_options_avail = [
     "budget_type",
     "calc_method",
-    "dprst_flag",  # to remove?
     "restart",
     "input_dir",
     "load_n_time_batches",
@@ -44,7 +43,6 @@ pws_control_options_avail = [
 ]
 
 prms_legacy_options_avail = [
-    "dprst_flag",
     "end_time",
     "init_vars_from_file",
     "initial_deltat",
@@ -127,10 +125,13 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
+        warn_unused_options: bool = True,
     ) -> "Control":
         msg = "Control.load will be deprecated for Control.load_prms"
         warn(msg, PendingDeprecationWarning)
-        return Control.load_prms(control_file)
+        return Control.load_prms(
+            control_file, warn_unused_options=warn_unused_options
+        )
 
     @classmethod
     def load_prms(

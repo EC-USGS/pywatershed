@@ -55,9 +55,8 @@ def test_compare_prms(
         )
 
     tmp_path = pl.Path(tmp_path)
-
-    # load csv files into dataframes
     output_dir = domain["prms_output_dir"]
+
     input_variables = {}
     for key in PRMSChannel.get_inputs():
         nc_path = output_dir / f"{key}.nc"

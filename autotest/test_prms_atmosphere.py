@@ -11,7 +11,7 @@ from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
-do_compare_output_files = True
+do_compare_output_files = False
 do_compare_in_memory = True
 rtol = 1.0e-5
 atol = 1.0e-5  # why is this relatively low accuracy?

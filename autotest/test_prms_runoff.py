@@ -9,7 +9,7 @@ from pywatershed.parameters import Parameters, PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
-do_compare_output_files = False
+do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-10
 
@@ -88,6 +88,7 @@ def test_compare_prms(
         control.advance()
         runoff.advance()
         runoff.calculate(1.0)
+        runoff.output()
         if do_compare_in_memory:
             compare_in_memory(
                 runoff, answers, atol=atol, rtol=rtol, skip_missing_ans=True

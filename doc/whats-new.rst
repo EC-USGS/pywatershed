@@ -41,7 +41,10 @@ Bug fixes
 ~~~~~~~~~
 - Resolve issues with different ways of specifiying netcdf output options.
   (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
-
+- PRMSSoilzone remove soil_moist_prev because soil_moist is not prognotic and
+  PRMSRunoff was needing it in the advance and not getting the correct value.
+  PRMSRunoff now depends on soil_lower_prev and soil_rechr_prev instead.
+  (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Documentation
 ~~~~~~~~~~~~~

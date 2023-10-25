@@ -49,7 +49,6 @@ def control(domain):
         control.options["calc_method"] = "fortran"
     else:
         control.options["calc_method"] = "numba"
-    control.options["load_n_time_batches"] = 1
     del control.options["netcdf_output_var_names"]
     return control
 
@@ -150,13 +149,18 @@ def test_model(domain, model_args, tmp_path):
         control = model_args["control"]
 
     control.options["input_dir"] = input_dir
-    control.options["netcdf_output_dir"] = tmp_path / "output"
+    model_out_dir = tmp_path / "output"
+    control.options["netcdf_output_dir"] = model_out_dir
 
     if control.options["calc_method"] == "fortran":
         with pytest.warns(UserWarning):
-            model = Model(**model_args)
+            model = Model(**model_args, write_control=model_out_dir)
     else:
-        model = Model(**model_args)
+        model = Model(**model_args, write_control=model_out_dir)
+
+    # check that control yaml file was written
+    control_yaml_file = sorted(model_out_dir.glob("*model_control.yaml"))
+    assert len(control_yaml_file) == 1
 
     # Test passing of control calc_method option
     if fortran_avail:

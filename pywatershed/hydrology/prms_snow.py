@@ -319,7 +319,11 @@ class PRMSSnow(ConservativeProcess):
         sd = int(self.ndeplval / 11)
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
 
-        if self.control.options["restart"] in [0, 2, 3]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 3]:
+
             # The super().__init__ already set_initial_conditions using its
             # set_initial_conditions
             # Below Im just following PRMS6, will reconcile later with the

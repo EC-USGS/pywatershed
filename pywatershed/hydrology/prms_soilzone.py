@@ -249,7 +249,11 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_den[wh_not_land] = zero
 
         # variables
-        if self.control.options["restart"] in [0, 2, 5]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 5]:
+
             # these are set in sm_climateflow
             self.soil_moist[:] = (
                 self.soil_moist_init_frac * self.soil_moist_max
@@ -269,7 +273,11 @@ class PRMSSoilzone(ConservativeProcess):
         # expectations. Move this parameter business to __init__
 
         # ssres_stor
-        if self.control.options["restart"] in [0, 2, 5]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 5]:
+
             self.ssres_stor = self.ssstor_init_frac * self._sat_threshold
             wh_inactive_or_lake = np.where(
                 (self.hru_type == HruType.INACTIVE.value)
@@ -341,7 +349,11 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_flag[wh_land_and_prf_den] = True
 
         # can this one be combined with the restart read logic above?
-        if self.control.options["restart"] in [0, 2, 5]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 5]:
+
             wh_land_or_swale = np.where(
                 (self.hru_type == HruType.LAND.value)
                 | (self.hru_type == HruType.SWALE.value)
@@ -487,7 +499,7 @@ class PRMSSoilzone(ConservativeProcess):
             cov_type=self.cov_type,
             current_time=self.control.current_time,
             dprst_evap_hru=self.dprst_evap_hru,
-            dprst_flag=self.control.options["dprst_flag"],
+            dprst_flag=True,  # self.control.options["dprst_flag"],
             dprst_seep_hru=self.dprst_seep_hru,
             dunnian_flow=self.dunnian_flow,
             fastcoef_lin=self.fastcoef_lin,

@@ -1,5 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
+from datetime import datetime
 from pprint import pprint
 from typing import Union
 from warnings import warn
@@ -43,6 +44,11 @@ class Model:
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
+        write_control: bool, str, or pl.Path a directory into which a copy of
+           the passed control is to be written, default is False. This is for
+           convenience when lost of in-memory manipulations may be made before
+           passing to the model. The output file name has the form
+           %Y-%m-%dT%H:%M:%S.model_control.yaml
 
     PRMS-legacy instantiation
     -----------------------------
@@ -403,11 +409,12 @@ class Model:
         control: Control = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,
+        write_control: Union[bool, str, pl.Path] = False,
     ):
         self.control = deepcopy(control)
         self.parameters = parameters
 
-        # This is for backwards compatibility
+        # This is for backwards compatibility: make a method?
         msg = "Inputs are inconsistent"
         if isinstance(process_list_or_model_dict, (list, tuple)):
             # take the old-school-style inputs and convert to new-school inputs
@@ -459,6 +466,15 @@ class Model:
             self._default_nc_out_dir = opts["netcdf_output_dir"]
         else:
             self._default_nc_out_dir = None
+
+        if write_control or isinstance(write_control, (pl.Path, str)):
+            if isinstance(write_control, bool):
+                write_control = pl.Path(".")
+            format_fn = "%Y-%m-%dT%H:%M:%S.model_control.yaml"
+            yaml_fn = write_control / datetime.now().strftime(format_fn)
+            if not yaml_fn.parent.exists():
+                yaml_fn.parent.mkdir(parents=True)
+            self.control.to_yaml(yaml_fn)
 
         return
 

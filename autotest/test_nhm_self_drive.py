@@ -73,13 +73,14 @@ def test_drive_indiv_process(domain, tmp_path):
         control.options["budget_type"] = "warn"
         control.options["calc_method"] = "numba"
         control.options["input_dir"] = nhm_output_dir
+        control.options["netcdf_output_dir"] = proc_model_output_dir
 
         proc_model = pws.Model(
             [proc],
             control=control,
             parameters=params,
         )
-        proc_model.initialize_netcdf(output_dir=proc_model_output_dir)
+        proc_model.initialize_netcdf()
         proc_model.run(finalize=True)
         del proc_model, params, control
 

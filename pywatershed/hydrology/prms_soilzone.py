@@ -305,8 +305,8 @@ class PRMSSoilzone(ConservativeProcess):
 
         throw_error = False
         mask = self.soil_moist_max < 1.0e-5
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "soil_moist_max < 1.0e-5, set to 1.0e-5 at indices: "
@@ -316,8 +316,8 @@ class PRMSSoilzone(ConservativeProcess):
             self.soil_moist_max = np.where(mask, 1.0e-5, self.soil_moist_max)
 
         mask = self.soil_rechr_max < 1.0e-5
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "soil_rechr_max < 1.0e-5, set to 1.0e-5 at indices: "
@@ -327,8 +327,8 @@ class PRMSSoilzone(ConservativeProcess):
             self.soil_rechr_max = np.where(mask, 1.0e-5, self.soil_rechr_max)
 
         mask = self.soil_rechr_max > self.soil_moist_max
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "soil_rechr_max > soil_moist_max, "
@@ -343,8 +343,8 @@ class PRMSSoilzone(ConservativeProcess):
             )
 
         mask = self.soil_rechr > self.soil_rechr_max
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "soil_rechr_init > soil_rechr_max, "
@@ -359,8 +359,8 @@ class PRMSSoilzone(ConservativeProcess):
             )
 
         mask = self.soil_moist > self.soil_moist_max
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "soil_moist_init > soil_moist_max, "
@@ -375,8 +375,8 @@ class PRMSSoilzone(ConservativeProcess):
             )
 
         mask = self.soil_rechr > self.soil_moist
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "soil_rechr > soil_moist, "
@@ -387,8 +387,8 @@ class PRMSSoilzone(ConservativeProcess):
             self.soil_rechr = np.where(mask, self.soil_moist, self.soil_rechr)
 
         mask = self.ssres_stor > self._sat_threshold
-        if mask.any() and self.adjust_parameters != "no":
-            if self.adjust_parameters == "error":
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
                 throw_error = True
             msg = (
                 "ssres_stor > _sat_threshold, "

@@ -236,13 +236,13 @@ class PRMSChannel(ConservativeProcess):
         # inputs in place during run
         # should also be done before computing velocity
         mask_too_flat = self.seg_slope < 1e-7
-        if mask_too_flat.any() and self.adjust_parameters != "no":
+        if mask_too_flat.any() and self._adjust_parameters != "no":
             msg = (
                 "seg_slope < 1.0e-7, set to 1.0e-4 at indices:"
                 f"{np.where(mask_too_flat)[0]}"
             )
             warn(msg, UserWarning)
-            if self.adjust_parameters == "error":
+            if self._adjust_parameters == "error":
                 raise ValueError(
                     "seg_slope parameter values were edited and an error was "
                     "requested. See warnings for additional details."

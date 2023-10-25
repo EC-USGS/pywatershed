@@ -50,6 +50,12 @@ class PRMSSoilzone(ConservativeProcess):
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
+        adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
+            the code edits the parameters and issues a warning. If "error" is
+            selected the the code issues warnings about all edited parameters
+            before raising the error to give you information. If "no" is
+            selected then no parameters are adjusted and there will be no
+            warnings or errors.
         verbose: Print extra information or not?
     """
 
@@ -70,6 +76,7 @@ class PRMSSoilzone(ConservativeProcess):
         snowcov_area: adaptable,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["numba", "numpy"] = None,
+        adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> "PRMSSoilzone":
         super().__init__(
@@ -296,74 +303,109 @@ class PRMSSoilzone(ConservativeProcess):
         # JLM: These are for "ACTIVE and non-lake" hrus....
         # JLM check that.
 
+        throw_error = False
         mask = self.soil_moist_max < 1.0e-5
-        if mask.any():
-            msg = "soil_moist_max < 1.0e-5, set to 1.0e-5"
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
+            msg = (
+                "soil_moist_max < 1.0e-5, set to 1.0e-5 at indices: "
+                f"{np.where(mask)[0]}"
+            )
             warn(msg, UserWarning)
-        self.soil_moist_max = np.where(mask, 1.0e-5, self.soil_moist_max)
+            self.soil_moist_max = np.where(mask, 1.0e-5, self.soil_moist_max)
 
         mask = self.soil_rechr_max < 1.0e-5
-        if mask.any():
-            msg = "soil_rechr_max < 1.0e-5, set to 1.0e-5"
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
+            msg = (
+                "soil_rechr_max < 1.0e-5, set to 1.0e-5 at indices: "
+                f"{np.where(mask)[0]}"
+            )
             warn(msg, UserWarning)
-        self.soil_rechr_max = np.where(mask, 1.0e-5, self.soil_rechr_max)
+            self.soil_rechr_max = np.where(mask, 1.0e-5, self.soil_rechr_max)
 
         mask = self.soil_rechr_max > self.soil_moist_max
-        if mask.any():
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "soil_rechr_max > soil_moist_max, "
-                "soil_rechr_max set to soil_moist_max"
+                "soil_rechr_max set to soil_moist_max at indices: "
+                f"{np.where(mask)[0]}"
             )
             warn(msg, UserWarning)
-        self.soil_rechr_max = np.where(
-            mask,
-            self.soil_moist_max,
-            self.soil_rechr_max,
-        )
+            self.soil_rechr_max = np.where(
+                mask,
+                self.soil_moist_max,
+                self.soil_rechr_max,
+            )
 
         mask = self.soil_rechr > self.soil_rechr_max
-        if mask.any():
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "soil_rechr_init > soil_rechr_max, "
-                "setting soil_rechr_init to soil_rechr_max"
+                "setting soil_rechr_init to soil_rechr_max at indices: "
+                f"{np.where(mask)[0]}"
             )
             warn(msg, UserWarning)
-        self.soil_rechr = np.where(
-            mask,
-            self.soil_rechr_max,
-            self.soil_rechr,
-        )
+            self.soil_rechr = np.where(
+                mask,
+                self.soil_rechr_max,
+                self.soil_rechr,
+            )
 
         mask = self.soil_moist > self.soil_moist_max
-        if mask.any():
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "soil_moist_init > soil_moist_max, "
-                "setting soil_moist to soil_moist max"
+                "setting soil_moist to soil_moist max at indices: "
+                f"{np.where(mask)[0]}"
             )
             warn(msg, UserWarning)
-        self.soil_moist = np.where(
-            mask,
-            self.soil_moist_max,
-            self.soil_moist,
-        )
+            self.soil_moist = np.where(
+                mask,
+                self.soil_moist_max,
+                self.soil_moist,
+            )
 
         mask = self.soil_rechr > self.soil_moist
-        if mask.any():
-            msg = "soil_rechr > soil_moist, setting soil_rechr to soil_moist"
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
+            msg = (
+                "soil_rechr > soil_moist, "
+                "setting soil_rechr to soil_moist at indices: "
+                f"{np.where(mask)[0]}"
+            )
             warn(msg, UserWarning)
-        self.soil_rechr = np.where(mask, self.soil_moist, self.soil_rechr)
+            self.soil_rechr = np.where(mask, self.soil_moist, self.soil_rechr)
 
         mask = self.ssres_stor > self._sat_threshold
-        if mask.any():
+        if mask.any() and self.adjust_parameters != "no":
+            if self.adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "ssres_stor > _sat_threshold, "
-                "setting ssres_stor to _sat_threshold"
+                "setting ssres_stor to _sat_threshold at indices: "
+                f"{np.where(mask)[0]}"
             )
-        self.ssres_stor = np.where(
-            mask,
-            self._sat_threshold,
-            self.ssres_stor,
-        )
+            self.ssres_stor = np.where(
+                mask,
+                self._sat_threshold,
+                self.ssres_stor,
+            )
+
+        if throw_error:
+            raise ValueError(
+                "Some parameter values were edited and an error was requested."
+                " See warnings for additional details."
+            )
 
         # <
         # need to set on swale_limit self? move to variables?

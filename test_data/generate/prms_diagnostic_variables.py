@@ -13,10 +13,10 @@ previous_vars = {
     "gwres_stor": pws.PRMSGroundwater,
     "dprst_stor_hru": pws.PRMSRunoff,
     "hru_impervstor": pws.PRMSRunoff,
+    "hru_intcpstor": pws.PRMSCanopy,
     "pref_flow_stor": pws.PRMSSoilzone,
     "slow_stor": pws.PRMSSoilzone,
     "soil_lower": pws.PRMSSoilzone,
-    "soil_moist": pws.PRMSSoilzone,
     "soil_rechr": pws.PRMSSoilzone,
     "ssres_stor": pws.PRMSSoilzone,
     "freeh2o": pws.PRMSSnow,
@@ -25,6 +25,9 @@ previous_vars = {
 
 prev_rename = {
     "gwres_stor": "gwres_stor_old",
+    "hru_impervstor": "hru_impervstor_old",
+    "hru_intcpstor": "hru_intcpstor_old",
+    "dprst_stor_hru": "dprst_stor_hru_old",
 }
 
 change_rename = {}
@@ -165,8 +168,6 @@ def diagnose_final_vars_to_nc(
     In this case "var_name" is not a PRMS output variable, the variable is a
     new variable which requires much/all of the PRMS output to be already
     present in netcdf output format. This is why this is a final diagnostic
-
-    Currently only: "through_rain"
 
     Args:
         var_name: str name of the variable to create, not a PRMS variable.

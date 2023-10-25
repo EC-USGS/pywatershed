@@ -1,4 +1,3 @@
-from pathlib import Path
 from filelock import FileLock
 
 import pytest

@@ -163,11 +163,11 @@ def test_deepcopy(domain):
     ctl_sh = copy(ctl)
     ctl_dp = deepcopy(ctl)
 
-    opt_restart_orig = ctl.options["restart"]
+    opt_restart_orig = ctl.options["verbosity"]
     opt_restart_new = "something_else"
-    ctl.options["restart"] = opt_restart_new
-    assert ctl_sh.options["restart"] == opt_restart_new
-    assert ctl_dp.options["restart"] == opt_restart_orig
+    ctl.options["verbosity"] = opt_restart_new
+    assert ctl_sh.options["verbosity"] == opt_restart_new
+    assert ctl_dp.options["verbosity"] == opt_restart_orig
 
     return None
 
@@ -176,17 +176,17 @@ def test_setitem_setattr(domain):
     ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
 
     # __setitem__ on OptsDict
-    ctl.options["restart"] = 12
+    ctl.options["verbosity"] = 12
     with pytest.raises(NameError):
         ctl.options["foobar"] = 12
 
     # __setattr__ on Control
-    ctl.options = {"restart": 45}
+    ctl.options = {"verbosity": 45}
     with pytest.raises(NameError):
         ctl.options = {"foobar": 12}
 
     # __setitem__ on Control
-    ctl["options"] = {"restart": 45}
+    ctl["options"] = {"verbosity": 45}
     with pytest.raises(NameError):
         ctl["options"] = {"foobar": 12}
 

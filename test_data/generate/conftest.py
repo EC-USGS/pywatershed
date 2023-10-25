@@ -65,8 +65,17 @@ def scheduler_active():
 
 
 def enforce_scheduler(test_dir):
+    """Enforce the use of scheduler
+
+    Args:
+        test_dir: the domain directory to run or schedule
+
+    Return:
+        True if must use a scheduler, False if not
+    """
+
     if scheduler_active():
-        return None
+        return False
     glob_match = list(
         fnmatch(str(test_dir), gg) for gg in domain_globs_schedule
     )

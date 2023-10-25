@@ -470,7 +470,7 @@ class Model:
         if write_control or isinstance(write_control, (pl.Path, str)):
             if isinstance(write_control, bool):
                 write_control = pl.Path(".")
-            format_fn = "%Y-%m-%dT%H:%M:%S.model_control.yaml"
+            format_fn = "%Y-%m-%dT%H.%M.%S.model_control.yaml"
             yaml_fn = write_control / datetime.now().strftime(format_fn)
             if not yaml_fn.parent.exists():
                 yaml_fn.parent.mkdir(parents=True)

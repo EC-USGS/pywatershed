@@ -9,12 +9,10 @@ from pywatershed.hydrology.prms_channel import PRMSChannel, has_prmschannel_f
 from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
-# compare in memory (faster) or full output files?
+# compare in memory (faster) or full output files? or both!
 do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
-
-fail_fast = False
 
 calc_methods = ("numpy", "numba", "fortran")
 params = ("params_sep", "params_one")
@@ -57,9 +55,8 @@ def test_compare_prms(
         )
 
     tmp_path = pl.Path(tmp_path)
-
-    # load csv files into dataframes
     output_dir = domain["prms_output_dir"]
+
     input_variables = {}
     for key in PRMSChannel.get_inputs():
         nc_path = output_dir / f"{key}.nc"

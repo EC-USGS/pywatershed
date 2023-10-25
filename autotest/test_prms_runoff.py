@@ -1,12 +1,17 @@
 import pathlib as pl
 
-import numpy as np
 import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.prms_runoff import PRMSRunoff
 from pywatershed.parameters import Parameters, PrmsParameters
+from utils_compare import compare_in_memory, compare_netcdfs
+
+# compare in memory (faster) or full output files? or both!
+do_compare_output_files = False
+do_compare_in_memory = True
+rtol = atol = 1.0e-10
 
 calc_methods = ("numpy", "numba")
 params = ("params_sep", "params_one")
@@ -40,36 +45,16 @@ def test_compare_prms(
 ):
     tmp_path = pl.Path(tmp_path)
 
-    # get the answer data
+    comparison_var_names = set(PRMSRunoff.get_variables())
+    # TODO: get rid of this exception
+    comparison_var_names -= set(
+        [
+            "dprst_area_open",
+        ]
+    )
 
-    comparison_var_names = [
-        "infil",
-        "infil_hru",
-        "dprst_stor_hru",
-        "dprst_seep_hru",
-        "hru_impervstor",
-        "sroff",
-        "dprst_evap_hru",
-        "hru_impervevap",
-        "dprst_insroff_hru",
-        "dprst_stor_hru",
-        "contrib_fraction",
-        "hru_sroffp",
-        "hru_sroffi",
-        # "hru_impervstor_change",
-        "dprst_sroff_hru",
-        "dprst_insroff_hru",
-        # "dprst_stor_hru_change",
-    ]
     output_dir = domain["prms_output_dir"]
 
-    # Read PRMS output into ans for comparison with pywatershed results
-    ans = {}
-    for key in comparison_var_names:
-        nc_pth = output_dir / f"{key}.nc"
-        ans[key] = adapter_factory(nc_pth, variable_name=key, control=control)
-
-    # instantiate runoff
     input_variables = {}
     for key in PRMSRunoff.get_inputs():
         nc_pth = output_dir / f"{key}.nc"
@@ -79,66 +64,45 @@ def test_compare_prms(
         control=control,
         discretization=discretization,
         parameters=parameters,
-        calc_method=calc_method,
         **input_variables,
         budget_type="error",
+        calc_method=calc_method,
     )
 
-    all_success = True
+    if do_compare_output_files:
+        nc_parent = tmp_path / domain["domain_name"]
+        runoff.initialize_netcdf(nc_parent)
+        # test that init netcdf twice raises a warning
+        with pytest.warns(UserWarning):
+            runoff.initialize_netcdf(nc_parent)
+
+    if do_compare_in_memory:
+        answers = {}
+        for var in comparison_var_names:
+            var_pth = output_dir / f"{var}.nc"
+            answers[var] = adapter_factory(
+                var_pth, variable_name=var, control=control
+            )
+
     for istep in range(control.n_times):
         control.advance()
         runoff.advance()
         runoff.calculate(1.0)
-
-        # advance the answer, which is being read from a netcdf file
-        for key, val in ans.items():
-            val.advance()
-
-        # make a comparison check with answer
-        check = True
-        failfast = True
-        detailed = True
-        if check:
-            atol = 1.0e-10
-            success = check_timestep_results(
-                runoff, istep, ans, atol, detailed
+        runoff.output()
+        if do_compare_in_memory:
+            compare_in_memory(
+                runoff, answers, atol=atol, rtol=rtol, skip_missing_ans=True
             )
-            if not success:
-                all_success = False
-                if failfast:
-                    assert success, "stopping..."
 
     runoff.finalize()
 
-    # check at the end and error if one or more steps didn't pass
-    if not all_success:
-        raise Exception("pywatershed results do not match prms results")
+    if do_compare_output_files:
+        compare_netcdfs(
+            comparison_var_names,
+            tmp_path / domain["domain_name"],
+            output_dir,
+            atol=atol,
+            rtol=rtol,
+        )
 
     return
-
-
-def check_timestep_results(storageunit, istep, ans, atol, detailed=False):
-    all_success = True
-    for key in ans.keys():
-        a1 = ans[key].current
-        a2 = storageunit[key]
-        success = np.isclose(a1, a2, atol=atol, rtol=atol).all()
-        if not success:
-            all_success = False
-            diff = a1 - a2
-            diffmin = diff.min()
-            diffmax = diff.max()
-            if True:
-                print(f"time step {istep}")
-                print(f"output variable {key}")
-                print(f"prms   {a1.min()}    {a1.max()}")
-                print(f"pywatershed  {a2.min()}    {a2.max()}")
-                print(f"diff   {diffmin}  {diffmax}")
-                if detailed:
-                    idx = np.where(np.abs(diff) > atol)[0]
-                    for i in idx:
-                        print(
-                            f"hru {i} prms {a1[i]} pywatershed {a2[i]} diff {diff[i]}"
-                        )
-            asdf
-    return all_success

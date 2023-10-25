@@ -4,12 +4,14 @@
 pywatershed: a hydrologic model in Python
 ####################################################
 
-Welcome to `pywatershed` docs!
+Welcome to the `pywatershed` docs!
 
-Browse the API reference, developer info, and index using the table of
-contents on the left.
+To learn more about this project, see `About <about.html>`_.
 
-| For introductory example notebooks, look in the `examples/ <https://github.com/EC-USGS/pywatershed/tree/main/examples>`_ directory in the repository. Numbered starting at 00, these are meant to be completed in order. Though no notebook outputs are saved in Github, these notebooks can easily navigated to and run in WholeTale containers (free but sign-up or log-in required):
+Please browse the API reference, developer info, and
+index using the table of contents on the left.
+
+| For introductory example notebooks, look in the `examples/ <https://github.com/EC-USGS/pywatershed/tree/main/examples>`_ directory in the repository. Numbered starting at 00, these are meant to be completed in order. Though no notebook outputs are saved in Github, these notebooks can be easily found and run in WholeTale containers (free but sign-up or log-in required):
 
 .. image:: https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg
    :target: https://dashboard.wholetale.org
@@ -23,6 +25,12 @@ We value your feedback! To view the repository, suggest an edit to this document
 
 Thank you for your interest.
 
+
+.. toctree::
+   :hidden:
+   :caption: About
+
+    About <about.rst>
 
 .. toctree::
    :hidden:

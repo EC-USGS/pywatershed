@@ -7,7 +7,7 @@ from numba import prange
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..constants import CovType, HruType, numba_num_threads, zero
+from ..constants import CovType, HruType, nan, numba_num_threads, zero
 from ..parameters import Parameters
 
 try:
@@ -119,7 +119,7 @@ class PRMSCanopy(ConservativeProcess):
             "net_snow": zero,
             "intcp_changeover": zero,
             "intcp_evap": zero,
-            "intcp_form": 0,  # could make boolean but would have to make the RAIN/SNOW match
+            "intcp_form": nan,  # = RAIN could make boolean but would have to make the RAIN/SNOW match
             "intcp_stor": zero,
             "intcp_transp_on": 0,  # could make boolean
             "hru_intcpevap": zero,
@@ -290,6 +290,7 @@ class PRMSCanopy(ConservativeProcess):
         if self._calc_method.lower() != "fortran":
             (
                 self.intcp_evap[:],
+                self.intcp_form[:],
                 self.intcp_stor[:],
                 self.net_rain[:],
                 self.net_snow[:],
@@ -310,7 +311,6 @@ class PRMSCanopy(ConservativeProcess):
                 hru_snow=self.hru_snow,
                 intcp_changeover=self.intcp_changeover,
                 intcp_evap=self.intcp_evap,
-                intcp_form=self.intcp_form,
                 intcp_stor=self.intcp_stor,
                 intcp_transp_on=self.intcp_transp_on,
                 net_ppt=self.net_ppt,
@@ -341,6 +341,7 @@ class PRMSCanopy(ConservativeProcess):
         else:
             (
                 self.intcp_evap[:],
+                self.intcp_form[:],
                 self.intcp_stor[:],
                 self.net_rain[:],
                 self.net_snow[:],
@@ -360,7 +361,6 @@ class PRMSCanopy(ConservativeProcess):
                 self.hru_snow,
                 self.intcp_changeover,
                 self.intcp_evap,
-                self.intcp_form,
                 self.intcp_stor,
                 self.intcp_transp_on,
                 self.net_ppt,
@@ -407,7 +407,6 @@ class PRMSCanopy(ConservativeProcess):
         hru_snow,
         intcp_changeover,
         intcp_evap,
-        intcp_form,
         intcp_stor,
         intcp_transp_on,
         net_ppt,
@@ -440,6 +439,8 @@ class PRMSCanopy(ConservativeProcess):
         #       actual inputs
         #       Keep the f90 call signature consistent with the args in
         #       python/numba.
+
+        intcp_form = np.full_like(hru_rain, np.nan, dtype="int32")
         for i in prange(nhru):
             netrain = hru_rain[i]
             netsnow = hru_snow[i]
@@ -596,6 +597,7 @@ class PRMSCanopy(ConservativeProcess):
 
         return (
             intcp_evap,
+            intcp_form,
             intcp_stor,
             net_rain,
             net_snow,

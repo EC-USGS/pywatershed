@@ -23,7 +23,7 @@ New features
   (:pull:`232`) By `James McCreight <https://github.com/jmccreight>`_.
 - Conda feedstock for pywatershed `<https://github.com/conda-forge/staged-recipes/pull/23428>`_.
   By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
-  
+
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
@@ -41,14 +41,22 @@ Bug fixes
 ~~~~~~~~~
 - Resolve issues with different ways of specifiying netcdf output options.
   (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
-
+- PRMSSoilzone remove soil_moist_prev because soil_moist is not prognotic and
+  PRMSRunoff was needing it in the advance and not getting the correct value.
+  PRMSRunoff now depends on soil_lower_prev and soil_rechr_prev instead.
+  (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Documentation
 ~~~~~~~~~~~~~
+- Add about section for version 1.0 to describe how pywatershed matches PRMS'
+  NHM configuration and how to perform the comparison.
+  (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 Internal changes
 ~~~~~~~~~~~~~~~~
+- Refactor tests against PRMS for consistency, flexibility, and thoroughness.
+  (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 .. _whats-new.0.2.1:

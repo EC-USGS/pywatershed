@@ -18,13 +18,7 @@ from .hydrology.prms_runoff import PRMSRunoff
 from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.starfit import Starfit
-from .utils import (
-    ControlVariables,
-    NetCdfCompare,
-    NetCdfRead,
-    NetCdfWrite,
-    Soltab,
-)
+from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab
 from .utils.csv_utils import CsvFile
 from .version import __version__
 

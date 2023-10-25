@@ -62,6 +62,7 @@ generated/
 # example output data and gis data
 examples/0*/
 examples/snow_errors
+examples/compare_pws_prms
 examples/runoff_errors
 examples/pynhm_gis
 examples/pywatershed_gis

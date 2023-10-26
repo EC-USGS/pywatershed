@@ -74,7 +74,9 @@ def diagnose_simple_vars_to_nc(
         # the final value (-1) was wrapped to the zeroth position
         # get the initial conditions for the first time by initializing the
         # model This works based on the control file, so could handle restart.
-        control = pws.Control.load(domain_dir / "control.test")
+        control = pws.Control.load_prms(
+            domain_dir / "control.test", warn_unused_options=False
+        )
         control.options = control.options | {
             "input_dir": domain_dir / "output",
         }
@@ -251,7 +253,9 @@ def diagnose_final_vars_to_nc(
             data_file = data_dir / f"{vv}.nc"
             data[vv] = xr.open_dataarray(data_file)
 
-        control = pws.Control.load(domain_dir / "control.test")
+        control = pws.Control.load_prms(
+            domain_dir / "control.test", warn_unused_options=False
+        )
         s_per_time = control.time_step_seconds
         params = pws.parameters.PrmsParameters.load(
             domain_dir / "myparam.param"

@@ -834,7 +834,11 @@ class PRMSAtmosphere(Process):
         output_vars: list = None,
         **kwargs,
     ):
-        if self._netcdf_initialized and self.control.options["verbosity"] > 5:
+        if (
+            self._netcdf_initialized
+            and "verbosity" in self.control.options.keys()
+            and self.control.options["verbosity"] > 5
+        ):
             msg = (
                 f"{self.name} class previously initialized netcdf output "
                 f"in {self._netcdf_output_dir}"

@@ -1085,7 +1085,9 @@ class PRMSSnow(ConservativeProcess):
         cond4 = pkwater_equiv < epsilon32
         cond5 = snow_evap < nearzero
         cond6 = net_snow < nearzero
+        cond7 = snow_evap > (-1 * (pk_ice_change + freeh2o_change))
         # reverse order from the if statements
+
         through_rain[:] = np.where(
             cond1 & cond3 & cond4 & cond6, net_rain, zero
         )
@@ -1093,6 +1095,16 @@ class PRMSSnow(ConservativeProcess):
             cond1 & cond3 & cond4 & cond5, net_ppt, through_rain
         )
         through_rain[:] = np.where(cond1 & cond2, net_rain, through_rain)
+
+        # This condition does not exist in PRMS as far as I can tell
+        # but is necessary for mass balance
+        # This is when it rains on snow (no new snow) and then snow_evap
+        # consumes the pack during the timestep.
+        through_rain[:] = np.where(
+            cond1 & cond6 & cond7,
+            zero,
+            through_rain,
+        )
 
         return (
             ai,
@@ -1764,8 +1776,8 @@ class PRMSSnow(ConservativeProcess):
                 # (2) Only part of free water freezes
                 # The calories absorbed by the new snow freezes some of the
                 # free water (increase in ice, decrease in free water).
-                pk_ice = pk_ice + (-cal / 203.2)  # [inches]
-                freeh2o = freeh2o - (-cal / 203.2)  # [inches]
+                pk_ice = pk_ice - (cal / 203.2)  # [inches]
+                freeh2o = freeh2o + (cal / 203.2)  # [inches]
                 return (
                     freeh2o,
                     pk_def,
@@ -2399,7 +2411,7 @@ class PRMSSnow(ConservativeProcess):
         calc_snowbal,
         canopy_covden,
         albedo,
-        cecn_coef,  # [control.current_month
+        cecn_coef,  # control.current_month
         cov_type,
         deninv,
         den_max,

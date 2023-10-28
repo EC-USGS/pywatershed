@@ -222,7 +222,6 @@ class PRMSSnow(ConservativeProcess):
             "pk_precip": zero,
             "pk_temp": zero,
             "pksv": zero,
-            "pkwater_ante": nan,
             "pkwater_equiv": nan,
             "pptmix_nopack": False,
             "pss": nan,
@@ -434,7 +433,6 @@ class PRMSSnow(ConservativeProcess):
         return
 
     def _advance_variables(self) -> None:
-        self.pkwater_ante[:] = self.pkwater_equiv
         self.freeh2o_prev[:] = self.freeh2o
         self.pk_ice_prev[:] = self.pk_ice
         return
@@ -537,7 +535,6 @@ class PRMSSnow(ConservativeProcess):
             pk_precip=self.pk_precip,
             pk_temp=self.pk_temp,
             pksv=self.pksv,
-            pkwater_ante=self.pkwater_ante,
             pkwater_equiv=self.pkwater_equiv,
             potet=self.potet,
             potet_sublim=self.potet_sublim,
@@ -637,7 +634,6 @@ class PRMSSnow(ConservativeProcess):
         pk_precip,
         pk_temp,
         pksv,
-        pkwater_ante,
         pkwater_equiv,
         potet,
         potet_sublim,

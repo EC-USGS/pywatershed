@@ -224,7 +224,6 @@ class PRMSSnow(ConservativeProcess):
             "pksv": zero,
             "pkwater_ante": nan,
             "pkwater_equiv": nan,
-            "pkwater_equiv_change": nan,
             "pptmix_nopack": False,
             "pss": nan,
             "pst": nan,
@@ -249,15 +248,7 @@ class PRMSSnow(ConservativeProcess):
                 "snowmelt",
                 "through_rain",
             ],
-            "storage_changes": [
-                "freeh2o_change",
-                "pk_ice_change"
-                # eventaully pakwater_equiv_change should be removed
-                # entirely from the code and the metadata.
-                # But there are significant gaps between the above and
-                # pkwater_equiv
-                # "pkwater_equiv_change",
-            ],
+            "storage_changes": ["freeh2o_change", "pk_ice_change"],
         }
 
     @staticmethod
@@ -471,7 +462,6 @@ class PRMSSnow(ConservativeProcess):
             self.pk_temp[:],
             self.pksv[:],
             self.pkwater_equiv[:],
-            self.pkwater_equiv_change[:],
             self.pptmix_nopack[:],
             self.pss[:],
             self.pst[:],
@@ -549,7 +539,6 @@ class PRMSSnow(ConservativeProcess):
             pksv=self.pksv,
             pkwater_ante=self.pkwater_ante,
             pkwater_equiv=self.pkwater_equiv,
-            pkwater_equiv_change=self.pkwater_equiv_change,
             potet=self.potet,
             potet_sublim=self.potet_sublim,
             pptmix=self.pptmix,
@@ -650,7 +639,6 @@ class PRMSSnow(ConservativeProcess):
         pksv,
         pkwater_ante,
         pkwater_equiv,
-        pkwater_equiv_change,
         potet,
         potet_sublim,
         pptmix,
@@ -1074,7 +1062,6 @@ class PRMSSnow(ConservativeProcess):
 
         # << end of space loop and previous if
 
-        pkwater_equiv_change[:] = pkwater_equiv - pkwater_ante
         freeh2o_change[:] = freeh2o - freeh2o_prev
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
@@ -1128,7 +1115,6 @@ class PRMSSnow(ConservativeProcess):
             pk_temp,
             pksv,
             pkwater_equiv,
-            pkwater_equiv_change,
             pptmix_nopack,
             pss,
             pst,

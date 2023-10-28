@@ -50,6 +50,12 @@ class PRMSSoilzone(ConservativeProcess):
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
+        adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
+            the code edits the parameters and issues a warning. If "error" is
+            selected the the code issues warnings about all edited parameters
+            before raising the error to give you information. If "no" is
+            selected then no parameters are adjusted and there will be no
+            warnings or errors.
         verbose: Print extra information or not?
     """
 
@@ -70,6 +76,7 @@ class PRMSSoilzone(ConservativeProcess):
         snowcov_area: adaptable,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["numba", "numpy"] = None,
+        adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> "PRMSSoilzone":
         super().__init__(
@@ -249,7 +256,11 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_den[wh_not_land] = zero
 
         # variables
-        if self.control.options["init_vars_from_file"] in [0, 2, 5]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 5]:
+
             # these are set in sm_climateflow
             self.soil_moist[:] = (
                 self.soil_moist_init_frac * self.soil_moist_max
@@ -269,7 +280,11 @@ class PRMSSoilzone(ConservativeProcess):
         # expectations. Move this parameter business to __init__
 
         # ssres_stor
-        if self.control.options["init_vars_from_file"] in [0, 2, 5]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 5]:
+
             self.ssres_stor = self.ssstor_init_frac * self._sat_threshold
             wh_inactive_or_lake = np.where(
                 (self.hru_type == HruType.INACTIVE.value)
@@ -288,74 +303,109 @@ class PRMSSoilzone(ConservativeProcess):
         # JLM: These are for "ACTIVE and non-lake" hrus....
         # JLM check that.
 
+        throw_error = False
         mask = self.soil_moist_max < 1.0e-5
-        if mask.any():
-            msg = "soil_moist_max < 1.0e-5, set to 1.0e-5"
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
+            msg = (
+                "soil_moist_max < 1.0e-5, set to 1.0e-5 at indices: "
+                f"{np.where(mask)[0]}"
+            )
             warn(msg, UserWarning)
-        self.soil_moist_max = np.where(mask, 1.0e-5, self.soil_moist_max)
+            self.soil_moist_max = np.where(mask, 1.0e-5, self.soil_moist_max)
 
         mask = self.soil_rechr_max < 1.0e-5
-        if mask.any():
-            msg = "soil_rechr_max < 1.0e-5, set to 1.0e-5"
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
+            msg = (
+                "soil_rechr_max < 1.0e-5, set to 1.0e-5 at indices: "
+                f"{np.where(mask)[0]}"
+            )
             warn(msg, UserWarning)
-        self.soil_rechr_max = np.where(mask, 1.0e-5, self.soil_rechr_max)
+            self.soil_rechr_max = np.where(mask, 1.0e-5, self.soil_rechr_max)
 
         mask = self.soil_rechr_max > self.soil_moist_max
-        if mask.any():
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "soil_rechr_max > soil_moist_max, "
-                "soil_rechr_max set to soil_moist_max"
+                "soil_rechr_max set to soil_moist_max at indices: "
+                f"{np.where(mask)[0]}"
             )
             warn(msg, UserWarning)
-        self.soil_rechr_max = np.where(
-            mask,
-            self.soil_moist_max,
-            self.soil_rechr_max,
-        )
+            self.soil_rechr_max = np.where(
+                mask,
+                self.soil_moist_max,
+                self.soil_rechr_max,
+            )
 
         mask = self.soil_rechr > self.soil_rechr_max
-        if mask.any():
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "soil_rechr_init > soil_rechr_max, "
-                "setting soil_rechr_init to soil_rechr_max"
+                "setting soil_rechr_init to soil_rechr_max at indices: "
+                f"{np.where(mask)[0]}"
             )
             warn(msg, UserWarning)
-        self.soil_rechr = np.where(
-            mask,
-            self.soil_rechr_max,
-            self.soil_rechr,
-        )
+            self.soil_rechr = np.where(
+                mask,
+                self.soil_rechr_max,
+                self.soil_rechr,
+            )
 
         mask = self.soil_moist > self.soil_moist_max
-        if mask.any():
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "soil_moist_init > soil_moist_max, "
-                "setting soil_moist to soil_moist max"
+                "setting soil_moist to soil_moist max at indices: "
+                f"{np.where(mask)[0]}"
             )
             warn(msg, UserWarning)
-        self.soil_moist = np.where(
-            mask,
-            self.soil_moist_max,
-            self.soil_moist,
-        )
+            self.soil_moist = np.where(
+                mask,
+                self.soil_moist_max,
+                self.soil_moist,
+            )
 
         mask = self.soil_rechr > self.soil_moist
-        if mask.any():
-            msg = "soil_rechr > soil_moist, setting soil_rechr to soil_moist"
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
+            msg = (
+                "soil_rechr > soil_moist, "
+                "setting soil_rechr to soil_moist at indices: "
+                f"{np.where(mask)[0]}"
+            )
             warn(msg, UserWarning)
-        self.soil_rechr = np.where(mask, self.soil_moist, self.soil_rechr)
+            self.soil_rechr = np.where(mask, self.soil_moist, self.soil_rechr)
 
         mask = self.ssres_stor > self._sat_threshold
-        if mask.any():
+        if mask.any() and self._adjust_parameters != "no":
+            if self._adjust_parameters == "error":
+                throw_error = True
             msg = (
                 "ssres_stor > _sat_threshold, "
-                "setting ssres_stor to _sat_threshold"
+                "setting ssres_stor to _sat_threshold at indices: "
+                f"{np.where(mask)[0]}"
             )
-        self.ssres_stor = np.where(
-            mask,
-            self._sat_threshold,
-            self.ssres_stor,
-        )
+            self.ssres_stor = np.where(
+                mask,
+                self._sat_threshold,
+                self.ssres_stor,
+            )
+
+        if throw_error:
+            raise ValueError(
+                "Some parameter values were edited and an error was requested."
+                " See warnings for additional details."
+            )
 
         # <
         # need to set on swale_limit self? move to variables?
@@ -381,7 +431,11 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_flag[wh_land_and_prf_den] = True
 
         # can this one be combined with the restart read logic above?
-        if self.control.options["init_vars_from_file"] in [0, 2, 5]:
+        if True:
+            # For now there is no restart capability. we'll use the following
+            # line when there is
+            # if self.control.options["restart"] in [0, 2, 5]:
+
             wh_land_or_swale = np.where(
                 (self.hru_type == HruType.LAND.value)
                 | (self.hru_type == HruType.SWALE.value)
@@ -526,7 +580,7 @@ class PRMSSoilzone(ConservativeProcess):
             cov_type=self.cov_type,
             current_time=self.control.current_time,
             dprst_evap_hru=self.dprst_evap_hru,
-            dprst_flag=self.control.options["dprst_flag"],
+            dprst_flag=True,  # self.control.options["dprst_flag"],
             dprst_seep_hru=self.dprst_seep_hru,
             dunnian_flow=self.dunnian_flow,
             fastcoef_lin=self.fastcoef_lin,

@@ -97,12 +97,11 @@ class PRMSSolarGeometry(Process):
         self._calculated = False
 
         self._netcdf_initialized = False
-        if self.netcdf_output_dir:
-            self._calculate_all_time()
+        if self._netcdf_output_dir:
             self.initialize_netcdf(
-                output_dir=pl.Path(netcdf_output_dir),
-                separate_variables=netcdf_separate_files,
-                output_vars=netcdf_output_vars,
+                output_dir=pl.Path(self._netcdf_output_dir),
+                separate_variables=self._netcdf_separate_files,
+                output_vars=self._netcdf_output_vars,
             )
 
         return
@@ -481,7 +480,11 @@ class PRMSSolarGeometry(Process):
         output_vars: list = None,
         **kwargs,
     ):
-        if self._netcdf_initialized:
+        if (
+            self._netcdf_initialized
+            and "verbosity" in self.control.options.keys()
+            and self.control.options["verbosity"] > 5
+        ):
             msg = (
                 f"{self.name} class previously initialized netcdf output "
                 f"in {self._netcdf_output_dir}"

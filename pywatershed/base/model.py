@@ -1,5 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
+from datetime import datetime
 from pprint import pprint
 from typing import Union
 from warnings import warn
@@ -10,7 +11,7 @@ from ..base.adapter import adapter_factory
 from ..base.control import Control
 from ..constants import fileish
 from ..parameters import Parameters, PrmsParameters
-from ..utils.path import path_rel_to_yml
+from ..utils.path import path_rel_to_yaml
 
 # This is a convenience
 process_order_nhm = [
@@ -43,6 +44,11 @@ class Model:
         find_input_files: Search/find input file on __init__ or delay until run
            or advance of the model. Delaying (False) allows ModelGraph of the
            specified model without the need for input files.
+        write_control: bool, str, or pl.Path a directory into which a copy of
+           the passed control is to be written, default is False. This is for
+           convenience when lost of in-memory manipulations may be made before
+           passing to the model. The output file name has the form
+           %Y-%m-%dT%H:%M:%S.model_control.yaml
 
     PRMS-legacy instantiation
     -----------------------------
@@ -95,7 +101,7 @@ class Model:
       Only one control object can be included in the model dictionary. Though
       the key for the control can be arbitrary, the value is either an instance
       of class Control or, in the case of a yaml model dictionary, a control
-      yaml file to be loaded by Control.from_yml() (todo: link to this
+      yaml file to be loaded by Control.from_yaml() (todo: link to this
       staticmethod).
     - **discretizations** - Multiple discretizations may be supplied to the
       model dictionary, each with arbitrary names. These provide spatial
@@ -328,7 +334,7 @@ class Model:
             with open(key, "w") as file:
                 documents = yaml.dump(val, file)
 
-        model = pws.Model.from_yml(model_dict_file)
+        model = pws.Model.from_yaml(model_dict_file)
         model.run()
         control_file.unlink()
         model_dict_file.unlink()
@@ -403,11 +409,12 @@ class Model:
         control: Control = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,
+        write_control: Union[bool, str, pl.Path] = False,
     ):
-        self.control = control
+        self.control = deepcopy(control)
         self.parameters = parameters
 
-        # This is for backwards compatibility
+        # This is for backwards compatibility: make a method?
         msg = "Inputs are inconsistent"
         if isinstance(process_list_or_model_dict, (list, tuple)):
             # take the old-school-style inputs and convert to new-school inputs
@@ -453,11 +460,21 @@ class Model:
         if find_input_files:
             self._find_input_files()
 
-        # methodize this netcdf section
-        self._parse_netcdf_control_options()
         self._netcdf_initialized = False
-        if "netcdf_output_dir" in self.control.options.keys():
-            self.initialize_netcdf(**self._netcdf_opts)
+        opts = self.control.options
+        if "netcdf_output_dir" in opts.keys():
+            self._default_nc_out_dir = opts["netcdf_output_dir"]
+        else:
+            self._default_nc_out_dir = None
+
+        if write_control or isinstance(write_control, (pl.Path, str)):
+            if isinstance(write_control, bool):
+                write_control = pl.Path(".")
+            format_fn = "%Y-%m-%dT%H.%M.%S.model_control.yaml"
+            yaml_fn = write_control / datetime.now().strftime(format_fn)
+            if not yaml_fn.parent.exists():
+                yaml_fn.parent.mkdir(parents=True)
+            self.control.to_yaml(yaml_fn)
 
         return
 
@@ -642,14 +659,14 @@ class Model:
         return
 
     @staticmethod
-    def model_dict_from_yml(yml_file: Union[str, pl.Path]) -> dict:
+    def model_dict_from_yaml(yaml_file: Union[str, pl.Path]) -> dict:
         """Generate a model dictionary from a yaml file.
 
-        Instead of Model.from_yml() it can be useful to get the model
+        Instead of Model.from_yaml() it can be useful to get the model
         dictionary before passing it to Model.
 
         Args:
-            yml_file: a yml file
+            yaml_file: a yaml file
 
         Returns:
             A model dictionary.
@@ -658,19 +675,19 @@ class Model:
 
         import pywatershed
 
-        with pl.Path(yml_file).open("r") as file_stream:
+        with pl.Path(yaml_file).open("r") as file_stream:
             model_dict = yaml.load(file_stream, Loader=yaml.Loader)
 
         for key, val in model_dict.items():
             if isinstance(val, str):
-                val_pl = path_rel_to_yml(val, yml_file)
-                if val.endswith(".yml"):
-                    model_dict[key] = Control.from_yml(val_pl)
+                val_pl = path_rel_to_yaml(val, yaml_file)
+                if (val.endswith(".yml")) or (val.endswith(".yaml")):
+                    model_dict[key] = Control.from_yaml(val_pl)
                 elif val.endswith(".nc"):
                     model_dict[key] = Parameters.from_netcdf(val_pl)
                 else:
                     msg = (
-                        "Unsupported file extension for control (.yml)"
+                        "Unsupported file extension for control (.yml/.yaml)"
                         "and parameter (.nc) file paths in model yaml file"
                     )
                     raise ValueError(msg)
@@ -683,7 +700,7 @@ class Model:
                     cls = val["class"]
                     val["class"] = getattr(pywatershed, cls)
                     par = val["parameters"]
-                    par_pl = path_rel_to_yml(par, yml_file)
+                    par_pl = path_rel_to_yaml(par, yaml_file)
                     val["parameters"] = Parameters.from_netcdf(
                         par_pl, encoding=False
                     )
@@ -696,13 +713,13 @@ class Model:
         return model_dict
 
     @staticmethod
-    def from_yml(yml_file: Union[str, pl.Path]):
+    def from_yaml(yaml_file: Union[str, pl.Path]):
         """Instantiate a Model from a yaml file
 
         A yaml file that specifies a model_dict as the first argument of Model.
 
         Args:
-           yml_file: str or pathlib.Path
+           yaml_file: str or pathlib.Path
 
         Returns:
            An instance of Model.
@@ -710,10 +727,11 @@ class Model:
         Yaml file structure (strict order not required, but suggested):
 
         Control object: Any name can be used but the value must be a control
-            yaml file specified with the suffix ".yml". E.g "name: control.yml"
+            yaml file specified with the suffix ".yaml". E.g
+            "name: control.yaml"
             would appear in the passed yaml file. Only one control
-            specification is allowed in the yml_file. For details on the
-            requirements of the control.yml file see `Control.from_yml`
+            specification is allowed in the yaml_file. For details on the
+            requirements of the control.yaml file see `Control.from_yaml`
         Discretization objects: Any number of discretization objects can be
             supplied with arbitrary (though unique) names. The values supplied
             for each discretization must be a valid netcdf file with suffix
@@ -733,31 +751,57 @@ class Model:
         Model order list: a list supplying the order in which the processes are
             to be executed.
 
-        Note: To get a model_dict specfied by the yml_file, call
-        `model_dict_from_yml` instead.
+        Note: To get a model_dict specfied by the yaml_file, call
+        `model_dict_from_yaml` instead.
 
         """
-        return Model(Model.model_dict_from_yml(yml_file))
+        return Model(Model.model_dict_from_yaml(yaml_file))
 
     def initialize_netcdf(
         self,
-        output_dir: str,
-        separate_files: bool = True,
+        output_dir: str = None,
+        separate_files: bool = None,
         budget_args: dict = None,
         output_vars: list = None,
     ):
-        """Initialize NetCDF output files for model (all processes)."""
+        """Initialize NetCDF output files for model (all processes).
 
+        Args:
+            output_dir: pl.Path or str of the directory where to write files
+            separate_files: For a given Process, write a single file or
+                separate files for the process' variables. DEFAULTS to True
+                for performance reasons.
+            budget_args: see Budget.initialize_netcdf(). defaults to None
+            output_vars: A list of variables to write. Unrecognized variable
+                names are silently skipped. Defaults to None which writes
+                all variables for all Processes.
+        """
         if self._netcdf_initialized:
             msg = (
                 "Model class previously initialized netcdf output "
                 f"in {self._netcdf_dir}"
             )
-            warn(msg)
-            return
+            raise RuntimeError(msg)
+
+        print("model initializing NetCDF output")
 
         if not self._found_input_files:
             self._find_input_files()
+
+        (
+            output_dir,
+            output_vars,
+            separate_files,
+        ) = self._reconcile_nc_args_w_control_opts(
+            output_dir, output_vars, separate_files
+        )
+
+        # apply defaults if necessary
+        if output_dir is None:
+            msg = "An output directory is required to be specified for netcdf initialization."
+            raise ValueError(msg)
+        if separate_files is None:
+            separate_files = True
 
         self._netcdf_dir = pl.Path(output_dir)
         for cls in self.process_order:
@@ -795,11 +839,13 @@ class Model:
             n_time_steps: the number of timesteps to run
             output_vars: the vars to output to the netcdf_dir
         """
-        if not self._found_input_files:
-            self._find_input_files()
-
-        if netcdf_dir:
-            print("model.run(): initializing NetCDF output")
+        # Can supply options ton initialize netcdf on .run but not with
+        # .advance. However, the first advance takes care of finding
+        # the input files.
+        if netcdf_dir or (
+            not self._netcdf_initialized
+            and self._default_nc_out_dir is not None
+        ):
             self.initialize_netcdf(netcdf_dir, output_vars=output_vars)
 
         if not n_time_steps:
@@ -820,6 +866,12 @@ class Model:
         """Advance the model in time."""
         if not self._found_input_files:
             self._find_input_files()
+
+        if (
+            not self._netcdf_initialized
+            and self._default_nc_out_dir is not None
+        ):
+            self.initialize_netcdf()
 
         self.control.advance()
         for cls in self.process_order:
@@ -844,44 +896,49 @@ class Model:
             self.processes[cls].finalize()
         return
 
-    def _parse_netcdf_control_options(self):
-        # defaults
-        output_dir = None
-        output_vars = None
-        separate_files = True
-        budget_args = None
+    def _reconcile_nc_args_w_control_opts(
+        self, output_dir, output_vars, separate_files
+    ):
+        # can treat the other args but they are not yet in the available opts
+        arg_opt_name_map = {
+            "output_dir": "netcdf_output_dir",
+            "output_vars": "netcdf_output_var_names",
+            "separate_files": "netcdf_output_separate_files",
+        }
 
-        if "netcdf_output_dir" in self.control.options.keys():
-            output_dir = self.control.options["netcdf_output_dir"]
-
-        if "netcdf_output_var_names" in self.control.options.keys():
-            output_vars = self.control.options["netcdf_output_var_names"]
-
-        if "netcdf_output_separate_files" in self.control.options.keys():
-            separate_files = self.control.options[
-                "netcdf_output_separate_files"
-            ]
-
-        if "netcdf_budget_args" in self.control.options.keys():
-            budget_args = self.control.options["netcdf_budget_args"]
-
-        any_netcdf_options = False
-        for kk in self.control.options.keys():
-            if "netcdf" in kk:
-                any_netcdf_options = True
-
-        if output_dir is None and any_netcdf_options:
-            raise RuntimeError(
-                "All netcdf options should be in control.options or passed "
-                "to Model.initialize_netcdf() but not mixed. You have not "
-                "supplied 'netcdf_output_dir' in control.options."
-            )
-
-        self._netcdf_opts = {
+        args = {
             "output_dir": output_dir,
             "output_vars": output_vars,
             "separate_files": separate_files,
-            "budget_args": budget_args,
         }
 
-        return
+        for vv in args.keys():
+            arg_val = args[vv]
+            opt_name = arg_opt_name_map[vv]
+            opts = self.control.options
+            if opt_name in opts.keys():
+                opt_val = opts[opt_name]
+            else:
+                opt_val = None
+
+            # set the arg vals to return
+
+            if opt_val is None and arg_val is None:
+                pass
+
+            elif opt_val is None:
+                pass
+
+            elif arg_val is None:
+                args[vv] = opt_val
+
+            else:
+                msg = (
+                    f"control.option '{opt_name}' being superceeded by "
+                    f"model.initialize_netcdf argument {vv}"
+                )
+                # TODO: should this edit control? and then model writes control
+                # at the end of run to the output dir?
+                warn(msg)
+
+        return args["output_dir"], args["output_vars"], args["separate_files"]

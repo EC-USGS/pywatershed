@@ -17,7 +17,7 @@ def params(domain):
 
 @pytest.fixture(scope="function")
 def control(domain):
-    return Control.load(domain["control_file"])
+    return Control.load_prms(domain["control_file"], warn_unused_options=False)
 
 
 def test_et(domain, control, params, tmp_path):

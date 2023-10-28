@@ -129,7 +129,11 @@ class MMRToMF6:
                 if key == "param":
                     setattr(self, "params", PrmsParameters.load(obj_file))
                 else:
-                    setattr(self, "control", Control.load(obj_file))
+                    setattr(
+                        self,
+                        "control",
+                        Control.load_prms(obj_file, warn_unused_options=False),
+                    )
 
             else:
                 setattr(self, f"{key}_file", None)

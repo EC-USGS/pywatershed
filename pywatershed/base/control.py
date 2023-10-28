@@ -1,13 +1,17 @@
-"""The control class."""
 import datetime
 import pathlib as pl
+from collections import UserDict
+from copy import deepcopy
+from typing import Union
+from warnings import warn
 
 import numpy as np
+import yaml
 
 from ..base import meta
 from ..constants import fileish
 from ..utils import ControlVariables
-from ..utils.path import assert_exists, path_rel_to_yml
+from ..utils.path import assert_exists, dict_pl_to_str, path_rel_to_yaml
 from ..utils.time_utils import (
     datetime_dowy,
     datetime_doy,
@@ -16,6 +20,54 @@ from ..utils.time_utils import (
     datetime_year,
 )
 from .accessor import Accessor
+
+# This is the list of control variables currently used by pywatershed
+# It is important to maintain this list to issue warnings about what
+# variables are unrecognized/ignored in legacy and non-legacy control
+# files
+# The following are duplicated in the Control docstring below and that
+# docstring needs updated whenever any of these change.
+pws_control_options_avail = [
+    "budget_type",
+    "calc_method",
+    # "restart",
+    "input_dir",
+    # "load_n_time_batches",
+    "netcdf_output_dir",
+    "netcdf_output_var_names",
+    "netcdf_output_separate_files",
+    "netcdf_budget_args",
+    "start_time",
+    "time_step_units",
+    "verbosity",
+]
+
+prms_legacy_options_avail = [
+    "end_time",
+    # "init_vars_from_file",
+    "initial_deltat",
+    "nhruOutBaseFileName",
+    "nhruOutVar_names",
+    "nsegmentOutBaseFileName",
+    "nsegmentOutVar_names",
+    "start_time",
+    "print_debug",
+]
+
+prms_to_pws_option_map = {
+    # "init_vars_from_file": "restart",
+    "initial_deltat": "time_step",
+    "nhruOutBaseFileName": "netcdf_output_dir",
+    "nhruOutVar_names": "netcdf_output_var_names",
+    "nsegmentOutBaseFileName": "netcdf_output_dir",
+    "nsegmentOutVar_names": "netcdf_output_var_names",
+    "print_debug": "verbosity",
+}
+
+assert (
+    len(set(prms_to_pws_option_map.keys()) - set(prms_legacy_options_avail))
+    == 0
+)
 
 
 class Control(Accessor):
@@ -26,7 +78,34 @@ class Control(Accessor):
             time
         end_time: the last integration time
         time_step: the length fo the time step
-        options: a dictionary of global Process options
+        options: a dictionary of global Process options.
+
+
+    Available pywatershed options:
+      * budget_type: one of [None, "warn", "error"]
+      * calc_method: one of ["numpy", "numba", "fortran"]
+      * input_dir: str or pathlib.path directory to search for input data
+      * netcdf_output_dir: str or pathlib.Path directory for output
+      * netcdf_output_var_names: a list of variable names to output
+      * netcdf_output_separate_files: bool if output is grouped by Process or if each variable is written to an individual file
+      * netcdf_budget_args:
+      * start_time: np.datetime64
+      * end_time: np.datetime64
+      * time_step_units: str containing single character code for np.timedelta64
+      * verbosity: 0-10
+
+    Available PRMS legacy options:
+      Either used as-is or mapped to pywatershed options as indicated below.
+
+      * start_time
+      * end_time
+      * initial_deltat: translates to "time_step"
+      * init_vars_from_file: translates to "restart"
+      * nhruOutBaseFileName: translates to "netcdf_output_dir"
+      * nhruOutVar_names: translates to a subset of "netcdf_output_var_names"
+      * nsegmentOutBaseFileName: translates to "netcdf_output_dir"
+      * nsegmentOutVar_names: translates to a subset of "netcdf_output_var_names"
+      * print_debug: translates to "verbosity"
 
     """
 
@@ -63,7 +142,7 @@ class Control(Accessor):
         self._itime_step = -1
 
         if options is None:
-            options = {}
+            options = OptsDict()
         self.options = options
         self.meta = meta
         # This will have the time dimension name
@@ -73,24 +152,125 @@ class Control(Accessor):
     def load(
         cls,
         control_file: fileish,
+        warn_unused_options: bool = True,
+    ) -> "Control":
+        msg = "Control.load will be deprecated for Control.load_prms"
+        warn(msg, PendingDeprecationWarning)
+        return Control.load_prms(
+            control_file, warn_unused_options=warn_unused_options
+        )
+
+    @classmethod
+    def load_prms(
+        cls,
+        control_file: fileish,
+        warn_unused_options: bool = True,
     ) -> "Control":
         """Initialize a control object from a PRMS control file
 
         Args:
             control_file: PRMS control file
+            warn_unused_options: bool if warnings are to be issued for unused
+                options from the PRMS control file. Recommended and True by
+                default. See below for a list of used/available legacy options.
 
         Returns:
             Time: Time object initialized from a PRMS control file
 
+
+
+        Available PRMS legacy options :
+            nhruOutVar_names: mapped to netcdf_output_var_names
+            nsegmentOutVar_names: mapped to netcdf_output_var_names
+
+
         """
         control = ControlVariables.load(control_file)
 
+        if warn_unused_options:
+            for vv in control.control.keys():
+                if vv not in prms_legacy_options_avail:
+                    msg = (
+                        f"Option '{vv}' in supplied control file is not used "
+                        "by pywatershed"
+                    )
+                    warn(msg, RuntimeWarning)
+
+        opts = control.control
+        opt_names = list(opts.keys())
+
+        for oo in opt_names:
+            if oo not in prms_legacy_options_avail:
+                del opts[oo]
+            if oo in prms_to_pws_option_map.keys():
+                pws_option_key = prms_to_pws_option_map[oo]
+                val = opts[oo]
+                del opts[oo]
+                if pws_option_key in opts.keys():
+                    # combine to a list with only unique entries
+                    # use value instead of list if only one value in list
+                    opts[pws_option_key] = list(
+                        set(opts[pws_option_key].tolist() + val.tolist())
+                    )
+                    if len(opts[pws_option_key]) == 1:
+                        opts[pws_option_key] = opts[pws_option_key][0]
+                else:
+                    opts[pws_option_key] = val
+
+        start_time = control.control["start_time"]
+        end_time = control.control["end_time"]
+        time_step = control.control["time_step"]
+        del control.control["start_time"]
+        del control.control["end_time"]
+        del control.control["time_step"]
+
         return cls(
-            control.control["start_time"],
-            control.control["end_time"],
-            control.control["initial_deltat"],
+            start_time=start_time,
+            end_time=end_time,
+            time_step=time_step,
             options=control.control,
         )
+
+    def _set_options(self, options: dict):
+        if not isinstance(options, (OptsDict, dict)):
+            raise ValueError("control.options must be a dictionary")
+        valid_options = OptsDict()
+        for key, val in options.items():
+            valid_options[key] = val
+
+        return valid_options
+
+    def __setitem__(self, key, value) -> None:
+        if key == "options":
+            value = self._set_options(value)
+
+        super().__setitem__(key, value)
+        return None
+
+    def __setattr__(self, name, value) -> None:
+        if name == "options":
+            value = self._set_options(value)
+
+        super().__setattr__(name, value)
+        return None
+
+    def __copy__(self):
+        cls = self.__class__
+        result = cls.__new__(cls)
+        result.__dict__.update(self.__dict__)
+        return result
+
+    def __deepcopy__(self, memo):
+        del self.meta
+        cls = self.__class__
+        result = cls.__new__(cls)
+        memo[id(self)] = result
+        for k, v in self.__dict__.items():
+            setattr(result, k, deepcopy(v, memo))
+
+        self.meta = meta
+        result.meta = meta
+        return result
 
     @property
     def current_time(self):
@@ -210,9 +390,74 @@ class Control(Accessor):
         )
         return
 
+    def __str__(self):
+        from pprint import pformat
+
+        return pformat(self.to_dict())
+
+    def __repr__(self):
+        # TODO: this is not really an object representation
+        return self.__str__()
+
+    def to_dict(self, deep_copy=True):
+        """Export a control object to a dictionary
+
+        Args:
+            None.
+        """
+
+        control_dict = {}
+
+        # I suppose this list could grow with time but these are
+        # the only non .option items in __dict__ required to reconstitute a
+        # Control instance
+        control_dict["start_time"] = str(self.start_time)
+        control_dict["end_time"] = str(self.end_time)
+        control_dict["time_step"] = str(self.time_step)[0:2]
+        control_dict["time_step_units"] = str(self.time_step)[3:4]
+
+        if deep_copy:
+            control = deepcopy(self)
+        else:
+            control = self
+
+        control_dict["options"] = {}
+        for kk, vv in control.options.items():
+            control_dict["options"][kk] = control.options[kk]
+
+        return control_dict
+
+    def to_yaml(self, yaml_file: Union[pl.Path, str]):
+        """Export to a yaml file
+
+        Note: This flattens .options to the top level of the yaml/dict
+            so that option keys are all at the same level as "start_time",
+            "end_time", "time_step", and "time_step_units". Using .from_yaml
+            will restore options to a nested dictionary.
+
+        Args:
+            yaml_file: pl.Path or str to designate the output path/file.
+        """
+        control_dict = dict_pl_to_str(self.to_dict())
+        opts = control_dict["options"]
+        for kk, vv in opts.items():
+            if kk in control_dict.keys():
+                msg = "Control option keys collide with non-option keys"
+                raise ValueError(msg)
+            control_dict[kk] = vv
+
+        del control_dict["options"]
+
+        yaml_file = pl.Path(yaml_file)
+        with open(yaml_file, "w") as file:
+            _ = yaml.dump(control_dict, file)
+
+        assert yaml_file.exists()
+        return None
+
     @staticmethod
-    def from_yml(yml_file):
-        """Instantate a Control object from a yml file
+    def from_yaml(yaml_file):
+        """Instantate a Control object from a yaml file
 
         Required key:value pairs:
             start_time: ISO8601 string for numpy datetime64,
@@ -245,7 +490,7 @@ class Control(Accessor):
         """
         import yaml
 
-        with pl.Path(yml_file).open("r") as file_stream:
+        with pl.Path(yaml_file).open("r") as file_stream:
             control_dict = yaml.load(file_stream, Loader=yaml.Loader)
 
         start_time = np.datetime64(control_dict["start_time"])
@@ -261,8 +506,8 @@ class Control(Accessor):
         paths_to_convert = ["input_dir"]
         for path_name in paths_to_convert:
             if path_name in control_dict.keys():
-                control_dict[path_name] = path_rel_to_yml(
-                    control_dict[path_name], yml_file
+                control_dict[path_name] = path_rel_to_yaml(
+                    control_dict[path_name], yaml_file
                 )
                 assert_exists(control_dict[path_name])
 
@@ -273,3 +518,12 @@ class Control(Accessor):
             options=control_dict,
         )
         return control
+
+
+class OptsDict(UserDict):
+    def __setitem__(self, key, value):
+        if key not in pws_control_options_avail:
+            msg = f"'{key}' is not an available control option"
+            raise NameError(msg)
+        super().__setitem__(key, value)
+        return None

@@ -464,7 +464,7 @@ class Process(Accessor):
             return
 
         if self._verbose:
-            print(f"initializing netcdf output for: {self.output_dir}")
+            print(f"initializing netcdf output for: {self.name}")
 
         self._netcdf_initialized = True
         self._netcdf_output_dir = pl.Path(output_dir)

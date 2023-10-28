@@ -73,6 +73,12 @@ class PRMSChannel(ConservativeProcess):
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
+        adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
+            the code edits the parameters and issues a warning. If "error" is
+            selected the the code issues warnings about all edited parameters
+            before raising the error to give you information. If "no" is
+            selected then no parameters are adjusted and there will be no
+            warnings or errors.
         verbose: Print extra information or not?
     """
 
@@ -86,6 +92,7 @@ class PRMSChannel(ConservativeProcess):
         gwres_flow_vol: adaptable,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["fortran", "numba", "numpy"] = None,
+        adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> None:
         super().__init__(
@@ -229,12 +236,19 @@ class PRMSChannel(ConservativeProcess):
         # inputs in place during run
         # should also be done before computing velocity
         mask_too_flat = self.seg_slope < 1e-7
-        if mask_too_flat.any():
-            msg = "seg_slope < 1.0e-7, set to 1.0e-4"
+        if mask_too_flat.any() and self._adjust_parameters != "no":
+            msg = (
+                "seg_slope < 1.0e-7, set to 1.0e-4 at indices:"
+                f"{np.where(mask_too_flat)[0]}"
+            )
             warn(msg, UserWarning)
-        self.seg_slope = np.where(
-            self.seg_slope < 1e-7, 1.0e-4, self.seg_slope
-        )  # not in prms6
+            if self._adjust_parameters == "error":
+                raise ValueError(
+                    "seg_slope parameter values were edited and an error was "
+                    "requested. See warnings for additional details."
+                )
+            # not in prms6
+            self.seg_slope = np.where(mask_too_flat, 1.0e-4, self.seg_slope)
 
         # initialize Kcoef to 24.0 for segments with zero velocities
         # this is different from PRMS, which relied on divide by zero resulting

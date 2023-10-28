@@ -81,9 +81,10 @@ def enforce_scheduler(test_dir):
     )
     if any(glob_match):
         msg = (
-            f"Domain '{test_dir}' must be scheduled (use --force to override)"
+            f"Skipping domain '{test_dir}' which must be scheduled or use "
+            "--force to override skip"
         )
-        warn(msg, RuntimeWarning)
+        warn(msg, UserWarning)
         return True
 
     return False
@@ -104,8 +105,8 @@ def collect_simulations(
 
         # optionally enforce scheduler
         if not force:
-            schedule = enforce_scheduler(test_dir)
-            if schedule:
+            skip = enforce_scheduler(test_dir)
+            if skip:
                 continue
 
         # if control file is found, add simulation

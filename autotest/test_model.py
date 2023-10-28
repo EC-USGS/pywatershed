@@ -35,19 +35,21 @@ test_models = {
 }
 
 
-invoke_style = ("prms", "model_dict", "model_dict_from_yml")
+invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
 
 
 @pytest.fixture(scope="function")
 def control(domain):
-    control = Control.load(domain["control_file"])
-    control.options["verbose"] = 10
+    control = Control.load_prms(
+        domain["control_file"], warn_unused_options=False
+    )
+    control.options["verbosity"] = 10
     control.options["budget_type"] = None
     if fortran_avail:
         control.options["calc_method"] = "fortran"
     else:
         control.options["calc_method"] = "numba"
-    control.options["load_n_time_batches"] = 1
+    del control.options["netcdf_output_var_names"]
     return control
 
 
@@ -110,9 +112,9 @@ def model_args(domain, control, discretization, request):
             "parameters": None,
         }
 
-    elif invoke_style == "model_dict_from_yml":
-        yml_file = domain["dir"] / "nhm_model.yml"
-        model_dict = Model.model_dict_from_yml(yml_file)
+    elif invoke_style == "model_dict_from_yaml":
+        yaml_file = domain["dir"] / "nhm_model.yml"
+        model_dict = Model.model_dict_from_yaml(yaml_file)
 
         args = {
             "process_list_or_model_dict": model_dict,
@@ -147,12 +149,18 @@ def test_model(domain, model_args, tmp_path):
         control = model_args["control"]
 
     control.options["input_dir"] = input_dir
+    model_out_dir = tmp_path / "output"
+    control.options["netcdf_output_dir"] = model_out_dir
 
     if control.options["calc_method"] == "fortran":
         with pytest.warns(UserWarning):
-            model = Model(**model_args)
+            model = Model(**model_args, write_control=model_out_dir)
     else:
-        model = Model(**model_args)
+        model = Model(**model_args, write_control=model_out_dir)
+
+    # check that control yaml file was written
+    control_yaml_file = sorted(model_out_dir.glob("*model_control.yaml"))
+    assert len(control_yaml_file) == 1
 
     # Test passing of control calc_method option
     if fortran_avail:

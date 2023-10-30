@@ -1488,6 +1488,14 @@
         Basin_snowdepth = Basin_snowdepth + Pk_depth(i)*DBLE( Hru_area(i) )
         Basin_tcal = Basin_tcal + DBLE( Tcal(i)*Hru_area(i) )
 
+        ! Enforce consistency between prognostic and diagnostic vars when for these small values
+        ! causes issues with prms_canopy
+        if (pkwater_equiv(i) < DNEARZERO) then
+            pkwater_equiv(i) = 0.0D0
+            pk_ice(i) = 0.0D0
+            freeh2o(i) = 0.0D0
+        end if
+
       ENDDO
 
       ! Area normalize basin totals

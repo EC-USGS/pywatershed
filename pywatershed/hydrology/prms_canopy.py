@@ -20,7 +20,7 @@ except ImportError:
 
 # set constants (may need .value for enum to be used in > comparisons)
 NEARZERO = 1.0e-6
-DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
+DNEARZERO = np.finfo(np.float64).eps  # EPSILON(0.0D0)
 BARESOIL = CovType.BARESOIL.value
 GRASSES = CovType.GRASSES.value
 LAND = HruType.LAND.value
@@ -38,7 +38,8 @@ class PRMSCanopy(ConservativeProcess):
         control: a Control object
         discretization: a discretization of class Parameters
         parameters: a parameter object of class Parameters
-        pkwater_ante: Previous snowpack water equivalent on each HRU
+        pk_ice_prev: Previous snowpack ice on each HRU
+        freeh2o_prev: Previous snowpack free water on each HRU
         transp_on: Flag indicating whether transpiration is occurring
             (0=no;1=yes)
         hru_ppt: Precipitation on each HRU
@@ -56,7 +57,8 @@ class PRMSCanopy(ConservativeProcess):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        pkwater_ante: adaptable,
+        pk_ice_prev: adaptable,
+        freeh2o_prev: adaptable,
         transp_on: adaptable,
         hru_ppt: adaptable,
         hru_rain: adaptable,
@@ -103,7 +105,8 @@ class PRMSCanopy(ConservativeProcess):
     @staticmethod
     def get_inputs() -> tuple:
         return (
-            "pkwater_ante",
+            "pk_ice_prev",
+            "freeh2o_prev",
             "transp_on",
             "hru_ppt",
             "hru_rain",
@@ -229,7 +232,8 @@ class PRMSCanopy(ConservativeProcess):
             #         nb.float64[:],  # net_ppt
             #         nb.float64[:],  # net_rain
             #         nb.float64[:],  # net_snow
-            #         nb.float64[:],  # self.pkwater_ante
+            #         nb.float64[:],  # self.pk_ice_prev
+            #         nb.float64[:],  # self.freeh2o_prev
             #         nb.float64[:],  # potet
             #         nb.float64[:],  # potet_sublim
             #         nb.float64[:],  # snow_intcp
@@ -316,7 +320,8 @@ class PRMSCanopy(ConservativeProcess):
                 net_ppt=self.net_ppt,
                 net_rain=self.net_rain,
                 net_snow=self.net_snow,
-                pkwater_ante=self.pkwater_ante,
+                pk_ice_prev=self.pk_ice_prev,
+                freeh2o_prev=self.freeh2o_prev,
                 potet=self.potet,
                 potet_sublim=self.potet_sublim,
                 snow_intcp=self.snow_intcp,
@@ -366,7 +371,8 @@ class PRMSCanopy(ConservativeProcess):
                 self.net_ppt,
                 self.net_rain,
                 self.net_snow,
-                self.pkwater_ante,
+                self.pk_ice_prev,
+                self.freeh2o_prev,
                 self.potet,
                 self.potet_sublim,
                 self.snow_intcp,
@@ -412,7 +418,8 @@ class PRMSCanopy(ConservativeProcess):
         net_ppt,
         net_rain,
         net_snow,
-        pkwater_ante,
+        pk_ice_prev,
+        freeh2o_prev,
         potet,
         potet_sublim,
         snow_intcp,
@@ -513,9 +520,8 @@ class PRMSCanopy(ConservativeProcess):
                             # can intercept rain.
                             # IF ( pkwater_ante(i)<DNEARZERO .AND. netsnow<NEARZERO ) THEN
                             if (
-                                pkwater_ante[i] < DNEARZERO
-                                and netsnow < NEARZERO
-                            ):
+                                pk_ice_prev[i] + freeh2o_prev[i]
+                            ) < DNEARZERO and netsnow < NEARZERO:
                                 intcpstor, netrain = intercept(
                                     hru_rain[i],
                                     stor_max_rain,

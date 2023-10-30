@@ -23,7 +23,8 @@ module canopy
         net_ppt, &  ! in
         net_rain, &  ! in
         net_snow, &  ! in
-        pkwater_ante, &  ! in
+        pk_ice_prev, &  ! in
+        freeh2o_prev, &  ! in
         potet, &  ! in
         potet_sublim, &  ! in
         snow_intcp, &  ! in
@@ -71,7 +72,7 @@ module canopy
         real(kind=8), intent(in), dimension(nhru) :: &
             covden_sum, covden_win, hru_intcpstor, hru_intcpevap, hru_ppt, &
             hru_rain, hru_snow, intcp_changeover, intcp_evap, intcp_stor,&
-            net_ppt, net_rain, net_snow, pkwater_ante, potet, &
+            net_ppt, net_rain, net_snow, pk_ice_prev, freeh2o_prev, potet, &
             potet_sublim, snow_intcp, srain_intcp, transp_on, wrain_intcp
 
         ! Output vectors
@@ -178,7 +179,7 @@ module canopy
                         else if (cov_type(ii) == GRASSES) then
                             ! if there is no snowpack and no snowfall, then apparently,
                             ! grasses can intercept rain.
-                            if ((pkwater_ante(ii) < DNEARZERO) &
+                            if ((pk_ice_prev(ii) + freeh2o_prev(ii) < DNEARZERO) &
                                 .and. (netsnow < NEARZERO)) then
                                 intcpstor_in = intcpstor
                                 netrain_in = netrain

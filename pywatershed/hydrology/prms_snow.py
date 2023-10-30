@@ -1058,6 +1058,12 @@ class PRMSSnow(ConservativeProcess):
 
         # << end of space loop and previous if
 
+        mask_pkwater_lt_eps = pkwater_equiv < epsilon64
+        if mask_pkwater_lt_eps.any():
+            pkwater_equiv = np.where(mask_pkwater_lt_eps, zero, pkwater_equiv)
+            pk_ice = np.where(mask_pkwater_lt_eps, zero, pk_ice)
+            freeh2o = np.where(mask_pkwater_lt_eps, zero, freeh2o)
+
         freeh2o_change[:] = freeh2o - freeh2o_prev
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
@@ -3085,8 +3091,8 @@ class PRMSSnow(ConservativeProcess):
             snow_evap = pkwater_equiv  # [inches]
             pkwater_equiv = zero  # [inches]
             pk_ice = zero  # [inches]
-            pk_def = zero  # [cal/cm^2]
             freeh2o = zero  # [inches]
+            pk_def = zero  # [cal/cm^2]
             pk_temp = zero  # [degrees C]
 
         else:
@@ -3175,6 +3181,8 @@ class PRMSSnow(ConservativeProcess):
     @staticmethod
     def set_snow_zero():
         pkwater_equiv = zero
+        pk_ice = zero
+        freeh2o = zero
         pk_depth = zero
         pss = zero
         snsv = zero
@@ -3186,8 +3194,6 @@ class PRMSSnow(ConservativeProcess):
         snowcov_area = zero
         pk_def = zero
         pk_temp = zero
-        pk_ice = zero
-        freeh2o = zero
         snowcov_areasv = zero
         ai = zero
         frac_swe = zero

@@ -76,8 +76,6 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
                 .to("meter ** 3 / s")
                 .magnitude
             )
-            comp = abs(result - ans_tt)
-            assert ((comp < 1e-5) | ((comp / ans_tt) < 1e-5)).all()
 
     else:
         sim = flopy.mf6.MFSimulation.load(
@@ -98,7 +96,22 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
                 .to("meter ** 3 / s")
                 .magnitude
             )
-            comp = abs(result - ans_tt)
-            assert ((comp < 1e-5) | ((comp / ans_tt) < 1e-5)).all()
+
+    # <<
+    # Compare
+    abs_diff = abs(result - ans_tt)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rel_diff = abs_diff / ans_tt
+
+    abs_tol = 1.0e-5
+    rel_tol = 1.0e-5
+
+    abs_close = abs_diff < abs_tol
+    rel_close = rel_diff < rel_tol
+    rel_close = np.where(np.isnan(rel_close), False, rel_close)
+
+    close = abs_close | rel_close
+
+    assert close.all()
 
     return

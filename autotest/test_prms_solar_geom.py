@@ -18,7 +18,7 @@ params = ("params_sep", "params_one")
 
 @pytest.fixture(scope="function")
 def control(domain):
-    return Control.load(domain["control_file"])
+    return Control.load_prms(domain["control_file"], warn_unused_options=False)
 
 
 @pytest.fixture(scope="function")

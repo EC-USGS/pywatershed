@@ -210,7 +210,7 @@ def diagnose_final_vars_to_nc(
         cond1 = data["net_ppt"] > zero
         cond2 = data["pptmix_nopack"] != 0
         cond3 = data["snowmelt"] < nearzero
-        cond4 = data["pkwater_equiv"] < epsilon32
+        cond4 = data["pkwater_equiv"] < epsilon64
         cond5 = data["snow_evap"] < nearzero
         cond6 = data["net_snow"] < nearzero
         cond7 = data["snow_evap"] > -1 * (

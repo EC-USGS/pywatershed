@@ -311,62 +311,78 @@ class PRMSSnow(ConservativeProcess):
 
         if True:
             # For now there is no restart capability. we'll use the following
-            # line when there is
+            # line above when there is
             # if self.control.options["restart"] in [0, 2, 3]:
 
             # The super().__init__ already set_initial_conditions using its
             # set_initial_conditions
             # Below Im just following PRMS6, will reconcile later with the
             # super (may be redundant).
-            vars_init = [
-                "albedo",
-                "iasw",
-                "int_alb",
-                "iso",
-                "lso",
-                "lst",
-                "mso",
-                "pk_def",
-                "pk_temp",
-                "pksv",
-                "salb",
-                "scrv",
-                "slst",
-                "snowcov_areasv",
-                "snsv",
-            ]
-            for vv in vars_init:
-                self._initialize_var(vv)
+            # vars_init = [
+            #     "albedo",
+            #     "iasw",
+            #     "int_alb",
+            #     "iso",
+            #     "lso",
+            #     "lst",
+            #     "mso",
+            #     "pk_def",
+            #     "pk_temp",
+            #     "pksv",
+            #     "salb",
+            #     "scrv",
+            #     "slst",
+            #     "snowcov_areasv",
+            #     "snsv",
+            # ]
+            # for vv in vars_init:
+            #     self._initialize_var(vv)
 
-            pkweq_gt_zero = self.pkwater_equiv > zero
-            wh_pkweq_gt_zero = np.where(pkweq_gt_zero)
-            self.pk_depth[wh_pkweq_gt_zero] = (
-                self.pkwater_equiv[wh_pkweq_gt_zero]
-                * self.deninv[wh_pkweq_gt_zero]
-            )
-            self.pk_den[wh_pkweq_gt_zero] = (
-                self.pkwater_equiv[wh_pkweq_gt_zero]
-                / self.pk_depth[wh_pkweq_gt_zero]
-            )
-            self.pk_ice[wh_pkweq_gt_zero] = self.pkwater_equiv[
-                wh_pkweq_gt_zero
-            ]
-            self.freeh2o[wh_pkweq_gt_zero] = (
-                self.pk_ice[wh_pkweq_gt_zero]
-                * self.freeh2o_cap[wh_pkweq_gt_zero]
-            )
-            self.ai[wh_pkweq_gt_zero] = self.pkwater_equiv[
-                wh_pkweq_gt_zero
-            ]  # inches
+            mask_pkweq_gt_zero = self.pkwater_equiv > zero
 
-            ai_gt_snarea_thresh = self.ai > self.snarea_thresh
-            wh_pkweq_gt_zero_and_ai_gt_snth = np.where(
-                pkweq_gt_zero & ai_gt_snarea_thresh
+            self.pk_depth = np.where(
+                mask_pkweq_gt_zero,
+                self.pkwater_equiv * self.deninv,
+                self.pk_depth,
             )
-            self.ai[wh_pkweq_gt_zero_and_ai_gt_snth] = self.snarea_thresh[
-                wh_pkweq_gt_zero_and_ai_gt_snth
-            ]
 
+            self.pk_den = np.where(
+                mask_pkweq_gt_zero,
+                self.pkwater_equiv / self.pk_depth,
+                self.pk_den,
+            )
+
+            self.pk_ice = np.where(
+                mask_pkweq_gt_zero, self.pkwater_equiv, self.pk_ice
+            )
+
+            self.freeh2o = np.where(
+                mask_pkweq_gt_zero,
+                self.pk_ice * self.freeh2o_cap,
+                self.freeh2o,
+            )
+
+            self.ai = np.where(
+                mask_pkweq_gt_zero,
+                self.pkwater_equiv,
+                self.ai,
+            )
+
+            mask_ai_gt_snarea_thresh = self.ai > self.snarea_thresh
+            self.ai = np.where(
+                mask_pkweq_gt_zero & mask_ai_gt_snarea_thresh,
+                self.snarea_thresh,
+                self.ai,
+            )
+
+            mask_ai_gt_zero = self.ai > epsilon64
+            self.frac_swe = np.where(
+                mask_ai_gt_zero,
+                np.minimum(self.pkwater_equiv / self.ai, 1),
+                self.frac_swe,
+            )
+
+            wh_pkweq_gt_zero = np.where(mask_pkweq_gt_zero)
             for ww in range(len(wh_pkweq_gt_zero[0])):
                 self.snowcov_area[wh_pkweq_gt_zero[ww]] = self.sca_deplcrv(
                     self.snarea_curve_2d[
@@ -1075,7 +1091,7 @@ class PRMSSnow(ConservativeProcess):
         cond1 = net_ppt > zero
         cond2 = pptmix_nopack != 0
         cond3 = snowmelt < nearzero
-        cond4 = pkwater_equiv < epsilon32
+        cond4 = pkwater_equiv < epsilon64
         cond5 = snow_evap < nearzero
         cond6 = net_snow < nearzero
         cond7 = snow_evap > (-1 * (pk_ice_change + freeh2o_change))

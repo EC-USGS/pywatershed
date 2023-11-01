@@ -1439,7 +1439,7 @@
 
 
 ! LAST check to clear out all arrays if packwater is gone
-        IF ( Pkwater_equiv(i)<=0.0D0 ) THEN
+        IF ( Pkwater_equiv(i) <= DNEARZERO ) THEN
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv(i)<-DNEARZERO ) &
      &           PRINT *, 'Snowpack problem, pkwater_equiv negative, HRU:', i, ' value:', Pkwater_equiv(i)
@@ -1458,8 +1458,8 @@
           Snowcov_area(i) = 0.0
           Pk_def(i) = 0.0
           Pk_temp(i) = 0.0
-          Pk_ice(i) = 0.0
-          Freeh2o(i) = 0.0
+          Pk_ice(i) = 0.0D0
+          Freeh2o(i) = 0.0D0
           Snowcov_areasv(i) = 0.0 ! rsr, not in original code
           Ai(i) = 0.0D0
           Frac_swe(i) = 0.0
@@ -1487,14 +1487,6 @@
         Basin_pk_precip = Basin_pk_precip + DBLE( Pk_precip(i)*Hru_area(i) )
         Basin_snowdepth = Basin_snowdepth + Pk_depth(i)*DBLE( Hru_area(i) )
         Basin_tcal = Basin_tcal + DBLE( Tcal(i)*Hru_area(i) )
-
-        ! Enforce consistency between prognostic and diagnostic vars when for these small values
-        ! causes issues with prms_canopy
-        if (pkwater_equiv(i) < DNEARZERO) then
-            pkwater_equiv(i) = 0.0D0
-            pk_ice(i) = 0.0D0
-            freeh2o(i) = 0.0D0
-        end if
 
       ENDDO
 

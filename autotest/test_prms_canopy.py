@@ -11,7 +11,7 @@ from utils_compare import compare_in_memory, compare_netcdfs
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = True
 do_compare_in_memory = False
-rtol = atol = 1e-6
+rtol = atol = 1e-12
 
 calc_methods = ("numpy", "numba", "fortran")
 params = ("params_sep", "params_one")

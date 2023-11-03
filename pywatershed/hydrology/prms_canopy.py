@@ -7,7 +7,15 @@ from numba import prange
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..constants import CovType, HruType, nan, numba_num_threads, zero
+from ..constants import (
+    CovType,
+    HruType,
+    nan,
+    numba_num_threads,
+    zero,
+    dnearzero,
+    nearzero,
+)
 from ..parameters import Parameters
 
 try:
@@ -19,8 +27,6 @@ except ImportError:
     has_prmscanopy_f = False
 
 # set constants (may need .value for enum to be used in > comparisons)
-NEARZERO = 1.0e-6
-DNEARZERO = np.finfo(np.float64).eps  # EPSILON(0.0D0)
 BARESOIL = CovType.BARESOIL.value
 GRASSES = CovType.GRASSES.value
 LAND = HruType.LAND.value
@@ -242,8 +248,8 @@ class PRMSCanopy(ConservativeProcess):
             #         nb.float64[:],  # wrain_intcp
             #         nb.float64,  # np.float64(time_length),
             #         nb.int64[:],  # self._hru_type
-            #         nb.float64,  # NEARZERO
-            #         nb.float64,  # DNEARZERO,
+            #         nb.float64,  # nearzero
+            #         nb.float64,  # dnearzero,
             #         nb.int32,  # BARESOIL,
             #         nb.int32,  # GRASSES,
             #         nb.int32,  # LAND,
@@ -330,8 +336,8 @@ class PRMSCanopy(ConservativeProcess):
                 wrain_intcp=self.wrain_intcp,
                 time_length=time_length,
                 hru_type=self._hru_type,
-                NEARZERO=np.float64(NEARZERO),
-                DNEARZERO=np.float64(DNEARZERO),
+                nearzero=nearzero,
+                dnearzero=dnearzero,
                 BARESOIL=np.int32(BARESOIL),
                 GRASSES=np.int32(GRASSES),
                 LAND=np.int32(LAND),
@@ -381,8 +387,8 @@ class PRMSCanopy(ConservativeProcess):
                 self.wrain_intcp,
                 time_length,
                 self._hru_type,
-                np.float64(NEARZERO),
-                np.float64(DNEARZERO),
+                nearzero,
+                dnearzero,
                 np.int32(BARESOIL),
                 np.int32(GRASSES),
                 np.int32(LAND),
@@ -428,8 +434,8 @@ class PRMSCanopy(ConservativeProcess):
         wrain_intcp,
         time_length,
         hru_type,
-        NEARZERO,
-        DNEARZERO,
+        nearzero,
+        dnearzero,
         BARESOIL,
         GRASSES,
         LAND,
@@ -518,10 +524,10 @@ class PRMSCanopy(ConservativeProcess):
                         elif cov_type[i] == GRASSES:
                             # if there is no snowpack and no snowfall, then apparently, grasses
                             # can intercept rain.
-                            # IF ( pkwater_ante(i)<DNEARZERO .AND. netsnow<NEARZERO ) THEN
+                            # IF ( pkwater_ante(i)<dnearzero .AND. netsnow<nearzero ) THEN
                             if (
                                 pk_ice_prev[i] + freeh2o_prev[i]
-                            ) < DNEARZERO and netsnow < NEARZERO:
+                            ) < dnearzero and netsnow < nearzero:
                                 intcpstor, netrain = intercept(
                                     hru_rain[i],
                                     stor_max_rain,
@@ -541,7 +547,7 @@ class PRMSCanopy(ConservativeProcess):
                             intcpstor,
                             netsnow,
                         )
-                        if netsnow < NEARZERO:
+                        if netsnow < nearzero:
                             netrain = netrain + netsnow
                             netsnow = 0.0
                             # todo: deal with newsnow and pptmix?
@@ -554,7 +560,7 @@ class PRMSCanopy(ConservativeProcess):
 
             # if precipitation assume no evaporation or sublimation
             if intcpstor > 0.0:
-                if hru_ppt[i] < NEARZERO:
+                if hru_ppt[i] < nearzero:
                     epan_coef = 1.0
                     evrn = potet[i] / epan_coef
                     evsn = potet[i] * potet_sublim[i]

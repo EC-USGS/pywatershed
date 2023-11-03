@@ -1,7 +1,7 @@
 import pathlib as pl
 
 import pywatershed as pws
-from pywatershed.constants import epsilon32, nan, zero
+from pywatershed.constants import dnearzero, nearzero, nan, zero
 
 import numpy as np
 import xarray as xr
@@ -205,12 +205,10 @@ def diagnose_final_vars_to_nc(
             data_file = data_dir / f"{vv}.nc"
             data[vv] = xr.open_dataarray(data_file)
 
-        nearzero = 1.0e-6
-
         cond1 = data["net_ppt"] > zero
         cond2 = data["pptmix_nopack"] != 0
         cond3 = data["snowmelt"] < nearzero
-        cond4 = data["pkwater_equiv"] < epsilon64
+        cond4 = data["pkwater_equiv"] < dnearzero
         cond5 = data["snow_evap"] < nearzero
         cond6 = data["net_snow"] < nearzero
         cond7 = data["snow_evap"] > -1 * (

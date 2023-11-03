@@ -9,16 +9,13 @@ from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import (
     HruType,
-    epsilon32,
-    epsilon64,
+    dnearzero,
+    nearzero,
     nan,
     numba_num_threads,
     zero,
 )
 from ..parameters import Parameters
-
-NEARZERO = 1.0e-6
-DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
 
 RAIN = 0
 SNOW = 1
@@ -329,7 +326,7 @@ class PRMSRunoff(ConservativeProcess):
                     open_vol_r = (
                         self.dprst_vol_open[i] / self.dprst_vol_open_max[i]
                     )
-                    if open_vol_r < NEARZERO:
+                    if open_vol_r < nearzero:
                         frac_op_ar = 0.0
                     elif open_vol_r > 1.0:
                         frac_op_ar = 1.0
@@ -348,7 +345,7 @@ class PRMSRunoff(ConservativeProcess):
                     clos_vol_r = (
                         self.dprst_vol_clos[i] / self.dprst_vol_clos_max[i]
                     )
-                    if clos_vol_r < NEARZERO:
+                    if clos_vol_r < nearzero:
                         frac_cl_ar = 0.0
                     elif clos_vol_r > 1.0:
                         frac_cl_ar = 1.0
@@ -890,10 +887,10 @@ class PRMSRunoff(ConservativeProcess):
         # procedure is used.  If there is no snowpack and no precip,
         # then check for melt from last of snowpack.  If rain/snow mix
         # with no antecedent snowpack, compute snowmelt portion of runoff.
-        cond3 = snowmelt < NEARZERO
-        cond4 = pkwater_equiv < epsilon64
-        cond1 = net_ppt > zero
-        cond6 = net_snow < NEARZERO
+        # cond3 = snowmelt < nearzero
+        cond4 = pkwater_equiv < dnearzero
+        # cond1 = net_ppt > zero
+        cond6 = net_snow < nearzero
 
         if snowmelt > 0.0:
             # if not cond3:  # this results in less precision accuracy
@@ -902,7 +899,7 @@ class PRMSRunoff(ConservativeProcess):
             avail_water = avail_water + snowmelt
             infil = infil + snowmelt
             if hru_flag == 1:
-                if (pkwater_equiv > 0.0) or (net_rain < NEARZERO):
+                if (pkwater_equiv > 0.0) or (net_rain < nearzero):
                     # Pervious area computations
                     infil, srp = check_capacity(
                         soil_moist_prev,
@@ -929,11 +926,11 @@ class PRMSRunoff(ConservativeProcess):
                         srp,
                     )
 
-        # elif pkwater_equiv < DNEARZERO:
+        # elif pkwater_equiv < Dnearzero:
         elif cond4:
             # If no snowmelt and no snowpack but there was net snow then
             # snowpack was small and was lost to sublimation.
-            # if net_snow < NEARZERO and net_rain > 0.0:
+            # if net_snow < nearzero and net_rain > 0.0:
             if cond6 and through_rain > 0.0:
                 ##  if net_snow < 1.0e-6 and net_rain > 0.0:
                 # cond3 & cond4 & cond6 & cond1
@@ -1038,15 +1035,15 @@ class PRMSRunoff(ConservativeProcess):
         # of snowpack.
         # If rain/snow mix with no antecedent snowpack, compute snowmelt
         # portion of runoff.
-        if snowmelt:
+        if snowmelt > zero:
             inflow = inflow + snowmelt
 
         # !******There was no snowmelt but a snowpack may exist.  If there is
         # !******no snowpack then check for rain on a snowfree HRU.
-        elif pkwater_equiv < DNEARZERO:
+        elif pkwater_equiv < dnearzero:
             # !      If no snowmelt and no snowpack but there was net snow then
             # !      snowpack was small and was lost to sublimation.
-            if net_snow < NEARZERO and net_rain > 0.0:
+            if net_snow < nearzero and net_rain > 0.0:
                 inflow = inflow + net_rain
 
         dprst_add_water_use = OFF
@@ -1080,7 +1077,7 @@ class PRMSRunoff(ConservativeProcess):
             srp = srp - dprst_srp / perv_frac
             if srp < zero:
                 srp = zero
-                # if srp < -NEARZERO: this should raise an error
+                # if srp < -nearzero: this should raise an error
 
         if sri > 0.0:
             tmp = sri * imperv_frac * sro_to_dprst_imperv * hru_area
@@ -1094,8 +1091,8 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_vol_clos = dprst_vol_clos + dprst_sri_clos
             sri = sri - dprst_sri / imperv_frac
             if sri < 0.0:
-                if sri < -NEARZERO:
-                    sri = 0.0
+                # if sri < -nearzero: warn??
+                sri = 0.0
 
         # <<<
         dprst_insroff_hru = dprst_srp + dprst_sri
@@ -1103,7 +1100,7 @@ class PRMSRunoff(ConservativeProcess):
         dprst_area_open = 0.0
         if dprst_vol_open > 0.0:
             open_vol_r = dprst_vol_open / dprst_vol_open_max
-            if open_vol_r < NEARZERO:
+            if open_vol_r < nearzero:
                 frac_op_ar = 0.0
             elif open_vol_r > 1.0:
                 frac_op_ar = 1.0
@@ -1117,7 +1114,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_area_clos = 0.0
             if dprst_vol_clos > 0.0:
                 clos_vol_r = dprst_vol_clos / dprst_vol_clos_max
-                if clos_vol_r < NEARZERO:
+                if clos_vol_r < nearzero:
                     frac_cl_ar = 0.0
                 elif clos_vol_r > 1.0:
                     frac_cl_ar = 1.0
@@ -1126,8 +1123,8 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_area_clos = dprst_area_clos_max * frac_cl_ar
                 if dprst_area_clos > dprst_area_clos_max:
                     dprst_area_clos = dprst_area_clos_max
-                if dprst_area_clos < NEARZERO:
-                    dprst_area_clos = 0.0
+                # if dprst_area_clos < nearzero:
+                #     dprst_area_clos = 0.0
 
         #
         # evaporate water from depressions based on snowcov_area
@@ -1186,7 +1183,7 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_vol_open = 0.0
 
         if dprst_area_clos_max > 0.0:
-            if dprst_area_clos > NEARZERO:
+            if dprst_area_clos > nearzero:
                 seep_clos = dprst_vol_clos * dprst_seep_rate_clos
                 dprst_vol_clos = dprst_vol_clos - seep_clos
                 if dprst_vol_clos < 0.0:

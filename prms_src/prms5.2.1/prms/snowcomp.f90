@@ -2625,9 +2625,9 @@
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv<-DNEARZERO ) &
      &           PRINT *, 'snowpack issue, negative pkwater_equiv in snowevap', Pkwater_equiv
-            Pkwater_equiv = 0.0D0  ! JLM: this is INSIDE a debug statement? will change the answers
             !  is this in the originial source
           ENDIF
+          Pkwater_equiv = 0.0D0  ! JLM: this is INSIDE a debug statement? will change the answers
         ENDIF
 
         Snow_evap = 0.0

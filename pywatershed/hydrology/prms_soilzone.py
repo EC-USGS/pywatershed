@@ -12,9 +12,9 @@ from ..constants import (
     HruType,
     SoilType,
     nan,
+    nearzero,
     numba_num_threads,
     one,
-    nearzero,
     zero,
 )
 from ..parameters import Parameters
@@ -88,6 +88,9 @@ class PRMSSoilzone(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
+
+        # This uses options
+        self._initialize_soilzone_data()
 
         self._set_budget()
         self._init_calc_method()
@@ -214,6 +217,10 @@ class PRMSSoilzone(ConservativeProcess):
         }
 
     def _set_initial_conditions(self):
+        # this is called in the super before options are set on self
+        pass
+
+    def _initialize_soilzone_data(self):
         # Derived parameters
         # JLM: is this awkward here?
         # JLM: it's definitely awkward to edit a parameter. maybe

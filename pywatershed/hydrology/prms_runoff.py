@@ -10,8 +10,8 @@ from ..base.control import Control
 from ..constants import (
     HruType,
     dnearzero,
-    nearzero,
     nan,
+    nearzero,
     numba_num_threads,
     zero,
 )

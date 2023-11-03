@@ -10,11 +10,11 @@ from ..base.control import Control
 from ..constants import (
     CovType,
     HruType,
+    dnearzero,
     nan,
+    nearzero,
     numba_num_threads,
     zero,
-    dnearzero,
-    nearzero,
 )
 from ..parameters import Parameters
 

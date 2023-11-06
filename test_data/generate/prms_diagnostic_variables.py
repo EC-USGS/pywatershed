@@ -1,7 +1,7 @@
 import pathlib as pl
 
 import pywatershed as pws
-from pywatershed.constants import epsilon32, nan, zero
+from pywatershed.constants import dnearzero, nearzero, nan, zero
 
 import numpy as np
 import xarray as xr
@@ -193,6 +193,8 @@ def diagnose_final_vars_to_nc(
             "pptmix_nopack",
             "snowmelt",
             "pkwater_equiv",
+            "pk_ice_change",
+            "freeh2o_change",
             "snow_evap",
             "net_snow",
             "net_rain",
@@ -203,14 +205,15 @@ def diagnose_final_vars_to_nc(
             data_file = data_dir / f"{vv}.nc"
             data[vv] = xr.open_dataarray(data_file)
 
-        nearzero = 1.0e-6
-
         cond1 = data["net_ppt"] > zero
         cond2 = data["pptmix_nopack"] != 0
         cond3 = data["snowmelt"] < nearzero
-        cond4 = data["pkwater_equiv"] < epsilon32
+        cond4 = data["pkwater_equiv"] < dnearzero
         cond5 = data["snow_evap"] < nearzero
         cond6 = data["net_snow"] < nearzero
+        cond7 = data["snow_evap"] > -1 * (
+            data["pk_ice_change"] + data["freeh2o_change"]
+        )
 
         through_rain = data["net_rain"] * zero
         # these are in reverse order
@@ -222,6 +225,16 @@ def diagnose_final_vars_to_nc(
         )
         through_rain[:] = np.where(
             cond1 & cond2, data["net_rain"], through_rain
+        )
+
+        # This condition does not exist in PRMS as far as I can tell
+        # but is necessary for mass balance
+        # This is when it rains on snow (no new snow) and then snow_evap
+        # consumes the pack during the timestep.
+        through_rain[:] = np.where(
+            cond1 & cond6 & cond7,
+            zero,
+            through_rain,
         )
 
         through_rain.to_dataset(name="through_rain").to_netcdf(out_file)

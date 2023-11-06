@@ -8,12 +8,10 @@ from pywatershed.base.process import Process
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.control import Control
-from ..constants import epsilon32, nan, one, zero
+from ..constants import dnearzero, nan, one, zero
 from ..parameters import Parameters
 from ..utils.prms5util import load_soltab_debug
 from .solar_constants import ndoy, pi, pi_12, r1, solar_declination, two_pi
-
-epsilon = epsilon32
 
 doy = np.arange(ndoy) + 1
 
@@ -226,10 +224,7 @@ class PRMSSolarGeometry(Process):
 
         # d1 is the denominator of equation 12, Lee, 1963
         d1 = sl_cos * x0_cos - sl_sin * np.sin(x0) * aspects_cos
-        eps_d1 = epsilon
-        wh_d1_lt_eps = np.where(d1 < eps_d1)
-        if len(wh_d1_lt_eps[0]) > 0:
-            d1[wh_d1_lt_eps] = eps_d1
+        d1 = np.where(np.abs(d1) < dnearzero, dnearzero, d1)
 
         # x2 is the difference in longitude between the location of
         # the HRU and the equivalent horizontal surface expressed in angle hour
@@ -307,14 +302,15 @@ class PRMSSolarGeometry(Process):
             sunh[wh_t6_lt_t1] = (t3 - t2 + t1 - t6)[wh_t6_lt_t1] * pi_12
 
         # The first condition checked
-        wh_sl_zero = np.where(tile_space_to_time(np.abs(sl)) < epsilon)
-        if len(wh_sl_zero[0]):
-            solt[wh_sl_zero] = func3(np.zeros(nhru), x0, t1, t0)[wh_sl_zero]
-            sunh[wh_sl_zero] = (t1 - t0)[wh_sl_zero] * pi_12
+        mask_sl_lt_dnearzero = tile_space_to_time(np.abs(sl)) < dnearzero
+        solt = np.where(
+            mask_sl_lt_dnearzero, func3(np.zeros(nhru), x0, t1, t0), solt
+        )
 
-        wh_sunh_lt_zero = np.where(sunh < epsilon)
-        if len(wh_sunh_lt_zero[0]):
-            sunh[wh_sunh_lt_zero] = zero
+        sunh = np.where(mask_sl_lt_dnearzero, (t1 - t0) * pi_12, sunh)
+
+        mask_sunh_lt_dnearzero = sunh < dnearzero
+        sunh = np.where(mask_sunh_lt_dnearzero, zero, sunh)
 
         wh_solt_lt_zero = np.where(solt < zero)
         if len(wh_solt_lt_zero[0]):

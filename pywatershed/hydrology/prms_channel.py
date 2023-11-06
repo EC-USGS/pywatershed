@@ -250,7 +250,7 @@ class PRMSChannel(ConservativeProcess):
             # not in prms6
             self.seg_slope = np.where(mask_too_flat, 1.0e-4, self.seg_slope)
 
-        # initialize Kcoef to 24.0 for segments with zero velocities
+        # JDH: initialize Kcoef to 24.0 for segments with zero velocities
         # this is different from PRMS, which relied on divide by zero resulting
         # in a value of infinity that when evaluated relative to a maximum
         # desired Kcoef value of 24 would be reset to 24. This approach is

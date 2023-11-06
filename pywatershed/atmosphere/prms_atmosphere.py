@@ -8,7 +8,7 @@ from pywatershed.utils.netcdf_utils import NetCdfWrite
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import epsilon, inch2cm, nan, one, zero
+from ..constants import inch2cm, nan, nearzero, one, zero
 from ..parameters import Parameters
 from ..utils.time_utils import datetime_doy, datetime_month
 from .solar_constants import solf
@@ -379,7 +379,7 @@ class PRMSAtmosphere(Process):
         # Calculate the mix everywhere, then set the precip/rain/snow amounts
         # from the conditions.
         tdiff = self.tmaxf.data - self.tminf.data
-        tdiff = np.where(tdiff < epsilon, 0.000100, tdiff)
+        tdiff = np.where(tdiff < nearzero, 1.0e-4, tdiff)
         self.prmx.data[:] = (
             (self.tmaxf.data - self.tmax_allsnow[month_ind]) / tdiff
         ) * self.adjmix_rain[month_ind]

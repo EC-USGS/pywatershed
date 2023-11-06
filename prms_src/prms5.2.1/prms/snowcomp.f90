@@ -1439,7 +1439,7 @@
 
 
 ! LAST check to clear out all arrays if packwater is gone
-        IF ( Pkwater_equiv(i)<=0.0D0 ) THEN
+        IF ( Pkwater_equiv(i) <= DNEARZERO ) THEN
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv(i)<-DNEARZERO ) &
      &           PRINT *, 'Snowpack problem, pkwater_equiv negative, HRU:', i, ' value:', Pkwater_equiv(i)
@@ -1458,8 +1458,8 @@
           Snowcov_area(i) = 0.0
           Pk_def(i) = 0.0
           Pk_temp(i) = 0.0
-          Pk_ice(i) = 0.0
-          Freeh2o(i) = 0.0
+          Pk_ice(i) = 0.0D0
+          Freeh2o(i) = 0.0D0
           Snowcov_areasv(i) = 0.0 ! rsr, not in original code
           Ai(i) = 0.0D0
           Frac_swe(i) = 0.0
@@ -2625,9 +2625,9 @@
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv<-DNEARZERO ) &
      &           PRINT *, 'snowpack issue, negative pkwater_equiv in snowevap', Pkwater_equiv
-            Pkwater_equiv = 0.0D0  ! JLM: this is INSIDE a debug statement? will change the answers
             !  is this in the originial source
           ENDIF
+          Pkwater_equiv = 0.0D0  ! JLM: this is INSIDE a debug statement? will change the answers
         ENDIF
 
         Snow_evap = 0.0

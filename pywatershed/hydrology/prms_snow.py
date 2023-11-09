@@ -9,10 +9,11 @@ from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import (
     HruType,
-    epsilon32,
-    epsilon64,
+    closezero,
+    dnearzero,
     inch2cm,
     nan,
+    nearzero,
     numba_num_threads,
     one,
     zero,
@@ -222,9 +223,7 @@ class PRMSSnow(ConservativeProcess):
             "pk_precip": zero,
             "pk_temp": zero,
             "pksv": zero,
-            "pkwater_ante": nan,
             "pkwater_equiv": nan,
-            "pkwater_equiv_change": nan,
             "pptmix_nopack": False,
             "pss": nan,
             "pst": nan,
@@ -249,15 +248,7 @@ class PRMSSnow(ConservativeProcess):
                 "snowmelt",
                 "through_rain",
             ],
-            "storage_changes": [
-                "freeh2o_change",
-                "pk_ice_change"
-                # eventaully pakwater_equiv_change should be removed
-                # entirely from the code and the metadata.
-                # But there are significant gaps between the above and
-                # pkwater_equiv
-                # "pkwater_equiv_change",
-            ],
+            "storage_changes": ["freeh2o_change", "pk_ice_change"],
         }
 
     @staticmethod
@@ -321,62 +312,78 @@ class PRMSSnow(ConservativeProcess):
 
         if True:
             # For now there is no restart capability. we'll use the following
-            # line when there is
+            # line above when there is
             # if self.control.options["restart"] in [0, 2, 3]:
 
             # The super().__init__ already set_initial_conditions using its
             # set_initial_conditions
             # Below Im just following PRMS6, will reconcile later with the
             # super (may be redundant).
-            vars_init = [
-                "albedo",
-                "iasw",
-                "int_alb",
-                "iso",
-                "lso",
-                "lst",
-                "mso",
-                "pk_def",
-                "pk_temp",
-                "pksv",
-                "salb",
-                "scrv",
-                "slst",
-                "snowcov_areasv",
-                "snsv",
-            ]
-            for vv in vars_init:
-                self._initialize_var(vv)
+            # vars_init = [
+            #     "albedo",
+            #     "iasw",
+            #     "int_alb",
+            #     "iso",
+            #     "lso",
+            #     "lst",
+            #     "mso",
+            #     "pk_def",
+            #     "pk_temp",
+            #     "pksv",
+            #     "salb",
+            #     "scrv",
+            #     "slst",
+            #     "snowcov_areasv",
+            #     "snsv",
+            # ]
+            # for vv in vars_init:
+            #     self._initialize_var(vv)
 
-            pkweq_gt_zero = self.pkwater_equiv > zero
-            wh_pkweq_gt_zero = np.where(pkweq_gt_zero)
-            self.pk_depth[wh_pkweq_gt_zero] = (
-                self.pkwater_equiv[wh_pkweq_gt_zero]
-                * self.deninv[wh_pkweq_gt_zero]
-            )
-            self.pk_den[wh_pkweq_gt_zero] = (
-                self.pkwater_equiv[wh_pkweq_gt_zero]
-                / self.pk_depth[wh_pkweq_gt_zero]
-            )
-            self.pk_ice[wh_pkweq_gt_zero] = self.pkwater_equiv[
-                wh_pkweq_gt_zero
-            ]
-            self.freeh2o[wh_pkweq_gt_zero] = (
-                self.pk_ice[wh_pkweq_gt_zero]
-                * self.freeh2o_cap[wh_pkweq_gt_zero]
-            )
-            self.ai[wh_pkweq_gt_zero] = self.pkwater_equiv[
-                wh_pkweq_gt_zero
-            ]  # inches
+            mask_pkweq_gt_zero = self.pkwater_equiv > zero
 
-            ai_gt_snarea_thresh = self.ai > self.snarea_thresh
-            wh_pkweq_gt_zero_and_ai_gt_snth = np.where(
-                pkweq_gt_zero & ai_gt_snarea_thresh
+            self.pk_depth = np.where(
+                mask_pkweq_gt_zero,
+                self.pkwater_equiv * self.deninv,
+                self.pk_depth,
             )
-            self.ai[wh_pkweq_gt_zero_and_ai_gt_snth] = self.snarea_thresh[
-                wh_pkweq_gt_zero_and_ai_gt_snth
-            ]
 
+            self.pk_den = np.where(
+                mask_pkweq_gt_zero,
+                self.pkwater_equiv / self.pk_depth,
+                self.pk_den,
+            )
+
+            self.pk_ice = np.where(
+                mask_pkweq_gt_zero, self.pkwater_equiv, self.pk_ice
+            )
+
+            self.freeh2o = np.where(
+                mask_pkweq_gt_zero,
+                self.pk_ice * self.freeh2o_cap,
+                self.freeh2o,
+            )
+
+            self.ai = np.where(
+                mask_pkweq_gt_zero,
+                self.pkwater_equiv,
+                self.ai,
+            )
+
+            mask_ai_gt_snarea_thresh = self.ai > self.snarea_thresh
+            self.ai = np.where(
+                mask_pkweq_gt_zero & mask_ai_gt_snarea_thresh,
+                self.snarea_thresh,
+                self.ai,
+            )
+
+            mask_ai_gt_zero = self.ai > dnearzero
+            self.frac_swe = np.where(
+                mask_ai_gt_zero,
+                np.minimum(self.pkwater_equiv / self.ai, 1),
+                self.frac_swe,
+            )
+
+            wh_pkweq_gt_zero = np.where(mask_pkweq_gt_zero)
             for ww in range(len(wh_pkweq_gt_zero[0])):
                 self.snowcov_area[wh_pkweq_gt_zero[ww]] = self.sca_deplcrv(
                     self.snarea_curve_2d[
@@ -447,7 +454,6 @@ class PRMSSnow(ConservativeProcess):
         return
 
     def _advance_variables(self) -> None:
-        self.pkwater_ante[:] = self.pkwater_equiv
         self.freeh2o_prev[:] = self.freeh2o
         self.pk_ice_prev[:] = self.pk_ice
         return
@@ -475,7 +481,6 @@ class PRMSSnow(ConservativeProcess):
             self.pk_temp[:],
             self.pksv[:],
             self.pkwater_equiv[:],
-            self.pkwater_equiv_change[:],
             self.pptmix_nopack[:],
             self.pss[:],
             self.pst[:],
@@ -551,9 +556,7 @@ class PRMSSnow(ConservativeProcess):
             pk_precip=self.pk_precip,
             pk_temp=self.pk_temp,
             pksv=self.pksv,
-            pkwater_ante=self.pkwater_ante,
             pkwater_equiv=self.pkwater_equiv,
-            pkwater_equiv_change=self.pkwater_equiv_change,
             potet=self.potet,
             potet_sublim=self.potet_sublim,
             pptmix=self.pptmix,
@@ -652,9 +655,7 @@ class PRMSSnow(ConservativeProcess):
         pk_precip,
         pk_temp,
         pksv,
-        pkwater_ante,
         pkwater_equiv,
-        pkwater_equiv_change,
         potet,
         potet_sublim,
         pptmix,
@@ -764,14 +765,14 @@ class PRMSSnow(ConservativeProcess):
             #     print(f"pk_ice 0 : {pk_ice[dbgind]}")
             #     print(f"tcal 0 : {tcal[dbgind]}")
 
-            if (pkwater_equiv[jj] < epsilon64) and (newsnow[jj] == 0):
+            if (pkwater_equiv[jj] < dnearzero) and (newsnow[jj] == 0):
                 # Skip the HRU if there is no snowpack and no new snow
                 # Reset to be sure it is zero if snowpack melted on last
                 # timestep.
                 snowcov_area[jj] = zero
                 continue
 
-            if newsnow[jj] and (pkwater_equiv[jj] < epsilon64):
+            if newsnow[jj] and (pkwater_equiv[jj] < dnearzero):
                 snowcov_area[jj] = one
 
             # <<
@@ -1000,7 +1001,7 @@ class PRMSSnow(ConservativeProcess):
                 # <<
                 elif pkwater_equiv[jj] < zero:
                     # if verbose:
-                    #     if pkwater_equiv[jj] < (-1 * epsilon64):
+                    #     if pkwater_equiv[jj] < (-1 * dnearzero):
                     #         print(
                     #             f"snowpack issue 3, negative pkwater_equiv, "
                     #             f"HRU: {jj}, value: {pkwater_equiv[jj]}"
@@ -1043,9 +1044,9 @@ class PRMSSnow(ConservativeProcess):
 
             # <<<<  The if starting between steps 3 & 4 ends here
             # LAST check to clear out all arrays if packwater is gone
-            if pkwater_equiv[jj] <= zero:
+            if pkwater_equiv[jj] <= dnearzero:
                 # if verbose:
-                #     if pkwater_equiv[jj] < -epsilon64:
+                #     if pkwater_equiv[jj] < -dnearzero:
                 #         print(
                 #             "Snowpack problem, pkwater_equiv negative, "
                 #             f"HRU: {jj}, value: {pkwater_equiv[jj]}"
@@ -1078,18 +1079,18 @@ class PRMSSnow(ConservativeProcess):
 
         # << end of space loop and previous if
 
-        pkwater_equiv_change[:] = pkwater_equiv - pkwater_ante
         freeh2o_change[:] = freeh2o - freeh2o_prev
         pk_ice_change[:] = pk_ice - pk_ice_prev
 
-        nearzero = 1.0e-6
         cond1 = net_ppt > zero
         cond2 = pptmix_nopack != 0
         cond3 = snowmelt < nearzero
-        cond4 = pkwater_equiv < epsilon32
+        cond4 = pkwater_equiv < dnearzero
         cond5 = snow_evap < nearzero
         cond6 = net_snow < nearzero
+        cond7 = snow_evap > (-1 * (pk_ice_change + freeh2o_change))
         # reverse order from the if statements
+
         through_rain[:] = np.where(
             cond1 & cond3 & cond4 & cond6, net_rain, zero
         )
@@ -1097,6 +1098,16 @@ class PRMSSnow(ConservativeProcess):
             cond1 & cond3 & cond4 & cond5, net_ppt, through_rain
         )
         through_rain[:] = np.where(cond1 & cond2, net_rain, through_rain)
+
+        # This condition does not exist in PRMS as far as I can tell
+        # but is necessary for mass balance
+        # This is when it rains on snow (no new snow) and then snow_evap
+        # consumes the pack during the timestep.
+        through_rain[:] = np.where(
+            cond1 & cond6 & cond7,
+            zero,
+            through_rain,
+        )
 
         return (
             ai,
@@ -1120,7 +1131,6 @@ class PRMSSnow(ConservativeProcess):
             pk_temp,
             pksv,
             pkwater_equiv,
-            pkwater_equiv_change,
             pptmix_nopack,
             pss,
             pst,
@@ -1230,7 +1240,7 @@ class PRMSSnow(ConservativeProcess):
             train = (tmaxc + tmax_allsnow_c_current) * 0.5  # [degrees C]
 
             # Temperatures will differ, depending on the presence of existing
-            # snowpack. should this be epsilon32?
+            # snowpack. should this be closezero?
             if pkwater_equiv > zero:
                 # If there is a snowpack, snow temperature is halfway between
                 # the minimum daily temperature and maximum temperature for
@@ -1248,7 +1258,7 @@ class PRMSSnow(ConservativeProcess):
             # If there is any rain, the rain temperature is the average
             # temperature.
             train = tavgc  # [degrees C]
-            if train < epsilon32:
+            if train < closezero:
                 # If average temperature is close to freezing, the rain
                 # temperature is halfway between the maximum daily temperature
                 # and maximum temperature
@@ -1312,7 +1322,7 @@ class PRMSSnow(ConservativeProcess):
                     # rain to bring the snowpack to isothermal at 0 degC or
                     # not 3 options below (if-then, elseif, else).
 
-                    if abs(net_rain - pndz) < epsilon32:
+                    if abs(net_rain - pndz) < closezero:
                         # (1.1.1) Exactly enough rain to bring pack to
                         # isothermal...
                         # Heat deficit and temperature of the snowpack go to 0.
@@ -1704,9 +1714,9 @@ class PRMSSnow(ConservativeProcess):
                     pss = pkwater_equiv  # [inches]
 
         # <<<
-        else:  # abs(dif) < epsilon64:
+        else:  # abs(dif) < dnearzero:
             # JLM: The test had been equality with zero, changed to
-            #      less than epsilon64.
+            #      less than dnearzero.
             # (2) Just enough heat to overcome heat deficit
             # Set temperature and heat deficit to zero. the pack is "ripe"
             pk_temp = zero  # [degrees C]
@@ -1744,7 +1754,7 @@ class PRMSSnow(ConservativeProcess):
         # Loss of heat is handled differently if there is liquid water in the
         # snowpack or not.
         # 2 options below (if-then, else)
-        if freeh2o < epsilon32:
+        if freeh2o < closezero:
             # (1) No free water exists in pack
             # Heat deficit increases because snow is colder than pack
             # (minus a negative number = plus).
@@ -1768,8 +1778,8 @@ class PRMSSnow(ConservativeProcess):
                 # (2) Only part of free water freezes
                 # The calories absorbed by the new snow freezes some of the
                 # free water (increase in ice, decrease in free water).
-                pk_ice = pk_ice + (-cal / 203.2)  # [inches]
-                freeh2o = freeh2o - (-cal / 203.2)  # [inches]
+                pk_ice = pk_ice - (cal / 203.2)  # [inches]
+                freeh2o = freeh2o + (cal / 203.2)  # [inches]
                 return (
                     freeh2o,
                     pk_def,
@@ -1868,7 +1878,7 @@ class PRMSSnow(ConservativeProcess):
         # <
         # Calculate the ratio of the current packwater equivalent to the
         # maximum packwater equivalent for the given snowpack.
-        if ai > epsilon64:
+        if ai > dnearzero:
             frac_swe = pkwater_equiv / ai  # [fraction]
             frac_swe = min(one, frac_swe)
         else:
@@ -2403,7 +2413,7 @@ class PRMSSnow(ConservativeProcess):
         calc_snowbal,
         canopy_covden,
         albedo,
-        cecn_coef,  # [control.current_month
+        cecn_coef,  # control.current_month
         cov_type,
         deninv,
         den_max,
@@ -2935,7 +2945,7 @@ class PRMSSnow(ConservativeProcess):
                 # snowpack. Right now cal isn't used for anything outside this
                 # subroutine, but care should be taken if it is.
         # <<
-        elif qcond < epsilon32:
+        elif qcond < closezero:
             # (2)  There is no heat conduction, qcond = zero
             # If the pack temperature is isothermal at 0 degC, then apply any
             # incoming radiation, condensation (latent heat), and convection
@@ -3082,7 +3092,7 @@ class PRMSSnow(ConservativeProcess):
         # for evaporation, and if the potential evapotation is enough to
         # completely deplete the snow pack or not.
         # 3 options below (if-then, elseif, else)
-        if ez < epsilon32:
+        if ez < closezero:
             # (1) There is no potential for evaporation...
             snow_evap = 0.0  # [inches]
 
@@ -3095,8 +3105,8 @@ class PRMSSnow(ConservativeProcess):
             snow_evap = pkwater_equiv  # [inches]
             pkwater_equiv = zero  # [inches]
             pk_ice = zero  # [inches]
-            pk_def = zero  # [cal/cm^2]
             freeh2o = zero  # [inches]
+            pk_def = zero  # [cal/cm^2]
             pk_temp = zero  # [degrees C]
 
         else:
@@ -3135,7 +3145,7 @@ class PRMSSnow(ConservativeProcess):
 
             if pkwater_equiv < zero:
                 # if verbose:
-                #     if pkwater_equiv < -epsilon64:
+                #     if pkwater_equiv < -dnearzero:
                 #         print(
                 #             "snowpack issue, negative pkwater_equiv in "
                 #             f"snowevap: {pkwater_equiv}"
@@ -3143,7 +3153,7 @@ class PRMSSnow(ConservativeProcess):
                 # #  <<
                 # zero of pkwater_equiv is inside a debug statement that
                 # is dosent seem to be triggered in test runs
-                # pkwater_equiv = zero
+                pkwater_equiv = zero
                 pass
 
             # <
@@ -3160,7 +3170,7 @@ class PRMSSnow(ConservativeProcess):
 
                 if pkwater_equiv < zero:
                     # if verbose:
-                    #     if pkwater_equiv < -epsilon64:
+                    #     if pkwater_equiv < -dnearzero:
                     #         print(
                     #             "snowpack issue 2, negative pkwater_equiv in"
                     #             f"snowevap: {pkwater_equiv}"
@@ -3185,6 +3195,8 @@ class PRMSSnow(ConservativeProcess):
     @staticmethod
     def set_snow_zero():
         pkwater_equiv = zero
+        pk_ice = zero
+        freeh2o = zero
         pk_depth = zero
         pss = zero
         snsv = zero
@@ -3196,8 +3208,6 @@ class PRMSSnow(ConservativeProcess):
         snowcov_area = zero
         pk_def = zero
         pk_temp = zero
-        pk_ice = zero
-        freeh2o = zero
         snowcov_areasv = zero
         ai = zero
         frac_swe = zero

@@ -7,9 +7,11 @@ MODULE PRMS_CONSTANTS
     !! Define real precision and range
     integer, parameter :: dp = REAL64
     !! Define double precision and range
-    real(REAL32), parameter :: CLOSEZERO = EPSILON(0.0)
+    ! https://en.wikipedia.org/wiki/Machine_epsilon
+    ! use values slightly larger than the informal definition
+    real(REAL32), parameter :: CLOSEZERO = 1.20e-7  ! EPSILON(0.0)
     real(REAL32), parameter :: NEARZERO = 1.0E-6
-    real(REAL64), parameter :: DNEARZERO = EPSILON(0.0D0)
+    real(REAL64), parameter :: DNEARZERO = 2.23e-16  ! EPSILON(0.0D0)
 
     integer, parameter :: MAXFILE_LENGTH = 256
     integer, parameter :: MAXLINE_LENGTH = 256

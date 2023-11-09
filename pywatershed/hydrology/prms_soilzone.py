@@ -11,8 +11,8 @@ from ..constants import (
     ETType,
     HruType,
     SoilType,
-    epsilon,
     nan,
+    nearzero,
     numba_num_threads,
     one,
     zero,
@@ -88,6 +88,9 @@ class PRMSSoilzone(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
+
+        # This uses options
+        self._initialize_soilzone_data()
 
         self._set_budget()
         self._init_calc_method()
@@ -214,6 +217,10 @@ class PRMSSoilzone(ConservativeProcess):
         }
 
     def _set_initial_conditions(self):
+        # this is called in the super before options are set on self
+        pass
+
+    def _initialize_soilzone_data(self):
         # Derived parameters
         # JLM: is this awkward here?
         # JLM: it's definitely awkward to edit a parameter. maybe
@@ -918,7 +925,7 @@ class PRMSSoilzone(ConservativeProcess):
 
                 # PRMSIV Step 9
                 # Compute slow contribution to interflow, if any
-                if slow_stor[hh] > epsilon:
+                if slow_stor[hh] > zero:  # single precision?
                     (
                         slow_stor[hh],
                         slow_flow[hh],
@@ -935,7 +942,7 @@ class PRMSSoilzone(ConservativeProcess):
                 slow_stor[hh] = availh2o
 
             # <
-            if (slow_stor[hh] > epsilon) and (ssr2gw_rate[hh] > zero):
+            if (slow_stor[hh] > zero) and (ssr2gw_rate[hh] > zero):
                 (
                     ssr_to_gw[hh],
                     slow_stor[hh],
@@ -981,7 +988,7 @@ class PRMSSoilzone(ConservativeProcess):
                 dunnianflw_gvr = topfr  # ?? is this right
 
             # <
-            pervactet = zero
+            perv_actet[hh] = zero
 
             # Compute actual evapotranspiration
             if soil_moist[hh] > zero:
@@ -991,7 +998,7 @@ class PRMSSoilzone(ConservativeProcess):
                     avail_potet,
                     potet_rechr[hh],
                     potet_lower[hh],
-                    pervactet,
+                    perv_actet[hh],
                 ) = compute_szactet(
                     transp_on[hh],
                     cov_type[hh],
@@ -1007,9 +1014,8 @@ class PRMSSoilzone(ConservativeProcess):
                 )
 
             # <
-            hru_actet[hh] = hru_actet[hh] + pervactet * hru_frac_perv[hh]
+            hru_actet[hh] = hru_actet[hh] + perv_actet[hh] * hru_frac_perv[hh]
             avail_potet = potet[hh] - hru_actet[hh]
-            perv_actet[hh] = pervactet
             soil_lower[hh] = soil_moist[hh] - soil_rechr[hh]
 
             if hru_type[hh] == HruType.LAND.value:
@@ -1277,7 +1283,7 @@ class PRMSSoilzone(ConservativeProcess):
         #   et_type=3    - transpiration plus evaporation
         #   et_type=1    - default... JLM: which is ??
 
-        if avail_potet < epsilon:
+        if avail_potet < nearzero:
             et_type = ETType.ET_DEFAULT  # 1
             avail_potet = zero
 
@@ -1391,5 +1397,5 @@ class PRMSSoilzone(ConservativeProcess):
             avail_potet,
             potet_rechr,
             potet_lower,
-            et,
+            et,  # -> perv_actet
         )

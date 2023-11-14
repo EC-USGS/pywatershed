@@ -178,7 +178,9 @@ class ProcessPlot:
 
         else:
             if nhm_id is None:
-                nhm_id = model.parameters["nhm_id"]
+                # nhm_id = model.parameters["nhm_id"]
+                raise ValueError("code needs work to handle nhm_id=None")
+
             data_df = pd.DataFrame(
                 {
                     "nhm_id": nhm_id,

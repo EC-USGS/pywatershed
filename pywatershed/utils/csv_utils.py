@@ -236,8 +236,8 @@ class CsvFile:
                 raise ValueError("Only dicts of len 1 allowed currently")
             for key, val in path.items():
                 self.paths[key] = pl.Path(val)
-        elif not isinstance(name, pl.Path):
-            raise TypeError(f"{name} must be a string or pathlib.Path object")
+        elif not isinstance(path, pl.Path):
+            raise TypeError("path must be a string or pathlib.Path object")
 
     def _lazy_data_evaluation(self):
         if self._data is None:

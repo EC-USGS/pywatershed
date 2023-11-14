@@ -174,6 +174,7 @@ class PrmsParameters(Parameters):
             self.to_nc4_ds(filename)
         return
 
+    @staticmethod
     def _process_file_input(
         parameter_dict: dict,
         parameter_dimensions_dict: dict = None,

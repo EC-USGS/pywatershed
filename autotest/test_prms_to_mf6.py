@@ -6,12 +6,6 @@ import xarray as xr
 
 from pywatershed.utils.prms_to_mf6 import MMRToMF6
 
-# not currently in repo or being used but might be good to add
-# shape_file = (
-#     "/Users/jamesmcc/usgs/data/pywatershed/20220209_gm_delaware_river"
-#     "/GIS_simple/HRU_subset.shp"
-# )
-
 start_time = np.datetime64("1979-01-01T00:00:00")
 end_time = np.datetime64("1979-01-07T00:00:00")
 

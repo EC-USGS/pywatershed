@@ -7,7 +7,7 @@ import yaml
 
 # This requires prms6 to be checkout from the prms repo.
 
-xml_dir = pl.Path("/Users/jamesmcc/usgs/prms/src/xml")
+xml_dir = pl.Path("../../../prms/src/xml")
 xml_files = {
     "control": xml_dir / "control.xml",
     "dimensions": xml_dir / "dimensions.xml",

@@ -4,7 +4,8 @@ import pathlib as pl
 from pywatershed import PrmsParameters
 from pywatershed.utils.cbh_utils import cbh_files_to_netcdf
 
-dom_dir = pl.Path("/Users/jamesmcc/usgs/data/pywatershed/conus_2yr/")
+
+dom_dir = pl.Path("../../../data/pywatershed/conus_2yr/")
 param_file = dom_dir / "myparam.param"
 params = PrmsParameters.load(dom_dir / "myparam.param")
 

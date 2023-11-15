@@ -2,8 +2,9 @@
 # Purpose:
 # Generate a 2 year test case of DRB from the full 40yr
 
-source_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb
-target_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr
+data_dir=../../../../data
+source_dir=$data_dir/prms_nhm_applications/drb
+target_dir=$data_dir/prms_nhm_applications/drb_2yr
 
 mkdir -p $target_dir
 

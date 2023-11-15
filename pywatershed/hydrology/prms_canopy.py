@@ -128,7 +128,7 @@ class PRMSCanopy(ConservativeProcess):
             "net_snow": zero,
             "intcp_changeover": zero,
             "intcp_evap": zero,
-            "intcp_form": nan,  # = RAIN could make boolean but would have to make the RAIN/SNOW match
+            "intcp_form": nan,  # = RAIN bool would have to match RAIN/SNOW
             "intcp_stor": zero,
             "intcp_transp_on": 0,  # could make boolean
             "hru_intcpevap": zero,
@@ -493,7 +493,7 @@ class PRMSCanopy(ConservativeProcess):
                     else:
                         intcpstor = 0.0
 
-            # ****** go from winter to summer cover density, excess = throughfall
+            # **** go from winter to summer cover density, excess = throughfall
             elif transp_on[i] == ACTIVE and intcp_transp_on[i] == OFF:
                 intcp_transp_on[i] = ACTIVE
                 if intcpstor > 0.0:
@@ -513,7 +513,9 @@ class PRMSCanopy(ConservativeProcess):
                     if cov > 0.0:
                         # IF ( Cov_type(i)>GRASSES ) THEN
                         if cov_type[i] > GRASSES:
-                            # intercept(Hru_rain(i), stor_max_rain, cov, intcpstor, netrain)
+                            # intercept(
+                            #     Hru_rain(i), stor_max_rain, cov, intcpstor,
+                            #     netrain)
                             intcpstor, netrain = intercept(
                                 hru_rain[i],
                                 stor_max_rain,
@@ -522,9 +524,11 @@ class PRMSCanopy(ConservativeProcess):
                                 netrain,
                             )
                         elif cov_type[i] == GRASSES:
-                            # if there is no snowpack and no snowfall, then apparently, grasses
-                            # can intercept rain.
-                            # IF ( pkwater_ante(i)<dnearzero .AND. netsnow<nearzero ) THEN
+                            # if there is no snowpack and no snowfall, then
+                            # apparently, grasses can intercept rain.
+                            # IF (
+                            #     pkwater_ante(i)<dnearzero
+                            #     .AND. netsnow<nearzero ) THEN
                             if (
                                 pk_ice_prev[i] + freeh2o_prev[i]
                             ) < dnearzero and netsnow < nearzero:

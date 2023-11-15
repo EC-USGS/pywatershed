@@ -1,7 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
 from datetime import datetime
-from pprint import pprint
 from typing import Union
 from warnings import warn
 
@@ -798,7 +797,10 @@ class Model:
 
         # apply defaults if necessary
         if output_dir is None:
-            msg = "An output directory is required to be specified for netcdf initialization."
+            msg = (
+                "An output directory is required to be specified for netcdf"
+                "initialization."
+            )
             raise ValueError(msg)
         if separate_files is None:
             separate_files = True

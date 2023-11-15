@@ -93,9 +93,9 @@ def load_prms_statscsv(fname, convert=True, verbose=False):
     # JLM: for prms_summary.csv?
     with open(fname) as f:
         line = f.readline()
-        colnames = line.strip().split(",")
+        _ = line.strip().split(",")
         line = f.readline()
-        units = line.strip().split(",")
+        _ = line.strip().split(",")
     df = pd.read_csv(
         fname,
         skiprows=[1],

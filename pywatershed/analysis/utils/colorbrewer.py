@@ -2364,7 +2364,9 @@ def jupyter_palette(palette: Union[list, dict]):
         ipdisplay.display(
             ipdisplay.Markdown(
                 "<br>".join(
-                    f'<span style="font-family: monospace">{color} <span style="color: {color}">████████</span></span>'
+                    f'<span style="font-family: monospace">{color}'
+                    f'<span style="color: {color}">████████'
+                    f"</span></span>"
                     for color in palette
                 )
             )
@@ -2373,7 +2375,9 @@ def jupyter_palette(palette: Union[list, dict]):
         ipdisplay.display(
             ipdisplay.Markdown(
                 "<br>".join(
-                    f'<span style="font-family: monospace">{key} <span style="color: {color}">████████</span></span>'
+                    f'<span style="font-family: monospace">{key} '
+                    f'<span style="color: {color}">████████'
+                    f"</span></span>"
                     for key, color in palette.items()
                 )
             )

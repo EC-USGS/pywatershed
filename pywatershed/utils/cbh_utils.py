@@ -68,7 +68,10 @@ def _cbh_file_to_df(
     var_count_dict[key] = count
 
     if len(var_count_dict) > 1:
-        msg = f"cbh input files should contain only one variable each: {the_file}"
+        msg = (
+            "cbh input files should contain only one variable each: "
+            f"{the_file}"
+        )
         raise ValueError(msg)
 
     dtypes = (["str"] * 6) + (["float64"] * len(col_names))
@@ -90,7 +93,10 @@ def _cbh_file_to_df(
         delim_whitespace=True,
         dtype=dtype_dict,
     )
-    msg = f"Number of actual data columns does not match metadata info: {meta_lines}"
+    msg = (
+        "Number of actual data columns does not match metadata info: "
+        f"{meta_lines}"
+    )
     assert len(data.columns) == len(col_names), msg
     # JLM: is the above sufficient?
 
@@ -106,7 +112,8 @@ def _cbh_file_to_df(
     data["date"] = pd.to_datetime(
         data.Y + "-" + data.m.str.zfill(2) + "-" + data.d.str.zfill(2)
     )
-    # JLM TODO: Set datetime resolution to hours? or mins. Could do days but might look forward a bit.
+    # JLM TODO: Set datetime resolution to hours? or mins. Could do days but
+    # might look forward a bit.
     data = data.drop(columns=set(date_cols))
     data = data.set_index("date")
 

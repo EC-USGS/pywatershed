@@ -68,7 +68,7 @@ class PRMSSoilzone(ConservativeProcess):
         dprst_seep_hru: adaptable,
         hru_impervevap: adaptable,
         hru_intcpevap: adaptable,
-        infil_hru: adaptable,  # file by /pywatershed/analysis/budget_soilzone.py
+        infil_hru: adaptable,  # in /pywatershed/analysis/budget_soilzone.py
         sroff: adaptable,
         potet: adaptable,
         transp_on: adaptable,
@@ -1347,7 +1347,7 @@ class PRMSSoilzone(ConservativeProcess):
 
                 # <
             else:
-                pass  ## JLM?
+                pass  # JLM
 
             # <
             # ****** Soil moisture accounting

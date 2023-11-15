@@ -2552,20 +2552,22 @@ class PRMSSnow(ConservativeProcess):
 
             # <
             # The effective thermal conductivity is approximated (empirically)
-            # as zero077 times (snowpack density)^2 [cal / (sec g degC)] Therefore,
-            # the effective conductivity term (inside the square root) in the
-            # equation for conductive heat exchange can be calculated as follows:
+            # as zero077 times (snowpack density)^2 [cal / (sec g degC)]
+            # Therefore, the effective conductivity term (inside the square
+            # root) in the equation for conductive heat exchange can be
+            # calculated as follows:
             #   (zero077 * pk_den^2) / (pk_den * 0.5)
             # where 0.5 is the specific heat of ice [cal / (g degC)]
             # this simplifies to the following
             effk = 0.0154 * pk_den  # [unitless]
 
             # 13751 is the number of seconds in 12 hours over pi
-            # So for a half day, to calculate the conductive heat exchange per cm
-            # of snow per cm^2 area per degree temperature difference is the
+            # So for a half day, to calculate the conductive heat exchange per
+            # cm of snow per cm^2 area per degree temperature difference is the
             # following
-            # In effect, multiplying cst times the temperature gradient gives the
-            # heatexchange by heat conducted (calories) per square cm of snowpack
+            # In effect, multiplying cst times the temperature gradient gives
+            # the heatexchange by heat conducted (calories) per square cm of
+            # snowpack
             cst = pk_den * (
                 np.sqrt(effk * 13751.0)
             )  # [cal/(cm^2 degC)] or [Langleys / degC]

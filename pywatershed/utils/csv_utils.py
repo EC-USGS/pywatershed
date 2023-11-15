@@ -195,7 +195,7 @@ class CsvFile:
             dims = ("time", dim_name)
             chunk_sizes_var = [chunk_sizes[vv] for vv in dims]
 
-            var = ds.createVariable(
+            _ = ds.createVariable(
                 variable_name,
                 variable_type,
                 dims,
@@ -250,9 +250,10 @@ class CsvFile:
             None
 
         """
-        str2date = lambda x: dt.datetime.strptime(
-            x.decode("utf-8"), "%Y-%m-%d"
-        )
+
+        def str2date(x):
+            return dt.datetime.strptime(x.decode("utf-8"), "%Y-%m-%d")
+
         all_data = []
         ntimes = 0
         dtype = [("date", dt.datetime)]

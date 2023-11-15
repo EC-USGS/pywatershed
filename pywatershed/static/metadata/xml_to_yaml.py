@@ -1,7 +1,6 @@
 import pathlib as pl
 import re
 from collections import OrderedDict
-from pprint import pprint
 
 import xmltodict
 import yaml

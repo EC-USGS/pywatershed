@@ -33,7 +33,7 @@ def assert_exists(path):
 
 
 def dict_pl_to_str(the_dict):
-    """Convert dictionary items of pathlib.Path class to strings, recursively"""
+    """Convert dict items of class  pathlib.Path to strings, recursively"""
     for key, val in the_dict.items():
         if isinstance(val, dict):
             the_dict[key] = dict_pl_to_str(val)

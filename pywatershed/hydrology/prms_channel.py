@@ -483,7 +483,8 @@ class PRMSChannel(ConservativeProcess):
             segment_order: segment routing order
             to_segment: downstream segment for each segment
             seg_lateral_inflow: segment lateral inflow
-            seg_inflow0: previous segment inflow variable (internal calculations)
+            seg_inflow0: previous segment inflow variable (internal
+                calculations)
             outflow_ts: outflow timeseries variable (internal calculations)
             tsi: integer flood wave travel time
             ts: float version of integer flood wave travel time
@@ -534,7 +535,7 @@ class PRMSChannel(ConservativeProcess):
                     inflow_ts[jseg] /= ts[jseg]
 
                     if tsi[jseg] > 0:
-                        # todo: evaluated if denormal results should be dealt with
+                        # todo: evaluate if denormal results should be treated
 
                         # Muskingum routing equation
                         outflow_ts[jseg] = (

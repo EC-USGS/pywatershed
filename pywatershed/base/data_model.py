@@ -1,6 +1,5 @@
 import warnings
 from copy import deepcopy
-from pprint import pprint
 from typing import Iterable, Literal
 
 import cftime
@@ -97,7 +96,9 @@ class DatasetDict(Accessor):
         import pywatershed as pws
         import numpy as np
         coords = {
-            'time': np.arange('2005-02-01', '2005-02-03', dtype='datetime64[D]'),
+            'time': np.arange(
+                '2005-02-01', '2005-02-03', dtype='datetime64[D]'
+            ),
             'space': np.arange(3)
         }
         dims = {'ntime': len(coords['time']), 'nspace': len(coords['space'])}
@@ -851,7 +852,7 @@ def _nc4_var_to_datetime64(var, attrs, encoding):
     return time_data, attrs, encoding
 
 
-def _datetime64_to_nc4_var(var):
+def _datetime64_to_nc4_var(var, units, calendar):
     """vectorized conversion of numpy.datetime64 to a netcdf4 variable."""
     # Based on what xarray does
     # https://github.com/pydata/xarray/blob/
@@ -859,9 +860,11 @@ def _datetime64_to_nc4_var(var):
     from xarray.coding.times import decode_cf_datetime
 
     # This can take encoding info but we are using defaults.
-    (data, units, calendar) = decode_cf_datetime(var)
+    # (data, units, calendar) = decode_cf_datetime(var, units, calendar)
+    # return {"data": data, "units": units, "calendar": calendar}
 
-    return {"data": data, "units": units, "calendar": calendar}
+    data = decode_cf_datetime(var, units, calendar)
+    return {"data": data}
 
 
 def nc4_ds_to_xr_dd(file_or_ds, xr_enc: dict = None) -> dict:

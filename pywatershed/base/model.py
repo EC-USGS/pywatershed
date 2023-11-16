@@ -1,7 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
 from datetime import datetime
-from pprint import pprint
 from typing import Union
 from warnings import warn
 
@@ -278,7 +277,7 @@ class Model:
     PRMSSnow jit compiling with numba
     >>> model.run()
       0%|                                                                     | 0/731 [00:00<?, ?it/s]
-    /Users/jmccreight/usgs/pywatershed2/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
+    pywatershed/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
         through_rain[:] = np.where(wh_through, net_rain, zero)
     100%|███████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 96.76it/s]
     model.run(): finalizing
@@ -391,10 +390,10 @@ class Model:
     PRMSSnow jit compiling with numba
     >>> model.run()
       0%|                                                                     | 0/731 [00:00<?, ?it/s]
-    /Users/jmccreight/usgs/pywatershed2/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
+    pywatershed/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
       through_rain[:] = np.where(wh_through, net_rain, zero)
       0%|                                                           | 1/731 [00:05<1:08:27,  5.63s/it]
-    /Users/jmccreight/usgs/pywatershed2/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
+    /pywatershed/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
       warn(msg, UserWarning)
     100%|██████████████████████████████████████████████████████████| 731/731 [00:06<00:00, 119.95it/s]
     model.run(): finalizing
@@ -798,7 +797,10 @@ class Model:
 
         # apply defaults if necessary
         if output_dir is None:
-            msg = "An output directory is required to be specified for netcdf initialization."
+            msg = (
+                "An output directory is required to be specified for netcdf"
+                "initialization."
+            )
             raise ValueError(msg)
         if separate_files is None:
             separate_files = True

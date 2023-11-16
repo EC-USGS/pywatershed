@@ -1,9 +1,4 @@
-from pprint import pprint
-
-from numpy.testing import assert_equal
-
-from pywatershed.base.parameters import _set_dict_read_write
-from pywatershed.parameters import Parameters, PrmsParameters
+from pywatershed.parameters import Parameters
 from utils import assert_dicts_equal
 
 

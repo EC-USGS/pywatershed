@@ -385,7 +385,8 @@ class PRMSSolarGeometry(Process):
             y: (T2) hour angle of sunrise on equivalent slope [ndoy, nhru]
 
         Returns:
-            (R4) is potential solar radiation on the surface cal/cm2/day [ndoy, nhru]
+            (R4) is potential solar radiation on the surface cal/cm2/day
+            [ndoy, nhru]
 
         Constants
             r1: solar constant for 60 minutes [ndoy]

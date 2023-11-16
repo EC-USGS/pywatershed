@@ -37,8 +37,9 @@ class ProcessPlot:
 
         # segment one-time setup
         self.seg_gdf = gpd.read_file(self.seg_shapefile)
-        # if (self.__seg_poly.crs.name == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
-        # print("Overriding USGS aea crs with EPSG:5070")
+        # if (self.__seg_poly.crs.name
+        #     == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
+        #     print("Overriding USGS aea crs with EPSG:5070")
         self.seg_gdf.crs = "EPSG:5070"
 
         self.seg_geoms_exploded = (
@@ -124,13 +125,13 @@ class ProcessPlot:
         plt.title("Variable: {}".format(var_name))
         plt.colorbar(mapper, shrink=0.6, label=metadata["units"], ax=ax)
 
-        hru_poly = plot_polygon_collection(
+        _ = plot_polygon_collection(
             ax,
             hru_geoms_exploded.geometry,
             **dict(cmap=cmap, norm=norm, linewidth=0.5, alpha=0.05),
         )
 
-        col = plot_line_collection(
+        _ = plot_line_collection(
             ax,
             df_plot.geometry,
             values=df_plot[var_name],
@@ -178,7 +179,9 @@ class ProcessPlot:
 
         else:
             if nhm_id is None:
-                nhm_id = model.parameters["nhm_id"]
+                # nhm_id = model.parameters["nhm_id"]
+                raise ValueError("code needs work to handle nhm_id=None")
+
             data_df = pd.DataFrame(
                 {
                     "nhm_id": nhm_id,
@@ -287,7 +290,8 @@ def plot_polygon_collection(
     **kwargs,
 ):
     """Plot a collection of Polygon geometries"""
-    # from https://stackoverflow.com/questions/33714050/geopandas-plotting-any-way-to-speed-things-up
+    # from https://stackoverflow.com/questions/33714050/
+    #     geopandas-plotting-any-way-to-speed-things-up
     shapely = import_optional_dependency("shapely")
 
     patches = []

@@ -4,7 +4,8 @@ import epiweeks as ew
 import numpy as np
 
 # JLM these np time manipulations need to be tested b/c i fear np might change
-# These should be built into numpy but it is stalled: https://github.com/numpy/numpy/pull/14276
+# These should be built into numpy but it is stalled:
+# https://github.com/numpy/numpy/pull/14276
 
 
 def dt64_to_dt(dt64: np.datetime64) -> datetime.datetime:

@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # config
-source_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb
-target_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr
-run_dir=/Users/jamesmcc/usgs/data/prms_nhm_applications/drb_2yr_check
-repo_dir=/Users/jamesmcc/usgs/pywatershed
-prms=/Users/jamesmcc/usgs/pywatershed/prms_src/prms5.2.1/bin/prms
+data_dir=../../../../data
+source_dir=$data_dir/prms_nhm_applications/drb
+target_dir=$data_dir/prms_nhm_applications/drb_2yr
+run_dir=$data_dir/prms_nhm_applications/drb_2yr_check
+repo_dir=../../../
+prms=$repo_dirprms_src/prms5.2.1/bin/prms
 
 # ---------------------------------
 

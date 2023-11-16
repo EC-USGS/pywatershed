@@ -29,7 +29,11 @@ def get_authors():
 
 
 def update_version_py(timestamp: datetime, version: Version):
-    lines = open(_version_py_path, "r").readlines() if _version_py_path.exists() else []
+    lines = (
+        open(_version_py_path, "r").readlines()
+        if _version_py_path.exists()
+        else []
+    )
     authors = get_authors()
     with open(_version_py_path, "w") as f:
         f.write(
@@ -39,13 +43,18 @@ def update_version_py(timestamp: datetime, version: Version):
         f.write(f'__version__ = "{version}"\n')
         f.writelines(
             [
-                f"__pakname__ = \"{_project_name}\"\n",
+                f'__pakname__ = "{_project_name}"\n',
                 "\n",
                 "author_dict = {\n",
-            ] + [f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n" for a in authors] + [
+            ]
+            + [
+                f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n"
+                for a in authors
+            ]
+            + [
                 "}\n",
-                "__author__ = \", \".join(author_dict.keys())\n",
-                "__author_email__ = \", \".join(s for _, s in author_dict.items())\n",
+                '__author__ = ", ".join(author_dict.keys())\n',
+                '__author_email__ = ", ".join(s for _, s in author_dict.items())\n',
             ]
         )
         f.close()

@@ -68,8 +68,9 @@ def pytest_generate_tests(metafunc):
             domain_dict["file"] = dd_file
             domain_dict["dir"] = dd_file.parent
 
-            # Transform all relative paths in the yaml (relative to the yaml file)
-            # using the rel path to the file - spare the tester from doing this.
+            # Transform all relative paths in the yaml (relative to the yaml
+            # file) using the rel path to the file - spare the tester from
+            # doing this.
             for ff in [
                 "param_file",
                 "control_file",

@@ -3,10 +3,13 @@ import pathlib as pl
 import sys
 from fnmatch import fnmatch
 from platform import processor
+from shutil import copy2
 from typing import List
 from warnings import warn
 
 import pytest
+
+final_var_names = ["through_rain", "seg_lateral_inflow"]
 
 
 def pytest_addoption(parser):
@@ -178,7 +181,6 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize("simulation", sims, ids=ids, scope="session")
 
     if "final_file" in metafunc.fixturenames:
-        final_var_names = ["through_rain", "seg_lateral_inflow"]
         final_files = [
             pl.Path(kk) / var
             for kk in simulations.keys()
@@ -189,3 +191,26 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(
             "final_file", final_files, ids=ids, scope="session"
         )
+
+
+# the following define a mechanism for documenting at least the version of
+# pywatershed underwhich the test_data was generated. this will be used by
+# autotest to help guide the tester towards re-generating the test data.
+def pytest_sessionstart(session):
+    pl.Path("../.test_data_made_by_version.txt").unlink(missing_ok=True)
+    return None
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # the best/easiest way is to hardcode this
+    final_tests_ran = True
+    for domain in ["hru_1", "drb_2yr", "ucb_2yr"]:
+        for var in final_var_names:
+            pth = pl.Path(f"../{domain}/output/{var}.nc")
+            if not pth.exists():
+                final_tests_ran = False
+
+    if exitstatus == 0 and final_tests_ran:
+        copy2("../../version.txt", "../.test_data_made_by_version.txt")
+
+    return None

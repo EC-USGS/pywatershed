@@ -141,28 +141,31 @@ all formally encoded in `.github/workflows/ci.yaml` and
 
 ## Testing
 Once the dependencies are available, we want to verify the software by running
-its test suite. The following testing procedures are also covered in the
-notebook `examples/01_automated_testing.ipynb`.  To run the tests, we first need
-to generate the test data. This consists of running PRMS and then converting the
-output to netcdf. From `test_data/scripts`:
+its test suite. However, we first need to generate the test data. This consists
+of running binaries (PRMS) and then converting the output to netcdf. In the
+`test_data/generate` directory, the current test generation procedure is:
 
+```shell
+pytest -v -n=auto run_prms_domains.py
+pytest -v -n=auto convert_prms_output_to_nc.py
 ```
-pytest -v -n=4 test_run_domains.py
-pytest -v -n=8 test_nc_domains.py
-```
+
+For more details on generating the test data, see [`test_data/README.md`](test_data/README.md]).
 
 Finally, the tests can be run from the `autotest` directory:
 
-``` pytest -v -n=8 ```
+```shell
+pytest -v -n=auto
+```
 
 All tests should pass, XPASS, or XFAIL. XFAIL is an expected
-failure. Substitute `-n auto` to automatically use all available cores on your
+failure. The flag `-n auto` to automatically use all available cores on your
 machine.
 
 
 ## Linting
 Automated linting procedures are performed in CI and enforced, these are
-```
+```shell
 isort ./autotest ./pywatershed
 black ./autotest ./pywatershed
 flake8 --count --show-source --exit-zero ./pywatershed ./autotest

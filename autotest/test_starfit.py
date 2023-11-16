@@ -6,8 +6,11 @@ import pytest
 import xarray as xr
 
 from pywatershed.base.control import Control
+from pywatershed.constants import __pywatershed_root__ as repo_root
 from pywatershed.hydrology.starfit import Starfit
 from pywatershed.parameters import StarfitParameters
+
+data_dir = repo_root / "hydrology/starfit_minimal"
 
 
 # havent pared down the data yet to add it to the repo
@@ -17,10 +20,6 @@ def test_regress(tmp_path):
 
     tmp_path = pl.Path(tmp_path)
     print(tmp_path)
-    data_dir = pl.Path(
-        "/Users/jmccreight/usgs/pywatershed/pywatershed/"
-        "hydrology/starfit_minimal"
-    )
 
     # TODO: make this work with the original source files
     param_files = {
@@ -113,9 +112,6 @@ def test_regress(tmp_path):
 def test_param_subset_write(tmp_path, domain_tag):
     tmp_path = pl.Path(tmp_path)
     print(tmp_path)
-    data_dir = pl.Path(
-        "/Users/jmccreight/usgs/pywatershed/pywatershed/hydrology/starfit_minimal"
-    )
 
     # TODO: make this work with the original source files
     param_files = {

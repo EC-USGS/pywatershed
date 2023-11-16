@@ -1,4 +1,5 @@
-# Vendored from https://github.com/pypa/packaging/blob/main/packaging/_structures.py
+# Vendored from https://github.com/pypa/packaging/blob/main/
+#    packaging/_structures.py
 # and https://github.com/pypa/packaging/blob/main/packaging/_structures.py
 # changeset ae891fd74d6dd4c6063bb04f2faeadaac6fc6313
 # 04/30/2021

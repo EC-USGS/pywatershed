@@ -96,7 +96,7 @@ def test_drive_indiv_process(domain, tmp_path):
             # Leaving the commented to diagnose what PRMSRunoff later.
             try:
                 xr.testing.assert_allclose(res, ans)
-            except:
+            except AssertionError:
                 print(vv, abs(res - ans).max())
                 print(vv, (abs(res - ans) / ans).max())
 

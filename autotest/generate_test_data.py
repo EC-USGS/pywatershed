@@ -1,19 +1,36 @@
 #!/usr/bin/env python
+"""Generate pywatershed test data.
+
+usage examples:
+    python:  `python generate_test_data.py --domains=hru_1,drb_2yr -n5`
+    ipython: `ipython generate_test_data.py -- -n=5 --domains=hru_1,drb_2yr`
+    command line: `./generate_test_data.py --domains=hru_1,drb_2yr -n5`
+
+For help, call with -h or --help. Note that arguments not listed by
+generate_test_data.py are passed directly to pytest. See `pytest --help`
+for its extensive list of options.
+
+For details look at DEVELOPER.md, autotest/README.md, and test_data/README.md.
+
+This wrapper calls pytest to create and destroy test data in the test_data
+directory. It also creates and destroys dot files which are looked for and at
+by autotest to get a rough sense if the test data are up to date. These dot
+files are `test_data/.test_data_version_{domain_name}.txt` for each domain.
+
+When in doubt about the freshness of test data, remake it!
+
+Note that this wrapper was create because the test version file
+tracking was practically impossible with pytest-xdist.
+"""
 
 import argparse
-from copy import deepcopy
 import os
 import pathlib as pl
 import shutil
 import sys
+from copy import deepcopy
 
 import pytest
-
-
-# usage examples:
-# python:  python generate_test_data.py --domain=hru_1,drb_2yr -n5
-# ipython: ipython generate_test_data.py -- -n=5 --domain=hru_1,drb_2yr
-# command line: ./generate_test_data.py --domain=hru_1,drb_2yr -n5
 
 
 def parse_args():
@@ -27,8 +44,16 @@ def parse_args():
     betweenrun_prms_domains.py and convert_prms_output_to_nc.py and also to
     control recording of which domains have available test_data.
     """
+    desc = (
+        "Generate pywatershed test data. "
+        "*** Arguments not listed by generate_test_data.py are passed "
+        "directly to pytest. See `pytest --help` for its extensive list of "
+        "options. ***"
+    )
     parser = argparse.ArgumentParser(
-        description="Generate pywatershed test data.", add_help=False
+        description=desc,
+        add_help=False,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "-h",
@@ -37,11 +62,11 @@ def parse_args():
         help="Help on calling generate_test_data.py.",
     )
     parser.add_argument(
-        "--domain",
+        "--domains",
         default="hru_1,drb_2yr,ucb_2yr",
         help=(
-            "Domains for which to generate test data, comma separated if "
-            "multiple."
+            "Domain name values for which to generate test data, comma "
+            "separate multiple values."
         ),
         type=str,
     )
@@ -63,7 +88,7 @@ def parse_args():
 
     known, unknown = parser.parse_known_args()
 
-    domains = known.domain
+    domains = known.domains
     if "," in domains:
         domains_split = domains.split(",")
         domain_list = []
@@ -85,10 +110,10 @@ def parse_args():
 
 
 def main():
+    arg_list = parse_args()
+
     print("\nGenerating test data. Running in ../test_data/generate")
     os.chdir("../test_data/generate")
-
-    arg_list = parse_args()
 
     # collect info on domains to be run_domains
     domains_to_run = []

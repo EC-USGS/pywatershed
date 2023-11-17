@@ -142,15 +142,16 @@ all formally encoded in `.github/workflows/ci.yaml` and
 ## Testing
 Once the dependencies are available, we want to verify the software by running
 its test suite. However, we first need to generate the test data. This consists
-of running binaries (PRMS) and then converting the output to netcdf. In the
-`test_data/generate` directory, the current test generation procedure is:
+of running binaries (PRMS) and then converting the output to netcdf files used
+by autotest as the answers or reference results. In the `autotest/` directory,
+test data is generated using the following command.
 
 ```shell
-pytest -v -n=auto run_prms_domains.py
-pytest -v -n=auto convert_prms_output_to_nc.py
+python generate_test_data.py -n=auto
 ```
 
-For more details on generating the test data, see [`test_data/README.md`](test_data/README.md]).
+Additional options may be supplied to `generate_test_data.py`. For more details
+on generating the test data, see [`test_data/README.md`](test_data/README.md).
 
 Finally, the tests can be run from the `autotest` directory:
 
@@ -161,6 +162,8 @@ pytest -v -n=auto
 All tests should pass, XPASS, or XFAIL. XFAIL is an expected
 failure. The flag `-n auto` to automatically use all available cores on your
 machine.
+
+For more details on the autotests, see [`autotest/README.md`](autotest/README.md).
 
 
 ## Linting

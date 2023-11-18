@@ -1,11 +1,8 @@
-import io
 import pathlib as pl
 from enum import Enum
-from typing import Tuple, Union
+from typing import Union
 
 import numpy as np
-
-import pywatershed
 
 from ..base import meta
 
@@ -330,7 +327,7 @@ class PrmsFile:
                     + f"Error on line {self.line_number} in PRMS "
                     + f"input file '{self.file_object.name}'."
                 )
-        except:
+        except TypeError:
             raise ValueError(
                 f"Error on line {self.line_number} in PRMS "
                 + f"input file '{self.file_object.name}'."
@@ -400,7 +397,7 @@ class PrmsFile:
                     + f"Error on line {self.line_number} in PRMS "
                     + f"input file '{self.file_object.name}'."
                 )
-        except:
+        except TypeError:
             raise ValueError(
                 f"Error on line {self.line_number} in PRMS "
                 + f"input file '{self.file_object.name}'."

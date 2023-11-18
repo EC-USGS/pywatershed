@@ -932,7 +932,7 @@ class PRMSRunoff(ConservativeProcess):
             # snowpack was small and was lost to sublimation.
             # if net_snow < nearzero and net_rain > 0.0:
             if cond6 and through_rain > 0.0:
-                ##  if net_snow < 1.0e-6 and net_rain > 0.0:
+                # if net_snow < 1.0e-6 and net_rain > 0.0:
                 # cond3 & cond4 & cond6 & cond1
                 # this is through_rain's top/most narrow case
 

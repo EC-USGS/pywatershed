@@ -1,5 +1,4 @@
 import functools
-import pathlib as pl
 from time import time
 
 

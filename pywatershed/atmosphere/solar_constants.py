@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from ..constants import ndoy, one, zero
+from ..constants import ndoy, one
 
 # SolarGeom Constants: Lots of them
 # https://github.com/nhm-usgs/prms/blob/6.0.0_dev/src/prmslib/physics/c_solar_radiation.f90

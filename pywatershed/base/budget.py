@@ -91,7 +91,8 @@ class Budget(Accessor):
             "inputs_sum": f"Sum of input fluxes ({self.basis})",
             "outputs_sum": f"Sum of output fluxes ({self.basis})",
             "storage_changes_sum": f"Sum of storage changes ({self.basis})",
-            # "balance": f"Balance of fluxes and storage changes ({self.basis})",
+            # "balance":
+            #     f"Balance of fluxes and storage changes ({self.basis})",
         }
 
         for var, desc in self.output_vars_desc.items():

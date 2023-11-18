@@ -188,11 +188,10 @@ jobs:
           pip list
 
       - name: hru_1 - generate and manage test data domain, run PRMS and convert csv output to NetCDF
-        working-directory: test_data/generate
+        working-directory: autotest
         run: |
-          pytest -vv -n=2 --durations=0 run_prms_domains.py --domain=hru_1
-          pytest -vv -n=auto --durations=0 convert_prms_output_to_nc.py  --domain=hru_1
-          pytest -vv -n=auto --durations=0 remove_prms_csvs.py
+          python generate_test_data.py \
+            -n=auto --domain=hru_1 --remove_prms_csvs --remove_prms_output_dirs
 
       - name: hru_1 - list netcdf input files
         working-directory: test_data
@@ -212,12 +211,10 @@ jobs:
 
 
       - name: drb_2yr - generate and manage test data
-        working-directory: test_data/generate
+        working-directory: autotest
         run: |
-          pytest -vv remove_output_dirs.py --domain=hru_1
-          pytest -vv -n=2 run_prms_domains.py --domain=drb_2yr
-          pytest -vv -n=auto convert_prms_output_to_nc.py --domain=drb_2yr
-          pytest -vv -n=auto remove_prms_csvs.py
+          python generate_test_data.py \
+            -n=auto --domain=drb_2yr --remove_prms_csvs --remove_prms_output_dirs
 
       - name: drb_2yr - list netcdf input files
         working-directory: test_data
@@ -236,12 +233,10 @@ jobs:
           --junitxml=pytest_drb_2yr.xml
 
       - name: ucb_2yr - generate and manage test data
-        working-directory: test_data/generate
+        working-directory: autotest
         run: |
-          pytest -vv remove_output_dirs.py --domain=drb_2yr
-          pytest -vv -n=2 run_prms_domains.py --domain=ucb_2yr
-          pytest -vv -n=auto convert_prms_output_to_nc.py --domain=ucb_2yr
-          pytest -vv -n=auto remove_prms_csvs.py
+          python generate_test_data.py \
+            -n=auto --domain=ucb_2yr --remove_prms_csvs --remove_prms_output_dirs
 
       - name: ucb_2yr - list netcdf input files
         working-directory: test_data

@@ -63,7 +63,6 @@ def test_single_csv_to_netcdf(domain):
 
 def test_multiple_csv(domain):
     csv = CsvFile()
-    imax = 0
     for var in csv_test_vars:
         csv.add_path(domain["prms_output_dir"] / f"{var}.csv")
     df = csv.to_dataframe()

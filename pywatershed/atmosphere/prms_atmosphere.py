@@ -136,14 +136,7 @@ class PRMSAtmosphere(Process):
         self._set_options(locals())
 
         self._calculated = False
-
         self._netcdf_initialized = False
-        if self._netcdf_output_dir:
-            self.initialize_netcdf(
-                output_dir=pl.Path(self._netcdf_output_dir),
-                separate_variables=self._netcdf_separate_files,
-                output_vars=self._netcdf_output_vars,
-            )
 
         return
 

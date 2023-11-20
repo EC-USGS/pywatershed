@@ -347,11 +347,12 @@ class PRMSSnow(ConservativeProcess):
                 self.pk_depth,
             )
 
-            self.pk_den = np.where(
-                mask_pkweq_gt_zero,
-                self.pkwater_equiv / self.pk_depth,
-                self.pk_den,
-            )
+            with np.errstate(invalid="ignore"):
+                self.pk_den = np.where(
+                    mask_pkweq_gt_zero & (self.pk_depth > dnearzero),
+                    self.pkwater_equiv / self.pk_depth,
+                    self.pk_den,
+                )
 
             self.pk_ice = np.where(
                 mask_pkweq_gt_zero, self.pkwater_equiv, self.pk_ice
@@ -377,11 +378,12 @@ class PRMSSnow(ConservativeProcess):
             )
 
             mask_ai_gt_zero = self.ai > dnearzero
-            self.frac_swe = np.where(
-                mask_ai_gt_zero,
-                np.minimum(self.pkwater_equiv / self.ai, 1),
-                self.frac_swe,
-            )
+            with np.errstate(invalid="ignore"):
+                self.frac_swe = np.where(
+                    mask_ai_gt_zero,
+                    np.minimum(self.pkwater_equiv / self.ai, 1),
+                    self.frac_swe,
+                )
 
             wh_pkweq_gt_zero = np.where(mask_pkweq_gt_zero)
             for ww in range(len(wh_pkweq_gt_zero[0])):

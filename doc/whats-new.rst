@@ -12,13 +12,16 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.0.3.0:
+.. _whats-new.1.0.0:
 
-v0.3.0 (unreleased)
+v1.0.0 (unreleased)
 ---------------------
 
 New features
 ~~~~~~~~~~~~
+- Control object features including (optional) warnings for unused legacy options, and
+  defined and enforced options. Also to_yaml() and __str__ implementations.
+  (:pull:`240`) By `James McCreight <https://github.com/jmccreight>`_.
 - Example notebook of how to edit Parameters with associated bug fixes to do so.
   (:pull:`232`) By `James McCreight <https://github.com/jmccreight>`_.
 - Conda feedstock for pywatershed `<https://github.com/conda-forge/staged-recipes/pull/23428>`_.
@@ -31,7 +34,8 @@ Breaking changes
 
 Deprecations
 ~~~~~~~~~~~~
-
+- Deprecation of Control.load() for Control.load_prms().
+  (:pull:`240`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Performance
 ~~~~~~~~~~~
@@ -39,6 +43,14 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
+- Mass balance fix in PRMS snow for rain on snow followed by evaporation
+  consuming the entire snow pack.
+  (:pull:`248`) By `James McCreight <https://github.com/jmccreight>`_.
+- Fix mass balance issue in PRMSSnow is also present in PRMS,
+  snow evap is not taken from freeh2o when there is no pk_ice.
+  (:pull:`236`) By `James McCreight <https://github.com/jmccreight>`_.
+- Resolve issues with different ways of specifying necdf output options.
+  (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
 - Resolve issues with different ways of specifiying netcdf output options.
   (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
 - PRMSSoilzone remove soil_moist_prev because soil_moist is not prognotic and
@@ -48,13 +60,28 @@ Bug fixes
 
 Documentation
 ~~~~~~~~~~~~~
+- New gh-pages branch (without history) to publish
+  `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
+  `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.
+  This branch publishes analysis supporting the version 1.0.0 release.
 - Add about section for version 1.0 to describe how pywatershed matches PRMS'
   NHM configuration and how to perform the comparison.
   (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
-
 Internal changes
 ~~~~~~~~~~~~~~~~
+- New system for generating test_data, by calling generate_test_data.py from
+  `autotest/`. The system helps autotest know if test data were generated
+  and if they are up to date.
+  (:pull:`253`) By `James McCreight <https://github.com/jmccreight>`_.
+- Apply pylint and flake8 everywhere as much as possible.
+  (:pull:`251`) By `James McCreight <https://github.com/jmccreight>`_.
+- Remove diagnostic variables pkwater_equiv_change, pkwater_ante
+  (:pull:`248`) By `James McCreight <https://github.com/jmccreight>`_.
+- Use v1 instead of main for fortran-lang/setup-fortran.
+  (:pull:`242`, :pull:`243`) By `Wes Bonelli <https://github.com/w-bonelli>`_.
+- Refactor test data generation to solve race condition for dependent tests.
+  (:pull:`237`) By `Wes Bonelli <https://github.com/w-bonelli>`_.
 - Refactor tests against PRMS for consistency, flexibility, and thoroughness.
   (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 

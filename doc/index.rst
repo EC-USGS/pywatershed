@@ -6,10 +6,38 @@ pywatershed: a hydrologic model in Python
 
 Welcome to the `pywatershed` docs!
 
-To learn more about this project, see `About <about.html>`_.
+pywatershed is path for modernizing legacy USGS hydrology models,
+in particular PRMS and GSFlow. It is also a place for experimentation with
+hydrologic models in this context.
 
-Please browse the API reference, developer info, and
-index using the table of contents on the left.
+===========
+Status
+===========
+
+-----------------------
+Current Version: 1.0.0
+-----------------------
+With pywatershed version 1.0.0, we have faithfully reproduced the NHM
+configuration of PRMS. For more information see the
+`release notes <https://github.com/EC-USGS/pywatershed/releases/tag/1.0.0`_
+and the `extended release notes <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview)`_
+for version 1.0.0.
+
+-------------------------------
+Upcoming development (in 2024)
+-------------------------------
+The broad goal is to reproduce GSFLOW couping to MODFLOW 6 via its API. This will include
+gridded configurations and cascading flows.
+We are also working on reservoir representations in pywatershed.
+
+
+=================
+Getting Started
+=================
+
+Please note that you can browse the API reference, developer info, and index
+using the table of contents on the left. However, the best way to get started
+with pywatershed is to dive in to the example notebooks.
 
 | For introductory example notebooks, look in the `examples/ <https://github.com/EC-USGS/pywatershed/tree/main/examples>`_ directory in the repository. Numbered starting at 00, these are meant to be completed in order. Though no notebook outputs are saved in Github, these notebooks can be easily found and run in WholeTale containers (free but sign-up or log-in required):
 
@@ -21,7 +49,16 @@ index using the table of contents on the left.
 
 See `README.md <https://github.com/EC-USGS/pywatershed/tree/develop/README.md>`_ for more details on using WholeTale.
 
-We value your feedback! To view the repository, suggest an edit to this documentation, or open an issue, please follow the Github Octocat at the top of the page. For more in-depth contributions, please start by reading over the `DEVELOPER.md file <https://github.com/EC-USGS/pywatershed/blob/develop/DEVELOPER.md>`_.
+
+========================
+Community Engagement
+========================
+
+We value your feedback! Please use `discussions <https://github.com/EC-USGS/pywatershed/discussions>`_
+or `issues <https://github.com/EC-USGS/pywatershed/issues>`_ on our Github page. You may also suggest
+edits to this documentation or open an issue by clicking on the Github Octocat at the top of the page.
+For more in-depth contributions, please start by reading over
+the `DEVELOPER.md file <https://github.com/EC-USGS/pywatershed/blob/develop/DEVELOPER.md>`_.
 
 Thank you for your interest.
 

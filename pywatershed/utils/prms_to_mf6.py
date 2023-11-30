@@ -164,9 +164,13 @@ class MMRToMF6:
             int((self.end_time - self.start_time) / self.control.time_step) + 1
         )
 
-        timestep_s = self.control.time_step_seconds * self.units("seconds")
+        self._timestep_s = self.control.time_step_seconds * self.units(
+            "seconds"
+        )
         # convert to output units in the output data structure
-        perlen = timestep_s.to_base_units().magnitude  # not reused, ok2convert
+        perlen = (
+            self._timestep_s.to_base_units().magnitude
+        )  # not reused, ok2convert
 
         if hasattr(self, "control"):
             tdis_rc = [(perlen, 1, 1.0) for ispd in range(self.nper)]
@@ -185,7 +189,7 @@ class MMRToMF6:
         )
 
         # SNF
-        snf = flopy.mf6.ModflowSwf(self.sim, modelname=sim_name)
+        self._snf = flopy.mf6.ModflowSwf(self.sim, modelname=sim_name)
 
         # DISL
 
@@ -211,27 +215,83 @@ class MMRToMF6:
         vertices = None
         cell2d = None
 
-        nsegment = self.params.dims["nsegment"]
-        hru_segment = parameters["hru_segment"] - 1
-        tosegment = parameters["tosegment"] - 1
+        self._nsegment = self.params.dims["nsegment"]
+        self._hru_segment = parameters["hru_segment"] - 1
+        self._tosegment = parameters["tosegment"] - 1
 
         # united quantities
 
         segment_units = self.units(meta.parameters["seg_length"]["units"])
-        segment_length = parameters["seg_length"]
-        segment_length = segment_length * segment_units
+        self._segment_length = parameters["seg_length"]
+        self._segment_length = self._segment_length * segment_units
 
         _ = flopy.mf6.ModflowSwfdisl(
-            snf,
-            nodes=nsegment,
+            self._snf,
+            nodes=self._nsegment,
             nvert=nvert,
-            reach_length=segment_length.to_base_units().magnitude,
-            toreach=tosegment,
+            reach_length=self._segment_length.to_base_units().magnitude,
+            toreach=self._tosegment,
             idomain=1,  # ??
             vertices=vertices,
             cell2d=cell2d,
             length_units=length_units,
         )
+
+        return
+
+    def write(self):
+        print(f"\nWriting simulation files to: {self.output_dir}")
+        self.sim.write_simulation()
+
+        return
+
+
+class MMRToMMR(MMRToMF6):
+    """Deal with the documentation later."""
+
+    def __init__(
+        self,
+        control_file: fileish = None,
+        param_file: fileish = None,
+        control: Control = None,
+        params: PrmsParameters = None,
+        segment_shapefile: fileish = None,
+        output_dir: fileish = pl.Path("."),
+        bc_binary_files: bool = False,
+        bc_flows_combine: bool = False,
+        sim_name: str = "mmr_to_mf6",
+        inflow_dir: fileish = None,
+        inflow_from_PRMS: bool = True,
+        # intial flows over ride from file?
+        length_units="meters",
+        time_units="seconds",
+        start_time: np.datetime64 = None,
+        end_time: np.datetime64 = None,
+        time_zone="UTC",
+        write_on_init: bool = True,
+        **kwargs,
+    ):
+        super().__init__(
+            control_file=control_file,
+            param_file=param_file,
+            control=control,
+            params=params,
+            segment_shapefile=segment_shapefile,
+            output_dir=output_dir,
+            bc_binary_files=bc_binary_files,
+            bc_flows_combine=bc_flows_combine,
+            sim_name=sim_name,
+            inflow_dir=inflow_dir,
+            inflow_from_PRMS=inflow_from_PRMS,
+            length_units=length_units,
+            time_units=time_units,
+            start_time=start_time,
+            end_time=end_time,
+            time_zone=time_zone,
+            write_on_init=write_on_init,
+        )
+
+        parameters = self.params.parameters
 
         # MMR
         # note: for specifying lake number, use fortran indexing!
@@ -246,16 +306,16 @@ class MMRToMF6:
         # convert prms data to zero-based
 
         connectivity = []
-        outflow_mask = np.full((len(tosegment)), False)
-        for iseg in range(nsegment):
-            theseg = tosegment[iseg]
+        outflow_mask = np.full((len(self._tosegment)), False)
+        for iseg in range(self._nsegment):
+            theseg = self._tosegment[iseg]
             if theseg < 0:
                 outflow_mask[iseg] = True
                 continue
             connectivity.append((iseg, theseg))
 
         # use networkx to calculate the Directed Acyclic Graph
-        if nsegment > 1:
+        if self._nsegment > 1:
             graph = nx.DiGraph()
             graph.add_edges_from(connectivity)
             segment_order = list(nx.topological_sort(graph))
@@ -307,12 +367,12 @@ class MMRToMF6:
         # in a value of infinity that when evaluated relative to a maximum
         # desired Kcoef value of 24 would be reset to 24. This approach is
         # equivalent and avoids the occurence of a divide by zero.
-        Kcoef = np.full(nsegment, 24.0, dtype=float)
-        Kcoef = Kcoef * (segment_length.units / velocity.units)
+        Kcoef = np.full(self._nsegment, 24.0, dtype=float)
+        Kcoef = Kcoef * (self._segment_length.units / velocity.units)
 
         # only calculate Kcoef for cells with velocities greater than zero
         idx = velocity > zero
-        Kcoef[idx] = segment_length[idx] / velocity[idx]
+        Kcoef[idx] = self._segment_length[idx] / velocity[idx]
         Kcoef = np.where(
             parameters["segment_type"] == SegmentType.LAKE.value,
             24.0 * Kcoef.units,
@@ -336,7 +396,7 @@ class MMRToMF6:
         x_coef = parameters["x_coef"] * x_coef_units
 
         _ = flopy.mf6.ModflowSwfmmr(
-            snf,
+            self._snf,
             print_flows=True,
             observations=mmr_obs,
             iseg_order=segment_order,
@@ -389,15 +449,17 @@ class MMRToMF6:
                 hru_area = parameters["hru_area"] * hru_area_unit
                 inflows[flow_name] *= hru_area
 
-            inflows[flow_name] /= timestep_s.to("seconds")
+            inflows[flow_name] /= self._timestep_s.to("seconds")
 
             new_inflow_unit = inflows[flow_name].units
 
             # calculate lateral flow term to the REACH/segment from HRUs
-            lat_inflow = np.zeros((self.nper, nsegment)) * new_inflow_unit
+            lat_inflow = (
+                np.zeros((self.nper, self._nsegment)) * new_inflow_unit
+            )
 
             for ihru in range(self.params.dims["nhru"]):
-                iseg = hru_segment[ihru]
+                iseg = self._hru_segment[ihru]
                 if iseg < 0:
                     # This is bad, selective handling of fluxes is not cool,
                     # mass is being discarded in a way that has to be
@@ -417,7 +479,7 @@ class MMRToMF6:
                         irch + add_one,
                         lat_inflow[ispd, irch].to_base_units().magnitude,
                     )
-                    for irch in range(nsegment)
+                    for irch in range(self._nsegment)
                 ]
 
                 if bc_binary_files:
@@ -447,22 +509,14 @@ class MMRToMF6:
                     flw_spd[ispd] = flw_ispd
 
             _ = flopy.mf6.ModflowSwfflw(
-                snf,
+                self._snf,
                 print_input=True,
                 print_flows=True,
                 stress_period_data=flw_spd,
-                maxbound=nsegment + 1,
+                maxbound=self._nsegment + 1,
                 pname=flow_name,
             )
 
         # done, write if requested/default else delay
         if write_on_init:
             self.write()
-
-        return
-
-    def write(self):
-        print(f"\nWriting simulation files to: {self.output_dir}")
-        self.sim.write_simulation()
-
-        return

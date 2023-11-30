@@ -183,11 +183,6 @@ class MMRToMF6:
                 perioddata=tdis_rc,
             )
 
-        # EMS
-        _ = flopy.mf6.ModflowEms(
-            self.sim,
-        )
-
         # SNF
         self._snf = flopy.mf6.ModflowSwf(self.sim, modelname=sim_name)
 
@@ -292,6 +287,9 @@ class MMRToMMR(MMRToMF6):
         )
 
         parameters = self.params.parameters
+
+        # EMS
+        _ = flopy.mf6.ModflowEms(self.sim)
 
         # MMR
         # note: for specifying lake number, use fortran indexing!

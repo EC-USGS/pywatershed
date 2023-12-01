@@ -20,11 +20,12 @@ from ..parameters import PrmsParameters
 #     has_geopandas = False
 
 
-# more generally: this is PRMSMMR to SNFDISL, SNFFLW, and/or SNFMMR
-
-
 class MMRToMF6:
-    """Muskingum-Mann Routing (MMR) data from PRMS to MF6
+    """A base class for MMRToMMR, MMRToMCT, and MMRToDFW
+
+    TODO: all the documentation below and for child classes.
+
+    # this is PRMSMMR to SNFDISL, SNFFLW, and/or SNFMMR
 
     The MF6 IO descrption can be found here
     https://modflow6.readthedocs.io/en/latest/mf6io.html
@@ -77,8 +78,8 @@ class MMRToMF6:
         inflow_dir: fileish = None,
         inflow_from_PRMS: bool = True,
         # intial flows over ride from file?
-        length_units="meters",
-        time_units="seconds",
+        # length_units="meters",
+        # time_units="seconds",
         start_time: np.datetime64 = None,
         end_time: np.datetime64 = None,
         time_zone="UTC",
@@ -94,6 +95,7 @@ class MMRToMF6:
         self.length_units = "meters"
         self.time_units = "seconds"
 
+        # Preliminaries
         # read the parameter/control files (similar but not identical logic)
         inputs_dict = {
             "param": {"obj": params, "file": param_file},
@@ -138,7 +140,7 @@ class MMRToMF6:
             else:
                 setattr(self, f"{key}_file", None)
 
-        # just shorthand
+        # shorthand
         parameters = self.params.parameters
 
         # MF6 simulation
@@ -188,6 +190,7 @@ class MMRToMF6:
 
         # DISL
 
+        # TODO: vertices
         # Bring in segment shapefile to do this sometime
         # # only requires parameter file
         # vertices = [
@@ -229,7 +232,7 @@ class MMRToMF6:
             idomain=1,  # ??
             vertices=vertices,
             cell2d=cell2d,
-            length_units=length_units,
+            length_units=self.length_units,
         )
 
         return
@@ -258,8 +261,8 @@ class MMRToMMR(MMRToMF6):
         inflow_dir: fileish = None,
         inflow_from_PRMS: bool = True,
         # intial flows over ride from file?
-        length_units="meters",
-        time_units="seconds",
+        # length_units="meters",
+        # time_units="seconds",
         start_time: np.datetime64 = None,
         end_time: np.datetime64 = None,
         time_zone="UTC",
@@ -278,8 +281,8 @@ class MMRToMMR(MMRToMF6):
             sim_name=sim_name,
             inflow_dir=inflow_dir,
             inflow_from_PRMS=inflow_from_PRMS,
-            length_units=length_units,
-            time_units=time_units,
+            # length_units=length_units,
+            # time_units=time_units,
             start_time=start_time,
             end_time=end_time,
             time_zone=time_zone,

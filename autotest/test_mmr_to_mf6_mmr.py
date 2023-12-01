@@ -4,7 +4,7 @@ import pint
 import pytest
 import xarray as xr
 
-from pywatershed.utils.prms_to_mf6 import MMRToMF6, MMRToMMR
+from pywatershed.utils.mmr_to_mf6_mmr import MMRToMF6MMR
 
 start_time = np.datetime64("1979-01-01T00:00:00")
 end_time = np.datetime64("1979-01-07T00:00:00")
@@ -19,7 +19,7 @@ def lateral_flow_ans_ds(domain):
 
 
 # When we can point at modflow6 develop we'll un-xfail this
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])
 def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
@@ -31,7 +31,7 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
     control_file = domain["control_file"]
     domain_name = domain["domain_name"]
 
-    _ = MMRToMMR(
+    _ = MMRToMF6MMR(
         param_file=param_file,
         control_file=control_file,
         output_dir=tmp_path,

@@ -33,11 +33,14 @@ author = "USGS Developers and Community"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# For sphinx-autodoc-typehints compat with sphinx.ext.napoleon see
+# https://github.com/tox-dev/sphinx-autodoc-typehints/issues/15
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
     # "nbsphinx",
     "sphinx_autosummary_accessors",
     "sphinx.ext.intersphinx",
@@ -56,7 +59,7 @@ extlinks = {
 
 
 autosummary_generate = True
-autodoc_typehints = "none"
+# autodoc_typehints = "none"
 # autosummary_imported_members = True
 
 # autodoc_default_options = {
@@ -73,7 +76,7 @@ autodoc_typehints = "none"
 # Napoleon configurations
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
-napoleon_use_param = False
+napoleon_use_param = True
 napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_preprocess_types = True

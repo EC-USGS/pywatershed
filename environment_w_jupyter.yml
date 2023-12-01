@@ -54,3 +54,4 @@ dependencies:
       - jupyter_black
       - modflow-devtools
       - pylint
+      - sphinx-autodoc-typehints

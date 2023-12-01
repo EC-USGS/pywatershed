@@ -41,6 +41,9 @@ pywatershed environment is already to go:
 
 * `Run the latest release (main branch) in WholeTale <https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata>`_
 * `Run the develop branch in WholeTale <https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata>`_
+=======
+| `WholeTale container for latest release (main branch) <https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata>`_
+| `WholeTale container for develop branch <https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata>`_
 
 See `README.md <https://github.com/EC-USGS/pywatershed/tree/develop/README.md>`_ for more details
 on both `running locally <https://github.com/EC-USGS/pywatershed#installation>`_

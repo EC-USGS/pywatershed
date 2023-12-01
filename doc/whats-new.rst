@@ -60,6 +60,8 @@ Bug fixes
 
 Documentation
 ~~~~~~~~~~~~~
+- Implement sphinx_autodoc_typehints.
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.  
 - New gh-pages branch (without history) to publish
   `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
   `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.

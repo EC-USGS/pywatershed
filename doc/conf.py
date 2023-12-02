@@ -62,15 +62,15 @@ autosummary_generate = True
 # autodoc_typehints = "none"
 # autosummary_imported_members = True
 
-# autodoc_default_options = {
-#     #     "members": False,
-#     #     # "imported-members": True,
-#     #     # "inherited-members": True,
-#     #     #     "undoc-members": True,
-#     #     #     "private-members": True,  #
-#     "special-members": "",
-#     "exclude-members": "__init__",
-# }
+autodoc_default_options = {
+    "members": True,
+    # "imported-members": True,
+    "inherited-members": True,
+    "undoc-members": True,
+    "private-members": False,  #
+    # "special-members": "",
+    "exclude-members": "__init__",
+}
 
 
 # Napoleon configurations

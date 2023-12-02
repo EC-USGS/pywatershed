@@ -725,30 +725,34 @@ class Model:
 
         Yaml file structure (strict order not required, but suggested):
 
-        Control object: Any name can be used but the value must be a control
-            yaml file specified with the suffix ".yaml". E.g
-            "name: control.yaml"
-            would appear in the passed yaml file. Only one control
-            specification is allowed in the yaml_file. For details on the
-            requirements of the control.yaml file see `Control.from_yaml`
-        Discretization objects: Any number of discretization objects can be
-            supplied with arbitrary (though unique) names. The values supplied
-            for each discretization must be a valid netcdf file with suffix
-            ".nc". These can generally be obtained by calling
-            `parameters.to_netcdf()` on subclasses of Parameters.
-        Process objects: Any number of processes may be specified with
-            arbitrary (though unique) names. Processes are specified as
-            dictionaries in the yaml file, they have additonal key:value pairs.
-            Required key:value pairs are:
-                class: a class that can be `from pywatershed import class`
-                parameters: a netcdf file that specifies the parameters for
-                    the class
-                dis: the name of the discretization for the class as given by
-                    a discretization object speficication above.
-            Optional key:value pairs:
-                TBD
-        Model order list: a list supplying the order in which the processes are
-            to be executed.
+        * Control object: Any name can be used but the value must be a control
+          yaml file specified with the suffix ".yaml". E.g
+          "name: control.yaml"
+          would appear in the passed yaml file. Only one control
+          specification is allowed in the yaml_file. For details on the
+          requirements of the control.yaml file see `Control.from_yaml`
+
+        * Discretization objects: Any number of discretization objects can be
+          supplied with arbitrary (though unique) names. The values supplied
+          for each discretization must be a valid netcdf file with suffix
+          ".nc". These can generally be obtained by calling
+          `parameters.to_netcdf()` on subclasses of Parameters.
+
+        * Process objects: Any number of processes may be specified with
+          arbitrary (though unique) names. Processes are specified as
+          dictionaries in the yaml file, they have additonal key:value pairs.
+          Required key:value pairs are:
+
+          * class: a class that can be `from pywatershed import class`
+          * parameters: a netcdf file that specifies the parameters for
+            the class
+          * dis: the name of the discretization for the class as given by
+            a discretization object speficication above.
+
+          Optional key:value pairs: TBD
+
+        * Model order list: a list supplying the order in which the processes
+          are to be executed.
 
         Note: To get a model_dict specfied by the yaml_file, call
         `model_dict_from_yaml` instead.

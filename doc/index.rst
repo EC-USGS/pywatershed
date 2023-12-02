@@ -33,17 +33,13 @@ Please note that you can browse the API reference, developer info, and index
 using the table of contents on the left. But *the best way to get started
 with pywatershed is to dive in to the example notebooks*.
 
-| For introductory example notebooks, look in the `examples/ <https://github.com/EC-USGS/pywatershed/tree/main/examples>`_ directory in the repository. Numbered starting at 00, these are meant to be completed in order. Notebook outputs are not saved in Github. But you can run these notebooks locally or using WholeTale (free but sign-up or log-in required) where the
-pywatershed environment is already to go:
+| For introductory example notebooks, look in the `examples/ <https://github.com/EC-USGS/pywatershed/tree/main/examples>`_ directory in the repository. Numbered starting at 00, these are meant to be completed in order. Notebook outputs are not saved in Github. But you can run these notebooks locally or using WholeTale (free but sign-up or log-in required) where the pywatershed environment is all ready to go:
 
 .. image:: https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg
    :target: https://dashboard.wholetale.org
 
-* `Run the latest release (main branch) in WholeTale <https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata>`_
+* `Run the latest release in WholeTale <https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata>`_
 * `Run the develop branch in WholeTale <https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata>`_
-=======
-| `WholeTale container for latest release (main branch) <https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata>`_
-| `WholeTale container for develop branch <https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata>`_
 
 See `README.md <https://github.com/EC-USGS/pywatershed/tree/develop/README.md>`_ for more details
 on both `running locally <https://github.com/EC-USGS/pywatershed#installation>`_
@@ -63,20 +59,18 @@ Thank you for your interest.
 
 .. toctree::
    :hidden:
-   :caption: About
-
-    About <about.rst>
-
-.. toctree::
-   :hidden:
    :caption: API Reference
 
     API Reference <api.rst>
+    meta <api/generated/pywatershed.meta.rst>
+    Control <api/generated/pywatershed.Control.rst>
+    Parameters <api/parameters>
+    Adapter <api/generated/pywatershed.Adapter.rst>
     Atmosphere <api/atmosphere>
     Hydrology <api/hydrology>
-    Parameters <api/parameters>
-    Base <api/base>
-    Utils <api/utils>
+    Model <api/generated/pywatershed.Model.rst>
+    Base Classes <api/base>
+    Utilities <api/utils>
 
 .. toctree::
    :maxdepth: 2

@@ -20,19 +20,28 @@ def datetime_year(dt64: np.datetime64) -> int:
 
 
 def datetime_month(dt64: np.datetime64, zero_based=False) -> int:
-    """Get the month from np.datetime64"""
+    """Get the month from np.datetime64
+    Args:
+         zero_based: count as a zero-based index.
+    """
     return dt64.astype("datetime64[M]").astype(int) % 12 + _offset(zero_based)
 
 
 def datetime_doy(dt64: np.datetime64, zero_based=False) -> int:
-    """Get day of year from np.datetime64"""
+    """Get day of year from np.datetime64
+    Args:
+        zero_based: count as a zero-based index.
+    """
     return (dt64 - dt64.astype("datetime64[Y]")).astype(
         "timedelta64[D]"
     ).astype(int) + _offset(zero_based)
 
 
 def datetime_dowy(dt64: np.datetime64, zero_based=False) -> int:
-    """Get day of water year from np.datetime64"""
+    """Get day of water year from np.datetime64
+    Args:
+        zero_based: count as a zero-based index.
+    """
     year_start = datetime_year(dt64)
     if datetime_month(dt64) < 10:
         year_start -= 1

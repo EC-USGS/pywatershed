@@ -51,7 +51,7 @@ def test_control_simple(control_simple):
     assert control_simple.time_step == ts
     assert control_simple.start_time == time_dict["start_time"]
     assert control_simple.end_time == time_dict["end_time"]
-    assert control_simple.current_time is None
+    assert control_simple.current_time == control_simple.init_time
     assert control_simple.itime_step == -1
     prev_time = control_simple.current_time
     n_times = control_simple.n_times

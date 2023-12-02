@@ -1,9 +1,9 @@
 .. currentmodule:: pywatershed
 
 
-##########
+----------
 Utils
-##########
+----------
 
 .. autosummary::
    :toctree: generated/

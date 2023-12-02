@@ -394,7 +394,7 @@ class Control(Accessor):
         return self._n_times
 
     @property
-    def time_step_seconds(self) -> np.float:
+    def time_step_seconds(self) -> np.float64:
         """The timestep length in units of seconds."""
         return self.time_step / np.timedelta64(1, "s")
 

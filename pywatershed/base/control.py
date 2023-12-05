@@ -113,7 +113,6 @@ class Control(Accessor):
     Examples:
     ---------
 
-    ..
     >>> import pathlib as pl
     >>>
     >>> import numpy as np

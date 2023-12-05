@@ -49,23 +49,11 @@ def _json_load(json_filename):
 
 
 class PrmsParameters(Parameters):
-    """
-    PRMS parameter class
+    """A parameter class with methods for native PRMS files.
 
-    Args:
-        parameter_dict : dict
-            parameters dictionary: either structure
-
-            * param: value
-            * process: {param: value ... }
-
-            where the later is a parameter dictionary grouped by process.
-            The keys for process should be either the class itself, class.name,
-            or type(class.__name__).
-        parameter_dimensions_dict : dict
-            parameters dimensions dictionary with a structure mirring the
-            parameter dict as described above but with shape tuples in place
-            of parameter value data.
+    See Also
+    --------
+    pywatershed.Parameters
 
     """
 
@@ -77,6 +65,7 @@ class PrmsParameters(Parameters):
         metadata: dict = None,
         encoding: dict = None,
         validate: bool = True,
+        copy: bool = True,
     ) -> None:
         if dims is None:
             dims = {}
@@ -96,6 +85,7 @@ class PrmsParameters(Parameters):
             metadata=metadata,
             encoding=encoding,
             validate=validate,
+            copy=copy,
         )
 
         return
@@ -114,7 +104,7 @@ class PrmsParameters(Parameters):
                 dimensions[key] = value
         return dimensions
 
-    def parameters_to_json(self, json_filename):
+    def parameters_to_json(self, json_filename) -> None:
         """write the parameters dictionary out to a json file"""
         json.dump(
             {**self.dims, **self.parameters},
@@ -122,8 +112,7 @@ class PrmsParameters(Parameters):
             indent=4,
             cls=JSONParameterEncoder,
         )
-
-        return
+        return None
 
     @staticmethod
     def _from_dict(param_dict: dict) -> "PrmsParameters":
@@ -132,14 +121,9 @@ class PrmsParameters(Parameters):
 
     @staticmethod
     def load_from_json(json_filename: fileish) -> "PrmsParameters":
-        """Load parameters from a json file
-
+        """Load parameters from a json file.
         Args:
-            : json file path
-
-        Returns:
-            PrmsParameters: full PRMS parameter dictionary
-
+          json_filename: json file path
         """
         pars = _json_load(json_filename)
         params = PrmsParameters._process_file_input(pars)

@@ -61,11 +61,11 @@ Thank you for your interest.
    :hidden:
    :caption: API Reference
 
-    API Reference <api.rst>
+    API Summary <api.rst>
     meta <api/generated/pywatershed.meta.rst>
     Control <api/generated/pywatershed.Control.rst>
     Parameters <api/parameters>
-    Adapter <api/generated/pywatershed.Adapter.rst>
+    adapter <api/adapter>
     Atmosphere <api/atmosphere>
     Hydrology <api/hydrology>
     Model <api/generated/pywatershed.Model.rst>

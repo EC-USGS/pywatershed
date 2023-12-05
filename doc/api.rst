@@ -1,7 +1,7 @@
 .. currentmodule:: pywatershed
 
 ################
-Full API Listing
+API Summary
 ################
 
 .. include:: api/meta.rst

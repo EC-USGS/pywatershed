@@ -11,32 +11,54 @@ from .process import Process
 
 
 class ConservativeProcess(Process):
-    """ConservativeProcess base class
+    """Base class for representation of conservative physical processes.
 
-    ConservativeProcess is a base class for mass and energy conservation. This
-    class extends the Process class with a budget on mass (energy in the
-    future).
-
-    It has budgets that can optionally be established for mass an energy and
-    these can be enforced or simply diagnosed with the model run.
+    ConservativeProcess is a base class for mass and energy conservation which
+    extends the :func:`~pywatershed.base.Process` class with a budget on
+    mass (energy in the future). Please see :func:`~pywatershed.base.Process`
+    for many details on the design of this parent class. In ConservativeProcess
+    only mass conservation is currently implemented. Budgets can optionally be
+    established for mass (and eventually energ) and these can be enforced or
+    simply diagnosed with the model run.
 
     Conventions are adopted through the use of the following
     properties/methods:
 
-        mass_budget_terms/get_mass_budget_terms():
-            These terms must all in in the same units across all components of
-            the budget (inputs, outputs, storage_changes). Diagnostic variables
-            should not appear in the budget terms, only prognostic variables
-            should.
+    mass_budget_terms/get_mass_budget_terms():
+        These terms must all in in the same units across all components of
+        the budget (inputs, outputs, storage_changes). Diagnostic variables
+        should not appear in the budget terms, only prognostic variables
+        should.
 
-        _calculate():
-            This method is to be overridden by the subclass. Near the end of
-            the method, the subclass should calculate its changes in mass and
-            energy storage in an obvious way. As commented for
-            mass_budget_terms, storage changes should only be tracked for
-            prognostic variables. (For example is snow_water_equiv = snow_ice +
-            snow_liquid, then storage changes for snow_ice and snow_liquid
-            should be tracked and not for snow_water_equiv).
+    _calculate():
+        This method is to be overridden by the subclass. Near the end of
+        the method, the subclass should calculate its changes in mass and
+        energy storage in an obvious way. As commented for
+        mass_budget_terms, storage changes should only be tracked for
+        prognostic variables. (For example is snow_water_equiv = snow_ice +
+        snow_liquid, then storage changes for snow_ice and snow_liquid
+        should be tracked and not for snow_water_equiv).
+
+    See Also
+    --------
+    pywatershed.base.Process
+    pywatershed.base.Budget
+
+    Args
+    ----
+    control:
+        A Control object
+    discretization:
+        A discretization object
+    parameters:
+        The parameters for this object
+    budget_type:
+        Use a budget and what action to take on budget imbalance.
+    metadata_patches:
+        Override static metadata for any public parameter or variable --
+        experimental.
+    metadata_patch_conflicts:
+        How to handle metadata_patches conflicts. Experimental.
 
     """
 

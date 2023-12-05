@@ -31,7 +31,16 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 class PRMSSolarGeometry(Process):
     """PRMS solar geometry.
 
-    Swift's daily potential solar radiation and number of hours
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
+    Implements Swift's daily potential solar radiation and number of hours
     of duration on a sloping surface in [cal/cm2/day].
     Swift, 1976, equation 6.
 

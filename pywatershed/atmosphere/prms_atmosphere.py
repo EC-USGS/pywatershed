@@ -27,14 +27,14 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
 class PRMSAtmosphere(Process):
     """PRMS atmospheric boundary layer model.
 
-    Implementation based on PRMS 5.2.1 with theoretical documentation based on
-    PRMS-IV:
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
 
-    Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
     Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
     precipitation-runoff modeling system, version 4. US Geological Survey
     Techniques and Methods, 6, B7.
-    https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
 
     This representation uses precipitation and temperature inputs. Relative
     humidity could be added as well.
@@ -42,7 +42,7 @@ class PRMSAtmosphere(Process):
     The boundary layer calculates and manages the following variables (given
     by PRMSAtmosphere.get_variables()):
 
-    *tmaxf, tminf, prmx, hru_ppt, hru_rain, hru_snow, swrad, potet, transp_on*
+    * tmaxf, tminf, prmx, hru_ppt, hru_rain, hru_snow, swrad, potet, transp_on
 
     PRMS adjustments to temperature and precipitation are applied here to
     the inputs. Shortwave radiation (using degree day method) and potential
@@ -60,7 +60,7 @@ class PRMSAtmosphere(Process):
     the variable which is named with a single-leading underscore (eg tmaxf for
     all time is _tmaxf).
 
-    This full-time initialization ma not be tractable for large domains and/or
+    This full-time initialization may not be tractable for large domains and/or
     long periods of time and require changes to batch the processing of the
     variables. The benefits of full-time initialization are 1) the code is
     vectorized and fast for such a large calculation, 2) the initialization of

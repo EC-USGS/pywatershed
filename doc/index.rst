@@ -1,7 +1,7 @@
 .. currentmodule:: pywatershed
 
 ####################################################
-pywatershed: a hydrologic model in Python
+pywatershed: A hydrologic model in Python
 ####################################################
 
 Welcome to the `pywatershed` docs!

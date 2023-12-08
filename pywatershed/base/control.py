@@ -123,8 +123,8 @@ class Control(Accessor):
         super().__init__()
         self.name = "Control"
 
-        if end_time <= start_time:
-            raise ValueError("end_time <= start_time")
+        if end_time < start_time:
+            raise ValueError("end_time < start_time")
 
         n_times_m1 = (end_time - start_time) / time_step
         if n_times_m1 != int(n_times_m1):

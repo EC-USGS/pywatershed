@@ -4,7 +4,12 @@ import pint
 import pytest
 import xarray as xr
 
-from pywatershed.utils.mmr_to_mf6_mmr import MMRToMF6MMR
+from pywatershed.utils.mmr_to_mf6_mmr import MmrToMf6Mmr
+
+# This does not check the output of mf6_mmr because would need a binary from
+# specialized mf6 branch in CI. Maybe when feat-snf merges to develop.
+# Could follow test_mmr_to_mf6_dfw and encode answers here... but answers
+# could change with mf6
 
 start_time = np.datetime64("1979-01-01T00:00:00")
 end_time = np.datetime64("1979-01-07T00:00:00")
@@ -19,7 +24,7 @@ def lateral_flow_ans_ds(domain):
 
 
 # When we can point at modflow6 develop we'll un-xfail this
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])
 def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
@@ -31,7 +36,7 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
     control_file = domain["control_file"]
     domain_name = domain["domain_name"]
 
-    _ = MMRToMF6MMR(
+    _ = MmrToMf6Mmr(
         param_file=param_file,
         control_file=control_file,
         output_dir=tmp_path,
@@ -53,7 +58,7 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
             flow_dict = {}
             for flow_name in flow_names:
                 np_file = (
-                    tmp_path / "snf_flw_bc"
+                    tmp_path / "swf_flw_bc"
                 ) / f"flw_{flow_name}_{str(tt)[0:10]}T00_00_00.bin"
                 assert np_file.exists()
                 flow_dict[flow_name] = np.fromfile(

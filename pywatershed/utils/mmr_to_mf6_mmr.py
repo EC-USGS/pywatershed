@@ -5,15 +5,14 @@ import networkx as nx
 import numpy as np
 import xarray as xr
 
-from pywatershed import Control, meta
-
-from .mmr_to_mf6 import MMRToMF6
+from ..base import Control, meta
 from ..constants import SegmentType, fileish, zero
 from ..parameters import PrmsParameters
+from .mmr_to_mf6 import MmrToMf6
 
 
-class MMRToMF6MMR(MMRToMF6):
-    """Deal with the documentation later."""
+class MmrToMf6Mmr(MmrToMf6):
+    """DEAL with the documentation later."""
 
     def __init__(
         self,
@@ -31,10 +30,12 @@ class MMRToMF6MMR(MMRToMF6):
         # intial flows over ride from file?
         # length_units="meters",
         # time_units="seconds",
+        save_flows: bool = False,
         start_time: np.datetime64 = None,
         end_time: np.datetime64 = None,
         time_zone="UTC",
         write_on_init: bool = True,
+        oc_options: dict = None,
         **kwargs,
     ):
         super().__init__(
@@ -49,6 +50,7 @@ class MMRToMF6MMR(MMRToMF6):
             sim_name=sim_name,
             inflow_dir=inflow_dir,
             inflow_from_PRMS=inflow_from_PRMS,
+            save_flows=save_flows,
             # length_units=length_units,
             # time_units=time_units,
             start_time=start_time,
@@ -57,10 +59,61 @@ class MMRToMF6MMR(MMRToMF6):
             write_on_init=write_on_init,
         )
 
+        if oc_options is None:
+            oc_options = {}
+
         parameters = self.params.parameters
+
+        # DISL
+
+        # todo: vertices
+        # Bring in segment shapefile to do this sometime
+        # # only requires parameter file
+        # vertices = [
+        #     [0, 0.0, 0.0, 0.0],
+        #     [1, 0.0, 1.0, 0.0],
+        #     [2, 1.0, 0.0, 0.0],
+        #     [3, 2.0, 0.0, 0.0],
+        #     [4, 3.0, 0.0, 0.0],
+        # ]
+        # # icell1d fdc ncvert icvert
+        # cell2d = [
+        #     [0, 0.5, 2, 1, 2],
+        #     [1, 0.5, 2, 0, 2],
+        #     [2, 0.5, 2, 2, 3],
+        #     [3, 0.5, 2, 3, 4],
+        # ]
+
+        # nvert turns off requirement of vertices and cell2d
+        nvert = None  # len(vertices)
+        vertices = None
+        cell2d = None
+
+        self._nsegment = self.params.dims["nsegment"]
+        self._tosegment = parameters["tosegment"] - 1
+
+        # unit-ed quantities
+
+        segment_units = self.units(meta.parameters["seg_length"]["units"])
+        self._segment_length = parameters["seg_length"]
+        self._segment_length = self._segment_length * segment_units
+
+        _ = flopy.mf6.ModflowSwfdisl(
+            self._swf,
+            nodes=self._nsegment,
+            nvert=nvert,
+            reach_length=self._segment_length.to_base_units().magnitude,
+            toreach=self._tosegment,
+            idomain=1,  # ??
+            vertices=vertices,
+            cell2d=cell2d,
+            length_units=self.length_units,
+        )
 
         # EMS
         _ = flopy.mf6.ModflowEms(self._sim)
+
+        self._hru_segment = self.params.parameters["hru_segment"] - 1
 
         # MMR
         # note: for specifying lake number, use fortran indexing!
@@ -167,11 +220,20 @@ class MMRToMF6MMR(MMRToMF6):
         _ = flopy.mf6.ModflowSwfmmr(
             self._swf,
             print_flows=True,
+            save_flows=save_flows,
             observations=mmr_obs,
             iseg_order=segment_order,
             qoutflow0=qoutflow0.to_base_units().magnitude,
             k_coef=Kcoef.to_base_units().magnitude,
             x_coef=x_coef.to_base_units().magnitude,
+        )
+
+        # output control
+        oc = flopy.mf6.ModflowSwfoc(
+            self._swf,
+            budget_filerecord=f"{self._sim_name}.bud",
+            qoutflow_filerecord=f"{self._sim_name}.qoutflow",
+            **oc_options,
         )
 
         # Boundary conditions / FLW
@@ -260,10 +322,10 @@ class MMRToMF6MMR(MMRToMF6):
                         self.control.start_time + ispd * self.control.time_step
                     )
                     bin_name = (
-                        f"snf_flw_bc/"
+                        f"swf_flw_bc/"
                         f"flw_{flow_name}_{i_time_str.replace(':', '_')}.bin"
                     )
-                    bin_name_pl = self.output_dir / bin_name
+                    bin_name_pl = self._output_dir / bin_name
                     if not bin_name_pl.parent.exists():
                         bin_name_pl.parent.mkdir()
                     _ = ra.tofile(bin_name_pl)
@@ -280,6 +342,7 @@ class MMRToMF6MMR(MMRToMF6):
             _ = flopy.mf6.ModflowSwfflw(
                 self._swf,
                 print_input=True,
+                save_flows=save_flows,
                 print_flows=True,
                 stress_period_data=flw_spd,
                 maxbound=self._nsegment + 1,

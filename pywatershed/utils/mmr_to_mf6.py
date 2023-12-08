@@ -18,7 +18,7 @@ from ..parameters import PrmsParameters
 #     has_geopandas = False
 
 
-class MMRToMF6:
+class MmrToMf6:
     """A base class for MMRToMMR, MMRToMCT, and MMRToDFW
 
     TODO: all the documentation below and for child classes.
@@ -78,14 +78,17 @@ class MMRToMF6:
         # intial flows over ride from file?
         # length_units="meters",
         # time_units="seconds",
+        save_flows: bool = False,
         start_time: np.datetime64 = None,
         end_time: np.datetime64 = None,
         time_zone="UTC",
         write_on_init: bool = True,
         **kwargs,
     ):
-        self.output_dir = output_dir
+        self._sim_name = sim_name
+        self._output_dir = pl.Path(output_dir)
         self.segment_shapefile = segment_shapefile
+        self._save_flows = save_flows
 
         self.units = pint.UnitRegistry(system="mks")
         # these are not really optional at the moment, but hope to make so soon
@@ -96,7 +99,7 @@ class MMRToMF6:
         # Preliminaries
         # read the parameter/control files (similar but not identical logic)
         inputs_dict = {
-            "param": {"obj": params, "file": param_file},
+            "params": {"obj": params, "file": param_file},
             "control": {"obj": control, "file": control_file},
         }
 
@@ -105,19 +108,19 @@ class MMRToMF6:
             obj = val_dict["obj"]
 
             if (obj_file is not None) and (obj is not None):
-                if key == "param":
+                if key == "params":
                     msg = "Can only specify one of param_file or params"
                 else:
                     msg = "Can only specify one of control_file or control"
                 raise ValueError(msg)
 
             elif (obj_file is None) and (obj is None):
-                if key == "param":
+                if key == "params":
                     msg = "Must specify (exactly) one of param_file or params"
                     raise ValueError(msg)
                 else:
                     msg = (
-                        "When control is not passed to MMRToMF6, it does note "
+                        "When control is not passed to MMRToMF6, it does not "
                         "create MF6 .nam, .flw, nor .obs files"
                     )
                     setattr(self, "control_file", None)
@@ -126,7 +129,7 @@ class MMRToMF6:
 
             elif obj_file:
                 setattr(self, f"{key}_file", obj_file)
-                if key == "param":
+                if key == "params":
                     setattr(self, "params", PrmsParameters.load(obj_file))
                 else:
                     setattr(
@@ -137,14 +140,15 @@ class MMRToMF6:
 
             else:
                 setattr(self, f"{key}_file", None)
+                setattr(self, key, obj)
 
         # shorthand
         parameters = self.params.parameters
 
         # MF6 simulation
         self._sim = flopy.mf6.MFSimulation(
-            sim_ws=str(self.output_dir),
-            sim_name=sim_name,
+            sim_ws=str(self._output_dir),
+            sim_name=self._sim_name,
             # version="mf6",
             # exe_name="mf6",
             memory_print_option="all",
@@ -184,59 +188,15 @@ class MMRToMF6:
             )
 
         # SWF
-        self._swf = flopy.mf6.ModflowSwf(self._sim, modelname=sim_name)
-
-        # DISL
-
-        # TODO: vertices
-        # Bring in segment shapefile to do this sometime
-        # # only requires parameter file
-        # vertices = [
-        #     [0, 0.0, 0.0, 0.0],
-        #     [1, 0.0, 1.0, 0.0],
-        #     [2, 1.0, 0.0, 0.0],
-        #     [3, 2.0, 0.0, 0.0],
-        #     [4, 3.0, 0.0, 0.0],
-        # ]
-        # # icell1d fdc ncvert icvert
-        # cell2d = [
-        #     [0, 0.5, 2, 1, 2],
-        #     [1, 0.5, 2, 0, 2],
-        #     [2, 0.5, 2, 2, 3],
-        #     [3, 0.5, 2, 3, 4],
-        # ]
-
-        # nvert turns off requirement of vertices and cell2d
-        nvert = None  # len(vertices)
-        vertices = None
-        cell2d = None
-
-        self._nsegment = self.params.dims["nsegment"]
-        self._hru_segment = parameters["hru_segment"] - 1
-        self._tosegment = parameters["tosegment"] - 1
-
-        # united quantities
-
-        segment_units = self.units(meta.parameters["seg_length"]["units"])
-        self._segment_length = parameters["seg_length"]
-        self._segment_length = self._segment_length * segment_units
-
-        _ = flopy.mf6.ModflowSwfdisl(
-            self._swf,
-            nodes=self._nsegment,
-            nvert=nvert,
-            reach_length=self._segment_length.to_base_units().magnitude,
-            toreach=self._tosegment,
-            idomain=1,  # ??
-            vertices=vertices,
-            cell2d=cell2d,
-            length_units=self.length_units,
+        self._swf = flopy.mf6.ModflowSwf(
+            self._sim, modelname=self._sim_name, save_flows=self._save_flows
         )
 
         return
 
-    def write(self):
-        print(f"\nWriting simulation files to: {self.output_dir}")
-        self._sim.write_simulation()
+    def write(self, *args, **kwargs):
+        print(f"\nWriting simulation files to: {self._output_dir}")
+        return self._sim.write_simulation(*args, **kwargs)
 
-        return
+    def run(self, *args, **kwargs):
+        return self._sim.run_simulation(*args, **kwargs)

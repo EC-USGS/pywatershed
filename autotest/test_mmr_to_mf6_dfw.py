@@ -3,6 +3,7 @@ import pathlib as pl
 import flopy
 import numpy as np
 import pytest
+import xarray as xr
 
 import pywatershed as pws
 from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
@@ -54,8 +55,14 @@ answers_swf_dfw = {
 def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     name = "swf-dfw01"
     output_dir = tmp_path / "test_swf_dfw"
-
     save_flows = True
+
+    # This example shows how to formulate pywatershed inputs to match MF6
+    # inputs unfortunately, these have to be translated through some of the
+    # assumptions of PRMS to go through MMRToMF6DFW
+    # One is that there are flows coming from potentially multiple HRUs to
+    # stream segments, the other is about the units of volume/flow being in
+    # cubicfeet.
 
     # create a dummy control with
     control = pws.Control(
@@ -69,9 +76,10 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     params = pws.parameters.PrmsParameters(
         dims={
             "nsegment": nreach,
+            "nhru": nreach,
         },
         coords={
-            "nsegment": np.array(range(nreach)),
+            "seg_id": np.array(range(nreach)),  # todo: rename seg_id or such
         },
         data_vars={
             "tosegment": np.array([2, 3, 0]),  # one-based index, 0 is outflow
@@ -80,15 +88,17 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
             "seg_slope": np.ones(nreach) * 0.001,
             "seg_width": np.ones(nreach) * 50.0,
             "seg_mid_elevation": np.zeros(nreach),
+            "hru_segment": np.array(range(nreach)) + 1,
         },
         metadata={
-            "nsegment": {"dims": ["nsegment"]},
+            "seg_id": {"dims": ["nsegment"]},
             "tosegment": {"dims": ["nsegment"]},
             "seg_length": {"dims": ["nsegment"]},
             "mann_n": {"dims": ["nsegment"]},
             "seg_slope": {"dims": ["nsegment"]},
             "seg_width": {"dims": ["nsegment"]},
             "seg_mid_elevation": {"dims": ["nsegment"]},
+            "hru_segment": {"dims": ["nsegment"]},
         },
         validate=True,
     )
@@ -120,35 +130,53 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     sto_options = {"save_flows": save_flows}
 
     oc_options = {
-        "saverecord": [("STAGE", "ALL"), ("BUDGET", "ALL")],
-        "printrecord": [("STAGE", "LAST"), ("BUDGET", "ALL")],
+        "saverecord": [
+            ("STAGE", "ALL"),
+            ("BUDGET", "ALL"),
+            # ("QOUTFLOW", "ALL"),
+        ],
+        "printrecord": [
+            ("STAGE", "LAST"),
+            ("BUDGET", "ALL"),
+            # ("QOUTFLOW", "ALL"),
+        ],
     }
 
     ic_options = {"strt": 1.0}
 
-    if binary_flw:
-        flw_list = [(1, 100)]  # one-based cell numbers here
-        ra = np.array(flw_list, dtype=[("irch", "<i4"), ("q", "<f8")])
-        output_dir.mkdir()
-        ra.tofile(output_dir / "flw0.bin")
-        flw_spd = {
-            0: {
-                "filename": "flw0.bin",
-                "binary": True,
-                "data": None,
-            },
-        }
-    else:
-        flw_list = [(0, 100)]  # zero-based cell numbers here
-        flw_spd = {0: flw_list}
+    # boundary conditions / FLW
+    # if we use the volumes from pws rather than the inches from
+    # PRMS, we dont have to supply 'hru_area' in the parameters for
+    # depth to volume conversion.
+    inflow_from_PRMS = False
+    # this will aggregate to a single flw variable when mf6 writes to file
+    bc_flows_combined = True
+    # we have to create files with the boundary conditions in them
+    inflow_list = ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"]
+    inflow_dir = output_dir / "inflow_dir"
+    inflow_dir.mkdir(parents=True)
+    for inflw in inflow_list:
+        if inflw == "sroff_vol":
+            flw_vol = 3531.4666721489  # 100.0 m3/s in ft^3/s
+        else:
+            flw_vol = 0.0
 
-    maxbound = len(flw_list)
+        _ = xr.Dataset(
+            coords=dict(
+                time=np.array([control.start_time]),
+                nsegment=params.parameters["seg_id"],
+            ),
+            data_vars={
+                f"{inflw}": (
+                    ["time", "nsegment"],
+                    np.array([[flw_vol, 0.0, 0.0]]),
+                ),
+            },
+        ).to_netcdf(inflow_dir / f"{inflw}.nc")
 
     flw_options = {
-        "maxbound": maxbound,
         "print_input": True,
         "print_flows": True,
-        "stress_period_data": flw_spd,
     }
 
     chd_options = {
@@ -169,12 +197,16 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
         sto_options=sto_options,
         ic_options=ic_options,
         oc_options=oc_options,
-        flw_options=flw_options,
         chd_options=chd_options,
         cxs_options=cxs_options,
+        inflow_from_PRMS=inflow_from_PRMS,
+        bc_flows_combined=bc_flows_combined,
+        inflow_dir=inflow_dir,
+        flw_options=flw_options,
     )
 
     dfw.write()
+
     success, buff = dfw.run(silent=False, report=True)
 
     # ======================

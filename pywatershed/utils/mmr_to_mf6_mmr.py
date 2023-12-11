@@ -3,7 +3,6 @@ import pathlib as pl
 import flopy
 import networkx as nx
 import numpy as np
-import xarray as xr
 
 from ..base import Control, meta
 from ..constants import SegmentType, fileish, zero
@@ -89,11 +88,9 @@ class MmrToMf6Mmr(MmrToMf6):
         vertices = None
         cell2d = None
 
-        self._nsegment = self.params.dims["nsegment"]
         self._tosegment = parameters["tosegment"] - 1
 
-        # unit-ed quantities
-
+        # unit-ed quantities:
         segment_units = self.units(meta.parameters["seg_length"]["units"])
         self._segment_length = parameters["seg_length"]
         self._segment_length = self._segment_length * segment_units
@@ -110,10 +107,11 @@ class MmrToMf6Mmr(MmrToMf6):
             length_units=self.length_units,
         )
 
+        # set boundary conditions/flows
+        self.set_flw()
+
         # EMS
         _ = flopy.mf6.ModflowEms(self._sim)
-
-        self._hru_segment = self.params.parameters["hru_segment"] - 1
 
         # MMR
         # note: for specifying lake number, use fortran indexing!
@@ -229,125 +227,14 @@ class MmrToMf6Mmr(MmrToMf6):
         )
 
         # output control
-        oc = flopy.mf6.ModflowSwfoc(
+        _ = flopy.mf6.ModflowSwfoc(
             self._swf,
             budget_filerecord=f"{self._sim_name}.bud",
             qoutflow_filerecord=f"{self._sim_name}.qoutflow",
             **oc_options,
         )
 
-        # Boundary conditions / FLW
-        # aggregate inflows over the contributing fluxes
-
-        if inflow_from_PRMS:
-            inflow_list = ["sroff", "ssres_flow", "gwres_flow"]
-        else:
-            inflow_list = ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"]
-
-        # check they all have the same units before summing
-        inflow_units = list(meta.get_units(inflow_list, to_pint=True).values())
-        inflow_unit = inflow_units[0]
-        assert [inflow_unit] * len(inflow_units) == inflow_units
-        inflow_unit = self.units(inflow_unit)
-
-        def read_inflow(vv, start_time, end_time):
-            ff = xr.open_dataset(pl.Path(inflow_dir) / f"{vv}.nc")[vv]
-            return ff.sel(time=slice(start_time, end_time))
-
-        inflows = {
-            vv: read_inflow(vv, self.start_time, self.end_time)
-            for vv in inflow_list
-        }
-
-        if bc_flows_combine:
-            inflows["combined"] = sum(inflows.values())
-            for kk in list(inflows.keys()):
-                if kk != "combined":
-                    del inflows[kk]
-
-        # add the units
-        inflows = {kk: vv.values * inflow_unit for kk, vv in inflows.items()}
-
-        # flopy adds one to the index, but if we write binary we have to do it
-        add_one = int(bc_binary_files)
-
-        for flow_name in inflows.keys():
-            # if from pywatershed, inflows are already volumes in cubicfeet
-            if "inch" in str(inflow_unit):  # PRMS style need hru areas
-                hru_area_unit = self.units(
-                    list(meta.get_units("hru_area").values())[0]
-                )
-                hru_area = parameters["hru_area"] * hru_area_unit
-                inflows[flow_name] *= hru_area
-
-            inflows[flow_name] /= self._timestep_s.to("seconds")
-
-            new_inflow_unit = inflows[flow_name].units
-
-            # calculate lateral flow term to the REACH/segment from HRUs
-            lat_inflow = (
-                np.zeros((self.nper, self._nsegment)) * new_inflow_unit
-            )
-
-            for ihru in range(self.params.dims["nhru"]):
-                iseg = self._hru_segment[ihru]
-                if iseg < 0:
-                    # This is bad, selective handling of fluxes is not cool,
-                    # mass is being discarded in a way that has to be
-                    # coordinated
-                    # with other parts of the code.
-                    # This code shuold be removed evenutally.
-                    inflows[flow_name][:, ihru] = zero * new_inflow_unit
-                    continue
-
-                lat_inflow[:, iseg] += inflows[flow_name][:, ihru]
-
-            # convert to output units in the output data structure
-            flw_spd = {}
-            for ispd in range(self.nper):
-                flw_ispd = [
-                    (
-                        irch + add_one,
-                        lat_inflow[ispd, irch].to_base_units().magnitude,
-                    )
-                    for irch in range(self._nsegment)
-                ]
-
-                if bc_binary_files:
-                    # should put the time in the file names?
-                    ra = np.array(
-                        flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")]
-                    )
-                    i_time_str = str(
-                        self.control.start_time + ispd * self.control.time_step
-                    )
-                    bin_name = (
-                        f"swf_flw_bc/"
-                        f"flw_{flow_name}_{i_time_str.replace(':', '_')}.bin"
-                    )
-                    bin_name_pl = self._output_dir / bin_name
-                    if not bin_name_pl.parent.exists():
-                        bin_name_pl.parent.mkdir()
-                    _ = ra.tofile(bin_name_pl)
-
-                    flw_spd[ispd] = {
-                        "filename": str(bin_name),
-                        "binary": True,
-                        "data": None,
-                    }
-
-                else:
-                    flw_spd[ispd] = flw_ispd
-
-            _ = flopy.mf6.ModflowSwfflw(
-                self._swf,
-                print_input=True,
-                save_flows=save_flows,
-                print_flows=True,
-                stress_period_data=flw_spd,
-                maxbound=self._nsegment + 1,
-                pname=flow_name,
-            )
+        # self.set_flw()
 
         # done, write if requested/default else delay
         if write_on_init:

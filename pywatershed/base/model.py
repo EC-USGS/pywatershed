@@ -35,8 +35,9 @@ class Model:
     below: 1) PRMS-legacy instantation, 2) pywatershed-centric instatiation.
 
     Args:
-        process_list_or_model_dict: a process list or a model dictionary,
-            see ways of instatiation below.
+        process_list_or_model_dict: a process list (for PRMS-legacy
+          instantiation) or a model dictionary (for pywatershed style
+          instatiation), see ways of instatiation below.
         control: Control object or None, see below.
         parameters: A Parameters object of a dictionary of Parameters objects.
             Default is None. See ways of instatnation below.
@@ -52,35 +53,30 @@ class Model:
     PRMS-legacy instantiation
     -----------------------------
 
-    This method of instantiation may be deprecated in the future. It is
-    intended to support PRMS files with few modifications.
+    This method of instantiation supports PRMS files with few modifications.
+    The first three arguments to instantiate a Model this way are:
 
-    Note: Pywatershed v0.2.0 has a minor break to backwards compatibility (pre
-    v0.2.0) where the list of processes is not passed as a list rather than an
-    upacked list or a number of arguments.
+    * process_list_or_model_dict: A process list of PRMS model components.
+    * control: A Control object.
+    * parameters: A PrmsParameters object.
 
-    Old way, first three args:
-
-    - **process_list_or_model_dict** - A process list of PRMS model components
-    - **control** - A control object
-    - **parameters** - A PrmsParameters object
-
-    See first example below for more details.
-    There are variations of this where
+    The first example below provides details. An extended example is given by
+    `examples/02_prms_legacy_models.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/02_prms_legacy_models.ipynb>`__.
 
     pywatershed-centric instatiation
     ------------------------------------
 
-    The new/pywatershed way was introduced to handle more aribtrary and subdry
-    models. It is loosely based on how MF6 structures its inputs. All of the
+    The pywatershed style instatniation handles aribtrary and sundry
+    processes. It is loosely based on how MF6 structures its inputs. All of the
     work is contained in the first argument, the model dictionary, and the
     control and parameters are both None.
 
-    New way, only one of first three args:
+    Instantating a Model this way, only the first of the first three args is
+    used:
 
-    - **process_list_or_model_dict** - a "model dictionary", detailed below.
-    - (*control* - None is default)
-    - (*parameters* - None is default)
+    - process_list_or_model_dict: a "model dictionary", detailed below.
+    - control: Do not pass, None is default.
+    - parameters: Do not pass, None is default.
 
     This means that the user must understand the model dictionary supplied. A
     model dictionary has aribtrary keys but prescribed values. Values may be
@@ -90,6 +86,10 @@ class Model:
     can also be specfied via yaml files. Notes on yaml versus in-memory
     requirements for the values are described as they are (necessarily)
     different.
+
+    See the second and third examples below for more details and see
+    `examples/01_multi-process_models.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/01_multi-process_models.ipynb>`__
+    for an extended example.
 
     Model dictionary values description:
     ====================================
@@ -404,7 +404,7 @@ class Model:
 
     def __init__(
         self,
-        process_list_or_model_dict,
+        process_list_or_model_dict: Union[list, dict],
         control: Control = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,

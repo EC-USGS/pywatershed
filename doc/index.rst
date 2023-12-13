@@ -6,9 +6,34 @@ pywatershed: A hydrologic model in Python
 
 Welcome to the `pywatershed` docs!
 
-pywatershed is a path for modernizing legacy USGS hydrology models,
-in particular PRMS and GSFlow. It is also a place for experimentation with
-hydrologic models in this context.
+Pywatershed is a path for modernizing legacy USGS hydrology models,
+in particular
+`PRMS <https://www.usgs.gov/software/precipitation-runoff-modeling-system-prms>`__
+and its role in
+`GSFLOW <https://www.usgs.gov/software/gsflow-coupled-groundwater-and-surface-water-flow-model>`__.
+Pywatershed is also a place for experimentation with these hydrologic models in this context.
+
+
+Following PRMS, pywatershed calculates explicit solutions of spatially
+distributed hydrologic process representations including evaporation, transpiration,
+runoff, infiltration, interflow, snowpack, soil moisture, conceptual groundwater storage,
+and channel flow. These process representations simulate hydrologic response and water
+budgets given inputs of spatially distributed weather variables and land use change at
+temporal scales ranging from days to centuries. 
+
+Pywatershed enhances PRMS with a new software design that is object-oriented and highly
+flexible, allowing users to easily run "sub-models", replace process representations, and
+incorporate new data. The Python language is more accessible to a wider audience of
+potential contributors which can help foster community development. A large number of
+advanced libraries are available within Python that can be used for experimentation,
+including libraries for parallelism, data access and manipulation, and machine learning.
+Finally, we can easily couple pywatershed to
+`MODFLOW 6 <https://www.usgs.gov/software/modflow-6-usgs-modular-hydrologic-model>`__
+via its
+`XMI interface <https://www.usgs.gov/publications/modflow-application-programming-interface-simulationcontrol-and-software>`__.
+This coupling will eventually bring pywatershed and MODFLOW 6 together to reproduce
+GSFLOW using a modern software design.
+
 
 =========================
 Current Version: 1.0.0

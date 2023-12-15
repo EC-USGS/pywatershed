@@ -31,7 +31,7 @@ Pywatershed enhances PRMS with a new software design that is object-oriented and
 flexible, allowing users to easily run "sub-models", replace process representations, and
 incorporate new data. The Python language is accessible to a wide audience of
 potential contributors which will help foster community development and experimentation.
-A large number of advanced libraries are available for Python can be applied to
+A large number of advanced libraries available for Python can be applied to
 hdyrologic modeling, including libraries for parallelism, data access and manipulation,
 and machine learning.
 

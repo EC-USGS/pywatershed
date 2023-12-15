@@ -18,7 +18,9 @@ params = ("params_sep", "params_one")
 
 @pytest.fixture(scope="function")
 def control(domain):
-    return Control.load_prms(domain["control_file"], warn_unused_options=False)
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+    del ctl.options["netcdf_output_dir"]
+    return ctl
 
 
 @pytest.fixture(scope="function")
@@ -57,8 +59,9 @@ def test_compare_prms(
         discretization=discretization,
         parameters=parameters,
         from_prms_file=from_prms_file,
-        netcdf_output_dir=tmp_path,
     )
+
+    solar_geom.initialize_netcdf(output_dir=tmp_path)
 
     if do_compare_in_memory:
         answers = {}

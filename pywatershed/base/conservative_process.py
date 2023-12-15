@@ -186,8 +186,8 @@ class ConservativeProcess(Process):
 
     def initialize_netcdf(
         self,
-        output_dir: [str, pl.Path],
-        separate_files: bool = True,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
         budget_args: dict = None,
         output_vars: list = None,
     ) -> None:
@@ -208,7 +208,7 @@ class ConservativeProcess(Process):
         if self.budget is not None:
             if budget_args is None:
                 budget_args = {}
-            budget_args["output_dir"] = output_dir
+            budget_args["output_dir"] = self._netcdf_output_dir
             budget_args["params"] = self.params
 
             self.budget.initialize_netcdf(**budget_args)

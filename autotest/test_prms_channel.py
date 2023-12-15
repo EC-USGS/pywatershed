@@ -20,7 +20,10 @@ params = ("params_sep", "params_one")
 
 @pytest.fixture(scope="function")
 def control(domain):
-    return Control.load_prms(domain["control_file"], warn_unused_options=False)
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+    del ctl.options["netcdf_output_dir"]
+    del ctl.options["netcdf_output_var_names"]
+    return ctl
 
 
 @pytest.fixture(scope="function")

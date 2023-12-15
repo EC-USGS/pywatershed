@@ -49,12 +49,13 @@ class PRMSAtmosphere(Process):
     evapotranspiration (Jensen and Haise ,1963) and a temperature based
     transpiration flag (transp_on) are also calculated.
 
-    Note that all variables are calculated for all time upon initialization and
-    that all calculated variables are written to netcdf (when netcdf output is
-    requested) prior to the first model advance. This is effectively a complete
-    preprocessing of the input CBH files to the fields the model actually uses
-    on initialization. If you just want to preprocess these variables, see
-    `this notebook <https://github.com/EC-USGS/pywatershed/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
+    Note that all variables are calculated for all time upon the first advance
+    and that all calculated variables are written to NetCDF (when netcdf output
+    is requested) the first time output is requested. This is effectively a
+    complete preprocessing of the input CBH files to the fields the model
+    actually uses on initialization. For an example of preprocessing the
+    variables in PRMSAtmosphere, see
+    `this notebook <https://github.com/EC-USGS/pywatershed/tree/main/examples/04_preprocess_atm.ipynb>`_.
 
     The full time version of a variable is given by the "private" version of
     the variable which is named with a single-leading underscore (eg tmaxf for
@@ -101,9 +102,9 @@ class PRMSAtmosphere(Process):
         soltab_potsw: adaptable,
         soltab_horad_potsw: adaptable,
         verbose: bool = False,
-        netcdf_output_dir: [str, pl.Path] = None,
-        netcdf_output_vars: list = None,
-        netcdf_separate_files: bool = None,
+        # netcdf_output_dir: [str, pl.Path] = None,
+        # netcdf_output_vars: list = None,
+        # netcdf_separate_files: bool = None,
         # from_file_dir: [str, pl.Path] = None,
         n_time_chunk: int = -1,
         load_n_time_batches: int = 1,
@@ -775,11 +776,11 @@ class PRMSAtmosphere(Process):
         if not self._netcdf_initialized:
             return
 
-        if self.netcdf_separate_files:
+        if self._netcdf_separate:
             for var in self.variables:
                 if var not in self._netcdf_output_vars:
                     continue
-                nc_path = self.netcdf_output_dir / f"{var}.nc"
+                nc_path = self._netcdf_output_dir / f"{var}.nc"
 
                 nc = NetCdfWrite(
                     nc_path,
@@ -797,7 +798,7 @@ class PRMSAtmosphere(Process):
                 print(f"Wrote file: {nc_path}")
 
         else:
-            nc_path = self.netcdf_output_dir / f"{self.name}.nc"
+            nc_path = self._netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
                 self.params.coords,
@@ -822,8 +823,8 @@ class PRMSAtmosphere(Process):
 
     def initialize_netcdf(
         self,
-        output_dir: [str, pl.Path],
-        separate_files: bool = True,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
         output_vars: list = None,
         **kwargs,
     ):
@@ -839,18 +840,44 @@ class PRMSAtmosphere(Process):
             warn(msg)
             return
 
+        if (
+            "verbosity" in self.control.options.keys()
+            and self.control.options["verbosity"] > 5
+        ):
+            print(f"initializing netcdf output for: {self.name}")
+
+        (
+            output_dir,
+            output_vars,
+            separate_files,
+        ) = self._reconcile_nc_args_w_control_opts(
+            output_dir, output_vars, separate_files
+        )
+
+        # apply defaults if necessary
+        if output_dir is None:
+            msg = (
+                "An output directory is required to be specified for netcdf"
+                "initialization."
+            )
+            raise ValueError(msg)
+
+        if separate_files is None:
+            separate_files = True
+
+        self._netcdf_separate = separate_files
+
         self._netcdf_initialized = True
-        self.netcdf_separate_files = separate_files
-        self.netcdf_output_dir = output_dir
+        self._netcdf_output_dir = pl.Path(output_dir)
+
         if output_vars is None:
             self._netcdf_output_vars = self.variables
         else:
             self._netcdf_output_vars = list(
                 set(output_vars).intersection(set(self.variables))
             )
-
-        if self._netcdf_output_vars is None:
-            self._netcdf_initialized = False
+            if len(self._netcdf_output_vars) == 0:
+                self._netcdf_initialized = False
 
         return
 

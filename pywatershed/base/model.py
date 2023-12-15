@@ -779,40 +779,24 @@ class Model:
                 names are silently skipped. Defaults to None which writes
                 all variables for all Processes.
         """
-        if self._netcdf_initialized:
-            msg = (
-                "Model class previously initialized netcdf output "
-                f"in {self._netcdf_dir}"
-            )
-            raise RuntimeError(msg)
-
         print("model initializing NetCDF output")
 
         if not self._found_input_files:
             self._find_input_files()
 
-        (
-            output_dir,
-            output_vars,
-            separate_files,
-        ) = self._reconcile_nc_args_w_control_opts(
-            output_dir, output_vars, separate_files
-        )
+        # (
+        #     output_dir,
+        #     output_vars,
+        #     separate_files,
+        # ) = self._reconcile_nc_args_w_control_opts(
+        #     output_dir, output_vars, separate_files
+        # )
 
-        # apply defaults if necessary
-        if output_dir is None:
-            msg = (
-                "An output directory is required to be specified for netcdf"
-                "initialization."
-            )
-            raise ValueError(msg)
-        if separate_files is None:
-            separate_files = True
+        # self._netcdf_dir = pl.Path(output_dir)
 
-        self._netcdf_dir = pl.Path(output_dir)
         for cls in self.process_order:
             self.processes[cls].initialize_netcdf(
-                output_dir=self._netcdf_dir,
+                output_dir=output_dir,
                 separate_files=separate_files,
                 budget_args=budget_args,
                 output_vars=output_vars,
@@ -902,49 +886,49 @@ class Model:
             self.processes[cls].finalize()
         return
 
-    def _reconcile_nc_args_w_control_opts(
-        self, output_dir, output_vars, separate_files
-    ):
-        # can treat the other args but they are not yet in the available opts
-        arg_opt_name_map = {
-            "output_dir": "netcdf_output_dir",
-            "output_vars": "netcdf_output_var_names",
-            "separate_files": "netcdf_output_separate_files",
-        }
+    # def _reconcile_nc_args_w_control_opts(
+    #     self, output_dir, output_vars, separate_files
+    # ):
+    #     # can treat the other args but they are not yet in the available opts
+    #     arg_opt_name_map = {
+    #         "output_dir": "netcdf_output_dir",
+    #         "output_vars": "netcdf_output_var_names",
+    #         "separate_files": "netcdf_output_separate_files",
+    #     }
 
-        args = {
-            "output_dir": output_dir,
-            "output_vars": output_vars,
-            "separate_files": separate_files,
-        }
+    #     args = {
+    #         "output_dir": output_dir,
+    #         "output_vars": output_vars,
+    #         "separate_files": separate_files,
+    #     }
 
-        for vv in args.keys():
-            arg_val = args[vv]
-            opt_name = arg_opt_name_map[vv]
-            opts = self.control.options
-            if opt_name in opts.keys():
-                opt_val = opts[opt_name]
-            else:
-                opt_val = None
+    #     for vv in args.keys():
+    #         arg_val = args[vv]
+    #         opt_name = arg_opt_name_map[vv]
+    #         opts = self.control.options
+    #         if opt_name in opts.keys():
+    #             opt_val = opts[opt_name]
+    #         else:
+    #             opt_val = None
 
-            # set the arg vals to return
+    #         # set the arg vals to return
 
-            if opt_val is None and arg_val is None:
-                pass
+    #         if opt_val is None and arg_val is None:
+    #             pass
 
-            elif opt_val is None:
-                pass
+    #         elif opt_val is None:
+    #             pass
 
-            elif arg_val is None:
-                args[vv] = opt_val
+    #         elif arg_val is None:
+    #             args[vv] = opt_val
 
-            else:
-                msg = (
-                    f"control.option '{opt_name}' being superceeded by "
-                    f"model.initialize_netcdf argument {vv}"
-                )
-                # TODO: should this edit control? and then model writes control
-                # at the end of run to the output dir?
-                warn(msg)
+    #         else:
+    #             msg = (
+    #                 f"control.option '{opt_name}' being superceeded by "
+    #                 f"model.initialize_netcdf argument {vv}"
+    #             )
+    #             # TODO: should this edit control? and then model writes control
+    #             # at the end of run to the output dir?
+    #             warn(msg)
 
-        return args["output_dir"], args["output_vars"], args["separate_files"]
+    #     return args["output_dir"], args["output_vars"], args["separate_files"]

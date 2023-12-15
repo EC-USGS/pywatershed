@@ -1,3 +1,10 @@
+"""The adapter module.
+
+This module contains the Adapter base class, its several concrete subclasses
+and an adapter factory to dispatch you the right subclass when you ask for it.
+
+"""
+
 import pathlib as pl
 from typing import Union
 
@@ -13,7 +20,7 @@ class Adapter:
     """Adapter base class for getting data from a variety of sources.
 
     Args:
-        variable: string name ov variable
+        variable: string name of variable
     """
 
     def __init__(
@@ -24,17 +31,21 @@ class Adapter:
         self._variable = variable
         return None
 
-    def advance(self):
-        "Advance the adapter in time"
+    def advance(self) -> None:
+        """Advance the adapter in time"""
         raise NotImplementedError("Must be overridden")
 
     @property
     def current(self):
+        """Current time of the Adapter instance."""
         return self._current_value
 
 
 class AdapterNetcdf(Adapter):
-    """Adapter class for a netcdf file
+    """Adapter subclass for a NetCDF file
+
+    This requires that the NetCDF file have a time dimension named "time" or
+    "doy" (day of year) to be properly handled as a timeseries for input, etc.
 
     Args:
         fname: filename of netcdf as string or Path
@@ -95,12 +106,22 @@ class AdapterNetcdf(Adapter):
         return None
 
     @property
-    def data(self):
+    def data(self) -> np.array:
+        """Return the data for the current time."""
         # TODO JLM: seems like we'd want to cache this data if we invoke once
         return self._nc_read.all_time(self._variable).data
 
 
 class AdapterOnedarray(Adapter):
+    """Adapter subclass for an invariant 1-D numpy.array
+
+    The data are constant and do not advance in time.
+
+    Args:
+        data: the data to be adapted
+        variable: variable name string
+    """
+
     def __init__(
         self,
         data: np.ndarray,
@@ -111,7 +132,8 @@ class AdapterOnedarray(Adapter):
         self._current_value = data
         return
 
-    def advance(self, *args):
+    def advance(self, *args) -> None:
+        """A dummy method for compliance."""
         return None
 
 
@@ -125,13 +147,24 @@ def adapter_factory(
     variable_dim_sizes: tuple = None,
     variable_type: str = None,
     load_n_time_batches: int = 1,
-):
+) -> "Adapter":
+    """A function to return the appropriate subclass of Adapter
+
+    Args:
+       var: the quantity to be adapted
+       variable_name: what you call the above var
+       control: a Control object
+       variable_dim_sizes: for an AdapterNetcdf
+       variable_type: for an AdapterNetcdf
+       load_n_time_batches: for an AdapterNetcdf
+
+    """
     if isinstance(var, Adapter):
-        """Adapt an adapter"""
+        # Adapt an adapter.
         return var
 
     elif isinstance(var, (str, pl.Path)):
-        """Paths and strings are considered paths to netcdf files"""
+        # Paths and strings are considered paths to netcdf files
         if pl.Path(var).suffix == ".nc":
             return AdapterNetcdf(
                 var,
@@ -143,15 +176,15 @@ def adapter_factory(
             )
 
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
-        """Adapt 1-D np.ndarrays"""
+        # Adapt 1-D np.ndarrays
         return AdapterOnedarray(var, variable=variable_name)
 
     elif isinstance(var, TimeseriesArray):
-        """Adapt TimeseriesArrays as is."""
+        # Adapt TimeseriesArrays as is.
         return var
 
     elif var is None:
-        """var is specified as None so return None"""
+        # var is specified as None so return None
         return None
 
     else:

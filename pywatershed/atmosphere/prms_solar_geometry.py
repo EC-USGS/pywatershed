@@ -31,7 +31,16 @@ def tile_space_to_time(arr: np.ndarray) -> np.ndarray:
 class PRMSSolarGeometry(Process):
     """PRMS solar geometry.
 
-    Swift's daily potential solar radiation and number of hours
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
+    Implements Swift's daily potential solar radiation and number of hours
     of duration on a sloping surface in [cal/cm2/day].
     Swift, 1976, equation 6.
 
@@ -45,10 +54,6 @@ class PRMSSolarGeometry(Process):
         verbose: Print extra information or not?
         from_prms_file: Load from a PRMS output file?
         from_nc_files_dir: [str, pl.Path] = None,
-        load_n_time_batches: How often to load from disk (not-implemented?)
-        netcdf_output_dir: A directory to write netcdf outpuf files
-        netcdf_separate_files: Separate or a single netcdf output file
-        netcdf_output_vars: A list of variables to output via netcdf.
 
     """
 
@@ -60,13 +65,7 @@ class PRMSSolarGeometry(Process):
         verbose: bool = False,
         from_prms_file: [str, pl.Path] = None,
         from_nc_files_dir: [str, pl.Path] = None,
-        load_n_time_batches: int = 1,
-        netcdf_output_dir: [str, pl.Path] = None,
-        netcdf_separate_files: bool = True,
-        netcdf_output_vars: list = None,
     ):
-        self.netcdf_output_dir = netcdf_output_dir
-
         # self._time is needed by Process for timeseries arrays
         # TODO: this is redundant because the parameter doy is set
         #       on load of prms file. Could pass the name to use for
@@ -92,8 +91,8 @@ class PRMSSolarGeometry(Process):
         elif from_nc_files_dir:
             raise NotImplementedError()
 
-        self._calculated = False
         self._netcdf_initialized = False
+        self._calculated = False
 
         return
 
@@ -412,11 +411,11 @@ class PRMSSolarGeometry(Process):
         if not self._netcdf_initialized:
             return
 
-        if self.netcdf_separate_files:
+        if self._netcdf_separate:
             for var in self.variables:
                 if var not in self._netcdf_output_vars:
                     continue
-                nc_path = self.netcdf_output_dir / f"{var}.nc"
+                nc_path = self._netcdf_output_dir / f"{var}.nc"
 
                 nc = NetCdfWrite(
                     nc_path,
@@ -435,7 +434,7 @@ class PRMSSolarGeometry(Process):
                 print(f"Wrote file: {nc_path}")
 
         else:
-            nc_path = self.netcdf_output_dir / f"{self.name}.nc"
+            nc_path = self._netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
                 self.params.coords,
@@ -465,8 +464,8 @@ class PRMSSolarGeometry(Process):
 
     def initialize_netcdf(
         self,
-        output_dir: [str, pl.Path],
-        separate_files: bool = True,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
         output_vars: list = None,
         **kwargs,
     ):
@@ -482,18 +481,44 @@ class PRMSSolarGeometry(Process):
             warnings.warn(msg)
             return
 
+        if (
+            "verbosity" in self.control.options.keys()
+            and self.control.options["verbosity"] > 5
+        ):
+            print(f"initializing netcdf output for: {self.name}")
+
+        (
+            output_dir,
+            output_vars,
+            separate_files,
+        ) = self._reconcile_nc_args_w_control_opts(
+            output_dir, output_vars, separate_files
+        )
+
+        # apply defaults if necessary
+        if output_dir is None:
+            msg = (
+                "An output directory is required to be specified for netcdf"
+                "initialization."
+            )
+            raise ValueError(msg)
+
+        if separate_files is None:
+            separate_files = True
+
+        self._netcdf_separate = separate_files
+
         self._netcdf_initialized = True
-        self.netcdf_separate_files = separate_files
-        self.netcdf_output_dir = output_dir
+        self._netcdf_output_dir = pl.Path(output_dir)
+
         if output_vars is None:
             self._netcdf_output_vars = self.variables
         else:
-            self.netcdf__output_vars = list(
+            self._netcdf_output_vars = list(
                 set(output_vars).intersection(set(self.variables))
             )
-
-        if self._netcdf_output_vars is None:
-            self._netcdf_initialized = False
+            if len(self._netcdf_output_vars) == 0:
+                self._netcdf_initialized = False
 
         return
 

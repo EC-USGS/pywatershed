@@ -16,6 +16,8 @@ import sys
 from datetime import datetime
 
 sys.path.insert(0, os.path.abspath("../"))
+sys.path.insert(0, os.path.abspath("../pywatershed"))
+
 
 import sphinx_autosummary_accessors  # noqa
 
@@ -33,11 +35,14 @@ author = "USGS Developers and Community"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+# For sphinx-autodoc-typehints compat with sphinx.ext.napoleon see
+# https://github.com/tox-dev/sphinx-autodoc-typehints/issues/15
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
     # "nbsphinx",
     "sphinx_autosummary_accessors",
     "sphinx.ext.intersphinx",
@@ -56,24 +61,25 @@ extlinks = {
 
 
 autosummary_generate = True
-autodoc_typehints = "none"
+
+# autodoc_typehints = "none"
 # autosummary_imported_members = True
 
-# autodoc_default_options = {
-#     #     "members": False,
-#     #     # "imported-members": True,
-#     #     # "inherited-members": True,
-#     #     #     "undoc-members": True,
-#     #     #     "private-members": True,  #
-#     "special-members": "",
-#     "exclude-members": "__init__",
-# }
+autodoc_default_options = {
+    "members": True,
+    # "imported-members": True,
+    "inherited-members": True,
+    "undoc-members": True,
+    "private-members": False,  #
+    # "special-members": "",
+    "exclude-members": "__init__",
+}
 
 
 # Napoleon configurations
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
-napoleon_use_param = False
+napoleon_use_param = True
 napoleon_use_ivar = True
 napoleon_use_rtype = False
 napoleon_preprocess_types = True
@@ -133,3 +139,13 @@ html_theme_options = dict(
     # show_navbar_depth=1,
     # show_toc_level=1,
 )
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "numba": ("https://numba.readthedocs.io/en/stable/", None),
+    "matplotlib": ("https://matplotlib.org/stable/", None),
+    "cftime": ("https://unidata.github.io/cftime", None),
+    "xarray": ("https://docs.xarray.dev/en/stable/", None),
+}

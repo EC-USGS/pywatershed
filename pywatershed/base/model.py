@@ -2,7 +2,6 @@ import pathlib as pl
 from copy import deepcopy
 from datetime import datetime
 from typing import Union
-from warnings import warn
 
 from tqdm.auto import tqdm
 
@@ -35,8 +34,9 @@ class Model:
     below: 1) PRMS-legacy instantation, 2) pywatershed-centric instatiation.
 
     Args:
-        process_list_or_model_dict: a process list or a model dictionary,
-            see ways of instatiation below.
+        process_list_or_model_dict: a process list (for PRMS-legacy
+          instantiation) or a model dictionary (for pywatershed style
+          instatiation), see ways of instatiation below.
         control: Control object or None, see below.
         parameters: A Parameters object of a dictionary of Parameters objects.
             Default is None. See ways of instatnation below.
@@ -52,35 +52,30 @@ class Model:
     PRMS-legacy instantiation
     -----------------------------
 
-    This method of instantiation may be deprecated in the future. It is
-    intended to support PRMS files with few modifications.
+    This method of instantiation supports PRMS files with few modifications.
+    The first three arguments to instantiate a Model this way are:
 
-    Note: Pywatershed v0.2.0 has a minor break to backwards compatibility (pre
-    v0.2.0) where the list of processes is not passed as a list rather than an
-    upacked list or a number of arguments.
+    * process_list_or_model_dict: A process list of PRMS model components.
+    * control: A Control object.
+    * parameters: A PrmsParameters object.
 
-    Old way, first three args:
-
-    - **process_list_or_model_dict** - A process list of PRMS model components
-    - **control** - A control object
-    - **parameters** - A PrmsParameters object
-
-    See first example below for more details.
-    There are variations of this where
+    The first example below provides details. An extended example is given by
+    `examples/02_prms_legacy_models.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/02_prms_legacy_models.ipynb>`__.
 
     pywatershed-centric instatiation
     ------------------------------------
 
-    The new/pywatershed way was introduced to handle more aribtrary and subdry
-    models. It is loosely based on how MF6 structures its inputs. All of the
+    The pywatershed style instatniation handles aribtrary and sundry
+    processes. It is loosely based on how MF6 structures its inputs. All of the
     work is contained in the first argument, the model dictionary, and the
     control and parameters are both None.
 
-    New way, only one of first three args:
+    Instantating a Model this way, only the first of the first three args is
+    used:
 
-    - **process_list_or_model_dict** - a "model dictionary", detailed below.
-    - (*control* - None is default)
-    - (*parameters* - None is default)
+    - process_list_or_model_dict: a "model dictionary", detailed below.
+    - control: Do not pass, None is default.
+    - parameters: Do not pass, None is default.
 
     This means that the user must understand the model dictionary supplied. A
     model dictionary has aribtrary keys but prescribed values. Values may be
@@ -90,6 +85,10 @@ class Model:
     can also be specfied via yaml files. Notes on yaml versus in-memory
     requirements for the values are described as they are (necessarily)
     different.
+
+    See the second and third examples below for more details and see
+    `examples/01_multi-process_models.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/01_multi-process_models.ipynb>`__
+    for an extended example.
 
     Model dictionary values description:
     ====================================
@@ -134,25 +133,6 @@ class Model:
 
     Construct a PRMS-legacy based model:
 
-    ..
-        import pywatershed as pws
-        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
-        domain_dir = test_data_dir / "drb_2yr"
-        # A PRMS-native control file
-        control_file = domain_dir / "control.test"
-        # PRMS-native parameter file
-        parameter_file = domain_dir / "myparam.param"
-        control = pws.Control.load(control_file)
-        control.options['input_dir'] = domain_dir / "output"
-        params = pws.parameters.PrmsParameters.load(parameter_file)
-        model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
-        model = pws.Model(
-            model_procs,
-            control=control,
-            parameters=params,
-        )
-        model.run()
-
     >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
@@ -160,7 +140,9 @@ class Model:
     >>> control_file = domain_dir / "control.test"
     >>> # PRMS-native parameter file
     >>> parameter_file = domain_dir / "myparam.param"
-    >>> control = pws.Control.load(control_file)
+    >>> control = pws.Control.load_prms(
+    ...     control_file, warn_unused_options=False
+    ... )
     >>> control.options["input_dir"] = domain_dir / "output"
     >>> params = pws.parameters.PrmsParameters.load(parameter_file)
     >>> model_procs = [
@@ -181,53 +163,6 @@ class Model:
 
     Construct a model the pywatershed-centric way, in memory:
 
-    ..
-        import pywatershed as pws
-        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
-        domain_dir = test_data_dir / "drb_2yr"
-        dis_hru = pws.Parameters.from_netcdf(
-            domain_dir / "parameters_dis_hru.nc", encoding=False
-        )
-        control_file = domain_dir / "control.test"
-        control = pws.Control.load(control_file)
-        control.options['input_dir'] = domain_dir
-        params = {}
-        for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
-            param_file = domain_dir / f"parameters_PRMS{proc}.nc"
-            params[proc.lower()] = pws.Parameters.from_netcdf(param_file)
-        model_dict = {
-           'control': control,
-           'dis_hru': dis_hru,
-           'model_order': [
-                'prmssolargeometry',
-                'prmsatmosphere',
-                'prmscanopy',
-                'prmssnow',
-            ],
-            'prmssolargeometry': {
-                'class': pws.PRMSSolarGeometry,
-                'parameters': params['solargeometry'],
-                'dis': 'dis_hru',
-            },
-            'prmsatmosphere': {
-                'class': pws.PRMSAtmosphere,
-                'parameters': params['atmosphere'],
-                'dis': 'dis_hru',
-            },
-            'prmscanopy': {
-                'class': pws.PRMSCanopy,
-                'parameters': params['canopy'],
-                'dis': 'dis_hru',
-            },
-            'prmssnow': {
-                'class': pws.PRMSSnow,
-                'parameters': params['snow'],
-                'dis': 'dis_hru',
-            }
-        }
-        model = pws.Model(model_dict)
-        model.run()
-
     >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
@@ -235,7 +170,9 @@ class Model:
     ...     domain_dir / "parameters_dis_hru.nc", encoding=False
     ... )
     >>> control_file = domain_dir / "control.test"
-    >>> control = pws.Control.load(control_file)
+    >>> control = pws.Control.load_prms(
+    ...     control_file, warn_unused_options=False
+    ... )
     >>> control.options["input_dir"] = domain_dir
     >>> params = {}
     >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
@@ -276,67 +213,10 @@ class Model:
     PRMSCanopy jit compiling with numba
     PRMSSnow jit compiling with numba
     >>> model.run()
-      0%|                                                                     | 0/731 [00:00<?, ?it/s]
-    pywatershed/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
-        through_rain[:] = np.where(wh_through, net_rain, zero)
-    100%|███████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 96.76it/s]
+    100%|███████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 60.76it/s]
     model.run(): finalizing
 
     Construct a model the pywatershed-centric way, from a yaml file definition:
-
-    ..
-        import yaml
-        import pywatershed as pws
-        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
-        domain_dir = test_data_dir / "drb_2yr"
-        control = {
-            "start_time": "1979-01-01T00:00:00",
-            "end_time": "1980-12-31T00:00:00",
-            "time_step": 24,
-            "time_step_units": "h",
-            "verbosity": 0,
-            "budget_type": "warn",
-            "init_vars_from_file": 0,
-            "input_dir": str(domain_dir),
-        }
-        control_file = domain_dir / "example_control.yml"
-
-        model_dict = {
-            "control": str(control_file),
-            "dis_hru": "parameters_dis_hru.nc",
-            "dis_both": "parameters_dis_both.nc",
-            "solargeometry": {
-                "class": "PRMSSolarGeometry",
-                "parameters": "parameters_PRMSSolarGeometry.nc",
-                "dis": "dis_hru",
-            },
-            "atmosphere": {
-                "class": "PRMSAtmosphere",
-                "parameters": "parameters_PRMSAtmosphere.nc",
-                "dis": "dis_hru",
-            },
-            "canopy": {
-                "class": "PRMSCanopy",
-                "parameters": "parameters_PRMSCanopy.nc",
-                "dis": "dis_hru",
-            },
-            "snow": {
-                "class": "PRMSSnow",
-                "parameters": "parameters_PRMSSnow.nc",
-                "dis": "dis_hru",
-            },
-            "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
-        }
-        model_dict_file = domain_dir / "example_model_dict.yml"
-        dump_dict = {control_file: control, model_dict_file: model_dict}
-        for key, val in dump_dict.items():
-            with open(key, "w") as file:
-                documents = yaml.dump(val, file)
-
-        model = pws.Model.from_yaml(model_dict_file)
-        model.run()
-        control_file.unlink()
-        model_dict_file.unlink()
 
     >>> import yaml
     >>> import pywatershed as pws
@@ -349,10 +229,9 @@ class Model:
     ...     "time_step_units": "h",
     ...     "verbosity": 0,
     ...     "budget_type": "warn",
-    ...     "init_vars_from_file": 0,
     ...     "input_dir": str(domain_dir),
     ... }
-    >>> control_file = domain_dir / "example_control.yml"
+    >>> control_file = domain_dir / "example_control.yaml"
     >>> model_dict = {
     ...     "control": str(control_file),
     ...     "dis_hru": "parameters_dis_hru.nc",
@@ -379,23 +258,17 @@ class Model:
     ...     },
     ...     "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
     ... }
-    >>> model_dict_file = domain_dir / "example_model_dict.yml"
+    >>> model_dict_file = domain_dir / "example_model_dict.yaml"
     >>> dump_dict = {control_file: control, model_dict_file: model_dict}
     >>> for key, val in dump_dict.items():
     ...     with open(key, "w") as file:
     ...         documents = yaml.dump(val, file)
     ...
-    >>> model = pws.Model.from_yml(model_dict_file)
+    >>> model = pws.Model.from_yaml(model_dict_file)
     PRMSCanopy jit compiling with numba
     PRMSSnow jit compiling with numba
     >>> model.run()
-      0%|                                                                     | 0/731 [00:00<?, ?it/s]
-    pywatershed/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
-      through_rain[:] = np.where(wh_through, net_rain, zero)
-      0%|                                                           | 1/731 [00:05<1:08:27,  5.63s/it]
-    /pywatershed/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
-      warn(msg, UserWarning)
-    100%|██████████████████████████████████████████████████████████| 731/731 [00:06<00:00, 119.95it/s]
+    100%|████████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 92.30it/s]
     model.run(): finalizing
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
@@ -404,7 +277,7 @@ class Model:
 
     def __init__(
         self,
-        process_list_or_model_dict,
+        process_list_or_model_dict: Union[list, dict],
         control: Control = None,
         parameters: Union[Parameters, dict[Parameters]] = None,
         find_input_files: bool = True,
@@ -725,30 +598,34 @@ class Model:
 
         Yaml file structure (strict order not required, but suggested):
 
-        Control object: Any name can be used but the value must be a control
-            yaml file specified with the suffix ".yaml". E.g
-            "name: control.yaml"
-            would appear in the passed yaml file. Only one control
-            specification is allowed in the yaml_file. For details on the
-            requirements of the control.yaml file see `Control.from_yaml`
-        Discretization objects: Any number of discretization objects can be
-            supplied with arbitrary (though unique) names. The values supplied
-            for each discretization must be a valid netcdf file with suffix
-            ".nc". These can generally be obtained by calling
-            `parameters.to_netcdf()` on subclasses of Parameters.
-        Process objects: Any number of processes may be specified with
-            arbitrary (though unique) names. Processes are specified as
-            dictionaries in the yaml file, they have additonal key:value pairs.
-            Required key:value pairs are:
-                class: a class that can be `from pywatershed import class`
-                parameters: a netcdf file that specifies the parameters for
-                    the class
-                dis: the name of the discretization for the class as given by
-                    a discretization object speficication above.
-            Optional key:value pairs:
-                TBD
-        Model order list: a list supplying the order in which the processes are
-            to be executed.
+        * Control object: Any name can be used but the value must be a control
+          yaml file specified with the suffix ".yaml". E.g
+          "name: control.yaml"
+          would appear in the passed yaml file. Only one control
+          specification is allowed in the yaml_file. For details on the
+          requirements of the control.yaml file see `Control.from_yaml`
+
+        * Discretization objects: Any number of discretization objects can be
+          supplied with arbitrary (though unique) names. The values supplied
+          for each discretization must be a valid netcdf file with suffix
+          ".nc". These can generally be obtained by calling
+          `parameters.to_netcdf()` on subclasses of Parameters.
+
+        * Process objects: Any number of processes may be specified with
+          arbitrary (though unique) names. Processes are specified as
+          dictionaries in the yaml file, they have additonal key:value pairs.
+          Required key:value pairs are:
+
+          * class: a class that can be `from pywatershed import class`
+          * parameters: a netcdf file that specifies the parameters for
+            the class
+          * dis: the name of the discretization for the class as given by
+            a discretization object speficication above.
+
+          Optional key:value pairs: TBD
+
+        * Model order list: a list supplying the order in which the processes
+          are to be executed.
 
         Note: To get a model_dict specfied by the yaml_file, call
         `model_dict_from_yaml` instead.
@@ -775,40 +652,14 @@ class Model:
                 names are silently skipped. Defaults to None which writes
                 all variables for all Processes.
         """
-        if self._netcdf_initialized:
-            msg = (
-                "Model class previously initialized netcdf output "
-                f"in {self._netcdf_dir}"
-            )
-            raise RuntimeError(msg)
-
         print("model initializing NetCDF output")
 
         if not self._found_input_files:
             self._find_input_files()
 
-        (
-            output_dir,
-            output_vars,
-            separate_files,
-        ) = self._reconcile_nc_args_w_control_opts(
-            output_dir, output_vars, separate_files
-        )
-
-        # apply defaults if necessary
-        if output_dir is None:
-            msg = (
-                "An output directory is required to be specified for netcdf"
-                "initialization."
-            )
-            raise ValueError(msg)
-        if separate_files is None:
-            separate_files = True
-
-        self._netcdf_dir = pl.Path(output_dir)
         for cls in self.process_order:
             self.processes[cls].initialize_netcdf(
-                output_dir=self._netcdf_dir,
+                output_dir=output_dir,
                 separate_files=separate_files,
                 budget_args=budget_args,
                 output_vars=output_vars,
@@ -841,9 +692,6 @@ class Model:
             n_time_steps: the number of timesteps to run
             output_vars: the vars to output to the netcdf_dir
         """
-        # Can supply options ton initialize netcdf on .run but not with
-        # .advance. However, the first advance takes care of finding
-        # the input files.
         if netcdf_dir or (
             not self._netcdf_initialized
             and self._default_nc_out_dir is not None
@@ -897,50 +745,3 @@ class Model:
         for cls in self.process_order:
             self.processes[cls].finalize()
         return
-
-    def _reconcile_nc_args_w_control_opts(
-        self, output_dir, output_vars, separate_files
-    ):
-        # can treat the other args but they are not yet in the available opts
-        arg_opt_name_map = {
-            "output_dir": "netcdf_output_dir",
-            "output_vars": "netcdf_output_var_names",
-            "separate_files": "netcdf_output_separate_files",
-        }
-
-        args = {
-            "output_dir": output_dir,
-            "output_vars": output_vars,
-            "separate_files": separate_files,
-        }
-
-        for vv in args.keys():
-            arg_val = args[vv]
-            opt_name = arg_opt_name_map[vv]
-            opts = self.control.options
-            if opt_name in opts.keys():
-                opt_val = opts[opt_name]
-            else:
-                opt_val = None
-
-            # set the arg vals to return
-
-            if opt_val is None and arg_val is None:
-                pass
-
-            elif opt_val is None:
-                pass
-
-            elif arg_val is None:
-                args[vv] = opt_val
-
-            else:
-                msg = (
-                    f"control.option '{opt_name}' being superceeded by "
-                    f"model.initialize_netcdf argument {vv}"
-                )
-                # TODO: should this edit control? and then model writes control
-                # at the end of run to the output dir?
-                warn(msg)
-
-        return args["output_dir"], args["output_vars"], args["separate_files"]

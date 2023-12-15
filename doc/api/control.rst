@@ -1,14 +1,10 @@
 .. currentmodule:: pywatershed
 
-
 ----------
-Atmosphere
+Control
 ----------
-
-Atmospheric process models.
 
 .. autosummary::
    :toctree: generated/
 
-   PRMSSolarGeometry
-   PRMSAtmosphere
+   Control

@@ -42,14 +42,15 @@ def test_drive_indiv_process(domain, tmp_path):
     control.options["calc_method"] = "numba"
     control.options["input_dir"] = domain["prms_run_dir"]
     del control.options["netcdf_output_var_names"]
+    del control.options["netcdf_output_dir"]
 
     nhm = pws.Model(
         nhm_processes,
         control=control,
         parameters=params,
     )
-    with pytest.warns(UserWarning):
-        nhm.initialize_netcdf(output_dir=nhm_output_dir)
+
+    nhm.initialize_netcdf(output_dir=nhm_output_dir)
 
     nhm.run(finalize=True)
     del nhm, params, control

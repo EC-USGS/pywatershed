@@ -35,6 +35,18 @@ LAKE = HruType.LAKE.value
 class PRMSRunoff(ConservativeProcess):
     """PRMS surface runoff.
 
+    A surface runoff representation from PRMS.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
+
     Args:
         control: a Control object
         discretization: a discretization of class Parameters

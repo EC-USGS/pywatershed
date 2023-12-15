@@ -3,7 +3,7 @@ from .analysis.utils.colorbrewer import ColorBrewer
 from .atmosphere.prms_atmosphere import PRMSAtmosphere
 from .atmosphere.prms_solar_geometry import PRMSSolarGeometry
 from .base import meta
-from .base.adapter import Adapter
+from .base.adapter import Adapter, AdapterNetcdf, adapter_factory
 from .base.budget import Budget
 from .base.control import Control
 from .base.model import Model
@@ -27,5 +27,6 @@ __all__ = [
     "atmosphere",
     "base",
     "hydrology",
+    "meta",
     "utils",
 ]

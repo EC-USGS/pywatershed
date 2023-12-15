@@ -21,6 +21,17 @@ except ImportError:
 class PRMSChannel(ConservativeProcess):
     """PRMS channel flow (muskingum_mann).
 
+    A representation of channel flow from PRMS.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
     The muskingum module was originally developed for the Precipitation Runoff
     Modeling System (PRMS) by Mastin and Vaccaro (2002) and developed further
     by Markstrom and others (2008). This module has been modified from past
@@ -52,11 +63,11 @@ class PRMSChannel(ConservativeProcess):
     using mann_n, seg_length, seg_depth (bank full), and seg_slope. The
     velocity at bank full segment depth is calculated using Manning's equation
 
-        velocity = ((1/n) sqrt(seg_slope) seg_depth**(2/3)
+        ``velocity = ((1/n) sqrt(seg_slope) seg_depth**(2/3)``
 
     K_coef ,in hours, is then calculated using
 
-        K_coef = seg_length / (velocity * 60 * 60)
+        ``K_coef = seg_length / (velocity * 60 * 60)``
 
     K_coef values computed greater than 24.0 are set to 24.0, values computed
     less than 0.01 are set to 0.01, and the value for lake HRUs is set to 24.0.

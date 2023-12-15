@@ -120,7 +120,7 @@ you will also need to activate this environment by name.)
 
 
 We install the `environment_w_jupyter.yml` to provide all known dependencies 
-including those for running the eample notebooks. (The `environment.yml` 
+including those for running the example notebooks. (The `environment.yml` 
 does not contain jupyter or jupyterlab because this interferes with installation
 on WholeTale, see Example Notebooks seection below.)
 

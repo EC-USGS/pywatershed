@@ -20,6 +20,12 @@ modeling techniques and data sources. Pywatershed is a place for experimentation
 with software design, process representation, and data fusion in the context
 of well established hydrologic process modeling.
 
+The Python language was choosen because it is accessible to a wide audience of
+potential contributors which will help foster community development and
+experimentation. A large number of advanced libraries available for Python can
+be applied to hdyrologic modeling, including libraries for parallelism, data
+access and manipulation, and machine learning.
+
 Following the conceptual design of PRMS, pywatershed calculates explicit solutions
 of spatially distributed hydrologic process representations including evaporation,
 transpiration, runoff, infiltration, interflow, snowpack, soil moisture, conceptual
@@ -29,11 +35,13 @@ land use change at temporal scales ranging from days to centuries.
 
 Pywatershed enhances PRMS with a new software design that is object-oriented and highly
 flexible, allowing users to easily run "sub-models", replace process representations, and
-incorporate new data. The Python language is accessible to a wide audience of
-potential contributors which will help foster community development and experimentation.
-A large number of advanced libraries available for Python can be applied to
-hdyrologic modeling, including libraries for parallelism, data access and manipulation,
-and machine learning.
+incorporate new data. There are base classes which manage mass and energy conservation
+and the implementation of concrete, process classes follows a self-describing design
+which allows for Model class to properly connect hydrologic proecsses based on their
+own descriptions of themselves. A variety of input data sources is managed by the
+Adapter class which implements subclasses for different sources. The design of
+pywatershed is documented in these docs and also deomonstrated by numbered jupyter
+notebooks in the `examples/` directory.
 
 The flexible structure of pywatershed helps it to couple with other hydrologic
 models. We can easily one-way couple pywatershed to

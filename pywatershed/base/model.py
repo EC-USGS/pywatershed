@@ -2,7 +2,6 @@ import pathlib as pl
 from copy import deepcopy
 from datetime import datetime
 from typing import Union
-from warnings import warn
 
 from tqdm.auto import tqdm
 
@@ -134,25 +133,6 @@ class Model:
 
     Construct a PRMS-legacy based model:
 
-    ..
-        import pywatershed as pws
-        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
-        domain_dir = test_data_dir / "drb_2yr"
-        # A PRMS-native control file
-        control_file = domain_dir / "control.test"
-        # PRMS-native parameter file
-        parameter_file = domain_dir / "myparam.param"
-        control = pws.Control.load(control_file)
-        control.options['input_dir'] = domain_dir / "output"
-        params = pws.parameters.PrmsParameters.load(parameter_file)
-        model_procs = [pws.PRMSGroundwater, pws.PRMSChannel,]
-        model = pws.Model(
-            model_procs,
-            control=control,
-            parameters=params,
-        )
-        model.run()
-
     >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
@@ -160,7 +140,9 @@ class Model:
     >>> control_file = domain_dir / "control.test"
     >>> # PRMS-native parameter file
     >>> parameter_file = domain_dir / "myparam.param"
-    >>> control = pws.Control.load(control_file)
+    >>> control = pws.Control.load_prms(
+    ...     control_file, warn_unused_options=False
+    ... )
     >>> control.options["input_dir"] = domain_dir / "output"
     >>> params = pws.parameters.PrmsParameters.load(parameter_file)
     >>> model_procs = [
@@ -181,53 +163,6 @@ class Model:
 
     Construct a model the pywatershed-centric way, in memory:
 
-    ..
-        import pywatershed as pws
-        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
-        domain_dir = test_data_dir / "drb_2yr"
-        dis_hru = pws.Parameters.from_netcdf(
-            domain_dir / "parameters_dis_hru.nc", encoding=False
-        )
-        control_file = domain_dir / "control.test"
-        control = pws.Control.load(control_file)
-        control.options['input_dir'] = domain_dir
-        params = {}
-        for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
-            param_file = domain_dir / f"parameters_PRMS{proc}.nc"
-            params[proc.lower()] = pws.Parameters.from_netcdf(param_file)
-        model_dict = {
-           'control': control,
-           'dis_hru': dis_hru,
-           'model_order': [
-                'prmssolargeometry',
-                'prmsatmosphere',
-                'prmscanopy',
-                'prmssnow',
-            ],
-            'prmssolargeometry': {
-                'class': pws.PRMSSolarGeometry,
-                'parameters': params['solargeometry'],
-                'dis': 'dis_hru',
-            },
-            'prmsatmosphere': {
-                'class': pws.PRMSAtmosphere,
-                'parameters': params['atmosphere'],
-                'dis': 'dis_hru',
-            },
-            'prmscanopy': {
-                'class': pws.PRMSCanopy,
-                'parameters': params['canopy'],
-                'dis': 'dis_hru',
-            },
-            'prmssnow': {
-                'class': pws.PRMSSnow,
-                'parameters': params['snow'],
-                'dis': 'dis_hru',
-            }
-        }
-        model = pws.Model(model_dict)
-        model.run()
-
     >>> import pywatershed as pws
     >>> test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
     >>> domain_dir = test_data_dir / "drb_2yr"
@@ -235,7 +170,9 @@ class Model:
     ...     domain_dir / "parameters_dis_hru.nc", encoding=False
     ... )
     >>> control_file = domain_dir / "control.test"
-    >>> control = pws.Control.load(control_file)
+    >>> control = pws.Control.load_prms(
+    ...     control_file, warn_unused_options=False
+    ... )
     >>> control.options["input_dir"] = domain_dir
     >>> params = {}
     >>> for proc in ["SolarGeometry", "Atmosphere", "Canopy", "Snow"]:
@@ -276,67 +213,10 @@ class Model:
     PRMSCanopy jit compiling with numba
     PRMSSnow jit compiling with numba
     >>> model.run()
-      0%|                                                                     | 0/731 [00:00<?, ?it/s]
-    pywatershed/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
-        through_rain[:] = np.where(wh_through, net_rain, zero)
-    100%|███████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 96.76it/s]
+    100%|███████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 60.76it/s]
     model.run(): finalizing
 
     Construct a model the pywatershed-centric way, from a yaml file definition:
-
-    ..
-        import yaml
-        import pywatershed as pws
-        test_data_dir = pws.constants.__pywatershed_root__ / "../test_data"
-        domain_dir = test_data_dir / "drb_2yr"
-        control = {
-            "start_time": "1979-01-01T00:00:00",
-            "end_time": "1980-12-31T00:00:00",
-            "time_step": 24,
-            "time_step_units": "h",
-            "verbosity": 0,
-            "budget_type": "warn",
-            "init_vars_from_file": 0,
-            "input_dir": str(domain_dir),
-        }
-        control_file = domain_dir / "example_control.yml"
-
-        model_dict = {
-            "control": str(control_file),
-            "dis_hru": "parameters_dis_hru.nc",
-            "dis_both": "parameters_dis_both.nc",
-            "solargeometry": {
-                "class": "PRMSSolarGeometry",
-                "parameters": "parameters_PRMSSolarGeometry.nc",
-                "dis": "dis_hru",
-            },
-            "atmosphere": {
-                "class": "PRMSAtmosphere",
-                "parameters": "parameters_PRMSAtmosphere.nc",
-                "dis": "dis_hru",
-            },
-            "canopy": {
-                "class": "PRMSCanopy",
-                "parameters": "parameters_PRMSCanopy.nc",
-                "dis": "dis_hru",
-            },
-            "snow": {
-                "class": "PRMSSnow",
-                "parameters": "parameters_PRMSSnow.nc",
-                "dis": "dis_hru",
-            },
-            "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
-        }
-        model_dict_file = domain_dir / "example_model_dict.yml"
-        dump_dict = {control_file: control, model_dict_file: model_dict}
-        for key, val in dump_dict.items():
-            with open(key, "w") as file:
-                documents = yaml.dump(val, file)
-
-        model = pws.Model.from_yaml(model_dict_file)
-        model.run()
-        control_file.unlink()
-        model_dict_file.unlink()
 
     >>> import yaml
     >>> import pywatershed as pws
@@ -349,10 +229,9 @@ class Model:
     ...     "time_step_units": "h",
     ...     "verbosity": 0,
     ...     "budget_type": "warn",
-    ...     "init_vars_from_file": 0,
     ...     "input_dir": str(domain_dir),
     ... }
-    >>> control_file = domain_dir / "example_control.yml"
+    >>> control_file = domain_dir / "example_control.yaml"
     >>> model_dict = {
     ...     "control": str(control_file),
     ...     "dis_hru": "parameters_dis_hru.nc",
@@ -379,23 +258,17 @@ class Model:
     ...     },
     ...     "model_order": ["solargeometry", "atmosphere", "canopy", "snow"],
     ... }
-    >>> model_dict_file = domain_dir / "example_model_dict.yml"
+    >>> model_dict_file = domain_dir / "example_model_dict.yaml"
     >>> dump_dict = {control_file: control, model_dict_file: model_dict}
     >>> for key, val in dump_dict.items():
     ...     with open(key, "w") as file:
     ...         documents = yaml.dump(val, file)
     ...
-    >>> model = pws.Model.from_yml(model_dict_file)
+    >>> model = pws.Model.from_yaml(model_dict_file)
     PRMSCanopy jit compiling with numba
     PRMSSnow jit compiling with numba
     >>> model.run()
-      0%|                                                                     | 0/731 [00:00<?, ?it/s]
-    pywatershed/pywatershed/hydrology/prms_snow.py:1086: NumbaExperimentalFeatureWarning: Use of isinstance() detected. This is an experimental feature.
-      through_rain[:] = np.where(wh_through, net_rain, zero)
-      0%|                                                           | 1/731 [00:05<1:08:27,  5.63s/it]
-    /pywatershed/pywatershed/base/budget.py:317: UserWarning: The flux unit balance not equal to the change in unit storage: PRMSSnow
-      warn(msg, UserWarning)
-    100%|██████████████████████████████████████████████████████████| 731/731 [00:06<00:00, 119.95it/s]
+    100%|████████████████████████████████████████████████████████████| 731/731 [00:07<00:00, 92.30it/s]
     model.run(): finalizing
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
@@ -784,16 +657,6 @@ class Model:
         if not self._found_input_files:
             self._find_input_files()
 
-        # (
-        #     output_dir,
-        #     output_vars,
-        #     separate_files,
-        # ) = self._reconcile_nc_args_w_control_opts(
-        #     output_dir, output_vars, separate_files
-        # )
-
-        # self._netcdf_dir = pl.Path(output_dir)
-
         for cls in self.process_order:
             self.processes[cls].initialize_netcdf(
                 output_dir=output_dir,
@@ -829,9 +692,6 @@ class Model:
             n_time_steps: the number of timesteps to run
             output_vars: the vars to output to the netcdf_dir
         """
-        # Can supply options ton initialize netcdf on .run but not with
-        # .advance. However, the first advance takes care of finding
-        # the input files.
         if netcdf_dir or (
             not self._netcdf_initialized
             and self._default_nc_out_dir is not None
@@ -885,50 +745,3 @@ class Model:
         for cls in self.process_order:
             self.processes[cls].finalize()
         return
-
-    # def _reconcile_nc_args_w_control_opts(
-    #     self, output_dir, output_vars, separate_files
-    # ):
-    #     # can treat the other args but they are not yet in the available opts
-    #     arg_opt_name_map = {
-    #         "output_dir": "netcdf_output_dir",
-    #         "output_vars": "netcdf_output_var_names",
-    #         "separate_files": "netcdf_output_separate_files",
-    #     }
-
-    #     args = {
-    #         "output_dir": output_dir,
-    #         "output_vars": output_vars,
-    #         "separate_files": separate_files,
-    #     }
-
-    #     for vv in args.keys():
-    #         arg_val = args[vv]
-    #         opt_name = arg_opt_name_map[vv]
-    #         opts = self.control.options
-    #         if opt_name in opts.keys():
-    #             opt_val = opts[opt_name]
-    #         else:
-    #             opt_val = None
-
-    #         # set the arg vals to return
-
-    #         if opt_val is None and arg_val is None:
-    #             pass
-
-    #         elif opt_val is None:
-    #             pass
-
-    #         elif arg_val is None:
-    #             args[vv] = opt_val
-
-    #         else:
-    #             msg = (
-    #                 f"control.option '{opt_name}' being superceeded by "
-    #                 f"model.initialize_netcdf argument {vv}"
-    #             )
-    #             # TODO: should this edit control? and then model writes control
-    #             # at the end of run to the output dir?
-    #             warn(msg)
-
-    #     return args["output_dir"], args["output_vars"], args["separate_files"]

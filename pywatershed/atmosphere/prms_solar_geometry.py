@@ -54,7 +54,6 @@ class PRMSSolarGeometry(Process):
         verbose: Print extra information or not?
         from_prms_file: Load from a PRMS output file?
         from_nc_files_dir: [str, pl.Path] = None,
-        load_n_time_batches: How often to load from disk (not-implemented?)
 
     """
 
@@ -66,7 +65,6 @@ class PRMSSolarGeometry(Process):
         verbose: bool = False,
         from_prms_file: [str, pl.Path] = None,
         from_nc_files_dir: [str, pl.Path] = None,
-        load_n_time_batches: int = 1,
     ):
         # self._time is needed by Process for timeseries arrays
         # TODO: this is redundant because the parameter doy is set

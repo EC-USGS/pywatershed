@@ -82,12 +82,6 @@ class PRMSAtmosphere(Process):
             radiation on a horizontal plane
 
         verbose: Print extra information or not?
-        netcdf_output_dir: A directory to write netcdf outpuf files
-        netcdf_output_vars: A list of variables to output via netcdf.
-        netcdf_separate_files: Separate or a single netcdf output file
-        load_n_time_batches: How often to load from disk (not-implemented?)
-        n_time_chunk: the inverse of load_n_time_batches, the number of
-           times in a chunk/batch (implemented?)
 
     """
 
@@ -102,20 +96,14 @@ class PRMSAtmosphere(Process):
         soltab_potsw: adaptable,
         soltab_horad_potsw: adaptable,
         verbose: bool = False,
-        # netcdf_output_dir: [str, pl.Path] = None,
-        # netcdf_output_vars: list = None,
-        # netcdf_separate_files: bool = None,
-        # from_file_dir: [str, pl.Path] = None,
-        n_time_chunk: int = -1,
-        load_n_time_batches: int = 1,
     ):
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
         # TODO: make time chunking options work (esp with output)
-        if n_time_chunk <= 0:
-            self.n_time_chunk = control.n_times
-        else:
-            self.n_time_chunk = n_time_chunk
+        # if n_time_chunk <= 0:
+        #     self.n_time_chunk = control.n_times
+        # else:
+        #     self.n_time_chunk = n_time_chunk
 
         # Initialize full time with nans
         self._time = np.full(control.n_times, nan, dtype="datetime64[s]")

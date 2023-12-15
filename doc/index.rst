@@ -7,7 +7,7 @@ pywatershed: A hydrologic model in Python
 Welcome to the `pywatershed` docs!
 
 Pywatershed is Python package for simulating hydrologic processes motivated by
-the need to modernize important, legacy hydrologic models at the USGS
+the need to modernize important, legacy hydrologic models at the USGS,
 particularly the
 `Precipitation-Runoff Modeling System <https://www.usgs.gov/software/precipitation-runoff-modeling-system-prms>`__
 (PRMS, Markstrom et al., 2015) and its role in
@@ -18,12 +18,12 @@ representations, to support testing of alternative hydrologic process
 conceptualizations, and to facilitate the incorporation of cutting edge
 modeling techniques and data sources. Pywatershed is a place for experimentation
 with software design, process representation, and data fusion in the context
-of well established hydrologic process modeling.
+of well-established hydrologic process modeling.
 
 The Python language was choosen because it is accessible to a wide audience of
 potential contributors which will help foster community development and
 experimentation. A large number of advanced libraries available for Python can
-be applied to hdyrologic modeling, including libraries for parallelism, data
+also be applied to hdyrologic modeling, including libraries for parallelism, data
 access and manipulation, and machine learning.
 
 Following the conceptual design of PRMS, pywatershed calculates explicit solutions
@@ -36,12 +36,12 @@ land use change at temporal scales ranging from days to centuries.
 Pywatershed enhances PRMS with a new software design that is object-oriented and highly
 flexible, allowing users to easily run "sub-models", replace process representations, and
 incorporate new data. There are base classes which manage mass and energy conservation
-and the implementation of concrete, process classes follows a self-describing design
-which allows for Model class to properly connect hydrologic proecsses based on their
-own descriptions of themselves. A variety of input data sources is managed by the
+and the implementation of concrete process classes follows a self-describing design
+which allows for a Model class to connect hydrologic process classes based on their
+descriptions of themselves. A variety of input data sources is managed by the
 Adapter class which implements subclasses for different sources. The design of
-pywatershed is documented in these docs and also deomonstrated by numbered jupyter
-notebooks in the `examples/` directory.
+pywatershed is documented in these docs and also demonstrated by numbered Jupyter
+Notebooks in the `examples/` directory.
 
 The flexible structure of pywatershed helps it to couple with other hydrologic
 models. We can easily one-way couple pywatershed to
@@ -56,7 +56,7 @@ sustainable manner that allows individual software components to evolve independ
 
 
 =========================
-Current Version: 1.0.0
+Current version: 1.0.0
 =========================
 With pywatershed version 1.0.0, we have faithfully reproduced the PRMS process representations used in
 the USGS `National Hydrolgical Model <https://pubs.usgs.gov/publication/tm6B9>`__ (NHM, Regan et al.,
@@ -73,11 +73,11 @@ gridded configurations and cascading flows.
 We are also working on reservoir representations.
 
 =================
-Getting Started
+Getting started
 =================
 Please note that you can browse the API reference, developer info, and index
 using the table of contents on the left. But *the best way to get started
-with pywatershed is to dive in to the example notebooks*.
+with pywatershed is to dive into the example notebooks*.
 
 | For introductory example notebooks, look in the `examples/ <https://github.com/EC-USGS/pywatershed/tree/main/examples>`_ directory in the repository. Numbered starting at 00, these are meant to be completed in order. Notebook outputs are not saved in Github. But you can run these notebooks locally or using WholeTale (free but sign-up or log-in required) where the pywatershed environment is all ready to go:
 
@@ -92,10 +92,10 @@ on both `running locally <https://github.com/EC-USGS/pywatershed#installation>`_
 or `using WholeTale <https://github.com/EC-USGS/pywatershed#example-notebooks>`_.
 
 ========================
-Community Engagement
+Community engagement
 ========================
 We value your feedback! Please use `discussions <https://github.com/EC-USGS/pywatershed/discussions>`_
-or `issues <https://github.com/EC-USGS/pywatershed/issues>`_ on our Github page. You may also suggest
+or `issues <https://github.com/EC-USGS/pywatershed/issues>`_ on Github. You may also suggest
 edits to this documentation or open an issue by clicking on the Github Octocat at the top of the page.
 For more in-depth contributions, please start by reading over
 the `DEVELOPER.md file <https://github.com/EC-USGS/pywatershed/blob/develop/DEVELOPER.md>`_.

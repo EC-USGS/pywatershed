@@ -20,7 +20,7 @@ modeling techniques and data sources. Pywatershed is a place for experimentation
 with software design, process representation, and data fusion in the context
 of well-established hydrologic process modeling.
 
-The Python language was choosen because it is accessible to a wide audience of
+The Python language was chosen because it is accessible to a wide audience of
 potential contributors which will help foster community development and
 experimentation. A large number of advanced libraries available for Python can
 also be applied to hdyrologic modeling, including libraries for parallelism, data

@@ -23,6 +23,10 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 # This DOES check the output of mf6_mmr and needs a binary from a specialized
 # mf6 branch. When feat-snf merges to develop we can un-xfail.
 
+# Here we supply "seg_mid_elevation" in the parameter data and
+# "stress_period_data" in chd options. This bypasses the calculation of these
+# given PRMS parameter information. In this case, it would be impossible
+# to supply PRMS-like data that would reproduce this test.
 
 answers_swf_dfw = {
     "ia": np.array([0, 2, 5, 7]),

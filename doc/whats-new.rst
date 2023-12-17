@@ -14,7 +14,7 @@ What's New
 
 .. _whats-new.1.0.0:
 
-v1.0.0 (unreleased)
+v1.0.0
 ---------------------
 
 New features

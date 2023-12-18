@@ -25,6 +25,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup gfortran
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: gcc
+          version: 11
+
       - name: Install Dependencies via Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -32,7 +38,7 @@ jobs:
           cache-environment: true
           cache-downloads: true
           create-args: >-
-            python=3.9
+            python=3.10
             conda
       
       - name: Checkout MODFLOW 6
@@ -47,6 +53,13 @@ jobs:
         run: |
           python update_flopy.py
 
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
+          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
+          cat .mf6_ci_ref_remote  >> $GITHUB_ENV
+          
       - name: Install pywatershed
         run: |
           pip install .

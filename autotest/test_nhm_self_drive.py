@@ -1,5 +1,6 @@
 import pathlib as pl
 
+import pytest
 import xarray as xr
 
 import pywatershed as pws
@@ -22,32 +23,41 @@ nhm_processes = [
 
 
 def test_drive_indiv_process(domain, tmp_path):
-    """Use output from a full NHM run to drive each of the indiv processes
-    separately: self-driving
+    """Output of a full pywatershed NHM drives indiv process models separately
+
+    The results from the full model should be consistent with the results from
+    the individual models, else there is likely something wrong with the
+    full model.
     """
-    # Full NHM output
+
+    # Run a full pws NHM to use its output to drive individual processes
     nhm_output_dir = pl.Path(tmp_path) / "nhm_output"
 
     params = pws.parameters.PrmsParameters.load(domain["param_file"])
-    control = pws.Control.load(domain["control_file"])
+    control = pws.Control.load_prms(
+        domain["control_file"], warn_unused_options=False
+    )
     control.edit_n_time_steps(n_time_steps)
     control.options["budget_type"] = "warn"
     control.options["calc_method"] = "numba"
     control.options["input_dir"] = domain["prms_run_dir"]
+    del control.options["netcdf_output_var_names"]
+    del control.options["netcdf_output_dir"]
 
     nhm = pws.Model(
         nhm_processes,
         control=control,
         parameters=params,
     )
+
     nhm.initialize_netcdf(output_dir=nhm_output_dir)
+
     nhm.run(finalize=True)
     del nhm, params, control
 
-    # individual process models
+    # run individual process models
     for proc in nhm_processes:
-        # proc = pws.PRMSRunoff  # TODO: fix this one ASAP
-        if proc in [pws.PRMSSolarGeometry, pws.PRMSAtmosphere, pws.PRMSRunoff]:
+        if proc in [pws.PRMSSolarGeometry, pws.PRMSAtmosphere]:
             # These are not driven by outputs of above, only external outputs
             # or known/static inputs
             continue
@@ -57,18 +67,21 @@ def test_drive_indiv_process(domain, tmp_path):
         proc_model_output_dir.mkdir()
 
         params = pws.parameters.PrmsParameters.load(domain["param_file"])
-        control = pws.Control.load(domain["control_file"])
+        control = pws.Control.load_prms(
+            domain["control_file"], warn_unused_options=False
+        )
         control.edit_n_time_steps(n_time_steps)
         control.options["budget_type"] = "warn"
         control.options["calc_method"] = "numba"
         control.options["input_dir"] = nhm_output_dir
+        control.options["netcdf_output_dir"] = proc_model_output_dir
 
         proc_model = pws.Model(
             [proc],
             control=control,
             parameters=params,
         )
-        proc_model.initialize_netcdf(output_dir=proc_model_output_dir)
+        proc_model.initialize_netcdf()
         proc_model.run(finalize=True)
         del proc_model, params, control
 
@@ -82,10 +95,11 @@ def test_drive_indiv_process(domain, tmp_path):
             ans = xr.open_dataset(nhm_output_dir / f"{vv}.nc")
 
             # Leaving the commented to diagnose what PRMSRunoff later.
-            # try:
-            xr.testing.assert_allclose(res, ans)
-            # except:
-            #     print(vv)
+            try:
+                xr.testing.assert_allclose(res, ans)
+            except AssertionError:
+                print(vv, abs(res - ans).max())
+                print(vv, (abs(res - ans) / ans).max())
 
             del res, ans
 

@@ -1,7 +1,6 @@
 import numpy as np
 
 from ..base.control import Control
-from ..constants import nan
 
 # should this be subclassed to DoyArray and TimeseriesArray?
 

@@ -1,3 +1,4 @@
+from copy import copy, deepcopy
 from datetime import datetime
 
 import numpy as np
@@ -50,7 +51,7 @@ def test_control_simple(control_simple):
     assert control_simple.time_step == ts
     assert control_simple.start_time == time_dict["start_time"]
     assert control_simple.end_time == time_dict["end_time"]
-    assert control_simple.current_time is None
+    assert control_simple.current_time == control_simple.init_time
     assert control_simple.itime_step == -1
     prev_time = control_simple.current_time
     n_times = control_simple.n_times
@@ -80,7 +81,7 @@ def test_control_simple(control_simple):
         year = year if month >= 10 else year - 1
         wy_start = np.datetime64(f"{year}-10-01")
         dowy = (current_time - wy_start).astype("timedelta64[D]")
-        assert dowy == control_simple.current_dowy
+        assert dowy == (control_simple.current_dowy - 1)
 
         prev_time = control_simple.current_time
 
@@ -152,5 +153,51 @@ def test_control_advance(control_simple, params_simple):
 
 
 def test_init_load(domain):
-    control = Control.load(domain["control_file"])
+    with pytest.warns(RuntimeWarning):
+        _ = Control.load_prms(domain["control_file"])
     return None
+
+
+def test_deepcopy(domain):
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+    ctl_sh = copy(ctl)
+    ctl_dp = deepcopy(ctl)
+
+    opt_restart_orig = ctl.options["verbosity"]
+    opt_restart_new = "something_else"
+    ctl.options["verbosity"] = opt_restart_new
+    assert ctl_sh.options["verbosity"] == opt_restart_new
+    assert ctl_dp.options["verbosity"] == opt_restart_orig
+
+    return None
+
+
+def test_setitem_setattr(domain):
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+
+    # __setitem__ on OptsDict
+    ctl.options["verbosity"] = 12
+    with pytest.raises(NameError):
+        ctl.options["foobar"] = 12
+
+    # __setattr__ on Control
+    ctl.options = {"verbosity": 45}
+    with pytest.raises(NameError):
+        ctl.options = {"foobar": 12}
+
+    # __setitem__ on Control
+    ctl["options"] = {"verbosity": 45}
+    with pytest.raises(NameError):
+        ctl["options"] = {"foobar": 12}
+
+    # The value for options must be a dictionary
+    with pytest.raises(ValueError):
+        ctl.options = None
+
+
+def test_yaml_roundtrip(domain, tmp_path):
+    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+    yml_file = tmp_path / "control.yaml"
+    ctl.to_yaml(yml_file)
+    ctl_2 = Control.from_yaml(yml_file)
+    np.testing.assert_equal(ctl.to_dict(), ctl_2.to_dict())

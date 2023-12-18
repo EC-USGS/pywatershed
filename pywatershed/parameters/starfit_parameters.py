@@ -79,11 +79,6 @@ class StarfitParameters(Parameters):
             )
         )
         istarf_conus_dd.subset_on_coord("grand_id", wh_subset)
-        # these attributes make merging fail
-        # relax merging with a dict of nested keys?, or jst on encoding/meta?
-        del istarf_conus_dd.encoding["grand_id"]["source"]
-        del istarf_conus_dd.encoding["grand_id"]["original_shape"]
-        # params_dd = DatasetDict.merge(istarf_conus_dd, resops_dd)
 
         grand_dams_dd = DatasetDict.from_netcdf(grand_dams)
         grand_rename = {"GRAND_ID": "grand_id"}
@@ -96,10 +91,6 @@ class StarfitParameters(Parameters):
             )
         )
         grand_dams_dd.subset_on_coord("grand_id", wh_subset)
-        # these attributes make merging fail
-        # relax merging with a dict of nested keys?, or jst on encoding/meta?
-        del grand_dams_dd.encoding["grand_id"]["source"]
-        del grand_dams_dd.encoding["grand_id"]["original_shape"]
 
         istarf_conus_dd.drop_var("subset_inds")
         grand_dams_dd.drop_var("subset_inds")

@@ -85,6 +85,7 @@ doc = [
     "jinja2<3.1",
     "sphinx",
     "sphinx-book-theme>=0.3.3",
+    "sphinx-autodoc-typehints",
     "sphinx-autosummary-accessors",
     "sphinx-copybutton"
 ]

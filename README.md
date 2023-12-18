@@ -10,6 +10,9 @@
 [![PyPI Status](https://img.shields.io/pypi/status/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 [![PyPI Versions](https://img.shields.io/pypi/pyversions/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/version.svg)](https://anaconda.org/conda-forge/pywatershed)
+[![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/platforms.svg)](https://anaconda.org/conda-forge/pywatershed)
+
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
 
 
@@ -17,53 +20,33 @@
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**
 
-- [Purpose](#purpose)
+- [About](#about)
 - [Installation](#installation)
-- [Contributing](#contributing)
-- [Example Notebooks](#example-notebooks)
-- [Overview of Repository Contents](#overview-of-repository-contents)
+- [Getting started / Example notebooks](#getting-started--example-notebooks)
+- [Community engagement](#community-engagement)
 - [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-## Purpose
+## About
 
-The purpose of this repository is to refactor and redesign the [PRMS modeling
-system](https://www.usgs.gov/software/precipitation-runoff-modeling-system-prms)
-while maintaining its functionality. Code modernization is a step towards
-unification with [MODFLOW 6 (MF6)](https://github.com/MODFLOW-USGS/modflow6).
+Welcome to the pywatershed repository!
 
-The following motivations are taken from our [AGU poster from December
-2022](https://agu2022fallmeeting-agu.ipostersessions.com/default.aspx?s=05-E1-C6-40-DF-0D-4D-C7-4E-DE-D2-61-02-05-8F-0A)
-which provides additional details on motivations, project status, and current
-directions of this project as of approximately January 2023.
+Pywatershed is Python package for simulating hydrologic processes motivated by
+the need to modernize important, legacy hydrologic models at the USGS,
+particularly the
+[Precipitation-Runoff Modeling System](https://www.usgs.gov/software/precipitation-runoff-modeling-system-prms)
+(PRMS, Markstrom et al., 2015) and its role in
+[GSFLOW](https://www.usgs.gov/software/gsflow-coupled-groundwater-and-surface-water-flow-model>)
+(Markstrom et al., 2008).
+The goal of modernization is to make these legacy models more flexible as process
+representations, to support testing of alternative hydrologic process
+conceptualizations, and to facilitate the incorporation of cutting edge
+modeling techniques and data sources. Pywatershed is a place for experimentation
+with software design, process representation, and data fusion in the context
+of well-established hydrologic process modeling.
 
-Goals of the USGS Enterprise Capacity (EC) project include:
-
-  * A sustainable integrated, hydrologic modeling framework for the U.S.
-    Geological Survey (USGS)
-  * Interoperable modeling across the USGS, partner agencies, and academia
-
-Goals for EC Watershed Modeling:
-
-  * Couple the Precipitation-Runoff Modeling System (PRMS, e.g. Regan et al,
-	2018)  with MODFLOW 6 (MF6, e.g. Langevin et al, 2017) in a sustainable
-	way
-  * Redesign PRMS to be more modern and flexible
-  * Prioritize process representations in the current National Hydrological
-    Model (NHM) based on PRMS 5.2.1
-
-Prototype an EC watershed model: "pywatershed"
-
-  * Redesign PRMS quickly in python
-  * Couple to MF6 via BMI/XMI interface (Hughes et al, 2021; Hutton et al, 2020)
-  * Establish a prototyping ground for EC codes that couples to the compiled
-	framework: low cost proof of concepts (at the price of potentially less
-    computational performance) * Enable process representation hypothesis testing
-  * Use cutting-edge techniques and technologies to improve models 
-  * Machine learning, automatic differentiation 
-  * Address challenges of modeling across space and time scales 
-  * Transition prototype watershed model to compiled EC code
+For more information on the goals and status of pywatershed, please see the [pywatershed docs](https://pywatershed.readthedocs.io/).
 
 
 ## Installation
@@ -71,17 +54,25 @@ Prototype an EC watershed model: "pywatershed"
 `pywatershed` uses Python 3.9 or 3.10.
 
 The `pywatershed` package is [available on
-PyPI](https://pypi.org/project/pywatershed/) but installation of dependencies
-may not be reliable on all platforms. 
+PyPI](https://pypi.org/project/pywatershed/) but installation of all
+dependencies sets (lint, test, optional, doc, and all) may not be reliable on
+all platforms. 
 
-We recommend dependencies be first installed with
-[Mamba](https://mamba.readthedocs.io/en/latest/). This will be much faster than
-Ananconda (but the conda command could also be used). We hope to provide
-`pywatershed` installation with all its dependencies on conda-forge in the 
-near future.
+The `pywatershed` package is [available on
+conda-forge](https://anaconda.org/conda-forge/pywatershed). The installation
+is the quickest way to get up and running by provides only the minimal set of
+dependencies (not including Jupyter nor all packages needed for running the
+example notebooks, also not suitable for development purposes). 
+
+We recommend the following installation procedures to get fully-functional
+environments for running `pywatershed` and its example notebooks. We strongly
+recommend using [Mamba](https://mamba.readthedocs.io/en/latest/)to first
+instal dependencies from the `environment_y_jupyter.yml` file in the
+repository before installing `pywatershed` itself. Mamba will be much faster
+than Ananconda (but the conda command could also be used). 
 
 If you wish to use the stable release, you will use `main` in place of 
-`<branch>` in the following commands. If you want to follow developemnt, you'll
+`<branch>` in the following commands. If you want to follow development, you'll
 use `develop` instead.
 
 Without using `git` (directly), you may:
@@ -109,68 +100,55 @@ you will also need to activate this environment by name.)
 
 
 We install the `environment_w_jupyter.yml` to provide all known dependencies 
-including those for running the eample notebooks. (The `environment.yml` 
-does not contain jupyter or jupyterlab because this interferes with installation
-on WholeTale, see Example Notebooks seection below.)
+including those for running the example notebooks. (The `environment.yml` 
+does not contain Jupyter or JupyterLab because this interferes with installation
+on WholeTale, see Getting Started section below.)
 
-## Contributing
 
-See the [developer documentation](./DEVELOPER.md) for instructions on setting up
-a development environment. See the [contribution guide](./CONTRIBUTING.md) to
-contribute to this project.
+## Getting started / Example notebooks
 
-## Example Notebooks
+Please note that you can browse the API reference, developer info, and index
+in the [pywatershed docs]((https://pywatershed.readthedocs.io/)). But
+*the best way to get started with pywatershed is to dive into the example
+notebooks*.
 
 For introductory example notebooks, look in the
 [`examples/`](https://github.com/EC-USGS/pywatershed/tree/main/examples>)
 directory in the repository. Numbered starting at 00, these are meant to be
-completed in order. Non-numbered notebooks coveradditional topics. These
-notebooks are note yet covered by testing and so may be expected to have some
-issues until they are added to testing. In `examples/developer/` there are
-notebooks of interest to developers who may want to learn about running the
-software tests.
-
-Though no notebook outputs are saved in Github, these notebooks can easily
-navigated to and run in WholeTale containers (free but sign-up or log-in
-required). This is a very easy and quick way to get started without needing to
-install pywatershed requirements yourself. WholeTale is an NSF funded project
-and supports logins from many institutions, e.g. the USGS, and you may not need
-to register.
-
-There are containers for both the `main` and `develop` branches.
+completed in order. Numbered starting at 00, these are meant to be completed
+in order. Notebook outputs are not saved in Github. But you can run these
+notebooks locally or using WholeTale (an NSF funded project supporting logins
+from many institutions, free but sign-up or log-in required)
+where the pywatershed environment is all ready to go:
 
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org)
 
-  * [WholeTale container for latest release (main
-	branch)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
-  * [WholeTale container for develop
-	branch](https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata)
+  * [Run latest release in WholeTale](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
+  * [Run the develop branch in WholeTale](https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata)
 
-WholeTale will give you a jupyter-lab running in the root of this
+WholeTale will give you a JupyterLab running in the root of this
 repository. You can navigate to `examples/` and then open and run the notebooks
 of your choice.  The develop container may require the user to update the
 repository (`git pull origin`) to stay current with development.
 
-## Overview of Repository Contents
+Non-numbered notebooks in `examples/` cover additional topics. These
+notebooks are not yet covered by testing and you may encounter some
+issues. In `examples/developer/` there are notebooks of interest to
+developers who may want to learn about running the software tests.
 
-The contents of directories at this level is described. Therein you may discover
-another README.md for more information.
 
-```
-.github/: Github actions, scripts and Python environments for continuous integration (CI) and releasing,
-asv_benchmarks/: preformance benchmarking by ASV
-autotest/: pywatershed package testing using pytest
-autotest_exs/: pywatershed example notebook testing using pytest
-bin/:PRMS executables distributed
-doc/:Package/code documentation source code
-evaluation/: tools for evaluation of pywatershed
-examples/:How to use the package, mostly jupyter notebooks
-prms_src/:PRMS source used for generating executables in bin/
-pywatershed/:Package source
-reference/:Ancillary materials for development
-resources/:Static stuff like images
-test_data/:Data used for automated testing
-```
+## Community engagement
+
+We value your feedback! Please use [discussions](https://github.com/EC-USGS/pywatershed/discussions)
+or [issues](https://github.com/EC-USGS/pywatershed/issues) on Github. 
+For more in-depth contributions, please start by reading over
+the pywatershed
+[DEVELOPER.md](https://github.com/EC-USGS/pywatershed/blob/develop/DEVELOPER.md) and
+[CONTRIBUTING.md](https://github.com/EC-USGS/pywatershed/blob/develop/CONTRIBUTING.md)
+guidelines.
+
+Thank you for your interest.
+
 
 ## Disclaimer
 

@@ -1435,10 +1435,11 @@
             ENDIF
           ENDIF
 
-        ENDIF
+        ENDIF  ! ends iff statement between steps 3 and 4 about 265 lines above
+
 
 ! LAST check to clear out all arrays if packwater is gone
-        IF ( Pkwater_equiv(i)<=0.0D0 ) THEN
+        IF ( Pkwater_equiv(i) <= DNEARZERO ) THEN
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv(i)<-DNEARZERO ) &
      &           PRINT *, 'Snowpack problem, pkwater_equiv negative, HRU:', i, ' value:', Pkwater_equiv(i)
@@ -1457,8 +1458,8 @@
           Snowcov_area(i) = 0.0
           Pk_def(i) = 0.0
           Pk_temp(i) = 0.0
-          Pk_ice(i) = 0.0
-          Freeh2o(i) = 0.0
+          Pk_ice(i) = 0.0D0
+          Freeh2o(i) = 0.0D0
           Snowcov_areasv(i) = 0.0 ! rsr, not in original code
           Ai(i) = 0.0D0
           Frac_swe(i) = 0.0
@@ -2598,6 +2599,9 @@
 !RAPCOMMENT - CHANGED TO CHECK FOR NEGATIVE PACK ICE
           ! If all pack ice is removed, then there cannot be a
           ! heat deficit
+          ! JLM mass balance fix, if we take pkwater_equiv - ez below
+          ! JLM we need to take ez from both pk_ice and freeh2o here
+          freeh2o = freeh2o + pk_ice
           Pk_ice = 0.0
           Pk_def = 0.0
           Pk_temp = 0.0
@@ -2613,17 +2617,22 @@
         Pkwater_equiv = Pkwater_equiv - ez
         Snow_evap = ez
       ENDIF
+
       IF ( Snow_evap<0.0 ) THEN
         Pkwater_equiv = Pkwater_equiv - DBLE(Snow_evap)
+
         IF ( Pkwater_equiv<0.0D0 ) THEN
           IF ( Print_debug>DEBUG_less ) THEN
             IF ( Pkwater_equiv<-DNEARZERO ) &
      &           PRINT *, 'snowpack issue, negative pkwater_equiv in snowevap', Pkwater_equiv
-            Pkwater_equiv = 0.0D0
+            !  is this in the originial source
           ENDIF
+          Pkwater_equiv = 0.0D0  ! JLM: this is INSIDE a debug statement? will change the answers
         ENDIF
+
         Snow_evap = 0.0
       ENDIF
+
       avail_et = Potet - Hru_intcpevap - Snow_evap
       IF ( avail_et<0.0 ) THEN
 !        PRINT *, 'snow evap', snow_evap, avail_et, pkwater_equiv

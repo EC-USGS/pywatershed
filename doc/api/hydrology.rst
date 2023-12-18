@@ -1,9 +1,9 @@
 .. currentmodule:: pywatershed
 
 		   
-##########
+----------
 Hydrology
-##########
+----------
 
 Hydrologic model components.
 

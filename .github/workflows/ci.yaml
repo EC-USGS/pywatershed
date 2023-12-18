@@ -9,6 +9,14 @@ on:
       - "*"
       - "!v[0-9]+.[0-9]+.[0-9]+*"
 
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
 jobs:
 
   pyws_setup:
@@ -101,7 +109,7 @@ jobs:
           pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
 
   test:
-    name: ${{ matrix.os}} py${{ matrix.python-version }}
+    name: ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -112,8 +120,13 @@ jobs:
         os: [ "ubuntu-latest", "macos-latest", "windows-latest" ]
         python-version: ["3.9", "3.10"]
     steps:
+
       - name: Checkout repo
         uses: actions/checkout@v3
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Set environment variables
         run: |
@@ -134,11 +147,11 @@ jobs:
           if [[ "$MF6_REMOTE" != "$req_remote" ]]; then exit 1; fi
 
       - name: Setup gfortran
-        uses: awvwgk/setup-fortran@main
+        uses: fortran-lang/setup-fortran@v1
         with:
           compiler: gcc
           version: 11
-      
+
       - name: Link gfortran dylibs on Mac
         if: runner.os == 'macOS'
         run: .github/scripts/symlink_gfortran_mac.sh
@@ -174,39 +187,87 @@ jobs:
           pip -V
           pip list
 
-      - name: Run available domains with PRMS and convert csv output to NetCDF
-        working-directory: test_data/scripts
+      - name: hru_1 - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+        working-directory: autotest
         run: |
-          pytest -v -n=auto --durations=0 test_run_domains.py
-          pytest -v -n=auto --durations=0 test_nc_domains.py
+          python generate_test_data.py \
+            -n=auto --domain=hru_1 --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: List all NetCDF files in test_data directory
+      - name: hru_1 - list netcdf input files
         working-directory: test_data
         run: |
-          find . -name "*.nc"
+          find hru_1/output/ -name '*.nc'
 
-      - name: Run tests
+      - name: hru_1 - pywatershed tests
         working-directory: autotest
         run: pytest
-          -v
+          -vv
           -n=auto
+          --domain_yaml=../test_data/hru_1/hru_1.yaml
           --durations=0
-          --all_domains
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest.xml
+          --junitxml=pytest_hru_1.xml
+
+
+      - name: drb_2yr - generate and manage test data
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=drb_2yr --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: drb_2yr - list netcdf input files
+        working-directory: test_data
+        run: |
+          find drb_2yr/output/ -name '*.nc'
+
+      - name: drb_2yr - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          --domain_yaml=../test_data/drb_2yr/drb_2yr.yaml
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr.xml
+
+      - name: ucb_2yr - generate and manage test data
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=ucb_2yr --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: ucb_2yr - list netcdf input files
+        working-directory: test_data
+        run: |
+          find ucb_2yr/output/ -name '*.nc'
+
+      - name: ucb_2yr - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          --domain_yaml=../test_data/ucb_2yr/ucb_2yr.yaml
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_ucb_2yr.xml
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
-          path: ./autotest/pytest.xml
+          path: |
+            ./autotest/pytest_hru_1.xml
+            ./autotest/pytest_drb_2yr.xml
+            ./autotest/pytest_ucb_2yr.xml
 
       - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v2.1.0
+        uses: codecov/codecov-action@v3
         with:
-          file: ./autotest/coverage.xml
+          file: ./autotest/coverage.xml  # should be just the ucb result
           # flags: unittests
           env_vars: RUNNER_OS,PYTHON_VERSION
           # name: codecov-umbrella

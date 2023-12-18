@@ -56,16 +56,23 @@ autotest/codecov
 autotest/.coverage
 autotest/temp
 
+# test_data
+test_data/.test_data_version*
+
 # sphinx
 generated/
 
 # example output data and gis data
 examples/0*/
+examples/snow_errors
+examples/compare_pws_prms
+examples/runoff_errors
 examples/pynhm_gis
 examples/pywatershed_gis
 examples/model_loop_custom_output
 pywatershed/data/pynhm_gis
 pywatershed/data/pywatershed_gis
+
 
 # graphics
 *.png

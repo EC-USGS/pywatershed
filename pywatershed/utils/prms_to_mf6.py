@@ -129,7 +129,11 @@ class MMRToMF6:
                 if key == "param":
                     setattr(self, "params", PrmsParameters.load(obj_file))
                 else:
-                    setattr(self, "control", Control.load(obj_file))
+                    setattr(
+                        self,
+                        "control",
+                        Control.load_prms(obj_file, warn_unused_options=False),
+                    )
 
             else:
                 setattr(self, f"{key}_file", None)
@@ -293,9 +297,9 @@ class MMRToMF6:
         # JLM: This is a bad idea and should throw an error rather than edit
         # inputs in place during run
         # Shouldnt this ALSO BE ABOVE the velocity calculation?
-        seg_slope = np.where(
-            parameters["seg_slope"] < 1e-7, 0.0001, parameters["seg_slope"]
-        )  # this is from prms5.2.1, it is not in prms6
+        # seg_slope = np.where(
+        #     parameters["seg_slope"] < 1e-7, 0.0001, parameters["seg_slope"]
+        # )  # this is from prms5.2.1, it is not in prms6
 
         # Kcoef
         # initialize Kcoef to 24.0 for segments with zero velocities

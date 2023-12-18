@@ -1,3 +1,9 @@
+### Version 1.0.0
+
+#### Control
+
+* [Control](https://github.com/EC-USGS/pywatershed/commit/59685feadc1ffc4adefb39f8da061b9dcb2db65f): 1) copy and deepcopy methods, 2)  __setitem__ and __setattr__ for managing options attribute/item that enforces valid options, 3) control.options as an OptsDict which also enforces valid keys, 4) tests for the previous. Committed by James McCreight on 2023-09-29.
+
 ### Version 0.2.0
 
 #### New features

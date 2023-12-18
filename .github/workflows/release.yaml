@@ -25,6 +25,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup gfortran
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: gcc
+          version: 11
+
       - name: Install Dependencies via Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
@@ -32,14 +38,14 @@ jobs:
           cache-environment: true
           cache-downloads: true
           create-args: >-
-            python=3.9
+            python=3.10
             conda
       
       - name: Checkout MODFLOW 6
         uses: actions/checkout@v3
         with:
           repository: MODFLOW-USGS/modflow6
-          ref: master
+          ref: develop
           path: modflow6
 
       - name: Update flopy MODFLOW 6 classes
@@ -47,6 +53,13 @@ jobs:
         run: |
           python update_flopy.py
 
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
+          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
+          cat .mf6_ci_ref_remote  >> $GITHUB_ENV
+          
       - name: Install pywatershed
         run: |
           pip install .
@@ -56,27 +69,72 @@ jobs:
           pip -V
           pip list
 
-      - name: Run available domains with PRMS and convert csv output to NetCDF
-        working-directory: test_data/scripts
+      - name: hru_1 - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+        working-directory: autotest
         run: |
-          pytest -v -n=auto --durations=0 test_run_domains.py
-          pytest -v -n=auto --durations=0 test_nc_domains.py
+          python generate_test_data.py \
+            -n=auto --domain=hru_1 --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: List all NetCDF files in test_data directory
+      - name: hru_1 - list netcdf input files
         working-directory: test_data
         run: |
-          find . -name "*.nc"
+          find hru_1/output/ -name '*.nc'
 
-      - name: Run tests
+      - name: hru_1 - pywatershed tests
         working-directory: autotest
         run: pytest
-          -v
+          -vv
           -n=auto
+          --domain_yaml=../test_data/hru_1/hru_1.yaml
           --durations=0
-          --all_domains
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest.xml
+          --junitxml=pytest_hru_1.xml
+
+
+      - name: drb_2yr - generate and manage test data
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=drb_2yr --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: drb_2yr - list netcdf input files
+        working-directory: test_data
+        run: |
+          find drb_2yr/output/ -name '*.nc'
+
+      - name: drb_2yr - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          --domain_yaml=../test_data/drb_2yr/drb_2yr.yaml
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr.xml
+
+      - name: ucb_2yr - generate and manage test data
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=ucb_2yr --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: ucb_2yr - list netcdf input files
+        working-directory: test_data
+        run: |
+          find ucb_2yr/output/ -name '*.nc'
+
+      - name: ucb_2yr - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          --domain_yaml=../test_data/ucb_2yr/ucb_2yr.yaml
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_ucb_2yr.xml
 
       - name: Update version
         id: version

@@ -37,7 +37,7 @@ endif
 
 $(info    ----------------)
 $(info    FC is $(FC))
-$(info    FC is $(CC))
+$(info    CC is $(CC))
 $(info    DBL_PREC is true)
 $(info    ----------------)
 $(info    )
@@ -78,7 +78,7 @@ endif
 # This is a shortcut to alleviate errors when parsing parameter inputs in soltab.
 ifeq ($(detected_OS), Windows)
 	ifeq ($(FC), gfortran)
-		FFLAGS = $(OPTLEVEL) -fno-second-underscore -fallow-argument-mismatch
+		FFLAGS = -freal-4-real-8 $(OPTLEVEL) -fno-second-underscore -fallow-argument-mismatch
 	endif
 else
 	ifeq ($(FC), gfortran)
@@ -99,7 +99,7 @@ endif
 
 ifeq ($(detected_OS), Windows)
 	ifeq ($(CC), gcc)
-		CFLAGS = $(OPTLEVEL) -D$(ARC) -D_UF -Wall
+		CFLAGS = -Dfloat=double $(OPTLEVEL) -D$(ARC) -D_UF -Wall
 	endif
 else
 	ifeq ($(CC), gcc)

@@ -7,6 +7,8 @@ import pandas as pd
 
 from pywatershed import CsvFile
 
+# these CSV files are protected from deletion in CI by
+# test_data/scripts/test_remove_csvs.py
 csv_test_vars = ["hru_ppt", "intcp_stor", "potet", "gwres_stor"]
 
 
@@ -61,7 +63,6 @@ def test_single_csv_to_netcdf(domain):
 
 def test_multiple_csv(domain):
     csv = CsvFile()
-    imax = 0
     for var in csv_test_vars:
         csv.add_path(domain["prms_output_dir"] / f"{var}.csv")
     df = csv.to_dataframe()

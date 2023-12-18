@@ -18,13 +18,13 @@ module canopy
         hru_snow, &  ! in
         intcp_changeover, &  ! in
         intcp_evap, &  ! in
-        intcp_form_in, &  ! in - NOT USED AS INPUT?
         intcp_stor, &  ! in
         intcp_transp_on, &  ! in
         net_ppt, &  ! in
         net_rain, &  ! in
         net_snow, &  ! in
-        pkwater_ante, &  ! in
+        pk_ice_prev, &  ! in
+        freeh2o_prev, &  ! in
         potet, &  ! in
         potet_sublim, &  ! in
         snow_intcp, &  ! in
@@ -44,6 +44,7 @@ module canopy
         OFF, &  ! in
         ACTIVE, &  ! in
         intcp_evap_out, &  ! out
+        intcp_form_out, &  ! out
         intcp_stor_out, &  ! out
         net_rain_out, &  ! out
         net_snow_out, &  ! out
@@ -64,19 +65,19 @@ module canopy
 
         ! Input Vectors
         integer(kind=4), intent(in), dimension(nhru) :: &
-            intcp_form_in, intcp_transp_on
+            intcp_transp_on
         integer(kind=8), intent(in), dimension(nhru) :: &
             cov_type, hru_type
 
         real(kind=8), intent(in), dimension(nhru) :: &
             covden_sum, covden_win, hru_intcpstor, hru_intcpevap, hru_ppt, &
             hru_rain, hru_snow, intcp_changeover, intcp_evap, intcp_stor,&
-            net_ppt, net_rain, net_snow, pkwater_ante, potet, &
+            net_ppt, net_rain, net_snow, pk_ice_prev, freeh2o_prev, potet, &
             potet_sublim, snow_intcp, srain_intcp, transp_on, wrain_intcp
 
         ! Output vectors
         integer(kind=4), intent(out), dimension(nhru) :: &
-            intcp_transp_on_out
+            intcp_transp_on_out, intcp_form_out
         real(kind=8), intent(out), dimension(nhru) :: &
             intcp_evap_out, intcp_stor_out, net_rain_out, net_snow_out, net_ppt_out, &
             hru_intcpstor_out, hru_intcpevap_out, intcp_changeover_out
@@ -88,8 +89,7 @@ module canopy
             netrain, netsnow, cov, stor_max_rain,  &
             intcpstor, intcpevap, changeover, extra_water, diff, &
             epan_coef, evrn, evsn, zz, dd, &
-            last, intcpstor_in, netrain_in, netsnow_in, & 
-            intcp_form
+            last, intcpstor_in, netrain_in, netsnow_in
         
         ! initialize output values ?
         ! intcp_evap_out = intcpevap
@@ -114,11 +114,9 @@ module canopy
                 stor_max_rain = wrain_intcp(ii)
             end if
 
-            intcp_form = RAIN
-            ! intcp_form(ii) = RAIN
+            intcp_form_out(ii) = RAIN
             if (hru_snow(ii) > zero) then
-                intcp_form = SNOW
-                ! intcp_form(ii) = SNOW
+                intcp_form_out(ii) = SNOW
             end if
 
             intcpstor = intcp_stor(ii)
@@ -181,7 +179,7 @@ module canopy
                         else if (cov_type(ii) == GRASSES) then
                             ! if there is no snowpack and no snowfall, then apparently,
                             ! grasses can intercept rain.
-                            if ((pkwater_ante(ii) < DNEARZERO) &
+                            if ((pk_ice_prev(ii) + freeh2o_prev(ii) < DNEARZERO) &
                                 .and. (netsnow < NEARZERO)) then
                                 intcpstor_in = intcpstor
                                 netrain_in = netrain
@@ -233,7 +231,7 @@ module canopy
                     ! IF (( evrn<zero ) evrn = zero
                     ! ENDIF
 
-                    if (intcp_form == SNOW) then
+                    if (intcp_form_out(ii) == SNOW) then
                         zz = intcpstor - evsn
                         if (zz > 0) then
                             intcpstor = zz

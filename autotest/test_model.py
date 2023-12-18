@@ -12,6 +12,10 @@ from pywatershed.base.control import Control
 from pywatershed.base.model import Model
 from pywatershed.parameters import Parameters, PrmsParameters
 
+fortran_avail = getattr(
+    getattr(pywatershed.hydrology, "prms_canopy"), "has_prmscanopy_f"
+)
+
 compare_to_prms521 = False  # TODO TODO TODO
 failfast = True
 detailed = True
@@ -31,16 +35,21 @@ test_models = {
 }
 
 
-invoke_style = ("prms", "model_dict", "model_dict_from_yml")
+invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
 
 
 @pytest.fixture(scope="function")
 def control(domain):
-    control = Control.load(domain["control_file"])
-    control.options["verbose"] = 10
+    control = Control.load_prms(
+        domain["control_file"], warn_unused_options=False
+    )
+    control.options["verbosity"] = 10
     control.options["budget_type"] = None
-    control.options["calc_method"] = "fortran"
-    control.options["load_n_time_batches"] = 1
+    if fortran_avail:
+        control.options["calc_method"] = "fortran"
+    else:
+        control.options["calc_method"] = "numba"
+    del control.options["netcdf_output_var_names"]
     return control
 
 
@@ -103,9 +112,9 @@ def model_args(domain, control, discretization, request):
             "parameters": None,
         }
 
-    elif invoke_style == "model_dict_from_yml":
-        yml_file = domain["dir"] / "nhm_model.yml"
-        model_dict = Model.model_dict_from_yml(yml_file)
+    elif invoke_style == "model_dict_from_yaml":
+        yaml_file = domain["dir"] / "nhm_model.yml"
+        model_dict = Model.model_dict_from_yaml(yaml_file)
 
         args = {
             "process_list_or_model_dict": model_dict,
@@ -140,22 +149,39 @@ def test_model(domain, model_args, tmp_path):
         control = model_args["control"]
 
     control.options["input_dir"] = input_dir
+    model_out_dir = tmp_path / "output"
+    control.options["netcdf_output_dir"] = model_out_dir
 
-    model = Model(**model_args)
+    if control.options["calc_method"] == "fortran":
+        with pytest.warns(UserWarning):
+            model = Model(**model_args, write_control=model_out_dir)
+    else:
+        model = Model(**model_args, write_control=model_out_dir)
+
+    # check that control yaml file was written
+    control_yaml_file = sorted(model_out_dir.glob("*model_control.yaml"))
+    assert len(control_yaml_file) == 1
 
     # Test passing of control calc_method option
-    for proc in model.processes.keys():
-        if proc.lower() in ["prmssnow", "prmsrunoff", "prmssoilzone"]:
-            assert model.processes[proc]._calc_method == "numba"
-        elif proc.lower() in ["prmscanopy", "prmsgroundwater", "prmschannel"]:
-            # check if has fortran (has_f) because results depend on that
-            mod_name = "prms_" + proc.lower()[4:]
-            var_name = "has_" + proc.lower() + "_f"
-            has_f = getattr(getattr(pywatershed.hydrology, mod_name), var_name)
-            if has_f:
-                assert model.processes[proc]._calc_method == "fortran"
-            else:
+    if fortran_avail:
+        for proc in model.processes.keys():
+            if proc.lower() in ["prmssnow", "prmsrunoff", "prmssoilzone"]:
                 assert model.processes[proc]._calc_method == "numba"
+            elif proc.lower() in [
+                "prmscanopy",
+                "prmsgroundwater",
+                "prmschannel",
+            ]:
+                # check if has fortran (has_f) because results depend on that
+                mod_name = "prms_" + proc.lower()[4:]
+                var_name = "has_" + proc.lower() + "_f"
+                has_f = getattr(
+                    getattr(pywatershed.hydrology, mod_name), var_name
+                )
+                if has_f:
+                    assert model.processes[proc]._calc_method == "fortran"
+                else:
+                    assert model.processes[proc]._calc_method == "numba"
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1
@@ -287,18 +313,18 @@ def test_model(domain, model_args, tmp_path):
         9: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1430.6364027142613,
-                    "hru_1": 13.416914151483681,
-                    "ucb_2yr": 1694.5412856707849,
+                    "drb_2yr": 1553.1874672413599,
+                    "hru_1": 13.696710376067216,
+                    "ucb_2yr": 1694.5697712423928,
                 },
             },
         },
         99: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1588.1444684289775,
-                    "hru_1": 19.596412903692578,
-                    "ucb_2yr": 407.2200022510677,
+                    "drb_2yr": 2362.7940777644653,
+                    "hru_1": 22.877787915898086,
+                    "ucb_2yr": 733.0192586668293,
                 },
             },
         },

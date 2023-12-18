@@ -11,10 +11,10 @@ from ..parameters import Parameters
 # THis class seems to be a sort of intermediate class that should
 # not exist in the future.
 # PRMS: solution is calculate hru_actet at the bottom of the chain, in
-#       soilzone.
-# pywatershed solution: potet and hru_actet are in atmosphere. potet is an "input"
-#       and avail_potet is passed around, resulting in hru_actet at the
-#       end of each time calculation.
+#      soilzone.
+# pywatershed solution: potet and hru_actet are in atmosphere. potet is an
+#     "input" and avail_potet is passed around, resulting in hru_actet at the
+#      end of each time calculation.
 
 
 class PRMSEt(Process):

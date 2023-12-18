@@ -39,7 +39,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: MODFLOW-USGS/modflow6
-          ref: master
+          ref: develop
           path: modflow6
 
       - name: Update flopy MODFLOW 6 classes

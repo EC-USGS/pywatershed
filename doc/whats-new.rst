@@ -11,10 +11,44 @@ What's New
 
     np.random.seed(123456)
 
+    
+.. _whats-new.1.1.0:
+
+v1.1.0 (Unreleased)
+---------------------
+
+New features
+~~~~~~~~~~~~
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+
+
+Deprecations
+~~~~~~~~~~~~
+
+
+Performance
+~~~~~~~~~~~
+
+
+Bug fixes
+~~~~~~~~~
+
+
+Documentation
+~~~~~~~~~~~~~
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+
+    
 
 .. _whats-new.1.0.0:
 
-v1.0.0 (unreleased)
+v1.0.0
 ---------------------
 
 New features
@@ -30,8 +64,20 @@ New features
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-
-
+- The `control.options` "netcdf_output_dir", "netcdf_output_var_names", and
+  "netcdf_output_separate_files" match the keyword arguments "output_dir",
+  "output_vars", and "separate_files" for both `process.intitalize_netcdf()`
+  and `model.initialize_netcdf()`. None of these arguments can be supplied in
+  both places (control and method call). It used to be that calling
+  `initialize_netcdf()` would override what is supplied in `control.options`
+  but this will now throw an error. The suggestion is to use `control.options` and
+  not pass arguments to `intialize_netcdf()`. When using
+  `Control.load()` (deprecated) or `Control.load_prms()` from a PRMS control
+  file, note that the "control.options" of "netcdf_output_dir" and
+  "netcdf_output_var_names" are set by values in the PRMS control file. You can
+  edit these, but be aware that they are now set in that load.
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
+  
 Deprecations
 ~~~~~~~~~~~~
 - Deprecation of Control.load() for Control.load_prms().

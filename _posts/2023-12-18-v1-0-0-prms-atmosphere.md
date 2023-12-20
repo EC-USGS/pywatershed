@@ -1,0 +1,75 @@
+---
+layout: post
+title: ""
+date: 2023-12-18 14:21:00 -0700
+categories: releases
+tags: 1.0.0
+---
+
+# Version 1.0.0 Extended Release Notes
+
+## PRMSAtmosphere
+
+{% include v1_0_0_compare_atmosphere.html %}
+
+<h2>Navigate release results</h2>
+
+<style type="text/css">
+.tg  {border:none;border-collapse:collapse;border-color:#ccc;border-spacing:0;width:65%}
+.tg td{background-color:#fff;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg th{background-color:#f0f0f0;border-color:#ccc;border-style:solid;border-width:0px;color:#333;
+  font-family:Arial, sans-serif;font-size:14px;font-weight:normal;overflow:hidden;padding:10px 5px;word-break:normal;}
+.tg .tg-baqh{text-align:center;vertical-align:top}
+.tg .tg-abip{background-color:#f9f9f9;border-color:inherit;text-align:center;vertical-align:top}
+</style>
+<table class="tg">
+<thead>
+  <tr>
+    <th class="tg-baqh" colspan="6"><a href="/pywatershed/2023/12/18/v1-0-0-overview">Overview of Release v1.0.0</a></th>
+  </tr>
+</thead>
+<tbody>
+  <tr>
+    <td class="tg-abip"><a href="/pywatershed/2023/12/18/v1-0-0-prms-atmosphere">PRMSAtmosphere</a></td>
+    <td class="tg-abip"><a href="/pywatershed/2023/12/18/v1-0-0-prms-canopy">PRMSCanopy</a></td>		
+    <td class="tg-abip"><a href="/pywatershed/2023/12/18/v1-0-0-prms-snow">PRMSSnow</a></td>
+    <td class="tg-abip"><a href="/pywatershed/2023/12/18/v1-0-0-prms-runoff">PRMSRunoff</a></td>
+    <td class="tg-abip"><a href="/pywatershed/2023/12/18/v1-0-0-prms-soilzone">PRMSSoilzone</a></td>		
+    <td class="tg-abip"><a href="/pywatershed/2023/12/18/v1-0-0-prms-channel">PRMSChannel</a></td>
+  </tr>
+</tbody>
+</table>
+
+
+
+<style type="text/css">
+body {
+  background-color: #fff;
+  padding:50px;
+  font: 14px/1.5 "Noto Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color:#727272;
+  font-weight:400;
+}
+
+a {
+  color:#267CB9;
+  text-decoration:none;
+}
+
+a:hover, a:focus {
+  color:#069;
+  font-weight: bold;
+}
+
+a small {
+  font-size:11px;
+  color:#777;
+  margin-top:-0.3em;
+  display:block;
+}
+
+a:hover small {
+  color:#777;
+}
+</style>

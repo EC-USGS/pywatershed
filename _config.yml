@@ -1,0 +1,6 @@
+title: pywatershed notes
+author: pywatershed development team
+logo: /assets/img/logo.png
+show_downloads: false
+theme: jekyll-theme-minimal
+permalink: /:year/:month/:day/:title

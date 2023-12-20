@@ -62,7 +62,7 @@ With pywatershed version 1.0.0, we have faithfully reproduced the PRMS process r
 the USGS `National Hydrolgical Model <https://pubs.usgs.gov/publication/tm6B9>`__ (NHM, Regan et al.,
 2018). For more information on version 1.0.0 see the
 `release notes <https://github.com/EC-USGS/pywatershed/releases/tag/1.0.0>`_
-and the `extended release notes <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_
+and the `extended release notes <https://ec-usgs.github.io/pywatershed/2023/12/18/v1-0-0-overview>`_
 for version 1.0.0.
 
 ============================================

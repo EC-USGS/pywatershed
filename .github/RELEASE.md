@@ -44,12 +44,12 @@ To release a new version:
    `v{major}.{minor}.{patch}` ([semantic version](https://semver.org/) number
    with a leading 'v'). For instance, for a minor release, if this repo is an
    `upstream` remote and one's local `develop` is up to date with upstream
-   `develop`, then from `develop` run `git switch -c vx.y.z`.
+   `develop`, then from `develop` run `git switch -c vx.y.z`. 
 
 1. If this is a patch release, make changes/fixes locally. If this is a major or
-   minor release, no changes are needed. In either case, add the release version
+   minor release, no changes may be needed. In either case, add the release version
    and date to the top of `doc/whats-new.rst`. If a patch, put it below the
-   pending minor release.
+   pending minor release. Update the CITATION.cff file.
 
 1. Push the branch to this repo. For instance, if this repo is an `upstream`
    remote: `git push -u upstream vx.y.z`. This starts a job to:

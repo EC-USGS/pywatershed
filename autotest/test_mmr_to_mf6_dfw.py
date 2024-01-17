@@ -8,7 +8,7 @@ import xarray as xr
 import pywatershed as pws
 from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 
-# The point of this is to reproduce the swf_dfw test run in mf6
+# The point of this is to reproduce the modflow6/autotest/test_swf_dfw.py
 # the answers of this test on 12/4/2023 are below.
 
 # THis test calls mf6 via flopy and wont be tested in CI
@@ -54,6 +54,7 @@ answers_swf_dfw = {
 }
 
 
+# fail this because it relies on mf6 binary to be present for feat-snf
 @pytest.mark.fail
 @pytest.mark.parametrize("binary_flw", [True, False])
 def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
@@ -210,11 +211,11 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     )
 
     dfw.write()
-
     success, buff = dfw.run(silent=False, report=True)
 
     # ======================
     # Checks
+    assert success
 
     # check binary grid file
     grb = flopy.mf6.utils.MfGrdFile(output_dir / f"{name}.disl.grb")

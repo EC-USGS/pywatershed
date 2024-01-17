@@ -130,9 +130,7 @@ class MmrToMf6Dfw(MmrToMf6):
         if "seg_mid_elevation" in parameters.keys():
             self._seg_mid_elevation = parameters["seg_mid_elevation"]
         else:
-            self._seg_mid_elevation = self.calculate_seg_mid_elevations(
-                check=False
-            )
+            self.calculate_seg_mid_elevations(check=False)
 
         # DISL
 
@@ -357,5 +355,5 @@ class MmrToMf6Dfw(MmrToMf6):
                         (seg_y[ss] - seg_y[my_downstream_ind]) - seg_dy[ss]
                     ) < 1.0e-7
 
-        self._seg_y_mid = seg_y - (seg_dy / 2)
+        self._seg_mid_elevation = seg_y - (seg_dy / 2)
         return

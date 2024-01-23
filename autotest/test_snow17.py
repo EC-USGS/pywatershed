@@ -8,9 +8,10 @@
 import pathlib as pl
 
 import numpy as np
-from pandas import Timestamp
-import pywatershed as pws
 import xarray as xr
+from pandas import Timestamp
+
+import pywatershed as pws
 
 dom_dir = pl.Path("../test_data/snow17")
 

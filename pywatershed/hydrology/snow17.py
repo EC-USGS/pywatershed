@@ -109,9 +109,11 @@ class Snow17(ConservativeProcess):
         return {
             "freeh2o": zero,
             "freeh2o_prev": zero,
+            "freeh2o_change": zero,
             "pk_def": zero,
             "pk_ice": zero,
             "pk_ice_prev": zero,
+            "pk_ice_change": zero,
             "pkwater_equiv": zero,  # model_swe
             "snowmelt": zero,  # outflow
         }
@@ -187,16 +189,18 @@ class Snow17(ConservativeProcess):
 
     def _advance_variables(self) -> None:
         self.freeh2o_prev[:] = self.freeh2o
-        self.pk_ice_prev[:] = self.freeh2o
+        self.pk_ice_prev[:] = self.pk_ice
         return
 
     def _calculate(self, simulation_time):
         (
             self.pkwater_equiv[:],
             self.snowmelt[:],
-            self.freeh2o_capacity[:],
             self.freeh2o[:],
+            self.freeh2o_capacity[:],
+            self.freeh2o_change[:],
             self.pk_ice[:],
+            self.pk_ice_change[:],
             self.pk_def[:],
             self.ait[:],
         ) = self._calculate_snow(
@@ -206,9 +210,11 @@ class Snow17(ConservativeProcess):
             tavgc=self.tavgc,
             ait_vec=self.ait,
             net_ppt=self.net_ppt,
-            freeh2o_capacity=self.freeh2o_capacity,
             freeh2o=self.freeh2o,
+            freeh2o_capacity=self.freeh2o_capacity,
+            freeh2o_prev=self.freeh2o_prev,
             pk_ice=self.pk_ice,
+            pk_ice_prev=self.pk_ice_prev,
             pk_def=self.pk_def,
             pkwater_equiv=self.pkwater_equiv,
             snowmelt=self.snowmelt,
@@ -240,9 +246,11 @@ class Snow17(ConservativeProcess):
         tavgc,
         ait_vec,
         net_ppt,
-        freeh2o_capacity,
         freeh2o,
+        freeh2o_capacity,
+        freeh2o_prev,
         pk_ice,
+        pk_ice_prev,
         pk_def,
         pkwater_equiv,
         snowmelt,
@@ -294,8 +302,8 @@ class Snow17(ConservativeProcess):
             )
 
             transitionx = [pxtemp1[hh], pxtemp2[hh]]
-            transitiony = [1.0, 0.0]
-            tipm_dt = 1.0 - ((1.0 - tipm[hh]) ** (dt_hrs / 6))
+            transitiony = [one, zero]
+            tipm_dt = one - ((one - tipm[hh]) ** (dt_hrs / 6))
 
             mf = melt_function(
                 current_doy, dt_hrs, lat[hh], mfmax[hh], mfmin[hh]
@@ -305,23 +313,23 @@ class Snow17(ConservativeProcess):
             if rvs[hh] == 0:
                 if t_air_mean <= pxtemp[hh]:
                     # then the air temperature is cold enough for snow to occur
-                    fracsnow = 1.0
+                    fracsnow = one
                 else:
                     # then the air temperature is warm enough for rain
-                    fracsnow = 0.0
+                    fracsnow = zero
             elif rvs[hh] == 1:
                 if t_air_mean <= pxtemp1[hh]:
-                    fracsnow = 1.0
+                    fracsnow = one
                 elif t_air_mean >= pxtemp2[hh]:
-                    fracsnow = 0.0
+                    fracsnow = zero
                 else:
                     fracsnow = np.interp(t_air_mean, transitionx, transitiony)
             elif rvs[hh] == 2:
-                fracsnow = 1.0
+                fracsnow = one
             else:
                 raise ValueError("Invalid rain vs snow option")
 
-            fracrain = 1.0 - fracsnow
+            fracrain = one - fracsnow
 
             # Snow Accumulation
             # water equivalent of new snowfall (mm)
@@ -330,19 +338,19 @@ class Snow17(ConservativeProcess):
             # cover (mm)
             w_i += pn
             # ee: snowmelt in mm
-            ee = 0.0
+            ee = zero
             # amount of precip (mm) that is rain during this time step
             rain = fracrain * precip
 
             # Temperature and Heat deficit from new Snow
-            if t_air_mean < 0.0:
+            if t_air_mean < zero:
                 t_snow_new = t_air_mean
                 # delta_hd_snow: mm change in the heat deficit due to snowfall
                 delta_hd_snow = -(t_snow_new * pn) / (80 / 0.5)
                 t_rain = pxtemp[hh]
             else:
-                t_snow_new = 0.0
-                delta_hd_snow = 0.0
+                t_snow_new = zero
+                delta_hd_snow = zero
                 t_rain = t_air_mean
 
             # Antecedent temperature Index
@@ -376,9 +384,9 @@ class Snow17(ConservativeProcess):
                 # melt (mm) during rain-on-snow periods is:
                 m_ros1 = np.maximum(
                     stefan * dt_hrs * (((t_air_mean + 273) ** 4) - (273**4)),
-                    0.0,
+                    zero,
                 )
-                m_ros2 = np.maximum((0.0125 * rain * t_rain), 0.0)
+                m_ros2 = np.maximum((0.0125 * rain * t_rain), zero)
                 m_ros3 = np.maximum(
                     (
                         8.5
@@ -389,11 +397,11 @@ class Snow17(ConservativeProcess):
                             + (0.00057 * p_atm * t_air_mean)
                         )
                     ),
-                    0.0,
+                    zero,
                 )
                 m_ros = m_ros1 + m_ros2 + m_ros3
             else:
-                m_ros = 0.0
+                m_ros = zero
 
             # Non-Rain melt
             if rain <= (0.25 * dt_hrs) and (t_air_mean > mbase[hh]):
@@ -402,7 +410,7 @@ class Snow17(ConservativeProcess):
                     0.0125 * rain * t_rain
                 )
             else:
-                m_nr = 0.0
+                m_nr = zero
 
             # Ripeness of the snow cover
             melt = m_ros + m_nr
@@ -413,7 +421,7 @@ class Snow17(ConservativeProcess):
                 w_i = w_i - melt
             else:
                 melt = w_i + w_q
-                w_i = 0.0
+                w_i = zero
 
             # qw: liquid water available melted/rained at the snow surface (mm)
             qw = melt + rain
@@ -424,12 +432,12 @@ class Snow17(ConservativeProcess):
 
             # limits of heat deficit
             if deficit < 0:
-                deficit = 0.0
+                deficit = zero
             elif deficit > 0.33 * w_i:
                 deficit = 0.33 * w_i
 
             # Snow cover is ripe when both (deficit=0) & (w_q = w_qx)
-            if w_i > 0.0:
+            if w_i > zero:
                 if (qw + w_q) > ((deficit * (1 + plwhc[hh])) + w_qx):
                     # THEN the snow is RIPE
                     # Excess liquid water (mm)
@@ -439,21 +447,21 @@ class Snow17(ConservativeProcess):
                     # w_i increases because water refreezes as heat deficit is
                     # decreased
                     w_i = w_i + deficit
-                    deficit = 0.0
+                    deficit = zero
                 elif (qw >= deficit) and (
                     (qw + w_q) <= ((deficit * (1 + plwhc[hh])) + w_qx)
                 ):
                     # THEN the snow is NOT yet ripe, but ice is being melted
-                    ee = 0.0
+                    ee = zero
                     w_q = w_q + qw - deficit
                     # w_i increases because water refreezes as heat deficit is
                     # decreased
                     w_i = w_i + deficit
-                    deficit = 0.0
+                    deficit = zero
                 else:
                     # (qw < deficit) %elseif ((qw + w_q) < deficit):
                     # THEN the snow is NOT yet ripe
-                    ee = 0.0
+                    ee = zero
                     # w_i increases because water refreezes as heat deficit is
                     # decreased
                     w_i = w_i + qw
@@ -473,7 +481,10 @@ class Snow17(ConservativeProcess):
             # precip only on RHS
             freeh2o_capacity[hh] = w_qx / in2mm
             freeh2o[hh] = w_q / in2mm
+            freeh2o_change = freeh2o - freeh2o_prev
+
             pk_ice[hh] = w_i / in2mm
+            pk_ice_change = pk_ice - pk_ice_prev
 
             pk_def[hh] = deficit  # TODO: convert to langelys?
 
@@ -482,9 +493,11 @@ class Snow17(ConservativeProcess):
         return (
             pkwater_equiv,
             snowmelt,
-            freeh2o_capacity,
             freeh2o,
+            freeh2o_capacity,
+            freeh2o_change,
             pk_ice,
+            pk_ice_change,
             pk_def,
             ait_vec,
         )
@@ -525,14 +538,14 @@ class Snow17(ConservativeProcess):
         sv = (0.5 * np.sin((n_mar21 * 2 * np.pi) / days)) + 0.5
         if lat < 54:
             # latitude parameter, av=1.0 when lat < 54 deg N
-            av = 1.0
+            av = one
         else:
             if jday <= 77 or jday >= 267:
                 # av = 0.0 from September 24 to March 18,
-                av = 0.0
+                av = zero
             elif jday >= 117 and jday <= 227:
                 # av = 1.0 from April 27 to August 15
-                av = 1.0
+                av = one
             elif jday >= 78 and jday <= 116:
                 # av varies linearly between 0.0 and 1.0 from 3/19-4/26 and
                 # between 1.0 and 0.0 from 8/16-9/23.

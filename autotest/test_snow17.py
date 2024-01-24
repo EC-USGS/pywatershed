@@ -43,6 +43,7 @@ def test_compare_tonic():
     tonic_results = list(tonic_results.values())
 
     input_dir = pl.Path(dom_dir / "two_forcing_data")
+    # vv is still around for use of its time
     control = pws.Control(
         start_time=vv.time.values[0],
         end_time=vv.time.values[-1],
@@ -52,6 +53,9 @@ def test_compare_tonic():
     parameters = pws.Parameters.from_netcdf(
         dom_dir / "two_snow17_params_default.nc"
     )
+    # for now, just duplicate the parameters into discretization
+    # could easily subset and define the discretization when parameters
+    # are created
     discretization = pws.Parameters.from_netcdf(
         dom_dir / "two_snow17_params_default.nc"
     )

@@ -1,9 +1,11 @@
-# Create default snow17 parameters for the drb.
+# Create default snow17 parameters for the the snow17 test case and for the
+# drb_2yr domain.
 
 # The default values are taken from here
 # https://github.com/UW-Hydro/tonic/blob/master/tonic/models/snow17/snow17.py
 # which mostly cites Shamir and Georgakakos 2007 default values for American
 # River basin in Ca.
+import pathlib as pl
 
 import numpy as np
 import pywatershed as pws
@@ -35,12 +37,12 @@ for ddk, ddv in dom_dict.items():
     }
 
     coords = {
-        "nhru": np.array(range(nhru)),
+        "hru_id": np.array(range(nhru)),
     }
 
     data_vars = {}
     metadata = {}
-    metadata["nhru"] = {"dims": ["nhru"]}
+    metadata["hru_id"] = {"dims": ["nhru"]}
     for kk, vv in snow17_defaults.items():
         data_vars[kk] = np.ones(nhru) * vv
         metadata[kk] = {"dims": ["nhru"]}
@@ -54,4 +56,7 @@ for ddk, ddv in dom_dict.items():
     )
 
     netcdf_file = f"{ddk}_snow17_params_default.nc"
+    if ddk == "drb":
+        netcdf_file = pl.Path("../drb_2yr") / netcdf_file
+
     params.to_netcdf(netcdf_file, use_xr=True)

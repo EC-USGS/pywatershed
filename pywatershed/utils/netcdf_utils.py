@@ -422,7 +422,11 @@ class NetCdfWrite(Accessor):
                 nreservoirs_coordinate = True
 
         if nhru_coordinate:
-            hru_ids = coordinates["nhm_id"]
+            if "hru_id" in coordinates.keys():
+                hru_id_name = "hru_id"
+            else:
+                hru_id_name = "nhm_id"
+            hru_ids = coordinates[hru_id_name]
             if isinstance(hru_ids, (list, tuple)):
                 nhrus = len(hru_ids)
             elif isinstance(hru_ids, np.ndarray):
@@ -475,7 +479,7 @@ class NetCdfWrite(Accessor):
             break
 
         if nhru_coordinate:
-            self.dataset.createDimension("nhm_id", self.nhrus)
+            self.dataset.createDimension(hru_id_name, self.nhrus)
         if nsegment_coordinate:
             self.dataset.createDimension("nhm_seg", self.nsegments)
         if one_coordinate:
@@ -485,7 +489,7 @@ class NetCdfWrite(Accessor):
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
-                "nhm_id", "i4", ("nhm_id")
+                hru_id_name, "i4", (hru_id_name)
             )
             self.hruid[:] = np.array(self.hru_ids, dtype=int)
         if nsegment_coordinate:
@@ -510,7 +514,7 @@ class NetCdfWrite(Accessor):
                     set(variable_dimensions[var_name])
                 )
             ):
-                spatial_coordinate = "nhm_id"
+                spatial_coordinate = hru_id_name
             elif "nsegment" in variable_dimensions[var_name]:
                 spatial_coordinate = "nhm_seg"
             elif "one" in variable_dimensions[var_name]:

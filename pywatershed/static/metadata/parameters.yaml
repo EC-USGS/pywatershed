@@ -2109,6 +2109,18 @@ pref_flow_den:
   - soilzone
   type: F
   units: decimal fraction
+pref_flow_infil_frac:
+  default: 0.0
+  desc: Fraction of preferential flow which infiltrates??
+  dims:
+    0: nhru
+  help: Fraction of preferential flow which infiltrates??
+  maximum: 0.5
+  minimum: 0.0
+  modules:
+  - soilzone
+  type: F
+  units: decimal fraction
 print_freq:
   default: 3
   desc: Frequency for the output frequency

@@ -6,7 +6,6 @@ import pathlib as pl
 import shutil
 
 from flopy import run_model
-import pywatershed as pws
 
 
 def test_exe_available(exe):
@@ -16,7 +15,8 @@ def test_exe_available(exe):
 
 def test_run_prms(simulation, exe):
     ws = pl.Path(simulation["ws"])
-    control_file = ws / simulation["control_file"]
+    control_file = simulation["control_file"]
+    output_dir = simulation["output_dir"]
     print(f"\n\n\n{'*' * 70}\n{'*' * 70}")
     print(
         f"run_domains.py: Running '{control_file.name}' in {ws}\n\n",
@@ -24,8 +24,6 @@ def test_run_prms(simulation, exe):
     )
 
     # delete the existing output dir and re-create it
-    ctl = pws.Control.load_prms(control_file, warn_unused_options=False)
-    output_dir = ws / ctl.options["netcdf_output_dir"]
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)

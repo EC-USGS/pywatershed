@@ -9,6 +9,7 @@ from typing import List
 from warnings import warn
 
 import pytest
+import pywatershed as pws
 
 rootdir = ".."
 
@@ -117,9 +118,12 @@ def collect_simulations(
         control_files = test_dir.glob("*.control")
         for control in control_files:
             id = f"{test_dir.name}_{control.with_suffix('').name}"
+            ctl = pws.Control.load_prms(control, warn_unused_options=False)
+            output_dir = test_dir / ctl.options["netcdf_output_dir"]
             simulations[id] = {
                 "ws": test_dir,
                 "control_file": control,
+                "output_dir": output_dir,
             }
 
     # make sure all requested domains were found
@@ -140,12 +144,14 @@ def collect_simulations(
     return simulations
 
 
-def collect_csv_files(simulations: list) -> List[pl.Path]:
+def collect_csv_files(simulations: list) -> List[tuple]:
     csv_files = []
     for key, value in simulations.items():
-        output_pth = pl.Path(key) / "output"
-        csv_files_dom = sorted(output_pth.glob("*.csv"))
-        csv_files += [ff for ff in csv_files_dom if ff.name != "stats.csv"]
+        control = value["control_file"]
+        csv_files_dom = sorted(value["output_dir"].glob("*.csv"))
+        csv_files += [
+            (control, ff) for ff in csv_files_dom if ff.name != "stats.csv"
+        ]
     return csv_files
 
 
@@ -153,19 +159,28 @@ def pytest_generate_tests(metafunc):
     domain_list = metafunc.config.getoption("domain")
     force = metafunc.config.getoption("force")
     simulations = collect_simulations(domain_list, force)
-    csv_files = collect_csv_files(simulations)
+    control_csv_files = collect_csv_files(simulations)
 
-    if "csv_file" in metafunc.fixturenames:
-        ids = [ff.parent.parent.name + ":" + ff.name for ff in csv_files]
-        metafunc.parametrize("csv_file", csv_files, ids=ids)
-
-    if "soltab_file" in metafunc.fixturenames:
-        soltab_files = [
-            pl.Path(kk) / "soltab_debug" for kk in simulations.keys()
+    if "control_csv_file" in metafunc.fixturenames:
+        ids = [
+            ff.parent.parent.name + ":" + ff.parent.name + ":" + ff.name
+            for cc, ff in control_csv_files
         ]
-        ids = [ff.parent.name + ":" + ff.name for ff in soltab_files]
+        metafunc.parametrize("control_csv_file", control_csv_files, ids=ids)
+
+    if "control_soltab_file" in metafunc.fixturenames:
+        control_soltab_files = [
+            (vv["control_file"], vv["ws"] / "soltab_debug")
+            for kk, vv in simulations.items()
+        ]
+        ids = [
+            ff.parent.name + ":" + ff.name for cc, ff in control_soltab_files
+        ]
         metafunc.parametrize(
-            "soltab_file", soltab_files, ids=ids, scope="session"
+            "control_soltab_file",
+            control_soltab_files,
+            ids=ids,
+            scope="session",
         )
 
     if "simulation" in metafunc.fixturenames:
@@ -176,14 +191,16 @@ def pytest_generate_tests(metafunc):
             scope="session",
         )
 
-    if "final_file" in metafunc.fixturenames:
-        final_files = [
-            pl.Path(kk) / var
-            for kk in simulations.keys()
+    if "control_final_file" in metafunc.fixturenames:
+        control_final_files = [
+            (vv["control_file"], pl.Path(kk) / var)
+            for kk, vv in simulations.items()
             for var in final_var_names
         ]
-        ids = [ff.parent.name + ":" + ff.name for ff in final_files]
+        ids = [
+            ff.parent.name + ":" + ff.name for cc, ff in control_final_files
+        ]
         # these are not really file names they are domain/key_var
         metafunc.parametrize(
-            "final_file", final_files, ids=ids, scope="session"
+            "control_final_file", control_final_files, ids=ids, scope="session"
         )

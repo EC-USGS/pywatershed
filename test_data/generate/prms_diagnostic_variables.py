@@ -36,6 +36,7 @@ change_rename = {}
 def diagnose_simple_vars_to_nc(
     var_name: str,
     data_dir: pl.Path,
+    control_file: pl.Path,
     domain_dir: pl.Path = None,
     output_dir: pl.Path = None,
 ):
@@ -51,8 +52,10 @@ def diagnose_simple_vars_to_nc(
         var_name: str name of the variable to create
         data_dir: where the netcdf file will be written, also where to look
             for necessary inputs to create the diagnostic variable.
+        control_file: the pathlib representation of the control file for
+            the run that produced the data.
         domain_dir: defaults to the parent dir of output_dir, this is where
-            domain files (parameter & control) for the domain can be found
+            domain files for the domain can be found
         output_dir: defaults to data_dir unless otherwise specified
 
     """
@@ -64,6 +67,8 @@ def diagnose_simple_vars_to_nc(
         output_dir = data_dir
 
     nc_path = data_dir / f"{var_name}.nc"
+    control = pws.Control.load_prms(control_file, warn_unused_options=False)
+    param_file = control_file.parent / control.options["parameter_file"]
 
     if var_name in previous_vars.keys():
         # the _prev is the desired suffix but PRMS legacy is inconsistent
@@ -74,15 +79,10 @@ def diagnose_simple_vars_to_nc(
         # the final value (-1) was wrapped to the zeroth position
         # get the initial conditions for the first time by initializing the
         # model This works based on the control file, so could handle restart.
-        control = pws.Control.load_prms(
-            domain_dir / "control.test", warn_unused_options=False
-        )
         control.options = control.options | {
             "input_dir": domain_dir / "output",
         }
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        )
+        params = pws.parameters.PrmsParameters.load(param_file)
         proc_class = previous_vars[var_name]
         inputs = {}
         for input_name in proc_class.get_inputs():
@@ -136,9 +136,7 @@ def diagnose_simple_vars_to_nc(
         return nc_path
 
     if var_name in ["sroff", "ssres_flow", "gwres_flow"]:
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        )
+        params = pws.parameters.PrmsParameters.load(param_file)
         ds = xr.open_dataset(nc_path)
         ds = ds.rename({var_name: f"{var_name}_vol"})
         ds = ds * params.data_vars["hru_in_to_cf"]
@@ -146,9 +144,7 @@ def diagnose_simple_vars_to_nc(
         ds.close()
 
     if var_name == "infil":
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        ).parameters
+        params = pws.parameters.PrmsParameters.load(param_file).parameters
         imperv_frac = params["hru_percent_imperv"]
         dprst_frac = params["dprst_frac"]
         perv_frac = 1.0 - imperv_frac - dprst_frac
@@ -162,6 +158,7 @@ def diagnose_simple_vars_to_nc(
 def diagnose_final_vars_to_nc(
     var_name: str,
     data_dir: pl.Path,
+    control_file: pl.Path,
     domain_dir: pl.Path = None,
     output_dir: pl.Path = None,
 ):
@@ -184,6 +181,9 @@ def diagnose_final_vars_to_nc(
 
     if output_dir is None:
         output_dir = data_dir
+
+    control = pws.Control.load_prms(control_file, warn_unused_options=False)
+    param_file = control_file.parent / control.options["parameter_file"]
 
     if var_name == "through_rain":
         out_file = output_dir / "through_rain.nc"
@@ -266,13 +266,9 @@ def diagnose_final_vars_to_nc(
             data_file = data_dir / f"{vv}.nc"
             data[vv] = xr.open_dataarray(data_file)
 
-        control = pws.Control.load_prms(
-            domain_dir / "control.test", warn_unused_options=False
-        )
+        control = pws.Control.load_prms(control_file)
         s_per_time = control.time_step_seconds
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        )
+        params = pws.parameters.PrmsParameters.load(param_file)
 
         ntimes = control.n_times
         nseg = params.dims["nsegment"]

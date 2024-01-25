@@ -114,18 +114,13 @@ def collect_simulations(
                 continue
 
         # if control file is found, add simulation
-        ctrl_file = next(
-            iter(
-                [
-                    p
-                    for p in test_dir.iterdir()
-                    if p.is_file() and p.name == "control.test"
-                ]
-            ),
-            None,
-        )
-        if ctrl_file:
-            simulations[str(test_dir)] = ctrl_file.name
+        control_files = test_dir.glob("*.control")
+        for control in control_files:
+            id = f"{test_dir.name}_{control.with_suffix('').name}"
+            simulations[id] = {
+                "ws": test_dir,
+                "control_file": control,
+            }
 
     # make sure all requested domains were found
     if len(domain_list) and (len(simulations) < len(domain_list)):
@@ -174,12 +169,12 @@ def pytest_generate_tests(metafunc):
         )
 
     if "simulation" in metafunc.fixturenames:
-        sims = [
-            {"ws": key, "control_file": val}
-            for key, val in simulations.items()
-        ]
-        ids = [pl.Path(kk).name for kk in simulations.keys()]
-        metafunc.parametrize("simulation", sims, ids=ids, scope="session")
+        metafunc.parametrize(
+            "simulation",
+            list(simulations.values()),
+            ids=list(simulations.keys()),
+            scope="session",
+        )
 
     if "final_file" in metafunc.fixturenames:
         final_files = [

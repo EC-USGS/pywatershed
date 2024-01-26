@@ -24,12 +24,12 @@ tracking was practically impossible with pytest-xdist.
 """
 
 import argparse
-from copy import deepcopy
 import os
 import pathlib as pl
-from pprint import pprint
 import shutil
 import sys
+from copy import deepcopy
+from pprint import pprint
 
 import pytest
 

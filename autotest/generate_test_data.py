@@ -177,7 +177,7 @@ def main():
             print("\nRemoving existing PRMS output dirs failed.")
             sys.exit(retcode_output_dirs.value)
 
-    print("\nRunning PRMS domains ...")
+    print("\nRunning PRMS simulations ...")
     # if -n is in the list and numeric and > ndomains+1
     #     then set it to ndomains + 1 just for running the domains
     n_orig = None
@@ -234,10 +234,9 @@ def main():
             print("\nRemoving PRMS CSV output files failed.")
             sys.exit(retcode_rm_csvs.value)
 
-    print(
-        "\nSuccess generating pywatershed test data for domains "
-        f"{domains_to_run}\n"
-    )
+    print("\nSuccess generating pywatershed test data for the simulations ")
+    pprint(simulations)
+
     sys.exit(0)
 
 

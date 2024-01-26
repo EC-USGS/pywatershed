@@ -18,22 +18,25 @@ params = ("params_sep", "params_one")
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load_prms(domain["control_file"], warn_unused_options=False)
+def control(simulation):
+    return Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
 
 
 @pytest.fixture(scope="function")
-def discretization(domain):
-    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+def discretization(simulation):
+    dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
     return Parameters.from_netcdf(dis_hru_file, encoding=False)
 
 
 @pytest.fixture(scope="function", params=params)
-def parameters(domain, request):
+def parameters(simulation, control, request):
     if request.param == "params_one":
-        params = PrmsParameters.load(domain["param_file"])
+        param_file = simulation["dir"] / control.options["parameter_file"]
+        params = PrmsParameters.load(param_file)
     else:
-        param_file = domain["dir"] / "parameters_PRMSGroundwater.nc"
+        param_file = simulation["dir"] / "parameters_PRMSGroundwater.nc"
         params = PrmsParameters.from_netcdf(param_file)
 
     return params
@@ -41,7 +44,7 @@ def parameters(domain, request):
 
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
-    domain, control, discretization, parameters, tmp_path, calc_method
+    simulation, control, discretization, parameters, tmp_path, calc_method
 ):
     if not has_prmsgroundwater_f and calc_method == "fortran":
         pytest.skip(
@@ -50,7 +53,7 @@ def test_compare_prms(
 
     tmp_path = pl.Path(tmp_path)
 
-    output_dir = domain["prms_output_dir"]
+    output_dir = simulation["output_dir"]
     input_variables = {}
     for key in PRMSGroundwater.get_inputs():
         nc_path = output_dir / f"{key}.nc"
@@ -66,7 +69,7 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / domain["domain_name"]
+        nc_parent = tmp_path / simulation["name"]
         gw.initialize_netcdf(nc_parent)
 
     if do_compare_in_memory:
@@ -91,7 +94,7 @@ def test_compare_prms(
     if do_compare_output_files:
         compare_netcdfs(
             PRMSGroundwater.get_variables(),
-            tmp_path / domain["domain_name"],
+            tmp_path / simulation["name"],
             output_dir,
             atol=atol,
             rtol=rtol,

@@ -11,11 +11,11 @@ from warnings import warn
 import pytest
 import pywatershed as pws
 
-rootdir = ".."
+test_data_dir = pl.Path("..")
 
 # Subset this to speed up tests by eliminating some domains
-test_dirs = sorted(
-    [path for path in pl.Path(rootdir).iterdir() if path.is_dir()]
+all_domain_dirs = sorted(
+    [path for path in test_data_dir.iterdir() if path.is_dir()]
 )
 
 # This would change to handle other/additional schedulers
@@ -114,36 +114,40 @@ def collect_simulations(
     verbose: bool = False,
 ):
     simulations = {}
-    for test_dir in test_dirs:
+    for dom_dir in all_domain_dirs:
         # ensure this is a self-contained run (all files in repo)
-        if not (test_dir / "prcp.cbh").exists():
+        if not (dom_dir / "prcp.cbh").exists():
+            # this is kind of a silly check... until something better needed
             continue
 
         # filter selected domains
-        if len(domain_list) and (test_dir.name not in domain_list):
+        if len(domain_list) and (dom_dir.name not in domain_list):
             continue
 
         # optionally enforce scheduler
         if not force:
-            skip = enforce_scheduler(test_dir)
+            skip = enforce_scheduler(dom_dir)
             if skip:
                 continue
 
-        control_file_candidates = sorted(test_dir.glob("*.control"))
+        control_file_candidates = sorted(dom_dir.glob("*.control"))
 
-        # filter against domain pattern
+        # filter against control pattern
         control_files = []
         for control in control_file_candidates:
-            for gg in control_pattern_list:
-                if gg in control.name:
-                    control_files += [control]
+            if not len(control_pattern_list):
+                control_files += [control]
+            else:
+                for gg in control_pattern_list:
+                    if gg in control.name:
+                        control_files += [control]
 
         for control in control_files:
-            id = f"{test_dir.name}:{control.with_suffix('').name}"
+            id = f"{dom_dir.name}:{control.with_suffix('').name}"
             ctl = pws.Control.load_prms(control, warn_unused_options=False)
-            output_dir = test_dir / ctl.options["netcdf_output_dir"]
+            output_dir = dom_dir / ctl.options["netcdf_output_dir"]
             simulations[id] = {
-                "ws": test_dir,
+                "ws": dom_dir,
                 "control_file": control,
                 "output_dir": output_dir,
             }

@@ -45,6 +45,18 @@ def pytest_addoption(parser):
         ),
     )
 
+    parser.addoption(
+        "--control_pattern",
+        required=False,
+        action="append",
+        default=[],
+        help=(
+            "Control file glob(s) (NOT path. Can drop '.control'). "
+            "You can pass multiples of this argument. If not used, "
+            "all control files in each domain will be run."
+        ),
+    )
+
 
 @pytest.fixture()
 def exe():
@@ -96,7 +108,10 @@ def enforce_scheduler(test_dir):
 
 
 def collect_simulations(
-    domain_list: list, force: bool = True, verbose: bool = False
+    domain_list: list,
+    control_pattern_list,
+    force: bool = True,
+    verbose: bool = False,
 ):
     simulations = {}
     for test_dir in test_dirs:
@@ -114,10 +129,17 @@ def collect_simulations(
             if skip:
                 continue
 
-        # if control file is found, add simulation
-        control_files = test_dir.glob("*.control")
+        control_file_candidates = sorted(test_dir.glob("*.control"))
+
+        # filter against domain pattern
+        control_files = []
+        for control in control_file_candidates:
+            for gg in control_pattern_list:
+                if gg in control.name:
+                    control_files += [control]
+
         for control in control_files:
-            id = f"{test_dir.name}_{control.with_suffix('').name}"
+            id = f"{test_dir.name}:{control.with_suffix('').name}"
             ctl = pws.Control.load_prms(control, warn_unused_options=False)
             output_dir = test_dir / ctl.options["netcdf_output_dir"]
             simulations[id] = {
@@ -157,13 +179,18 @@ def collect_csv_files(simulations: list) -> List[tuple]:
 
 def pytest_generate_tests(metafunc):
     domain_list = metafunc.config.getoption("domain")
+    control_pattern_list = metafunc.config.getoption("control_pattern")
     force = metafunc.config.getoption("force")
-    simulations = collect_simulations(domain_list, force)
+    simulations = collect_simulations(domain_list, control_pattern_list, force)
     control_csv_files = collect_csv_files(simulations)
 
     if "control_csv_file" in metafunc.fixturenames:
         ids = [
-            ff.parent.parent.name + ":" + ff.parent.name + ":" + ff.name
+            ff.parent.parent.name
+            + ":"
+            + cc.with_suffix("").name
+            + ":"
+            + ff.name
             for cc, ff in control_csv_files
         ]
         metafunc.parametrize("control_csv_file", control_csv_files, ids=ids)
@@ -174,7 +201,8 @@ def pytest_generate_tests(metafunc):
             for kk, vv in simulations.items()
         ]
         ids = [
-            ff.parent.name + ":" + ff.name for cc, ff in control_soltab_files
+            ff.parent.name + ":" + cc.with_suffix("").name + ":" + ff.name
+            for cc, ff in control_soltab_files
         ]
         metafunc.parametrize(
             "control_soltab_file",
@@ -193,13 +221,19 @@ def pytest_generate_tests(metafunc):
 
     if "control_final_file" in metafunc.fixturenames:
         control_final_files = [
-            (vv["control_file"], pl.Path(kk) / var)
+            (vv["control_file"], vv["output_dir"] / var)
             for kk, vv in simulations.items()
             for var in final_var_names
         ]
         ids = [
-            ff.parent.name + ":" + ff.name for cc, ff in control_final_files
+            ff.parent.parent.name
+            + ":"
+            + cc.with_suffix("").name
+            + ":"
+            + ff.name
+            for cc, ff in control_final_files
         ]
+
         # these are not really file names they are domain/key_var
         metafunc.parametrize(
             "control_final_file", control_final_files, ids=ids, scope="session"

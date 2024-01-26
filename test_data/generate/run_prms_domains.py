@@ -40,8 +40,7 @@ def test_run_prms(simulation, exe):
         ],
         normal_msg="Normal completion of PRMS",
     )
+
     assert success, f"could not run prms model in '{ws}'"
 
-    model_out = ws / "model.out"
-    model_out.rename(ws / f"{control_file.with_suffix('').name}_model.out")
     print(f"run_domains.py: End of domain {ws}\n", flush=True)

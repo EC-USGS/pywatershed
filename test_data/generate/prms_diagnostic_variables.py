@@ -266,7 +266,9 @@ def diagnose_final_vars_to_nc(
             data_file = data_dir / f"{vv}.nc"
             data[vv] = xr.open_dataarray(data_file)
 
-        control = pws.Control.load_prms(control_file)
+        control = pws.Control.load_prms(
+            control_file, warn_unused_options=False
+        )
         s_per_time = control.time_step_seconds
         params = pws.parameters.PrmsParameters.load(param_file)
 

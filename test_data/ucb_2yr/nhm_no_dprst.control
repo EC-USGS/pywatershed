@@ -63,7 +63,7 @@ sf_data
 model_output_file
 1
 4
-model.out
+model_no_dprst.out
 ####
 dprst_flag
 1

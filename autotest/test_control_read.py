@@ -7,9 +7,21 @@ from pywatershed.utils import ControlVariables, compare_control_files
 from utils import assert_or_print
 
 test_answers = {
-    "start_time": np.datetime64("1979-01-01T00:00:00"),
-    "end_time": np.datetime64("1980-12-31T00:00:00"),
-    "initial_deltat": np.timedelta64(24, "h"),
+    "hru_1": {
+        "start_time": np.datetime64("1979-01-01T00:00:00"),
+        "end_time": np.datetime64("2019-12-31T00:00:00"),
+        "initial_deltat": np.timedelta64(24, "h"),
+    },
+    "drb_2yr": {
+        "start_time": np.datetime64("1979-01-01T00:00:00"),
+        "end_time": np.datetime64("1980-12-31T00:00:00"),
+        "initial_deltat": np.timedelta64(24, "h"),
+    },
+    "ucb_2yr": {
+        "start_time": np.datetime64("1979-01-01T00:00:00"),
+        "end_time": np.datetime64("1980-12-31T00:00:00"),
+        "initial_deltat": np.timedelta64(24, "h"),
+    },
 }
 
 
@@ -29,12 +41,15 @@ def test_control_read(simulation, control_keys):
     print(f"parsing...'{control_file}'")
     control = ControlVariables.load(control_file)
 
+    domain_name = simulation["name"].split(":")[0]
+    domain_answers = test_answers[domain_name]
+
     results = {
         key: val
         for key, val in control.control.items()
-        if key in test_answers.keys()
+        if key in domain_answers.keys()
     }
-    assert_or_print(results, test_answers, print_ans=simulation["print_ans"])
+    assert_or_print(results, domain_answers, print_ans=simulation["print_ans"])
     print(f"success parsing...'{control_file}'")
     return
 

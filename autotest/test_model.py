@@ -39,9 +39,9 @@ invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
 
 
 @pytest.fixture(scope="function")
-def control(domain):
+def control(simulation):
     control = Control.load_prms(
-        domain["control_file"], warn_unused_options=False
+        simulation["control_file"], warn_unused_options=False
     )
     control.options["verbosity"] = 10
     control.options["budget_type"] = None
@@ -54,9 +54,9 @@ def control(domain):
 
 
 @pytest.fixture(scope="function")
-def discretization(domain):
-    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
-    dis_both_file = domain["dir"] / "parameters_dis_both.nc"
+def discretization(simulation):
+    dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
+    dis_both_file = simulation["dir"] / "parameters_dis_both.nc"
     dis_hru = Parameters.from_netcdf(dis_hru_file, encoding=False)
     dis_both = Parameters.from_netcdf(dis_both_file, encoding=False)
     # PRMSChannel needs both dis where as it should only need dis_seg
@@ -69,17 +69,18 @@ def discretization(domain):
 @pytest.fixture(
     scope="function", params=list(product(invoke_style, test_models.keys()))
 )
-def model_args(domain, control, discretization, request):
+def model_args(simulation, control, discretization, request):
     invoke_style = request.param[0]
     model_key = request.param[1]
     process_list = test_models[model_key]
 
     if invoke_style == "prms":
         # Single params is the backwards compatible way
+        param_file = simulation["dir"] / control.options["parameter_file"]
         args = {
             "process_list_or_model_dict": process_list,
             "control": control,
-            "parameters": PrmsParameters.load(domain["param_file"]),
+            "parameters": PrmsParameters.load(param_file),
         }
 
     elif invoke_style == "model_dict":
@@ -97,7 +98,7 @@ def model_args(domain, control, discretization, request):
             model_dict[proc_name_lower] = {}
             proc = model_dict[proc_name_lower]
             proc["class"] = process
-            proc_param_file = domain["dir"] / f"parameters_{proc_name}.nc"
+            proc_param_file = simulation["dir"] / f"parameters_{proc_name}.nc"
             proc["parameters"] = PrmsParameters.from_netcdf(proc_param_file)
             if proc_name_lower == "PRMSChannel".lower():
                 proc["dis"] = "dis_both"
@@ -113,7 +114,7 @@ def model_args(domain, control, discretization, request):
         }
 
     elif invoke_style == "model_dict_from_yaml":
-        yaml_file = domain["dir"] / "nhm_model.yml"
+        yaml_file = simulation["dir"] / "nhm_model.yaml"
         model_dict = Model.model_dict_from_yaml(yaml_file)
 
         args = {
@@ -129,11 +130,11 @@ def model_args(domain, control, discretization, request):
     return args
 
 
-def test_model(domain, model_args, tmp_path):
+def test_model(simulation, model_args, tmp_path):
     """Run the full NHM model"""
 
     tmp_path = pl.Path(tmp_path)
-    output_dir = domain["prms_output_dir"]
+    output_dir = simulation["output_dir"]
 
     # setup input_dir with symlinked prms inputs and outputs
     input_dir = tmp_path / "input"
@@ -313,18 +314,18 @@ def test_model(domain, model_args, tmp_path):
         9: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 1553.1874672413599,
-                    "hru_1": 13.696710376067216,
-                    "ucb_2yr": 1694.5697712423928,
+                    "drb_2yr:nhm": 1553.1874672413599,
+                    "hru_1:nhm": 13.696710376067216,
+                    "ucb_2yr:nhm": 1694.5697712423928,
                 },
             },
         },
         99: {
             "PRMSChannel": {
                 "seg_outflow": {
-                    "drb_2yr": 2362.7940777644653,
-                    "hru_1": 22.877787915898086,
-                    "ucb_2yr": 733.0192586668293,
+                    "drb_2yr:nhm": 2362.7940777644653,
+                    "hru_1:nhm": 22.877787915898086,
+                    "ucb_2yr:nhm": 733.0192586668293,
                 },
             },
         },
@@ -371,7 +372,7 @@ def test_model(domain, model_args, tmp_path):
                         if pp not in model.processes.keys():
                             pp = pp[4:]
                     result = model.processes[pp][vv].mean()
-                    reg_ans = aa[domain["domain_name"]]
+                    reg_ans = aa[simulation["name"]]
                     if not reg_ans:
                         print(
                             f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}"

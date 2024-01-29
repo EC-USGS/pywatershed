@@ -37,6 +37,7 @@ pws_control_options_avail = [
     "netcdf_output_var_names",
     "netcdf_output_separate_files",
     "netcdf_budget_args",
+    "parameter_file",
     "start_time",
     "time_step_units",
     "verbosity",
@@ -50,6 +51,7 @@ prms_legacy_options_avail = [
     "nhruOutVar_names",
     "nsegmentOutBaseFileName",
     "nsegmentOutVar_names",
+    "param_file",
     "start_time",
     "print_debug",
 ]
@@ -61,6 +63,7 @@ prms_to_pws_option_map = {
     "nhruOutVar_names": "netcdf_output_var_names",
     "nsegmentOutBaseFileName": "netcdf_output_dir",
     "nsegmentOutVar_names": "netcdf_output_var_names",
+    "param_file": "parameter_file",
     "print_debug": "verbosity",
 }
 
@@ -107,6 +110,7 @@ class Control(Accessor):
       * nsegmentOutBaseFileName: translates to "netcdf_output_dir"
       * nsegmentOutVar_names: translates to a subset of
         "netcdf_output_var_names"
+      * param_file: translates to "parameter_file"
       * print_debug: translates to "verbosity"
 
 
@@ -256,6 +260,9 @@ class Control(Accessor):
                         opts[pws_option_key] = opts[pws_option_key][0]
                 else:
                     opts[pws_option_key] = val
+                # some special cases
+                if pws_option_key == "parameter_file":
+                    opts[pws_option_key] = val[0]
 
         start_time = control.control["start_time"]
         end_time = control.control["end_time"]

@@ -19,15 +19,27 @@ n_time_steps = 10
 
 
 # This probably dosent need varied over domain
-@pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
 
 
 @pytest.fixture(scope="function")
-def control(domain):
+def control(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    del ctl.options["netcdf_output_dir"]
+    return ctl
+
+
+@pytest.fixture(scope="function")
+def params(simulation, control):
+    param_file = simulation["dir"] / control.options["parameter_file"]
+    return PrmsParameters.load(param_file)
+
+
+@pytest.fixture(scope="function")
+def control(simulation):
     control = Control.load_prms(
-        domain["control_file"], warn_unused_options=False
+        simulation["control_file"], warn_unused_options=False
     )
     control.edit_n_time_steps(n_time_steps)
     control.options["budget_type"] = "error"
@@ -72,7 +84,9 @@ check_budget_sum_vars_params = [False, True, "some"]
     check_budget_sum_vars_params,
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
-def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
+def test_process_budgets(
+    simulation, control, params, tmp_path, budget_sum_param
+):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
     model_procs = [
@@ -83,7 +97,7 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     ]
 
     # setup input_dir with symlinked prms inputs and outputs
-    domain_output_dir = domain["prms_output_dir"]
+    domain_output_dir = simulation["output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     control.options["input_dir"] = input_dir
@@ -224,7 +238,7 @@ def sep_vars(request):
 
 
 def test_separate_together_var_list(
-    domain, control, params, tmp_path, sep_vars
+    simulation, control, params, tmp_path, sep_vars
 ):
     separate = sep_vars[0]
     output_vars = sep_vars[1]
@@ -239,7 +253,7 @@ def test_separate_together_var_list(
     ]
 
     # setup input_dir with symlinked prms inputs and outputs
-    domain_output_dir = domain["prms_output_dir"]
+    domain_output_dir = simulation["output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     control.options["input_dir"] = input_dir

@@ -1,4 +1,4 @@
-control: control.yml
+control: nhm_control.yaml
 
 dis_hru: parameters_dis_hru.nc
 

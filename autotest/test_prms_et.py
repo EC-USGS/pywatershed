@@ -10,19 +10,22 @@ from pywatershed.parameters import PrmsParameters
 
 
 @pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+def control(simulation):
+    return Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load_prms(domain["control_file"], warn_unused_options=False)
+def params(simulation, control):
+    param_file = simulation["dir"] / control.options["parameter_file"]
+    return PrmsParameters.load(param_file)
 
 
 class TestPRMSEt:
-    def test_init(self, domain, control, params, tmp_path):
+    def test_init(self, simulation, control, params, tmp_path):
         tmp_path = pl.Path(tmp_path)
-        output_dir = domain["prms_output_dir"]
+        output_dir = simulation["output_dir"]
 
         et_inputs = {}
         for key in PRMSEt.get_inputs():

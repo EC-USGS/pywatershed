@@ -1,8 +1,8 @@
 import pathlib as pl
 
+import pytest
 import yaml
 
-import pytest
 import pywatershed as pws
 
 test_data_dir = pl.Path("../test_data")
@@ -155,6 +155,9 @@ def pytest_generate_tests(metafunc):
         # "domain_test" fixture (domain + runtime test options)
         # Not sure I love this, maybe have a domain_opts fixture later?
         print_ans = metafunc.config.getoption("print_ans")
+
+        for sk, sv in simulations.items():
+            sv["print_ans"] = print_ans
 
         # open and read in the yaml and
         # domain_list = []

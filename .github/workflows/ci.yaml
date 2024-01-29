@@ -204,7 +204,8 @@ jobs:
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/hru_1/hru_1.yaml
+          --domain=hru_1
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml
@@ -228,7 +229,8 @@ jobs:
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/drb_2yr/drb_2yr.yaml
+          --domain=drb_2yr
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml
@@ -251,7 +253,8 @@ jobs:
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/ucb_2yr/ucb_2yr.yaml
+          --domain=ucb_2yr
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml

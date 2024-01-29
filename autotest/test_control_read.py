@@ -6,6 +6,12 @@ import pytest
 from pywatershed.utils import ControlVariables, compare_control_files
 from utils import assert_or_print
 
+test_answers = {
+    "start_time": np.datetime64("1979-01-01T00:00:00"),
+    "end_time": np.datetime64("1980-12-31T00:00:00"),
+    "initial_deltat": np.timedelta64(24, "h"),
+}
+
 
 @pytest.fixture
 def control_keys():
@@ -18,27 +24,17 @@ def control_keys():
     )
 
 
-def test_control_read(domain, control_keys):
-    control_file = domain["control_file"]
+def test_control_read(simulation, control_keys):
+    control_file = simulation["control_file"]
     print(f"parsing...'{control_file}'")
     control = ControlVariables.load(control_file)
-    answers = domain["test_ans"]["control_read"]
-
-    for key, value in answers.items():
-        if key in (
-            "start_time",
-            "end_time",
-        ):
-            answers[key] = np.datetime64(value)
-        elif key in ("initial_deltat",):
-            answers[key] = np.timedelta64(int(value), "h")
 
     results = {
         key: val
         for key, val in control.control.items()
-        if key in answers.keys()
+        if key in test_answers.keys()
     }
-    assert_or_print(results, answers, print_ans=domain["print_ans"])
+    assert_or_print(results, test_answers, print_ans=simulation["print_ans"])
     print(f"success parsing...'{control_file}'")
     return
 

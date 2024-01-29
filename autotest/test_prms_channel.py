@@ -78,7 +78,7 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / simulation["name"]
+        nc_parent = tmp_path / simulation["name"].replace(":", "_")
         channel.initialize_netcdf(nc_parent)
         # test that init netcdf twice raises a warning
         with pytest.warns(UserWarning):
@@ -105,7 +105,7 @@ def test_compare_prms(
     if do_compare_output_files:
         compare_netcdfs(
             PRMSChannel.get_variables(),
-            tmp_path / simulation["name"],
+            tmp_path / simulation["name"].replace(":", "_"),
             output_dir,
             atol=atol,
             rtol=rtol,

@@ -89,7 +89,7 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / simulation["name"]
+        nc_parent = tmp_path / simulation["name"].replace(":", "_")
         canopy.initialize_netcdf(nc_parent)
 
     if do_compare_in_memory:
@@ -115,7 +115,7 @@ def test_compare_prms(
     if do_compare_output_files:
         compare_netcdfs(
             comparison_var_names,
-            tmp_path / simulation["name"],
+            tmp_path / simulation["name"].replace(":", "_"),
             output_dir,
             atol=atol,
             rtol=rtol,

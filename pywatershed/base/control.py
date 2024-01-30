@@ -30,6 +30,7 @@ from .accessor import Accessor
 pws_control_options_avail = [
     "budget_type",
     "calc_method",
+    "dprst_flag",
     # "restart",
     "input_dir",
     # "load_n_time_batches",
@@ -44,6 +45,7 @@ pws_control_options_avail = [
 ]
 
 prms_legacy_options_avail = [
+    "dprst_flag",
     "end_time",
     # "init_vars_from_file",
     "initial_deltat",
@@ -86,12 +88,14 @@ class Control(Accessor):
     Available pywatershed options:
       * budget_type: one of [None, "warn", "error"]
       * calc_method: one of ["numpy", "numba", "fortran"]
+      * dprst_flag: boolean if depression storage is included (true) or not.
       * input_dir: str or pathlib.path directory to search for input data
       * netcdf_output_dir: str or pathlib.Path directory for output
       * netcdf_output_var_names: a list of variable names to output
       * netcdf_output_separate_files: bool if output is grouped by Process or
         if each variable is written to an individual file
       * netcdf_budget_args:
+      * parameter_file: the name of a parameter file to use
       * start_time: np.datetime64
       * end_time: np.datetime64
       * time_step_units: str containing single character code for
@@ -103,6 +107,7 @@ class Control(Accessor):
 
       * start_time
       * end_time
+      * dprst_flag: integer is converted to boolean.
       * initial_deltat: translates to "time_step"
       * init_vars_from_file: translates to "restart"
       * nhruOutBaseFileName: translates to "netcdf_output_dir"
@@ -263,6 +268,10 @@ class Control(Accessor):
                 # some special cases
                 if pws_option_key == "parameter_file":
                     opts[pws_option_key] = val[0]
+
+            # special cases, unmapped names
+            if oo == "dprst_flag":
+                opts[oo] = bool(opts[oo][0])
 
         start_time = control.control["start_time"]
         end_time = control.control["end_time"]

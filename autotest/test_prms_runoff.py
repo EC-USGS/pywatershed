@@ -19,9 +19,12 @@ params = ("params_sep", "params_one")
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    return Control.load_prms(
+    control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
+    control.options["netcdf_output_var_names"] = PRMSRunoff.get_variables()
+
+    return control
 
 
 @pytest.fixture(scope="function")
@@ -44,11 +47,22 @@ def parameters(simulation, control, request):
 
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
-    simulation, control, discretization, parameters, tmp_path, calc_method
+    simulation,
+    control,
+    discretization,
+    parameters,
+    tmp_path,
+    calc_method,
 ):
     tmp_path = pl.Path(tmp_path)
 
     comparison_var_names = set(PRMSRunoff.get_variables())
+    # TODO: this is hacky, improve the design
+    if not control.options["dprst_flag"]:
+        comparison_var_names = {
+            vv for vv in comparison_var_names if "dprst" not in vv
+        }
+
     # TODO: get rid of this exception
     comparison_var_names -= set(
         [
@@ -63,6 +77,10 @@ def test_compare_prms(
         nc_pth = output_dir / f"{key}.nc"
         input_variables[key] = nc_pth
 
+    if do_compare_output_files:
+        nc_parent = tmp_path / simulation["name"]
+        control.options["netcdf_output_dir"] = nc_parent
+
     runoff = PRMSRunoff(
         control=control,
         discretization=discretization,
@@ -73,11 +91,10 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / simulation["name"]
-        runoff.initialize_netcdf(nc_parent)
+        runoff.initialize_netcdf()
         # test that init netcdf twice raises a warning
         with pytest.warns(UserWarning):
-            runoff.initialize_netcdf(nc_parent)
+            runoff.initialize_netcdf()
 
     if do_compare_in_memory:
         answers = {}

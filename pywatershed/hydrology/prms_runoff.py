@@ -10,7 +10,6 @@ from ..base.control import Control
 from ..constants import (
     HruType,
     dnearzero,
-    nan,
     nearzero,
     numba_num_threads,
     zero,
@@ -70,7 +69,8 @@ class PRMSRunoff(ConservativeProcess):
             canopy for each HRU
         intcp_changeover: Canopy throughfall caused by canopy density
             change from winter to summer
-        dprst_flag: bool=True by default, use depression storage or not?
+        dprst_flag: use depression storage or not? None uses value in control
+            file, which otherwise defaults to True.
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
@@ -96,13 +96,11 @@ class PRMSRunoff(ConservativeProcess):
         through_rain: adaptable,
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
-        dprst_flag: bool = True,
+        dprst_flag: bool = None,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
-        self.dprst_flag = dprst_flag
-
         super().__init__(
             control=control,
             discretization=discretization,
@@ -113,12 +111,16 @@ class PRMSRunoff(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
+        if self._dprst_flag is None:
+            self._dprst_flag = True
 
         self._set_budget()
         self._init_calc_method()
 
         self.basin_init()
-        self.dprst_init()
+
+        if self._dprst_flag:
+            self.dprst_init()
 
         return
 
@@ -217,7 +219,7 @@ class PRMSRunoff(ConservativeProcess):
             "dprst_area_clos_max": zero,
             "dprst_area_open_max": zero,
             "dprst_sroff_hru": zero,
-            "dprst_seep_hru": nan,
+            "dprst_seep_hru": zero,
             "dprst_evap_hru": zero,
             "dprst_insroff_hru": zero,
             "dprst_stor_hru": zero,
@@ -253,12 +255,12 @@ class PRMSRunoff(ConservativeProcess):
 
     def basin_init(self):
         """
-        This is trying to replicate the prms basin_init function that
+        This is trying to replicate the prms basin.f90/basinit() function that
         calculates some of the variables needed here by runoff.  This should
         probably go somewhere else at some point as I suspect other components
         may need similar information.
         """
-        # dprst_flag = ACTIVE
+
         self.hru_perv = np.zeros(self.nhru, float)
         self.hru_frac_perv = np.zeros(self.nhru, float)
         self.hru_imperv = np.zeros(self.nhru, float)
@@ -271,7 +273,7 @@ class PRMSRunoff(ConservativeProcess):
                 self.hru_imperv[i] = self.hru_percent_imperv[i] * harea
                 perv_area = perv_area - self.hru_imperv[i]
 
-            if self.dprst_flag == ACTIVE:
+            if self._dprst_flag == ACTIVE:
                 self.dprst_area_max[i] = self.dprst_frac[i] * harea
                 if self.dprst_area_max[i] > 0.0:
                     self.dprst_area_open_max[i] = (
@@ -524,7 +526,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_comp=self.dprst_comp,
             imperv_et=self.imperv_et,
             through_rain=self.through_rain,
-            dprst_flag=self.dprst_flag,
+            dprst_flag=self._dprst_flag,
         )
 
         self.infil_hru[:] = self.infil * self.hru_frac_perv
@@ -682,7 +684,6 @@ class PRMSRunoff(ConservativeProcess):
 
             if dprst_flag == ACTIVE:
                 dprst_in[i] = 0.0
-                dprst_seep_hru[i] = zero
                 dprst_chk = OFF
                 # JLM: can this logic be moved inside dprst_comp?
                 if dprst_area_max[i] > 0.0:
@@ -712,7 +713,6 @@ class PRMSRunoff(ConservativeProcess):
                             dprst_area_open_max=dprst_area_open_max[i],
                             dprst_area_open=dprst_area_open[i],
                             dprst_sroff_hru=dprst_sroff_hru[i],
-                            dprst_seep_hru=dprst_seep_hru[i],
                             sro_to_dprst_perv=sro_to_dprst_perv[i],
                             sro_to_dprst_imperv=sro_to_dprst_imperv[i],
                             dprst_evap_hru=dprst_evap_hru[i],
@@ -1001,7 +1001,6 @@ class PRMSRunoff(ConservativeProcess):
         dprst_area_open_max,
         dprst_area_open,
         dprst_sroff_hru,
-        dprst_seep_hru,
         sro_to_dprst_perv,
         sro_to_dprst_imperv,
         dprst_evap_hru,

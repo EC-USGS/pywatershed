@@ -106,6 +106,7 @@ def compare_in_memory(
             equal_nan=equal_nan,
             strict=strict,
             also_check_w_np=also_check_w_np,
+            var_name=var,
         )
 
 

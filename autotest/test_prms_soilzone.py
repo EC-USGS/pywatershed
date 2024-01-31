@@ -19,9 +19,12 @@ params = ("params_sep", "params_one")
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    return Control.load_prms(
+    control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
+    control.options["netcdf_output_var_names"] = PRMSSoilzone.get_variables()
+
+    return control
 
 
 @pytest.fixture(scope="function")
@@ -50,10 +53,10 @@ def test_compare_prms(
 
     comparison_var_names = list(
         set(PRMSSoilzone.get_variables())
-        # these are not prms variables per se
-        # the hru ones have non-hru equivalents being checked
+        # These are not prms variables per se.
+        # The _hru ones have non-hru equivalents being checked.
         # soil_zone_max and soil_lower_max would be nice to check but
-        # prms5.2.1 wont write them as hru variables
+        # prms5.2.1 wont write them as hru variables.
         - set(
             [
                 "perv_actet_hru",
@@ -64,13 +67,26 @@ def test_compare_prms(
             ]
         )
     )
+    # TODO: this is hacky, improve the design
+    if not control.options["dprst_flag"]:
+        comparison_var_names = {
+            vv for vv in comparison_var_names if "dprst" not in vv
+        }
 
     output_dir = simulation["output_dir"]
 
     input_variables = {}
     for key in PRMSSoilzone.get_inputs():
         nc_path = output_dir / f"{key}.nc"
+        # TODO: this is hacky for accommodating dprst_flag, improve the design
+        # so people dont have to pass None for dead options.
+        if not nc_path.exists():
+            nc_path = None
         input_variables[key] = nc_path
+
+    if do_compare_output_files:
+        nc_parent = tmp_path / simulation["name"]
+        control.options["netcdf_output_dir"] = nc_parent
 
     soil = PRMSSoilzone(
         control=control,
@@ -82,8 +98,7 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / simulation["name"]
-        soil.initialize_netcdf(nc_parent)
+        soil.initialize_netcdf()
 
     if do_compare_in_memory:
         answers = {}
@@ -112,6 +127,8 @@ def test_compare_prms(
             output_dir,
             atol=atol,
             rtol=rtol,
+            # fail_after_all_vars=False,
+            verbose=True,
         )
 
     return

@@ -57,7 +57,15 @@ def test_compare_prms(
     input_variables = {}
     for key in PRMSGroundwater.get_inputs():
         nc_path = output_dir / f"{key}.nc"
+        # TODO: this is hacky for accommodating dprst_flag, improve the design
+        # so people dont have to pass None for dead options.
+        if not nc_path.exists():
+            nc_path = None
         input_variables[key] = nc_path
+
+    if do_compare_output_files:
+        nc_parent = tmp_path / simulation["name"]
+        control.options["netcdf_output_dir"] = nc_parent
 
     gw = PRMSGroundwater(
         control,
@@ -69,8 +77,7 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / simulation["name"]
-        gw.initialize_netcdf(nc_parent)
+        gw.initialize_netcdf()
 
     if do_compare_in_memory:
         answers = {}

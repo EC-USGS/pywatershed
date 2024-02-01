@@ -8,7 +8,7 @@ from pywatershed.parameters import PrmsParameters
 from utils import assert_or_print
 
 test_ans = {
-    "drb_2yr:nhm": {
+    "drb_2yr": {
         "ndepl": 5,
         "ndeplval": 55,
         "ndoy": 366,
@@ -21,7 +21,7 @@ test_ans = {
         "nssr": 765,
         "scalar": 1,
     },
-    "hru_1:nhm": {
+    "hru_1": {
         "nhru": 1,
         "nsegment": 1,
         "nssr": 1,
@@ -33,7 +33,7 @@ test_ans = {
         "scalar": 1,
         "ndoy": 366,
     },
-    "ucb_2yr:nhm": {
+    "ucb_2yr": {
         "nhru": 3851,
         "nsegment": 1942,
         "nssr": 3851,
@@ -82,7 +82,9 @@ def test_parameter_read(simulation):
     parameters = PrmsParameters.load(parameter_file)
 
     # check dimensions
-    answers = test_ans[simulation["name"]]
+    # this only depends on domain and not simulation AFAICT
+    test_domain = simulation["name"].split(":")[0]
+    answers = test_ans[test_domain]
     results = parameters.dims
     assert_or_print(results, answers, print_ans=simulation["print_ans"])
 

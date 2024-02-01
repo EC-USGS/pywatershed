@@ -99,20 +99,6 @@ class PrmsParameters(Parameters):
 
         return
 
-    @property
-    def dimensions(self) -> dict:
-        """Get the dimensions from the parameters
-
-        Returns:
-            dimensions in the PRMS parameter dictionary
-
-        """
-        dimensions = {}
-        for key, value in self.dims.items():
-            if isinstance(value, int):
-                dimensions[key] = value
-        return dimensions
-
     def parameters_to_json(self, json_filename) -> None:
         """write the parameters dictionary out to a json file"""
         json.dump(

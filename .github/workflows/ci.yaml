@@ -211,11 +211,11 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_hru_1_nhm.xml
 
-      - name: drb_2yr_nhm - generate and manage test data
+      - name: drb_2yr with and without dprst - generate and manage test data
         working-directory: autotest
         run: |
           python generate_test_data.py \
-            -n=auto --domain=drb_2yr --control_pattern=nhm \
+            -n=auto --domain=drb_2yr \
             --remove_prms_csvs --remove_prms_output_dirs
 
       - name: drb_2yr_nhm - list netcdf input files
@@ -223,6 +223,11 @@ jobs:
         run: |
           find drb_2yr/output/ -name '*.nc'
 
+      - name: drb_2yr_no_dprst - list netcdf input files
+        working-directory: test_data
+        run: |
+          find drb_2yr/output_no_dprst/ -name '*.nc'
+          
       - name: drb_2yr_nhm - pywatershed tests
         working-directory: autotest
         run: pytest
@@ -235,23 +240,14 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_drb_2yr_nhm.xml
 
-      - name: drb_2yr_no_dprst - generate and manage test data
-        working-directory: autotest
-        run: |
-          python generate_test_data.py \
-            -n=auto --domain=drb_2yr --control_pattern=no_dprst \
-            --remove_prms_csvs --remove_prms_output_dirs
-
-      - name: drb_2yr_no_dprst - list netcdf input files
-        working-directory: test_data
-        run: |
-          find drb_2yr/output_no_dprst/ -name '*.nc'
-
-      # Very specific, to be expanded
+      # Specific tests not redundant with dprst
       - name: drb_2yr_no_dprst - pywatershed tests
         working-directory: autotest
         run: pytest
           test_prms_runoff.py
+          test_prms_soilzone.py
+          test_prms_groundwater.py
+          test_model.py
           -vv
           -n=auto
           --domain=drb_2yr

@@ -19,7 +19,8 @@ v1.1.0 (Unreleased)
 
 New features
 ~~~~~~~~~~~~
-
+- The depression storage option for PRMSRunoff is implemented and tested.
+  (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
@@ -43,6 +44,9 @@ Documentation
 
 Internal changes
 ~~~~~~~~~~~~~~~~
+- Testing system refactor to handle pairs of domains and control files
+  allowing much more flexibility in configuration/control testing.
+  (:pull:`278`) By `James McCreight <https://github.com/jmccreight>`_.
 
     
 

@@ -146,7 +146,13 @@ def diagnose_simple_vars_to_nc(
     if var_name == "infil":
         params = pws.parameters.PrmsParameters.load(param_file).parameters
         imperv_frac = params["hru_percent_imperv"]
-        dprst_frac = params["dprst_frac"]
+        if (
+            "dprst_flag" in control.options.keys()
+            and control.options["dprst_flag"]
+        ):
+            dprst_frac = params["dprst_frac"]
+        else:
+            dprst_frac = zero
         perv_frac = 1.0 - imperv_frac - dprst_frac
         ds = xr.open_dataset(nc_path.with_suffix(".nc"))
         ds = ds.rename(infil="infil_hru")

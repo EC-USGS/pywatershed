@@ -11,6 +11,9 @@ from pywatershed.parameters import PrmsParameters
 
 @pytest.fixture(scope="function")
 def control(simulation):
+    if simulation["name"] != "nhm":
+        pytest.skip("Only test for nhm configuration")
+
     return Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )

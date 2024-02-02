@@ -114,7 +114,8 @@ def model_args(simulation, control, discretization, request):
         }
 
     elif invoke_style == "model_dict_from_yaml":
-        yaml_file = simulation["dir"] / "nhm_model.yaml"
+        yaml_name = simulation["name"].split(":")[1]
+        yaml_file = simulation["dir"] / f"{yaml_name}_model.yaml"
         model_dict = Model.model_dict_from_yaml(yaml_file)
 
         args = {
@@ -300,10 +301,19 @@ def test_model(simulation, model_args, tmp_path):
     ans = {key: {} for key in comparison_vars_dict.keys()}
     for unit_name, var_names in comparison_vars_dict.items():
         for vv in var_names:
+            # TODO: this is hacky, improve the design
+            if (
+                "dprst_flag" in control.options.keys()
+                and not control.options["dprst_flag"]
+            ):
+                if "dprst" in vv:
+                    continue
+
             if vv in ["tmin", "tmax", "prcp"]:
                 nc_pth = input_dir.parent / f"{vv}.nc"
             else:
                 nc_pth = input_dir / f"{vv}.nc"
+
             ans[unit_name][vv] = adapter_factory(
                 nc_pth, variable_name=vv, control=control
             )
@@ -315,8 +325,11 @@ def test_model(simulation, model_args, tmp_path):
             "PRMSChannel": {
                 "seg_outflow": {
                     "drb_2yr:nhm": 1553.1874672413599,
+                    "drb_2yr:nhm_no_dprst": 1635.6279159235228,
                     "hru_1:nhm": 13.696710376067216,
+                    "hru_1:nhm_no_dprst": 12.628610403228954,
                     "ucb_2yr:nhm": 1694.5697712423928,
+                    "ucb_2yr:nhm_no_dprst": 1680.53570465336,
                 },
             },
         },
@@ -324,8 +337,11 @@ def test_model(simulation, model_args, tmp_path):
             "PRMSChannel": {
                 "seg_outflow": {
                     "drb_2yr:nhm": 2362.7940777644653,
+                    "drb_2yr:nhm_no_dprst": 2463.9993388384923,
                     "hru_1:nhm": 22.877787915898086,
+                    "hru_1:nhm_no_dprst": 22.712155511368834,
                     "ucb_2yr:nhm": 733.0192586668293,
+                    "ucb_2yr:nhm_no_dprst": 726.248353433804,
                 },
             },
         },

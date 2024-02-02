@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
+from pywatershed import Control
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.cbh_utils import cbh_file_to_netcdf, cbh_files_to_df
 from utils import assert_or_print
@@ -11,21 +12,35 @@ from utils import assert_or_print
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 
+@pytest.fixture(scope="function")
+def control(simulation):
+    if simulation["name"] != "nhm":
+        pytest.skip("test_cbh_to_netcdf only for nhm configuration")
+
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    del ctl.options["netcdf_output_dir"]
+    return ctl
+
+
 @pytest.fixture
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+def params(simulation, control):
+    param_file = simulation["dir"] / control.options["parameter_file"]
+    return PrmsParameters.load(param_file)
 
 
 @pytest.fixture(params=["no_params", "params"])
-def params_and_none(request, domain):
+def params_and_none(request, simulation, control):
     if request.param == "params":
-        return PrmsParameters.load(domain["param_file"])
+        param_file = simulation["dir"] / control.options["parameter_file"]
+        return PrmsParameters.load(param_file)
     else:
         return None
 
 
 answer_key = {
-    "drb_2yr": {
+    "drb_2yr:nhm": {
         "files_to_df": {
             "prcp": 0.12495362248866715,
         },
@@ -38,7 +53,7 @@ answer_key = {
             "time": 315532800.0,
         },
     },
-    "hru_1": {
+    "hru_1:nhm": {
         "files_to_df": {
             "prcp": 0.13502103505843072,
         },
@@ -50,7 +65,7 @@ answer_key = {
             "time": 930873600.0,
         },
     },
-    "ucb_2yr": {
+    "ucb_2yr:nhm": {
         "files_to_df": {
             "prcp": 0.046485653521159784,
         },
@@ -67,20 +82,23 @@ answer_key = {
 
 
 @pytest.mark.parametrize("var", [var_cases[0]])
-def test_cbh_files_to_df(domain, var, params):
-    the_file = domain["cbh_inputs"][var]
+def test_cbh_files_to_df(simulation, var, params):
+    the_file = simulation["dir"] / f"{var}.cbh"
     assert pl.Path(the_file).exists(), the_file
     df = cbh_files_to_df(the_file, params)
     results = {var: df.mean().mean()}
-    answers = answer_key[domain["domain_name"]]["files_to_df"]
+    answers = answer_key[simulation["name"]]["files_to_df"]
     assert_or_print(
-        results, answers, "files_to_df", print_ans=domain["print_ans"]
+        results, answers, "files_to_df", print_ans=simulation["print_ans"]
     )
     return
 
 
-def test_cbh_file_to_netcdf(domain, params, tmp_path):
-    input_files_dict = domain["cbh_inputs"]
+def test_cbh_file_to_netcdf(simulation, params, tmp_path):
+    input_files_dict = {
+        ff.with_suffix("").name: ff for ff in simulation["dir"].glob("*.cbh")
+    }
+
     results = {}
     for var, cbh_file in input_files_dict.items():
         nc_file = tmp_path / f"{var}.nc"
@@ -89,7 +107,7 @@ def test_cbh_file_to_netcdf(domain, params, tmp_path):
 
     results["time"] = results[var].time
 
-    answers = answer_key[domain["domain_name"]]["file_to_netcdf"]
+    answers = answer_key[simulation["name"]]["file_to_netcdf"]
     for var in answers.keys():
         if var == "time":
             results[var] = (
@@ -105,7 +123,7 @@ def test_cbh_file_to_netcdf(domain, params, tmp_path):
         results,
         answers,
         "file_to_netcdf",
-        print_ans=domain["print_ans"],
+        print_ans=simulation["print_ans"],
         close=True,
     )
 

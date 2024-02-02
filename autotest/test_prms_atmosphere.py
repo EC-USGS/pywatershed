@@ -17,34 +17,40 @@ params = ["params_sep", "params_one"]
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+def control(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
     del ctl.options["netcdf_output_dir"]
     return ctl
 
 
 @pytest.fixture(scope="function")
-def discretization(domain):
-    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+def discretization(simulation):
+    dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
     return Parameters.from_netcdf(dis_hru_file, encoding=False)
 
 
 @pytest.fixture(scope="function", params=params)
-def parameters(domain, request):
+def parameters(simulation, control, request):
     if request.param == "params_one":
-        params = PrmsParameters.load(domain["param_file"])
+        param_file = simulation["dir"] / control.options["parameter_file"]
+        params = PrmsParameters.load(param_file)
     else:
-        param_file = domain["dir"] / "parameters_PRMSAtmosphere.nc"
+        param_file = simulation["dir"] / "parameters_PRMSAtmosphere.nc"
         params = PrmsParameters.from_netcdf(param_file)
 
     return params
 
 
-def test_compare_prms(domain, control, discretization, parameters, tmp_path):
+def test_compare_prms(
+    simulation, control, discretization, parameters, tmp_path
+):
     comparison_var_names = PRMSAtmosphere.get_variables()
 
-    output_dir = domain["prms_output_dir"]
-    cbh_dir = domain["cbh_inputs"]["prcp"].parent.resolve()
+    output_dir = simulation["output_dir"]
+    cbh_dir = simulation["dir"]
+    # cbh_dir = simulation["cbh_inputs"]["prcp"].parent.resolve()
 
     input_variables = {}
     for key in PRMSAtmosphere.get_inputs():

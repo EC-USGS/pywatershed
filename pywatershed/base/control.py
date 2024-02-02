@@ -30,6 +30,7 @@ from .accessor import Accessor
 pws_control_options_avail = [
     "budget_type",
     "calc_method",
+    "dprst_flag",
     # "restart",
     "input_dir",
     # "load_n_time_batches",
@@ -37,12 +38,14 @@ pws_control_options_avail = [
     "netcdf_output_var_names",
     "netcdf_output_separate_files",
     "netcdf_budget_args",
+    "parameter_file",
     "start_time",
     "time_step_units",
     "verbosity",
 ]
 
 prms_legacy_options_avail = [
+    "dprst_flag",
     "end_time",
     # "init_vars_from_file",
     "initial_deltat",
@@ -50,6 +53,7 @@ prms_legacy_options_avail = [
     "nhruOutVar_names",
     "nsegmentOutBaseFileName",
     "nsegmentOutVar_names",
+    "param_file",
     "start_time",
     "print_debug",
 ]
@@ -61,6 +65,7 @@ prms_to_pws_option_map = {
     "nhruOutVar_names": "netcdf_output_var_names",
     "nsegmentOutBaseFileName": "netcdf_output_dir",
     "nsegmentOutVar_names": "netcdf_output_var_names",
+    "param_file": "parameter_file",
     "print_debug": "verbosity",
 }
 
@@ -83,12 +88,14 @@ class Control(Accessor):
     Available pywatershed options:
       * budget_type: one of [None, "warn", "error"]
       * calc_method: one of ["numpy", "numba", "fortran"]
+      * dprst_flag: boolean if depression storage is included (true) or not.
       * input_dir: str or pathlib.path directory to search for input data
       * netcdf_output_dir: str or pathlib.Path directory for output
       * netcdf_output_var_names: a list of variable names to output
       * netcdf_output_separate_files: bool if output is grouped by Process or
         if each variable is written to an individual file
       * netcdf_budget_args:
+      * parameter_file: the name of a parameter file to use
       * start_time: np.datetime64
       * end_time: np.datetime64
       * time_step_units: str containing single character code for
@@ -100,6 +107,7 @@ class Control(Accessor):
 
       * start_time
       * end_time
+      * dprst_flag: integer is converted to boolean.
       * initial_deltat: translates to "time_step"
       * init_vars_from_file: translates to "restart"
       * nhruOutBaseFileName: translates to "netcdf_output_dir"
@@ -107,6 +115,7 @@ class Control(Accessor):
       * nsegmentOutBaseFileName: translates to "netcdf_output_dir"
       * nsegmentOutVar_names: translates to a subset of
         "netcdf_output_var_names"
+      * param_file: translates to "parameter_file"
       * print_debug: translates to "verbosity"
 
 
@@ -256,6 +265,13 @@ class Control(Accessor):
                         opts[pws_option_key] = opts[pws_option_key][0]
                 else:
                     opts[pws_option_key] = val
+                # some special cases
+                if pws_option_key == "parameter_file":
+                    opts[pws_option_key] = val[0]
+
+            # special cases, unmapped names
+            if oo == "dprst_flag":
+                opts[oo] = bool(opts[oo][0])
 
         start_time = control.control["start_time"]
         end_time = control.control["end_time"]

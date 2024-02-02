@@ -22,7 +22,7 @@ nhm_processes = [
 #       where N in [2,6]
 
 
-def test_drive_indiv_process(domain, tmp_path):
+def test_drive_indiv_process(simulation, tmp_path):
     """Output of a full pywatershed NHM drives indiv process models separately
 
     The results from the full model should be consistent with the results from
@@ -33,16 +33,19 @@ def test_drive_indiv_process(domain, tmp_path):
     # Run a full pws NHM to use its output to drive individual processes
     nhm_output_dir = pl.Path(tmp_path) / "nhm_output"
 
-    params = pws.parameters.PrmsParameters.load(domain["param_file"])
     control = pws.Control.load_prms(
-        domain["control_file"], warn_unused_options=False
+        simulation["control_file"], warn_unused_options=False
     )
+
     control.edit_n_time_steps(n_time_steps)
     control.options["budget_type"] = "warn"
     control.options["calc_method"] = "numba"
-    control.options["input_dir"] = domain["prms_run_dir"]
+    control.options["input_dir"] = simulation["dir"]
     del control.options["netcdf_output_var_names"]
     del control.options["netcdf_output_dir"]
+
+    param_file = simulation["dir"] / control.options["parameter_file"]
+    params = pws.parameters.PrmsParameters.load(param_file)
 
     nhm = pws.Model(
         nhm_processes,
@@ -66,10 +69,12 @@ def test_drive_indiv_process(domain, tmp_path):
         proc_model_output_dir = tmp_path / proc.__name__
         proc_model_output_dir.mkdir()
 
-        params = pws.parameters.PrmsParameters.load(domain["param_file"])
         control = pws.Control.load_prms(
-            domain["control_file"], warn_unused_options=False
+            simulation["control_file"], warn_unused_options=False
         )
+        param_file = simulation["dir"] / control.options["parameter_file"]
+        params = pws.parameters.PrmsParameters.load(param_file)
+
         control.edit_n_time_steps(n_time_steps)
         control.options["budget_type"] = "warn"
         control.options["calc_method"] = "numba"

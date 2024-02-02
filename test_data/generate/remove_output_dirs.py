@@ -3,8 +3,7 @@ import shutil
 
 
 def test_remove_output_dirs(simulation):
-    ws = simulation["ws"]
-    output_dir = pl.Path(ws) / "output"
+    output_dir = pl.Path(simulation["output_dir"])
     if output_dir.exists():
         shutil.rmtree(output_dir)
 

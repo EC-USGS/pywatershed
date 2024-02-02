@@ -1,10 +1,9 @@
 from pywatershed.utils.netcdf_utils import NetCdfRead
 
 
-def test_netcdf(domain):
-    # output_files = list(domain["prms_outputs"].values())
+def test_netcdf(simulation):
     variable = "gwres_stor"
-    output_dir = domain["prms_output_dir"]
+    output_dir = simulation["output_dir"]
     nc_pth = output_dir / f"{variable}.nc"
 
     nc_data = NetCdfRead(nc_pth)

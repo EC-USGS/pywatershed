@@ -187,72 +187,99 @@ jobs:
           pip -V
           pip list
 
-      - name: hru_1 - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+      - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest
         run: |
           python generate_test_data.py \
-            -n=auto --domain=hru_1 --remove_prms_csvs --remove_prms_output_dirs
+            -n=auto --domain=hru_1 --control_pattern=nhm.control \
+            --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: hru_1 - list netcdf input files
+      - name: hru_1_nhm - list netcdf input files
         working-directory: test_data
         run: |
           find hru_1/output/ -name '*.nc'
 
-      - name: hru_1 - pywatershed tests
+      - name: hru_1_nhm - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/hru_1/hru_1.yaml
+          --domain=hru_1
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest_hru_1.xml
+          --junitxml=pytest_hru_1_nhm.xml
 
-
-      - name: drb_2yr - generate and manage test data
+      - name: drb_2yr with and without dprst - generate and manage test data
         working-directory: autotest
         run: |
           python generate_test_data.py \
-            -n=auto --domain=drb_2yr --remove_prms_csvs --remove_prms_output_dirs
+            -n=auto --domain=drb_2yr \
+            --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: drb_2yr - list netcdf input files
+      - name: drb_2yr_nhm - list netcdf input files
         working-directory: test_data
         run: |
           find drb_2yr/output/ -name '*.nc'
 
-      - name: drb_2yr - pywatershed tests
+      - name: drb_2yr_no_dprst - list netcdf input files
+        working-directory: test_data
+        run: |
+          find drb_2yr/output_no_dprst/ -name '*.nc'
+          
+      - name: drb_2yr_nhm - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/drb_2yr/drb_2yr.yaml
+          --domain=drb_2yr
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest_drb_2yr.xml
+          --junitxml=pytest_drb_2yr_nhm.xml
 
-      - name: ucb_2yr - generate and manage test data
+      # Specific tests not redundant with dprst
+      - name: drb_2yr_no_dprst - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          test_prms_runoff.py
+          test_prms_soilzone.py
+          test_prms_groundwater.py
+          test_model.py
+          -vv
+          -n=auto
+          --domain=drb_2yr
+          --control_pattern=no_dprst
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_no_dprst.xml
+
+      - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest
         run: |
           python generate_test_data.py \
-            -n=auto --domain=ucb_2yr --remove_prms_csvs --remove_prms_output_dirs
+            -n=auto --domain=ucb_2yr --control_pattern=nhm.control \
+            --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: ucb_2yr - list netcdf input files
+      - name: ucb_2yr_nhm - list netcdf input files
         working-directory: test_data
         run: |
           find ucb_2yr/output/ -name '*.nc'
 
-      - name: ucb_2yr - pywatershed tests
+      - name: ucb_2yr_nhm - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/ucb_2yr/ucb_2yr.yaml
+          --domain=ucb_2yr
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest_ucb_2yr.xml
+          --junitxml=pytest_ucb_2yr_nhm.xml
 
       - name: Upload test results
         if: always()
@@ -260,9 +287,10 @@ jobs:
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
           path: |
-            ./autotest/pytest_hru_1.xml
-            ./autotest/pytest_drb_2yr.xml
-            ./autotest/pytest_ucb_2yr.xml
+            ./autotest/pytest_hru_1_nhm.xml
+            ./autotest/pytest_drb_2yr_nhm.xml
+            ./autotest/pytest_drb_2yr_no_dprst.xml
+            ./autotest/pytest_ucb_2yr_nhm.xml
 
       - name: Upload code coverage to Codecov
         uses: codecov/codecov-action@v3

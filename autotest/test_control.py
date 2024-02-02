@@ -152,14 +152,16 @@ def test_control_advance(control_simple, params_simple):
         #     )
 
 
-def test_init_load(domain):
+def test_init_load(simulation):
     with pytest.warns(RuntimeWarning):
-        _ = Control.load_prms(domain["control_file"])
+        _ = Control.load_prms(simulation["control_file"])
     return None
 
 
-def test_deepcopy(domain):
-    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+def test_deepcopy(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
     ctl_sh = copy(ctl)
     ctl_dp = deepcopy(ctl)
 
@@ -172,8 +174,10 @@ def test_deepcopy(domain):
     return None
 
 
-def test_setitem_setattr(domain):
-    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+def test_setitem_setattr(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
 
     # __setitem__ on OptsDict
     ctl.options["verbosity"] = 12
@@ -195,8 +199,10 @@ def test_setitem_setattr(domain):
         ctl.options = None
 
 
-def test_yaml_roundtrip(domain, tmp_path):
-    ctl = Control.load_prms(domain["control_file"], warn_unused_options=False)
+def test_yaml_roundtrip(simulation, tmp_path):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
     yml_file = tmp_path / "control.yaml"
     ctl.to_yaml(yml_file)
     ctl_2 = Control.from_yaml(yml_file)

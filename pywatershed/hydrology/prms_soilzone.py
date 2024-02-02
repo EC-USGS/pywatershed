@@ -4,7 +4,7 @@ from warnings import warn
 import numpy as np
 from numba import prange
 
-from ..base.adapter import adaptable
+from ..base.adapter import adaptable, adapter_factory
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import (
@@ -56,6 +56,8 @@ class PRMSSoilzone(ConservativeProcess):
         snow_evap: Evaporation and sublimation from snowpack on each HRU
         snowcov_area: Snow-covered area on each HRU prior to melt and
             sublimation unless snowpack
+        dprst_flag: use depression storage or not? None uses value in control
+            file, which otherwise defaults to True.
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
@@ -83,6 +85,7 @@ class PRMSSoilzone(ConservativeProcess):
         transp_on: adaptable,
         snow_evap: adaptable,
         snowcov_area: adaptable,
+        dprst_flag: bool = None,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
@@ -97,6 +100,20 @@ class PRMSSoilzone(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
+
+        if self._dprst_flag is None:
+            self._dprst_flag = True
+        # This is a hacky dprst_flag == False approach. Improve design to
+        # get rid of these inputs.
+        if not self._dprst_flag:
+            for kk, vv in self._input_variables_dict.items():
+                if vv is not None:
+                    continue
+                self._input_variables_dict[kk] = adapter_factory(
+                    np.zeros(self.params.dimensions["nhru"]),
+                    variable_name=kk,
+                    control=self.control,
+                )
 
         # This uses options
         self._initialize_soilzone_data()
@@ -214,7 +231,7 @@ class PRMSSoilzone(ConservativeProcess):
                 "perv_actet_hru",
                 "soil_to_gw",
                 "ssr_to_gw",
-                "slow_flow"
+                "slow_flow",
                 # "pref_flow",
             ],
             "storage_changes": [
@@ -247,12 +264,13 @@ class PRMSSoilzone(ConservativeProcess):
         # this%hru_frac_perv = 1.0 - this%hru_percent_imperv
         self.hru_frac_perv = one - self.hru_percent_imperv
 
-        dprst_area_max = self.dprst_frac * self.hru_area
-
         wh_active = np.where(self.hru_type != HruType.INACTIVE.value)
-        self.hru_area_perv[wh_active] = (
-            self.hru_area_perv[wh_active] - dprst_area_max[wh_active]
-        )
+        if self._dprst_flag:
+            dprst_area_max = self.dprst_frac * self.hru_area
+            self.hru_area_perv[wh_active] = (
+                self.hru_area_perv[wh_active] - dprst_area_max[wh_active]
+            )
+
         # Recompute hru_frac_perv to reflect the depression storage area
         self.hru_frac_perv[wh_active] = (
             self.hru_area_perv[wh_active] / self.hru_area[wh_active]
@@ -596,7 +614,7 @@ class PRMSSoilzone(ConservativeProcess):
             cov_type=self.cov_type,
             current_time=self.control.current_time,
             dprst_evap_hru=self.dprst_evap_hru,
-            dprst_flag=True,  # self.control.options["dprst_flag"],
+            dprst_flag=self._dprst_flag,
             dprst_seep_hru=self.dprst_seep_hru,
             dunnian_flow=self.dunnian_flow,
             fastcoef_lin=self.fastcoef_lin,
@@ -775,8 +793,6 @@ class PRMSSoilzone(ConservativeProcess):
         # JLM: ET calculations to be removed from soilzone.
         hru_actet = hru_impervevap + hru_intcpevap + snow_evap
 
-        # This is obnoxious. i guess this should be an
-        # optional input? should default to zero?
         if dprst_flag:
             hru_actet = hru_actet + dprst_evap_hru
 

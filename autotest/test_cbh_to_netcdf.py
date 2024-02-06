@@ -14,7 +14,8 @@ var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if simulation["name"] != "nhm":
+    control_name = simulation["name"].split(":")[1]
+    if control_name != "nhm":
         pytest.skip("test_cbh_to_netcdf only for nhm configuration")
 
     ctl = Control.load_prms(

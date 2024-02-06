@@ -258,15 +258,18 @@ class Control(Accessor):
                 if pws_option_key in opts.keys():
                     # combine to a list with only unique entries
                     # use value instead of list if only one value in list
-                    opts[pws_option_key] = list(
-                        set(opts[pws_option_key].tolist() + val.tolist())
-                    )
+                    opt_val = opts[pws_option_key]
+                    if isinstance(opt_val, np.ndarray):
+                        opt_val = opt_val.tolist()
+                    elif isinstance(opt_val, str):
+                        opt_val = [opt_val]
+                    opts[pws_option_key] = list(set(opt_val + val.tolist()))
                     if len(opts[pws_option_key]) == 1:
                         opts[pws_option_key] = opts[pws_option_key][0]
                 else:
                     opts[pws_option_key] = val
                 # some special cases
-                if pws_option_key == "parameter_file":
+                if pws_option_key in ["parameter_file", "netcdf_output_dir"]:
                     opts[pws_option_key] = val[0]
 
             # special cases, unmapped names

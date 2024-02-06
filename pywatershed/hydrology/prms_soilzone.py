@@ -258,7 +258,6 @@ class PRMSSoilzone(ConservativeProcess):
         self.hru_area_perv = self.hru_area - self.hru_area_imperv
 
         self.soil_rechr_max = self.soil_rechr_max_frac * self.soil_moist_max
-        # asdf
 
         # apparent issues with hru_frac_perv
         # this%hru_frac_perv = 1.0 - this%hru_percent_imperv

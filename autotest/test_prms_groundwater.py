@@ -5,6 +5,10 @@ import pytest
 from pywatershed import Control, Parameters, PRMSGroundwater
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.hydrology.prms_groundwater import has_prmsgroundwater_f
+from pywatershed.hydrology.prms_groundwater_no_dprst import (
+    PRMSGroundwaterNoDprst,
+)
+
 from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
@@ -22,6 +26,19 @@ def control(simulation):
     return Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
+
+
+@pytest.fixture(scope="function")
+def Groundwater(control):
+    if (
+        "dprst_flag" in control.options.keys()
+        and control.options["dprst_flag"]
+    ):
+        Groundwater = PRMSGroundwater
+    else:
+        Groundwater = PRMSGroundwaterNoDprst
+
+    return Groundwater
 
 
 @pytest.fixture(scope="function")
@@ -44,7 +61,13 @@ def parameters(simulation, control, request):
 
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
-    simulation, control, discretization, parameters, tmp_path, calc_method
+    simulation,
+    control,
+    discretization,
+    parameters,
+    Groundwater,
+    tmp_path,
+    calc_method,
 ):
     if not has_prmsgroundwater_f and calc_method == "fortran":
         pytest.skip(
@@ -55,7 +78,7 @@ def test_compare_prms(
 
     output_dir = simulation["output_dir"]
     input_variables = {}
-    for key in PRMSGroundwater.get_inputs():
+    for key in Groundwater.get_inputs():
         nc_path = output_dir / f"{key}.nc"
         # TODO: this is hacky for accommodating dprst_flag, improve the design
         # so people dont have to pass None for dead options.
@@ -67,7 +90,7 @@ def test_compare_prms(
         nc_parent = tmp_path / simulation["name"]
         control.options["netcdf_output_dir"] = nc_parent
 
-    gw = PRMSGroundwater(
+    gw = Groundwater(
         control,
         discretization,
         parameters,
@@ -81,7 +104,7 @@ def test_compare_prms(
 
     if do_compare_in_memory:
         answers = {}
-        for var in PRMSGroundwater.get_variables():
+        for var in Groundwater.get_variables():
             var_pth = output_dir / f"{var}.nc"
             answers[var] = adapter_factory(
                 var_pth, variable_name=var, control=control
@@ -100,7 +123,7 @@ def test_compare_prms(
 
     if do_compare_output_files:
         compare_netcdfs(
-            PRMSGroundwater.get_variables(),
+            Groundwater.get_variables(),
             tmp_path / simulation["name"],
             output_dir,
             atol=atol,

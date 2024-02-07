@@ -206,6 +206,9 @@ def pytest_generate_tests(metafunc):
         #     # append to the list of all domains
         #     domain_list += [domain_dict]
 
+        if not len(simulations):
+            raise ValueError("No simulations found, check your input.")
+
         metafunc.parametrize(
             "simulation", simulations.values(), ids=simulations.keys()
         )

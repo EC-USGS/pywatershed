@@ -1,9 +1,9 @@
 .. currentmodule:: pywatershed
 
 
-###########
+-----------
 Parameters
-###########
+-----------
 
 Parameter classes.
 

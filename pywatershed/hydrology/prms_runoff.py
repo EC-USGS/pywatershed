@@ -7,11 +7,8 @@ from numba import prange
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..constants import HruType, nan, numba_num_threads, zero
+from ..constants import HruType, dnearzero, nearzero, numba_num_threads, zero
 from ..parameters import Parameters
-
-NEARZERO = 1.0e-6
-DNEARZERO = np.finfo(float).eps  # EPSILON(0.0D0)
 
 RAIN = 0
 SNOW = 1
@@ -25,16 +22,30 @@ ACTIVE = 1
 LAND = HruType.LAND.value
 LAKE = HruType.LAKE.value
 
+# TODO: using through_rain and not net_rain and net_ppt is a WIP
+
 
 class PRMSRunoff(ConservativeProcess):
     """PRMS surface runoff.
+
+    A surface runoff representation from PRMS.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
 
     Args:
         control: a Control object
         discretization: a discretization of class Parameters
         parameters: a parameter object of class Parameters
-        soil_moist_prev: Previous storage of capillary reservoir for each
-            HRU
+        soil_lower_prev: Previous storage of lower reservoir for each HRU
+        soil_rechr_prev: Previous storage of recharge reservoir for each HRU
         net_ppt: Precipitation (rain and/or snow) that falls through the
             canopy for each HRU
         net_rain: Rain that falls through canopy for each HRU
@@ -52,6 +63,8 @@ class PRMSRunoff(ConservativeProcess):
             canopy for each HRU
         intcp_changeover: Canopy throughfall caused by canopy density
             change from winter to summer
+        dprst_flag: use depression storage or not? None uses value in control
+            file, which otherwise defaults to True.
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
@@ -63,7 +76,8 @@ class PRMSRunoff(ConservativeProcess):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        soil_moist_prev: adaptable,
+        soil_lower_prev: adaptable,
+        soil_rechr_prev: adaptable,
         net_ppt: adaptable,
         net_rain: adaptable,
         net_snow: adaptable,
@@ -76,6 +90,7 @@ class PRMSRunoff(ConservativeProcess):
         through_rain: adaptable,
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
+        dprst_flag: bool = None,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
@@ -90,9 +105,17 @@ class PRMSRunoff(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
+        if self._dprst_flag is None:
+            self._dprst_flag = True
 
         self._set_budget()
         self._init_calc_method()
+
+        self.basin_init()
+
+        if self._dprst_flag:
+            self.dprst_init()
+
         return
 
     def _set_initial_conditions(self):
@@ -109,13 +132,6 @@ class PRMSRunoff(ConservativeProcess):
         self.dprst_vol_clos_max = np.zeros(self.nhru, dtype=float)
         self.dprst_frac_clos = np.zeros(self.nhru, dtype=float)
         self.dprst_vol_thres_open = np.zeros(self.nhru, dtype=float)
-
-        # call the basin_init hack to calculate basin
-        # variables
-        self.basin_init()
-
-        # call the depression storage init
-        self.dprst_init()
 
         return
 
@@ -155,7 +171,8 @@ class PRMSRunoff(ConservativeProcess):
     @staticmethod
     def get_inputs() -> tuple:
         return (
-            "soil_moist_prev",
+            "soil_lower_prev",
+            "soil_rechr_prev",
             "net_rain",
             "net_ppt",
             "net_snow",
@@ -196,7 +213,7 @@ class PRMSRunoff(ConservativeProcess):
             "dprst_area_clos_max": zero,
             "dprst_area_open_max": zero,
             "dprst_sroff_hru": zero,
-            "dprst_seep_hru": nan,
+            "dprst_seep_hru": zero,
             "dprst_evap_hru": zero,
             "dprst_insroff_hru": zero,
             "dprst_stor_hru": zero,
@@ -209,6 +226,7 @@ class PRMSRunoff(ConservativeProcess):
         return {
             "inputs": [
                 # "net_rain",
+                # "net_snow",
                 "through_rain",
                 "snowmelt",
                 "intcp_changeover",
@@ -231,12 +249,12 @@ class PRMSRunoff(ConservativeProcess):
 
     def basin_init(self):
         """
-        This is trying to replicate the prms basin_init function that
+        This is trying to replicate the prms basin.f90/basinit() function that
         calculates some of the variables needed here by runoff.  This should
         probably go somewhere else at some point as I suspect other components
         may need similar information.
         """
-        dprst_flag = ACTIVE
+
         self.hru_perv = np.zeros(self.nhru, float)
         self.hru_frac_perv = np.zeros(self.nhru, float)
         self.hru_imperv = np.zeros(self.nhru, float)
@@ -249,7 +267,7 @@ class PRMSRunoff(ConservativeProcess):
                 self.hru_imperv[i] = self.hru_percent_imperv[i] * harea
                 perv_area = perv_area - self.hru_imperv[i]
 
-            if dprst_flag == ACTIVE:
+            if self._dprst_flag == ACTIVE:
                 self.dprst_area_max[i] = self.dprst_frac[i] * harea
                 if self.dprst_area_max[i] > 0.0:
                     self.dprst_area_open_max[i] = (
@@ -316,7 +334,7 @@ class PRMSRunoff(ConservativeProcess):
                     open_vol_r = (
                         self.dprst_vol_open[i] / self.dprst_vol_open_max[i]
                     )
-                    if open_vol_r < NEARZERO:
+                    if open_vol_r < nearzero:
                         frac_op_ar = 0.0
                     elif open_vol_r > 1.0:
                         frac_op_ar = 1.0
@@ -335,7 +353,7 @@ class PRMSRunoff(ConservativeProcess):
                     clos_vol_r = (
                         self.dprst_vol_clos[i] / self.dprst_vol_clos_max[i]
                     )
-                    if clos_vol_r < NEARZERO:
+                    if clos_vol_r < nearzero:
                         frac_cl_ar = 0.0
                     elif clos_vol_r > 1.0:
                         frac_cl_ar = 1.0
@@ -376,7 +394,7 @@ class PRMSRunoff(ConservativeProcess):
                 f"Invalid calc_method={self._calc_method} for {self.name}. "
                 f"Setting calc_method to 'numba' for {self.name}"
             )
-            warn(msg)
+            warn(msg, UserWarning)
             self._calc_method = "numba"
 
         if self._calc_method.lower() == "numba":
@@ -447,7 +465,8 @@ class PRMSRunoff(ConservativeProcess):
             potet=self.potet,
             snow_evap=self.snow_evap,
             hru_intcpevap=self.hru_intcpevap,
-            soil_moist_prev=self.soil_moist_prev,
+            soil_lower_prev=self.soil_lower_prev,
+            soil_rechr_prev=self.soil_rechr_prev,
             soil_moist_max=self.soil_moist_max,
             carea_max=self.carea_max,
             smidx_coef=self.smidx_coef,
@@ -500,6 +519,8 @@ class PRMSRunoff(ConservativeProcess):
             compute_infil=self.compute_infil,
             dprst_comp=self.dprst_comp,
             imperv_et=self.imperv_et,
+            through_rain=self.through_rain,
+            dprst_flag=self._dprst_flag,
         )
 
         self.infil_hru[:] = self.infil * self.hru_frac_perv
@@ -532,7 +553,8 @@ class PRMSRunoff(ConservativeProcess):
         potet,
         snow_evap,
         hru_intcpevap,
-        soil_moist_prev,
+        soil_lower_prev,
+        soil_rechr_prev,
         soil_moist_max,
         carea_max,
         smidx_coef,
@@ -586,37 +608,38 @@ class PRMSRunoff(ConservativeProcess):
         compute_infil,
         dprst_comp,
         imperv_et,
+        through_rain,
+        dprst_flag,
     ):
-        # move towards replacing net_rain and other variables.
-        # self.net_rain[:] = self.through_rain
-
         dprst_chk = 0
         infil[:] = 0.0
+
+        soil_moist_prev = soil_lower_prev + soil_rechr_prev
+
         for k in prange(nhru):
             # TODO: remove duplicated vars
             # TODO: move setting constants outside the loop.
 
             # cdl i = Hru_route_order(k)
             i = k
-            runoff = 0.0
+            runoff = zero
             hruarea = hru_area[i]
             perv_area = hru_perv[i]
             perv_frac = hru_frac_perv[i]
-            srp = 0.0
-            sri = 0.0
-            hru_sroffp[i] = 0.0
-            contrib_fraction[i] = 0.0
+            srp = zero
+            sri = zero
+            hru_sroffp[i] = zero
+            contrib_fraction[i] = zero
             hruarea_imperv = hru_imperv[i]
-            imperv_frac = 0.0
-            if hruarea_imperv > 0.0:
+            imperv_frac = zero
+            if hruarea_imperv > zero:
                 imperv_frac = hru_percent_imperv[i]
-                hru_sroffi[i] = 0.0
-                imperv_evap[i] = 0.0
-                hru_impervevap[i] = 0.0
+                hru_sroffi[i] = zero
+                imperv_evap[i] = zero
+                hru_impervevap[i] = zero
 
             avail_et = potet[i] - snow_evap[i] - hru_intcpevap[i]
-            # apparently not used
-            # availh2o = intcp_changeover[i] + net_rain[i]
+            availh2o = intcp_changeover[i] + net_rain[i]
 
             (
                 sri,
@@ -648,14 +671,13 @@ class PRMSRunoff(ConservativeProcess):
                 srp=srp,
                 check_capacity=check_capacity,
                 perv_comp=perv_comp,
+                through_rain=through_rain[i],
             )
 
-            dprst_flag = ACTIVE  # cdl todo: hardwired
             frzen = OFF  # cdl todo: hardwired
 
             if dprst_flag == ACTIVE:
                 dprst_in[i] = 0.0
-                dprst_seep_hru[i] = zero
                 dprst_chk = OFF
                 # JLM: can this logic be moved inside dprst_comp?
                 if dprst_area_max[i] > 0.0:
@@ -685,7 +707,6 @@ class PRMSRunoff(ConservativeProcess):
                             dprst_area_open_max=dprst_area_open_max[i],
                             dprst_area_open=dprst_area_open[i],
                             dprst_sroff_hru=dprst_sroff_hru[i],
-                            dprst_seep_hru=dprst_seep_hru[i],
                             sro_to_dprst_perv=sro_to_dprst_perv[i],
                             sro_to_dprst_imperv=sro_to_dprst_imperv[i],
                             dprst_evap_hru=dprst_evap_hru[i],
@@ -709,7 +730,7 @@ class PRMSRunoff(ConservativeProcess):
                             dprst_flow_coef=dprst_flow_coef[i],
                             dprst_seep_rate_clos=dprst_seep_rate_clos[i],
                             avail_et=avail_et,
-                            net_rain=net_rain[i],
+                            net_rain=availh2o,
                             dprst_in=dprst_in[i],
                             srp=srp,
                             sri=sri,
@@ -722,7 +743,7 @@ class PRMSRunoff(ConservativeProcess):
             #        runoff and srunoff
             # Compute runoff for pervious and impervious area, and depression
             # storage area
-            srunoff = 0.0
+            srunoff = zero
             if hru_type[i] == LAND:
                 runoff = runoff + srp * perv_area + sri * hruarea_imperv
                 srunoff = runoff / hruarea
@@ -816,12 +837,14 @@ class PRMSRunoff(ConservativeProcess):
         srp,
         check_capacity,
         perv_comp,
+        through_rain,
     ):
         isglacier = False  # todo -- hardwired
-        cascade_active = False
         hru_flag = 0
         if hru_type == LAND or isglacier:
             hru_flag = 1
+
+        cascade_active = False
         if cascade_active:
             raise Exception("bad bad bad")
         else:
@@ -846,17 +869,21 @@ class PRMSRunoff(ConservativeProcess):
         # if rain/snow event with no antecedent snowpack,
         # compute the runoff from the rain first and then proceed with the
         # snowmelt computations
-        if pptmix_nopack == ACTIVE:
-            avail_water = avail_water + net_rain
-            infil = infil + net_rain
+        # double_counting = 0
+        cond2 = pptmix_nopack != 0
+        # if pptmix_nopack == ACTIVE:
+        if cond2:
+            # double_counting += 1
+            avail_water = avail_water + through_rain
+            infil = infil + through_rain
             if hru_flag == 1:
                 infil, srp, contrib_fraction = perv_comp(
                     soil_moist_prev,
                     carea_max,
                     smidx_coef,
                     smidx_exp,
-                    net_rain,
-                    net_rain,
+                    through_rain,
+                    through_rain,
                     infil,
                     srp,
                 )
@@ -866,13 +893,19 @@ class PRMSRunoff(ConservativeProcess):
         # procedure is used.  If there is no snowpack and no precip,
         # then check for melt from last of snowpack.  If rain/snow mix
         # with no antecedent snowpack, compute snowmelt portion of runoff.
+        # cond3 = snowmelt < nearzero
+        cond4 = pkwater_equiv < dnearzero
+        # cond1 = net_ppt > zero
+        cond6 = net_snow < nearzero
+
         if snowmelt > 0.0:
+            # if not cond3:  # this results in less precision accuracy
             # There was no snowmelt but a snowpack may exist.  If there is
             # no snowpack then check for rain on a snowfree HRU.
             avail_water = avail_water + snowmelt
             infil = infil + snowmelt
             if hru_flag == 1:
-                if pkwater_equiv > 0.0 or net_ppt - net_snow < NEARZERO:
+                if (pkwater_equiv > 0.0) or (net_rain < nearzero):
                     # Pervious area computations
                     infil, srp = check_capacity(
                         soil_moist_prev,
@@ -883,6 +916,11 @@ class PRMSRunoff(ConservativeProcess):
                     )
                 else:
                     # Snowmelt occurred and depleted the snowpack
+                    # this frequently gets counted along with pptmix_nopack
+                    # double_counting += 1
+                    # if double_counting > 1:
+                    #     print("snowmelt")
+
                     infil, srp, contrib_fraction = perv_comp(
                         soil_moist_prev,
                         carea_max,
@@ -894,20 +932,30 @@ class PRMSRunoff(ConservativeProcess):
                         srp,
                     )
 
-        elif pkwater_equiv < DNEARZERO:
+        # elif pkwater_equiv < Dnearzero:
+        elif cond4:
             # If no snowmelt and no snowpack but there was net snow then
             # snowpack was small and was lost to sublimation.
-            if net_snow < NEARZERO and net_rain > 0.0:
-                avail_water = avail_water + net_rain
-                infil = infil + net_rain
+            # if net_snow < nearzero and net_rain > 0.0:
+            if cond6 and through_rain > 0.0:
+                # if net_snow < 1.0e-6 and net_rain > 0.0:
+                # cond3 & cond4 & cond6 & cond1
+                # this is through_rain's top/most narrow case
+
+                avail_water = avail_water + through_rain
+                infil = infil + through_rain
+
+                # double_counting += 1
+                # if double_counting > 1:
+                #     print("cond4")
                 if hru_flag == 1:
                     infil, srp, contrib_fraction = perv_comp(
                         soil_moist_prev,
                         carea_max,
                         smidx_coef,
                         smidx_exp,
-                        net_rain,
-                        net_rain,
+                        through_rain,
+                        through_rain,
                         infil,
                         srp,
                     )
@@ -924,6 +972,9 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
+
+        # if double_counting > 1:
+        #     assert False
 
         if hruarea_imperv > 0.0:
             imperv_stor = imperv_stor + avail_water
@@ -944,7 +995,6 @@ class PRMSRunoff(ConservativeProcess):
         dprst_area_open_max,
         dprst_area_open,
         dprst_sroff_hru,
-        dprst_seep_hru,
         sro_to_dprst_perv,
         sro_to_dprst_imperv,
         dprst_evap_hru,
@@ -990,15 +1040,15 @@ class PRMSRunoff(ConservativeProcess):
         # of snowpack.
         # If rain/snow mix with no antecedent snowpack, compute snowmelt
         # portion of runoff.
-        if snowmelt:
+        if snowmelt > zero:
             inflow = inflow + snowmelt
 
         # !******There was no snowmelt but a snowpack may exist.  If there is
         # !******no snowpack then check for rain on a snowfree HRU.
-        elif pkwater_equiv < DNEARZERO:
+        elif pkwater_equiv < dnearzero:
             # !      If no snowmelt and no snowpack but there was net snow then
             # !      snowpack was small and was lost to sublimation.
-            if net_snow < NEARZERO and net_rain > 0.0:
+            if net_snow < nearzero and net_rain > 0.0:
                 inflow = inflow + net_rain
 
         dprst_add_water_use = OFF
@@ -1030,9 +1080,9 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_srp = dprst_srp + dprst_srp_clos / hru_area
                 dprst_vol_clos = dprst_vol_clos + dprst_srp_clos
             srp = srp - dprst_srp / perv_frac
-            if srp < 0.0:
-                if srp < -NEARZERO:
-                    srp = 0.0
+            if srp < zero:
+                srp = zero
+                # if srp < -nearzero: this should raise an error
 
         if sri > 0.0:
             tmp = sri * imperv_frac * sro_to_dprst_imperv * hru_area
@@ -1046,14 +1096,16 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_vol_clos = dprst_vol_clos + dprst_sri_clos
             sri = sri - dprst_sri / imperv_frac
             if sri < 0.0:
-                if sri < -NEARZERO:
-                    sri = 0.0
-            dprst_insroff_hru = dprst_srp + dprst_sri
+                # if sri < -nearzero: warn??
+                sri = 0.0
+
+        # <<<
+        dprst_insroff_hru = dprst_srp + dprst_sri
 
         dprst_area_open = 0.0
         if dprst_vol_open > 0.0:
             open_vol_r = dprst_vol_open / dprst_vol_open_max
-            if open_vol_r < NEARZERO:
+            if open_vol_r < nearzero:
                 frac_op_ar = 0.0
             elif open_vol_r > 1.0:
                 frac_op_ar = 1.0
@@ -1067,7 +1119,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_area_clos = 0.0
             if dprst_vol_clos > 0.0:
                 clos_vol_r = dprst_vol_clos / dprst_vol_clos_max
-                if clos_vol_r < NEARZERO:
+                if clos_vol_r < nearzero:
                     frac_cl_ar = 0.0
                 elif clos_vol_r > 1.0:
                     frac_cl_ar = 1.0
@@ -1076,8 +1128,8 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_area_clos = dprst_area_clos_max * frac_cl_ar
                 if dprst_area_clos > dprst_area_clos_max:
                     dprst_area_clos = dprst_area_clos_max
-                if dprst_area_clos < NEARZERO:
-                    dprst_area_clos = 0.0
+                # if dprst_area_clos < nearzero:
+                #     dprst_area_clos = 0.0
 
         #
         # evaporate water from depressions based on snowcov_area
@@ -1136,7 +1188,7 @@ class PRMSRunoff(ConservativeProcess):
                 dprst_vol_open = 0.0
 
         if dprst_area_clos_max > 0.0:
-            if dprst_area_clos > NEARZERO:
+            if dprst_area_clos > nearzero:
                 seep_clos = dprst_vol_clos * dprst_seep_rate_clos
                 dprst_vol_clos = dprst_vol_clos - seep_clos
                 if dprst_vol_clos < 0.0:

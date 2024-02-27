@@ -7,7 +7,7 @@ all_tests = list(
     product(
         *[
             domains,
-            model_tests.values(),
+            model_tests.keys(),
             outputs,
         ]
     )

@@ -4,20 +4,15 @@ import pint
 import pytest
 import xarray as xr
 
+from pywatershed import Control
 from pywatershed.utils.prms_to_mf6 import MMRToMF6
-
-# not currently in repo or being used but might be good to add
-# shape_file = (
-#     "/Users/jamesmcc/usgs/data/pywatershed/20220209_gm_delaware_river"
-#     "/GIS_simple/HRU_subset.shp"
-# )
 
 start_time = np.datetime64("1979-01-01T00:00:00")
 end_time = np.datetime64("1979-01-07T00:00:00")
 
 
-def lateral_flow_ans_ds(domain):
-    control_file = domain["control_file"]
+def lateral_flow_ans_ds(simulation):
+    control_file = simulation["control_file"]
     inflow_dir = control_file.parent / "output"
     ds = xr.open_dataset(inflow_dir / "seg_lateral_inflow.nc")
     ds = ds.sel(time=slice(start_time, end_time))["seg_lateral_inflow"]
@@ -28,21 +23,24 @@ def lateral_flow_ans_ds(domain):
 @pytest.mark.xfail
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])
-def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
+def test_mmr_to_mf6(simulation, tmp_path, bc_binary_files, bc_flows_combine):
     units = pint.UnitRegistry()
-    ans = lateral_flow_ans_ds(domain)
+    ans = lateral_flow_ans_ds(simulation)
     times = ans.time.values
 
-    param_file = domain["param_file"]
-    control_file = domain["control_file"]
-    domain_name = domain["domain_name"]
+    sim_name = simulation["name"]
+    control_file = simulation["control_file"]
+    control = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    param_file = simulation["dir"] / control.options["parameter_file"]
 
     _ = MMRToMF6(
         param_file=param_file,
         control_file=control_file,
         output_dir=tmp_path,
         inflow_dir=control_file.parent / "output",
-        sim_name=domain_name,
+        sim_name=sim_name,
         start_time=start_time,
         end_time=end_time,
         bc_binary_files=bc_binary_files,
@@ -76,14 +74,12 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
                 .to("meter ** 3 / s")
                 .magnitude
             )
-            comp = abs(result - ans_tt)
-            assert ((comp < 1e-5) | ((comp / ans_tt) < 1e-5)).all()
 
     else:
         sim = flopy.mf6.MFSimulation.load(
             "sim", "mfsim.nam", sim_ws=str(tmp_path)
         )
-        model = sim.get_model(domain_name)
+        model = sim.get_model(sim_name)
         flw_spds = {}
         for flow_name in flow_names:
             flw_spds[flow_name] = model.get_package(
@@ -98,7 +94,22 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
                 .to("meter ** 3 / s")
                 .magnitude
             )
-            comp = abs(result - ans_tt)
-            assert ((comp < 1e-5) | ((comp / ans_tt) < 1e-5)).all()
+
+    # <<
+    # Compare
+    abs_diff = abs(result - ans_tt)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rel_diff = abs_diff / ans_tt
+
+    abs_tol = 1.0e-5
+    rel_tol = 1.0e-5
+
+    abs_close = abs_diff < abs_tol
+    rel_close = rel_diff < rel_tol
+    rel_close = np.where(np.isnan(rel_close), False, rel_close)
+
+    close = abs_close | rel_close
+
+    assert close.all()
 
     return

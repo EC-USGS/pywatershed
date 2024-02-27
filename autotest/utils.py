@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 import numpy as np
 
 print_ans = False
@@ -41,3 +43,22 @@ def assert_or_print(
     # Always fail if printing answers
     assert not print_ans
     return
+
+
+def assert_dicts_equal(dic1, dic2):
+    assert set(dic1.keys()) == set(dic2.keys())
+
+    # add cases as needed
+    for kk, vv in dic1.items():
+        if isinstance(vv, (dict, MappingProxyType)):
+            assert_dicts_equal(dic1[kk], dic2[kk])
+        elif isinstance(vv, np.ndarray):
+            np.testing.assert_equal(dic1[kk], dic2[kk])
+        else:
+            if (
+                isinstance(vv, float)
+                and np.isnan(dic1[kk])
+                and np.isnan(dic2[kk])
+            ):
+                continue
+            assert dic1[kk] == dic2[kk]

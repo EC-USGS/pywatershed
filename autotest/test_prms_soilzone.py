@@ -1,34 +1,45 @@
 import pathlib as pl
 
-import numpy as np
 import pytest
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.prms_soilzone import PRMSSoilzone
 from pywatershed.parameters import Parameters, PrmsParameters
+from utils_compare import compare_in_memory, compare_netcdfs
+
+# compare in memory (faster) or full output files? or both!
+do_compare_output_files = False
+do_compare_in_memory = True
+rtol = atol = 5.0e-6
 
 calc_methods = ("numpy", "numba")
 params = ("params_sep", "params_one")
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load(domain["control_file"])
+def control(simulation):
+    control = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    control.options["netcdf_output_var_names"] = PRMSSoilzone.get_variables()
+
+    return control
 
 
 @pytest.fixture(scope="function")
-def discretization(domain):
-    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+def discretization(simulation):
+    dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
     return Parameters.from_netcdf(dis_hru_file, encoding=False)
 
 
 @pytest.fixture(scope="function", params=params)
-def parameters(domain, request):
+def parameters(simulation, control, request):
     if request.param == "params_one":
-        params = PrmsParameters.load(domain["param_file"])
+        param_file = simulation["dir"] / control.options["parameter_file"]
+        params = PrmsParameters.load(param_file)
     else:
-        param_file = domain["dir"] / "parameters_PRMSSoilzone.nc"
+        param_file = simulation["dir"] / "parameters_PRMSSoilzone.nc"
         params = PrmsParameters.from_netcdf(param_file)
 
     return params
@@ -36,46 +47,46 @@ def parameters(domain, request):
 
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
-    domain, control, discretization, parameters, tmp_path, calc_method
+    simulation, control, discretization, parameters, tmp_path, calc_method
 ):
     tmp_path = pl.Path(tmp_path)
-    output_dir = domain["prms_output_dir"]
 
-    # get the answer data
-    comparison_var_names = [
-        "cap_infil_tot",
-        "hru_actet",
-        "perv_actet",
-        "potet_lower",
-        "potet_rechr",
-        "recharge",
-        "slow_flow",
-        "slow_stor",
-        "soil_lower",
-        # "soil_lower_ratio",
-        "soil_moist",
-        "soil_moist_prev",
-        "soil_moist_tot",
-        "soil_rechr",
-        "soil_to_gw",
-        "soil_to_ssr",
-        "ssr_to_gw",
-        "ssres_flow",
-        "ssres_in",
-        "ssres_stor",
-        ### "unused_potet",
-    ]
+    comparison_var_names = list(
+        set(PRMSSoilzone.get_variables())
+        # These are not prms variables per se.
+        # The _hru ones have non-hru equivalents being checked.
+        # soil_zone_max and soil_lower_max would be nice to check but
+        # prms5.2.1 wont write them as hru variables.
+        - set(
+            [
+                "perv_actet_hru",
+                "soil_lower_change_hru",
+                "soil_lower_max",
+                "soil_rechr_change_hru",
+                "soil_zone_max",  # not a prms variable?
+            ]
+        )
+    )
+    # TODO: this is hacky, improve the design
+    if not control.options["dprst_flag"]:
+        comparison_var_names = {
+            vv for vv in comparison_var_names if "dprst" not in vv
+        }
 
-    ans = {}
-    for key in comparison_var_names:
-        nc_pth = output_dir / f"{key}.nc"
-        ans[key] = adapter_factory(nc_pth, variable_name=key, control=control)
+    output_dir = simulation["output_dir"]
 
-    # setup the soilzone
     input_variables = {}
     for key in PRMSSoilzone.get_inputs():
         nc_path = output_dir / f"{key}.nc"
+        # TODO: this is hacky for accommodating dprst_flag, improve the design
+        # so people dont have to pass None for dead options.
+        if not nc_path.exists():
+            nc_path = None
         input_variables[key] = nc_path
+
+    if do_compare_output_files:
+        nc_parent = tmp_path / simulation["name"]
+        control.options["netcdf_output_dir"] = nc_parent
 
     soil = PRMSSoilzone(
         control=control,
@@ -85,58 +96,39 @@ def test_compare_prms(
         budget_type="error",
         calc_method=calc_method,
     )
-    all_success = True
+
+    if do_compare_output_files:
+        soil.initialize_netcdf()
+
+    if do_compare_in_memory:
+        answers = {}
+        for var in comparison_var_names:
+            var_pth = output_dir / f"{var}.nc"
+            answers[var] = adapter_factory(
+                var_pth, variable_name=var, control=control
+            )
+
     for istep in range(control.n_times):
-        # for istep in range(10):
-
         control.advance()
-
-        # print("\n")
-        # print(control.current_time)
-
         soil.advance()
-        soil.calculate(float(istep))
-
-        # compare along the way
-        atol = 1.0e-4
-        for key, val in ans.items():
-            val.advance()
-        for key in ans.keys():
-            a1 = ans[key].current.data
-            a2 = soil[key]
-            success = np.isclose(a1, a2, atol=atol).all()
-            # if success:
-            # print(f"SUCCESS output variable: {key}")
-            if not success:
-                all_success = False
-                # asdf
-                diff = a1 - a2
-                diffmin = diff.min()
-                diffmax = diff.max()
-                # print(f"time step {istep}")
-                print(f"fail output variable: {key}")
-                print(f"prms   {a1.min()}    {a1.max()}")
-                print(f"pywatershed  {a2.min()}    {a2.max()}")
-                print(f"diff   {diffmin}  {diffmax}")
-
-        # if istep == 15:
-        #     asdf
+        soil.calculate(1.0)
+        soil.output()
+        if do_compare_in_memory:
+            compare_in_memory(
+                soil, answers, atol=atol, rtol=rtol, skip_missing_ans=True
+            )
 
     soil.finalize()
 
-    if not all_success:
-        raise Exception("pywatershed results do not match prms results")
-
-    #   gw.output()
-
-    # gw.finalize()
-
-    # assert_error = False
-    # for key, (base, compare) in output_compare.items():
-    #     success, diff = NetCdfCompare(base, compare).compare()
-    #     if not success:
-    #         print(f"comparison for {key} failed: maximum error {diff}")
-    #         assert_error = True
-    # assert not assert_error, "comparison failed"
+    if do_compare_output_files:
+        compare_netcdfs(
+            comparison_var_names,
+            tmp_path / simulation["name"],
+            output_dir,
+            atol=atol,
+            rtol=rtol,
+            # fail_after_all_vars=False,
+            verbose=True,
+        )
 
     return

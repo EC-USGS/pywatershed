@@ -14,8 +14,6 @@ zero = np.zeros((1))[0]
 one = np.ones((1))[0]
 
 # Compound types
-file_type = Union[str, pl.Path]
-fileish = Union[str, pl.Path, dict]
 
 nc4_to_np_types = {
     "i4": "int32",
@@ -32,7 +30,7 @@ hash_line_official = "########################################"
 
 
 def _cbh_file_to_df(
-    the_file: file_type, params: PrmsParameters = None
+    the_file: Union[str, pl.Path], params: PrmsParameters = None
 ) -> pd.DataFrame:
     # Only take cbh files that contain single variables
     # JLM: this can be substantially simplified as
@@ -70,7 +68,10 @@ def _cbh_file_to_df(
     var_count_dict[key] = count
 
     if len(var_count_dict) > 1:
-        msg = f"cbh input files should contain only one variable each: {the_file}"
+        msg = (
+            "cbh input files should contain only one variable each: "
+            f"{the_file}"
+        )
         raise ValueError(msg)
 
     dtypes = (["str"] * 6) + (["float64"] * len(col_names))
@@ -92,7 +93,10 @@ def _cbh_file_to_df(
         delim_whitespace=True,
         dtype=dtype_dict,
     )
-    msg = f"Number of actual data columns does not match metadata info: {meta_lines}"
+    msg = (
+        "Number of actual data columns does not match metadata info: "
+        f"{meta_lines}"
+    )
     assert len(data.columns) == len(col_names), msg
     # JLM: is the above sufficient?
 
@@ -108,7 +112,8 @@ def _cbh_file_to_df(
     data["date"] = pd.to_datetime(
         data.Y + "-" + data.m.str.zfill(2) + "-" + data.d.str.zfill(2)
     )
-    # JLM TODO: Set datetime resolution to hours? or mins. Could do days but might look forward a bit.
+    # JLM TODO: Set datetime resolution to hours? or mins. Could do days but
+    # might look forward a bit.
     data = data.drop(columns=set(date_cols))
     data = data.set_index("date")
 
@@ -118,16 +123,19 @@ def _cbh_file_to_df(
 def _cbh_files_to_df(
     file_dict: dict, params: PrmsParameters = None
 ) -> pd.DataFrame:
-    dfs = [_cbh_file_to_df(val, params) for val in file_dict.values()]
+    if isinstance(file_dict, dict):
+        dfs = [_cbh_file_to_df(val, params) for val in file_dict.values()]
+    else:
+        dfs = [_cbh_file_to_df(val, params) for val in file_dict]
     return pd.concat(dfs, axis=1)
 
 
 def cbh_files_to_df(
-    files: fileish, params: PrmsParameters = None
+    files: Union[str, pl.Path], params: PrmsParameters = None
 ) -> pd.DataFrame:
     if isinstance(files, (str, pl.Path)):
         df = _cbh_file_to_df(files, params)
-    elif isinstance(files, (dict)):
+    elif isinstance(files, (dict, list)):
         df = _cbh_files_to_df(files, params)
     else:
         raise ValueError(
@@ -176,27 +184,56 @@ def cbh_n_time(np_dict: dict) -> int:
     return np_dict["time"].shape[0]
 
 
-def cbh_files_to_np_dict(files: fileish, params: PrmsParameters) -> dict:
+def cbh_files_to_np_dict(
+    files: Union[str, pl.Path], params: PrmsParameters
+) -> dict:
     np_dict = cbh_df_to_np_dict(cbh_files_to_df(files, params))
     return np_dict
 
 
-def _cbh_to_netcdf(
-    np_dict: dict,
-    filename: fileish,
+def cbh_file_to_netcdf(
+    input_file: Union[str, pl.Path],
+    parameters: PrmsParameters,
+    nc_file: Union[str, pl.Path],
     clobber: bool = True,
     output_vars: list = None,
     zlib: bool = True,
     complevel: int = 4,
-    global_atts: dict = {},
-    rename_vars={"precip": "prcp", "tminf": "tmin", "tmaxf": "tmax"},
-    chunk_sizes={"time": 30, "hru": 0},
+    global_atts: dict = None,
+    rename_vars: dict = None,
+    chunk_sizes: dict = None,
     time_units="days since 1979-01-01 00:00:00",
     time_calendar="standard",
 ) -> None:
+    """Convert PRMS native CBH files to NetCDF format for pywatershed
+
+    Args:
+        input_file: the CBH file to read
+        parameters: the Parameters object of PRMS parameters for this domain
+        nc_file: the NetCDF output file
+        clobber: Overwrite an existing NetCDF file?
+        output_vars: Subset of variables in the CBH to write?
+        zlib: use zlib compression?
+        complevel: The level of compression.
+        global_atts: A dictionary of meta data for the variables.
+        rename_vars: a dictionary for mapping CBH variable names
+        chunk_sizes: along each dimension, default {"time": 30, "hru": 0},
+        time_units: default "days since 1979-01-01 00:00:00",
+        time_calendar: default"standard",
+    """
+
+    if rename_vars is None:
+        rename_vars = {}
+    if global_atts is None:
+        global_atts = {}
+    if chunk_sizes is None:
+        chunk_sizes = {"time": 30, "hru": 0}
+
+    np_dict = cbh_files_to_np_dict(input_file, parameters)
+
     # Default time chunk is for a read pattern of ~monthly at a time.
 
-    ds = nc4.Dataset(filename, "w", clobber=clobber)
+    ds = nc4.Dataset(nc_file, "w", clobber=clobber)
     ds.setncattr("Description", "Climate by HRU")
     for key, val in global_atts.items():
         ds.setncattr(key, val)
@@ -261,13 +298,5 @@ def _cbh_to_netcdf(
         ds.variables[var_name_out][:, :] = np_dict[vv]
 
     ds.close()
-    print(f"Wrote netcdf file: {filename}")
+    print(f"Wrote netcdf file: {nc_file}")
     return
-
-
-def cbh_files_to_netcdf(
-    input_files_dict: dict, params: PrmsParameters, nc_file: fileish, **kwargs
-) -> None:
-    return _cbh_to_netcdf(
-        cbh_files_to_np_dict(input_files_dict, params), nc_file, **kwargs
-    )

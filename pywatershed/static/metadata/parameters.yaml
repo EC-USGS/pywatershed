@@ -2079,7 +2079,7 @@ ppt_zero_thresh:
   help: The minimum/zero threhold for precipitation
   maximum: 0.0
   minimum: 0.0
-  modules:
+  modules: None
   type: F
   units: inches
 precip_units:
@@ -2103,6 +2103,18 @@ pref_flow_den:
   dims:
     0: nhru
   help: Fraction of the soil zone in which preferential flow occurs for each HRU
+  maximum: 0.5
+  minimum: 0.0
+  modules:
+  - soilzone
+  type: F
+  units: decimal fraction
+pref_flow_infil_frac:
+  default: 0.0
+  desc: Fraction of preferential flow which infiltrates??
+  dims:
+    0: nhru
+  help: Fraction of preferential flow which infiltrates??
   maximum: 0.5
   minimum: 0.0
   modules:
@@ -3057,7 +3069,7 @@ stream_tave_init:
   help: Cold-start stream average stream temperature
   maximum: unbounded
   minimum: unbounded
-  modules:
+  modules: None
   type: F
   units: unknown
 subbasin_down:

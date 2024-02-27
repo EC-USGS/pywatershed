@@ -17,63 +17,75 @@ from .control import Control
 
 
 class Process(Accessor):
-    """Process base class
+    """Base class for physical process representation.
 
-    Process is a base class for physical processes.
-
-    The  class aims to describe itself through it staticmethods and
+    The  class aims to describe itself through its staticmethods and
     properties.
 
     Conventions are adopted through the use of the following
     properties/methods:
 
-        inputs/get_inputs():
-            List the names of variables required from external sources.
-            Still working on conventions if these are to be modified.
-            For an input to be successfully inicluded,
-            that variable must be defined in the metadata
-            (pywatershed/static/metadata/variables.yaml).
-            Efforts should be made to not use diagnostic variables as input
-            as much as possible.
-        variables/get_variables():
-            List the names of internal public variables. If not necessary,
-            to be public, variables should be made private with a single,
-            leading underscore and not maintained in this list. For an input
-            to be successfully inicluded, that variable must be defined in the
-            metadata (pywatershed/static/metadata/variables.yaml).
-            Efforts should be made not to track diagnostic variables in this
-            public variable set, as much as possible.
-        parameters/get_parameters():
-            List the names of parameters used by the subclass.
-        description:
-            Return a dictionary of with the process subclass name and its
-            metadata for all variables for each of inputs, variables, and
-            parameters.
-        get_init_values:
-            Return a dictionary of initialization values for variables.
-            Note that these may be overridden by subclass initialization
-            routines (e.g. using parameters) or by restart values. So these
-            are not "initial values", they are initialization values that
-            are set when the variable is declared from metadata in
-            _initialize_var(). Initization values should be nan as much as
-            possible.
-        _advance_variables():
-            This advance should exactly specify the prognostic variables in
-            setting previous values to current values. When/if necessary to
-            keep previous diagnostic variables, those must not appear here but
-            in _calculate().
-        _calculate():
-            This method is to be overridden by the subclass. Near the end of
-            the method, the subclass should calculate its changes in mass and
-            energy storage in an obvious way. As commented for
-            mass_budget_terms, storage changes should only be tracked for
-            prognostic variables. (For example is snow_water_equiv = snow_ice +
-            snow_liquid, then storage changes for snow_ice and snow_liquid
-            should be tracked and not for snow_water_equiv).
+    inputs/get_inputs():
+        List the names of variables required from external sources.
+        Still working on conventions if these are to be modified.
+        For an input to be successfully inicluded,
+        that variable must be defined in the metadata
+        (pywatershed/static/metadata/variables.yaml).
+        Efforts should be made to not use diagnostic variables as input
+        as much as possible.
+    variables/get_variables():
+        List the names of internal public variables. If not necessary,
+        to be public, variables should be made private with a single,
+        leading underscore and not maintained in this list. For an input
+        to be successfully inicluded, that variable must be defined in the
+        metadata (pywatershed/static/metadata/variables.yaml).
+        Efforts should be made not to track diagnostic variables in this
+        public variable set, as much as possible.
+    parameters/get_parameters():
+        List the names of parameters used by the subclass.
+    description:
+        Return a dictionary of with the process subclass name and its
+        metadata for all variables for each of inputs, variables, and
+        parameters.
+    get_init_values:
+        Return a dictionary of initialization values for variables.
+        Note that these may be overridden by subclass initialization
+        routines (e.g. using parameters) or by restart values. So these
+        are not "initial values", they are initialization values that
+        are set when the variable is declared from metadata in
+        _initialize_var(). Initization values should be nan as much as
+        possible.
+    _advance_variables():
+        This advance should exactly specify the prognostic variables in
+        setting previous values to current values. When/if necessary to
+        keep previous diagnostic variables, those must not appear here but
+        in _calculate().
+    _calculate():
+        This method is to be overridden by the subclass. Near the end of
+        the method, the subclass should calculate its changes in mass and
+        energy storage in an obvious way. As commented for
+        mass_budget_terms, storage changes should only be tracked for
+        prognostic variables. (For example is snow_water_equiv = snow_ice +
+        snow_liquid, then storage changes for snow_ice and snow_liquid
+        should be tracked and not for snow_water_equiv).
 
-        Args:
-          control: a Control object
+    See Also
+    --------
+    pywatershed.base.ConservativeProcess
 
+    Args
+    ----
+    control:
+        A Control object
+    discretization:
+        A discretization object
+    parameters:
+        The parameters for this object
+    metadata_patches:
+        Override static metadata for any public parameter or variable --
+        experimental.
+    metadata_patch_conflicts:
+        How to handle metadata_patches conflicts. Experimental.
     """
 
     def __init__(
@@ -98,9 +110,6 @@ class Process(Accessor):
 
         # netcdf output variables
         self._netcdf_initialized = False
-        self._netcdf_output_dir = None
-        self._netcdf = None
-        self._separate_netcdf = True
 
         self._itime_step = -1
 
@@ -328,7 +337,6 @@ class Process(Accessor):
         inputs_args = self.inputs
         non_option_args = process_init_args.union(inputs_args)
         option_names = init_arg_names.difference(non_option_args)
-
         for opt in option_names:
             if opt in init_locals.keys() and init_locals[opt] is not None:
                 setattr(self, f"_{opt}", init_locals[opt])
@@ -437,8 +445,8 @@ class Process(Accessor):
 
     def initialize_netcdf(
         self,
-        output_dir: [str, pl.Path],
-        separate_files: bool = True,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
         output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
@@ -464,30 +472,48 @@ class Process(Accessor):
             return
 
         if self._verbose:
-            print(f"initializing netcdf output for: {self.output_dir}")
+            print(f"initializing netcdf output for: {self.name}")
+
+        (
+            output_dir,
+            output_vars,
+            separate_files,
+        ) = self._reconcile_nc_args_w_control_opts(
+            output_dir, output_vars, separate_files
+        )
+
+        # apply defaults if necessary
+        if output_dir is None:
+            msg = (
+                "An output directory is required to be specified for netcdf"
+                "initialization."
+            )
+            raise ValueError(msg)
+
+        if separate_files is None:
+            separate_files = True
+        self._netcdf_separate = separate_files
 
         self._netcdf_initialized = True
         self._netcdf_output_dir = pl.Path(output_dir)
         if output_vars is None:
-            self._output_vars = self.variables
+            self._netcdf_output_vars = self.variables
         else:
-            self._output_vars = list(
+            self._netcdf_output_vars = list(
                 set(output_vars).intersection(set(self.variables))
             )
-
-        if self._output_vars is None:
-            self._netcdf_initialized = False
-            return
+            if len(self._netcdf_output_vars) == 0:
+                self._netcdf_initialized = False
+                return
 
         self._netcdf = {}
 
-        if separate_files:
-            self._separate_netcdf = True
+        if self._netcdf_separate:
             # make working directory
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             for variable_name in self.variables:
-                if (self._output_vars is not None) and (
-                    variable_name not in self._output_vars
+                if (self._netcdf_output_vars is not None) and (
+                    variable_name not in self._netcdf_output_vars
                 ):
                     continue
                 nc_path = self._netcdf_output_dir / f"{variable_name}.nc"
@@ -498,17 +524,23 @@ class Process(Accessor):
                     {variable_name: self.meta[variable_name]},
                     {"process class": self.name},
                 )
+
         else:
-            initial_variable = self.variables[0]
+            if self._netcdf_output_vars is None:
+                the_out_vars = self.variables
+            else:
+                the_out_vars = self._netcdf_output_vars
+
+            initial_variable = the_out_vars[0]
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
                 self._netcdf_output_dir / f"{self.name}.nc",
                 self.params.coords,
-                self.variables,
+                self._netcdf_output_vars,
                 self.meta,
                 {"process class": self.name},
             )
-            for variable in self.variables[1:]:
+            for variable in the_out_vars[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
 
         return
@@ -523,11 +555,11 @@ class Process(Accessor):
         if self._netcdf_initialized:
             time_added = False
             for variable in self.variables:
-                if (self._output_vars is not None) and (
-                    variable not in self._output_vars
+                if (self._netcdf_output_vars is not None) and (
+                    variable not in self._netcdf_output_vars
                 ):
                     continue
-                if not time_added or self._separate_netcdf:
+                if not time_added or self._netcdf_separate:
                     time_added = True
                     self._netcdf[variable].add_simulation_time(
                         self.control.itime_step, self.control.current_datetime
@@ -548,12 +580,64 @@ class Process(Accessor):
         """
         if self._netcdf_initialized:
             for idx, variable in enumerate(self.variables):
-                if (self._output_vars is not None) and (
-                    variable not in self._output_vars
+                if (self._netcdf_output_vars is not None) and (
+                    variable not in self._netcdf_output_vars
                 ):
                     continue
 
                 self._netcdf[variable].close()
-                if not self._separate_netcdf:
+                if not self._netcdf_separate:
                     break
         return
+
+    def _reconcile_nc_args_w_control_opts(
+        self, output_dir, output_vars, separate_files
+    ):
+        # can treat the other args but they are not yet in the available opts
+        arg_opt_name_map = {
+            "output_dir": "netcdf_output_dir",
+            "output_vars": "netcdf_output_var_names",
+            "separate_files": "netcdf_output_separate_files",
+        }
+
+        args = {
+            "output_dir": output_dir,
+            "output_vars": output_vars,
+            "separate_files": separate_files,
+        }
+
+        for vv in args.keys():
+            arg_val = args[vv]
+            opt_name = arg_opt_name_map[vv]
+            opts = self.control.options
+            if opt_name in opts.keys():
+                opt_val = opts[opt_name]
+            else:
+                opt_val = None
+
+            # if options is a list (output_vars), take it's intersection with
+            # self.variables
+
+            # set value into args to return to return
+
+            # the 4 cases:
+            if opt_val is None and arg_val is None:
+                pass
+
+            elif opt_val is None:
+                pass
+
+            elif arg_val is None:
+                args[vv] = opt_val
+
+            elif opt_val is not None and arg_val is not None:
+                if opt_val == arg_val:
+                    pass
+                else:
+                    msg = (
+                        f"control.option '{opt_name}' conflicts with "
+                        f"initialize_netcdf() argument {vv}"
+                    )
+                    raise ValueError(msg)
+
+        return args["output_dir"], args["output_vars"], args["separate_files"]

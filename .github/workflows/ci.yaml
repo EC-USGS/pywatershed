@@ -144,7 +144,7 @@ jobs:
           if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
           req_remote=MODFLOW-USGS/modflow6
           echo $MF6_REMOTE
-          if [[ "$MF6_REMOTE" != "$req_remote" ]]; then exit 1; fi
+          if [[ "$MF6_REMOTE" != "$req_remote" ]]; then echo "bad mf6 remote in .mf6_ci_ref_remote"; exit 1; fi
 
       - name: Setup gfortran
         uses: fortran-lang/setup-fortran@v1

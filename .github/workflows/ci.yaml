@@ -29,10 +29,10 @@ jobs:
         shell: bash
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
@@ -64,10 +64,10 @@ jobs:
         shell: bash
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
@@ -122,7 +122,7 @@ jobs:
     steps:
 
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -167,7 +167,7 @@ jobs:
             conda
 
       - name: Checkout MODFLOW 6
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ env.MF6_REMOTE }}
           ref: ${{ env.MF6_REF }}
@@ -283,7 +283,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
           path: |
@@ -293,7 +293,7 @@ jobs:
             ./autotest/pytest_ucb_2yr_nhm.xml
 
       - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           file: ./autotest/coverage.xml  # should be just the ucb result
           # flags: unittests

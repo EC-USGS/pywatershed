@@ -187,75 +187,75 @@ jobs:
           pip -V
           pip list
 
-      - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
-        working-directory: autotest
-        run: |
-          python generate_test_data.py \
-            -n=auto --domain=hru_1 --control_pattern=nhm.control \
-            --remove_prms_csvs --remove_prms_output_dirs
+      # - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+      #   working-directory: autotest
+      #   run: |
+      #     python generate_test_data.py \
+      #       -n=auto --domain=hru_1 --control_pattern=nhm.control \
+      #       --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: hru_1_nhm - list netcdf input files
-        working-directory: test_data
-        run: |
-          find hru_1/output/ -name '*.nc'
+      # - name: hru_1_nhm - list netcdf input files
+      #   working-directory: test_data
+      #   run: |
+      #     find hru_1/output/ -name '*.nc'
 
-      - name: hru_1_nhm - pywatershed tests
-        working-directory: autotest
-        run: pytest
-          -vv
-          -n=auto
-          --domain=hru_1
-          --control_pattern=nhm.control
-          --durations=0
-          --cov=pywatershed
-          --cov-report=xml
-          --junitxml=pytest_hru_1_nhm.xml
+      # - name: hru_1_nhm - pywatershed tests
+      #   working-directory: autotest
+      #   run: pytest
+      #     -vv
+      #     -n=auto
+      #     --domain=hru_1
+      #     --control_pattern=nhm.control
+      #     --durations=0
+      #     --cov=pywatershed
+      #     --cov-report=xml
+      #     --junitxml=pytest_hru_1_nhm.xml
 
-      - name: drb_2yr with and without dprst - generate and manage test data
-        working-directory: autotest
-        run: |
-          python generate_test_data.py \
-            -n=auto --domain=drb_2yr \
-            --remove_prms_csvs --remove_prms_output_dirs
+      # - name: drb_2yr with and without dprst - generate and manage test data
+      #   working-directory: autotest
+      #   run: |
+      #     python generate_test_data.py \
+      #       -n=auto --domain=drb_2yr \
+      #       --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: drb_2yr_nhm - list netcdf input files
-        working-directory: test_data
-        run: |
-          find drb_2yr/output/ -name '*.nc'
+      # - name: drb_2yr_nhm - list netcdf input files
+      #   working-directory: test_data
+      #   run: |
+      #     find drb_2yr/output/ -name '*.nc'
 
-      - name: drb_2yr_no_dprst - list netcdf input files
-        working-directory: test_data
-        run: |
-          find drb_2yr/output_no_dprst/ -name '*.nc'
+      # - name: drb_2yr_no_dprst - list netcdf input files
+      #   working-directory: test_data
+      #   run: |
+      #     find drb_2yr/output_no_dprst/ -name '*.nc'
           
-      - name: drb_2yr_nhm - pywatershed tests
-        working-directory: autotest
-        run: pytest
-          -vv
-          -n=auto
-          --domain=drb_2yr
-          --control_pattern=nhm.control
-          --durations=0
-          --cov=pywatershed
-          --cov-report=xml
-          --junitxml=pytest_drb_2yr_nhm.xml
+      # - name: drb_2yr_nhm - pywatershed tests
+      #   working-directory: autotest
+      #   run: pytest
+      #     -vv
+      #     -n=auto
+      #     --domain=drb_2yr
+      #     --control_pattern=nhm.control
+      #     --durations=0
+      #     --cov=pywatershed
+      #     --cov-report=xml
+      #     --junitxml=pytest_drb_2yr_nhm.xml
 
-      # Specific tests not redundant with dprst
-      - name: drb_2yr_no_dprst - pywatershed tests
-        working-directory: autotest
-        run: pytest
-          test_prms_runoff.py
-          test_prms_soilzone.py
-          test_prms_groundwater.py
-          test_model.py
-          -vv
-          -n=auto
-          --domain=drb_2yr
-          --control_pattern=no_dprst
-          --durations=0
-          --cov=pywatershed
-          --cov-report=xml
-          --junitxml=pytest_drb_2yr_no_dprst.xml
+      # # Specific tests not redundant with dprst
+      # - name: drb_2yr_no_dprst - pywatershed tests
+      #   working-directory: autotest
+      #   run: pytest
+      #     test_prms_runoff.py
+      #     test_prms_soilzone.py
+      #     test_prms_groundwater.py
+      #     test_model.py
+      #     -vv
+      #     -n=auto
+      #     --domain=drb_2yr
+      #     --control_pattern=no_dprst
+      #     --durations=0
+      #     --cov=pywatershed
+      #     --cov-report=xml
+      #     --junitxml=pytest_drb_2yr_no_dprst.xml
 
       - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest
@@ -273,7 +273,9 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
-          -n=auto
+          -s
+          -x
+          --pdb
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0

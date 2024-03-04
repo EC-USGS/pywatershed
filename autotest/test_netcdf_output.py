@@ -296,14 +296,14 @@ def test_separate_together_var_list(
                 if output_vars is not None and vv not in output_vars:
                     continue
                 nc_file = test_output_dir / f"{vv}.nc"
-                assert nc_file.exists(), "a1"
+                assert nc_file.exists()
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
                 if isinstance(
                     proc[vv], pywatershed.base.timeseries.TimeseriesArray
                 ):
-                    assert (ds[vv].values == proc[vv].data).all(), "a2"
+                    assert (ds[vv].values == proc[vv].data).all()
                 else:
-                    assert (ds[vv][-1, :] == proc[vv]).all(), "a3"
+                    assert (ds[vv][-1, :] == proc[vv]).all()
 
                 del ds
 
@@ -312,7 +312,7 @@ def test_separate_together_var_list(
             # non-budget
             nc_file = test_output_dir / f"{proc_key}.nc"
             if output_vars is None or proc_key in check_vars.keys():
-                assert nc_file.exists(), "a4"
+                assert nc_file.exists()
 
                 ds = xr.open_dataset(nc_file, decode_timedelta=False)
                 if output_vars is None:
@@ -320,7 +320,7 @@ def test_separate_together_var_list(
                 else:
                     proc_vars = set(check_vars[proc_key])
                 nc_vars = set(ds.data_vars)
-                assert proc_vars == nc_vars, "a5"
+                assert proc_vars == nc_vars
                 for vv in proc.variables:
                     if output_vars is not None and vv not in output_vars:
                         continue
@@ -328,10 +328,10 @@ def test_separate_together_var_list(
                     if isinstance(
                         proc[vv], pywatershed.base.timeseries.TimeseriesArray
                     ):
-                        assert (ds[vv].values == proc[vv].data).all(), "a6"
+                        assert (ds[vv].values == proc[vv].data).all()
 
                     else:
-                        assert (ds[vv][-1, :] == proc[vv]).all(), "a7"
+                        assert (ds[vv][-1, :] == proc[vv]).all()
 
                 del ds
 
@@ -342,7 +342,7 @@ def test_separate_together_var_list(
             nc_file = test_output_dir / f"{proc_key}_budget.nc"
             ds = xr.open_dataset(nc_file)
             for ss in budget_sum_vars_all:
-                assert (proc.budget[ss] == ds[ss][-1, :]).all(), "a8"
+                assert (proc.budget[ss] == ds[ss][-1, :]).all()
 
             del ds
     return

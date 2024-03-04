@@ -19,30 +19,22 @@ def rename_dims(dim_name):
 
 
 def expand_scalar_to_dims(param_dict, param_dim_dict):
-    from pywatershed.utils.separate_nhm_params import (
-        params_expand_scalar_to_dims,
-    )
+    from pywatershed.utils.separate_nhm_params import params_expand_scalar
 
     # sometimes a scalar is allowed to represent a uniform values for
     # the full dimensions of a parameter. Going to handle those on a
     # case-by-case basis for now: just expand them to full size
     for param_name in param_dict.keys():
-        if param_name in params_expand_scalar_to_dims:
-            dims = meta.find_variables(param_name)[param_name]["dims"]
-            exp_dim = params_expand_scalar_to_dims[param_name]
+        if param_name in params_expand_scalar:
             param_shape = param_dict[param_name].shape
+            if param_shape != (1,):
+                continue
+            dims = meta.find_variables(param_name)[param_name]["dims"]
+            full_param_shape = tuple([param_dict[dd] for dd in dims])
             param_val = param_dict[param_name]
-            param_dims = param_dim_dict[param_name]
-            for ii, dim_name in enumerate(dims):
-                if dim_name == exp_dim:
-                    param_shape = list(param_shape)
-                    param_dims = list(param_dims)
-                    param_shape[ii] = param_dict[exp_dim]
-                    param_dims[ii] = exp_dim
-                    param_shape = tuple(param_shape)
-                    param_vals = np.zeros(param_shape) + param_val
-                    param_dict[param_name] = param_vals
-                    param_dim_dict[param_name] = tuple(param_dims)
+            param_vals = np.zeros(full_param_shape) + param_val
+            param_dim_dict[param_name] = dims
+            param_dict[param_name] = param_vals
 
     return param_dict, param_dim_dict
 

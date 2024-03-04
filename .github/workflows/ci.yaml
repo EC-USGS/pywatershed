@@ -139,7 +139,7 @@ jobs:
         if: github.base_ref == 'main'
         run: |
           echo Merge commit: GITHUB_BASE_REF = $GITHUB_BASE_REF
-          req_ref=feat-snf  # if not develop, submit an issue
+          req_ref=swf_q_mmr_and_mct  # if not develop, submit an issue
           echo $MF6_REF
           if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
           req_remote=MODFLOW-USGS/modflow6
@@ -273,9 +273,6 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
-          -s
-          -x
-          --pdb
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0

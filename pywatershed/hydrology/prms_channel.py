@@ -167,7 +167,8 @@ class PRMSChannel(ConservativeProcess):
         return self._outflow_mask
 
     def _set_initial_conditions(self) -> None:
-        # initialize channel segment storage
+        # initialize channel segment "storage"
+        # this is unused currently. Seems that it would set seg_inflow0
         self.seg_outflow[:] = self.segment_flow_init
         return
 

@@ -13,7 +13,7 @@ from .base.timeseries import TimeseriesArray
 from .hydrology.pass_through_node import PassThroughNode
 from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
-from .hydrology.prms_channel_flow_graph import PRMSChannelFlowGraph
+from .hydrology.prms_channel_flow_graph import PRMSChannelFlowNodeMaker
 from .hydrology.prms_et import PRMSEt
 from .hydrology.prms_groundwater import PRMSGroundwater
 from .hydrology.prms_runoff import PRMSRunoff

@@ -1,29 +1,24 @@
-from typing import Literal, Tuple
-from warnings import warn
+from typing import Literal
 
-import networkx as nx
 import numpy as np
 
-from ..base.adapter import adaptable
-from ..base.control import Control
+from pywatershed.base.adapter import Adapter
+from pywatershed.base.control import Control
 
-from ..base.flow_graph import FlowGraph, FlowNode
-from ..constants import SegmentType, nan, zero
-from ..parameters import Parameters
+from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
+from pywatershed.constants import SegmentType, nan, zero
+from pywatershed.parameters import Parameters
 
 
 class PRMSChannelFlowNode(FlowNode):
     def __init__(
         self,
-        control,
-        tsi,
-        ts,
-        c0,
-        c1,
-        c2,
-        graph_outflow,
-        lateral_flow_ref,
-        lateral_flow_ind,
+        control: Control,
+        tsi: np.int64,
+        ts: np.float64,
+        c0: np.float64,
+        c1: np.float64,
+        c2: np.float64,
     ):
         self.control = control
 
@@ -32,15 +27,13 @@ class PRMSChannelFlowNode(FlowNode):
         self._c0 = c0
         self._c1 = c1
         self._c2 = c2
-        self._graph_outflow = graph_outflow
-        self._lateral_flow_ref = lateral_flow_ref
-        self._lateral_flow_ind = lateral_flow_ind
 
         self._outflow_ts = zero
         self._seg_inflow0 = zero
         self._seg_inflow = zero
         self._inflow_ts = zero
         self._seg_current_sum = zero
+        self._inflow_lateral = zero
 
         return
 
@@ -51,18 +44,15 @@ class PRMSChannelFlowNode(FlowNode):
 
         self._seg_inflow = zero
         self._seg_outflow = zero
-        self._seg_outflow0 = zero
+        # self._seg_outflow0 = zero
         self._inflow_ts = zero
         self._seg_current_sum = zero
 
         return
 
-    def calculate_subtimestep(self, ihr, inflow_upstream, seg_ind=None):
-        # self.seg_upstream_inflow = zero  ## correct ? or in _calculate?
-        # self._seg_current_sum += inflow_upstream
-        inflow_lateral = self._lateral_flow_ref[self._lateral_flow_ind]
-
-        seg_current_inflow = inflow_lateral + inflow_upstream
+    def calculate_subtimestep(self, ihr, inflow_upstream, inflow_lateral):
+        # some way to enforce that ihr is actually an hour?
+        seg_current_inflow = self._inflow_lateral + inflow_upstream
         self._seg_inflow += seg_current_inflow
         self._inflow_ts += seg_current_inflow
 
@@ -89,6 +79,7 @@ class PRMSChannelFlowNode(FlowNode):
         return
 
     def finalize_timestep(self):
+        # get rid of the magic 24 with argument?
         self._seg_outflow = self._seg_outflow / 24.0
         self._seg_inflow = self._seg_inflow / 24.0
         # self.seg_upstream_inflow = self._seg_current_sum / 24.0
@@ -97,14 +88,10 @@ class PRMSChannelFlowNode(FlowNode):
             self._seg_inflow - self._seg_outflow
         ) * self._s_per_time
 
-        self.channel_outflow_vol = zero
-        if self._graph_outflow:
-            self.channel_outflow_vol = self._seg_outflow * self._s_per_time
-
         return
 
     def advance(self):
-        self._seg_inflow0 = self._seg_inflow.copy()
+        self._seg_inflow0 = self._seg_inflow
 
         return
 
@@ -121,22 +108,16 @@ class PRMSChannelFlowNode(FlowNode):
         return self.seg_stor_change
 
 
-class PRMSChannelFlowGraph(FlowGraph):
+class PRMSChannelFlowNodeMaker(FlowNodeMaker):
     """PRMS channel flow (muskingum_mann) using a FlowGraph.
 
     See PRMSChannel for details on the method.
-    This class bases on FlowGraph while that one bases on ConservativeProcess.
+    This class bases on FlowGraphNodeMaker which bases on
+    ConservativeProcess.
 
     Args:
-        control: a Control object
         discretization: a discretization of class Parameters
         parameters: a parameter object of class Parameters
-        sroff_vol: Surface runoff to the stream network for each HRU
-        ssres_flow_vol: Interflow volume from gravity and preferential-flow
-            reservoirs to the stream network for each HRU
-        gwres_flow_vol: Groundwater discharge volume from each GWR to the
-            stream network
-        budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -144,39 +125,50 @@ class PRMSChannelFlowGraph(FlowGraph):
 
     def __init__(
         self,
-        control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        sroff_vol: adaptable,
-        ssres_flow_vol: adaptable,
-        gwres_flow_vol: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
-        super().__init__(
+        self.name = "PRMSChannelFlowNodeMaker"
+
+        self._set_data(discretization, parameters)
+
+        self._init_data()
+
+        return
+
+    def get_node(self, control, index):
+        # could pass initial conditons here but they arent currently used in
+        # PRMS
+        return PRMSChannelFlowNode(
             control=control,
-            discretization=discretization,
-            parameters=parameters,
+            tsi=self._tsi[index],
+            ts=self._ts[index],
+            c0=self._c0[index],
+            c1=self._c1[index],
+            c2=self._c2[index],
         )
-        self.name = "PRMSChannel"
 
-        self._set_inputs(locals())
-        self._set_options(locals())
+    def _set_data(self, discretization, parameters):
+        self._parameters = parameters
+        self._discretization = discretization
+        for param in self.get_parameters():
+            if param in self._parameters.parameters.keys():
+                self[param] = self._parameters.parameters[param]
+            else:
+                self[param] = self._discretization.parameters[param]
 
-        self._set_budget(basis="global")
-
+        self.nsegment = len(self.seg_length)
         return
 
     @staticmethod
     def get_dimensions() -> tuple:
-        return ("nhru", "nsegment")  # nhru to be removed via exchange
+        return "nsegment"
 
     @staticmethod
     def get_parameters() -> tuple:
         return (
-            "hru_area",
-            "hru_segment",  # to be removed via exchange
             "mann_n",
             "seg_depth",
             "seg_length",
@@ -186,55 +178,7 @@ class PRMSChannelFlowGraph(FlowGraph):
             "tosegment_nhm",
             "x_coef",
             "segment_flow_init",
-            "obsin_segment",
-            "obsout_segment",
         )
-
-    @staticmethod
-    def get_inputs() -> tuple:
-        return (
-            "sroff_vol",
-            "ssres_flow_vol",
-            "gwres_flow_vol",
-        )
-
-    @staticmethod
-    def get_init_values() -> dict:
-        return {
-            "channel_sroff_vol": nan,
-            "channel_ssres_flow_vol": nan,
-            "channel_gwres_flow_vol": nan,
-            "channel_outflow_vol": nan,
-            "seg_lateral_inflow": zero,
-            "seg_upstream_inflow": zero,
-            "seg_outflow": zero,
-            "seg_outflow_substep": zero,
-            "seg_stor_change": zero,
-        }
-
-    @staticmethod
-    def get_mass_budget_terms():
-        return {
-            "inputs": [
-                "channel_sroff_vol",
-                "channel_ssres_flow_vol",
-                "channel_gwres_flow_vol",
-            ],
-            "outputs": ["channel_outflow_vol"],
-            "storage_changes": ["seg_stor_change"],
-        }
-
-    def get_outflow_mask(self):
-        return self._outflow_mask
-
-    @property
-    def outflow_mask(self):
-        return self._outflow_mask
-
-    def _set_initial_conditions(self) -> None:
-        # initialize channel segment storage
-        self.seg_outflow[:] = self.segment_flow_init
-        return
 
     def _init_data(self) -> None:
         """Initialize internal variables from raw channel data"""
@@ -331,236 +275,76 @@ class PRMSChannelFlowGraph(FlowGraph):
 
         return
 
-    # def _init_calc_method(self):
-    #     if self._calc_method is None:
-    #         self._calc_method = "numba"
 
-    #     avail_methods = ["numpy", "numba", "fortran"]
-    #     fortran_msg = ""
-    #     if self._calc_method == "fortran" and not has_prmschannel_f:
-    #         _ = avail_methods.remove("fortran")
-    #         fortran_msg = "\n(Fortran not available as installed)\n"
+class AdapterExchangeHruSegment(Adapter):
+    def __init__(
+        self,
+        variable: str,
+        parameters: Parameters,
+        sroff_vol: Adapter,
+        ssres_flow_vol: Adapter,
+        gwres_flow_vol: Adapter,
+    ):
+        self._variable = variable
+        self._parameters = parameters
 
-    #     if self._calc_method.lower() not in avail_methods:
-    #         msg = (
-    #             f"Invalid calc_method={self._calc_method} for {self.name}. "
-    #             f"{fortran_msg}"
-    #             f"Setting calc_method to 'numba' for {self.name}"
-    #         )
-    #         warn(msg)
-    #         self._calc_method = "numba"
+        self._inputs = {}
+        for key in [
+            "sroff_vol",
+            "ssres_flow_vol",
+            "gwres_flow_vol",
+        ]:
+            self._inputs[key] = locals()[key]
 
-    #     if self._calc_method.lower() == "numba":
-    #         import numba as nb
+        self._nhru = self._parameters.dims["nhru"]
+        self._nsegment = self._parameters.dims["nsegment"]
+        # flows from hrus
+        self._inflows = np.zeros(self._nhru) * nan
+        # flows to segments
+        self._current_value = np.zeros(self._nsegment) * nan
 
-    #         numba_msg = f"{self.name} jit compiling with numba "
-    #         # this method can not be parallelized (? true?)
-    #         print(numba_msg, flush=True)
-
-    #         self._muskingum_mann = nb.njit(
-    #             nb.types.UniTuple(nb.float64, 4)(
-    #                 nb.int64,  # ihr
-    #                 nb.float64,  # _seg_inflow0
-    #                 nb.float64,  # seg_outflow
-    #                 nb.float64,  # _inflow_ts
-    #                 nb.float64,  # _outflow_ts
-    #                 nb.int64,  # _tsi
-    #                 nb.float64,  # _ts
-    #                 nb.float64,  # _c0
-    #                 nb.float64,  # _c1
-    #                 nb.float64,  # _c2
-    #             ),
-    #             fastmath=True,
-    #             parallel=False,
-    #         )(_muskingum_mann_numpy)
-
-    #     else:
-    #         self._muskingum_mann = _muskingum_mann_numpy
-
-    def _advance_variables(self) -> None:
-        self._seg_inflow0[:] = self._seg_inflow
-
-        self._seg_inflow[:] = zero
-        self.seg_outflow[:] = zero
-        self._inflow_ts[:] = zero
-
-        self._seg_current_sum[:] = zero
+        self._hru_segment = self._parameters.parameters["hru_segment"] - 1
 
         return
 
-    def _init_graph(self) -> None:
-        """Initialize internal variables from raw channel data"""
+    def advance(self):
+        for vv in self._inputs.values():
+            vv.advance()
 
-        # convert prms data to zero-based
-        self._hru_segment = self.hru_segment - 1  # to be removed via exchange
-        self._tosegment = self.tosegment - 1
-        self._tosegment = self._tosegment.astype("int64")
+        sum_list = [vv.current for cc in self._inputs.values()]
+        self._inflows = sum(sum_list)
 
-        self._outflow_mask = np.full((len(self._tosegment)), False)
-
-        connectivity = []
-        for iseg in range(self.nsegment):
-            tosegment = self._tosegment[iseg]
-            if tosegment < 0:
-                self._outflow_mask[iseg] = True
-                continue
-            connectivity.append(
-                (
-                    iseg,
-                    tosegment,
-                )
-            )
-
-        # use networkx to calculate the Directed Acyclic Graph
-        self._graph = nx.DiGraph()
-        self._graph.add_edges_from(connectivity)
-
-        self._calculate_node_order()
-
-        self._flow_nodes = []
-        for ii in range(self.nsegment):
-            self._flow_nodes.append(
-                PRMSChannelFlowNode(
-                    control=self.control,
-                    tsi=self._tsi[ii],
-                    ts=self._ts[ii],
-                    c0=self._c0[ii],
-                    c1=self._c1[ii],
-                    c2=self._c2[ii],
-                    graph_outflow=self._outflow_mask[ii],
-                    lateral_flow_ref=self.seg_lateral_inflow,
-                    lateral_flow_ind=ii,
-                )
-            )
-
-        # initialize internal self_inflow variable
-        for iseg in range(self.nsegment):
-            jseg = self._tosegment[iseg]
-            if jseg < 0:
-                continue
-            self._seg_inflow[jseg] = self.seg_outflow[iseg]
+        self._calculate_segment_inflows()
 
         return
 
-    def _calculate_node_order(self):
-        if self.nsegment > 1:
-            node_order = list(nx.topological_sort(self._graph))
-        else:
-            node_order = [0]
-
-        # if the domain contains links with no upstream or
-        # downstream reaches, we just throw these back at the
-        # top of the order since networkx wont handle such nonsense
-        wh_mask_set = set(np.where(self._outflow_mask)[0])
-        seg_ord_set = set(node_order)
-        mask_not_seg_ord = list(wh_mask_set - seg_ord_set)
-        if len(mask_not_seg_ord):
-            node_order = mask_not_seg_ord + node_order
-            # for pp in mask_not_seg_ord:
-            #    assert (tosegment[pp] == -1) and (not pp in tosegment)
-
-        self._node_order = np.array(node_order, dtype="int64")
-        return
-
-    def finalize_graph(self) -> None:
-        self._graph_finalized = True
-
-    def _calculate_lateral_inflows(self):
+    def _calculate_segment_inflows(self):
+        """Map HRU flows on to segments"""
         # This could vary with timestep so leave here
-        self._s_per_time = self.control.time_step_seconds
+        self._s_per_time = self._inputs["sroff_vol"].control.time_step_seconds
 
-        self.seg_lateral_inflow[:] = 0.0
-        for ihru in range(self.nhru):
+        self._current_value[:] = zero
+        for ihru in range(self._nhru):
             iseg = self._hru_segment[ihru]  # to be removed via exchange
             if iseg < 0:
                 # This is bad, selective handling of fluxes is not cool,
-                # mass is being discarded in a way that has to be coordinated
-                # with other parts of the code.
+                # mass is being discarded in a way that has to be
+                # coordinated with other parts of the code.
                 # This code shuold be removed evenutally.
-                self.channel_sroff_vol[ihru] = zero
-                self.channel_ssres_flow_vol[ihru] = zero
-                self.channel_gwres_flow_vol[ihru] = zero
                 continue
 
-            else:
-                self.channel_sroff_vol[ihru] = self.sroff_vol[ihru]
-                self.channel_ssres_flow_vol[ihru] = self.ssres_flow_vol[ihru]
-                self.channel_gwres_flow_vol[ihru] = self.gwres_flow_vol[ihru]
-
             # cubicfeet to cfs
-            lateral_inflow = (
-                self.channel_sroff_vol[ihru]
-                + self.channel_ssres_flow_vol[ihru]
-                + self.channel_gwres_flow_vol[ihru]
-            ) / (self._s_per_time)
-            self.seg_lateral_inflow[iseg] += lateral_inflow
+            segment_inflow = self._inflows[ihru] / (self._s_per_time)
+            self._current_value[iseg] += segment_inflow
 
         return
 
-    def _calculate(self, simulation_time: float) -> None:
-        if not self._graph_finalized:
-            self.finalize_graph()
-
-        # what in here should be the responsibility of the nodes?
-        self._simulation_time = simulation_time
-
-        self._calculate_lateral_inflows()
-
-        # The upstream inflow and its accumulation dont belog to nodes
-        self._seg_upstream_inflow_acc = self.seg_upstream_inflow * zero
-
-        for ii in range(self.nsegment):
-            self._flow_nodes[ii].advance()
-            self._flow_nodes[ii].prepare_timestep()
-
-        # Should probably pass time lengths to nodes
-        for ihr in range(24):
-            # This works because the first nodes calculated do
-            # not have upstream reaches
-            self.seg_upstream_inflow[:] = zero
-
-            for jseg in self._node_order:
-                self._flow_nodes[jseg].calculate_subtimestep(
-                    ihr,
-                    self.seg_upstream_inflow[jseg],
-                    # jseg,
-                )
-                self.seg_outflow_substep[jseg] = self._flow_nodes[
-                    jseg
-                ].outflow_substep
-                self._sum_outflows_to_inflow(jseg)
-
-            # <
-            self._seg_upstream_inflow_acc += self.seg_upstream_inflow
-
-        for ii in range(self.nsegment):
-            self._flow_nodes[ii].finalize_timestep()
-
-        for ii in range(self.nsegment):
-            self.seg_outflow[ii] = self._flow_nodes[ii].outflow
-            self.seg_stor_change[ii] = self._flow_nodes[ii].storage_change
-
-        # global mass balance term
-        s_per_time = self.control.time_step_seconds
-        self.channel_outflow_vol[:] = (
-            np.where(self._outflow_mask, self.seg_outflow, zero)
-        ) * s_per_time
-
-        # <
-        # PRMS uses the same variable for two different things
-        # and we are continuing the bad practice here.
-        # The next timestep apparently needs the average upstream
-        # inflow from the previous timestep
-        # It appears inconsistent to use substep flows except for the
-        # initial substep...
-        self.seg_upstream_inflow = self._seg_upstream_inflow_acc / 24.0
-
-        return
-
-    def _sum_outflows_to_inflow(self, jseg):
-        if self._tosegment[jseg] >= 0:
-            self.seg_upstream_inflow[
-                self._tosegment[jseg]
-            ] += self.seg_outflow_substep[jseg]
-
-        return
+    # def _calculate_lateral_inflow_inds(self):
+    #     """A hash from segments to HRU"""
+    #     self._seg_hrus = {}
+    #     for ihru in range(self.nhru):
+    #         iseg = self._hru_segment[ihru]  # to be removed via exchange
+    #         if iseg in self._seg_hrus.keys():
+    #             self._seg_hrus[iseg] += [ihru]
+    #         else:
+    #             self._seg_hrus[iseg] = [ihru]

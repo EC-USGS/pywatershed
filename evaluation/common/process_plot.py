@@ -3,8 +3,8 @@ from textwrap import wrap
 
 import cartopy.crs as ccrs
 import geopandas as gpd
-import holoviews as hv
-import hvplot.pandas
+
+import hvplot.pandas  # noqa
 import numpy as np
 import matplotlib as mpl
 from matplotlib.collections import LineCollection, PatchCollection
@@ -16,86 +16,107 @@ import pywatershed
 import shapely
 
 
-class ProcessPlot():
+class ProcessPlot:
     def __init__(
-        self, 
-        gis_dir: pl.Path, 
+        self,
+        gis_dir: pl.Path,
         hru_shp_file_name: str = "HRU_subset.shp",
         seg_shp_file_name: str = "Segments_subset.shp",
     ):
-      
         self.hru_shapefile = gis_dir / hru_shp_file_name
         self.seg_shapefile = gis_dir / seg_shp_file_name
-        
+
         # HRU one-time setups
         self.hru_gdf = (
-            gpd
-            .read_file(self.hru_shapefile) 
-            .drop('nhm_id', axis=1)
-            .rename(columns={"nhru_v1_1": 'nhm_id'})
-            .set_index('nhm_id')
+            gpd.read_file(self.hru_shapefile)
+            .drop("nhm_id", axis=1)
+            .rename(columns={"nhru_v1_1": "nhm_id"})
+            .set_index("nhm_id")
         )
 
         # segment one-time setup
-        self.seg_gdf = (gpd.read_file(self.seg_shapefile))
-        #if (self.__seg_poly.crs.name == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
-            # print("Overriding USGS aea crs with EPSG:5070")
+        self.seg_gdf = gpd.read_file(self.seg_shapefile)
+        # if (self.__seg_poly.crs.name ==
+        #     "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
+        #     print("Overriding USGS aea crs with EPSG:5070")
         self.seg_gdf.crs = "EPSG:5070"
-               
+
         self.seg_geoms_exploded = (
-                self.seg_gdf.explode()
-                .reset_index(level=1, drop=True)
-                .drop("model_idx", axis=1)
+            self.seg_gdf.explode()
+            .reset_index(level=1, drop=True)
+            .drop("model_idx", axis=1)
             .rename(columns={"nsegment_v": "nhm_seg"})
             .set_index("nhm_seg")
         )
 
         return
 
-    def plot(self, var_name: str, process: pywatershed.StorageUnit, cmap: str=None):
-        var_dims = list(pywatershed.meta.get_vars(var_name)[var_name]['dimensions'].values())
-        if 'nsegment' in var_dims:
+    def plot(
+        self, var_name: str, process: pywatershed.StorageUnit, cmap: str = None
+    ):
+        var_dims = list(
+            pywatershed.meta.get_vars(var_name)[var_name][
+                "dimensions"
+            ].values()
+        )
+        if "nsegment" in var_dims:
             if not cmap:
-                cmap = 'cool'
-            return plot_seg_var(self, var_name, process, cmap)
-        elif 'nhru' in var_dims:
-            return plot_hru_var(self, var_name, process)
+                cmap = "cool"
+            return self.plot_seg_var(self, var_name, process, cmap)
+        elif "nhru" in var_dims:
+            return self.plot_hru_var(self, var_name, process)
         else:
             raise ValueError()
-    
-    def plot_seg_var(self, var_name: str, process: pywatershed.StorageUnit, cmap='cool'):
-        
-        data_df = pd.DataFrame({
-            'nhm_seg': process.control.params.parameters['nhm_seg'],
-            var_name: process[var_name],
-        }).set_index('nhm_seg')
+
+    def plot_seg_var(
+        self, var_name: str, process: pywatershed.StorageUnit, cmap="cool"
+    ):
+        data_df = pd.DataFrame(
+            {
+                "nhm_seg": process.control.params.parameters["nhm_seg"],
+                var_name: process[var_name],
+            }
+        ).set_index("nhm_seg")
 
         minx, miny, maxx, maxy = self.hru_gdf.geometry.total_bounds
-        hru_geoms_exploded = self.hru_gdf.explode().reset_index(level=1, drop=True)
-        
+        hru_geoms_exploded = self.hru_gdf.explode().reset_index(
+            level=1, drop=True
+        )
+
         aa = {}
         for yy in self.seg_gdf.crs.coordinate_operation.params:
             aa[yy.name] = yy.value
-        if '9822' in self.seg_gdf.crs.coordinate_operation.method_code:
+        if "9822" in self.seg_gdf.crs.coordinate_operation.method_code:
             # Albers Equal Area
-            crs_proj = ccrs.AlbersEqualArea(central_longitude=aa['Longitude of false origin'],
-                                            central_latitude=aa['Latitude of false origin'],
-                                            standard_parallels=(aa['Latitude of 1st standard parallel'],
-                                                                aa['Latitude of 2nd standard parallel']),
-                                            false_easting=aa['Easting at false origin'],
-                                            false_northing=aa['Northing at false origin'])
-        elif '9802' in self.seg_gdf.crs.coordinate_operation.method_code:
+            crs_proj = ccrs.AlbersEqualArea(
+                central_longitude=aa["Longitude of false origin"],
+                central_latitude=aa["Latitude of false origin"],
+                standard_parallels=(
+                    aa["Latitude of 1st standard parallel"],
+                    aa["Latitude of 2nd standard parallel"],
+                ),
+                false_easting=aa["Easting at false origin"],
+                false_northing=aa["Northing at false origin"],
+            )
+        elif "9802" in self.seg_gdf.crs.coordinate_operation.method_code:
             # Lambert Conformal Conic
-            crs_proj = ccrs.LambertConformal(central_latitude=aa['Latitude of false origin'],
-                                             central_longitude=aa['Longitude of false origin'],
-                                             standard_parallels=(aa['Latitude of 1st standard parallel'],
-                                                                 aa['Latitude of 2nd standard parallel']),
-                                             false_easting=aa['Easting at false origin'],
-                                             false_northing=aa['Northing at false origin'])        
+            crs_proj = ccrs.LambertConformal(
+                central_latitude=aa["Latitude of false origin"],
+                central_longitude=aa["Longitude of false origin"],
+                standard_parallels=(
+                    aa["Latitude of 1st standard parallel"],
+                    aa["Latitude of 2nd standard parallel"],
+                ),
+                false_easting=aa["Easting at false origin"],
+                false_northing=aa["Northing at false origin"],
+            )
 
         df_plot = self.seg_geoms_exploded.join(data_df)
-        norm = Normalize(vmin=df_plot[var_name].min().min(), vmax=df_plot[var_name].max().max())
-        
+        norm = Normalize(
+            vmin=df_plot[var_name].min().min(),
+            vmax=df_plot[var_name].max().max(),
+        )
+
         fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(30, 20))
         ax = plt.axes(projection=crs_proj)
         ax.coastlines()
@@ -107,14 +128,12 @@ class ProcessPlot():
 
         metadata = pywatershed.meta.get_vars(var_name)[var_name]
         plt.title("Variable: {}".format(var_name))
-        plt.colorbar(mapper, shrink=0.6, label=metadata['units'])
-        
+        plt.colorbar(mapper, shrink=0.6, label=metadata["units"])
+
         hru_poly = plot_polygon_collection(
             ax,
             hru_geoms_exploded.geometry,
-            **dict(
-            cmap=cmap, norm=norm, linewidth=0.5, alpha=0.05
-            ),
+            **dict(cmap=cmap, norm=norm, linewidth=0.5, alpha=0.05),
         )
 
         col = plot_line_collection(
@@ -124,71 +143,93 @@ class ProcessPlot():
             **dict(cmap=cmap, norm=norm),
         )
 
-        
         return
-    
+
     def get_hru_var(self, var_name: str, model: pywatershed.Model):
         # find the process
         for proc_name, proc in model.processes.items():
             params_vars = list(set(proc.variables) | set(proc.parameters))
             if var_name in params_vars:
                 process = proc
-                break 
-                
-        data_df = pd.DataFrame({
-            'nhm_id': process.control.params.parameters['nhm_id'],
-            var_name: process[var_name],
-        }).set_index('nhm_id')
+                break
+
+        data_df = pd.DataFrame(
+            {
+                "nhm_id": process.control.params.parameters["nhm_id"],
+                var_name: process[var_name],
+            }
+        ).set_index("nhm_id")
         return data_df
-        
-    def plot_hru(self, var_name: str, model: pywatershed.Model, data: np.ndarray=None, data_units: str=None):        
-        
+
+    def plot_hru(
+        self,
+        var_name: str,
+        model: pywatershed.Model,
+        data: np.ndarray = None,
+        data_units: str = None,
+    ):
         if data is None:
             data_df = self.get_hru_var(var_name, model)
         else:
-            data_df = pd.DataFrame({
-                'nhm_id': model.control.params.parameters['nhm_id'],
-                var_name: data,
-            }).set_index('nhm_id') 
-            
+            data_df = pd.DataFrame(
+                {
+                    "nhm_id": model.control.params.parameters["nhm_id"],
+                    var_name: data,
+                }
+            ).set_index("nhm_id")
+
         plot_df = self.hru_gdf.join(data_df)
 
         metadata = pywatershed.meta.get_vars(var_name)
         if not len(metadata):
             metadata = pywatershed.meta.get_params(var_name)
-        if len(metadata):            
+        if len(metadata):
             metadata = metadata[var_name]
-        else: 
+        else:
             metadata = None
 
         frame_height = 550
-        title = f'"{var_name}"\n' 
+        title = f'"{var_name}"\n'
         clabel = data_units
         if metadata is not None:
-            title += "\n".join(wrap(f"{metadata['desc']}, {metadata['units']}", width = frame_height / 10))
-            clabel = f'{metadata["units"]}'
-            
-        plot = (
-            plot_df.hvplot(
-                tiles=True,
-                crs=ccrs.epsg(5070), 
-                frame_height=frame_height,
-                c=var_name,
-                line_width=0, 
-                alpha=.75, 
-                #clim=stat_lims[stat],
-                title=title, 
-                clabel=clabel, 
-                xlabel='Longitude (degrees East)',
-                ylabel='Latitude (degrees North)',
+            title += "\n".join(
+                wrap(
+                    f"{metadata['desc']}, {metadata['units']}",
+                    width=frame_height / 10,
+                )
             )
+            clabel = f'{metadata["units"]}'
+
+        plot = plot_df.hvplot(
+            tiles=True,
+            crs=ccrs.epsg(5070),
+            frame_height=frame_height,
+            c=var_name,
+            line_width=0,
+            alpha=0.75,
+            # clim=stat_lims[stat],
+            title=title,
+            clabel=clabel,
+            xlabel="Longitude (degrees East)",
+            ylabel="Latitude (degrees North)",
         )
         return plot
 
 
-def plot_line_collection(ax, geoms, values=None, cmap=None, norm=None, vary_width=False, vary_color=True, colors=None,
-                         alpha=1.0, linewidth=1.0, **kwargs):
-    """ Plot a collection of line geometries """
+def plot_line_collection(
+    ax,
+    geoms,
+    values=None,
+    cmap=None,
+    norm=None,
+    vary_width=False,
+    vary_color=True,
+    colors=None,
+    alpha=1.0,
+    linewidth=1.0,
+    **kwargs,
+):
+    """Plot a collection of line geometries"""
     lines = []
     for geom in geoms:
         a = np.asarray(geom.coords)
@@ -201,11 +242,17 @@ def plot_line_collection(ax, geoms, values=None, cmap=None, norm=None, vary_widt
     if vary_width:
         lwidths = ((values / values.max()).to_numpy() + 0.01) * linewidth
         if vary_color:
-            lines = LineCollection(lines, linewidths=lwidths, cmap=cmap, norm=norm, alpha=alpha)
+            lines = LineCollection(
+                lines, linewidths=lwidths, cmap=cmap, norm=norm, alpha=alpha
+            )
         else:
-            lines = LineCollection(lines, linewidths=lwidths, colors=colors, alpha=alpha)
+            lines = LineCollection(
+                lines, linewidths=lwidths, colors=colors, alpha=alpha
+            )
     elif vary_color:
-        lines = LineCollection(lines, linewidth=linewidth, alpha=alpha, cmap=cmap, norm=norm)
+        lines = LineCollection(
+            lines, linewidth=linewidth, alpha=alpha, cmap=cmap, norm=norm
+        )
 
     if vary_color and values is not None:
         lines.set_array(values)
@@ -216,22 +263,38 @@ def plot_line_collection(ax, geoms, values=None, cmap=None, norm=None, vary_widt
     return lines
 
 
-def plot_polygon_collection(ax, geoms, values=None, cmap=None, norm=None, facecolor=None, edgecolor=None,
-                            alpha=1.0, linewidth=1.0, **kwargs):
-    """ Plot a collection of Polygon geometries """
+def plot_polygon_collection(
+    ax,
+    geoms,
+    values=None,
+    cmap=None,
+    norm=None,
+    facecolor=None,
+    edgecolor=None,
+    alpha=1.0,
+    linewidth=1.0,
+    **kwargs,
+):
+    """Plot a collection of Polygon geometries"""
     # from https://stackoverflow.com/questions/33714050/geopandas-plotting-any-way-to-speed-things-up
     patches = []
 
     for poly in geoms:
-
         a = np.asarray(poly.exterior)
         if poly.has_z:
             a = shapely.geometry.Polygon(zip(*poly.exterior.xy))
 
         patches.append(Polygon(a))
 
-    patches = PatchCollection(patches, facecolor=facecolor, linewidth=linewidth, edgecolor=edgecolor,
-                              alpha=alpha, cmap=cmap, norm=norm)
+    patches = PatchCollection(
+        patches,
+        facecolor=facecolor,
+        linewidth=linewidth,
+        edgecolor=edgecolor,
+        alpha=alpha,
+        cmap=cmap,
+        norm=norm,
+    )
 
     if values is not None:
         patches.set_array(values)
@@ -240,4 +303,3 @@ def plot_polygon_collection(ax, geoms, values=None, cmap=None, norm=None, faceco
     ax.add_collection(patches, autolim=True)
     ax.autoscale_view()
     return patches
-    

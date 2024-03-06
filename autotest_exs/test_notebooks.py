@@ -7,7 +7,9 @@ from pywatershed.constants import __pywatershed_root__
 
 # "Official" notebooks are numbered
 notebooks = sorted(
-    pl.Path(__pywatershed_root__).parent.joinpath("examples").glob("[0-9]*.ipynb")
+    pl.Path(__pywatershed_root__)
+    .parent.joinpath("examples")
+    .glob("[0-9]*.ipynb")
 )
 
 notebook_ids = [nb.name for nb in notebooks]
@@ -15,7 +17,6 @@ notebook_ids = [nb.name for nb in notebooks]
 
 @pytest.mark.parametrize("notebook", notebooks, ids=notebook_ids)
 def test_notebooks(notebook):
-
     # Convert the notebook to a .py version of itself using jupyter nbconvert
     # this formats magics in a way that ipython can run
     cmd = [

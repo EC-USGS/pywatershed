@@ -8,7 +8,7 @@ import numpy as np
 
 from pywatershed.base.control import Control
 
-from ..constants import zero
+from ..constants import epsilon64, one, zero
 from ..utils.formatting import pretty_print
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
@@ -91,7 +91,8 @@ class Budget(Accessor):
             "inputs_sum": f"Sum of input fluxes ({self.basis})",
             "outputs_sum": f"Sum of output fluxes ({self.basis})",
             "storage_changes_sum": f"Sum of storage changes ({self.basis})",
-            # "balance": f"Balance of fluxes and storage changes ({self.basis})",
+            # "balance":
+            #     f"Balance of fluxes and storage changes ({self.basis})",
         }
 
         for var, desc in self.output_vars_desc.items():
@@ -298,18 +299,27 @@ class Budget(Accessor):
         return self._sum("storage_changes")
 
     def _calc_unit_balance(self):
-        unit_balance = self._inputs_sum - self._outputs_sum
         self._zero_sum = True
-        if not np.allclose(
-            unit_balance,
-            self._storage_changes_sum,
-            rtol=self.rtol,
-            atol=self.atol,
-        ):
+
+        # roll our own np.allclose so we can diagnose the not close points
+        unit_balance = self._inputs_sum - self._outputs_sum
+        abs_diff = np.abs(unit_balance - self._storage_changes_sum)
+        mask_div_zero = self._storage_changes_sum < epsilon64
+        rel_abs_diff = abs_diff / np.where(
+            mask_div_zero, one, self._storage_changes_sum
+        )
+        abs_close = abs_diff < self.atol
+        rel_close = rel_abs_diff < self.rtol
+        either_close = abs_close | rel_close
+        cond = np.where(mask_div_zero, abs_close, either_close)
+
+        if not cond.all():
             self._zero_sum = False
+            wh_not_cond = np.where(~cond)
             msg = (
-                "The flux unit balance not equal to the change in unit storage"
-                f": {self.description}"
+                "The flux unit balance not equal to the change in unit "
+                f"storage at time {self.control.current_time} and at the "
+                f"following locations for {self.description}: {wh_not_cond}"
             )
             if self.imbalance_fatal:
                 raise ValueError(msg)

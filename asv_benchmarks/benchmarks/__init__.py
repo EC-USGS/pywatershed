@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 
     _is_pws = True
 
-if not "constants" in pws.__dict__.keys():
+if "constants" not in pws.__dict__.keys():
     del pws
     import pywatershed as pws
 

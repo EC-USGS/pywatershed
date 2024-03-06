@@ -1,6 +1,5 @@
 import pathlib as pl
 from copy import deepcopy
-from pprint import pprint
 
 import netCDF4 as nc4
 import numpy as np
@@ -86,8 +85,8 @@ def test_to_dd_identical():
     dd_xr = dm.xr_ds_to_dd(nc_file)  # pass the file
     dd_nc4 = dm.nc4_ds_to_dd(nc_file)
 
-    enc_xr = dd_xr.pop("encoding")
-    enc_nc4 = dd_nc4.pop("encoding")
+    _ = dd_xr.pop("encoding")
+    _ = dd_nc4.pop("encoding")
 
     np.testing.assert_equal(dd_xr, dd_nc4)
 
@@ -167,6 +166,7 @@ def test_nc4_dd_nc4(tmp_path):
         "contiguous",
         "chunksizes",
         "coordinates",
+        "preferred_chunks",
     ]:
         for vv in sorted(ds1.variables):
             for dd in [ds1, ds2]:
@@ -264,7 +264,6 @@ def test_merge_dicts():
     dd_0 = {"a": {"aa": 123, "dims": {0: "zero", 1: "one"}}}
     dd_1 = {"a": {"aa": 123, "dims": {0: "dd_1"}}}
     dd_2 = {"a": {"aa": 123, "dims": {0: "dd_2"}}}
-    dd_3 = {"a": {"aa": 123, "zzzz": {0: "one"}}}
 
     with pytest.raises(ValueError):
         result = dm._merge_dicts([dd_0, dd_1])

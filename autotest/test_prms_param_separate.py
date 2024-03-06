@@ -21,17 +21,26 @@ nhm_processes = [
 
 
 @pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+def control(simulation):
+    ctl = pywatershed.Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    del ctl.options["netcdf_output_dir"]
+    return ctl
+
+
+@pytest.fixture(scope="function")
+def params(simulation, control):
+    param_file = simulation["dir"] / control.options["parameter_file"]
+    return PrmsParameters.load(param_file)
 
 
 @pytest.mark.parametrize("use_xr", [True])  # TODO: add False
-def test_param_sep(domain, params, use_xr, tmp_path):
+def test_param_sep(simulation, control, params, use_xr, tmp_path):
     tmp_path = pl.Path(tmp_path)
 
-    domain_name = domain["domain_name"]
-    prms_param_file = domain["param_file"]
-
+    domain_name = simulation["name"]
+    prms_param_file = simulation["dir"] / control.options["parameter_file"]
     print(tmp_path)
     proc_nc_files = separate_domain_params_dis_to_ncdf(
         prms_param_file,

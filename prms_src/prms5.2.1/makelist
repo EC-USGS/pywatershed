@@ -37,7 +37,7 @@ endif
 
 $(info    ----------------)
 $(info    FC is $(FC))
-$(info    FC is $(CC))
+$(info    CC is $(CC))
 $(info    DBL_PREC is false)
 $(info    ----------------)
 $(info    )

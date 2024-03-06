@@ -1529,8 +1529,8 @@ lat_temp_adj:
   default: 0.0
   desc: Correction factor to adjust the bias of the temperature of the lateral inflow
   dims:
-    0: nsegment
-    1: nmonth
+    0: nmonth
+    1: nsegment
   help: Correction factor to adjust the bias of the temperature of the lateral inflow
   maximum: 5.0
   minimum: -5.0
@@ -1874,8 +1874,8 @@ padj_sn:
   default: 1.0
   desc: Snow adjustment factor, by month for each precipitation station
   dims:
-    0: nrain
-    1: nmonth
+    0: nmonth
+    1: nrain
   help: Monthly (January to December) factor to adjust precipitation lapse rate computed
     between station hru_psta and station hru_plaps; positive factors are mutiplied
     times the lapse rate and negative factors are made positive and substituted for
@@ -1981,8 +1981,8 @@ pmn_mo:
   default: 1.0
   desc: Mean monthly precipitation for each lapse precipitation station
   dims:
-    0: nrain
-    1: nmonth
+    0: nmonth
+    1: nrain
   help: Mean monthly (January to December) precipitation for each lapse precipitation
     measurement station
   maximum: 100.0
@@ -2079,7 +2079,7 @@ ppt_zero_thresh:
   help: The minimum/zero threhold for precipitation
   maximum: 0.0
   minimum: 0.0
-  modules:
+  modules: None
   type: F
   units: inches
 precip_units:
@@ -2103,6 +2103,18 @@ pref_flow_den:
   dims:
     0: nhru
   help: Fraction of the soil zone in which preferential flow occurs for each HRU
+  maximum: 0.5
+  minimum: 0.0
+  modules:
+  - soilzone
+  type: F
+  units: decimal fraction
+pref_flow_infil_frac:
+  default: 0.0
+  desc: Fraction of preferential flow which infiltrates??
+  dims:
+    0: nhru
+  help: Fraction of preferential flow which infiltrates??
   maximum: 0.5
   minimum: 0.0
   modules:
@@ -2154,8 +2166,8 @@ psta_mon:
   default: 1.0
   desc: Monthly precipitation for each of the nrain precipitation measurement stations
   dims:
-    0: nrain
-    1: nmonth
+    0: nmonth
+    1: nrain
   help: Monthly (January to December) factor to precipitation at each measured station
     to adjust precipitation distributed to each HRU to account for differences in
     elevation, and so forth
@@ -2515,8 +2527,8 @@ seg_humidity:
   default: 0.7
   desc: Mean monthly humidity for each segment
   dims:
-    0: nsegment
-    1: nmonth
+    0: nmonth
+    1: nsegment
   help: Mean monthly humidity for each segment, used when values not input in CBH
     file
   maximum: 1.0
@@ -3057,7 +3069,7 @@ stream_tave_init:
   help: Cold-start stream average stream temperature
   maximum: unbounded
   minimum: unbounded
-  modules:
+  modules: None
   type: F
   units: unknown
 subbasin_down:

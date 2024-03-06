@@ -1,9 +1,9 @@
 .. currentmodule:: pywatershed
 
 
-##########
+----------
 Atmosphere
-##########
+----------
 
 Atmospheric process models.
 

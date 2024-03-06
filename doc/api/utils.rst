@@ -1,15 +1,12 @@
 .. currentmodule:: pywatershed
 
 
-##########
+----------
 Utils
-##########
-
-Utilities to define PRMS variables, dimensions, and parameters.
+----------
 
 .. autosummary::
    :toctree: generated/
 
     ControlVariables
-    PrmsParameters
-
+    utils.cbh_file_to_netcdf

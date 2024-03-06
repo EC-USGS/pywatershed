@@ -3,7 +3,7 @@ from warnings import warn
 
 import numpy as np
 
-from ..base.adapter import adaptable
+from ..base.adapter import adaptable, adapter_factory
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
 from ..constants import nan, numba_num_threads
@@ -19,6 +19,15 @@ except ImportError:
 
 class PRMSGroundwater(ConservativeProcess):
     """PRMS groundwater reservoir.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
 
     Args:
         control: a Control object
@@ -45,6 +54,7 @@ class PRMSGroundwater(ConservativeProcess):
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
+        dprst_flag: bool = None,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
@@ -58,6 +68,21 @@ class PRMSGroundwater(ConservativeProcess):
 
         self._set_inputs(locals())
         self._set_options(locals())
+
+        if self._dprst_flag is None:
+            self._dprst_flag = True
+
+        # This is a hacky dprst_flag == False approach. Improve design to
+        # get rid of these inputs.
+        if not self._dprst_flag:
+            for kk, vv in self._input_variables_dict.items():
+                if vv is not None:
+                    continue
+                self._input_variables_dict[kk] = adapter_factory(
+                    np.zeros(self.params.dimensions["nhru"]),
+                    variable_name=kk,
+                    control=self.control,
+                )
 
         self._set_budget()
         self._init_calc_method()

@@ -21,6 +21,17 @@ except ImportError:
 class PRMSChannel(ConservativeProcess):
     """PRMS channel flow (muskingum_mann).
 
+    A representation of channel flow from PRMS.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
     The muskingum module was originally developed for the Precipitation Runoff
     Modeling System (PRMS) by Mastin and Vaccaro (2002) and developed further
     by Markstrom and others (2008). This module has been modified from past
@@ -52,11 +63,11 @@ class PRMSChannel(ConservativeProcess):
     using mann_n, seg_length, seg_depth (bank full), and seg_slope. The
     velocity at bank full segment depth is calculated using Manning's equation
 
-        velocity = ((1/n) sqrt(seg_slope) seg_depth**(2/3)
+        ``velocity = ((1/n) sqrt(seg_slope) seg_depth**(2/3)``
 
     K_coef ,in hours, is then calculated using
 
-        K_coef = seg_length / (velocity * 60 * 60)
+        ``K_coef = seg_length / (velocity * 60 * 60)``
 
     K_coef values computed greater than 24.0 are set to 24.0, values computed
     less than 0.01 are set to 0.01, and the value for lake HRUs is set to 24.0.
@@ -73,6 +84,12 @@ class PRMSChannel(ConservativeProcess):
         budget_type: one of [None, "warn", "error"]
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
+        adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
+            the code edits the parameters and issues a warning. If "error" is
+            selected the the code issues warnings about all edited parameters
+            before raising the error to give you information. If "no" is
+            selected then no parameters are adjusted and there will be no
+            warnings or errors.
         verbose: Print extra information or not?
     """
 
@@ -86,6 +103,7 @@ class PRMSChannel(ConservativeProcess):
         gwres_flow_vol: adaptable,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["fortran", "numba", "numpy"] = None,
+        adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> None:
         super().__init__(
@@ -228,11 +246,23 @@ class PRMSChannel(ConservativeProcess):
         )
         # JLM: This is a bad idea and should throw an error rather than edit
         # inputs in place during run
-        self.seg_slope = np.where(
-            self.seg_slope < 1e-7, 0.0001, self.seg_slope
-        )  # not in prms6
+        # should also be done before computing velocity
+        mask_too_flat = self.seg_slope < 1e-7
+        if mask_too_flat.any() and self._adjust_parameters != "no":
+            msg = (
+                "seg_slope < 1.0e-7, set to 1.0e-4 at indices:"
+                f"{np.where(mask_too_flat)[0]}"
+            )
+            warn(msg, UserWarning)
+            if self._adjust_parameters == "error":
+                raise ValueError(
+                    "seg_slope parameter values were edited and an error was "
+                    "requested. See warnings for additional details."
+                )
+            # not in prms6
+            self.seg_slope = np.where(mask_too_flat, 1.0e-4, self.seg_slope)
 
-        # initialize Kcoef to 24.0 for segments with zero velocities
+        # JDH: initialize Kcoef to 24.0 for segments with zero velocities
         # this is different from PRMS, which relied on divide by zero resulting
         # in a value of infinity that when evaluated relative to a maximum
         # desired Kcoef value of 24 would be reset to 24. This approach is
@@ -464,7 +494,8 @@ class PRMSChannel(ConservativeProcess):
             segment_order: segment routing order
             to_segment: downstream segment for each segment
             seg_lateral_inflow: segment lateral inflow
-            seg_inflow0: previous segment inflow variable (internal calculations)
+            seg_inflow0: previous segment inflow variable (internal
+                calculations)
             outflow_ts: outflow timeseries variable (internal calculations)
             tsi: integer flood wave travel time
             ts: float version of integer flood wave travel time
@@ -514,7 +545,7 @@ class PRMSChannel(ConservativeProcess):
                     inflow_ts[jseg] /= ts[jseg]
 
                     if tsi[jseg] > 0:
-                        # todo: evaluated if denormal results should be dealt with
+                        # todo: evaluate if denormal results should be treated
 
                         # Muskingum routing equation
                         outflow_ts[jseg] = (

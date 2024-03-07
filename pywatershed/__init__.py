@@ -17,6 +17,7 @@ from .hydrology.prms_groundwater import PRMSGroundwater
 from .hydrology.prms_runoff import PRMSRunoff
 from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
+from .hydrology.snow17 import Snow17
 from .hydrology.starfit import Starfit
 from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab
 from .utils.csv_utils import CsvFile

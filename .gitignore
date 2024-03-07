@@ -100,3 +100,6 @@ CHANGELOG_*.md
 
 # environment files
 .env
+
+# evaluation output directories
+evaluation/prms/prms_snow17/

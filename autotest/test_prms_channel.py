@@ -1,8 +1,6 @@
 import pathlib as pl
 
-import numpy as np
 import pytest
-import xarray as xr
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control

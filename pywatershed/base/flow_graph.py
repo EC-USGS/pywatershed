@@ -19,7 +19,7 @@ class FlowNode(Accessor):
     Could also calculate head, storage, etc...
     """
 
-    def calculate_subtimestep(self, inflow):
+    def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
         raise Exception("This must be overridden")
 
     def advance(self):
@@ -139,10 +139,14 @@ class FlowGraph(Accessor):
     def get_init_values() -> dict:
         return {
             "outflow_vol": nan,
-            "node_upstream_inflow": zero,
+            # "node_upstream_inflow": zero,
             "node_outflow": zero,
             "node_storage_change": zero,
         }
+
+    def get_variables(cls) -> tuple:
+        """Get a tuple of (public) variable names for this Process."""
+        return list(cls.get_init_values().keys())
 
     @staticmethod
     def get_mass_budget_terms():
@@ -261,9 +265,9 @@ class FlowGraph(Accessor):
             node.finalize_timestep()
 
         # collect public variables from nodes
-        self.node_upstream_inflow[:] = (
-            self._seg_upstream_inflow_acc / n_substeps
-        )
+        # self.node_upstream_inflow[:] = (
+        #     self._seg_upstream_inflow_acc / n_substeps
+        # )
 
         for ii in range(self.nnodes):
             self.node_outflow[ii] = self._nodes[ii].outflow

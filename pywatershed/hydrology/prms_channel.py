@@ -215,9 +215,9 @@ class PRMSChannel(ConservativeProcess):
 
         # use networkx to calculate the Directed Acyclic Graph
         if self.nsegment > 1:
-            graph = nx.DiGraph()
-            graph.add_edges_from(connectivity)
-            segment_order = list(nx.topological_sort(graph))
+            self._graph = nx.DiGraph()
+            self._graph.add_edges_from(connectivity)
+            segment_order = list(nx.topological_sort(self._graph))
         else:
             segment_order = [0]
 

@@ -33,7 +33,6 @@ class PRMSChannelFlowNode(FlowNode):
         self._seg_inflow = zero
         self._inflow_ts = zero
         self._seg_current_sum = zero
-        self._inflow_lateral = zero
 
         return
 
@@ -52,7 +51,7 @@ class PRMSChannelFlowNode(FlowNode):
 
     def calculate_subtimestep(self, ihr, inflow_upstream, inflow_lateral):
         # some way to enforce that ihr is actually an hour?
-        seg_current_inflow = self._inflow_lateral + inflow_upstream
+        seg_current_inflow = inflow_lateral + inflow_upstream
         self._seg_inflow += seg_current_inflow
         self._inflow_ts += seg_current_inflow
 
@@ -311,8 +310,7 @@ class AdapterExchangeHruSegment(Adapter):
         for vv in self._inputs.values():
             vv.advance()
 
-        sum_list = [vv.current for cc in self._inputs.values()]
-        self._inflows = sum(sum_list)
+        self._inflows = sum([vv.current for vv in self._inputs.values()])
 
         self._calculate_segment_inflows()
 
@@ -325,7 +323,7 @@ class AdapterExchangeHruSegment(Adapter):
 
         self._current_value[:] = zero
         for ihru in range(self._nhru):
-            iseg = self._hru_segment[ihru]  # to be removed via exchange
+            iseg = self._hru_segment[ihru]
             if iseg < 0:
                 # This is bad, selective handling of fluxes is not cool,
                 # mass is being discarded in a way that has to be

@@ -24,6 +24,7 @@ def lateral_flow_ans_ds(simulation):
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])
 def test_mmr_to_mf6(simulation, tmp_path, bc_binary_files, bc_flows_combine):
+    pytest.skip("MF6 MMR is deprecated and MMRToMF6 testing is deprecated")
     units = pint.UnitRegistry()
     ans = lateral_flow_ans_ds(simulation)
     times = ans.time.values

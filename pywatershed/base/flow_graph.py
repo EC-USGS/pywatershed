@@ -18,6 +18,9 @@ class FlowNode(Accessor):
     Could also calculate head, storage, etc...
     """
 
+    def prepare_timestep(self):
+        raise Exception("This must be overridden")
+
     def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
         raise Exception("This must be overridden")
 
@@ -49,10 +52,12 @@ class FlowNodeMaker(Accessor):
 
     def __init__(
         self,
+        NodeClass: FlowNode,
         discretization: Parameters = None,
         parameters: Parameters = None,
     ):
         self.name = "FlowNodeMaker"
+        self._NodeClass = NodeClass
         return
 
     def get_node(control, index):

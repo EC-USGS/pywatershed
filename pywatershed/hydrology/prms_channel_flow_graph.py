@@ -123,13 +123,14 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
 
     def __init__(
         self,
+        NodeClass: FlowNode,
         discretization: Parameters,
         parameters: Parameters,
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
         self.name = "PRMSChannelFlowNodeMaker"
-
+        self._NodeClass = NodeClass
         self._set_data(discretization, parameters)
 
         self._init_data()
@@ -139,7 +140,7 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
     def get_node(self, control, index):
         # could pass initial conditons here but they arent currently used in
         # PRMS
-        return PRMSChannelFlowNode(
+        return self._NodeClass(
             control=control,
             tsi=self._tsi[index],
             ts=self._ts[index],

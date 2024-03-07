@@ -27,7 +27,7 @@ dependencies:
   - pip
   - pre-commit
   - pydot
-  - pytest
+  - pytest!=8.1.0
   - pytest-cov
   - pytest-env
   - pytest-order

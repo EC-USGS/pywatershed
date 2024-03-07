@@ -3,7 +3,6 @@ from typing import Literal, Union
 import networkx as nx
 import numpy as np
 
-
 from pywatershed.base.accessor import Accessor
 from pywatershed.base.adapter import adaptable
 from pywatershed.base.control import Control

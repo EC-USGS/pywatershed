@@ -4,7 +4,6 @@ import numpy as np
 
 from pywatershed.base.adapter import Adapter
 from pywatershed.base.control import Control
-
 from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
 from pywatershed.constants import SegmentType, nan, zero
 from pywatershed.parameters import Parameters

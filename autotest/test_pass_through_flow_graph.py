@@ -1,18 +1,18 @@
 import numpy as np
 import pytest
 
-from pywatershed.base.adapter import adapter_factory, Adapter, AdapterNetcdf
+from pywatershed import PRMSChannel
+from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.base.parameters import Parameters
 from pywatershed.base.flow_graph import FlowGraph
+from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
-from pywatershed.parameters import PrmsParameters
 from pywatershed.hydrology.prms_channel_flow_graph import (
-    PRMSChannelFlowNodeMaker,
     AdapterExchangeHruSegment,
+    PRMSChannelFlowNodeMaker,
 )
-from pywatershed import PRMSChannel
+from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
 do_compare_output_files = False

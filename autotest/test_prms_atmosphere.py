@@ -87,6 +87,8 @@ def test_compare_prms(
                 atm.output()
             atm.calculate(1.0)
 
+            for var in answers.values():
+                var.advance()
             compare_in_memory(atm, answers, atol=atol, rtol=rtol)
             assert id(atm.tmaxf) == tmaxf_id
 

@@ -93,6 +93,8 @@ def test_compare_prms(
         gw.calculate(float(istep))
         gw.output()
 
+        for var in answers.values():
+            var.advance()
         if do_compare_in_memory:
             compare_in_memory(gw, answers, atol=atol, rtol=rtol)
 

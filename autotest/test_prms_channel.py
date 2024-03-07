@@ -97,6 +97,8 @@ def test_compare_prms(
         channel.advance()
         channel.calculate(float(istep))
         channel.output()
+        for var in answers.values():
+            var.advance()
         if do_compare_in_memory:
             compare_in_memory(channel, answers, atol=atol, rtol=rtol)
 

@@ -86,6 +86,8 @@ def test_compare_prms(
                 solar_geom.output()
             solar_geom.calculate(1.0)
 
+            for var in answers.values():
+                var.advance()
             compare_in_memory(solar_geom, answers, atol=atol, rtol=rtol)
             assert id(solar_geom.soltab_sunhrs) == sunhrs_id
 

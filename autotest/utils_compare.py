@@ -80,7 +80,7 @@ def compare_in_memory(
     strict: bool = False,
     also_check_w_np: bool = True,
     skip_missing_ans: bool = False,
-    fail_after_all_vars: bool = True,
+    fail_after_all_vars: bool = False,
     verbose: bool = False,
 ):
     # TODO: docstring

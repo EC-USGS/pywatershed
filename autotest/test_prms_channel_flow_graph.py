@@ -8,8 +8,8 @@ from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.prms_channel_flow_graph import (
     AdapterExchangeHruSegment,
-    PRMSChannelFlowNodeMaker,
     PRMSChannelFlowNode,
+    PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs

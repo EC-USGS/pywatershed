@@ -37,7 +37,6 @@ rename_vars = {
 def control(simulation):
     if "drb:nhm" not in simulation["name"]:
         pytest.skip("Only testing passthrough flow graph for drb_2yr:nhm")
-
     return Control.load(simulation["control_file"], warn_unused_options=False)
 
 

@@ -29,6 +29,8 @@ rename_vars = {
 
 @pytest.fixture(scope="function")
 def control(simulation):
+    if "drb:nhm" not in simulation["name"]:
+        pytest.skip("Only testing prms channel flow graph for drb_2yr:nhm")
     return Control.load(simulation["control_file"])
 
 

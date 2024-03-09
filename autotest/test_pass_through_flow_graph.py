@@ -33,28 +33,18 @@ rename_vars = {
 # we only need to test this on one domain.
 
 
-# could parameterize this over control pattern
 @pytest.fixture(scope="function")
-def sim():
-    return {
-        "name": "drb_2yr:nhm",
-        "dir": pl.Path("../test_data/drb_2yr"),
-        "control_file": pl.Path("../test_data/drb_2yr/nhm.control"),
-        "output_dir": pl.Path("../test_data/drb_2yr/output"),
-        "testing_yaml": pl.Path("../test_data/drb_2yr/nhm.yaml"),
-        "print_ans": False,
-    }
+def control(simulation):
+    if "drb:nhm" not in simulation["name"]:
+        pytest.skip("Only testing passthrough flow graph for drb_2yr:nhm")
+
+    return Control.load(simulation["control_file"], warn_unused_options=False)
 
 
 @pytest.fixture(scope="function")
-def control(sim):
-    return Control.load(sim["control_file"], warn_unused_options=False)
-
-
-@pytest.fixture(scope="function")
-def discretization_prms(sim):
-    dis_hru_file = sim["dir"] / "parameters_dis_hru.nc"
-    dis_seg_file = sim["dir"] / "parameters_dis_seg.nc"
+def discretization_prms(simulation):
+    dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
+    dis_seg_file = simulation["dir"] / "parameters_dis_seg.nc"
     return Parameters.merge(
         Parameters.from_netcdf(dis_hru_file, encoding=False),
         Parameters.from_netcdf(dis_seg_file, encoding=False),
@@ -62,13 +52,13 @@ def discretization_prms(sim):
 
 
 @pytest.fixture(scope="function")
-def parameters_prms(sim, control):
-    param_file = sim["dir"] / "parameters_PRMSChannel.nc"
+def parameters_prms(simulation, control):
+    param_file = simulation["dir"] / "parameters_PRMSChannel.nc"
     return PrmsParameters.from_netcdf(param_file)
 
 
 def test_prms_channel_pass_through_compare_prms(
-    sim,
+    simulation,
     control,
     discretization_prms,
     parameters_prms,
@@ -84,7 +74,7 @@ def test_prms_channel_pass_through_compare_prms(
     }
 
     # flow exchange: combine PRMS lateral inflows to a single volumetric inflow
-    output_dir = sim["output_dir"]
+    output_dir = simulation["output_dir"]
     input_variables = {}
     for key in PRMSChannel.get_inputs():
         nc_path = output_dir / f"{key}.nc"
@@ -139,7 +129,7 @@ def test_prms_channel_pass_through_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / sim["name"].replace(":", "_")
+        nc_parent = tmp_path / simulation["name"].replace(":", "_")
         flow_graph.initialize_netcdf(nc_parent)
 
     if do_compare_in_memory:

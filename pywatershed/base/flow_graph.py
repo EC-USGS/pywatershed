@@ -5,6 +5,7 @@ import numpy as np
 
 from pywatershed.base.accessor import Accessor
 from pywatershed.base.adapter import adaptable
+from pywatershed.base.budget import Budget
 from pywatershed.base.control import Control
 from pywatershed.constants import nan, zero
 from pywatershed.parameters import Parameters
@@ -77,14 +78,16 @@ class FlowGraph(Accessor):
 
     Args:
         control: a Control object
-        inflows: An adaptable of the lateral inflows to the graph
+        inflows_vol: An adaptable of volumetric inflows to the graph. These
+            are often referred to as "lateral" flows.
         node_maker_dict: name:FlowNodeMaker
         node_maker_name: list or np.array of the maker name for each node
         node_maker_index: list or np.array of the index of the makerto
             use for each node
         to_graph_index: the index of the downstream index in the FlowGraph
             with -1 indicating an outflow node. This must specify a DAG.
-
+        budget_type: If we use a budget, what action to take on budget
+            imbalance.
     """
 
     def __init__(
@@ -92,25 +95,26 @@ class FlowGraph(Accessor):
         control: Control,
         # discretization: Parameters,  # could use this, but not necsesary
         # parameters: Parameters,  # unnecessary? use for to_graph_index
-        inflows: adaptable,
+        inflows_vol: adaptable,
         node_maker_dict: dict,
         node_maker_name: Union[list, np.ndarray],
         node_maker_index: Union[list, np.ndarray],
         to_graph_index: Union[list, np.ndarray],  # put in parameters?
         budget_type: Literal[None, "warn", "error"] = None,
+        # budget_basis: Literal["unit", "global"] = "global",
     ):
-        # add a budget like process adds a budget?
-        # self._set_budget(basis="global")
+        self.name = "FlowGraph"
 
         self.control = control
-        self._inflows = inflows
+        self._inflows_vol = inflows_vol
         self._node_maker_dict = node_maker_dict
         self._node_maker_name = node_maker_name
         self._node_maker_index = node_maker_index
         self._to_graph_index = to_graph_index
+        self._budget_type = budget_type
 
         # basic checks
-        self.nnodes = len(self._inflows.current)
+        self.nnodes = len(self._inflows_vol.current)
         assert len(self._node_maker_name) == self.nnodes
         assert len(self._node_maker_index) == self.nnodes
         assert len(self._to_graph_index) == self.nnodes
@@ -121,10 +125,16 @@ class FlowGraph(Accessor):
         self._init_graph()
         self._init_variables()
 
+        self["inflows_vol"] = np.zeros(self.nnodes) * nan
+
         # private variables
-        self._seg_upstream_inflow = np.zeros(self.nnodes) * zero
-        self._seg_upstream_inflow_acc = np.zeros(self.nnodes) * zero
-        self._seg_outflow_substep = np.zeros(self.nnodes) * zero
+        # TODO make these nans?
+        self._node_upstream_inflow_acc = np.zeros(self.nnodes)
+        self._node_outflow_substep = np.zeros(self.nnodes)
+
+        # If FlowGraph handles nodes which dont tautologically balance
+        # could allow the basis to be unit.
+        self._set_budget(basis="global")
 
         return
 
@@ -138,15 +148,15 @@ class FlowGraph(Accessor):
 
     @staticmethod
     def get_inputs() -> tuple:
-        return ("inflow_vol",)
+        return ("inflows_vol",)
 
     @staticmethod
     def get_init_values() -> dict:
         return {
-            "outflow_vol": nan,
-            # "node_upstream_inflow": zero,
-            "node_outflow": zero,
-            "node_storage_change": zero,
+            "outflows_vol": nan,
+            "node_upstream_inflow": nan,
+            "node_outflow": nan,
+            "node_storage_change_vol": nan,
         }
 
     def get_variables(cls) -> tuple:
@@ -156,9 +166,11 @@ class FlowGraph(Accessor):
     @staticmethod
     def get_mass_budget_terms():
         return {
-            "inputs": ["inflow_vol"],
-            "outputs": ["outflow_vol"],
-            "storage_changes": ["node_storage_change"],
+            "inputs": [
+                "inflows_vol",
+            ],
+            "outputs": ["outflows_vol"],
+            "storage_changes": ["node_storage_change_vol"],
         }
 
     def get_outflow_mask(self):
@@ -224,28 +236,48 @@ class FlowGraph(Accessor):
         for key, val in self.get_init_values().items():
             self[key] = np.zeros(self.nnodes) + val
 
-    def advance(self) -> None:
-        # need to advance the inputs?
-        self._inflows.advance()
+    def _advance_inputs(self):
+        self._inflows_vol.advance()
+        self["inflows_vol"][:] = self._inflows_vol.current
 
-        # advance all the nodes
+        return
+
+    def advance(self) -> None:
+        self._advance_inputs()
         for node in self._nodes:
             node.advance()
 
         # no prognostic variables on the graph
+        return
+
+    def _set_budget(self, basis: str = "unit"):
+        if self._budget_type is None:
+            self.budget = None
+        elif self._budget_type in ["error", "warn"]:
+            self.budget = Budget.from_storage_unit(
+                self,
+                time_unit="D",
+                description=self.name,
+                imbalance_fatal=(self._budget_type == "error"),
+                basis=basis,
+            )
+        else:
+            raise ValueError(f"Illegal behavior: {self._budget_type}")
 
         return
 
     def calculate(self, n_substeps=24) -> None:
+        s_per_time = self.control.time_step_seconds
+
         for node in self._nodes:
             node.prepare_timestep()
 
-        self._seg_upstream_inflow_acc[:] = zero
+        self._node_upstream_inflow_acc[:] = zero
 
         for istep in range(n_substeps):
             # This works because the first nodes calculated do
             # not have upstream reaches
-            self._seg_upstream_inflow[:] = zero
+            self.node_upstream_inflow[:] = zero
 
             for jseg in self._node_order:
                 # The first nodes calculated dont have upstream inflows
@@ -253,44 +285,42 @@ class FlowGraph(Accessor):
                 # Calculate
                 self._nodes[jseg].calculate_subtimestep(
                     istep,
-                    self._seg_upstream_inflow[jseg],
-                    self._inflows.current[jseg],
+                    self.node_upstream_inflow[jseg],
+                    self._inflows_vol.current[jseg] / s_per_time,
                 )
                 # Get the outflows back
-                self._seg_outflow_substep[jseg] = self._nodes[
+                self._node_outflow_substep[jseg] = self._nodes[
                     jseg
                 ].outflow_substep
                 # Add this node's outflow its downstream node's inflow
                 self._sum_outflows_to_inflow(jseg)
 
             # <
-            self._seg_upstream_inflow_acc += self._seg_upstream_inflow
+            self._node_upstream_inflow_acc += self.node_upstream_inflow
 
         for node in self._nodes:
             node.finalize_timestep()
 
-        # collect public variables from nodes
-        # self.node_upstream_inflow[:] = (
-        #     self._seg_upstream_inflow_acc / n_substeps
-        # )
-
         for ii in range(self.nnodes):
             self.node_outflow[ii] = self._nodes[ii].outflow
-            self.node_storage_change[ii] = self._nodes[ii].storage_change
+            self.node_storage_change_vol[ii] = self._nodes[ii].storage_change
 
         # global mass balance term
-        s_per_time = self.control.time_step_seconds
-        self.outflow_vol[:] = (
+        self.outflows_vol[:] = (
             np.where(self._outflow_mask, self.node_outflow, zero)
         ) * s_per_time
+
+        if self.budget is not None:
+            self.budget.advance()
+            self.budget.calculate()
 
         return
 
     def _sum_outflows_to_inflow(self, jseg):
         if self._to_graph_index[jseg] >= 0:
-            self._seg_upstream_inflow[
+            self.node_upstream_inflow[
                 self._to_graph_index[jseg]
-            ] += self._seg_outflow_substep[jseg]
+            ] += self._node_outflow_substep[jseg]
 
         return
 

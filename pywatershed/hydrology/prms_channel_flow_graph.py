@@ -80,7 +80,10 @@ class PRMSChannelFlowNode(FlowNode):
         # get rid of the magic 24 with argument?
         self._seg_outflow = self._seg_outflow / 24.0
         self._seg_inflow = self._seg_inflow / 24.0
-        # self.seg_upstream_inflow = self._seg_current_sum / 24.0
+        # This should be managed by FlowGraph
+        # self.seg_upstream_inflow_vol = (
+        #     self._seg_current_sum / 24.0 * self._s_per_time
+        # )
 
         self.seg_stor_change = (
             self._seg_inflow - self._seg_outflow
@@ -95,14 +98,17 @@ class PRMSChannelFlowNode(FlowNode):
 
     @property
     def outflow(self):
+        """The average outflow over the timestep in cubic feet per second."""
         return self._seg_outflow
 
     @property
     def outflow_substep(self):
+        """The outflow over the sub-timestep in cubic feet per second."""
         return self._outflow_ts
 
     @property
     def storage_change(self):
+        """The volumetric storage change in cubic feet."""
         return self.seg_stor_change
 
 
@@ -273,7 +279,7 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
         return
 
 
-class AdapterExchangeHruSegment(Adapter):
+class HruSegmentInflowAdapter(Adapter):
     def __init__(
         self,
         variable: str,
@@ -310,12 +316,14 @@ class AdapterExchangeHruSegment(Adapter):
 
         self._inflows = sum([vv.current for vv in self._inputs.values()])
 
-        self._calculate_segment_inflows()
+        self._calculate_segment_inflows_vol()
 
         return
 
-    def _calculate_segment_inflows(self):
+    def _calculate_segment_inflows_vol(self):
         """Map HRU flows on to segments"""
+        # TODO: call these lateral flows or exogenous flows
+
         # This could vary with timestep so leave here
         self._s_per_time = self._inputs["sroff_vol"].control.time_step_seconds
 
@@ -326,12 +334,10 @@ class AdapterExchangeHruSegment(Adapter):
                 # This is bad, selective handling of fluxes is not cool,
                 # mass is being discarded in a way that has to be
                 # coordinated with other parts of the code.
-                # This code shuold be removed evenutally.
+                # This code should be removed evenutally.
                 continue
 
-            # cubicfeet to cfs
-            segment_inflow = self._inflows[ihru] / (self._s_per_time)
-            self._current_value[iseg] += segment_inflow
+            self._current_value[iseg] += self._inflows[ihru]
 
         return
 

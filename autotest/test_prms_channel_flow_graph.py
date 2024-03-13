@@ -7,7 +7,7 @@ from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.prms_channel_flow_graph import (
-    AdapterExchangeHruSegment,
+    HruSegmentInflowAdapter,
     PRMSChannelFlowNode,
     PRMSChannelFlowNodeMaker,
 )
@@ -18,20 +18,19 @@ do_compare_output_files = False
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
-# test the exchange too?
 rename_vars = {
-    "channel_outflow_vol": "outflow_vol",
-    # "seg_upstream_inflow": "node_upstream_inflow",
+    "channel_outflow_vol": "outflows_vol",
+    # "seg_upstream_inflow": "node_upstream_inflow_vol",
     "seg_outflow": "node_outflow",
-    "seg_stor_change": "node_storage_change",
+    "seg_stor_change": "node_storage_change_vol",
 }
 
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if "drb:nhm" not in simulation["name"]:
+    if "drb_2yr:nhm" not in simulation["name"]:
         pytest.skip("Only testing prms channel flow graph for drb_2yr:nhm")
-    return Control.load(simulation["control_file"])
+    return Control.load(simulation["control_file"], warn_unused_options=False)
 
 
 @pytest.fixture(scope="function")
@@ -57,14 +56,14 @@ def test_prms_channel_flow_graph_compare_prms(
         "prms_channel": PRMSChannelFlowNodeMaker(discretization, parameters),
     }
 
-    # flow exchange: combine lateral inflows to a single volumetric inflow
+    # combine lateral inflows to a single volumetric inflow
     output_dir = simulation["output_dir"]
     input_variables = {}
     for key in PRMSChannel.get_inputs():
         nc_path = output_dir / f"{key}.nc"
         input_variables[key] = AdapterNetcdf(nc_path, key, control)
 
-    inflow_exchange = AdapterExchangeHruSegment(
+    inflow_exchange = HruSegmentInflowAdapter(
         "inflow_vol", parameters, **input_variables
     )
 
@@ -113,9 +112,12 @@ def test_prms_channel_flow_graph_compare_prms(
 
         # check exchange
         lateral_inflow_answers.advance()
-        assert (
-            inflow_exchange.current == lateral_inflow_answers.current
-        ).all()
+        np.testing.assert_allclose(
+            (inflow_exchange.current / 86400),
+            lateral_inflow_answers.current,
+            rtol=rtol,
+            atol=atol,
+        )
 
         for var in answers.values():
             var.advance()
@@ -126,7 +128,8 @@ def test_prms_channel_flow_graph_compare_prms(
                 answers,
                 atol=atol,
                 rtol=rtol,
-                fail_after_all_vars=False,
+                skip_missing_ans=True,
+                fail_after_all_vars=True,
             )
 
     flow_graph.finalize()

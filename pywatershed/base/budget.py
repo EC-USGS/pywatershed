@@ -1,6 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
-from typing import Union
+from typing import Union, Literal
 from warnings import warn
 
 import netCDF4 as nc4
@@ -41,7 +41,7 @@ class Budget(Accessor):
         description: str = None,
         rtol: float = 1e-5,
         atol: float = 1e-5,
-        basis: str = "unit",
+        basis: Literal["unit", "global"] = "unit",
         imbalance_fatal: bool = False,
         verbose: bool = True,
     ):
@@ -283,11 +283,8 @@ class Budget(Accessor):
 
     def _sum(self, attr):
         """Sum over the individual terms in a budget component."""
-        key0 = list(self[attr].keys())[0]
-        sum = self[attr][key0] * zero
-        for kk, vv in self[attr].items():
-            sum += vv
-        return sum
+        vals = [val for val in self[attr].values()]
+        return sum(vals)
 
     def _sum_inputs(self):
         return self._sum("inputs")

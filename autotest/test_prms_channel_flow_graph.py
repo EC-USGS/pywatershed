@@ -63,9 +63,7 @@ def test_prms_channel_flow_graph_compare_prms(
         nc_path = output_dir / f"{key}.nc"
         input_variables[key] = AdapterNetcdf(nc_path, key, control)
 
-    inflow_exchange = HruSegmentInflowAdapter(
-        "inflow_vol", parameters, **input_variables
-    )
+    inflow_exchange = HruSegmentInflowAdapter(parameters, **input_variables)
 
     # FlowGraph
     nsegment = parameters.dims["nsegment"]
@@ -113,7 +111,7 @@ def test_prms_channel_flow_graph_compare_prms(
         # check exchange
         lateral_inflow_answers.advance()
         np.testing.assert_allclose(
-            (inflow_exchange.current / 86400),
+            inflow_exchange.current,
             lateral_inflow_answers.current,
             rtol=rtol,
             atol=atol,

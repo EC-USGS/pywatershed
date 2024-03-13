@@ -78,8 +78,8 @@ class FlowGraph(Accessor):
 
     Args:
         control: a Control object
-        inflows_vol: An adaptable of volumetric inflows to the graph. These
-            are often referred to as "lateral" flows.
+        inflows: An adaptable of inflows to the graph, often referred to as
+            "lateral" flows.
         node_maker_dict: name:FlowNodeMaker
         node_maker_name: list or np.array of the maker name for each node
         node_maker_index: list or np.array of the index of the makerto
@@ -95,7 +95,7 @@ class FlowGraph(Accessor):
         control: Control,
         # discretization: Parameters,  # could use this, but not necsesary
         # parameters: Parameters,  # unnecessary? use for to_graph_index
-        inflows_vol: adaptable,
+        inflows: adaptable,
         node_maker_dict: dict,
         node_maker_name: Union[list, np.ndarray],
         node_maker_index: Union[list, np.ndarray],
@@ -106,7 +106,7 @@ class FlowGraph(Accessor):
         self.name = "FlowGraph"
 
         self.control = control
-        self._inflows_vol = inflows_vol
+        self._inflows = inflows
         self._node_maker_dict = node_maker_dict
         self._node_maker_name = node_maker_name
         self._node_maker_index = node_maker_index
@@ -114,7 +114,7 @@ class FlowGraph(Accessor):
         self._budget_type = budget_type
 
         # basic checks
-        self.nnodes = len(self._inflows_vol.current)
+        self.nnodes = len(self._inflows.current)
         assert len(self._node_maker_name) == self.nnodes
         assert len(self._node_maker_index) == self.nnodes
         assert len(self._to_graph_index) == self.nnodes
@@ -125,7 +125,7 @@ class FlowGraph(Accessor):
         self._init_graph()
         self._init_variables()
 
-        self["inflows_vol"] = np.zeros(self.nnodes) * nan
+        self["inflows"] = np.zeros(self.nnodes) * nan
 
         # private variables
         # TODO make these nans?
@@ -148,15 +148,15 @@ class FlowGraph(Accessor):
 
     @staticmethod
     def get_inputs() -> tuple:
-        return ("inflows_vol",)
+        return ("inflows",)
 
     @staticmethod
     def get_init_values() -> dict:
         return {
-            "outflows_vol": nan,
+            "outflows": nan,
             "node_upstream_inflow": nan,
             "node_outflow": nan,
-            "node_storage_change_vol": nan,
+            "node_storage_change": nan,
         }
 
     def get_variables(cls) -> tuple:
@@ -167,10 +167,10 @@ class FlowGraph(Accessor):
     def get_mass_budget_terms():
         return {
             "inputs": [
-                "inflows_vol",
+                "inflows",
             ],
-            "outputs": ["outflows_vol"],
-            "storage_changes": ["node_storage_change_vol"],
+            "outputs": ["outflows"],
+            "storage_changes": ["node_storage_change"],
         }
 
     def get_outflow_mask(self):
@@ -237,8 +237,8 @@ class FlowGraph(Accessor):
             self[key] = np.zeros(self.nnodes) + val
 
     def _advance_inputs(self):
-        self._inflows_vol.advance()
-        self["inflows_vol"][:] = self._inflows_vol.current
+        self._inflows.advance()
+        self["inflows"][:] = self._inflows.current
 
         return
 
@@ -267,8 +267,6 @@ class FlowGraph(Accessor):
         return
 
     def calculate(self, n_substeps=24) -> None:
-        s_per_time = self.control.time_step_seconds
-
         for node in self._nodes:
             node.prepare_timestep()
 
@@ -286,7 +284,7 @@ class FlowGraph(Accessor):
                 self._nodes[jseg].calculate_subtimestep(
                     istep,
                     self.node_upstream_inflow[jseg],
-                    self._inflows_vol.current[jseg] / s_per_time,
+                    self._inflows.current[jseg],
                 )
                 # Get the outflows back
                 self._node_outflow_substep[jseg] = self._nodes[
@@ -303,12 +301,12 @@ class FlowGraph(Accessor):
 
         for ii in range(self.nnodes):
             self.node_outflow[ii] = self._nodes[ii].outflow
-            self.node_storage_change_vol[ii] = self._nodes[ii].storage_change
+            self.node_storage_change[ii] = self._nodes[ii].storage_change
 
         # global mass balance term
-        self.outflows_vol[:] = (
-            np.where(self._outflow_mask, self.node_outflow, zero)
-        ) * s_per_time
+        self.outflows[:] = np.where(
+            self._outflow_mask, self.node_outflow, zero
+        )
 
         if self.budget is not None:
             self.budget.advance()

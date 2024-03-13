@@ -37,9 +37,6 @@ class PRMSChannelFlowNode(FlowNode):
 
     def prepare_timestep(self):
         # self._simulation_time = simulation_time  # add argument?
-
-        self._s_per_time = self.control.time_step_seconds
-
         self._seg_inflow = zero
         self._seg_outflow = zero
         # self._seg_outflow0 = zero
@@ -80,14 +77,8 @@ class PRMSChannelFlowNode(FlowNode):
         # get rid of the magic 24 with argument?
         self._seg_outflow = self._seg_outflow / 24.0
         self._seg_inflow = self._seg_inflow / 24.0
-        # This should be managed by FlowGraph
-        # self.seg_upstream_inflow_vol = (
-        #     self._seg_current_sum / 24.0 * self._s_per_time
-        # )
 
-        self.seg_stor_change = (
-            self._seg_inflow - self._seg_outflow
-        ) * self._s_per_time
+        self.seg_stor_change = self._seg_inflow - self._seg_outflow
 
         return
 
@@ -280,15 +271,27 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
 
 
 class HruSegmentInflowAdapter(Adapter):
+    """
+    Adapt PRMS HRU volumetric outflows to PRMS Segment lateral inflows.
+    The calculated lateral flows (in cubic feet per second) are availble from
+    the current_value property.
+
+    Args
+    ----
+    parameters: A PRMSChannel parameter object.
+    sroff_vol: An Adapter of surface runoff volume
+    ssres_flow_vol: An Adapter of subsurface reservoir outflow volume
+    gwres_flow_vol: An Adapter of groundwater reservoir outflow volume
+    """
+
     def __init__(
         self,
-        variable: str,
         parameters: Parameters,
         sroff_vol: Adapter,
         ssres_flow_vol: Adapter,
         gwres_flow_vol: Adapter,
     ):
-        self._variable = variable
+        self._variable = "inflows"
         self._parameters = parameters
 
         self._inputs = {}
@@ -301,9 +304,11 @@ class HruSegmentInflowAdapter(Adapter):
 
         self._nhru = self._parameters.dims["nhru"]
         self._nsegment = self._parameters.dims["nsegment"]
-        # flows from hrus
+
+        # sum of flows from hrus, these are flows and not volumes
         self._inflows = np.zeros(self._nhru) * nan
-        # flows to segments
+
+        # self.current_value (provided in the super) is the lateral flows
         self._current_value = np.zeros(self._nsegment) * nan
 
         self._hru_segment = self._parameters.parameters["hru_segment"] - 1
@@ -311,22 +316,25 @@ class HruSegmentInflowAdapter(Adapter):
         return
 
     def advance(self):
+        """Advance the Segement inflows in time.
+        Here we move to flows from flow volumes.
+        """
         for vv in self._inputs.values():
             vv.advance()
 
-        self._inflows = sum([vv.current for vv in self._inputs.values()])
+        # Move to a flow basis here instead of a volume basis.
+        # s_per_time could vary with timestep so leave here.
+        s_per_time = self._inputs["sroff_vol"].control.time_step_seconds
+        self._inflows = (
+            sum([vv.current for vv in self._inputs.values()]) / s_per_time
+        )
 
-        self._calculate_segment_inflows_vol()
+        self._calculate_segment_lateral_inflows()
 
         return
 
-    def _calculate_segment_inflows_vol(self):
-        """Map HRU flows on to segments"""
-        # TODO: call these lateral flows or exogenous flows
-
-        # This could vary with timestep so leave here
-        self._s_per_time = self._inputs["sroff_vol"].control.time_step_seconds
-
+    def _calculate_segment_lateral_inflows(self):
+        """Map HRU inflows to lateral inflows on segments/nodes"""
         self._current_value[:] = zero
         for ihru in range(self._nhru):
             iseg = self._hru_segment[ihru]
@@ -340,13 +348,3 @@ class HruSegmentInflowAdapter(Adapter):
             self._current_value[iseg] += self._inflows[ihru]
 
         return
-
-    # def _calculate_lateral_inflow_inds(self):
-    #     """A hash from segments to HRU"""
-    #     self._seg_hrus = {}
-    #     for ihru in range(self.nhru):
-    #         iseg = self._hru_segment[ihru]  # to be removed via exchange
-    #         if iseg in self._seg_hrus.keys():
-    #             self._seg_hrus[iseg] += [ihru]
-    #         else:
-    #             self._seg_hrus[iseg] = [ihru]

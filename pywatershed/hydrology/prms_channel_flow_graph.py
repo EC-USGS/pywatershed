@@ -1,5 +1,6 @@
 from typing import Literal
 
+import numba as nb
 import numpy as np
 
 from pywatershed.base.adapter import Adapter
@@ -18,6 +19,7 @@ class PRMSChannelFlowNode(FlowNode):
         c0: np.float64,
         c1: np.float64,
         c2: np.float64,
+        calc_method: Literal["numba", "numpy"] = None,
     ):
         self.control = control
 
@@ -33,6 +35,12 @@ class PRMSChannelFlowNode(FlowNode):
         self._inflow_ts = zero
         self._seg_current_sum = zero
 
+        if calc_method is None or calc_method == "numba":
+            self._calculate_subtimestep = _calculate_subtimestep_numba
+        elif calc_method == "numpy":
+            self._calculate_subtimestep = _calculate_subtimestep_numpy
+        else:
+            raise ValueError(f"Invalid choice of calc_method: {calc_method}")
         return
 
     def prepare_timestep(self):
@@ -46,32 +54,27 @@ class PRMSChannelFlowNode(FlowNode):
         return
 
     def calculate_subtimestep(self, ihr, inflow_upstream, inflow_lateral):
-        # some way to enforce that ihr is actually an hour?
-        seg_current_inflow = inflow_lateral + inflow_upstream
-        self._seg_inflow += seg_current_inflow
-        self._inflow_ts += seg_current_inflow
-
-        remainder = (ihr + 1) % self._tsi
-        if remainder == 0:
-            # segment routed on current hour
-            self._inflow_ts /= self._ts
-
-            if self._tsi > 0:
-                # Muskingum routing equation
-                self._outflow_ts = (
-                    self._inflow_ts * self._c0
-                    + self._seg_inflow0 * self._c1
-                    + self._outflow_ts * self._c2
-                )
-            else:
-                self._outflow_ts = self._inflow_ts
-
-            self._seg_inflow0 = self._inflow_ts
-            self._inflow_ts = 0.0
-
-        self._seg_outflow += self._outflow_ts
-
-        return
+        (
+            self._seg_inflow,
+            self._inflow_ts,
+            self._outflow_ts,
+            self._seg_inflow0,
+            self._seg_outflow,
+        ) = self._calculate_subtimestep(
+            ihr,
+            inflow_upstream,
+            inflow_lateral,
+            self._seg_inflow0,
+            self._seg_inflow,  # implied on RHS by +=
+            self._inflow_ts,
+            self._seg_outflow,
+            self._outflow_ts,
+            self._tsi,
+            self._ts,
+            self._c0,
+            self._c1,
+            self._c2,
+        )
 
     def finalize_timestep(self):
         # get rid of the magic 24 with argument?
@@ -122,12 +125,12 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
         self,
         discretization: Parameters,
         parameters: Parameters,
-        calc_method: Literal["fortran", "numba", "numpy"] = None,
+        calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
         self.name = "PRMSChannelFlowNodeMaker"
+        self._calc_method = calc_method
         self._set_data(discretization, parameters)
-
         self._init_data()
 
         return
@@ -142,6 +145,7 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
             c0=self._c0[index],
             c1=self._c1[index],
             c2=self._c2[index],
+            calc_method=self._calc_method,
         )
 
     def _set_data(self, discretization, parameters):
@@ -348,3 +352,76 @@ class HruSegmentInflowAdapter(Adapter):
             self._current_value[iseg] += self._inflows[ihru]
 
         return
+
+
+# <
+# module scope functions
+def _calculate_subtimestep_numpy(
+    ihr,
+    inflow_upstream,
+    inflow_lateral,
+    _seg_inflow0,
+    _seg_inflow,
+    _inflow_ts,
+    _seg_outflow,
+    _outflow_ts,
+    _tsi,
+    _ts,
+    _c0,
+    _c1,
+    _c2,
+):
+    # some way to enforce that ihr is actually an hour?
+    seg_current_inflow = inflow_lateral + inflow_upstream
+    _seg_inflow += seg_current_inflow
+    _inflow_ts += seg_current_inflow
+
+    remainder = (ihr + 1) % _tsi
+    if remainder == 0:
+        # segment routed on current hour
+        _inflow_ts /= _ts
+
+        if _tsi > 0:
+            # Muskingum routing equation
+            _outflow_ts = (
+                _inflow_ts * _c0 + _seg_inflow0 * _c1 + _outflow_ts * _c2
+            )
+        else:
+            _outflow_ts = _inflow_ts
+
+        _seg_inflow0 = _inflow_ts
+        _inflow_ts = 0.0
+
+    _seg_outflow += _outflow_ts
+
+    return (
+        _seg_inflow,
+        _inflow_ts,
+        _outflow_ts,
+        _seg_inflow0,
+        _seg_outflow,
+    )
+
+
+numba_msg = "prms_channel_flow_graph jit compiling with numba"
+print(numba_msg, flush=True)
+
+_calculate_subtimestep_numba = nb.njit(
+    nb.types.UniTuple(nb.float64, 5)(
+        nb.int64,  # ihr
+        nb.float64,  # inflow_upstream
+        nb.float64,  # inflow_lateral
+        nb.float64,  # _seg_inflow0
+        nb.float64,  # _seg_inflow
+        nb.float64,  # _inflow_ts
+        nb.float64,  # _seg_outflow
+        nb.float64,  # _outflow_ts
+        nb.int64,  # _tsi
+        nb.float64,  # _ts
+        nb.float64,  # _c0
+        nb.float64,  # _c1
+        nb.float64,  # _c2
+    ),
+    fastmath=True,
+    parallel=False,
+)(_calculate_subtimestep_numpy)

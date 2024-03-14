@@ -18,6 +18,8 @@ do_compare_output_files = False
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
+calc_methods = ("numpy", "numba")
+
 rename_vars = {
     "channel_outflow_vol": "outflows_vol",
     # "seg_upstream_inflow": "node_upstream_inflow_vol",
@@ -30,7 +32,9 @@ rename_vars = {
 def control(simulation):
     if "drb_2yr:nhm" not in simulation["name"]:
         pytest.skip("Only testing prms channel flow graph for drb_2yr:nhm")
-    return Control.load(simulation["control_file"], warn_unused_options=False)
+    return Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
 
 
 @pytest.fixture(scope="function")
@@ -49,11 +53,14 @@ def parameters(simulation, control):
     return PrmsParameters.from_netcdf(param_file)
 
 
+@pytest.mark.parametrize("calc_method", calc_methods)
 def test_prms_channel_flow_graph_compare_prms(
-    simulation, control, discretization, parameters, tmp_path
+    simulation, control, discretization, parameters, tmp_path, calc_method
 ):
     node_maker_dict = {
-        "prms_channel": PRMSChannelFlowNodeMaker(discretization, parameters),
+        "prms_channel": PRMSChannelFlowNodeMaker(
+            discretization, parameters, calc_method=calc_method
+        ),
     }
 
     # combine lateral inflows to a single volumetric inflow

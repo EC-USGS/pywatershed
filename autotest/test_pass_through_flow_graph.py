@@ -24,13 +24,13 @@ rtol = atol = 1.0e-7
 # test the exchange too?
 rename_vars = {
     "channel_outflow_vol": "outflows",
-    "seg_upstream_inflow": "node_upstream_inflow",
-    "seg_outflow": "node_outflow",
-    "seg_stor_change": "node_storage_change",
+    "seg_upstream_inflow": "node_upstream_inflows",
+    "seg_outflow": "node_outflows",
+    "seg_stor_change": "node_storage_changes",
 }
 
 # the above values in rename_vars need converted to volume in these cases
-convert_to_vol = ["outflows", "node_storage_change"]
+convert_to_vol = ["outflows", "node_storage_changes"]
 
 
 @pytest.fixture(scope="function")

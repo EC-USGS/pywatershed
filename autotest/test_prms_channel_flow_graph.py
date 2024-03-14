@@ -13,6 +13,10 @@ from pywatershed.hydrology.prms_channel_flow_graph import (
 from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
+# NB: THere is no real comparison of output files because the answer files
+#     have different units. Could create a class to manage this but
+#     I've checked that the memory values match the file values.
+#     do_compare_output_files write files but does not check them
 do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
@@ -119,7 +123,7 @@ def test_prms_channel_flow_graph_compare_prms(
         control.advance()
         flow_graph.advance()
         flow_graph.calculate()
-        # flow_graph.output()
+        flow_graph.output()
 
         # check exchange
         lateral_inflow_answers.advance()

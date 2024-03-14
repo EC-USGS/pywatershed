@@ -4,9 +4,8 @@ import networkx as nx
 import numpy as np
 
 from pywatershed.base.accessor import Accessor
-from pywatershed.base.process import Process
+from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.adapter import adaptable
-from pywatershed.base.budget import Budget
 from pywatershed.base.control import Control
 from pywatershed.constants import nan, zero
 from pywatershed.parameters import Parameters
@@ -67,7 +66,7 @@ class FlowNodeMaker(Accessor):
         raise Exception("This must be overridden")
 
 
-class FlowGraph(Process):
+class FlowGraph(ConservativeProcess):
     """
     Assembles and computes FlowNodes over a list/connectivity of FlowNodes
     and tracks their mass balance.
@@ -107,7 +106,6 @@ class FlowGraph(Process):
         node_maker_index: Union[list, np.ndarray],
         to_graph_index: Union[list, np.ndarray],  # put in parameters?
         budget_type: Literal[None, "warn", "error"] = None,
-        # budget_basis: Literal["unit", "global"] = "global",
         verbose: bool = None,
     ):
         # Keep FlowGraph "parameter" by building parameters from the arguments
@@ -150,11 +148,8 @@ class FlowGraph(Process):
             assert isinstance(fnm, FlowNodeMaker)
 
         self._init_graph()
-        self._init_variables()
 
-        self["inflows"] = np.zeros(self.nnodes) * nan
-
-        # If FlowGraph handles nodes which dont tautologically balance
+        # If/when FlowGraph handles nodes which dont tautologically balance
         # could allow the basis to be unit.
         self._set_budget(basis="global")
 
@@ -266,33 +261,11 @@ class FlowGraph(Process):
                 )
             ]
 
-    def _init_variables(self) -> None:
-        """Initialize node variables tracked by the FlowGraph"""
-        for key, val in self.get_init_values().items():
-            self[key] = np.zeros(self.nnodes) + val
-
-    def advance(self) -> None:
-        self._advance_inputs()
+    def _advance_variables(self) -> None:
         for node in self._nodes:
             node.advance()
 
         # no prognostic variables on the graph
-        return
-
-    def _set_budget(self, basis: str = "unit"):
-        if self._budget_type is None:
-            self.budget = None
-        elif self._budget_type in ["error", "warn"]:
-            self.budget = Budget.from_storage_unit(
-                self,
-                time_unit="D",
-                description=self.name,
-                imbalance_fatal=(self._budget_type == "error"),
-                basis=basis,
-            )
-        else:
-            raise ValueError(f"Illegal behavior: {self._budget_type}")
-
         return
 
     def calculate(self, n_substeps=24) -> None:

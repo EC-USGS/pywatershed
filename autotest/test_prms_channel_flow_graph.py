@@ -65,14 +65,14 @@ def test_prms_channel_flow_graph_compare_prms(
         ),
     }
 
-    # combine lateral inflows to a single volumetric inflow
+    # combine lateral inflows to a single non-volumetric inflow
     output_dir = simulation["output_dir"]
     input_variables = {}
     for key in PRMSChannel.get_inputs():
         nc_path = output_dir / f"{key}.nc"
         input_variables[key] = AdapterNetcdf(nc_path, key, control)
 
-    inflow_exchange = HruSegmentInflowAdapter(parameters, **input_variables)
+    inflow_prms = HruSegmentInflowAdapter(parameters, **input_variables)
 
     # FlowGraph
     nsegment = parameters.dims["nsegment"]
@@ -82,7 +82,7 @@ def test_prms_channel_flow_graph_compare_prms(
 
     flow_graph = FlowGraph(
         control,
-        inflow_exchange,
+        inflow_prms,
         node_maker_dict,
         node_maker_name,
         node_maker_index,
@@ -121,7 +121,7 @@ def test_prms_channel_flow_graph_compare_prms(
         # check exchange
         lateral_inflow_answers.advance()
         np.testing.assert_allclose(
-            inflow_exchange.current,
+            inflow_prms.current,
             lateral_inflow_answers.current,
             rtol=rtol,
             atol=atol,
@@ -137,6 +137,7 @@ def test_prms_channel_flow_graph_compare_prms(
                     answers_conv_vol[key] = val.current / (24 * 60 * 60)
                 else:
                     answers_conv_vol[key] = val.current
+
             compare_in_memory(
                 flow_graph,
                 answers_conv_vol,

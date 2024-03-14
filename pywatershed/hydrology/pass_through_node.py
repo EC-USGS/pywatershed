@@ -12,7 +12,6 @@ class PassThroughNode(FlowNode):
         return
 
     def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
-        print("ptn inflow upstream", inflow_upstream)
         self._seg_outflow = inflow_upstream
         return
 

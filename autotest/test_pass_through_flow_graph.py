@@ -11,7 +11,7 @@ from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
-    AdapterExchangeHruSegment,
+    HruSegmentInflowAdapter,
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
@@ -23,19 +23,19 @@ rtol = atol = 1.0e-7
 
 # test the exchange too?
 rename_vars = {
-    "channel_outflow_vol": "outflow_vol",
-    # "seg_upstream_inflow": "node_upstream_inflow",
+    "channel_outflow_vol": "outflows",
+    "seg_upstream_inflow": "node_upstream_inflow",
     "seg_outflow": "node_outflow",
     "seg_stor_change": "node_storage_change",
 }
 
-
-# we only need to test this on one domain.
+# the above values in rename_vars need converted to volume in these cases
+convert_to_vol = ["outflows", "node_storage_change"]
 
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if "drb:nhm" not in simulation["name"]:
+    if "drb_2yr:nhm" not in simulation["name"]:
         pytest.skip("Only testing passthrough flow graph for drb_2yr:nhm")
     return Control.load(simulation["control_file"], warn_unused_options=False)
 
@@ -63,25 +63,14 @@ def test_prms_channel_pass_through_compare_prms(
     parameters_prms,
     tmp_path,
 ):
-    # PassThroughNode
-
-    node_maker_dict = {
-        "prms_channel": PRMSChannelFlowNodeMaker(
-            discretization_prms, parameters_prms
-        ),
-        "pass_throughs": PassThroughNodeMaker(),
-    }
-
-    # flow exchange: combine PRMS lateral inflows to a single volumetric inflow
+    # combine PRMS lateral inflows to a single non-volumetric inflow
     output_dir = simulation["output_dir"]
     input_variables = {}
     for key in PRMSChannel.get_inputs():
         nc_path = output_dir / f"{key}.nc"
         input_variables[key] = AdapterNetcdf(nc_path, key, control)
 
-    inflow_exchange_prms = AdapterExchangeHruSegment(
-        "inflow_vol", parameters_prms, **input_variables
-    )
+    inflows_prms = HruSegmentInflowAdapter(parameters_prms, **input_variables)
 
     class GraphInflowAdapter(Adapter):
         def __init__(
@@ -102,24 +91,47 @@ def test_prms_channel_pass_through_compare_prms(
             self._current_value[-1] = zero  # no inflow at the pass through
             return
 
-    inflow_exchange = GraphInflowAdapter("inflow_vol", inflow_exchange_prms)
+    inflows_graph = GraphInflowAdapter("inflow_vol", inflows_prms)
 
     # FlowGraph
+
+    node_maker_dict = {
+        "prms_channel": PRMSChannelFlowNodeMaker(
+            discretization_prms, parameters_prms
+        ),
+        "pass_throughs": PassThroughNodeMaker(),
+    }
     nnodes = parameters_prms.dims["nsegment"] + 1
     node_maker_name = ["prms_channel"] * nnodes
     node_maker_name[-1] = "pass_throughs"
     node_maker_index = np.arange(nnodes)
     node_maker_index[-1] = 0
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
-    to_graph_index[0:-1] = discretization_prms.parameters["tosegment"] - 1
-    intervene_above_node = 34  # random choice
-    wh_intervene = np.where(to_graph_index == intervene_above_node)
-    to_graph_index[-1] = intervene_above_node
-    to_graph_index[wh_intervene] = nnodes - 1
+    dis_params = discretization_prms.parameters
+    to_graph_index[0:-1] = dis_params["tosegment"] - 1
+    nhm_seg_intervene_above = 1829  # 1829
+    wh_intervene_above_nhm = np.where(
+        dis_params["nhm_seg"] == nhm_seg_intervene_above
+    )
+    wh_intervene_below_nhm = np.where(
+        (dis_params["tosegment"] - 1) == wh_intervene_above_nhm[0][0]
+    )
+    # have to map to the graph from an index found in prms_channel
+    wh_intervene_above_graph = np.where(
+        (np.array(node_maker_name) == "prms_channel")
+        & (node_maker_index == wh_intervene_above_nhm[0][0])
+    )
+    wh_intervene_below_graph = np.where(
+        (np.array(node_maker_name) == "prms_channel")
+        & np.isin(node_maker_index, wh_intervene_below_nhm)
+    )
+
+    to_graph_index[-1] = wh_intervene_above_graph[0][0]
+    to_graph_index[wh_intervene_below_graph] = nnodes - 1
 
     flow_graph = FlowGraph(
         control,
-        inflow_exchange,
+        inflows_graph,
         node_maker_dict,
         node_maker_name,
         node_maker_index,
@@ -149,7 +161,6 @@ def test_prms_channel_pass_through_compare_prms(
         )
 
     for istep in range(control.n_times):
-        print(istep)
         control.advance()
         flow_graph.advance()
         flow_graph.calculate()
@@ -158,23 +169,29 @@ def test_prms_channel_pass_through_compare_prms(
         # check exchange
         lateral_inflow_answers.advance()
         assert (
-            inflow_exchange.current[0:-1] == lateral_inflow_answers.current
+            inflows_graph.current[0:-1] == lateral_inflow_answers.current
         ).all()
 
-        answers_on_graph = {}
+        answers_from_graph = {}
         for key, val in answers.items():
             val.advance()
-            answers_on_graph[key] = np.zeros(len(val.current) + 1)
-            answers_on_graph[key][0:-1] = val.current
+            answers_from_graph[key] = np.zeros(len(val.current) + 1)
+            answers_from_graph[key][0:-1] = val.current
             # just use this as correct and verify the rest of the graph is
             # unchanged
-            answers_on_graph[key][-1] = flow_graph[key][-1]
-            print(key, flow_graph[key][-1])
+            answers_from_graph[key][-1] = flow_graph[key][-1]
 
         if do_compare_in_memory:
+            answers_conv_vol = {}
+            for key, val in answers_from_graph.items():
+                if key in convert_to_vol:
+                    answers_conv_vol[key] = val / (24 * 60 * 60)
+                else:
+                    answers_conv_vol[key] = val
+
             compare_in_memory(
                 flow_graph,
-                answers_on_graph,
+                answers_conv_vol,
                 atol=atol,
                 rtol=rtol,
                 fail_after_all_vars=False,

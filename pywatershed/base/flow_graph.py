@@ -129,6 +129,7 @@ class FlowGraph(Accessor):
 
         # private variables
         # TODO make these nans?
+        self._node_upstream_inflow_sub = np.zeros(self.nnodes)
         self._node_upstream_inflow_acc = np.zeros(self.nnodes)
         self._node_outflow_substep = np.zeros(self.nnodes)
 
@@ -275,7 +276,7 @@ class FlowGraph(Accessor):
         for istep in range(n_substeps):
             # This works because the first nodes calculated do
             # not have upstream reaches
-            self.node_upstream_inflow[:] = zero
+            self._node_upstream_inflow_sub[:] = zero
 
             for jseg in self._node_order:
                 # The first nodes calculated dont have upstream inflows
@@ -283,7 +284,7 @@ class FlowGraph(Accessor):
                 # Calculate
                 self._nodes[jseg].calculate_subtimestep(
                     istep,
-                    self.node_upstream_inflow[jseg],
+                    self._node_upstream_inflow_sub[jseg],
                     self._inflows.current[jseg],
                 )
                 # Get the outflows back
@@ -294,10 +295,15 @@ class FlowGraph(Accessor):
                 self._sum_outflows_to_inflow(jseg)
 
             # <
-            self._node_upstream_inflow_acc += self.node_upstream_inflow
+            # not sure how PRMS-specific this is
+            self._node_upstream_inflow_acc += self._node_upstream_inflow_sub
 
         for node in self._nodes:
             node.finalize_timestep()
+
+        self.node_upstream_inflow[:] = (
+            self._node_upstream_inflow_acc / n_substeps
+        )
 
         for ii in range(self.nnodes):
             self.node_outflow[ii] = self._nodes[ii].outflow
@@ -316,7 +322,7 @@ class FlowGraph(Accessor):
 
     def _sum_outflows_to_inflow(self, jseg):
         if self._to_graph_index[jseg] >= 0:
-            self.node_upstream_inflow[
+            self._node_upstream_inflow_sub[
                 self._to_graph_index[jseg]
             ] += self._node_outflow_substep[jseg]
 

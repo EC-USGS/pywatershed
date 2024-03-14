@@ -80,7 +80,6 @@ class PRMSChannelFlowNode(FlowNode):
         # get rid of the magic 24 with argument?
         self._seg_outflow = self._seg_outflow / 24.0
         self._seg_inflow = self._seg_inflow / 24.0
-
         self.seg_stor_change = self._seg_inflow - self._seg_outflow
 
         return

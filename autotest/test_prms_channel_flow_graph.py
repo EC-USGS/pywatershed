@@ -8,7 +8,6 @@ from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentInflowAdapter,
-    PRMSChannelFlowNode,
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
@@ -21,11 +20,14 @@ rtol = atol = 1.0e-7
 calc_methods = ("numpy", "numba")
 
 rename_vars = {
-    "channel_outflow_vol": "outflows_vol",
-    # "seg_upstream_inflow": "node_upstream_inflow_vol",
+    "channel_outflow_vol": "outflows",
+    "seg_upstream_inflow": "node_upstream_inflow",
     "seg_outflow": "node_outflow",
-    "seg_stor_change": "node_storage_change_vol",
+    "seg_stor_change": "node_storage_change",
 }
+
+# the above values in rename_vars need converted to volume in these cases
+convert_to_vol = ["outflows", "node_storage_change"]
 
 
 @pytest.fixture(scope="function")
@@ -102,6 +104,7 @@ def test_prms_channel_flow_graph_compare_prms(
             answers[new_var] = adapter_factory(
                 var_pth, variable_name=var, control=control
             )
+
         # answers for the exchange
         var = "seg_lateral_inflow"
         var_pth = output_dir / f"{var}.nc"
@@ -128,13 +131,19 @@ def test_prms_channel_flow_graph_compare_prms(
             var.advance()
 
         if do_compare_in_memory:
+            answers_conv_vol = {}
+            for key, val in answers.items():
+                if key in convert_to_vol:
+                    answers_conv_vol[key] = val.current / (24 * 60 * 60)
+                else:
+                    answers_conv_vol[key] = val.current
             compare_in_memory(
                 flow_graph,
-                answers,
+                answers_conv_vol,
                 atol=atol,
                 rtol=rtol,
-                skip_missing_ans=True,
-                fail_after_all_vars=True,
+                skip_missing_ans=False,
+                fail_after_all_vars=False,
             )
 
     flow_graph.finalize()

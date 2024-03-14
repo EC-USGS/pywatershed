@@ -120,7 +120,7 @@ def compare_in_memory(
             try:
                 assert_allclose(
                     actual,
-                    answers[var].current.data,
+                    desired,
                     atol=atol,
                     rtol=rtol,
                     equal_nan=equal_nan,

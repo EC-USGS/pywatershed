@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 
 from pywatershed.base.accessor import Accessor
+from pywatershed.base.process import Process
 from pywatershed.base.adapter import adaptable
 from pywatershed.base.budget import Budget
 from pywatershed.base.control import Control
@@ -66,7 +67,7 @@ class FlowNodeMaker(Accessor):
         raise Exception("This must be overridden")
 
 
-class FlowGraph(Accessor):
+class FlowGraph(Process):
     """
     Assembles and computes FlowNodes over a list/connectivity of FlowNodes
     and tracks their mass balance.
@@ -96,28 +97,54 @@ class FlowGraph(Accessor):
         # discretization: Parameters,  # could use this, but not necsesary
         # parameters: Parameters,  # unnecessary? use for to_graph_index
         inflows: adaptable,
+        # node_maker_dict is not really a parameter, it's a composition
+        # mechanism
         node_maker_dict: dict,
+        # node_maker_name, node_maker_index, and
+        # to_graph_index are all really parameters. require they pass through
+        # parameters? or leave them here for convenience?
         node_maker_name: Union[list, np.ndarray],
         node_maker_index: Union[list, np.ndarray],
         to_graph_index: Union[list, np.ndarray],  # put in parameters?
         budget_type: Literal[None, "warn", "error"] = None,
         # budget_basis: Literal["unit", "global"] = "global",
+        verbose: bool = None,
     ):
+        # Keep FlowGraph "parameter" by building parameters from the arguments
+        # The super uses self.params to set dimensions on self.
+        self.params = Parameters(
+            dims={
+                "nnodes": len(inflows.current),
+            },
+            coords={
+                "nnodes": np.array(range(len(inflows.current))),
+            },
+            data_vars={
+                # "node_maker_dict": node_maker_dict,
+                "node_maker_name": node_maker_name,
+                "node_maker_index": node_maker_index,
+                "to_graph_index": to_graph_index,
+            },
+            metadata={
+                # "node_maker_dict": {"dims": ["nnodes"]},
+                "nnodes": {"dims": ["nnodes"]},
+                "node_maker_name": {"dims": ["nnodes"]},
+                "node_maker_index": {"dims": ["nnodes"]},
+                "to_graph_index": {"dims": ["nnodes"]},
+            },
+            validate=True,
+        )
+        del node_maker_name, node_maker_index, to_graph_index
+
+        super().__init__(
+            control=control,
+            discretization=None,
+            parameters=None,
+        )
         self.name = "FlowGraph"
 
-        self.control = control
-        self._inflows = inflows
-        self._node_maker_dict = node_maker_dict
-        self._node_maker_name = node_maker_name
-        self._node_maker_index = node_maker_index
-        self._to_graph_index = to_graph_index
-        self._budget_type = budget_type
-
-        # basic checks
-        self.nnodes = len(self._inflows.current)
-        assert len(self._node_maker_name) == self.nnodes
-        assert len(self._node_maker_index) == self.nnodes
-        assert len(self._to_graph_index) == self.nnodes
+        self._set_inputs(locals())
+        self._set_options(locals())
 
         for fnm in self._node_maker_dict.values():
             assert isinstance(fnm, FlowNodeMaker)
@@ -126,12 +153,6 @@ class FlowGraph(Accessor):
         self._init_variables()
 
         self["inflows"] = np.zeros(self.nnodes) * nan
-
-        # private variables
-        # TODO make these nans?
-        self._node_upstream_inflow_sub = np.zeros(self.nnodes)
-        self._node_upstream_inflow_acc = np.zeros(self.nnodes)
-        self._node_outflow_substep = np.zeros(self.nnodes)
 
         # If FlowGraph handles nodes which dont tautologically balance
         # could allow the basis to be unit.
@@ -145,7 +166,11 @@ class FlowGraph(Accessor):
 
     @staticmethod
     def get_parameters() -> tuple:
-        return ("to_graph_index",)
+        return (
+            "node_maker_name",
+            "node_maker_index",
+            "to_graph_index",
+        )
 
     @staticmethod
     def get_inputs() -> tuple:
@@ -155,9 +180,9 @@ class FlowGraph(Accessor):
     def get_init_values() -> dict:
         return {
             "outflows": nan,
-            "node_upstream_inflow": nan,
-            "node_outflow": nan,
-            "node_storage_change": nan,
+            "node_upstream_inflows": nan,
+            "node_outflows": nan,
+            "node_storage_changes": nan,
         }
 
     def get_variables(cls) -> tuple:
@@ -171,7 +196,7 @@ class FlowGraph(Accessor):
                 "inflows",
             ],
             "outputs": ["outflows"],
-            "storage_changes": ["node_storage_change"],
+            "storage_changes": ["node_storage_changes"],
         }
 
     def get_outflow_mask(self):
@@ -181,18 +206,27 @@ class FlowGraph(Accessor):
     def outflow_mask(self):
         return self._outflow_mask
 
+    def _set_initial_conditions(self) -> None:
+        self._node_upstream_inflow_sub = np.zeros(self.nnodes) * nan
+        self._node_upstream_inflow_acc = np.zeros(self.nnodes) * nan
+        self._node_outflow_substep = np.zeros(self.nnodes) * nan
+        return
+
     def _init_graph(self) -> None:
+        params = self.params.parameters
         # where do flows exit the graph?
-        self._outflow_mask = np.where(self._to_graph_index == -1, True, False)
+        self._outflow_mask = np.where(
+            params["to_graph_index"] == -1, True, False
+        )
 
         # which nodes do not have upstream nodes?
         self._headwater_nodes = set(range(self.nnodes)).difference(
-            set(self._to_graph_index)
+            set(params["to_graph_index"])
         )
 
         connectivity = []
         for inode in range(self.nnodes):
-            tonode = self._to_graph_index[inode]
+            tonode = params["to_graph_index"][inode]
             if tonode < 0:
                 continue
             connectivity.append(
@@ -224,7 +258,7 @@ class FlowGraph(Accessor):
         # instatiate the nodes
         self._nodes = []
         for ii, (maker_name, maker_index) in enumerate(
-            zip(self._node_maker_name, self._node_maker_index)
+            zip(params["node_maker_name"], params["node_maker_index"])
         ):
             self._nodes += [
                 self._node_maker_dict[maker_name].get_node(
@@ -236,12 +270,6 @@ class FlowGraph(Accessor):
         """Initialize node variables tracked by the FlowGraph"""
         for key, val in self.get_init_values().items():
             self[key] = np.zeros(self.nnodes) + val
-
-    def _advance_inputs(self):
-        self._inflows.advance()
-        self["inflows"][:] = self._inflows.current
-
-        return
 
     def advance(self) -> None:
         self._advance_inputs()
@@ -285,7 +313,7 @@ class FlowGraph(Accessor):
                 self._nodes[jseg].calculate_subtimestep(
                     istep,
                     self._node_upstream_inflow_sub[jseg],
-                    self._inflows.current[jseg],
+                    self.inflows[jseg],
                 )
                 # Get the outflows back
                 self._node_outflow_substep[jseg] = self._nodes[
@@ -301,17 +329,17 @@ class FlowGraph(Accessor):
         for node in self._nodes:
             node.finalize_timestep()
 
-        self.node_upstream_inflow[:] = (
+        self.node_upstream_inflows[:] = (
             self._node_upstream_inflow_acc / n_substeps
         )
 
         for ii in range(self.nnodes):
-            self.node_outflow[ii] = self._nodes[ii].outflow
-            self.node_storage_change[ii] = self._nodes[ii].storage_change
+            self.node_outflows[ii] = self._nodes[ii].outflow
+            self.node_storage_changes[ii] = self._nodes[ii].storage_change
 
         # global mass balance term
         self.outflows[:] = np.where(
-            self._outflow_mask, self.node_outflow, zero
+            self._outflow_mask, self.node_outflows, zero
         )
 
         if self.budget is not None:
@@ -321,15 +349,10 @@ class FlowGraph(Accessor):
         return
 
     def _sum_outflows_to_inflow(self, jseg):
-        if self._to_graph_index[jseg] >= 0:
+        params = self.params.parameters
+        if params["to_graph_index"][jseg] >= 0:
             self._node_upstream_inflow_sub[
-                self._to_graph_index[jseg]
+                params["to_graph_index"][jseg]
             ] += self._node_outflow_substep[jseg]
 
-        return
-
-    # dont have a netcdf output method
-
-    def finalize(self) -> None:
-        # eventually close netcdf
         return

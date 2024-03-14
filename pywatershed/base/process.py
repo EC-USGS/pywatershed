@@ -99,14 +99,17 @@ class Process(Accessor):
         self.name = "Process"
         self.control = control
 
-        # params from dis and params: methodize this
-        missing_params = set(self.parameters).difference(
-            set(parameters.variables.keys())
-        )
-        if missing_params:
-            self.params = type(parameters).merge(parameters, discretization)
-        else:
-            self.params = parameters.subset(self.get_parameters())
+        if parameters is not None:
+            # params from dis and params: methodize this
+            missing_params = set(self.parameters).difference(
+                set(parameters.variables.keys())
+            )
+            if missing_params and discretization is not None:
+                self.params = type(parameters).merge(
+                    parameters, discretization
+                )
+            else:
+                self.params = parameters.subset(self.get_parameters())
 
         # netcdf output variables
         self._netcdf_initialized = False

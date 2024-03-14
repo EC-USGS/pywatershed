@@ -13,7 +13,7 @@ from pywatershed.hydrology.prms_channel_flow_graph import (
 from pywatershed.parameters import PrmsParameters
 from utils_compare import compare_in_memory, compare_netcdfs
 
-do_compare_output_files = False
+do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
@@ -21,22 +21,25 @@ calc_methods = ("numpy", "numba")
 
 rename_vars = {
     "channel_outflow_vol": "outflows",
-    "seg_upstream_inflow": "node_upstream_inflow",
-    "seg_outflow": "node_outflow",
-    "seg_stor_change": "node_storage_change",
+    "seg_upstream_inflow": "node_upstream_inflows",
+    "seg_outflow": "node_outflows",
+    "seg_stor_change": "node_storage_changes",
 }
 
 # the above values in rename_vars need converted to volume in these cases
-convert_to_vol = ["outflows", "node_storage_change"]
+convert_to_vol = ["outflows", "node_storage_changes"]
 
 
 @pytest.fixture(scope="function")
 def control(simulation):
     if "drb_2yr:nhm" not in simulation["name"]:
         pytest.skip("Only testing prms channel flow graph for drb_2yr:nhm")
-    return Control.load_prms(
+    control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
+    del control.options["netcdf_output_dir"]
+    del control.options["netcdf_output_var_names"]
+    return control
 
 
 @pytest.fixture(scope="function")

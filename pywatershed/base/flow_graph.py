@@ -4,8 +4,8 @@ import networkx as nx
 import numpy as np
 
 from pywatershed.base.accessor import Accessor
-from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.adapter import adaptable
+from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.control import Control
 from pywatershed.constants import nan, zero
 from pywatershed.parameters import Parameters

@@ -1,6 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
-from typing import Union, Literal
+from typing import Literal, Union
 from warnings import warn
 
 import netCDF4 as nc4

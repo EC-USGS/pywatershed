@@ -75,8 +75,8 @@ def test_prms_channel_pass_through_compare_prms(
     class GraphInflowAdapter(Adapter):
         def __init__(
             self,
-            variable: str,
             prms_inflows: Adapter,
+            variable: str = "inflows",
         ):
             self._variable = variable
             self._prms_inflows = prms_inflows
@@ -91,7 +91,7 @@ def test_prms_channel_pass_through_compare_prms(
             self._current_value[-1] = zero  # no inflow at the pass through
             return
 
-    inflows_graph = GraphInflowAdapter("inflow_vol", inflows_prms)
+    inflows_graph = GraphInflowAdapter(inflows_prms)
 
     # FlowGraph
 

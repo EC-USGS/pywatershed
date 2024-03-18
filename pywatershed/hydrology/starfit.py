@@ -211,6 +211,33 @@ class Starfit(ConservativeProcess):
             (self.lake_inflow - self.lake_release) * 24 * 60 * 60 / 1.0e6
         )  # conv to MCM
 
+        # can't release more than storage + inflow. This assumes zero
+        # storage = deadpool which may not be accurate, but this situation
+        # rarely occurs since STARFIT releases are already designed to keep
+        # storage within NOR.
+        wh_neg_storage = np.where(
+            (self.lake_storage + self.lake_storage_change) < zero
+        )
+        if len(wh_neg_storage):
+            potential_release = self.lake_release[wh_neg_storage] + (
+                self.lake_storage[wh_neg_storage]
+                + self.lake_storage_change[wh_neg_storage]
+            ) * (1.0e6 / 24 / 60 / 60)
+            self.lake_release[wh_neg_storage] = np.maximum(
+                potential_release,
+                potential_release * zero,
+            )
+            self.lake_storage_change[wh_neg_storage] = (
+                (
+                    self.lake_inflow[wh_neg_storage]
+                    - self.lake_release[wh_neg_storage]
+                )
+                * 24
+                * 60
+                * 60
+                / 1.0e6
+            )
+
         self.lake_storage[:] = np.maximum(
             self.lake_storage + self.lake_storage_change, zero
         )

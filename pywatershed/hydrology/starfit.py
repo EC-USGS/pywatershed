@@ -9,6 +9,8 @@ from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
 from pywatershed.constants import nan, one, zero
 from pywatershed.parameters import Parameters
 
+# MCM is million cubic meters
+
 
 class Starfit(ConservativeProcess):
     """starfit: Storage Targets And Release Function Inference Tool
@@ -502,14 +504,11 @@ class StarfitFlowNode(FlowNode):
             Release_p2=self._Release_p2,
         )  # output in m^3/d
 
-        self._lake_release[:] = (
-            self._lake_release / 24 / 60 / 60
-        )  # convert to m^3/s
+        self._lake_release[:] = self._lake_release / 24 / 60 / 60  # m^3/s
 
-        # asdf
         self._lake_storage_change[:] = (
             (self._lake_inflow - self._lake_release) * 24 * 60 * 60 / 1.0e6
-        )  # conv to MCM
+        )  # MCM: million cubic meters
 
         # can't release more than storage + inflow. This assumes zero
         # storage = deadpool which may not be accurate, but this situation
@@ -518,18 +517,20 @@ class StarfitFlowNode(FlowNode):
         if (self._lake_storage + self._lake_storage_change) < zero:
             potential_release = self._lake_release + (
                 self._lake_storage + self._lake_storage_change
-            ) * (1.0e6 / 24 / 60 / 60)
+            ) * (
+                1.0e6 / 24 / 60 / 60
+            )  # m^3/s
             self._lake_release[:] = np.maximum(
                 potential_release,
                 potential_release * zero,
-            )
+            )  # m^3/s
             self._lake_storage_change[:] = (
                 (self._lake_inflow - self._lake_release) * 24 * 60 * 60 / 1.0e6
-            )
+            )  # MCM: million cubic meters
 
         self._lake_storage[:] = np.maximum(
             self._lake_storage + self._lake_storage_change, zero
-        )
+        )  # MCM
 
         self._lake_spill[:] = nan
         if ~np.isnan(self._lake_storage):
@@ -542,28 +543,37 @@ class StarfitFlowNode(FlowNode):
                 / 24
                 / 60
                 / 60
-            )
-            self._lake_storage[:] = self._GRanD_CAP_MCM
+            )  # m^3/s
+            self._lake_storage[:] = self._GRanD_CAP_MCM  # MCM
+
+        # m^3/s
+        self._outflow = self._lake_release + self._lake_spill
 
         return
 
     def finalize_timestep(self):
-        pass
+        return
 
     def advance(self):
-        pass
+        self._lake_storage_change[:] = (
+            self._lake_storage - self._lake_storage_old
+        )
+        self._lake_storage_old[:] = self._lake_storage
+        return
 
     @property
     def outflow(self):
-        pass
-
-    @property
-    def outflow_subset(self):
-        pass
+        return self._outflow
 
     @property
     def storage_change(self):
-        return self.seg_stor_change
+        # should this copy?
+        return self._lake_storage_change
+
+    @property
+    def storage(self):
+        # should this copy?
+        return self._lake_storage
 
 
 class StarfitFlowNodeMaker(FlowNodeMaker):

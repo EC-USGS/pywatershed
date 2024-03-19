@@ -126,6 +126,8 @@ def test_starfit_flow_node_compare_starfit(control, parameters, tmp_path):
             node.advance()
             node.prepare_timestep()
             node.calculate_subtimestep(0, inflows_node.current[inode], zero)
+            # subtimesteps dont matter to starfit node.
+            node.calculate_subtimestep(1, inflows_node.current[inode], zero)
 
         # check as we go
         ymd = control.current_datetime.strftime("%Y-%m-%d")

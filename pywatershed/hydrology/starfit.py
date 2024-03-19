@@ -454,11 +454,15 @@ class StarfitFlowNode(FlowNode):
         return
 
     def prepare_timestep(self):
-        #  solve here and do nothing in the subtimestep?
-        # just provide uniform flow rates on the subtimesteps
-        pass
+        return
 
-    def calculate_subtimestep(self, ihr, inflow_upstream, inflow_lateral):
+    def calculate_subtimestep(
+        self, ihr, inflow_upstream, inflow_lateral
+    ) -> None:
+        # this does not have subtimesteps, the outflow is the same on
+        # all of them, so dont re-solve
+        if ihr > 0:
+            return
         self._lake_inflow = inflow_upstream + inflow_lateral
         if (self.control.current_time > self._end_time) or (
             self.control.current_time < self._start_time

@@ -269,6 +269,8 @@ class FlowGraph(ConservativeProcess):
         return
 
     def calculate(self, n_substeps=24) -> None:
+        params = self.params.parameters
+
         for node in self._nodes:
             node.prepare_timestep()
 
@@ -279,21 +281,24 @@ class FlowGraph(ConservativeProcess):
             # not have upstream reaches
             self._node_upstream_inflow_sub[:] = zero
 
-            for jseg in self._node_order:
+            for inode in self._node_order:
                 # The first nodes calculated dont have upstream inflows
                 # Eventually pass timestep length and n_substems to nodes
                 # Calculate
-                self._nodes[jseg].calculate_subtimestep(
+                self._nodes[inode].calculate_subtimestep(
                     istep,
-                    self._node_upstream_inflow_sub[jseg],
-                    self.inflows[jseg],
+                    self._node_upstream_inflow_sub[inode],
+                    self.inflows[inode],
                 )
                 # Get the outflows back
-                self._node_outflow_substep[jseg] = self._nodes[
-                    jseg
+                self._node_outflow_substep[inode] = self._nodes[
+                    inode
                 ].outflow_substep
                 # Add this node's outflow its downstream node's inflow
-                self._sum_outflows_to_inflow(jseg)
+                if params["to_graph_index"][inode] >= 0:
+                    self._node_upstream_inflow_sub[
+                        params["to_graph_index"][inode]
+                    ] += self._node_outflow_substep[inode]
 
             # <
             # not sure how PRMS-specific this is
@@ -318,14 +323,5 @@ class FlowGraph(ConservativeProcess):
         if self.budget is not None:
             self.budget.advance()
             self.budget.calculate()
-
-        return
-
-    def _sum_outflows_to_inflow(self, jseg):
-        params = self.params.parameters
-        if params["to_graph_index"][jseg] >= 0:
-            self._node_upstream_inflow_sub[
-                params["to_graph_index"][jseg]
-            ] += self._node_outflow_substep[jseg]
 
         return

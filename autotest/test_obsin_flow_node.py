@@ -1,6 +1,7 @@
 import pathlib as pl
 
 import numpy as np
+from pyPRMS import Streamflow
 import pytest
 
 from pywatershed import PRMSChannel
@@ -9,7 +10,7 @@ from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
-from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
+from pywatershed.hydrology.obsin_node import ObsInNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentInflowAdapter,
     PRMSChannelFlowNodeMaker,
@@ -35,8 +36,8 @@ convert_to_vol = ["outflows", "node_storage_changes"]
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if "drb_2yr:nhm" not in simulation["name"]:
-        pytest.skip("Only testing passthrough flow graph for drb_2yr:nhm")
+    # if "drb_2yr:nhm_obsin" not in simulation["name"]:
+    #    pytest.skip("Only testing obsin flow graph for drb_2yr:nhm_obsin")
     return Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
@@ -58,13 +59,20 @@ def parameters_prms(simulation, control):
     return PrmsParameters.from_netcdf(param_file)
 
 
-def test_prms_channel_pass_through_compare_prms(
+def test_prms_channel_obsin_compare_prms(
     simulation,
     control,
     discretization_prms,
     parameters_prms,
     tmp_path,
 ):
+    sf_data = Streamflow(simulation["dir"] / "sf_data").data
+    obsin_poi_inds = [167]
+    obsin_poi_ids = discretization_prms.parameters["poi_gage_id"][
+        (obsin_poi_inds),
+    ]
+    obs_data = sf_data[sf_data.columns.intersection(obsin_poi_ids)]
+
     # combine PRMS lateral inflows to a single non-volumetric inflow
     output_dir = simulation["output_dir"]
     input_variables = {}
@@ -90,7 +98,7 @@ def test_prms_channel_pass_through_compare_prms(
         def advance(self) -> None:
             self._prms_inflows.advance()
             self._current_value[0:-1] = self._prms_inflows.current
-            self._current_value[-1] = zero  # no inflow at the pass through
+            self._current_value[-1] = zero  # no inflow at the obsin
             return
 
     inflows_graph = GraphInflowAdapter(inflows_prms)
@@ -101,27 +109,39 @@ def test_prms_channel_pass_through_compare_prms(
         "prms_channel": PRMSChannelFlowNodeMaker(
             discretization_prms, parameters_prms
         ),
-        "pass_throughs": PassThroughNodeMaker(),
+        "obsin": ObsInNodeMaker(),
     }
     nnodes = parameters_prms.dims["nsegment"] + 1
     node_maker_name = ["prms_channel"] * nnodes
-    node_maker_name[-1] = "pass_throughs"
+    node_maker_name[-1] = "obsin"
     node_maker_index = np.arange(nnodes)
     node_maker_index[-1] = 0
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
     dis_params = discretization_prms.parameters
     to_graph_index[0:-1] = dis_params["tosegment"] - 1
-    nhm_seg_intervene_above = 1829  # 1829
-    wh_intervene_above_nhm = np.where(
-        dis_params["nhm_seg"] == nhm_seg_intervene_above
+
+    # this is  baroque, but we want to solve the nhm_seg identifier
+    obsin_intervene_inds = (
+        discretization_prms.parameters["poi_gage_segment"][(obsin_poi_inds),]
+        - 1
     )
+    # we want to intervene below this poi
+    nhm_seg_intervene_below = discretization_prms.parameters["nhm_seg"][
+        (obsin_intervene_inds),
+    ]
+
     wh_intervene_below_nhm = np.where(
-        (dis_params["tosegment"] - 1) == wh_intervene_above_nhm[0][0]
+        dis_params["nhm_seg"] == nhm_seg_intervene_below
     )
+
+    wh_intervene_above_nhm = (dis_params["tosegment"] - 1)[
+        wh_intervene_below_nhm
+    ]
+
     # have to map to the graph from an index found in prms_channel
     wh_intervene_above_graph = np.where(
         (np.array(node_maker_name) == "prms_channel")
-        & (node_maker_index == wh_intervene_above_nhm[0][0])
+        & (node_maker_index == wh_intervene_above_nhm)
     )
     wh_intervene_below_graph = np.where(
         (np.array(node_maker_name) == "prms_channel")
@@ -196,7 +216,7 @@ def test_prms_channel_pass_through_compare_prms(
                 answers_conv_vol,
                 atol=atol,
                 rtol=rtol,
-                fail_after_all_vars=False,
+                fail_after_all_vars=True,
             )
 
     flow_graph.finalize()

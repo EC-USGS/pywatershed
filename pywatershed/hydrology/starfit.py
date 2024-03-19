@@ -2,12 +2,12 @@ from typing import Literal
 
 import numpy as np
 
+from pywatershed.base.adapter import adaptable
 from pywatershed.base.conservative_process import ConservativeProcess
-
-from ..base.adapter import adaptable
-from ..base.control import Control
-from ..constants import nan, one, zero
-from ..parameters import Parameters
+from pywatershed.base.control import Control
+from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
+from pywatershed.constants import nan, one, zero
+from pywatershed.parameters import Parameters
 
 
 class Starfit(ConservativeProcess):
@@ -375,3 +375,286 @@ class Starfit(ConservativeProcess):
 
         # storage update and boundaries are enforced during the regulation step
         return release, availability_status
+
+
+class StarfitFlowNode(FlowNode):
+    def __init__(
+        self,
+        control: Control,
+        grand_id: np.int64,
+        initial_storage: np.float64,
+        start_time: np.datetime64,
+        end_time: np.datetime64,
+        inflow_mean: np.float64,
+        NORhi_min: np.float64,
+        NORhi_max: np.float64,
+        NORhi_alpha: np.float64,
+        NORhi_beta: np.float64,
+        NORhi_mu: np.float64,
+        NORlo_min: np.float64,
+        NORlo_max: np.float64,
+        NORlo_alpha: np.float64,
+        NORlo_beta: np.float64,
+        NORlo_mu: np.float64,
+        Release_min: np.float64,
+        Release_max: np.float64,
+        Release_alpha1: np.float64,
+        Release_alpha2: np.float64,
+        Release_beta1: np.float64,
+        Release_beta2: np.float64,
+        Release_p1: np.float64,
+        Release_p2: np.float64,
+        Release_c: np.float64,
+        GRanD_CAP_MCM: np.float64,
+        Obs_MEANFLOW_CUMECS: np.float64,
+        calc_method: Literal["numba", "numpy"] = None,
+    ):
+        self.control = control
+
+        self._grand_id = grand_id
+        self._initial_storage = initial_storage
+        self._start_time = start_time
+        self._end_time = end_time
+        self._inflow_mean = inflow_mean
+        self._NORhi_min = NORhi_min
+        self._NORhi_max = NORhi_max
+        self._NORhi_alpha = NORhi_alpha
+        self._NORhi_beta = NORhi_beta
+        self._NORhi_mu = NORhi_mu
+        self._NORlo_min = NORlo_min
+        self._NORlo_max = NORlo_max
+        self._NORlo_alpha = NORlo_alpha
+        self._NORlo_beta = NORlo_beta
+        self._NORlo_mu = NORlo_mu
+        self._Release_min = Release_min
+        self._Release_max = Release_max
+        self._Release_alpha1 = Release_alpha1
+        self._Release_alpha2 = Release_alpha2
+        self._Release_beta1 = Release_beta1
+        self._Release_beta2 = Release_beta2
+        self._Release_p1 = Release_p1
+        self._Release_p2 = Release_p2
+        self._Release_c = Release_c
+        self._GRanD_CAP_MCM = GRanD_CAP_MCM
+        self._Obs_MEANFLOW_CUMECS = Obs_MEANFLOW_CUMECS
+
+        self._lake_storage = np.zeros(1) * nan
+        self._lake_storage_old = np.zeros(1) * nan
+        self._lake_storage_change = np.zeros(1) * nan
+        # self._lake_inflow = np.zeros(1) * nan
+        self._lake_release = np.zeros(1) * nan
+        self._lake_spill = np.zeros(1) * nan
+        self._lake_availability_status = np.zeros(1) * nan
+
+        if np.isnan(self._Obs_MEANFLOW_CUMECS):
+            self._Obs_MEANFLOW_CUMECS = self._inflow_mean
+
+        return
+
+    def prepare_timestep(self):
+        #  solve here and do nothing in the subtimestep?
+        # just provide uniform flow rates on the subtimesteps
+        pass
+
+    def calculate_subtimestep(self, ihr, inflow_upstream, inflow_lateral):
+        self._lake_inflow = inflow_upstream + inflow_lateral
+        if (self.control.current_time > self._end_time) or (
+            self.control.current_time < self._start_time
+        ):
+            self._lake_storage[:] = np.zeros(1) * nan
+            self._lake_release[:] = np.zeros(1) * nan
+            self._lake_spill[:] = np.zeros(1) * nan
+            self._lake_availability_status[:] = np.zeros(1) * nan
+            return
+
+        if self.control.current_time == self._start_time:
+            self._lake_storage[:] = self._initial_storage
+            self._lake_storage_old[:] = self._initial_storage
+
+        (
+            self._lake_release[:],
+            self._lake_availability_status[:],
+        ) = Starfit._calc_istarf_release(
+            epiweek=np.minimum(self.control.current_epiweek, 52),
+            GRanD_CAP_MCM=self._GRanD_CAP_MCM,
+            grand_id=self._grand_id,
+            lake_inflow=self._lake_inflow,
+            lake_storage=self._lake_storage,
+            NORhi_alpha=self._NORhi_alpha,
+            NORhi_beta=self._NORhi_beta,
+            NORhi_max=self._NORhi_max,
+            NORhi_min=self._NORhi_min,
+            NORhi_mu=self._NORhi_mu,
+            NORlo_alpha=self._NORlo_alpha,
+            NORlo_beta=self._NORlo_beta,
+            NORlo_max=self._NORlo_max,
+            NORlo_min=self._NORlo_min,
+            NORlo_mu=self._NORlo_mu,
+            Obs_MEANFLOW_CUMECS=self._Obs_MEANFLOW_CUMECS,
+            Release_alpha1=self._Release_alpha1,
+            Release_alpha2=self._Release_alpha2,
+            Release_beta1=self._Release_beta1,
+            Release_beta2=self._Release_beta2,
+            Release_c=self._Release_c,
+            Release_max=self._Release_max,
+            Release_min=self._Release_min,
+            Release_p1=self._Release_p1,
+            Release_p2=self._Release_p2,
+        )  # output in m^3/d
+
+        self._lake_release[:] = (
+            self._lake_release / 24 / 60 / 60
+        )  # convert to m^3/s
+
+        # asdf
+        self._lake_storage_change[:] = (
+            (self._lake_inflow - self._lake_release) * 24 * 60 * 60 / 1.0e6
+        )  # conv to MCM
+
+        # can't release more than storage + inflow. This assumes zero
+        # storage = deadpool which may not be accurate, but this situation
+        # rarely occurs since STARFIT releases are already designed to keep
+        # storage within NOR.
+        if (self._lake_storage + self._lake_storage_change) < zero:
+            potential_release = self._lake_release + (
+                self._lake_storage + self._lake_storage_change
+            ) * (1.0e6 / 24 / 60 / 60)
+            self._lake_release[:] = np.maximum(
+                potential_release,
+                potential_release * zero,
+            )
+            self._lake_storage_change[:] = (
+                (self._lake_inflow - self._lake_release) * 24 * 60 * 60 / 1.0e6
+            )
+
+        self._lake_storage[:] = np.maximum(
+            self._lake_storage + self._lake_storage_change, zero
+        )
+
+        self._lake_spill[:] = nan
+        if ~np.isnan(self._lake_storage):
+            self._lake_spill[:] = zero
+
+        if self._lake_storage > self._GRanD_CAP_MCM:
+            self._lake_spill[:] = (
+                (self._lake_storage - self._GRanD_CAP_MCM)
+                * 1.0e6
+                / 24
+                / 60
+                / 60
+            )
+            self._lake_storage[:] = self._GRanD_CAP_MCM
+
+        return
+
+    def finalize_timestep(self):
+        pass
+
+    def advance(self):
+        pass
+
+    @property
+    def outflow(self):
+        pass
+
+    @property
+    def outflow_subset(self):
+        pass
+
+    @property
+    def storage_change(self):
+        return self.seg_stor_change
+
+
+class StarfitFlowNodeMaker(FlowNodeMaker):
+    def __init__(
+        self,
+        discretization: Parameters,
+        parameters: Parameters,
+        calc_method: Literal["numba", "numpy"] = None,
+        verbose: bool = None,
+    ) -> None:
+        self.name = "PRMSChannelFlowNodeMaker"
+        self._calc_method = calc_method
+        self._set_data(discretization, parameters)
+
+        return
+
+    def get_node(self, control, index):
+        return StarfitFlowNode(
+            control=control,
+            grand_id=self.grand_id[index],
+            initial_storage=self.initial_storage[index],
+            start_time=self.start_time[index],
+            end_time=self.end_time[index],
+            inflow_mean=self.inflow_mean[index],
+            NORhi_min=self.NORhi_min[index],
+            NORhi_max=self.NORhi_max[index],
+            NORhi_alpha=self.NORhi_alpha[index],
+            NORhi_beta=self.NORhi_beta[index],
+            NORhi_mu=self.NORhi_mu[index],
+            NORlo_min=self.NORlo_min[index],
+            NORlo_max=self.NORlo_max[index],
+            NORlo_alpha=self.NORlo_alpha[index],
+            NORlo_beta=self.NORlo_beta[index],
+            NORlo_mu=self.NORlo_mu[index],
+            Release_min=self.Release_min[index],
+            Release_max=self.Release_max[index],
+            Release_alpha1=self.Release_alpha1[index],
+            Release_alpha2=self.Release_alpha2[index],
+            Release_beta1=self.Release_beta1[index],
+            Release_beta2=self.Release_beta2[index],
+            Release_p1=self.Release_p1[index],
+            Release_p2=self.Release_p2[index],
+            Release_c=self.Release_c[index],
+            GRanD_CAP_MCM=self.GRanD_CAP_MCM[index],
+            Obs_MEANFLOW_CUMECS=self.Obs_MEANFLOW_CUMECS[index],
+            calc_method=self._calc_method,
+        )
+
+    def _set_data(self, discretization, parameters):
+        self._parameters = parameters
+        self._discretization = discretization
+        for param in self.get_parameters():
+            if param in self._parameters.parameters.keys():
+                self[param] = self._parameters.parameters[param]
+            else:
+                self[param] = self._discretization.parameters[param]
+
+        self.nreservoirs = len(self.grand_id)
+        return
+
+    @staticmethod
+    def get_dimensions() -> dict:
+        return ("nreservoirs",)
+
+    @staticmethod
+    def get_parameters() -> tuple:
+        return (
+            "grand_id",
+            "initial_storage",
+            "start_time",
+            "end_time",
+            "inflow_mean",
+            "NORhi_min",
+            "NORhi_max",
+            "NORhi_alpha",
+            "NORhi_beta",
+            "NORhi_mu",
+            "NORlo_min",
+            "NORlo_max",
+            "NORlo_alpha",
+            "NORlo_beta",
+            "NORlo_mu",
+            "Release_min",
+            "Release_max",
+            "Release_alpha1",
+            "Release_alpha2",
+            "Release_beta1",
+            "Release_beta2",
+            "Release_p1",
+            "Release_p2",
+            "Release_c",
+            "GRanD_CAP_MCM",
+            "Obs_MEANFLOW_CUMECS",
+        )

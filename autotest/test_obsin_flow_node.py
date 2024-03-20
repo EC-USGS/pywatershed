@@ -36,8 +36,8 @@ convert_to_vol = ["outflows", "node_storage_changes"]
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    # if "drb_2yr:nhm_obsin" not in simulation["name"]:
-    #    pytest.skip("Only testing obsin flow graph for drb_2yr:nhm_obsin")
+    if "drb_2yr:nhm_obsin" not in simulation["name"]:
+        pytest.skip("Only testing obsin flow graph for drb_2yr:nhm_obsin")
     return Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
@@ -71,7 +71,14 @@ def test_prms_channel_obsin_compare_prms(
     obsin_poi_ids = discretization_prms.parameters["poi_gage_id"][
         (obsin_poi_inds),
     ]
-    obs_data = sf_data[sf_data.columns.intersection(obsin_poi_ids)]
+    obsin_data = sf_data[sf_data.columns.intersection(obsin_poi_ids)]
+    # see test starfit flow node to see how slice off individual points
+    # and re-merge using xarray
+    obsin_params = Parameters.from_ds(
+        discretization_prms.subset(["poi_gage_id"])
+        .to_xr_ds()
+        .isel(npoigages=obsin_poi_inds)
+    )
 
     # combine PRMS lateral inflows to a single non-volumetric inflow
     output_dir = simulation["output_dir"]
@@ -109,7 +116,7 @@ def test_prms_channel_obsin_compare_prms(
         "prms_channel": PRMSChannelFlowNodeMaker(
             discretization_prms, parameters_prms
         ),
-        "obsin": ObsInNodeMaker(),
+        "obsin": ObsInNodeMaker(obsin_params, obsin_data),
     }
     nnodes = parameters_prms.dims["nsegment"] + 1
     node_maker_name = ["prms_channel"] * nnodes
@@ -158,7 +165,7 @@ def test_prms_channel_obsin_compare_prms(
         node_maker_name,
         node_maker_index,
         to_graph_index,
-        budget_type="error",
+        budget_type=None,
     )
 
     if do_compare_output_files:
@@ -194,29 +201,35 @@ def test_prms_channel_obsin_compare_prms(
             inflows_graph.current[0:-1] == lateral_inflow_answers.current
         ).all()
 
-        answers_from_graph = {}
-        for key, val in answers.items():
-            val.advance()
-            answers_from_graph[key] = np.zeros(len(val.current) + 1)
-            answers_from_graph[key][0:-1] = val.current
-            # just use this as correct and verify the rest of the graph is
-            # unchanged
-            answers_from_graph[key][-1] = flow_graph[key][-1]
-
         if do_compare_in_memory:
-            answers_conv_vol = {}
-            for key, val in answers_from_graph.items():
+            for key, val in answers.items():
+                val.advance()
                 if key in convert_to_vol:
-                    answers_conv_vol[key] = val / (24 * 60 * 60)
+                    desired = val.current / (24 * 60 * 60)
                 else:
-                    answers_conv_vol[key] = val
+                    desired = val.current
 
-            compare_in_memory(
-                flow_graph,
-                answers_conv_vol,
-                atol=atol,
-                rtol=rtol,
-                fail_after_all_vars=True,
-            )
+                # this indexing is all very hardwired below here
+                actual = flow_graph[key][0:-1]
+                if key not in [
+                    "node_upstream_inflows",
+                    "node_storage_changes",
+                ]:
+                    actual[-2] = flow_graph[key][-1]
+
+                if key == "node_storage_changes":
+                    # are the sign conventions right?
+                    sink_source_storage_changes = (
+                        -1 * flow_graph._nodes[-1].sink_source
+                    )
+
+                    actual[-2] = sink_source_storage_changes
+
+                np.testing.assert_allclose(
+                    actual,
+                    desired,
+                    atol=atol,
+                    rtol=rtol,
+                )
 
     flow_graph.finalize()

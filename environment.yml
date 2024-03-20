@@ -9,6 +9,7 @@ dependencies:
   - cartopy
   - epiweeks
   - filelock
+  - folium
   - geopandas
   - geoviews
   - git

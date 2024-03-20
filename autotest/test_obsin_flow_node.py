@@ -1,8 +1,8 @@
 import pathlib as pl
 
 import numpy as np
-from pyPRMS import Streamflow
 import pytest
+from pyPRMS import Streamflow
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory

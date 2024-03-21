@@ -2,7 +2,11 @@ import pathlib as pl
 
 import numpy as np
 import pytest
-from pyPRMS import Streamflow
+
+try:
+    from pyPRMS import Streamflow
+except ImportError:
+    Streamflow = None
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory

@@ -20,7 +20,13 @@ class ObsInNode(FlowNode):
 
     def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
         inflow = inflow_upstream + inflow_lateral
-        self._sink_source_sum += self._seg_outflow - inflow
+        if self._seg_outflow >= zero:
+            self._sink_source_sum += self._seg_outflow - inflow
+        else:
+            self._seg_outflow = inflow
+            self._sink_source_sum += zero
+
+        # <
         self._sink_source = self._sink_source_sum / (isubstep + 1)
         return
 

@@ -579,6 +579,10 @@ class StarfitFlowNode(FlowNode):
         # should this copy?
         return self._lake_storage
 
+    @property
+    def sink_source(self):
+        return zero
+
 
 class StarfitFlowNodeMaker(FlowNodeMaker):
     def __init__(

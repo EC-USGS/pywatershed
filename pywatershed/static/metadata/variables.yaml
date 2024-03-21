@@ -2570,6 +2570,13 @@ segment_transfer_tot:
     0: nsegment
   type: float64
   units: cfs
+sink_source:
+  desc: Net sink or source over a timestep on a FlowNode over FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 slow_flow:
   desc: Interflow from gravity reservoir storage that flows to the stream network
     for each HRU

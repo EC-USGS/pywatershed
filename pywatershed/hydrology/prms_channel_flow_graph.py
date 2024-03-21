@@ -104,6 +104,10 @@ class PRMSChannelFlowNode(FlowNode):
         """The volumetric storage change in cubic feet."""
         return self.seg_stor_change
 
+    @property
+    def sink_source(self):
+        return zero
+
 
 class PRMSChannelFlowNodeMaker(FlowNodeMaker):
     """PRMS channel flow (muskingum_mann) using a FlowGraph.

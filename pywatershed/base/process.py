@@ -99,14 +99,17 @@ class Process(Accessor):
         self.name = "Process"
         self.control = control
 
-        # params from dis and params: methodize this
-        missing_params = set(self.parameters).difference(
-            set(parameters.variables.keys())
-        )
-        if missing_params:
-            self.params = type(parameters).merge(parameters, discretization)
-        else:
-            self.params = parameters.subset(self.get_parameters())
+        if parameters is not None:
+            # params from dis and params: methodize this
+            missing_params = set(self.parameters).difference(
+                set(parameters.variables.keys())
+            )
+            if missing_params and discretization is not None:
+                self.params = type(parameters).merge(
+                    parameters, discretization
+                )
+            else:
+                self.params = parameters.subset(self.get_parameters())
 
         # netcdf output variables
         self._netcdf_initialized = False
@@ -309,15 +312,15 @@ class Process(Accessor):
             if len([mm for mm in check_list if mm in ii_dims[0]]):
                 ii_dims = ii_dims[1:]
 
-            ii_dim_sizes = tuple(self.params.get_dim_values(ii_dims).values())
-            ii_type = self.control.meta.get_numpy_types(ii)[ii]
+            # ii_dim_sizes = tuple(self.params.get_dim_values(ii_dims).values())
+            # ii_type = self.control.meta.get_numpy_types(ii)[ii]
 
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii],
                 variable_name=ii,
                 control=args["control"],
-                variable_dim_sizes=ii_dim_sizes,
-                variable_type=ii_type,
+                # variable_dim_sizes=ii_dim_sizes,
+                # variable_type=ii_type,
             )
             if self._input_variables_dict[ii]:
                 self[ii] = self._input_variables_dict[ii].current

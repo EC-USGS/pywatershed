@@ -1711,6 +1711,13 @@ infil_hru:
   type: float64
   units: inches
   var_category: mass flux
+inflows:
+  desc: Inflows to FlowGraph in vol/time
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 int_alb:
   desc: 'Flag to indicate (1: accumulation season curve; 2: use of the melt season
     curve)'
@@ -2034,6 +2041,27 @@ newsnow:
     0: nhru
   type: int32
   units: none
+node_outflows:
+  desc: The flows leaving each FlowGraph node in (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
+node_storage_changes:
+  desc: The storage changes on each node of the FlowGraph (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass storage
+node_upstream_inflows:
+  desc: Within FlowGraph flows to each node (not including lateral inflows)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 obs_runoff_mo:
   desc: Monthly measured streamflow at basin outlet
   dims:
@@ -2089,6 +2117,13 @@ orad_hru:
     0: nhru
   type: float64
   units: Langleys
+outflows:
+  desc: Outflows exiting the FlowGrap (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 pan_evap:
   desc: Pan evaporation at each measurement station
   dims:
@@ -2411,6 +2446,13 @@ seg_outflow:
   type: float64
   units: cfs
   var_category: mass flux
+seg_outflow_substep:
+  desc: Streamflow leaving a segment on a time substep
+  dims:
+    0: nsegment
+  type: float64
+  units: cfs
+  var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
   dims:
@@ -2528,6 +2570,13 @@ segment_transfer_tot:
     0: nsegment
   type: float64
   units: cfs
+sink_source:
+  desc: Net sink or source over a timestep on a FlowNode over FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 slow_flow:
   desc: Interflow from gravity reservoir storage that flows to the stream network
     for each HRU

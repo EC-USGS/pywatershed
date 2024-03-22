@@ -185,7 +185,8 @@ class PRMSChannel(ConservativeProcess):
         return self._outflow_mask
 
     def _set_initial_conditions(self) -> None:
-        # initialize channel segment storage
+        # initialize channel segment "storage"
+        # this is unused currently. Seems that it would set seg_inflow0
         self.seg_outflow[:] = self.segment_flow_init
         return
 
@@ -214,9 +215,9 @@ class PRMSChannel(ConservativeProcess):
 
         # use networkx to calculate the Directed Acyclic Graph
         if self.nsegment > 1:
-            graph = nx.DiGraph()
-            graph.add_edges_from(connectivity)
-            segment_order = list(nx.topological_sort(graph))
+            self._graph = nx.DiGraph()
+            self._graph.add_edges_from(connectivity)
+            segment_order = list(nx.topological_sort(self._graph))
         else:
             segment_order = [0]
 
@@ -433,7 +434,6 @@ class PRMSChannel(ConservativeProcess):
             self.seg_lateral_inflow[iseg] += lateral_inflow
 
         # solve muskingum_mann routing
-
         (
             self.seg_upstream_inflow[:],
             self._seg_inflow0[:],
@@ -516,7 +516,6 @@ class PRMSChannel(ConservativeProcess):
 
         seg_inflow = seg_inflow0 * zero
         seg_outflow = seg_inflow0 * zero
-        seg_outflow0 = seg_inflow0 * zero
         inflow_ts = seg_inflow0 * zero
         seg_current_sum = seg_inflow0 * zero
 
@@ -577,10 +576,6 @@ class PRMSChannel(ConservativeProcess):
                 # segment outflow (the mean daily flow rate for each segment)
                 # will be the average of hourly values
                 seg_outflow[jseg] += outflow_ts[jseg]
-
-                # previous segment outflow is equal to the inflow_ts on the
-                # previous routed timestep
-                seg_outflow0[jseg] = outflow_ts[jseg]
 
                 # add current time step flow rate to the upstream flow rate
                 # for the segment this segment is connected to

@@ -9,6 +9,7 @@ dependencies:
   - cartopy
   - epiweeks
   - filelock
+  - folium
   - geopandas
   - geoviews
   - git
@@ -54,4 +55,5 @@ dependencies:
       - jupyter_black
       - modflow-devtools
       - pylint
+      # - pyPRMS
       - sphinx-autodoc-typehints

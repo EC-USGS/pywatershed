@@ -109,7 +109,10 @@ def test_compare_prms(
         runoff.advance()
         runoff.calculate(1.0)
         runoff.output()
+
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
             compare_in_memory(
                 runoff, answers, atol=atol, rtol=rtol, skip_missing_ans=True
             )

@@ -405,6 +405,7 @@ class NetCdfWrite(Accessor):
         nsegment_coordinate = False
         one_coordinate = False
         nreservoirs_coordinate = False
+        nnodes_coordinate = False
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name
@@ -420,6 +421,8 @@ class NetCdfWrite(Accessor):
                 one_coordinate = True
             if "nreservoirs" in dimension_name:
                 nreservoirs_coordinate = True
+            if "nnodes" in dimension_name:
+                nnodes_coordinate = True
 
         if nhru_coordinate:
             hru_ids = coordinates["nhm_id"]
@@ -429,7 +432,6 @@ class NetCdfWrite(Accessor):
                 nhrus = hru_ids.shape[0]
             self.nhrus = nhrus
             self.hru_ids = hru_ids
-
         if nsegment_coordinate:
             segment_ids = coordinates["nhm_seg"]
             if isinstance(segment_ids, (list, tuple)):
@@ -438,12 +440,12 @@ class NetCdfWrite(Accessor):
                 nsegments = segment_ids.shape[0]
             self.nsegments = nsegments
             self.segment_ids = segment_ids
-
         if one_coordinate:
             self.one_ids = coordinates["one"]
-
         if nreservoirs_coordinate:
             self.nreservoirs = len(coordinates["grand_id"])
+        if nnodes_coordinate:
+            self.nnodes = len(coordinates["nnodes"])
 
         # Dimensions
 
@@ -482,6 +484,8 @@ class NetCdfWrite(Accessor):
             self.dataset.createDimension("one", 1)
         if nreservoirs_coordinate:
             self.dataset.createDimension("grand_id", self.nreservoirs)
+        if nnodes_coordinate:
+            self.dataset.createDimension("nnodes", self.nnodes)
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
@@ -501,6 +505,11 @@ class NetCdfWrite(Accessor):
                 "grand_id", "i4", ("grand_id")
             )
             self.grandid[:] = coordinates["grand_id"]
+        if nnodes_coordinate:
+            self.nnodes = self.dataset.createVariable(
+                "nnodes", "i4", ("nnodes")
+            )
+            self.nnodes[:] = coordinates["nnodes"]
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
@@ -517,6 +526,8 @@ class NetCdfWrite(Accessor):
                 spatial_coordinate = "one"
             elif "nreservoirs" in variable_dimensions[var_name]:
                 spatial_coordinate = "grand_id"
+            elif "nnodes" in variable_dimensions[var_name]:
+                spatial_coordinate = "nnodes"
             else:
                 msg = (
                     "Undefined spatial coordinate name in "

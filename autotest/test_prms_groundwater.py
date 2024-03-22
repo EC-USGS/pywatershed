@@ -94,6 +94,8 @@ def test_compare_prms(
         gw.output()
 
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
             compare_in_memory(gw, answers, atol=atol, rtol=rtol)
 
     gw.finalize()

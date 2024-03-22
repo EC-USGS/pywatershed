@@ -44,8 +44,7 @@ prms_src/prms5.3.0/bin
 *.wbal
 wbal.msgs
 soltab_debug
-output/
-output_no_dprst/
+output*/
 
 # emacs
 *~

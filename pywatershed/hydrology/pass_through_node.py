@@ -33,6 +33,10 @@ class PassThroughNode(FlowNode):
     def storage_change(self):
         return zero
 
+    @property
+    def sink_source(self):
+        return zero
+
 
 class PassThroughNodeMaker(FlowNodeMaker):
     def __init__(

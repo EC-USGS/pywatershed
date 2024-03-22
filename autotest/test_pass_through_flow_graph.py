@@ -191,6 +191,10 @@ def test_prms_channel_pass_through_compare_prms(
                 else:
                     answers_conv_vol[key] = val
 
+            # <<
+            # there are no expected sources or sinks in this test
+            answers_conv_vol["sink_source"] = val * zero
+
             compare_in_memory(
                 flow_graph,
                 answers_conv_vol,

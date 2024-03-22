@@ -6,6 +6,7 @@ from pywatershed.base.adapter import AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
+from pywatershed.constants import zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentInflowAdapter,
     PRMSChannelFlowNodeMaker,
@@ -144,6 +145,10 @@ def test_prms_channel_flow_graph_compare_prms(
                     answers_conv_vol[key] = val.current / (24 * 60 * 60)
                 else:
                     answers_conv_vol[key] = val.current
+
+            # <<
+            # there are no expected sources or sinks in this test
+            answers_conv_vol["sink_source"] = val.current * zero
 
             compare_in_memory(
                 flow_graph,

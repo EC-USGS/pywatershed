@@ -147,8 +147,8 @@ jobs:
 
       - name: Format files
         run: |
-          isort ./pywatershed
-          black ./pywatershed
+          ruff check .
+          ruff format .
 
       - name: Update release branch, draft PR to main
         env:

@@ -82,31 +82,11 @@ jobs:
           pip -V
           pip list
 
-      - name: Run isort
-        run: |
-          echo "if isort check fails update isort using"
-          echo "  pip install isort --upgrade"
-          echo "and run"
-          echo "  isort ./pywatershed ./autotest"
-          echo "and then commit the changes."
-          isort --check --diff ./pywatershed ./autotest
+      - name: Lint
+        run: ruff check .
 
-      - name: Run black
-        run: |
-          echo "if black check fails update black using"
-          echo "  pip install black --upgrade"
-          echo "and run"
-          echo "  black ./pywatershed ./autotest"
-          echo "and then commit the changes."
-          black --check --diff ./pywatershed ./autotest
-
-      - name: Run flake8
-        run: |
-          flake8 --count --show-source --exit-zero ./pywatershed ./autotest
-
-      - name: Run pylint
-        run: |
-          pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
+      - name: Format
+        run: ruff format --check .
 
   test:
     name: ${{ matrix.os }} py${{ matrix.python-version }}

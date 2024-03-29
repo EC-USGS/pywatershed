@@ -47,11 +47,8 @@ dynamic = ["version", "readme"]
 [project.optional-dependencies]
 lint = [
     "cffconvert",
-    "black",
     "click",
-    "isort",
-    "flake8",
-    "pylint",
+    "ruff",
     "flynt",
     "pre-commit",
 ]
@@ -113,15 +110,28 @@ include = ["pywatershed", "pywatershed.*"]
 "pywatershed.static.metadata" = ["*.yaml"]
 "pywatershed.data.drb_2yr" = ["*"]
 
-[tool.black]
+[tool.ruff]
 line-length = 79
-target_version = ["py39"]
+target-version = "py38"
+include = [
+    "pyproject.toml",
+    "pywatershed/**/*.py",
+    "autotest/**/*.py",
+    "examples/**/*.py",
+    "test_data/**/*.py",
+    "docs/**/*.py",
+]
 
-[tool.flynt]
-line-length = 79
-verbose = true
-
-[tool.isort]
-profile = "black"
-src_paths = ["pywatershed", "autotest", "test_data"]
-line_length = 79
+[tool.ruff.lint]
+ignore = [
+    "E402", # module level import not at top of file
+    "E712", # Avoid equality comparisons to `True`
+    "E722", # do not use bare `except`
+    "E741", # ambiguous variable name
+    "F401", # unused import
+    "F403", # unable to detect undefined names (star imports)
+    "F524", # `.format` missing argument(s) for placeholder(s)
+    "F811", # Redefinition of unused variable
+    "F821", # undefined name TODO FIXME
+    "F841", # local variable assigned but never used
+]

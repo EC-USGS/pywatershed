@@ -168,22 +168,22 @@ class ModelGraph:
                 n_vars = 0
                 varset_col_span = 6
 
-            label += f"    <TR>\n"
+            label += "    <TR>\n"
             label += (
                 f'        <TD COLSPAN="{varset_col_span}" ROWSPAN="{n_vars+1}"'
             )
             label += f'         BGCOLOR="{category_colors[varset_name]}">{varset_name}</TD>\n'
-            label += f"    </TR>\n"
+            label += "    </TR>\n"
 
             for ii, vv in enumerate(sorted(varset)):
                 border_color_str = ""
                 if vv in mass_budget_vars:
                     border_color_str = 'border="1" COLOR="BLUE"'
-                label += f"    <TR>\n"
+                label += "    <TR>\n"
                 label += f'        <TD COLSPAN="4" BGCOLOR="{category_colors[varset_name]}" {border_color_str} PORT="{vv}"><FONT POINT-SIZE="9.0">{vv}</FONT></TD>\n'
-                label += f"    </TR>\n"
+                label += "    </TR>\n"
 
-        label += f"</TABLE>>\n"
+        label += "</TABLE>>\n"
         label = label
 
         color_str = ""
@@ -205,16 +205,16 @@ class ModelGraph:
     def _file_node(self, files):
         files = list(set(files))
         label = (
-            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
-            f'    <TR><TD COLSPAN="1">Files</TD></TR>\n'
+            '<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
+            '    <TR><TD COLSPAN="1">Files</TD></TR>\n'
         )
 
         for file in files:
-            label += f"    <TR>\n"
+            label += "    <TR>\n"
             label += f'        <TD COLSPAN="1"  BGCOLOR="gray50" PORT="{file.split(".")[0]}"><FONT POINT-SIZE="9.0">{file}</FONT></TD>\n'
-            label += f"    </TR>\n"
+            label += "    </TR>\n"
 
-        label += f"</TABLE>>\n"
+        label += "</TABLE>>\n"
         label = label
         node = self.pydot.Node(
             "Files",

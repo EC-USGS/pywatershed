@@ -129,7 +129,7 @@ class ModelGraph:
         cls = process.__class__.__name__
 
         label = (
-            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
+            f'<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'  # noqa: E501
             f'    <TR><TD COLSPAN="6">"{process_name}"</TD></TR>\n'
             f'    <TR><TD COLSPAN="6">{cls}</TD></TR>\n'
         )
@@ -172,7 +172,7 @@ class ModelGraph:
             label += (
                 f'        <TD COLSPAN="{varset_col_span}" ROWSPAN="{n_vars+1}"'
             )
-            label += f'         BGCOLOR="{category_colors[varset_name]}">{varset_name}</TD>\n'
+            label += f'         BGCOLOR="{category_colors[varset_name]}">{varset_name}</TD>\n'  # noqa: E501
             label += "    </TR>\n"
 
             for ii, vv in enumerate(sorted(varset)):
@@ -180,7 +180,7 @@ class ModelGraph:
                 if vv in mass_budget_vars:
                     border_color_str = 'border="1" COLOR="BLUE"'
                 label += "    <TR>\n"
-                label += f'        <TD COLSPAN="4" BGCOLOR="{category_colors[varset_name]}" {border_color_str} PORT="{vv}"><FONT POINT-SIZE="9.0">{vv}</FONT></TD>\n'
+                label += f'        <TD COLSPAN="4" BGCOLOR="{category_colors[varset_name]}" {border_color_str} PORT="{vv}"><FONT POINT-SIZE="9.0">{vv}</FONT></TD>\n'  # noqa: E501
                 label += "    </TR>\n"
 
         label += "</TABLE>>\n"
@@ -205,13 +205,13 @@ class ModelGraph:
     def _file_node(self, files):
         files = list(set(files))
         label = (
-            '<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'
+            '<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0" CELLPADDING="1">\n'  # noqa
             '    <TR><TD COLSPAN="1">Files</TD></TR>\n'
         )
 
         for file in files:
             label += "    <TR>\n"
-            label += f'        <TD COLSPAN="1"  BGCOLOR="gray50" PORT="{file.split(".")[0]}"><FONT POINT-SIZE="9.0">{file}</FONT></TD>\n'
+            label += f'        <TD COLSPAN="1"  BGCOLOR="gray50" PORT="{file.split(".")[0]}"><FONT POINT-SIZE="9.0">{file}</FONT></TD>\n'  # noqa
             label += "    </TR>\n"
 
         label += "</TABLE>>\n"

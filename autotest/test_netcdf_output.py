@@ -14,20 +14,9 @@ from pywatershed.parameters import PrmsParameters
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
 
+# This probably dosent need varied over simulation
 
 n_time_steps = 10
-
-
-# This probably dosent need varied over domain
-
-
-@pytest.fixture(scope="function")
-def control(simulation):
-    ctl = Control.load_prms(
-        simulation["control_file"], warn_unused_options=False
-    )
-    del ctl.options["netcdf_output_dir"]
-    return ctl
 
 
 @pytest.fixture(scope="function")

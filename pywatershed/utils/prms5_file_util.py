@@ -337,7 +337,7 @@ class PrmsFile:
         """
         try:
             dimension = int(self._get_line().split()[0])
-        except:
+        except:  # noqa: E722
             raise ValueError(
                 f"Error on line {self.line_number} in PRMS "
                 + f"input file '{self.file_object.name}'."

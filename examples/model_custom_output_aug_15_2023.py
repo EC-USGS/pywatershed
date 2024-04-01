@@ -3,8 +3,9 @@ import shutil
 import time
 
 import numpy as np
-import pywatershed as pws
 import xarray as xr
+
+import pywatershed as pws
 
 sttime = time.time()
 

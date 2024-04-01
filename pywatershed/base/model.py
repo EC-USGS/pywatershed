@@ -273,7 +273,7 @@ class Model:
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,

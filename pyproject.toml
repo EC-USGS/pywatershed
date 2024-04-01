@@ -125,8 +125,7 @@ include = [
 [tool.ruff.lint]
 select = ["F", "E", "I001"]
 ignore = [
-    # "E722", # do not use bare `except`
-    "F401", # unused import
+    # "F401", # unused import
 ]
 
 # this is maintained for some editors

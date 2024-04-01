@@ -1,10 +1,8 @@
 import os
 import pathlib as pl
 import sys
-import time
 from fnmatch import fnmatch
 from platform import processor
-from shutil import copy2
 from typing import List
 from warnings import warn
 

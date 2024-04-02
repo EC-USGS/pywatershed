@@ -1,8 +1,5 @@
 import pathlib as pl
 
-import pytest
-import yaml
-
 import pywatershed as pws
 
 test_data_dir = pl.Path("../test_data")

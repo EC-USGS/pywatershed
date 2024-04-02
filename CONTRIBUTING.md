@@ -50,15 +50,15 @@ To submit a pull request (PR) please follow these steps:
 
 3. Make your changes in a new branch. Be sure to include test cases.
 
-4. Run `isort` and `black` on the `pywatershed` module.
+4. Run `ruff` on the `pywatershed` module.
 
-    Python source code files should be formatted by running `black` and `isort` on the
+    Python source code files should be formatted by running `ruff` on the
     `pywatershed` subdirectory before opening a pull request, as CI will fail if the code
     is not properly formatted. For instance, from the project root:
 
     ```shell
-    black --check --diff pywatershed
-    isort --check --diff pywatershed
+    ruff check .
+    ruff format . --check --diff
     ```
 
     **Note**:  PRs must pass format checks in GitHub Actions before they can be accepted.

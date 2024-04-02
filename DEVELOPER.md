@@ -169,10 +169,8 @@ For more details on the autotests, see [`autotest/README.md`](autotest/README.md
 ## Linting
 Automated linting procedures are performed in CI and enforced, these are
 ```shell
-isort ./autotest ./pywatershed
-black ./autotest ./pywatershed
-flake8 --count --show-source --exit-zero ./pywatershed ./autotest
-pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
+ruff check .
+ruff format .
 ```
 
 And you'll need to run these locally to pass CI checks.

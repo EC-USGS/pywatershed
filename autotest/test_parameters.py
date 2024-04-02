@@ -1,5 +1,6 @@
-from pywatershed.parameters import Parameters
 from utils import assert_dicts_equal
+
+from pywatershed.parameters import Parameters
 
 
 def test_param_dd_param(simulation):

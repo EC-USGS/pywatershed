@@ -267,7 +267,7 @@ class CsvFile:
                         delimiter=",",
                         converters={0: str2date},
                     )
-                except:
+                except:  # noqa: E722
                     raise IOError(f"numpy could not parse...'{path}'")
 
             if self._variables is None:

@@ -82,7 +82,8 @@ def separate_domain_params_dis_to_ncdf(
 
     Args:
         prms_param_file: the native PRMS parameter file to separate
-        domain_name: string name to include in the output files
+        domain_name: string name to include in the output files, None includes
+            no additional string.
         out_dir: the directory to which output files will be writen
         process_list: optional, the list of process classes desired for
             individual output files. If not specified, all process classes
@@ -111,20 +112,25 @@ def separate_domain_params_dis_to_ncdf(
 
     written_files = {}
 
+    if domain_name is None:
+        domain_name = ""
+    else:
+        domain_name = f"{domain_name}_"
+
     for proc in process_list:
         dis_param_names = set(dis_hru_vars + dis_seg_vars)
         proc_param_names = set(proc.get_parameters())
         proc_params_no_dis_names = proc_param_names.difference(dis_param_names)
         proc_params = prms_parameters.subset(proc_params_no_dis_names)
         print(proc, proc_params_no_dis_names)
-        nc_out_file = out_dir / f"parameters_{domain_name}_{proc.__name__}.nc"
+        nc_out_file = out_dir / f"parameters_{domain_name}{proc.__name__}.nc"
         proc_params.to_netcdf(nc_out_file, use_xr=use_xr)
         written_files[proc] = nc_out_file
 
     dis_dict = {"dis_hru": dis_hru_vars, "dis_seg": dis_seg_vars}
     for dis_name, dis_var_names in dis_dict.items():
         dis_params = prms_parameters.subset(dis_var_names)
-        nc_out_file = out_dir / f"parameters_{domain_name}_{dis_name}.nc"
+        nc_out_file = out_dir / f"parameters_{domain_name}{dis_name}.nc"
         dis_params.to_netcdf(nc_out_file, use_xr=use_xr)
         written_files[dis_name] = nc_out_file
 
@@ -136,7 +142,7 @@ def separate_domain_params_dis_to_ncdf(
         prms_parameters.subset(dis_dict["dis_hru"]),
         prms_parameters.subset(dis_dict["dis_seg"]),
     )
-    nc_out_file = out_dir / f"parameters_{domain_name}_both.nc"
+    nc_out_file = out_dir / f"parameters_{domain_name}dis_both.nc"
     dis_both.to_netcdf(nc_out_file, use_xr=use_xr)
     written_files["dis_both"] = nc_out_file
 

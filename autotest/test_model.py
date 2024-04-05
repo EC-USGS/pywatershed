@@ -32,6 +32,16 @@ test_models = {
         pywatershed.PRMSGroundwater,
         pywatershed.PRMSChannel,
     ],
+    "nhm_no_dprst": [
+        pywatershed.PRMSSolarGeometry,
+        pywatershed.PRMSAtmosphere,
+        pywatershed.PRMSCanopy,
+        pywatershed.PRMSSnow,
+        pywatershed.PRMSRunoffNoDprst,
+        pywatershed.PRMSSoilzoneNoDprst,
+        pywatershed.PRMSGroundwaterNoDprst,
+        pywatershed.PRMSChannel,
+    ],
 }
 
 
@@ -66,13 +76,11 @@ def discretization(simulation):
     return dis
 
 
-@pytest.fixture(
-    scope="function", params=list(product(invoke_style, test_models.keys()))
-)
+@pytest.fixture(scope="function", params=invoke_style)
 def model_args(simulation, control, discretization, request):
-    invoke_style = request.param[0]
-    model_key = request.param[1]
-    process_list = test_models[model_key]
+    invoke_style = request.param
+    control_key = simulation["name"].split(":")[1]
+    process_list = test_models[control_key]
 
     if invoke_style == "prms":
         # Single params is the backwards compatible way
@@ -92,7 +100,7 @@ def model_args(simulation, control, discretization, request):
             pp.__name__.lower() for pp in process_list
         ]
 
-        for process in test_models["nhm"]:
+        for process in test_models[control_key]:
             proc_name = process.__name__
             proc_name_lower = proc_name.lower()
             model_dict[proc_name_lower] = {}
@@ -133,7 +141,6 @@ def model_args(simulation, control, discretization, request):
 
 def test_model(simulation, model_args, tmp_path):
     """Run the full NHM model"""
-
     tmp_path = pl.Path(tmp_path)
     output_dir = simulation["output_dir"]
 
@@ -266,6 +273,9 @@ def test_model(simulation, model_args, tmp_path):
             "seg_outflow",
         ],
     }
+
+    for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
+        comparison_vars_dict_all[f"{vv}NoDprst"] = comparison_vars_dict_all[vv]
 
     tol = {
         "PRMSSolarGeometry": 1.0e-5,

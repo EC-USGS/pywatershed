@@ -54,6 +54,7 @@ precip_day
 1
 4
 ./prcp.cbh
+####
 model_output_file
 1
 4
@@ -93,12 +94,12 @@ transp_module
 1
 4
 transp_tindex
-###
+####
 cascade_flag
 1
 1
 1
-###
+####
 cascadegw_flag
 1
 1

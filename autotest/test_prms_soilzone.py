@@ -89,7 +89,10 @@ def test_compare_prms(
     control.options["netcdf_output_var_names"] = comparison_var_names
 
     # TODO: this is hacky, improve the design
-    if not control.options["dprst_flag"]:
+    if (
+        "dprst_flag" not in control.options.keys()
+        or not control.options["dprst_flag"]
+    ):
         comparison_var_names = {
             vv for vv in comparison_var_names if "dprst" not in vv
         }

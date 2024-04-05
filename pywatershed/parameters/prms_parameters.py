@@ -196,6 +196,7 @@ class PrmsParameters(Parameters):
                     temp_dims = []
                     for isize in shape:
                         found_dim = False
+
                         for dim_key, dim_value in param_dims.items():
                             if dim_value == isize:
                                 found_dim = True
@@ -205,6 +206,12 @@ class PrmsParameters(Parameters):
                         if isize == 1 and not found_dim:
                             found_dim = True
                             temp_dims.append("scalar")
+
+                        if not found_dim:
+                            raise ValueError(
+                                "Unable to identify dimension name for"
+                                f"parameter {key} with length {isize}"
+                            )
 
                 parameter_dimensions_dict[key] = {"dims": tuple(temp_dims)}
 

@@ -232,6 +232,7 @@ class PRMSSoilzone(ConservativeProcess):
                 "soil_to_gw",
                 "ssr_to_gw",
                 "slow_flow",
+                "dunnian_flow",
                 # "pref_flow",
             ],
             "storage_changes": [
@@ -1092,8 +1093,6 @@ class PRMSSoilzone(ConservativeProcess):
             soil_lower[wh_lower_stor_max_gt_zero]
             / soil_lower_max[wh_lower_stor_max_gt_zero]
         )
-        # if current_time == np.datetime64("1979-03-18T00:00:00"):
-        # asdf
 
         soil_moist_tot = ssres_stor + soil_moist * hru_frac_perv
         recharge = soil_to_gw + ssr_to_gw

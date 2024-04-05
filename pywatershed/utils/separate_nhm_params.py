@@ -101,8 +101,11 @@ def separate_domain_params_dis_to_ncdf(
         pywatershed.PRMSCanopy,
         pywatershed.PRMSSnow,
         pywatershed.PRMSRunoff,
+        pywatershed.PRMSRunoffNoDprst,
         pywatershed.PRMSSoilzone,
+        pywatershed.PRMSSoilzoneNoDprst,
         pywatershed.PRMSGroundwater,
+        pywatershed.PRMSGroundwaterNoDprst,
         pywatershed.PRMSChannel,
     ]
     if process_list is None:

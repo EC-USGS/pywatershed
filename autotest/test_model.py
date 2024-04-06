@@ -1,6 +1,5 @@
 import pathlib as pl
 import shutil
-from itertools import product
 from pprint import pprint
 
 import numpy as np

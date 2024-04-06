@@ -1,14 +1,10 @@
 from typing import Literal
-from warnings import warn
-
-import numpy as np
-from numba import prange
 
 from ..base.adapter import adaptable
-from .prms_runoff import PRMSRunoff
 from ..base.control import Control
-from ..constants import HruType, dnearzero, nearzero, numba_num_threads, zero
+from ..constants import HruType, zero
 from ..parameters import Parameters
+from .prms_runoff import PRMSRunoff
 
 RAIN = 0
 SNOW = 1

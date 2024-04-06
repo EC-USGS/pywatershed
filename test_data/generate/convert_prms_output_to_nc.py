@@ -1,4 +1,3 @@
-from filelock import FileLock
 from warnings import warn
 
 import pytest

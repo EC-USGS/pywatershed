@@ -1,11 +1,10 @@
 from typing import Literal
 
-
 from ..base.adapter import adaptable
-from .prms_soilzone import PRMSSoilzone
 from ..base.control import Control
 from ..constants import nan, zero
 from ..parameters import Parameters
+from .prms_soilzone import PRMSSoilzone
 
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3

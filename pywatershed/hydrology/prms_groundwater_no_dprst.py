@@ -1,10 +1,10 @@
 from typing import Literal
 
 from ..base.adapter import adaptable
-from .prms_groundwater import PRMSGroundwater
 from ..base.control import Control
 from ..constants import nan, zero
 from ..parameters import Parameters
+from .prms_groundwater import PRMSGroundwater
 
 
 class PRMSGroundwaterNoDprst(PRMSGroundwater):

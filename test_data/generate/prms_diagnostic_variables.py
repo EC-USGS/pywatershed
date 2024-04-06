@@ -1,11 +1,11 @@
 import pathlib as pl
 from warnings import warn
 
-import pywatershed as pws
-from pywatershed.constants import dnearzero, nearzero, nan, zero
-
 import numpy as np
 import xarray as xr
+
+import pywatershed as pws
+from pywatershed.constants import dnearzero, nan, nearzero, zero
 
 """This module is for generating PRMS diagnostic variables"""
 

@@ -3,11 +3,11 @@ import pathlib as pl
 import numpy as np
 import pytest
 import xarray as xr
+from utils import assert_or_print
 
 from pywatershed import Control
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.cbh_utils import cbh_file_to_netcdf, cbh_files_to_df
-from utils import assert_or_print
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 

@@ -1,6 +1,5 @@
 import pathlib as pl
 
-import pytest
 import xarray as xr
 
 import pywatershed as pws

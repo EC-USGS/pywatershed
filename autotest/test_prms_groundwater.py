@@ -1,6 +1,7 @@
 import pathlib as pl
 
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed import Control, Parameters, PRMSGroundwater
 from pywatershed.base.adapter import adapter_factory
@@ -10,7 +11,6 @@ from pywatershed.hydrology.prms_groundwater_no_dprst import (
 )
 
 from pywatershed.parameters import PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files?
 do_compare_output_files = False

@@ -2,10 +2,10 @@ import pathlib as pl
 
 import numpy as np
 import pytest
+from utils import assert_or_print
 
 from pywatershed import Control, Parameters, PRMSCanopy
 from pywatershed.parameters import PrmsParameters
-from utils import assert_or_print
 
 test_ans = {
     "drb_2yr": {

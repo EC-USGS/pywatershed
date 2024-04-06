@@ -2,9 +2,9 @@ import pathlib as pl
 
 import numpy as np
 import pytest
+from utils import assert_or_print
 
 from pywatershed.utils import ControlVariables, compare_control_files
-from utils import assert_or_print
 
 test_answers = {
     "hru_1": {

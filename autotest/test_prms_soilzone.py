@@ -1,13 +1,13 @@
 import pathlib as pl
 
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.prms_soilzone import PRMSSoilzone
 from pywatershed.hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 from pywatershed.parameters import Parameters, PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = False

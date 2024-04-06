@@ -246,9 +246,7 @@ class Budget(Accessor):
                     var
                 ] * self.control.time_step.astype(
                     f"timedelta64[{self.time_unit}]"
-                ).astype(
-                    int
-                )
+                ).astype(int)
 
         self._sum_component_accumulations()
 

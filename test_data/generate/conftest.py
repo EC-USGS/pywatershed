@@ -3,12 +3,11 @@ import pathlib as pl
 import sys
 from fnmatch import fnmatch
 from platform import processor
-from shutil import copy2
-import time
 from typing import List
 from warnings import warn
 
 import pytest
+
 import pywatershed as pws
 
 test_data_dir = pl.Path("..")

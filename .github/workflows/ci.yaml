@@ -29,10 +29,10 @@ jobs:
         shell: bash
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
@@ -64,10 +64,10 @@ jobs:
         shell: bash
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
@@ -82,31 +82,11 @@ jobs:
           pip -V
           pip list
 
-      - name: Run isort
-        run: |
-          echo "if isort check fails update isort using"
-          echo "  pip install isort --upgrade"
-          echo "and run"
-          echo "  isort ./pywatershed ./autotest"
-          echo "and then commit the changes."
-          isort --check --diff ./pywatershed ./autotest
+      - name: Lint
+        run: ruff check .
 
-      - name: Run black
-        run: |
-          echo "if black check fails update black using"
-          echo "  pip install black --upgrade"
-          echo "and run"
-          echo "  black ./pywatershed ./autotest"
-          echo "and then commit the changes."
-          black --check --diff ./pywatershed ./autotest
-
-      - name: Run flake8
-        run: |
-          flake8 --count --show-source --exit-zero ./pywatershed ./autotest
-
-      - name: Run pylint
-        run: |
-          pylint --jobs=2 --errors-only --exit-zero ./pywatershed ./autotest
+      - name: Format
+        run: ruff format --check .
 
   test:
     name: ${{ matrix.os }} py${{ matrix.python-version }}
@@ -119,10 +99,28 @@ jobs:
       matrix:
         os: [ "ubuntu-latest", "macos-latest", "windows-latest" ]
         python-version: ["3.9", "3.10"]
+
     steps:
 
+      - name: Free Disk Space (Ubuntu)
+        if: runner.os == 'Linux'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Checkout repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -135,16 +133,16 @@ jobs:
           echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
           cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 
-      - name: Enforce MF6 ref and remote merge to main
-        if: github.base_ref == 'main'
-        run: |
-          echo Merge commit: GITHUB_BASE_REF = $GITHUB_BASE_REF
-          req_ref=feat-snf  # if not develop, submit an issue
-          echo $MF6_REF
-          if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
-          req_remote=langevin-usgs/modflow6  # if not MODFLOW-USGS/modflow6, submit an issue
-          echo $MF6_REMOTE
-          if [[ "$MF6_REMOTE" != "$req_remote" ]]; then exit 1; fi
+      # - name: Enforce MF6 ref and remote merge to main
+      #   if: github.base_ref == 'main'
+      #   run: |
+      #     echo Merge commit: GITHUB_BASE_REF = $GITHUB_BASE_REF
+      #     req_ref=swf_q_mmr_and_mct  # if not develop, submit an issue
+      #     echo $MF6_REF
+      #     if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
+      #     req_remote=MODFLOW-USGS/modflow6
+      #     echo $MF6_REMOTE
+      #     if [[ "$MF6_REMOTE" != "$req_remote" ]]; then echo "bad mf6 remote in .mf6_ci_ref_remote"; exit 1; fi
 
       - name: Setup gfortran
         uses: fortran-lang/setup-fortran@v1
@@ -166,17 +164,17 @@ jobs:
             python=${{matrix.python-version}}
             conda
 
-      - name: Checkout MODFLOW 6
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.MF6_REMOTE }}
-          ref: ${{ env.MF6_REF }}
-          path: modflow6
+      # - name: Checkout MODFLOW 6
+      #   uses: actions/checkout@v4
+      #   with:
+      #     repository: ${{ env.MF6_REMOTE }}
+      #     ref: ${{ env.MF6_REF }}
+      #     path: modflow6
 
-      - name: Update flopy MODFLOW 6 classes
-        working-directory: modflow6/autotest
-        run: |
-          python update_flopy.py
+      # - name: Update flopy MODFLOW 6 classes
+      #   working-directory: modflow6/autotest
+      #   run: |
+      #     python update_flopy.py
 
       - name: Install pywatershed
         run: |
@@ -227,7 +225,7 @@ jobs:
         working-directory: test_data
         run: |
           find drb_2yr/output_no_dprst/ -name '*.nc'
-          
+
       - name: drb_2yr_nhm - pywatershed tests
         working-directory: autotest
         run: pytest
@@ -273,7 +271,6 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
-          -n=auto
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0
@@ -283,7 +280,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Test results for ${{ runner.os }}-${{ matrix.python-version }}
           path: |

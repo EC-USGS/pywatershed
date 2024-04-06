@@ -2,13 +2,14 @@ from filelock import FileLock
 from warnings import warn
 
 import pytest
-import pywatershed as pws
-
+from filelock import FileLock
 from prms_convert_to_netcdf import convert_csv_to_nc, convert_soltab_to_nc
 from prms_diagnostic_variables import (
-    diagnose_simple_vars_to_nc,
     diagnose_final_vars_to_nc,
+    diagnose_simple_vars_to_nc,
 )
+
+import pywatershed as pws
 
 
 @pytest.fixture

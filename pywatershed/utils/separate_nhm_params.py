@@ -15,11 +15,11 @@ separation is defined and carried out.
 
 # these are prarameters that are provided as scalars which we will
 # force expand to their full dimensions
-params_expand_scalar_to_dims = {
-    "obsout_segment": "nsegment",
-    "seg_humidity": "nsegment",
-    "width_m": "nsegment",
-}
+params_expand_scalar = [
+    "obsout_segment",
+    "seg_humidity",
+    "width_m",
+]
 
 var_meta_to_attrs = [
     "default",

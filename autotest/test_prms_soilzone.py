@@ -75,15 +75,14 @@ def test_compare_prms(
         # The _hru ones have non-hru equivalents being checked.
         # soil_zone_max and soil_lower_max would be nice to check but
         # prms5.2.1 wont write them as hru variables.
-        - set(
-            [
-                "perv_actet_hru",
-                "soil_lower_change_hru",
-                "soil_lower_max",
-                "soil_rechr_change_hru",
-                "soil_zone_max",  # not a prms variable?
-            ]
-        )
+        - {
+            "perv_actet_hru",
+            "soil_lower_change_hru",
+            "soil_lower_max",
+            "soil_rechr_change_hru",
+            "soil_zone_max",  # not a prms variable?
+        }
+        | {"sroff"}
     )
 
     control.options["netcdf_output_var_names"] = comparison_var_names

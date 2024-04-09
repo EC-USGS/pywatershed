@@ -61,10 +61,10 @@ def parameters(simulation, control, request):
         sz_params = PrmsParameters.from_netcdf(sz_param_file)
         sat_threshold = sz_params.parameters["sat_threshold"]
 
-    if abs(sat_threshold).min() >= 999.0:
+    if abs(sat_threshold).min() < 999.0:
         pytest.skip(
-            "test_prms_runoff only valid when sat_threshold < 999 (or some "
-            "other reasonable amount) causes non-zero dunnian_flow"
+            "test_prms_runoff only valid when sat_threshold >= 999 (or some "
+            "amount) which causes zero dunnian_flow"
         )
 
     return params

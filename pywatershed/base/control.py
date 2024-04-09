@@ -19,6 +19,7 @@ from ..utils.time_utils import (
     datetime_month,
     datetime_year,
 )
+from ..utils.utils import diff_dicts
 from .accessor import Accessor
 
 # This is the list of control variables currently used by pywatershed
@@ -173,6 +174,7 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         options: dict = None,
+        only_warn_invalid: bool = False,
     ):
         super().__init__()
         self.name = "Control"
@@ -198,10 +200,13 @@ class Control(Accessor):
         self._previous_time = None
         self._itime_step = -1
 
+        self._only_warn_invalid = only_warn_invalid
+
         if options is None:
             options = OptsDict()
         self.options = options
         self.meta = meta
+
         # This will have the time dimension name
         # This will have the time coordimate name
 
@@ -222,6 +227,7 @@ class Control(Accessor):
         cls,
         control_file: fileish,
         warn_unused_options: bool = True,
+        keep_unused_options: bool = False,
     ) -> "Control":
         """Initialize a control object from a PRMS control file.
 
@@ -235,6 +241,9 @@ class Control(Accessor):
             An instance of a Control object.
         """
         control = ControlVariables.load(control_file)
+
+        if keep_unused_options and not warn_unused_options:
+            warn_unused_options = True
 
         if warn_unused_options:
             for vv in control.control.keys():
@@ -250,7 +259,8 @@ class Control(Accessor):
 
         for oo in opt_names:
             if oo not in prms_legacy_options_avail:
-                del opts[oo]
+                if not keep_unused_options:
+                    del opts[oo]
             if oo in prms_to_pws_option_map.keys():
                 pws_option_key = prms_to_pws_option_map[oo]
                 val = opts[oo]
@@ -288,12 +298,13 @@ class Control(Accessor):
             end_time=end_time,
             time_step=time_step,
             options=control.control,
+            only_warn_invalid=keep_unused_options,
         )
 
     def _set_options(self, options: dict):
         if not isinstance(options, (OptsDict, dict)):
             raise ValueError("control.options must be a dictionary")
-        valid_options = OptsDict()
+        valid_options = OptsDict(self._only_warn_invalid)
         for key, val in options.items():
             valid_options[key] = val
 
@@ -589,11 +600,31 @@ class Control(Accessor):
         )
         return control
 
+    def diff(self, other) -> None:
+        """Diff self with another Control instance
+
+        Args:
+            other: An other dict against which to compare.
+        """
+        diff_dicts(self.__dict__, other.__dict__, ["options"])
+        diff_dicts(self.options, other.options)
+        return
+
 
 class OptsDict(UserDict):
+    def __init__(self, only_warn: bool = False):
+        super().__init__()
+        self._only_warn = only_warn
+
+        return
+
     def __setitem__(self, key, value):
         if key not in pws_control_options_avail:
             msg = f"'{key}' is not an available control option"
-            raise NameError(msg)
+            if not self._only_warn:
+                raise NameError(msg)
+            else:
+                warn(msg)
+
         super().__setitem__(key, value)
         return None

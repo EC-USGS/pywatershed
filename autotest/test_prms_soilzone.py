@@ -138,7 +138,12 @@ def test_compare_prms(
         soil.output()
         if do_compare_in_memory:
             compare_in_memory(
-                soil, answers, atol=atol, rtol=rtol, skip_missing_ans=True
+                soil,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                skip_missing_ans=True,
+                fail_after_all_vars=True,
             )
 
     soil.finalize()

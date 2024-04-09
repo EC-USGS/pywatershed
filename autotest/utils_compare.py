@@ -80,9 +80,12 @@ def compare_in_memory(
     strict: bool = False,
     also_check_w_np: bool = True,
     skip_missing_ans: bool = False,
+    fail_after_all_vars: bool = True,
+    verbose: bool = False,
 ):
     # TODO: docstring
 
+    fail_list = []
     for var in process.get_variables():
         if var not in answers.keys():
             if skip_missing_ans:
@@ -98,16 +101,38 @@ def compare_in_memory(
         else:
             actual = process[var]
 
-        assert_allclose(
-            actual,
-            answers[var].current.data,
-            atol=atol,
-            rtol=rtol,
-            equal_nan=equal_nan,
-            strict=strict,
-            also_check_w_np=also_check_w_np,
-            var_name=var,
-        )
+        if not fail_after_all_vars:
+            assert_allclose(
+                actual,
+                answers[var].current.data,
+                atol=atol,
+                rtol=rtol,
+                equal_nan=equal_nan,
+                strict=strict,
+                also_check_w_np=also_check_w_np,
+                var_name=var,
+            )
+
+        else:
+            try:
+                assert_allclose(
+                    actual,
+                    answers[var].current.data,
+                    atol=atol,
+                    rtol=rtol,
+                    equal_nan=equal_nan,
+                    strict=strict,
+                    also_check_w_np=also_check_w_np,
+                    var_name=var,
+                )
+
+            except AssertionError:
+                fail_list += [var]
+                if verbose:
+                    print(f"compare_netcdfs NOT all close for variable: {var}")
+
+    if len(fail_list) > 0:
+        assert False, f"compare_netcdfs failed for variables: {fail_list}"
 
 
 def compare_netcdfs(

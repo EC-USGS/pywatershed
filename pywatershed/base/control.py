@@ -1,6 +1,5 @@
 import datetime
 import pathlib as pl
-from collections import UserDict
 from copy import deepcopy
 from typing import Union
 from warnings import warn
@@ -611,7 +610,7 @@ class Control(Accessor):
         return
 
 
-class OptsDict(UserDict):
+class OptsDict(dict):
     def __init__(self, only_warn: bool = False):
         super().__init__()
         self._only_warn = only_warn

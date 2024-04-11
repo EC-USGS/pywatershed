@@ -674,7 +674,7 @@ class PRMSAtmosphere(Process):
         # transp_on inited to 0 everywhere above
 
         # candidate for worst code lines
-        if self.params.parameters["temp_units"] == 0:
+        if self._params.parameters["temp_units"] == 0:
             transp_tmax_f = self.transp_tmax
         else:
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0
@@ -772,7 +772,7 @@ class PRMSAtmosphere(Process):
 
                 nc = NetCdfWrite(
                     nc_path,
-                    self.params.coords,
+                    self._params.coords,
                     [var],
                     {var: self.meta[var]},
                 )
@@ -789,7 +789,7 @@ class PRMSAtmosphere(Process):
             nc_path = self._netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.coords,
+                self._params.coords,
                 self._netcdf_output_vars,
                 self.meta,
             )

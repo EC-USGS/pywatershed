@@ -100,13 +100,7 @@ class Process(Accessor):
         self.control = control
 
         # params from dis and params: methodize this
-        missing_params = set(self.parameters).difference(
-            set(parameters.variables.keys())
-        )
-        if missing_params:
-            self.params = type(parameters).merge(parameters, discretization)
-        else:
-            self.params = parameters.subset(self.get_parameters())
+        self._set_params(parameters, discretization)
 
         # netcdf output variables
         self._netcdf_initialized = False
@@ -223,22 +217,44 @@ class Process(Accessor):
         """A dictionary of initial values for each public variable."""
         return self.get_init_values()
 
+    def _set_params(self, parameters, discretization):
+        param_keys = set(parameters.variables.keys())
+        missing_params = set(self.parameters).difference(param_keys)
+        if missing_params:
+            if discretization is not None:
+                dis_keys = set(discretization.variables.keys())
+                all_missing_in_dis = (
+                    missing_params.intersection(dis_keys) == missing_params
+                )
+            else:
+                all_missing_in_dis = False
+
+            if not all_missing_in_dis:
+                raise ValueError(
+                    "The following required parameters were not found in the "
+                    f"parameter file: {missing_params}"
+                )
+
+            self._params = type(parameters).merge(parameters, discretization)
+        else:
+            self._params = parameters.subset(self.parameters)
+
     def _initialize_self_variables(self, restart: bool = False):
         # dims
         for name in self.dimensions:
             if name == "ntime":
                 setattr(self, name, self.control.n_times)
             else:
-                setattr(self, name, self.params.dims[name])
+                setattr(self, name, self._params.dims[name])
 
         # parameters
         for name in self.parameters:
-            setattr(self, name, self.params.get_param_values(name))
+            setattr(self, name, self._params.get_param_values(name))
 
         # inputs
         for name in self.inputs:
             # dims of internal variables never have time, so they are spatial
-            spatial_dims = self.params.get_dim_values(
+            spatial_dims = self._params.get_dim_values(
                 list(meta.find_variables(name)[name]["dims"])
             )
             spatial_dims = tuple(spatial_dims.values())
@@ -309,7 +325,7 @@ class Process(Accessor):
             if len([mm for mm in check_list if mm in ii_dims[0]]):
                 ii_dims = ii_dims[1:]
 
-            ii_dim_sizes = tuple(self.params.get_dim_values(ii_dims).values())
+            ii_dim_sizes = tuple(self._params.get_dim_values(ii_dims).values())
             ii_type = self.control.meta.get_numpy_types(ii)[ii]
 
             self._input_variables_dict[ii] = adapter_factory(
@@ -519,7 +535,7 @@ class Process(Accessor):
                 nc_path = self._netcdf_output_dir / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
                     nc_path,
-                    self.params.coords,
+                    self._params.coords,
                     [variable_name],
                     {variable_name: self.meta[variable_name]},
                     {"process class": self.name},
@@ -535,7 +551,7 @@ class Process(Accessor):
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
                 self._netcdf_output_dir / f"{self.name}.nc",
-                self.params.coords,
+                self._params.coords,
                 self._netcdf_output_vars,
                 self.meta,
                 {"process class": self.name},

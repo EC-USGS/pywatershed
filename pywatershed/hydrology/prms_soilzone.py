@@ -240,7 +240,7 @@ class PRMSSoilzone(ConservativeProcess):
                 "soil_rechr_change_hru",
                 "soil_lower_change_hru",
                 "slow_stor_change",
-                # "pref_flow_stor_change",
+                "pref_flow_stor_change",
             ],
         }
 
@@ -278,14 +278,14 @@ class PRMSSoilzone(ConservativeProcess):
         )
 
         self._snow_free = one - self.snowcov_area
-        # edit a param
+        # edit a param - bad
         wh_inactive_or_lake = np.where(
             (self.hru_type == HruType.INACTIVE.value)
             | (self.hru_type == HruType.LAKE.value)
         )
         self._sat_threshold = self.sat_threshold.copy()
         self._sat_threshold[wh_inactive_or_lake] = zero
-        # edit a param
+        # edit a param - bad
         wh_not_land = np.where(self.hru_type != HruType.LAND.value)
         self._pref_flow_den = self.pref_flow_den.copy()
         self._pref_flow_den[wh_not_land] = zero
@@ -806,7 +806,8 @@ class PRMSSoilzone(ConservativeProcess):
             dunnianflw = zero
             dunnianflw_pfr = zero
             dunnianflw_gvr = zero
-            # interflow = zero
+            interflow = zero  # loop variable
+            prefflow = zero
 
             # JLM: ET calculation to be removed from soilzone.
             avail_potet = np.maximum(zero, potet[hh] - hru_actet[hh])
@@ -830,44 +831,41 @@ class PRMSSoilzone(ConservativeProcess):
             capwater_maxin = infil_hru[hh] / hru_frac_perv[hh]
 
             # Compute preferential flow and storage, and any dunnian flow
-            prefflow = zero
-            # if _pref_flow_flag[hh]:
-            #     pref_flow_infil[hh] = zero
-            #     pref_flow_maxin = zero
+            if pref_flow_infil_frac[hh]:
+                pref_flow_maxin = zero
+                pref_flow_infil[hh] = zero
 
-            #     if capwater_maxin > zero:
-            #         # PRMSIV Step 1 - Partition infil between capillary and
-            #         #                 preferential-flow (eqn 1-121)
-            #         # pref_flow for whole HRU but capwater is pervious area
-            #         # calculations on pervious area
-            #         pref_flow_maxin = capwater_maxin * pref_flow_den[hh]
+                if capwater_maxin > zero:
+                    # PRMSIV Step 1 - Partition infil between capillary and
+                    #                 preferential-flow (eqn 1-121)
+                    # pref_flow for whole HRU but capwater is pervious area
+                    # calculations on pervious area
+                    pref_flow_maxin = capwater_maxin * pref_flow_infil_frac[hh]
 
-            #         # PRMSIV Step 3: no cascades and already normalized to
-            #         #                pervious area. (eqn 1-124)
-            #         capwater_maxin = capwater_maxin - pref_flow_maxin
+                    # PRMSIV Step 3: no cascades and already normalized to
+                    #                pervious area. (eqn 1-124)
+                    capwater_maxin = capwater_maxin - pref_flow_maxin
 
-            #         # renormalize pref_flow to whole HRU from pervious area
-            #         pref_flow_maxin = pref_flow_maxin * hru_frac_perv[hh]
+                    # renormalize pref_flow to whole HRU from pervious area
+                    pref_flow_maxin = pref_flow_maxin * hru_frac_perv[hh]
 
-            #         # PRMSIV Step 2 - Compute PFR storage, excess to Dunnian
-            #         #                 (eqns 1-122 and 1-123)
-            #         # Compute contribution to preferential-flow reservoir
-            #         # storage
-            #         pref_flow_stor[hh] = (
-            #             pref_flow_stor[hh] + pref_flow_maxin
-            #         )
-            #         dunnianflw_pfr = max(
-            #             zero, pref_flow_stor[hh] - pref_flow_max[hh]
-            #         )
+                    # PRMSIV Step 2 - Compute PFR storage, excess to Dunnian
+                    #                 (eqns 1-122 and 1-123)
+                    # Compute contribution to preferential-flow reservoir
+                    # storage
+                    pref_flow_stor[hh] = pref_flow_stor[hh] + pref_flow_maxin
+                    dunnianflw_pfr = np.maximum(
+                        zero, pref_flow_stor[hh] - pref_flow_max[hh]
+                    )
 
-            #         if dunnianflw_pfr > zero:
-            #             pref_flow_stor[hh] = pref_flow_max[hh]
+                    if dunnianflw_pfr > zero:
+                        pref_flow_stor[hh] = pref_flow_max[hh]
 
-            #         # <
-            #         pref_flow_infil[hh] = pref_flow_maxin - dunnianflw_pfr
+                    # <
+                    pref_flow_infil[hh] = pref_flow_maxin - dunnianflw_pfr
 
-            #     # <
-            #     _pfr_dunnian_flow[hh] = dunnianflw_pfr
+                # <
+                # pfr_dunnian_flow[hh] = dunnianflw_pfr  # does nothing
 
             # <
             # whole HRU
@@ -900,15 +898,17 @@ class PRMSSoilzone(ConservativeProcess):
                 )
 
                 cap_waterin[hh] = cap_waterin[hh] * hru_frac_perv[hh]
+                # we got rid of gvr_maxin and just use soil_to_ssr[hh]
 
             # <
-
             topfr = zero
 
             # soil_to_ssr also known as grv_maxin
             # grv_availh2o = grv_stor + soil_to_ssr
             availh2o = slow_stor[hh] + soil_to_ssr[hh]
 
+            # why is this condition different than in prms5.2.1?
+            # compute_lateral == ACTIVE
             if hru_type[hh] == HruType.LAND.value:
                 # PRMSIV Step 7
                 # PRMSIV eqn 1-132? not necessary?
@@ -989,7 +989,7 @@ class PRMSSoilzone(ConservativeProcess):
             #      variables less.
 
             # Compute contribution to Dunnian flow from PFR, if any
-            if _pref_flow_flag[hh]:
+            if pref_flow_den[hh] > zero:
                 # PRMSIV eqn 1-135 (? - value of topfr is not obvious)
                 availh2o = pref_flow_stor[hh] + topfr
                 dunnianflw_gvr = max(zero, availh2o - pref_flow_max[hh])
@@ -1006,6 +1006,7 @@ class PRMSSoilzone(ConservativeProcess):
                 pref_flow_stor[hh] = pref_flow_stor[hh] + topfr
 
                 if pref_flow_stor[hh] > zero:
+                    # JLM: there's nothring returned here
                     compute_interflow(
                         fastcoef_lin[hh],
                         fastcoef_sq[hh],
@@ -1013,10 +1014,11 @@ class PRMSSoilzone(ConservativeProcess):
                         pref_flow_stor[hh],
                         prefflow,
                     )
-                # <
+            # <<
             elif hru_type[hh] == HruType.LAND.value:
                 dunnianflw_gvr = topfr  # ?? is this right
 
+            # gvr2pfr = topfr  # this is a gravflow/gsflow variable
             # <
             perv_actet[hh] = zero
 
@@ -1049,7 +1051,7 @@ class PRMSSoilzone(ConservativeProcess):
             soil_lower[hh] = soil_moist[hh] - soil_rechr[hh]
 
             if hru_type[hh] == HruType.LAND.value:
-                # interflow = slow_flow[hh] + prefflow
+                interflow = slow_flow[hh] + prefflow
 
                 dunnianflw = dunnianflw_gvr + dunnianflw_pfr
                 dunnian_flow[hh] = dunnianflw
@@ -1057,7 +1059,7 @@ class PRMSSoilzone(ConservativeProcess):
                 # Treat pref_flow as interflow
                 ssres_flow[hh] = slow_flow[hh]
 
-                if _pref_flow_flag[hh]:
+                if pref_flow_den[hh] > zero:
                     pref_flow[hh] = prefflow
                     ssres_flow[hh] = ssres_flow[hh] + prefflow
 
@@ -1087,10 +1089,14 @@ class PRMSSoilzone(ConservativeProcess):
                 ssres_stor[hh] = slow_stor[hh]
 
             # <
+            # The following calculationw are vectorized, out of the loop
+            # soil_lower_ratio, soil_moist_tot, recharge
             ssres_in[hh] = soil_to_ssr[hh] + pref_flow_infil[hh] + gwin
+            # grav_dunnian_flow[hh] = dunnianflw_gvr  # this variable does 0
             unused_potet[hh] = potet[hh] - hru_actet[hh]
 
-        # <
+        # < enddo
+
         # Could mo move the remaining code to _calculate
         # refactor with np.where
         wh_lower_stor_max_gt_zero = np.where(soil_lower_max > zero)
@@ -1270,7 +1276,7 @@ class PRMSSoilzone(ConservativeProcess):
             else:
                 inter_flow = ssres_in
 
-            # <
+        # <<
         else:
             inter_flow = zero
 

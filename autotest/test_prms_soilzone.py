@@ -143,7 +143,7 @@ def test_compare_prms(
                 atol=atol,
                 rtol=rtol,
                 skip_missing_ans=True,
-                fail_after_all_vars=True,
+                fail_after_all_vars=False,
             )
 
     soil.finalize()

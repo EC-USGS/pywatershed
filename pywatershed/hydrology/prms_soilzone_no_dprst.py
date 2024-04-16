@@ -205,13 +205,13 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
                 "ssr_to_gw",
                 "slow_flow",
                 "dunnian_flow",
-                # "pref_flow",
+                "pref_flow",
             ],
             "storage_changes": [
                 "soil_rechr_change_hru",
                 "soil_lower_change_hru",
                 "slow_stor_change",
-                # "pref_flow_stor_change",
+                "pref_flow_stor_change",
             ],
         }
 

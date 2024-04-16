@@ -234,7 +234,7 @@ class PRMSSoilzone(ConservativeProcess):
                 "ssr_to_gw",
                 "slow_flow",
                 "dunnian_flow",
-                # "pref_flow",
+                "pref_flow",
             ],
             "storage_changes": [
                 "soil_rechr_change_hru",
@@ -806,7 +806,7 @@ class PRMSSoilzone(ConservativeProcess):
             dunnianflw = zero
             dunnianflw_pfr = zero
             dunnianflw_gvr = zero
-            interflow = zero  # loop variable
+            # interflow = zero  # loop variable, unused
             prefflow = zero
 
             # JLM: ET calculation to be removed from soilzone.
@@ -841,7 +841,6 @@ class PRMSSoilzone(ConservativeProcess):
                     # pref_flow for whole HRU but capwater is pervious area
                     # calculations on pervious area
                     pref_flow_maxin = capwater_maxin * pref_flow_infil_frac[hh]
-
                     # PRMSIV Step 3: no cascades and already normalized to
                     #                pervious area. (eqn 1-124)
                     capwater_maxin = capwater_maxin - pref_flow_maxin
@@ -1004,10 +1003,13 @@ class PRMSSoilzone(ConservativeProcess):
                 #
                 pref_flow_in[hh] = pref_flow_infil[hh] + topfr
                 pref_flow_stor[hh] = pref_flow_stor[hh] + topfr
-
                 if pref_flow_stor[hh] > zero:
                     # JLM: there's nothring returned here
-                    compute_interflow(
+
+                    (
+                        pref_flow_stor[hh],
+                        prefflow,
+                    ) = compute_interflow(
                         fastcoef_lin[hh],
                         fastcoef_sq[hh],
                         pref_flow_in[hh],
@@ -1051,7 +1053,7 @@ class PRMSSoilzone(ConservativeProcess):
             soil_lower[hh] = soil_moist[hh] - soil_rechr[hh]
 
             if hru_type[hh] == HruType.LAND.value:
-                interflow = slow_flow[hh] + prefflow
+                # interflow = slow_flow[hh] + prefflow  # pointless calculation
 
                 dunnianflw = dunnianflw_gvr + dunnianflw_pfr
                 dunnian_flow[hh] = dunnianflw
@@ -1243,7 +1245,6 @@ class PRMSSoilzone(ConservativeProcess):
         # this function. The theory shows 3 oneline equations, this is
         # a wild departure which makes me assume that there are things going
         # on with the coefficients that I dont know about.
-
         if (coef_lin <= zero) and (ssres_in <= zero):
             # print("interflow: 1")
             c1 = coef_sq * storage
@@ -1269,7 +1270,7 @@ class PRMSSoilzone(ConservativeProcess):
             c1 = coef_sq * sos / c3
             c2 = one - np.exp(-c3)
 
-            if one + c1 * c2 > zero:
+            if (one + c1 * c2) > zero:
                 inter_flow = ssres_in + (
                     (sos * (one + c1) * c2) / (one + c1 * c2)
                 )
@@ -1281,12 +1282,12 @@ class PRMSSoilzone(ConservativeProcess):
             inter_flow = zero
 
         # <
+        if inter_flow < zero:
+            inter_flow = zero
+        elif inter_flow > storage:
+            inter_flow = storage
 
-        # TODO: Check if inter_flow < zero; if so, throw warning, reset to zero
-        inter_flow = min(inter_flow, storage)
-        # ifinter_flow > storage:
-        #   inter_flow = storage
-        # # <
+        # <
         storage = storage - inter_flow
         return storage, inter_flow
 

@@ -40,6 +40,7 @@ pws_control_options_avail = [
     "netcdf_budget_args",
     "parameter_file",
     "start_time",
+    "streamflow_module",
     "time_step_units",
     "verbosity",
 ]
@@ -55,6 +56,7 @@ prms_legacy_options_avail = [
     "nsegmentOutVar_names",
     "param_file",
     "start_time",
+    "strmflow_module",
     "print_debug",
 ]
 
@@ -67,6 +69,7 @@ prms_to_pws_option_map = {
     "nsegmentOutVar_names": "netcdf_output_var_names",
     "param_file": "parameter_file",
     "print_debug": "verbosity",
+    "strmflow_module": "streamflow_module",
 }
 
 assert (
@@ -278,7 +281,11 @@ class Control(Accessor):
                 else:
                     opts[pws_option_key] = val
                 # some special cases
-                if pws_option_key in ["parameter_file", "netcdf_output_dir"]:
+                if pws_option_key in [
+                    "parameter_file",
+                    "netcdf_output_dir",
+                    "streamflow_module",
+                ]:
                     opts[pws_option_key] = val[0]
 
             # special cases, unmapped names

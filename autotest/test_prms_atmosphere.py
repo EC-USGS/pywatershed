@@ -1,4 +1,6 @@
+import numpy as np
 import pytest
+
 from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.atmosphere.prms_atmosphere import PRMSAtmosphere
@@ -6,6 +8,11 @@ from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
+
+# pptmix is altered by PRMSCanopy
+# the answers on those times,locations are set to the true answers below
+# only for compare_in_memory. comparing output files will fail if
+# pptmix is changed by PRMSCanopy
 
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = False
@@ -77,6 +84,12 @@ def test_compare_prms(
                 var_pth, variable_name=var, control=control
             )
 
+        new_snow = adapter_factory(
+            output_dir / "newsnow.nc",
+            variable_name="newsnow",
+            control=control,
+        )
+
         # check the advance/calculate the state
         tmaxf_id = id(atm.tmaxf)
 
@@ -87,7 +100,26 @@ def test_compare_prms(
                 atm.output()
             atm.calculate(1.0)
 
-            compare_in_memory(atm, answers, atol=atol, rtol=rtol)
+            # this is because pptmix is altered by canopy using this
+            # net_snow condition from canopy
+            new_snow.advance()
+            # answers are behind, a second advance in compare_in_memory will
+            # keep it at the same time, even with control
+            answers["pptmix"].advance()
+            # this is the condition that zeros pptmix
+            cond = new_snow.current == 0
+            atm.pptmix._current = np.where(
+                cond, answers["pptmix"].current, atm.pptmix.data[ii, :]
+            )
+
+            compare_in_memory(
+                atm,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                fail_after_all_vars=False,
+                verbose=False,
+            )
             assert id(atm.tmaxf) == tmaxf_id
 
     if do_compare_output_files:

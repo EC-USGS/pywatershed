@@ -94,6 +94,8 @@ def compare_in_memory(
                 msg = f"Variable '{var}' not found in the answers provided."
                 raise KeyError(msg)
 
+        if verbose:
+            print(f"checking {var}")
         answers[var].advance()
 
         if isinstance(process[var], pws.base.timeseries.TimeseriesArray):

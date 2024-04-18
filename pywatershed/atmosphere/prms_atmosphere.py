@@ -10,7 +10,7 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, nearzero, one, zero
 from ..parameters import Parameters
-from ..utils.time_utils import datetime_doy, datetime_month
+from ..utils.time_utils import datetime_day_of_month, datetime_month
 from .solar_constants import solf
 
 
@@ -154,7 +154,7 @@ class PRMSAtmosphere(Process):
         self._month_ind_12 = datetime_month(self._time) - 1  # (time)
         self._month_ind_1 = np.zeros(self._time.shape, dtype=int)  # (time)
         self._month = datetime_month(self._time)  # (time)
-        self._doy = datetime_doy(self._time)  # (time)
+        self._dom = datetime_day_of_month(self._time)  # (time)
 
         self.adjust_temperature()
         self.adjust_precip()
@@ -389,10 +389,6 @@ class PRMSAtmosphere(Process):
             ivd["prcp"].data <= zero, zero, self.prmx.data
         )
 
-        self.pptmix.data[:] = np.where(
-            (self.prmx.data > zero) & (self.prmx.data < one), 1, 0
-        )
-
         # Recalculate/redefine these now based on prmx instead of the
         # temperature logic
         wh_all_snow = np.where(self.prmx.data <= zero)
@@ -419,6 +415,18 @@ class PRMSAtmosphere(Process):
         )[wh_all_rain]
         self.hru_rain.data[wh_all_rain] = self.hru_ppt.data[wh_all_rain]
         self.hru_snow.data[wh_all_rain] = zero
+
+        cond = (
+            (self.hru_ppt.data > zero)
+            & (self.tmaxf.data > self.tmax_allsnow[month_ind])
+            & (
+                (self.tminf.data <= self.tmax_allsnow[month_ind])
+                & (self.tmaxf.data < tmax_allrain[month_ind])
+            )
+            & (self.prmx.data < one)
+        )
+        self.pptmix.data[:] = np.where(cond, 1, 0)
+
         return
 
     def calculate_sw_rad_degree_day(self) -> None:
@@ -716,19 +724,16 @@ class PRMSAtmosphere(Process):
         # RUN: Process_flag == RUN
         # Set switch for active transpiration period
         for tt in range(ntime):
+
             for hh in range(self.nhru):
                 if tt > 0:
                     self.transp_on.data[tt, hh] = self.transp_on.data[
                         tt - 1, hh
                     ]
 
-                # if tt == 2 and hh == 980:
-                #      asdf
-
                 # check for month to turn check switch on or
                 # transpiration switch off
-
-                if self._doy[tt] == 1:
+                if self._dom[tt] == 1:
                     # check for end of period
                     if self._month[tt] == self.transp_end[hh]:
                         self.transp_on.data[tt, hh] = 0

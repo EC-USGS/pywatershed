@@ -107,7 +107,12 @@ def test_compare_prms(
         canopy.output()
         if do_compare_in_memory:
             compare_in_memory(
-                canopy, answers, atol=atol, rtol=rtol, skip_missing_ans=True
+                canopy,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                skip_missing_ans=True,
+                fail_after_all_vars=False,
             )
 
     canopy.finalize()
@@ -120,5 +125,12 @@ def test_compare_prms(
             atol=atol,
             rtol=rtol,
         )
+
+    # compare pptmix, a modified input against PRMS's pptmix
+    pptmix = canopy._input_variables_dict["pptmix"]
+    pptmix_ans = adapter_factory(
+        output_dir / "pptmix.nc", variable_name="pptmix", control=control
+    )
+    assert (pptmix.data == pptmix_ans.data).all()
 
     return

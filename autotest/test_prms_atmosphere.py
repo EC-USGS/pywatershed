@@ -15,7 +15,7 @@ from pywatershed.parameters import PrmsParameters
 # pptmix is changed by PRMSCanopy
 
 # compare in memory (faster) or full output files? or both!
-do_compare_output_files = False
+do_compare_output_files = False  # True will fail on pptmix
 do_compare_in_memory = True
 rtol = 1.0e-5
 atol = 1.0e-5  # why is this relatively low accuracy?
@@ -74,7 +74,17 @@ def test_compare_prms(
         **input_variables,
     )
 
+    # check the advance/calculate the state
+    tmaxf_id = id(atm.tmaxf)
+
     atm.initialize_netcdf(output_dir=tmp_path)
+
+    # this is the condition which may modify pptmix, see below
+    new_snow = adapter_factory(
+        output_dir / "newsnow.nc",
+        variable_name="newsnow",
+        control=control,
+    )
 
     if do_compare_in_memory:
         answers = {}
@@ -84,22 +94,14 @@ def test_compare_prms(
                 var_pth, variable_name=var, control=control
             )
 
-        new_snow = adapter_factory(
-            output_dir / "newsnow.nc",
-            variable_name="newsnow",
-            control=control,
-        )
+    for ii in range(control.n_times):
+        control.advance()
+        atm.advance()
+        if ii == 0:
+            atm.output()
+        atm.calculate(1.0)
 
-        # check the advance/calculate the state
-        tmaxf_id = id(atm.tmaxf)
-
-        for ii in range(control.n_times):
-            control.advance()
-            atm.advance()
-            if ii == 0:
-                atm.output()
-            atm.calculate(1.0)
-
+        if do_compare_in_memory:
             # this is because pptmix is altered by canopy using this
             # net_snow condition from canopy
             new_snow.advance()

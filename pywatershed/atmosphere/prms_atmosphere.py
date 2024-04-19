@@ -724,7 +724,6 @@ class PRMSAtmosphere(Process):
         # RUN: Process_flag == RUN
         # Set switch for active transpiration period
         for tt in range(ntime):
-
             for hh in range(self.nhru):
                 if tt > 0:
                     self.transp_on.data[tt, hh] = self.transp_on.data[

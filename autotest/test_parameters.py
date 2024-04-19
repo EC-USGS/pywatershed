@@ -1,6 +1,6 @@
+import pytest
 from utils import assert_dicts_equal
 
-import pytest
 from pywatershed.parameters import Parameters
 
 

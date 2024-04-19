@@ -1,6 +1,6 @@
-from copy import deepcopy
 import pathlib as pl
 import shutil
+from copy import deepcopy
 from itertools import product
 
 import numpy as np

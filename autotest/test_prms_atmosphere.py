@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.atmosphere.prms_atmosphere import PRMSAtmosphere

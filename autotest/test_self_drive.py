@@ -1,8 +1,9 @@
 import pathlib as pl
 
 import pytest
-import pywatershed as pws
 import xarray as xr
+
+import pywatershed as pws
 
 n_time_steps = 50
 

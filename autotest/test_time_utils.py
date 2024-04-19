@@ -1,18 +1,18 @@
-from datetime import datetime
 import math
 import random
+from datetime import datetime
 
 import epiweeks as ew
 import numpy as np
 import pytest
 
 from pywatershed.utils.time_utils import (
-    dt64_to_dt,
-    datetime_year,
-    datetime_month,
     datetime_day_of_month,
-    datetime_doy,
     datetime_dowy,
+    datetime_doy,
+    datetime_month,
+    datetime_year,
+    dt64_to_dt,
 )
 
 # should probably test the offset too

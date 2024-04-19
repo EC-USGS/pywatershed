@@ -69,6 +69,8 @@ def test_compare_prms(
 ):
     tmp_path = pl.Path(tmp_path)
 
+    # sroff is a runoff variable is edited by soilzone but the forcings are
+    # from the output of soilzone, so checking it is kind of a tautology
     comparison_var_names = list(
         set(Soilzone.get_variables())
         # These are not prms variables per se.
@@ -82,7 +84,6 @@ def test_compare_prms(
             "soil_rechr_change_hru",
             "soil_zone_max",  # not a prms variable?
         }
-        | {"sroff"}
     )
 
     control.options["netcdf_output_var_names"] = comparison_var_names

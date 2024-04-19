@@ -85,13 +85,6 @@ def test_compare_prms(
     comparison_var_names = set(Runoff.get_variables())
     control.options["netcdf_output_var_names"] = comparison_var_names
 
-    # TODO: get rid of this exception
-    comparison_var_names -= set(
-        [
-            "dprst_area_open",
-        ]
-    )
-
     output_dir = simulation["output_dir"]
 
     input_variables = {}
@@ -133,7 +126,12 @@ def test_compare_prms(
         runoff.output()
         if do_compare_in_memory:
             compare_in_memory(
-                runoff, answers, atol=atol, rtol=rtol, skip_missing_ans=True
+                runoff,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                skip_missing_ans=True,
+                fail_after_all_vars=False,
             )
 
     runoff.finalize()

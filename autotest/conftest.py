@@ -143,9 +143,13 @@ def pytest_generate_tests(metafunc):
         domain_list = ["drb_2yr"]
 
     control_pattern_list = metafunc.config.getoption("control_pattern")
-    simulations = collect_simulations(domain_list, control_pattern_list)
 
-    if "simulation" in metafunc.fixturenames:
+    if (
+        "domainless" not in metafunc.config.option.markexpr
+        and "simulation" in metafunc.fixturenames
+    ):
+        simulations = collect_simulations(domain_list, control_pattern_list)
+
         # Put --print_ans in the domain fixture as it applies only to the
         # domain tests. It is a run time attribute, not actually an attribute
         # of the domain however, so the "domain" fixture is more like a

@@ -45,6 +45,7 @@ def process_list(simulation):
 #       where N in [2,6]
 
 
+@pytest.mark.domain
 def test_drive_indiv_process(simulation, process_list, tmp_path):
     """Output of a full pywatershed drives indiv process models separately
 

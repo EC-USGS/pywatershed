@@ -45,6 +45,7 @@ def parameters(simulation, control, request):
     return params
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method

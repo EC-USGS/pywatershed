@@ -67,6 +67,7 @@ budget_sum_vars_all = ["inputs_sum", "outputs_sum", "storage_changes_sum"]
 check_budget_sum_vars_params = [False, True, "some"]
 
 
+@pytest.mark.domain
 @pytest.mark.filterwarnings("ignore:Budget for")
 @pytest.mark.parametrize(
     "budget_sum_param",
@@ -226,6 +227,7 @@ def sep_vars(request):
     return (request.param[0], request.param[1])
 
 
+@pytest.mark.domain
 def test_separate_together_var_list(
     simulation, control, params, tmp_path, sep_vars
 ):

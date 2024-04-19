@@ -82,6 +82,7 @@ answer_key = {
 }
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize("var", [var_cases[0]])
 def test_cbh_files_to_df(simulation, var, params):
     the_file = simulation["dir"] / f"{var}.cbh"
@@ -95,6 +96,7 @@ def test_cbh_files_to_df(simulation, var, params):
     return
 
 
+@pytest.mark.domain
 def test_cbh_file_to_netcdf(simulation, params, tmp_path):
     input_files_dict = {
         ff.with_suffix("").name: ff for ff in simulation["dir"].glob("*.cbh")

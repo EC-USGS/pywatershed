@@ -34,6 +34,7 @@ control_keys = tuple(
 )
 
 
+@pytest.mark.domain
 def test_control_read(simulation):
     domain_name = simulation["name"].split(":")[0]
     if domain_name not in test_answers.keys():
@@ -54,6 +55,7 @@ def test_control_read(simulation):
     return
 
 
+@pytest.mark.domainless
 def test_control_compare():
     common_dir = pl.Path("../test_data/common")
     n_diffs = compare_control_files(

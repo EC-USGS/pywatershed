@@ -185,6 +185,35 @@ jobs:
           pip -V
           pip list
 
+      - name: domainless - run tests no requiring domain data
+        working-directory: autotest
+        run: pytest -m domainless
+
+      - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=sagehen_5yr --control_pattern=sagehen_no_cascades.control \
+            --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: sagehen_5yr_no_cascades - list netcdf input files
+        working-directory: test_data
+        run: |
+          find sagehen_5yr/output_no_cascades/ -name '*.nc'
+
+      - name: sagehen_5yr_no_cascades - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -n=auto
+          -m domain
+          --domain=sagehen_5y
+          --control_pattern=sagehen_5yr_no_cascades.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_sagehen_5yr_no_cascades.xml
+
       - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest
         run: |
@@ -202,6 +231,7 @@ jobs:
         run: pytest
           -vv
           -n=auto
+          -m domain
           --domain=hru_1
           --control_pattern=nhm.control
           --durations=0
@@ -231,6 +261,7 @@ jobs:
         run: pytest
           -vv
           -n=auto
+          -m domain
           --domain=drb_2yr
           --control_pattern=nhm.control
           --durations=0
@@ -248,6 +279,7 @@ jobs:
           test_model.py
           -vv
           -n=auto
+          -m domain
           --domain=drb_2yr
           --control_pattern=no_dprst
           --durations=0
@@ -271,6 +303,7 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
+          -m domain
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0

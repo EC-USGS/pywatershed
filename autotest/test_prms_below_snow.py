@@ -24,7 +24,7 @@ fortran_avail = getattr(
 )
 
 invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
-failfast = False
+failfast = True
 verbose = False
 
 test_models = {

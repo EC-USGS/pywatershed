@@ -46,6 +46,20 @@ test_ans = {
         "scalar": 1,
         "ndoy": 366,
     },
+    "sagehen_5yr": {
+        "nhru": 128,
+        "nsegment": 15,
+        "ncascade": 317,
+        "ncascdgw": 317,
+        "nssr": 128,
+        "ngw": 128,
+        "nobs": 1,
+        "ndeplval": 22,
+        "ndepl": 2,
+        "nmonth": 12,
+        "scalar": 1,
+        "ndoy": 366,
+    },
 }
 
 

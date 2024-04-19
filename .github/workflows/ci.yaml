@@ -208,7 +208,7 @@ jobs:
           -n=auto
           -m domain
           --domain=sagehen_5y
-          --control_pattern=sagehen_5yr_no_cascades.control
+          --control_pattern=sagehen_no_cascades.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml

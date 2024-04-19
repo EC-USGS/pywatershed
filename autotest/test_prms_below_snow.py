@@ -253,14 +253,12 @@ def test_model(simulation, model_args, tmp_path):
     plomd = model_args["process_list_or_model_dict"]
     config_processes = test_models[config_name]
     if isinstance(plomd, list):
-        is_old_style = True
         processes = [pp for pp in plomd if pp in config_processes]
         control = model_args["control"]
         class_key = {
             vv.__class__.__name__: kk for kk, vv in model.processes.items()
         }
     else:
-        is_old_style = False
         processes = [
             vv["class"]
             for vv in plomd.values()

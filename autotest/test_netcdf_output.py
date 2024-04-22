@@ -11,6 +11,7 @@ import pywatershed
 from pywatershed.base.control import Control
 from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.time_utils import datetime_doy as doy
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
@@ -201,8 +202,13 @@ def test_process_budgets(
         for vv in pp_vars:
             nc_data = xr.open_dataarray(tmp_dir / f"{vv}.nc")
             if vv in pywatershed.PRMSSolarGeometry.get_variables():
+                # these are on doy-basis in output, not a timeseries
+                # start_ind
+                start_doy = doy(control.start_time)
+                start_ind = start_doy - 1
+                end_ind = start_ind + n_time_steps
                 assert np.allclose(
-                    check_dict[pp][vv], nc_data[0:n_time_steps, :]
+                    check_dict[pp][vv], nc_data[start_ind:end_ind, :]
                 )
             else:
                 assert np.allclose(check_dict[pp][vv], nc_data)

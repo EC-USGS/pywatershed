@@ -283,9 +283,9 @@ jobs:
           --domain=drb_2yr
           --control_pattern=no_dprst
           --durations=0
-          --cov=pywatershed
-          --cov-report=xml
-          --junitxml=pytest_drb_2yr_no_dprst.xml
+          # --cov=pywatershed
+          # --cov-report=xml
+          # --junitxml=pytest_drb_2yr_no_dprst.xml
 
       - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest

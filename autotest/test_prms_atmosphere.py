@@ -61,11 +61,13 @@ def test_compare_prms(
 
     input_variables = {}
     for key in PRMSAtmosphere.get_inputs():
-        dir = ""
         if "soltab" in key:
-            dir = "output/"
-        nc_pth = cbh_dir / f"{dir}{key}.nc"
-        input_variables[key] = nc_pth
+            nc_path = simulation["output_dir"] / f"{key}.nc"
+        else:
+            nc_path = cbh_dir / f"{key}.nc"
+        # <
+        print(nc_path, nc_path.exists())
+        input_variables[key] = nc_path
 
     atm = PRMSAtmosphere(
         control=control,

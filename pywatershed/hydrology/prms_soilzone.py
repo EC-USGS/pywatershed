@@ -50,6 +50,7 @@ class PRMSSoilzone(ConservativeProcess):
         infil_hru: Infiltration to the capillary and preferential-flow
             reservoirs, depth on HRU area
         sroff: Surface runoff to the stream network for each HRU
+        sroff_vol: Surface runoff volume to the stream network for each HRU
         potet: Potential ET for each HRU
         transp_on: Flag indicating whether transpiration is occurring
             (0=no;1=yes)
@@ -81,6 +82,7 @@ class PRMSSoilzone(ConservativeProcess):
         hru_intcpevap: adaptable,
         infil_hru: adaptable,  # in /pywatershed/analysis/budget_soilzone.py
         sroff: adaptable,
+        sroff_vol: adaptable,
         potet: adaptable,
         transp_on: adaptable,
         snow_evap: adaptable,
@@ -163,6 +165,7 @@ class PRMSSoilzone(ConservativeProcess):
             "hru_intcpevap",  # JLM ???
             "infil_hru",
             "sroff",
+            "sroff_vol",
             "potet",
             # hru_ppt => model_precip%hru_ppt, & # JLM ??
             "transp_on",
@@ -683,6 +686,8 @@ class PRMSSoilzone(ConservativeProcess):
             transp_on=self.transp_on,
             unused_potet=self.unused_potet,
         )
+
+        self.sroff_vol[:] = self.sroff * self.hru_in_to_cf
 
         return
 

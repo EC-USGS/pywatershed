@@ -313,7 +313,6 @@ def test_model(simulation, model_args, tmp_path):
                 ans[process_name][vv].advance()
 
         # make a comparison check with answer
-
         for process_name in ans.keys():
             success = check_timestep_results(
                 model.processes[class_key[process_name]],

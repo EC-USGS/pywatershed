@@ -309,6 +309,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
         self.hru_impervstor_change[:] = (
             self.hru_impervstor - self.hru_impervstor_old
         )
+
         self.sroff_vol[:] = self.sroff * self.hru_in_to_cf
 
         return

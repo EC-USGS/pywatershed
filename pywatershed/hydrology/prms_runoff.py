@@ -66,7 +66,7 @@ class PRMSRunoff(ConservativeProcess):
         dprst_flag: use depression storage or not? None uses value in control
             file, which otherwise defaults to True.
         budget_type: one of [None, "warn", "error"]
-        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+        calc_method: one of ["numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
     """
@@ -686,6 +686,7 @@ class PRMSRunoff(ConservativeProcess):
                         (
                             dprst_in[i],
                             dprst_vol_open[i],
+                            dprst_area_open[i],
                             avail_et,
                             dprst_vol_clos[i],
                             dprst_sroff_hru[i],
@@ -705,7 +706,6 @@ class PRMSRunoff(ConservativeProcess):
                             dprst_vol_open_max=dprst_vol_open_max[i],
                             dprst_vol_open=dprst_vol_open[i],
                             dprst_area_open_max=dprst_area_open_max[i],
-                            dprst_area_open=dprst_area_open[i],
                             dprst_sroff_hru=dprst_sroff_hru[i],
                             sro_to_dprst_perv=sro_to_dprst_perv[i],
                             sro_to_dprst_imperv=sro_to_dprst_imperv[i],
@@ -993,7 +993,6 @@ class PRMSRunoff(ConservativeProcess):
         dprst_vol_open_max,
         dprst_vol_open,
         dprst_area_open_max,
-        dprst_area_open,
         dprst_sroff_hru,
         sro_to_dprst_perv,
         sro_to_dprst_imperv,
@@ -1210,6 +1209,7 @@ class PRMSRunoff(ConservativeProcess):
         return (
             dprst_in,
             dprst_vol_open,
+            dprst_area_open,
             avail_et,
             dprst_vol_clos,
             dprst_sroff_hru,

@@ -25,17 +25,17 @@ snow:
   dis: dis_hru
 
 runoff:
-  class: PRMSRunoff
+  class: PRMSRunoffNoDprst
   parameters: parameters_PRMSRunoff.nc
   dis: dis_hru
 
 soilzone:
-  class: PRMSSoilzone
+  class: PRMSSoilzoneNoDprst
   parameters: parameters_PRMSSoilzone.nc
   dis: dis_hru
 
 groundwater:
-  class: PRMSGroundwater
+  class: PRMSGroundwaterNoDprst
   parameters: parameters_PRMSGroundwater.nc
   dis: dis_hru
 

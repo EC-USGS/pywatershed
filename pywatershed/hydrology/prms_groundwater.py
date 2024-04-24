@@ -79,7 +79,7 @@ class PRMSGroundwater(ConservativeProcess):
                 if vv is not None:
                     continue
                 self._input_variables_dict[kk] = adapter_factory(
-                    np.zeros(self.params.dimensions["nhru"]),
+                    np.zeros(self._params.dimensions["nhru"]),
                     variable_name=kk,
                     control=self.control,
                 )

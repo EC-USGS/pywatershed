@@ -46,9 +46,24 @@ test_ans = {
         "scalar": 1,
         "ndoy": 366,
     },
+    "sagehen_5yr": {
+        "nhru": 128,
+        "nsegment": 15,
+        "ncascade": 317,
+        "ncascdgw": 317,
+        "nssr": 128,
+        "ngw": 128,
+        "nobs": 1,
+        "ndeplval": 22,
+        "ndepl": 2,
+        "nmonth": 12,
+        "scalar": 1,
+        "ndoy": 366,
+    },
 }
 
 
+@pytest.mark.domainless
 def test_parameter_init():
     # TODO: this test should be moved to tests for the Parameters class
     parameters = {
@@ -72,6 +87,7 @@ def test_parameter_init():
     print("success initializing Parameters object")
 
 
+@pytest.mark.domain
 def test_parameter_read(simulation):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
@@ -92,6 +108,7 @@ def test_parameter_read(simulation):
     return
 
 
+@pytest.mark.domain
 def test_parameter_canopy_subset(simulation):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
@@ -116,6 +133,7 @@ def test_parameter_canopy_subset(simulation):
     print(f"success parsing...'{parameter_file}'")
 
 
+@pytest.mark.domain
 def test_parameter_access(simulation):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
@@ -137,6 +155,7 @@ def test_parameter_access(simulation):
     _ = parameters.parameters["srain_intcp"]
 
 
+@pytest.mark.domain
 def test_parameter_json(simulation, tmp_path):
     # read a myparams.param file to a parameter object,
     # write it to json,

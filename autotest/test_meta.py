@@ -1,7 +1,10 @@
+import pytest
+
 from pywatershed.base import meta
 from pywatershed.hydrology.prms_groundwater import PRMSGroundwater
 
 
+@pytest.mark.domainless
 def test_init():
     # some random checks
     assert "nhru" in meta.dimensions.keys()
@@ -11,6 +14,7 @@ def test_init():
     return
 
 
+@pytest.mark.domainless
 def test_get_in_list():
     gw_vars = PRMSGroundwater.get_variables()
     gw_var_meta = meta.get_vars(gw_vars)

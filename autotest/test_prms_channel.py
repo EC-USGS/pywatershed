@@ -23,8 +23,13 @@ def control(simulation):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
+    if ctl.options["streamflow_module"] == "strmflow":
+        pytest.skip(
+            f"PRMSChannel not present in simulation {simulation['name']}"
+        )
     del ctl.options["netcdf_output_dir"]
     del ctl.options["netcdf_output_var_names"]
+
     return ctl
 
 
@@ -51,6 +56,7 @@ def parameters(simulation, control, request):
     return params
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method

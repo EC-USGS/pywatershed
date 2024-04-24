@@ -14,9 +14,12 @@ from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_et import PRMSEt
 from .hydrology.prms_groundwater import PRMSGroundwater
+from .hydrology.prms_groundwater_no_dprst import PRMSGroundwaterNoDprst
 from .hydrology.prms_runoff import PRMSRunoff
+from .hydrology.prms_runoff_no_dprst import PRMSRunoffNoDprst
 from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
+from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 from .hydrology.starfit import Starfit
 from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab
 from .utils.csv_utils import CsvFile
@@ -41,9 +44,12 @@ __all__ = (
     "PRMSChannel",
     "PRMSEt",
     "PRMSGroundwater",
+    "PRMSGroundwaterNoDprst",
     "PRMSRunoff",
+    "PRMSRunoffNoDprst",
     "PRMSSnow",
     "PRMSSoilzone",
+    "PRMSSoilzoneNoDprst",
     "Starfit",
     "ControlVariables",
     "NetCdfRead",

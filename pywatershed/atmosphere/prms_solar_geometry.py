@@ -419,7 +419,7 @@ class PRMSSolarGeometry(Process):
 
                 nc = NetCdfWrite(
                     nc_path,
-                    self.params.coords,
+                    self._params.coords,
                     [var],
                     {var: self.meta[var]},
                 )
@@ -437,7 +437,7 @@ class PRMSSolarGeometry(Process):
             nc_path = self._netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.coords,
+                self._params.coords,
                 self._netcdf_output_vars,
                 self.meta,
             )

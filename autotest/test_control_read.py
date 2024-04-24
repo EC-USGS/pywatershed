@@ -25,24 +25,25 @@ test_answers = {
 }
 
 
-@pytest.fixture
-def control_keys():
-    return tuple(
-        (
-            "start_time",
-            "end_time",
-            "initial_deltat",
-        )
+control_keys = tuple(
+    (
+        "start_time",
+        "end_time",
+        "initial_deltat",
     )
+)
 
 
-def test_control_read(simulation, control_keys):
+@pytest.mark.domain
+def test_control_read(simulation):
+    domain_name = simulation["name"].split(":")[0]
+    if domain_name not in test_answers.keys():
+        pytest.skip(f"Answers not provided for domain {domain_name}")
+    domain_answers = test_answers[domain_name]
+
     control_file = simulation["control_file"]
     print(f"parsing...'{control_file}'")
     control = ControlVariables.load(control_file)
-
-    domain_name = simulation["name"].split(":")[0]
-    domain_answers = test_answers[domain_name]
 
     results = {
         key: val
@@ -54,6 +55,7 @@ def test_control_read(simulation, control_keys):
     return
 
 
+@pytest.mark.domainless
 def test_control_compare():
     common_dir = pl.Path("../test_data/common")
     n_diffs = compare_control_files(

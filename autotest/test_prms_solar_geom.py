@@ -43,6 +43,7 @@ def parameters(simulation, control, request):
     return params
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize(
     "from_prms_file", (True, False), ids=("from_prms_file", "compute")
 )

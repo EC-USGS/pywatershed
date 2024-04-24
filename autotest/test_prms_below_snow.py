@@ -104,12 +104,17 @@ def control(simulation):
 @pytest.fixture(scope="function")
 def discretization(simulation):
     dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
-    dis_both_file = simulation["dir"] / "parameters_dis_both.nc"
     dis_hru = Parameters.from_netcdf(dis_hru_file, encoding=False)
-    dis_both = Parameters.from_netcdf(dis_both_file, encoding=False)
     # PRMSChannel needs both dis where as it should only need dis_seg
     # and will when we have exchanges
-    dis = {"dis_hru": dis_hru, "dis_both": dis_both}
+    dis = {
+        "dis_hru": dis_hru,
+    }
+
+    dis_both_file = simulation["dir"] / "parameters_dis_both.nc"
+    if dis_both_file.exists():
+        dis_both = Parameters.from_netcdf(dis_both_file, encoding=False)
+        dis["dis_both"] = dis_both
 
     return dis
 

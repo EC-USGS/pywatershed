@@ -12,13 +12,22 @@ from pywatershed.base.model import Model
 from pywatershed.parameters import Parameters, PrmsParameters
 
 # This test removes PRMSSnow from the full model test, removing its errorrs.
-# Importantly, it tests that "sroff" is computed correctly as it is set by
-# both PRMSRunoff and PRMSSoilzone.
+# Importantly, it tests that "pptmix" is computed correctly as it is set by
+# both PRMSAtmosphere and PRMSCanopy.
 # The (nearly) comprehensive suite of variables is verified against PRMS
 # outputs. Several variables in soilzone are not output in the PRMS
 # configuraton or perhaps not at all by PRMS and these are skipped.
+# The (nearly) comprehensive suite of variables is verified against PRMS
+# outputs. Several variables in soilzone are not output in the PRMS
+# configuraton or perhaps not at all by PRMS and these are skipped.
+# Importantly, this test and test_prms_below_snow test model
+# instantiation/invocation three ways which is not tested elsewhere in the
+# the test suite.
 
-# what is going on with this? is fortran being used?
+# When available, fortran is set to the global calc_method in the
+# control fixture. The control fixture is NOT used when the model_dict
+# and control comes from yaml. In that case, calc_method is what is
+# specified in the control yaml file, generally numba.
 fortran_avail = getattr(
     getattr(pywatershed.hydrology, "prms_canopy"), "has_prmscanopy_f"
 )
@@ -128,6 +137,7 @@ def model_args(simulation, control, discretization, request):
         }
 
     elif invoke_style == "model_dict_from_yaml":
+        # Note this invocation ignores control and parameters
         yaml_name = simulation["name"].split(":")[1]
         yaml_file = simulation["dir"] / f"{yaml_name}_model.yaml"
         model_dict = Model.model_dict_from_yaml(yaml_file)
@@ -183,11 +193,10 @@ def test_model(simulation, model_args, tmp_path):
     model_out_dir = tmp_path / "output"
     control.options["netcdf_output_dir"] = model_out_dir
 
-    if control.options["calc_method"] == "fortran":
-        # with pytest.warns(UserWarning):
-        model = Model(**model_args, write_control=model_out_dir)
-    else:
-        model = Model(**model_args, write_control=model_out_dir)
+    # If comparing with test_prms_below_snow, the warning catch here is removed
+    # because only PRMSCanopy takes calc_method and it has fortran, so no
+    # warnings
+    model = Model(**model_args, write_control=model_out_dir)
 
     # check that control yaml file was written
     control_yaml_file = sorted(model_out_dir.glob("*model_control.yaml"))

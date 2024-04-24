@@ -1009,8 +1009,6 @@ class PRMSSoilzone(ConservativeProcess):
                 pref_flow_in[hh] = pref_flow_infil[hh] + topfr
                 pref_flow_stor[hh] = pref_flow_stor[hh] + topfr
                 if pref_flow_stor[hh] > zero:
-                    # JLM: there's nothring returned here
-
                     (
                         pref_flow_stor[hh],
                         prefflow,
@@ -1096,7 +1094,7 @@ class PRMSSoilzone(ConservativeProcess):
                 ssres_stor[hh] = slow_stor[hh]
 
             # <
-            # The following calculationw are vectorized, out of the loop
+            # The following calculations are vectorized, out of the loop
             # soil_lower_ratio, soil_moist_tot, recharge
             ssres_in[hh] = soil_to_ssr[hh] + pref_flow_infil[hh] + gwin
             # grav_dunnian_flow[hh] = dunnianflw_gvr  # this variable does 0

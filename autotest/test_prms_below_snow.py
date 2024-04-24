@@ -17,8 +17,14 @@ from pywatershed.parameters import Parameters, PrmsParameters
 # The (nearly) comprehensive suite of variables is verified against PRMS
 # outputs. Several variables in soilzone are not output in the PRMS
 # configuraton or perhaps not at all by PRMS and these are skipped.
+# Importantly, this test and test_prms_above_snow test model
+# instantiation/invocation three ways which is not tested elsewhere in the
+# the test suite.
 
-# what is going on with this? is fortran being used?
+# When available, fortran is set to the global calc_method in the
+# control fixture. The control fixture is NOT used when the model_dict
+# and control comes from yaml. In that case, calc_method is what is
+# specified in the control yaml file, generally numba.
 fortran_avail = getattr(
     getattr(pywatershed.hydrology, "prms_canopy"), "has_prmscanopy_f"
 )

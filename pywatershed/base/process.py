@@ -99,7 +99,6 @@ class Process(Accessor):
         self.name = "Process"
         self.control = control
 
-        # params from dis and params: methodize this
         self._set_params(parameters, discretization)
 
         # netcdf output variables

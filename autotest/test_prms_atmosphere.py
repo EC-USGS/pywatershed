@@ -1,3 +1,5 @@
+from warnings import warn
+
 import numpy as np
 import pytest
 from utils_compare import compare_in_memory, compare_netcdfs
@@ -14,7 +16,8 @@ from pywatershed.parameters import PrmsParameters
 # pptmix is changed by PRMSCanopy
 
 # compare in memory (faster) or full output files? or both!
-do_compare_output_files = False  # True will fail on pptmix
+# do_compare_output_files=True results in failure on pptmix in certain domains
+do_compare_output_files = False  # see above
 do_compare_in_memory = True
 rtol = 1.0e-5
 atol = 1.0e-5  # why is this relatively low accuracy?
@@ -112,9 +115,24 @@ def test_compare_prms(
             answers["pptmix"].advance()
             # this is the condition that zeros pptmix
             cond = new_snow.current == 0
-            atm.pptmix._current = np.where(
-                cond, answers["pptmix"].current, atm.pptmix.data[ii, :]
-            )
+            wh_cond = np.where(cond)
+            if (
+                cond.any()
+                and (
+                    answers["pptmix"].current[wh_cond]
+                    != atm.pptmix.data[ii, wh_cond]
+                ).any()
+            ):
+                msg = (
+                    "Editing answers for pptmix to match results where "
+                    "PRMSCanopy edits the value later, this pywatershed "
+                    "functionality is properly tested by "
+                    "test_prms_above_snow."
+                )
+                warn(msg)
+                atm.pptmix._current = np.where(
+                    cond, answers["pptmix"].current, atm.pptmix.data[ii, :]
+                )
 
             compare_in_memory(
                 atm,

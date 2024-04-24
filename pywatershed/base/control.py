@@ -37,7 +37,6 @@ pws_control_options_avail = [
     "netcdf_output_dir",
     "netcdf_output_var_names",
     "netcdf_output_separate_files",
-    "netcdf_budget_args",
     "parameter_file",
     "start_time",
     "streamflow_module",
@@ -97,8 +96,8 @@ class Control(Accessor):
       * netcdf_output_var_names: a list of variable names to output
       * netcdf_output_separate_files: bool if output is grouped by Process or
         if each variable is written to an individual file
-      * netcdf_budget_args:
       * parameter_file: the name of a parameter file to use
+      * streamflow_module: the selected streamflow module in PRMS.
       * start_time: np.datetime64
       * end_time: np.datetime64
       * time_step_units: str containing single character code for

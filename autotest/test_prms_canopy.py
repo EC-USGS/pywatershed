@@ -127,11 +127,4 @@ def test_compare_prms(
             rtol=rtol,
         )
 
-    # compare pptmix, a modified input against PRMS's pptmix
-    pptmix = canopy._input_variables_dict["pptmix"]
-    pptmix_ans = adapter_factory(
-        output_dir / "pptmix.nc", variable_name="pptmix", control=control
-    )
-    assert (pptmix.data == pptmix_ans.data).all()
-
     return

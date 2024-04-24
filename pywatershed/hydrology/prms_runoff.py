@@ -66,7 +66,7 @@ class PRMSRunoff(ConservativeProcess):
         dprst_flag: use depression storage or not? None uses value in control
             file, which otherwise defaults to True.
         budget_type: one of [None, "warn", "error"]
-        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+        calc_method: one of ["numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
     """

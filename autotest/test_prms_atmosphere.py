@@ -1,14 +1,23 @@
+from warnings import warn
+
+import numpy as np
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.atmosphere.prms_atmosphere import PRMSAtmosphere
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
+
+# pptmix is altered by PRMSCanopy
+# the answers on those times,locations are set to the true answers below
+# only for compare_in_memory. comparing output files will fail if
+# pptmix is changed by PRMSCanopy
 
 # compare in memory (faster) or full output files? or both!
-do_compare_output_files = False
+# do_compare_output_files=True results in failure on pptmix in certain domains
+do_compare_output_files = False  # see above
 do_compare_in_memory = True
 rtol = 1.0e-5
 atol = 1.0e-5  # why is this relatively low accuracy?
@@ -43,6 +52,7 @@ def parameters(simulation, control, request):
     return params
 
 
+@pytest.mark.domain
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path
 ):
@@ -54,11 +64,13 @@ def test_compare_prms(
 
     input_variables = {}
     for key in PRMSAtmosphere.get_inputs():
-        dir = ""
         if "soltab" in key:
-            dir = "output/"
-        nc_pth = cbh_dir / f"{dir}{key}.nc"
-        input_variables[key] = nc_pth
+            nc_path = simulation["output_dir"] / f"{key}.nc"
+        else:
+            nc_path = cbh_dir / f"{key}.nc"
+        # <
+        print(nc_path, nc_path.exists())
+        input_variables[key] = nc_path
 
     atm = PRMSAtmosphere(
         control=control,
@@ -67,7 +79,17 @@ def test_compare_prms(
         **input_variables,
     )
 
+    # check the advance/calculate the state
+    tmaxf_id = id(atm.tmaxf)
+
     atm.initialize_netcdf(output_dir=tmp_path)
+
+    # this is the condition which may modify pptmix, see below
+    new_snow = adapter_factory(
+        output_dir / "newsnow.nc",
+        variable_name="newsnow",
+        control=control,
+    )
 
     if do_compare_in_memory:
         answers = {}
@@ -77,20 +99,49 @@ def test_compare_prms(
                 var_pth, variable_name=var, control=control
             )
 
-        # check the advance/calculate the state
-        tmaxf_id = id(atm.tmaxf)
+    for ii in range(control.n_times):
+        control.advance()
+        atm.advance()
+        if ii == 0:
+            atm.output()
+        atm.calculate(1.0)
 
-        for ii in range(control.n_times):
-            control.advance()
-            atm.advance()
-            if ii == 0:
-                atm.output()
-            atm.calculate(1.0)
+        if do_compare_in_memory:
+            # this is because pptmix is altered by canopy using this
+            # net_snow condition from canopy
+            new_snow.advance()
+            # answers are behind, a second advance in compare_in_memory will
+            # keep it at the same time, even with control
+            answers["pptmix"].advance()
+            # this is the condition that zeros pptmix
+            cond = new_snow.current == 0
+            wh_cond = np.where(cond)
+            if (
+                cond.any()
+                and (
+                    answers["pptmix"].current[wh_cond]
+                    != atm.pptmix.data[ii, wh_cond]
+                ).any()
+            ):
+                msg = (
+                    "Editing answers for pptmix to match results where "
+                    "PRMSCanopy edits the value later, this pywatershed "
+                    "functionality is properly tested by "
+                    "test_prms_above_snow."
+                )
+                warn(msg)
+                atm.pptmix._current = np.where(
+                    cond, answers["pptmix"].current, atm.pptmix.data[ii, :]
+                )
 
-            if do_compare_in_memory:
-                for var in answers.values():
-                    var.advance()
-                compare_in_memory(atm, answers, atol=atol, rtol=rtol)
+            compare_in_memory(
+                atm,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                fail_after_all_vars=False,
+                verbose=False,
+            )
 
             assert id(atm.tmaxf) == tmaxf_id
 

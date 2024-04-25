@@ -1,5 +1,6 @@
 import pathlib as pl
 import shutil
+from copy import deepcopy
 from itertools import product
 
 import numpy as np
@@ -10,24 +11,14 @@ import pywatershed
 from pywatershed.base.control import Control
 from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.time_utils import datetime_doy as doy
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
 
+# This probably dosent need varied over simulation
 
 n_time_steps = 10
-
-
-# This probably dosent need varied over domain
-
-
-@pytest.fixture(scope="function")
-def control(simulation):
-    ctl = Control.load_prms(
-        simulation["control_file"], warn_unused_options=False
-    )
-    del ctl.options["netcdf_output_dir"]
-    return ctl
 
 
 @pytest.fixture(scope="function")
@@ -52,7 +43,7 @@ def control(simulation):
 # optional variables to processes
 # optional variables to budgets
 
-check_vars = {
+check_vars_dict = {
     "PRMSSolarGeometry": [
         "soltab_horad_potsw",
         "soltab_potsw",
@@ -74,10 +65,17 @@ check_vars = {
     ],
 }
 
+
+@pytest.fixture(scope="function")
+def check_vars():
+    return deepcopy(check_vars_dict)
+
+
 budget_sum_vars_all = ["inputs_sum", "outputs_sum", "storage_changes_sum"]
 check_budget_sum_vars_params = [False, True, "some"]
 
 
+@pytest.mark.domain
 @pytest.mark.filterwarnings("ignore:Budget for")
 @pytest.mark.parametrize(
     "budget_sum_param",
@@ -85,7 +83,7 @@ check_budget_sum_vars_params = [False, True, "some"]
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
 def test_process_budgets(
-    simulation, control, params, tmp_path, budget_sum_param
+    simulation, control, params, tmp_path, budget_sum_param, check_vars
 ):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
@@ -95,6 +93,10 @@ def test_process_budgets(
         pywatershed.PRMSCanopy,
         pywatershed.PRMSChannel,
     ]
+
+    if control.options["streamflow_module"] == "strmflow":
+        _ = model_procs.remove(pywatershed.PRMSChannel)
+        del check_vars["PRMSChannel"]
 
     # setup input_dir with symlinked prms inputs and outputs
     domain_output_dir = simulation["output_dir"]
@@ -198,10 +200,15 @@ def test_process_budgets(
     # read the data back in
     for pp, pp_vars in check_vars.items():
         for vv in pp_vars:
-            nc_data = xr.open_dataset(tmp_dir / f"{vv}.nc")[vv]
+            nc_data = xr.open_dataarray(tmp_dir / f"{vv}.nc")
             if vv in pywatershed.PRMSSolarGeometry.get_variables():
+                # these are on doy-basis in output, not a timeseries
+                # start_ind
+                start_doy = doy(control.start_time)
+                start_ind = start_doy - 1
+                end_ind = start_ind + n_time_steps
                 assert np.allclose(
-                    check_dict[pp][vv], nc_data[0:n_time_steps, :]
+                    check_dict[pp][vv], nc_data[start_ind:end_ind, :]
                 )
             else:
                 assert np.allclose(check_dict[pp][vv], nc_data)
@@ -226,7 +233,8 @@ def test_process_budgets(
 
 
 separate_outputs = [False, True]
-output_vars = [None, [var for kk, vv in check_vars.items() for var in vv]]
+
+output_vars = [None, [var for kk, vv in check_vars_dict.items() for var in vv]]
 
 
 @pytest.fixture(
@@ -237,8 +245,9 @@ def sep_vars(request):
     return (request.param[0], request.param[1])
 
 
+@pytest.mark.domain
 def test_separate_together_var_list(
-    simulation, control, params, tmp_path, sep_vars
+    simulation, control, params, tmp_path, sep_vars, check_vars
 ):
     separate = sep_vars[0]
     output_vars = sep_vars[1]
@@ -251,6 +260,10 @@ def test_separate_together_var_list(
         pywatershed.PRMSCanopy,
         pywatershed.PRMSChannel,
     ]
+
+    if control.options["streamflow_module"] == "strmflow":
+        _ = model_procs.remove(pywatershed.PRMSChannel)
+        del check_vars["PRMSChannel"]
 
     # setup input_dir with symlinked prms inputs and outputs
     domain_output_dir = simulation["output_dir"]

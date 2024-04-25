@@ -209,7 +209,7 @@ class ConservativeProcess(Process):
             if budget_args is None:
                 budget_args = {}
             budget_args["output_dir"] = self._netcdf_output_dir
-            budget_args["params"] = self.params
+            budget_args["params"] = self._params
 
             self.budget.initialize_netcdf(**budget_args)
 

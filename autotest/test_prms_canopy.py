@@ -1,12 +1,12 @@
 import pathlib as pl
 
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.prms_canopy import PRMSCanopy, has_prmscanopy_f
 from pywatershed.parameters import Parameters, PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = True
@@ -45,6 +45,7 @@ def parameters(simulation, control, request):
     return params
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method
@@ -109,7 +110,12 @@ def test_compare_prms(
             for var in answers.values():
                 var.advance()
             compare_in_memory(
-                canopy, answers, atol=atol, rtol=rtol, skip_missing_ans=True
+                canopy,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                skip_missing_ans=True,
+                fail_after_all_vars=False,
             )
 
     canopy.finalize()

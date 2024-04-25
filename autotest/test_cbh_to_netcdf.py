@@ -3,18 +3,19 @@ import pathlib as pl
 import numpy as np
 import pytest
 import xarray as xr
+from utils import assert_or_print
 
 from pywatershed import Control
 from pywatershed.parameters import PrmsParameters
 from pywatershed.utils.cbh_utils import cbh_file_to_netcdf, cbh_files_to_df
-from utils import assert_or_print
 
 var_cases = ["prcp", "rhavg", "tmax", "tmin"]
 
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if simulation["name"] != "nhm":
+    control_name = simulation["name"].split(":")[1]
+    if control_name != "nhm":
         pytest.skip("test_cbh_to_netcdf only for nhm configuration")
 
     ctl = Control.load_prms(
@@ -81,6 +82,7 @@ answer_key = {
 }
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize("var", [var_cases[0]])
 def test_cbh_files_to_df(simulation, var, params):
     the_file = simulation["dir"] / f"{var}.cbh"
@@ -94,6 +96,7 @@ def test_cbh_files_to_df(simulation, var, params):
     return
 
 
+@pytest.mark.domain
 def test_cbh_file_to_netcdf(simulation, params, tmp_path):
     input_files_dict = {
         ff.with_suffix("").name: ff for ff in simulation["dir"].glob("*.cbh")

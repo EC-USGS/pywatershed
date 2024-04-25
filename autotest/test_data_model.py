@@ -81,6 +81,7 @@ def del_encodings(dd, keys):
 # tests below
 
 
+@pytest.mark.domainless
 def test_to_dd_identical():
     dd_xr = dm.xr_ds_to_dd(nc_file)  # pass the file
     dd_nc4 = dm.nc4_ds_to_dd(nc_file)
@@ -91,6 +92,7 @@ def test_to_dd_identical():
     np.testing.assert_equal(dd_xr, dd_nc4)
 
 
+@pytest.mark.domainless
 def test_xr_dd_xr(tmp_path):
     tmp_path = pl.Path(tmp_path)
 
@@ -127,6 +129,7 @@ def test_xr_dd_xr(tmp_path):
     return
 
 
+@pytest.mark.domainless
 def test_nc4_dd_nc4(tmp_path):
     # pass the file and round trip it to file, compare via xarry
     out_file = pl.Path(tmp_path / "rt_1.nc")
@@ -191,6 +194,7 @@ def dd_spatial_coord_names():
     pass
 
 
+@pytest.mark.domainless
 def test_dd_netcdf(tmp_path):
     # xarray write, xarray read
     # ds0 -> dd0 -xr-> file -xr-> ds1(compare ds0) -> dd1(compare dd0)
@@ -234,6 +238,7 @@ def test_dd_netcdf(tmp_path):
     return
 
 
+@pytest.mark.domainless
 def test_dd_subset_merge(tmp_path):
     sub1_keys = ["temperature"]
     sub2_keys = [kk for kk in dd0.data_vars.keys() if "precip" in kk]
@@ -260,6 +265,7 @@ def test_dd_subset_merge(tmp_path):
     return
 
 
+@pytest.mark.domainless
 def test_merge_dicts():
     dd_0 = {"a": {"aa": 123, "dims": {0: "zero", 1: "one"}}}
     dd_1 = {"a": {"aa": 123, "dims": {0: "dd_1"}}}

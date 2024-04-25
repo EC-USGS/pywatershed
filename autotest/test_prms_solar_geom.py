@@ -1,11 +1,11 @@
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.atmosphere.prms_solar_geometry import PRMSSolarGeometry
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.parameters import PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = False
@@ -43,6 +43,7 @@ def parameters(simulation, control, request):
     return params
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize(
     "from_prms_file", (True, False), ids=("from_prms_file", "compute")
 )

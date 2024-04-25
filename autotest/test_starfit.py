@@ -14,6 +14,7 @@ data_dir = repo_root / "hydrology/starfit_minimal"
 
 
 # havent pared down the data yet to add it to the repo
+@pytest.mark.domainless
 @pytest.mark.xfail
 def test_regress(tmp_path):
     # Regression against independenly run outputs in pickle file
@@ -107,6 +108,7 @@ def test_regress(tmp_path):
     return
 
 
+@pytest.mark.domainless
 @pytest.mark.xfail
 @pytest.mark.parametrize("domain_tag", ["drb"])
 def test_param_subset_write(tmp_path, domain_tag):

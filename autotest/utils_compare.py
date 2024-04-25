@@ -80,7 +80,7 @@ def compare_in_memory(
     strict: bool = False,
     also_check_w_np: bool = True,
     skip_missing_ans: bool = False,
-    fail_after_all_vars: bool = False,
+    fail_after_all_vars: bool = True,
     verbose: bool = False,
 ):
     # TODO: docstring
@@ -93,6 +93,10 @@ def compare_in_memory(
             else:
                 msg = f"Variable '{var}' not found in the answers provided."
                 raise KeyError(msg)
+
+        if verbose:
+            print(f"checking {var}")
+        answers[var].advance()
 
         if isinstance(process[var], pws.base.timeseries.TimeseriesArray):
             actual = process[var].current

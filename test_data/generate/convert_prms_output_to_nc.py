@@ -1,13 +1,14 @@
-from filelock import FileLock
+from warnings import warn
 
 import pytest
-import pywatershed as pws
-
+from filelock import FileLock
 from prms_convert_to_netcdf import convert_csv_to_nc, convert_soltab_to_nc
 from prms_diagnostic_variables import (
-    diagnose_simple_vars_to_nc,
     diagnose_final_vars_to_nc,
+    diagnose_simple_vars_to_nc,
 )
+
+import pywatershed as pws
 
 
 @pytest.fixture
@@ -20,9 +21,14 @@ def netcdf_file(control_csv_file):
     data_dir = csv_file.parent
     convert_csv_to_nc(var_name, data_dir)
 
-    diagnose_simple_vars_to_nc(var_name, data_dir, control_file)
+    success = diagnose_simple_vars_to_nc(var_name, data_dir, control_file)
 
-    return
+    if not success:
+        # should this fail or not?
+        # pytest.skip(f"Unable to diagnose {var_name}")
+        assert False, "Unable to diagnose {var_name}"
+
+    return f"{var_name}.nc"
 
 
 def make_netcdf_files(netcdf_file):
@@ -58,11 +64,19 @@ def final_netcdf_file(tmp_path_factory, control_final_file):
 
     root_tmpdir = tmp_path_factory.getbasetemp().parent
     with FileLock(root_tmpdir / "final_nc.lock"):
-        yield  # do this in session cleanup
+        yield final_file  # do this in session cleanup
 
-        diagnose_final_vars_to_nc(
+        success = diagnose_final_vars_to_nc(
             var_name, output_dir, control_file, domain_dir
         )
+
+        if not success:
+            warn(
+                "make_final_netcdf_files False PASS above: "
+                f"unable to diagnose {final_file}"
+            )
+
+    return final_file  # dosent really matter
 
 
 def make_final_netcdf_files(final_netcdf_file):

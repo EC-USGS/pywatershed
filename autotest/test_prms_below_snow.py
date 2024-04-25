@@ -1,6 +1,5 @@
 import pathlib as pl
 import shutil
-from itertools import product
 from pprint import pprint
 
 import numpy as np
@@ -12,34 +11,83 @@ from pywatershed.base.control import Control
 from pywatershed.base.model import Model
 from pywatershed.parameters import Parameters, PrmsParameters
 
+# This test removes PRMSSnow from the full model test, removing its errorrs.
+# Importantly, it tests that "sroff" is computed correctly as it is set by
+# both PRMSRunoff and PRMSSoilzone.
+# The (nearly) comprehensive suite of variables is verified against PRMS
+# outputs. Several variables in soilzone are not output in the PRMS
+# configuraton or perhaps not at all by PRMS and these are skipped.
+# Importantly, this test and test_prms_above_snow test model
+# instantiation/invocation three ways which is not tested elsewhere in the
+# the test suite.
+
+# When available, fortran is set to the global calc_method in the
+# control fixture. The control fixture is NOT used when the model_dict
+# and control comes from yaml. In that case, calc_method is what is
+# specified in the control yaml file, generally numba.
 fortran_avail = getattr(
     getattr(pywatershed.hydrology, "prms_canopy"), "has_prmscanopy_f"
 )
 
-compare_to_prms521 = False  # TODO TODO TODO
+invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
 failfast = True
-detailed = True
+verbose = False
 
-n_time_steps = 101
 test_models = {
     "nhm": [
-        pywatershed.PRMSSolarGeometry,
-        pywatershed.PRMSAtmosphere,
-        pywatershed.PRMSCanopy,
-        pywatershed.PRMSSnow,
         pywatershed.PRMSRunoff,
         pywatershed.PRMSSoilzone,
         pywatershed.PRMSGroundwater,
         pywatershed.PRMSChannel,
     ],
+    "nhm_no_dprst": [
+        pywatershed.PRMSRunoffNoDprst,
+        pywatershed.PRMSSoilzoneNoDprst,
+        pywatershed.PRMSGroundwaterNoDprst,
+        pywatershed.PRMSChannel,
+    ],
+    "sagehen_no_cascades": [
+        pywatershed.PRMSRunoffNoDprst,
+        pywatershed.PRMSSoilzoneNoDprst,
+        pywatershed.PRMSGroundwaterNoDprst,
+    ],
 }
 
+comparison_vars_dict_all = {
+    "PRMSRunoff": pywatershed.PRMSRunoff.get_variables(),
+    "PRMSSoilzone": list(
+        set(pywatershed.PRMSSoilzone.get_variables())
+        - {  # these variables not output by PRMS
+            "soil_zone_max",
+            "soil_lower_max",
+            "perv_actet_hru",
+            "soil_lower_change_hru",
+            "soil_rechr_change_hru",
+        }
+    ),
+    "PRMSGroundwater": pywatershed.PRMSGroundwater.get_variables(),
+    "PRMSChannel": pywatershed.PRMSChannel.get_variables(),
+}
 
-invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
+tol = {
+    "PRMSRunoff": 1.0e-8,
+    "PRMSRunoffNoDprst": 1.0e-8,
+    "PRMSSoilzone": 1.0e-8,
+    "PRMSSoilzoneNoDprst": 1.0e-8,
+    "PRMSGroundwater": 1.0e-8,
+    "PRMSGroundwaterNoDprst": 1.0e-8,
+    "PRMSChannel": 5.0e-7,
+}
 
 
 @pytest.fixture(scope="function")
 def control(simulation):
+    sim_name = simulation["name"]
+    config_name = sim_name.split(":")[1]
+    if config_name not in test_models.keys():
+        pytest.skip(
+            f"The configuration is not tested by test_model: {config_name}"
+        )
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
@@ -56,23 +104,26 @@ def control(simulation):
 @pytest.fixture(scope="function")
 def discretization(simulation):
     dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
-    dis_both_file = simulation["dir"] / "parameters_dis_both.nc"
     dis_hru = Parameters.from_netcdf(dis_hru_file, encoding=False)
-    dis_both = Parameters.from_netcdf(dis_both_file, encoding=False)
     # PRMSChannel needs both dis where as it should only need dis_seg
     # and will when we have exchanges
-    dis = {"dis_hru": dis_hru, "dis_both": dis_both}
+    dis = {
+        "dis_hru": dis_hru,
+    }
+
+    dis_both_file = simulation["dir"] / "parameters_dis_both.nc"
+    if dis_both_file.exists():
+        dis_both = Parameters.from_netcdf(dis_both_file, encoding=False)
+        dis["dis_both"] = dis_both
 
     return dis
 
 
-@pytest.fixture(
-    scope="function", params=list(product(invoke_style, test_models.keys()))
-)
+@pytest.fixture(scope="function", params=invoke_style)
 def model_args(simulation, control, discretization, request):
-    invoke_style = request.param[0]
-    model_key = request.param[1]
-    process_list = test_models[model_key]
+    invoke_style = request.param
+    control_key = simulation["name"].split(":")[1]
+    process_list = test_models[control_key]
 
     if invoke_style == "prms":
         # Single params is the backwards compatible way
@@ -92,7 +143,7 @@ def model_args(simulation, control, discretization, request):
             pp.__name__.lower() for pp in process_list
         ]
 
-        for process in test_models["nhm"]:
+        for process in test_models[control_key]:
             proc_name = process.__name__
             proc_name_lower = proc_name.lower()
             model_dict[proc_name_lower] = {}
@@ -105,7 +156,8 @@ def model_args(simulation, control, discretization, request):
             else:
                 proc["dis"] = "dis_hru"
 
-        pprint(model_dict, sort_dicts=False)
+        if verbose:
+            pprint(model_dict, sort_dicts=False)
 
         args = {
             "process_list_or_model_dict": model_dict,
@@ -117,6 +169,19 @@ def model_args(simulation, control, discretization, request):
         yaml_name = simulation["name"].split(":")[1]
         yaml_file = simulation["dir"] / f"{yaml_name}_model.yaml"
         model_dict = Model.model_dict_from_yaml(yaml_file)
+
+        # Edit this dict from the yaml to use only processes below snow
+        class_keys = {
+            vv["class"]: kk
+            for kk, vv in model_dict.items()
+            if isinstance(vv, dict) and "class" in vv.keys()
+        }
+        to_del = [
+            kk for cl, kk in class_keys.items() if cl not in process_list
+        ]
+        for del_me in to_del:
+            _ = model_dict["model_order"].remove(del_me)
+            del model_dict[del_me]
 
         args = {
             "process_list_or_model_dict": model_dict,
@@ -131,11 +196,13 @@ def model_args(simulation, control, discretization, request):
     return args
 
 
+@pytest.mark.domain
 def test_model(simulation, model_args, tmp_path):
     """Run the full NHM model"""
-
     tmp_path = pl.Path(tmp_path)
     output_dir = simulation["output_dir"]
+    sim_name = simulation["name"]
+    config_name = sim_name.split(":")[1]
 
     # setup input_dir with symlinked prms inputs and outputs
     input_dir = tmp_path / "input"
@@ -188,118 +255,44 @@ def test_model(simulation, model_args, tmp_path):
     # ---------------------------------
     # get the answer data against PRMS5.2.1
     # this is the adhoc set of things to compare, to circumvent fussy issues?
-    comparison_vars_dict_all = {
-        "PRMSSolarGeometry": [],
-        "PRMSAtmosphere": [
-            "tmaxf",
-            "tminf",
-            "hru_ppt",
-            "hru_rain",
-            "hru_snow",
-            "swrad",
-            "potet",
-        ],
-        "PRMSCanopy": [
-            "net_rain",
-            "net_snow",
-            "net_ppt",
-            "intcp_stor",
-            "intcp_evap",
-            "hru_intcpstor",
-            "hru_intcpevap",
-            "potet",
-        ],
-        "PRMSSnow": [
-            "iso",
-            "pkwater_equiv",
-            "snow_evap",
-            "tcal",
-        ],
-        "PRMSRunoff": [
-            "infil",
-            "dprst_stor_hru",
-            "hru_impervstor",
-            "sroff",
-            "dprst_evap_hru",
-            # "dprst_vol_open",
-            "dprst_seep_hru",
-        ],
-        "PRMSEt": [
-            "potet",
-            "hru_impervevap",
-            "hru_intcpevap",
-            "snow_evap",
-            "dprst_evap_hru",
-            "perv_actet",
-            "hru_actet",
-        ],
-        "PRMSSoilzone": [
-            "hru_actet",
-            "perv_actet",
-            "potet_lower",
-            "potet_rechr",
-            "recharge",
-            "slow_flow",
-            "slow_stor",
-            "soil_lower",
-            "soil_moist",
-            "soil_moist_tot",
-            "soil_rechr",
-            "soil_to_gw",
-            "soil_to_ssr",
-            "ssr_to_gw",
-            "ssres_flow",
-            "ssres_in",
-            "ssres_stor",
-        ],
-        "PRMSGroundwater": [
-            # "soil_to_gw",  # input
-            # "ssr_to_gw",  # input
-            # "dprst_seep_hru",  # input
-            "gwres_flow",
-            "gwres_sink",
-            "gwres_stor",
-        ],
-        "PRMSChannel": [
-            "seg_lateral_inflow",
-            "seg_upstream_inflow",
-            "seg_outflow",
-        ],
-    }
 
-    tol = {
-        "PRMSSolarGeometry": 1.0e-5,
-        "PRMSAtmosphere": 1.0e-4,
-        "PRMSCanopy": 1.0e-5,
-        "PRMSSnow": 5e-2,
-        "PRMSRunoff": 1.0e-3,
-        "PRMSSoilzone": 1.0e-3,  #
-        "PRMSGroundwater": 1.0e-2,
-        "PRMSEt": 1.0e-3,
-        "PRMSChannel": 1.0e-3,
-    }
+    for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
+        comparison_vars_dict_all[f"{vv}NoDprst"] = comparison_vars_dict_all[vv]
 
     comparison_vars_dict = {}
 
     plomd = model_args["process_list_or_model_dict"]
+    config_processes = test_models[config_name]
     if isinstance(plomd, list):
-        is_old_style = True
-        processes = plomd
+        processes = [pp for pp in plomd if pp in config_processes]
         control = model_args["control"]
+        class_key = {
+            vv.__class__.__name__: kk for kk, vv in model.processes.items()
+        }
     else:
-        is_old_style = False
         processes = [
-            vv["class"] for vv in plomd.values() if isinstance(vv, dict)
+            vv["class"]
+            for vv in plomd.values()
+            if isinstance(vv, dict) and vv["class"] in config_processes
         ]
+        processes = [pp for pp in processes if pp in config_processes]
         control = plomd["control"]
+        class_key = {
+            vv["class"].__name__: kk
+            for kk, vv in plomd.items()
+            if isinstance(vv, dict) and "class" in vv.keys()
+        }
 
     for cls in processes:
         key = cls.__name__
-        comparison_vars_dict[key] = comparison_vars_dict_all[key]
+        cls_vars = cls.get_variables()
+        comparison_vars_dict[key] = {
+            vv for vv in comparison_vars_dict_all[key] if vv in cls_vars
+        }
 
     # Read PRMS output into ans for comparison with pywatershed results
     ans = {key: {} for key in comparison_vars_dict.keys()}
-    for unit_name, var_names in comparison_vars_dict.items():
+    for process_name, var_names in comparison_vars_dict.items():
         for vv in var_names:
             # TODO: this is hacky, improve the design
             if (
@@ -314,106 +307,42 @@ def test_model(simulation, model_args, tmp_path):
             else:
                 nc_pth = input_dir / f"{vv}.nc"
 
-            ans[unit_name][vv] = adapter_factory(
+            ans[process_name][vv] = adapter_factory(
                 nc_pth, variable_name=vv, control=control
             )
 
-    # ---------------------------------
-    # itimestep: process: variable: mean
-    regression_ans = {
-        9: {
-            "PRMSChannel": {
-                "seg_outflow": {
-                    "drb_2yr:nhm": 1553.1874672413599,
-                    "drb_2yr:nhm_no_dprst": 1635.6279159235228,
-                    "hru_1:nhm": 13.696710376067216,
-                    "hru_1:nhm_no_dprst": 12.628610403228954,
-                    "ucb_2yr:nhm": 1694.5697712423928,
-                    "ucb_2yr:nhm_no_dprst": 1680.53570465336,
-                },
-            },
-        },
-        99: {
-            "PRMSChannel": {
-                "seg_outflow": {
-                    "drb_2yr:nhm": 2362.7940777644653,
-                    "drb_2yr:nhm_no_dprst": 2463.9993388384923,
-                    "hru_1:nhm": 22.877787915898086,
-                    "hru_1:nhm_no_dprst": 22.712155511368834,
-                    "ucb_2yr:nhm": 733.0192586668293,
-                    "ucb_2yr:nhm_no_dprst": 726.248353433804,
-                },
-            },
-        },
-    }
-
     all_success = True
     fail_prms_compare = False
-    fail_regression = False
     for istep in range(control.n_times):
         model.advance()
         model.calculate()
 
         # PRMS5 answers
         # advance the answer, which is being read from a netcdf file
-        for unit_name, var_names in ans.items():
+        for process_name, var_names in ans.items():
             for vv in var_names:
-                ans[unit_name][vv].advance()
+                ans[process_name][vv].advance()
 
         # make a comparison check with answer
-
-        # compare_to_prms521 is a global variable
-        if compare_to_prms521:
-            for unit_name in ans.keys():
-                success = check_timestep_results(
-                    model.processes[unit_name],
-                    istep,
-                    ans[unit_name],
-                    tol[unit_name],
-                    detailed,
-                    failfast,
-                )
-                if not success:
-                    fail_prms_compare = True
-                    all_success = False
-                    if failfast:
-                        assert False, "PRMS comparison failfast"
-
-        # Regression checking
-        if istep in regression_ans:
-            for pp, var_ans in regression_ans[istep].items():
-                for vv, aa in var_ans.items():
-                    if not is_old_style:
-                        pp = pp.lower()
-                        if pp not in model.processes.keys():
-                            pp = pp[4:]
-                    result = model.processes[pp][vv].mean()
-                    reg_ans = aa[simulation["name"]]
-                    if not reg_ans:
-                        print(
-                            f"\nreg_ans: [{istep}][{pp}][{vv}] mean: {result}"
-                        )
-                        success = False
-                    else:
-                        success = (abs(result - reg_ans) / abs(reg_ans)) < 1e-5
-
-                        if not success:
-                            fail_regression = True
-                            all_success = False
-                            if failfast:
-                                assert False, "Regression failffast"
+        for process_name in ans.keys():
+            success = check_timestep_results(
+                model.processes[class_key[process_name]],
+                istep,
+                ans[process_name],
+                tol[process_name],
+                failfast,
+                verbose=verbose,
+            )
+            if not success:
+                fail_prms_compare = True
+                all_success = False
+                if failfast:
+                    assert False, "PRMS comparison failfast"
 
     # check at the end and error if one or more steps didn't pass
     if not all_success:
-        if fail_prms_compare and fail_regression:
-            msg = (
-                "pywatershed results both failed regression test and "
-                "comparison with prms5.2.1"
-            )
-        elif fail_prms_compare:
+        if fail_prms_compare:
             msg = "pywatershed results failed comparison with prms5.2.1"
-        elif fail_regression:
-            msg = "pywatershed results failed regression"
         else:
             assert False, "this should not be possible"
 
@@ -427,8 +356,8 @@ def check_timestep_results(
     istep,
     ans,
     tol,
-    detailed=False,
     failfast=False,
+    verbose=False,
 ):
     # print(storageunit)
     all_success = True
@@ -454,7 +383,7 @@ def check_timestep_results(
                 print(f"pywatershed  {a2.min()}    {a2.max()}")
                 print(f"diff   {diffmin}  {diffmax}")
 
-                if detailed:
+                if verbose:
                     idx = np.where(~success)
                     for i in idx:
                         print(
@@ -463,4 +392,8 @@ def check_timestep_results(
                         )
             if failfast:
                 raise (ValueError)
+        # <
+        elif verbose:
+            print(f"variable {key} matches")
+
     return all_success

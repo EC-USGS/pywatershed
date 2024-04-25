@@ -11,7 +11,7 @@ What's New
 
     np.random.seed(123456)
 
-    
+
 .. _whats-new.1.1.0:
 
 v1.1.0 (Unreleased)
@@ -21,10 +21,26 @@ New features
 ~~~~~~~~~~~~
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
+- No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,
+  and PRMSGroundwater by adding "NoDprst" to the end of the names. Depression
+  storage is switched off in sagehen_5yr and in new nhm_no_dprst
+  configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Dunnian flow is implemented (in PRMSSoilzone) and tested for sagehen_5yr
+  whereas it was effectively off in all NHM configurations and its effect
+  on the sroff variable (in PRMSRunoff) incorrect.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Preferential flow is implemented (in PRMSSoilzone) and tested for sagehen_5yr
+  whereas it was effectively off in all NHM configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Control instances have a diff method to compare with other instances.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-
+- pref_flow_infil_frac now a required parameter input for PRMSSoilzone. The NHM
+  values assumed previously are zeros on all HRUs.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Deprecations
 ~~~~~~~~~~~~
@@ -36,7 +52,15 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
-
+- Fixed calculation of the variable transp_on was incorrectly calculated in certain
+  situations not covered by NHM configuratons but covered by sagehen_5yr.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Fixed calculation of variable dprst_area_open which was not being checked but
+  was affecting no other variables.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- The variable pptmix was incorrectly calculated in certain situations not covered
+  by the NHM configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Documentation
 ~~~~~~~~~~~~~
@@ -47,8 +71,22 @@ Internal changes
 - Testing system refactor to handle pairs of domains and control files
   allowing much more flexibility in configuration/control testing.
   (:pull:`278`) By `James McCreight <https://github.com/jmccreight>`_.
+- New testing domain "sagehen_5yr" is added to test_data directory
+  with configuration sagehen_no_cascades. This domain introduces multiple
+  PRMS capabilities (noted indvidually in this PR) not used in the NHM
+  configuration and provides a test for these.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Tests are now marked as "domain" or "domainless" to avoid redundant
+  runs of domainless tests across test domains.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- New tests test_prms_above_snow and test_prms_below_snow replace
+  test_model and are extremely close to PRMS (PRMSSolarGeometry: 1.0e-8,
+  PRMSAtmosphere: 1.0e-5, PRMSCanopy: 1.0e-6, PRMSRunoff: 1.0e-8,
+  PRMSRunoffNoDprst: 1.0e-8, PRMSSoilzone: 1.0e-8, PRMSSoilzoneNoDprst: 1.0e-8,
+  PRMSGroundwater: 1.0e-8, PRMSGroundwaterNoDprst: 1.0e-8, PRMSChannel: 5.0e-7)
+  for all test domains.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
-    
 
 .. _whats-new.1.0.0:
 
@@ -81,7 +119,7 @@ Breaking changes
   "netcdf_output_var_names" are set by values in the PRMS control file. You can
   edit these, but be aware that they are now set in that load.
   (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
-  
+
 Deprecations
 ~~~~~~~~~~~~
 - Deprecation of Control.load() for Control.load_prms().
@@ -111,7 +149,7 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 - Implement sphinx_autodoc_typehints.
-  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.  
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
 - New gh-pages branch (without history) to publish
   `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
   `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.

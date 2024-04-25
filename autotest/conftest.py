@@ -1,8 +1,5 @@
 import pathlib as pl
 
-import pytest
-import yaml
-
 import pywatershed as pws
 
 test_data_dir = pl.Path("../test_data")
@@ -146,65 +143,24 @@ def pytest_generate_tests(metafunc):
         domain_list = ["drb_2yr"]
 
     control_pattern_list = metafunc.config.getoption("control_pattern")
-    simulations = collect_simulations(domain_list, control_pattern_list)
 
-    if "simulation" in metafunc.fixturenames:
+    if (
+        "domainless" not in metafunc.config.option.markexpr
+        and "simulation" in metafunc.fixturenames
+    ):
+        simulations = collect_simulations(domain_list, control_pattern_list)
+
         # Put --print_ans in the domain fixture as it applies only to the
         # domain tests. It is a run time attribute, not actually an attribute
         # of the domain however, so the "domain" fixture is more like a
         # "domain_test" fixture (domain + runtime test options)
         # Not sure I love this, maybe have a domain_opts fixture later?
         print_ans = metafunc.config.getoption("print_ans")
-
         for sk, sv in simulations.items():
             sv["print_ans"] = print_ans
 
-        # open and read in the yaml and
-        # domain_list = []
-        # for sk, sv in simulations.items():
-        #     dd_file = pl.Path(dd)
-        #     with dd_file.open("r") as yaml_file:
-        #         domain_dict = yaml.safe_load(yaml_file)
-
-        #     # Runtime test options here
-        #     domain_dict["print_ans"] = print_ans
-
-        #     # Construct/derive some convenience quantities
-        #     domain_dict["file"] = dd_file
-        #     domain_dict["dir"] = dd_file.parent
-
-        #     # Transform all relative paths in the yaml (relative to the yaml
-        #     # file) using the rel path to the file - spare the tester from
-        #     # doing this.
-        #     for ff in [
-        #         "param_file",
-        #         "control_file",
-        #         "cbh_nc",
-        #         "prms_run_dir",
-        #         "prms_output_dir",
-        #     ]:
-        #         domain_dict[ff] = pl.Path(domain_dict[ff])
-        #         if not domain_dict[ff].is_absolute():
-        #             domain_dict[ff] = domain_dict["dir"] / domain_dict[ff]
-
-        #     for fd_key in ["cbh_inputs"]:
-        #         domain_dict[fd_key] = {
-        #             key: (
-        #                 pl.Path(val)
-        #                 if pl.Path(val).is_absolute()
-        #                 else domain_dict["dir"] / val
-        #             )
-        #             for key, val in domain_dict[fd_key].items()
-        #         }
-
-        #     # Construct a dictionary that gets used in CBH
-        #     # JLM: move to a helper function in test_preprocess_cbh.py?
-        #     domain_dict["input_files_dict"] = {
-        #         key: val for key, val in domain_dict["cbh_inputs"].items()
-        #     }
-
-        #     # append to the list of all domains
-        #     domain_list += [domain_dict]
+        if not len(simulations):
+            raise ValueError("No simulations found, check your input.")
 
         metafunc.parametrize(
             "simulation", simulations.values(), ids=simulations.keys()

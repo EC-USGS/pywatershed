@@ -18,9 +18,12 @@ process_order_nhm = [
     "PRMSCanopy",
     "PRMSSnow",
     "PRMSRunoff",
+    "PRMSRunoffNoDprst",
     "PRMSSoilzone",
+    "PRMSSoilzoneNoDprst",
     "PRMSEt",
     "PRMSGroundwater",
+    "PRMSGroundwaterNoDprst",
     "PRMSChannel",
 ]
 
@@ -273,7 +276,7 @@ class Model:
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -283,7 +286,7 @@ class Model:
         find_input_files: bool = True,
         write_control: Union[bool, str, pl.Path] = False,
     ):
-        self.control = deepcopy(control)
+        self.control = control
         self.parameters = parameters
 
         # This is for backwards compatibility: make a method?

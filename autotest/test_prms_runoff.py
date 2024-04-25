@@ -1,12 +1,13 @@
 import pathlib as pl
 
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.prms_runoff import PRMSRunoff
+from pywatershed.hydrology.prms_runoff_no_dprst import PRMSRunoffNoDprst
 from pywatershed.parameters import Parameters, PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = False
@@ -22,9 +23,21 @@ def control(simulation):
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
-    control.options["netcdf_output_var_names"] = PRMSRunoff.get_variables()
 
     return control
+
+
+@pytest.fixture(scope="function")
+def Runoff(control):
+    if (
+        "dprst_flag" in control.options.keys()
+        and control.options["dprst_flag"]
+    ):
+        Runoff = PRMSRunoff
+    else:
+        Runoff = PRMSRunoffNoDprst
+
+    return Runoff
 
 
 @pytest.fixture(scope="function")
@@ -38,42 +51,45 @@ def parameters(simulation, control, request):
     if request.param == "params_one":
         param_file = simulation["dir"] / control.options["parameter_file"]
         params = PrmsParameters.load(param_file)
+        sat_threshold = params.parameters["sat_threshold"]
+
     else:
         param_file = simulation["dir"] / "parameters_PRMSRunoff.nc"
         params = PrmsParameters.from_netcdf(param_file)
 
+        sz_param_file = simulation["dir"] / "parameters_PRMSSoilzone.nc"
+        sz_params = PrmsParameters.from_netcdf(sz_param_file)
+        sat_threshold = sz_params.parameters["sat_threshold"]
+
+    if abs(sat_threshold).min() < 999.0:
+        pytest.skip(
+            "test_prms_runoff only valid when sat_threshold >= 999 (or some "
+            "amount) which causes zero dunnian_flow"
+        )
+
     return params
 
 
+@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation,
     control,
     discretization,
     parameters,
+    Runoff,
     tmp_path,
     calc_method,
 ):
     tmp_path = pl.Path(tmp_path)
 
-    comparison_var_names = set(PRMSRunoff.get_variables())
-    # TODO: this is hacky, improve the design
-    if not control.options["dprst_flag"]:
-        comparison_var_names = {
-            vv for vv in comparison_var_names if "dprst" not in vv
-        }
-
-    # TODO: get rid of this exception
-    comparison_var_names -= set(
-        [
-            "dprst_area_open",
-        ]
-    )
+    comparison_var_names = set(Runoff.get_variables())
+    control.options["netcdf_output_var_names"] = comparison_var_names
 
     output_dir = simulation["output_dir"]
 
     input_variables = {}
-    for key in PRMSRunoff.get_inputs():
+    for key in Runoff.get_inputs():
         nc_pth = output_dir / f"{key}.nc"
         input_variables[key] = nc_pth
 
@@ -81,7 +97,7 @@ def test_compare_prms(
         nc_parent = tmp_path / simulation["name"]
         control.options["netcdf_output_dir"] = nc_parent
 
-    runoff = PRMSRunoff(
+    runoff = Runoff(
         control=control,
         discretization=discretization,
         parameters=parameters,
@@ -114,7 +130,12 @@ def test_compare_prms(
             for var in answers.values():
                 var.advance()
             compare_in_memory(
-                runoff, answers, atol=atol, rtol=rtol, skip_missing_ans=True
+                runoff,
+                answers,
+                atol=atol,
+                rtol=rtol,
+                skip_missing_ans=True,
+                fail_after_all_vars=False,
             )
 
     runoff.finalize()

@@ -134,7 +134,8 @@ def import_optional_dependency(
                 print(msg)
             return None
 
-    # Handle submodules: if we have submodule, grab parent module from sys.modules
+    # Handle submodules: if we have submodule, grab parent module from
+    # sys.modules
     parent = name.split(".")[0]
     if parent != name:
         install_name = parent

@@ -6,6 +6,7 @@ from .base import meta
 from .base.adapter import Adapter, AdapterNetcdf, adapter_factory
 from .base.budget import Budget
 from .base.control import Control
+from .base.flow_graph import FlowGraph
 from .base.model import Model
 from .base.parameters import Parameters
 from .base.process import Process
@@ -13,7 +14,10 @@ from .base.timeseries import TimeseriesArray
 from .hydrology.pass_through_node import PassThroughNode
 from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
-from .hydrology.prms_channel_flow_graph import PRMSChannelFlowNodeMaker
+from .hydrology.prms_channel_flow_graph import (
+    PRMSChannelFlowNodeMaker,
+    HruSegmentInflowAdapter,
+)
 from .hydrology.prms_et import PRMSEt
 from .hydrology.prms_groundwater import PRMSGroundwater
 from .hydrology.prms_groundwater_no_dprst import PRMSGroundwaterNoDprst
@@ -38,12 +42,16 @@ __all__ = (
     "adapter_factory",
     "Budget",
     "Control",
+    "FlowGraph",
+    "HruSegmentInflowAdapter",
     "Model",
     "Parameters",
     "Process",
     "TimeseriesArray",
+    "PassThroughNode",
     "PRMSCanopy",
     "PRMSChannel",
+    "PRMSChannelFlowNodeMaker",
     "PRMSEt",
     "PRMSGroundwater",
     "PRMSGroundwaterNoDprst",

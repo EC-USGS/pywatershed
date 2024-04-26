@@ -96,7 +96,9 @@ def compare_in_memory(
 
         if verbose:
             print(f"checking {var}")
-        answers[var].advance()
+
+        if not isinstance(answers[var], np.ndarray):
+            answers[var].advance()
 
         if isinstance(process[var], pws.base.timeseries.TimeseriesArray):
             actual = process[var].current

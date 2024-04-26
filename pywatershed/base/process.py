@@ -217,6 +217,8 @@ class Process(Accessor):
         return self.get_init_values()
 
     def _set_params(self, parameters, discretization):
+        if hasattr(self, "_params"):
+            return
         param_keys = set(parameters.variables.keys())
         missing_params = set(self.parameters).difference(param_keys)
         if missing_params:
@@ -324,8 +326,8 @@ class Process(Accessor):
             if len([mm for mm in check_list if mm in ii_dims[0]]):
                 ii_dims = ii_dims[1:]
 
-            ii_dim_sizes = tuple(self._params.get_dim_values(ii_dims).values())
-            ii_type = self.control.meta.get_numpy_types(ii)[ii]
+            # ii_dim_sizes = tuple(self._params.get_dim_values(ii_dims).values())
+            # ii_type = self.control.meta.get_numpy_types(ii)[ii]
 
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii],

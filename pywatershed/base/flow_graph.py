@@ -31,12 +31,19 @@ class FlowNode(Accessor):
     def advance(self):
         raise Exception("This must be overridden")
 
+    def finalize_timestep(self):
+        raise Exception("This must be overridden")
+
     @property
     def outflow(self):
         raise Exception("This must be overridden")
 
     @property
     def storage_change(self):
+        raise Exception("This must be overridden")
+
+    @property
+    def sink_source(self):
         raise Exception("This must be overridden")
 
 
@@ -109,8 +116,8 @@ class FlowGraph(ConservativeProcess):
         verbose: bool = None,
     ):
         # Keep FlowGraph "parameter" by building parameters from the arguments
-        # The super uses self.params to set dimensions on self.
-        self.params = Parameters(
+        # The super uses self._params to set dimensions on self.
+        self._params = Parameters(
             dims={
                 "nnodes": len(inflows.current),
             },
@@ -210,7 +217,7 @@ class FlowGraph(ConservativeProcess):
         return
 
     def _init_graph(self) -> None:
-        params = self.params.parameters
+        params = self._params.parameters
         # where do flows exit the graph?
         self._outflow_mask = np.where(
             params["to_graph_index"] == -1, True, False
@@ -271,7 +278,7 @@ class FlowGraph(ConservativeProcess):
         return
 
     def calculate(self, n_substeps=24) -> None:
-        params = self.params.parameters
+        params = self._params.parameters
 
         for node in self._nodes:
             node.prepare_timestep()

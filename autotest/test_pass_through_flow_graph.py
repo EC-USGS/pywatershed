@@ -35,7 +35,7 @@ convert_to_vol = ["outflows", "node_storage_changes"]
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if "drb_2yr:nhm" not in simulation["name"]:
+    if "drb_2yr:nhm" != simulation["name"]:
         pytest.skip("Only testing passthrough flow graph for drb_2yr:nhm")
     return Control.load_prms(
         simulation["control_file"], warn_unused_options=False

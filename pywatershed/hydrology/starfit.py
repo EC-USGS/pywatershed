@@ -521,9 +521,7 @@ class StarfitFlowNode(FlowNode):
         if (self._lake_storage + self._lake_storage_change) < zero:
             potential_release = self._lake_release + (
                 self._lake_storage + self._lake_storage_change
-            ) * (
-                1.0e6 / 24 / 60 / 60
-            )  # m^3/s
+            ) * (1.0e6 / 24 / 60 / 60)  # m^3/s
             self._lake_release[:] = np.maximum(
                 potential_release,
                 potential_release * zero,

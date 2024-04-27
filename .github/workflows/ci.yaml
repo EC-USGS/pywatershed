@@ -187,7 +187,7 @@ jobs:
 
       - name: domainless - run tests no requiring domain data
         working-directory: autotest
-        run: pytest -m "not domainless"less -n=auto -vv
+        run: pytest -m domainless -n=auto -vv
 
       - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest

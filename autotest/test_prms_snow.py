@@ -42,7 +42,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 @pytest.mark.xfail
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(

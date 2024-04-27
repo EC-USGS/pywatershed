@@ -49,8 +49,6 @@ def parameters():
         param_names=starfit_parameters,
     ).to_xr_ds()
 
-    del parameters_ds["time"]
-    parameters_ds = parameters_ds.drop_dims("time")
     # the first parameter/reservoir
     merge_list = []
     for ii in starfit_inds_test:

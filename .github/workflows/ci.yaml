@@ -187,7 +187,7 @@ jobs:
 
       - name: domainless - run tests no requiring domain data
         working-directory: autotest
-        run: pytest -m domainless -n=auto -vv
+        run: pytest -m "not domainless"less -n=auto -vv
 
       - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest
@@ -206,7 +206,7 @@ jobs:
         run: pytest
           -vv
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=sagehen_5yr
           --control_pattern=sagehen_no_cascades.control
           --durations=0
@@ -231,7 +231,7 @@ jobs:
         run: pytest
           -vv
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=hru_1
           --control_pattern=nhm.control
           --durations=0
@@ -239,7 +239,7 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_hru_1_nhm.xml
 
-      - name: drb_2yr with and without dprst - generate and manage test data
+      - name: drb_2yr with and without dprst and obsin - generate and manage test data
         working-directory: autotest
         run: |
           python generate_test_data.py \
@@ -261,7 +261,7 @@ jobs:
         run: pytest
           -vv
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=drb_2yr
           --control_pattern=nhm.control
           --durations=0
@@ -280,7 +280,7 @@ jobs:
           test_prms_below_snow.py
           -vv
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=drb_2yr
           --control_pattern=no_dprst
           --durations=0
@@ -288,6 +288,22 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_drb_2yr_no_dprst.xml
 
+      # Specific tests not redundant with dprst
+      - name: drb_2yr_no_dprst - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          test_obsin_flow_node.py
+          -vv
+          -n=1
+          -m "not domainless"
+          --domain=drb_2yr
+          --control_pattern=nhm_obsin.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_no_dprst.xml
+
+          
       - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest
         run: |
@@ -304,7 +320,7 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
-          -m domain
+          -m "not domainless"
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0

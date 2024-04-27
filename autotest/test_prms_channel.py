@@ -20,6 +20,9 @@ params = ("params_sep", "params_one")
 
 @pytest.fixture(scope="function")
 def control(simulation):
+    if "obsin" in simulation["name"]:
+        pytest.skip("Not testing passthrough flow graph for drb_2yr:nhm_obsin")
+
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
@@ -56,7 +59,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method

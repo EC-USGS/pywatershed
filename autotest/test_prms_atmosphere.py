@@ -52,7 +52,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path
 ):

@@ -154,14 +154,12 @@ def test_control_advance(control_simple, params_simple):
         #     )
 
 
-@pytest.mark.domain
 def test_init_load(simulation):
     with pytest.warns(RuntimeWarning):
         _ = Control.load_prms(simulation["control_file"])
     return None
 
 
-@pytest.mark.domain
 def test_deepcopy(simulation):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
@@ -178,7 +176,6 @@ def test_deepcopy(simulation):
     return None
 
 
-@pytest.mark.domain
 def test_setitem_setattr(simulation):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
@@ -204,7 +201,6 @@ def test_setitem_setattr(simulation):
         ctl.options = None
 
 
-@pytest.mark.domain
 def test_yaml_roundtrip(simulation, tmp_path):
     ctl = Control.load_prms(
         simulation["control_file"], warn_unused_options=False

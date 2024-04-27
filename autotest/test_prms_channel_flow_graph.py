@@ -37,8 +37,10 @@ convert_to_vol = ["outflows", "node_storage_changes"]
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if "drb_2yr:nhm" not in simulation["name"]:
-        pytest.skip("Only testing prms channel flow graph for drb_2yr:nhm")
+    if "obsin" in simulation["name"]:
+        pytest.skip(
+            "Not testing prms channel flow graph for drb_2yr:nhm_obsin"
+        )
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )

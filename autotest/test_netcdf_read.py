@@ -1,9 +1,6 @@
-import pytest
-
 from pywatershed.utils.netcdf_utils import NetCdfRead
 
 
-@pytest.mark.domain
 def test_netcdf(simulation):
     variable = "gwres_stor"
     output_dir = simulation["output_dir"]

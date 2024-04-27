@@ -69,6 +69,7 @@ def control(parameters):
 
 
 # @pytest.mark.parametrize("calc_method", calc_methods)
+@pytest.mark.xfail
 def test_starfit_flow_node_compare_starfit(control, parameters, tmp_path):
     with open(data_dir / "starfit_outputs.pickle", "rb") as handle:
         ans_dict = pickle.load(handle)

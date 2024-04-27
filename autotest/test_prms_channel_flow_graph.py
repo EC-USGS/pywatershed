@@ -44,6 +44,11 @@ def control(simulation):
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
+    if control.options["streamflow_module"] == "strmflow":
+        pytest.skip(
+            f"PRMSChannel not present in simulation {simulation['name']}"
+        )
+
     del control.options["netcdf_output_dir"]
     del control.options["netcdf_output_var_names"]
     return control

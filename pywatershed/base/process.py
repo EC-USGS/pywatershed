@@ -326,15 +326,10 @@ class Process(Accessor):
             if len([mm for mm in check_list if mm in ii_dims[0]]):
                 ii_dims = ii_dims[1:]
 
-            # ii_dim_sizes = tuple(self._params.get_dim_values(ii_dims).values())
-            # ii_type = self.control.meta.get_numpy_types(ii)[ii]
-
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii],
                 variable_name=ii,
                 control=args["control"],
-                # variable_dim_sizes=ii_dim_sizes,
-                # variable_type=ii_type,
             )
             if self._input_variables_dict[ii]:
                 self[ii] = self._input_variables_dict[ii].current

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from utils_compare import compare_in_memory
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import AdapterNetcdf, adapter_factory
@@ -12,7 +13,6 @@ from pywatershed.hydrology.prms_channel_flow_graph import (
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # NB: THere is no real comparison of output files because the answer files
 #     have different units. Could create a class to manage this but

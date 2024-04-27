@@ -1,5 +1,3 @@
-import pathlib as pl
-
 import numpy as np
 import pytest
 
@@ -7,6 +5,7 @@ try:
     from pyPRMS import Streamflow
 except ImportError:
     Streamflow = None
+
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
@@ -20,7 +19,6 @@ from pywatershed.hydrology.prms_channel_flow_graph import (
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 do_compare_output_files = False
 do_compare_in_memory = True

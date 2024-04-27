@@ -10,12 +10,10 @@ from pywatershed.base.adapter import Adapter, AdapterNetcdf
 from pywatershed.base.control import Control
 
 # from pywatershed.base.flow_graph import FlowGraph
-from pywatershed.base.parameters import Parameters
 from pywatershed.constants import __pywatershed_root__ as pws_root
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
 from pywatershed.parameters import StarfitParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # NB: THere is no real comparison of output files because the answer files
 #     have different units. Could create a class to manage this but

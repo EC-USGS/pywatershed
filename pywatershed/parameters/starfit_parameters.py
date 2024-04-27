@@ -1,7 +1,7 @@
 import pathlib as pl
-from typing import Union
 import tempfile
 import urllib
+from typing import Union
 from warnings import warn
 
 import numpy as np

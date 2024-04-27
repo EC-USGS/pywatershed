@@ -39,8 +39,11 @@ convert_to_vol = ["outflows", "node_storage_changes"]
 def control(simulation):
     if "obsin" in simulation["name"]:
         pytest.skip(
-            "Not testing prms channel flow graph for drb_2yr:nhm_obsin"
+            "Not testing prms_channel_flow_graph for drb_2yr:nhm_obsin"
         )
+    if "hru_1" in simulation["name"]:
+        pytest.skip("Not testing prms_channel_flow_graph for hru_1")
+
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )

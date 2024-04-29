@@ -83,16 +83,18 @@ class FlowGraph(ConservativeProcess):
     Note that initial conditions are set by the node makers via their
     parameters.
 
-    Args:
-        control: a Control object
-        inflows: An adaptable of inflows to the graph, often referred to as
-            "lateral" flows.
-        node_maker_dict: name:FlowNodeMaker
+    Parameters:
         node_maker_name: list or np.array of the maker name for each node
         node_maker_index: list or np.array of the index of the makerto
             use for each node
         to_graph_index: the index of the downstream index in the FlowGraph
             with -1 indicating an outflow node. This must specify a DAG.
+
+    Args:
+        control: a Control object
+        inflows: An adaptable of inflows to the graph, often referred to as
+            "lateral" flows.
+        node_maker_dict: {name: flow_node_maker_instance, ...}
         budget_type: If we use a budget, what action to take on budget
             imbalance.
     """
@@ -100,8 +102,8 @@ class FlowGraph(ConservativeProcess):
     def __init__(
         self,
         control: Control,
-        # discretization: Parameters,  # could use this, but not necsesary
-        # parameters: Parameters,  # unnecessary? use for to_graph_index
+        discretization: Parameters,  # could use this, but not necsesary
+        parameters: Parameters,  # unnecessary? use for to_graph_index
         inflows: adaptable,
         # node_maker_dict is not really a parameter, it's a composition
         # mechanism
@@ -109,42 +111,16 @@ class FlowGraph(ConservativeProcess):
         # node_maker_name, node_maker_index, and
         # to_graph_index are all really parameters. require they pass through
         # parameters? or leave them here for convenience?
-        node_maker_name: Union[list, np.ndarray],
-        node_maker_index: Union[list, np.ndarray],
-        to_graph_index: Union[list, np.ndarray],  # put in parameters?
+        # node_maker_name: Union[list, np.ndarray],
+        # node_maker_index: Union[list, np.ndarray],
+        # to_graph_index: Union[list, np.ndarray],  # put in parameters?
         budget_type: Literal[None, "warn", "error"] = None,
         verbose: bool = None,
     ):
-        # Keep FlowGraph "parameter" by building parameters from the arguments
-        # The super uses self._params to set dimensions on self.
-        self._params = Parameters(
-            dims={
-                "nnodes": len(inflows.current),
-            },
-            coords={
-                "nnodes": np.array(range(len(inflows.current))),
-            },
-            data_vars={
-                # "node_maker_dict": node_maker_dict,
-                "node_maker_name": node_maker_name,
-                "node_maker_index": node_maker_index,
-                "to_graph_index": to_graph_index,
-            },
-            metadata={
-                # "node_maker_dict": {"dims": ["nnodes"]},
-                "nnodes": {"dims": ["nnodes"]},
-                "node_maker_name": {"dims": ["nnodes"]},
-                "node_maker_index": {"dims": ["nnodes"]},
-                "to_graph_index": {"dims": ["nnodes"]},
-            },
-            validate=True,
-        )
-        del node_maker_name, node_maker_index, to_graph_index
-
         super().__init__(
             control=control,
-            discretization=None,
-            parameters=None,
+            discretization=discretization,
+            parameters=parameters,
         )
         self.name = "FlowGraph"
 
@@ -188,6 +164,7 @@ class FlowGraph(ConservativeProcess):
             "sink_source": nan,
         }
 
+    @classmethod
     def get_variables(cls) -> tuple:
         """Get a tuple of (public) variable names for this Process."""
         return list(cls.get_init_values().keys())

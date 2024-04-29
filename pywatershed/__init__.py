@@ -15,7 +15,7 @@ from .hydrology.pass_through_node import PassThroughNode
 from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_channel_flow_graph import (
-    HruSegmentInflowAdapter,
+    HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
 )
 from .hydrology.prms_et import PRMSEt
@@ -43,7 +43,7 @@ __all__ = (
     "Budget",
     "Control",
     "FlowGraph",
-    "HruSegmentInflowAdapter",
+    "HruSegmentFlowAdapter",
     "Model",
     "Parameters",
     "Process",

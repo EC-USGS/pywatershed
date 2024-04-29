@@ -9,9 +9,11 @@ from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
-    HruSegmentInflowAdapter,
+    HruSegmentFlowAdapter,
+    HruSegmentFlowExchange,
     PRMSChannelFlowNodeMaker,
 )
+from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
 
 # NB: THere is no real comparison of output files because the answer files
@@ -90,21 +92,38 @@ def test_prms_channel_flow_graph_compare_prms(
         nc_path = output_dir / f"{key}.nc"
         input_variables[key] = AdapterNetcdf(nc_path, key, control)
 
-    inflow_prms = HruSegmentInflowAdapter(parameters, **input_variables)
+    inflow_prms = HruSegmentFlowAdapter(parameters, **input_variables)
 
     # FlowGraph
     nsegment = parameters.dims["nsegment"]
-    node_maker_name = ["prms_channel"] * nsegment
-    node_maker_index = np.arange(nsegment)
-    to_graph_index = discretization.parameters["tosegment"] - 1
+    params_flow_graph = Parameters(
+        dims={
+            "nnodes": nsegment,
+            # "nnode_types": 1,
+        },
+        coords={
+            "nnodes": np.arange(nsegment),
+        },
+        data_vars={
+            "node_maker_name": ["prms_channel"] * nsegment,
+            "node_maker_index": np.arange(nsegment),
+            "to_graph_index": discretization.parameters["tosegment"] - 1,
+        },
+        metadata={
+            "nnodes": {"dims": ["nnodes"]},
+            "node_maker_name": {"dims": ["nnodes"]},
+            "node_maker_index": {"dims": ["nnodes"]},
+            "to_graph_index": {"dims": ["nnodes"]},
+        },
+        validate=True,
+    )
 
     flow_graph = FlowGraph(
         control,
-        inflow_prms,
-        node_maker_dict,
-        node_maker_name,
-        node_maker_index,
-        to_graph_index,
+        discretization=None,
+        parameters=params_flow_graph,
+        inflows=inflow_prms,
+        node_maker_dict=node_maker_dict,
         budget_type="error",
     )
 

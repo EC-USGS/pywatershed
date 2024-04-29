@@ -10,7 +10,7 @@ from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
-    HruSegmentInflowAdapter,
+    HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
@@ -70,7 +70,7 @@ def test_prms_channel_pass_through_compare_prms(
         nc_path = output_dir / f"{key}.nc"
         input_variables[key] = AdapterNetcdf(nc_path, key, control)
 
-    inflows_prms = HruSegmentInflowAdapter(parameters_prms, **input_variables)
+    inflows_prms = HruSegmentFlowAdapter(parameters_prms, **input_variables)
 
     class GraphInflowAdapter(Adapter):
         def __init__(
@@ -129,13 +129,33 @@ def test_prms_channel_pass_through_compare_prms(
     to_graph_index[-1] = wh_intervene_above_graph[0][0]
     to_graph_index[wh_intervene_below_graph] = nnodes - 1
 
+    params_flow_graph = Parameters(
+        dims={
+            "nnodes": nnodes,
+        },
+        coords={
+            "nnodes": np.arange(nnodes),
+        },
+        data_vars={
+            "node_maker_name": node_maker_name,
+            "node_maker_index": node_maker_index,
+            "to_graph_index": to_graph_index,
+        },
+        metadata={
+            "nnodes": {"dims": ["nnodes"]},
+            "node_maker_name": {"dims": ["nnodes"]},
+            "node_maker_index": {"dims": ["nnodes"]},
+            "to_graph_index": {"dims": ["nnodes"]},
+        },
+        validate=True,
+    )
+
     flow_graph = FlowGraph(
         control,
-        inflows_graph,
-        node_maker_dict,
-        node_maker_name,
-        node_maker_index,
-        to_graph_index,
+        discretization=None,
+        parameters=params_flow_graph,
+        inflows=inflows_graph,
+        node_maker_dict=node_maker_dict,
         budget_type="error",
     )
 

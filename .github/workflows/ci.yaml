@@ -289,12 +289,12 @@ jobs:
           --junitxml=pytest_drb_2yr_no_dprst.xml
 
       # Specific tests not redundant with dprst
-      - name: drb_2yr_no_dprst - pywatershed tests
+      - name: drb_2yr_obsin - pywatershed tests
         working-directory: autotest
         run: pytest
           test_obsin_flow_node.py
           -vv
-          -n=1
+          -n=0
           -m "not domainless"
           --domain=drb_2yr
           --control_pattern=nhm_obsin.control

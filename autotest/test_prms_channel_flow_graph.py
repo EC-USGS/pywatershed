@@ -10,10 +10,8 @@ from pywatershed.base.parameters import Parameters
 from pywatershed.constants import zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
-    HruSegmentFlowExchange,
     PRMSChannelFlowNodeMaker,
 )
-from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
 
 # NB: THere is no real comparison of output files because the answer files

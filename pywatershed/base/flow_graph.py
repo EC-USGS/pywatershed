@@ -308,3 +308,69 @@ class FlowGraph(ConservativeProcess):
             self.budget.calculate()
 
         return
+
+
+def inflow_exchange_factory(
+    dimension_names: tuple,
+    parameter_names: tuple,
+    input_names: tuple,
+    init_values: dict,
+    mass_budget_terms: dict,
+    calculation: callable,
+):
+    class InflowExchange(ConservativeProcess):
+        def __init__(
+            self,
+            control: Control,
+            discretization: Parameters,
+            parameters: Parameters,
+            budget_type: Literal[None, "warn", "error"] = None,
+            verbose: bool = None,
+            budget_basis="global",
+            **kwargs,
+        ) -> None:
+            super().__init__(
+                control=control,
+                discretization=discretization,
+                parameters=parameters,
+            )
+            self.name = "HruSegmentFlowExchange"
+
+            self._set_inputs(locals() | kwargs)
+            self._set_options(locals())
+
+            self._set_budget(basis=budget_basis)
+
+            return
+
+        @staticmethod
+        def get_dimensions() -> tuple:
+            return dimension_names
+
+        @staticmethod
+        def get_parameters() -> tuple:
+            return parameter_names
+
+        @staticmethod
+        def get_inputs() -> tuple:
+            return input_names
+
+        @staticmethod
+        def get_init_values() -> dict:
+            return init_values
+
+        @staticmethod
+        def get_mass_budget_terms():
+            return mass_budget_terms
+
+        def _set_initial_conditions(self) -> None:
+            pass
+
+        def _advance_variables(self) -> None:
+            pass
+
+        def _calculate(self, simulation_time: float) -> None:
+            calculation(self)
+            return
+
+    return InflowExchange

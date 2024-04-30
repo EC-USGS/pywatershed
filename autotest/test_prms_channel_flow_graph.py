@@ -6,10 +6,10 @@ from utils_compare import compare_in_memory
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.base.flow_graph import FlowGraph
+from pywatershed.base.flow_graph import FlowGraph, inflow_exchange_factory
 from pywatershed.base.model import Model
 from pywatershed.base.parameters import Parameters
-from pywatershed.constants import zero
+from pywatershed.constants import nan, zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
     HruSegmentFlowExchange,
@@ -192,13 +192,64 @@ def test_prms_channel_flow_graph_compare_prms(
     flow_graph.finalize()
 
 
+exchange_types = ("hrusegmentflowexchange", "inflowexchangefactory")
+
+
+@pytest.mark.parametrize("exchange_type", exchange_types)
 def test_hru_segment_flow_exchange(
     simulation,
     control,
     discretization,
     parameters,
     tmp_path,
+    exchange_type,
 ):
+    if exchange_type == "hrusegmentflowexchange":
+        Exchange = HruSegmentFlowExchange
+    else:
+
+        def calculation(self) -> None:
+            _hru_segment = self.hru_segment - 1
+            s_per_time = self.control.time_step_seconds
+            self._inputs_sum = (
+                sum([vv.current for vv in self._input_variables_dict.values()])
+                / s_per_time
+            )
+
+            self.inflows[:] = zero
+            self.sinks[:] = zero  # this is an HRU variable
+            for ihru in range(self.nhru):
+                iseg = _hru_segment[ihru]
+                if iseg < 0:
+                    self.sinks[ihru] += self._inputs_sum[ihru]
+                else:
+                    self.inflows[iseg] += self._inputs_sum[ihru]
+
+            self.inflows_vol[:] = self.inflows * s_per_time
+            self.sinks_vol[:] = self.sinks * s_per_time
+
+        Exchange = inflow_exchange_factory(
+            dimension_names=("nhru", "nnodes"),
+            parameter_names=("hru_segment", "node_coord"),
+            input_names=PRMSChannel.get_inputs(),
+            init_values={
+                "inflows": nan,
+                "inflows_vol": nan,
+                "sinks": nan,
+                "sinks_vol": nan,
+            },
+            mass_budget_terms={
+                "inputs": [
+                    "sroff_vol",
+                    "ssres_flow_vol",
+                    "gwres_flow_vol",
+                ],
+                "outputs": ["inflows_vol", "sinks_vol"],
+                "storage_changes": [],
+            },
+            calculation=calculation,
+        )
+
     control.options["netcdf_output_var_names"] = ["outflow"]
     # run_dir = tmp_path / "test_hru_segment_exchange"
 
@@ -253,7 +304,7 @@ def test_hru_segment_flow_exchange(
         "dis_both": discretization,
         "model_order": ["hru_seg_exchange", "prms_channel_graph"],
         "hru_seg_exchange": {
-            "class": HruSegmentFlowExchange,
+            "class": Exchange,
             "parameters": params_exchange,
             "dis": "dis_both",
         },

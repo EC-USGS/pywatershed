@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 import xarray as xr
-
 from utils_compare import compare_in_memory
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
+from pywatershed.base.model import Model
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
@@ -15,7 +15,6 @@ from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowExchange,
     PRMSChannelFlowNodeMaker,
 )
-from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
 
 # NB: THere is no real comparison of output files because the answer files
@@ -201,7 +200,7 @@ def test_hru_segment_flow_exchange(
     tmp_path,
 ):
     control.options["netcdf_output_var_names"] = ["outflow"]
-    run_dir = tmp_path / "test_hru_segment_exchange"
+    # run_dir = tmp_path / "test_hru_segment_exchange"
 
     control.options = control.options | {
         "input_dir": simulation["output_dir"],

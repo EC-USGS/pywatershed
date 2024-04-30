@@ -491,9 +491,9 @@ class Model:
             self.process_input_from[process] = {}
             for input, frm in self._inputs_from[process].items():
                 if not frm:
-                    self.process_input_from[process][
-                        input
-                    ] = self._file_inputs[input]
+                    self.process_input_from[process][input] = (
+                        self._file_inputs[input]
+                    )
                 else:
                     self.process_input_from[process][input] = frm[0]
                     self.processes[process].set_input_to_adapter(

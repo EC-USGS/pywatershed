@@ -183,12 +183,12 @@ def test_process_budgets(
             for bb in check_budget_sum_vars:
                 if tt == 0:
                     # use the output data to figure out the shape
-                    check_dict[pp][bb] = np.zeros(
-                        (
-                            n_time_steps,
-                            model.processes[pp].budget[f"_{bb}"].shape[0],
-                        )
-                    )
+                    shp = model.processes[pp].budget[f"_{bb}"].shape
+                    if len(shp):
+                        shp = shp[0]
+                    else:
+                        shp = 1
+                    check_dict[pp][bb] = np.zeros((n_time_steps, shp))
 
                 check_dict[pp][bb][tt, :] = model.processes[pp].budget[
                     f"_{bb}"

@@ -1718,6 +1718,13 @@ inflows:
   type: float64
   units: cfs
   var_category: mass flux
+inflows_vol:
+  desc: Volumes entering the FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 int_alb:
   desc: 'Flag to indicate (1: accumulation season curve; 2: use of the melt season
     curve)'
@@ -2118,11 +2125,18 @@ orad_hru:
   type: float64
   units: Langleys
 outflows:
-  desc: Outflows exiting the FlowGrap (vol/time)
+  desc: Outflows exiting the FlowGraph (vol/time)
   dims:
     0: nnodes
   type: float64
   units: cfs
+  var_category: mass flux
+outflows_vol:
+  desc: Volumes exiting the FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cubicfeet
   var_category: mass flux
 pan_evap:
   desc: Pan evaporation at each measurement station
@@ -2576,6 +2590,20 @@ sink_source:
     0: nnodes
   type: float64
   units: cfs
+  var_category: mass flux
+sinks:
+  desc: Sinks of HRU outflows not mapped to segments
+  dims:
+    0: nhru
+  type: float64
+  units: cfs
+  var_category: mass flux
+sinks_vol:
+  desc: Sinks of HRU volumetric outflows not mapped to segments
+  dims:
+    0: nhru
+  type: float64
+  units: cubicfeet
   var_category: mass flux
 slow_flow:
   desc: Interflow from gravity reservoir storage that flows to the stream network

@@ -3,7 +3,8 @@ from typing import Literal
 import numba as nb
 import numpy as np
 
-from pywatershed.base.adapter import Adapter
+from pywatershed.base.adapter import Adapter, adaptable
+from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
 from pywatershed.constants import SegmentType, nan, zero
@@ -430,74 +431,105 @@ class HruSegmentFlowAdapter(Adapter):
         return
 
 
-# <
-# module scope functions
-def _calculate_subtimestep_numpy(
-    ihr,
-    inflow_upstream,
-    inflow_lateral,
-    _seg_inflow0,
-    _seg_inflow,
-    _inflow_ts,
-    _seg_outflow,
-    _outflow_ts,
-    _tsi,
-    _ts,
-    _c0,
-    _c1,
-    _c2,
-):
-    # some way to enforce that ihr is actually an hour?
-    seg_current_inflow = inflow_lateral + inflow_upstream
-    _seg_inflow += seg_current_inflow
-    _inflow_ts += seg_current_inflow
+class HruSegmentFlowExchange(ConservativeProcess):
+    """PRMS class to map HRU outflows to segment inflows.
 
-    remainder = (ihr + 1) % _tsi
-    if remainder == 0:
-        # segment routed on current hour
-        _inflow_ts /= _ts
+    This code is contained in the channel part of the PRMS code.
 
-        if _tsi > 0:
-            # Muskingum routing equation
-            _outflow_ts = (
-                _inflow_ts * _c0 + _seg_inflow0 * _c1 + _outflow_ts * _c2
-            )
-        else:
-            _outflow_ts = _inflow_ts
+    Args:
 
-        _seg_inflow0 = _inflow_ts
-        _inflow_ts = 0.0
+    """
 
-    _seg_outflow += _outflow_ts
+    def __init__(
+        self,
+        control: Control,
+        discretization: Parameters,
+        parameters: Parameters,
+        sroff_vol: adaptable,
+        ssres_flow_vol: adaptable,
+        gwres_flow_vol: adaptable,
+        budget_type: Literal[None, "warn", "error"] = None,
+        verbose: bool = None,
+    ) -> None:
+        super().__init__(
+            control=control,
+            discretization=discretization,
+            parameters=parameters,
+        )
+        self.name = "HruSegmentFlowExchange"
 
-    return (
-        _seg_inflow,
-        _inflow_ts,
-        _outflow_ts,
-        _seg_inflow0,
-        _seg_outflow,
-    )
+        self._set_inputs(locals())
+        self._set_options(locals())
 
+        self._hru_segment = self.hru_segment - 1
 
-numba_msg = "prms_channel_flow_graph jit compiling with numba"
-print(numba_msg, flush=True)
+        self._set_budget(basis="global")
 
-_calculate_subtimestep_numba = nb.njit(
-    nb.types.UniTuple(nb.float64, 5)(
-        nb.int64,  # ihr
-        nb.float64,  # inflow_upstream
-        nb.float64,  # inflow_lateral
-        nb.float64,  # _seg_inflow0
-        nb.float64,  # _seg_inflow
-        nb.float64,  # _inflow_ts
-        nb.float64,  # _seg_outflow
-        nb.float64,  # _outflow_ts
-        nb.int64,  # _tsi
-        nb.float64,  # _ts
-        nb.float64,  # _c0
-        nb.float64,  # _c1
-        nb.float64,  # _c2
-    ),
-    fastmath=True,
-    parallel=False,
-)(_calculate_subtimestep_numpy)
+        return
+
+    @staticmethod
+    def get_dimensions() -> tuple:
+        return ("nhru", "nnodes")
+
+    @staticmethod
+    def get_parameters() -> tuple:
+        return ("hru_segment", "node_coord")
+
+    @staticmethod
+    def get_inputs() -> tuple:
+        return (
+            "sroff_vol",
+            "ssres_flow_vol",
+            "gwres_flow_vol",
+        )
+
+    @staticmethod
+    def get_init_values() -> dict:
+        return {
+            "inflows": nan,
+            "inflows_vol": nan,
+            "sinks": nan,
+            "sinks_vol": nan,
+        }
+
+    @staticmethod
+    def get_mass_budget_terms():
+        return {
+            "inputs": [
+                "sroff_vol",
+                "ssres_flow_vol",
+                "gwres_flow_vol",
+            ],
+            "outputs": ["inflows_vol", "sinks_vol"],
+            "storage_changes": [],
+        }
+
+    def _set_initial_conditions(self) -> None:
+        pass
+
+    def _advance_variables(self) -> None:
+        # could vary with timesstep some day
+        return
+
+    def _calculate(self, simulation_time: float) -> None:
+        self._simulation_time = simulation_time
+
+        s_per_time = self.control.time_step_seconds
+        self._inputs_sum = (
+            sum([vv.current for vv in self._input_variables_dict.values()])
+            / s_per_time
+        )
+
+        self.inflows[:] = zero
+        self.sinks[:] = zero  # this is an HRU variable
+        for ihru in range(self.nhru):
+            iseg = self._hru_segment[ihru]
+            if iseg < 0:
+                self.sinks[ihru] += self._inputs_sum[ihru]
+            else:
+                self.inflows[iseg] += self._inputs_sum[ihru]
+
+        self.inflows_vol[:] = self.inflows * s_per_time
+        self.sinks_vol[:] = self.sinks * s_per_time
+
+        return

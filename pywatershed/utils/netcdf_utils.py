@@ -445,7 +445,7 @@ class NetCdfWrite(Accessor):
         if nreservoirs_coordinate:
             self.nreservoirs = len(coordinates["grand_id"])
         if nnodes_coordinate:
-            self.nnodes = len(coordinates["nnodes"])
+            self.nnodes = len(coordinates["node_coord"])
 
         # Dimensions
 
@@ -485,7 +485,7 @@ class NetCdfWrite(Accessor):
         if nreservoirs_coordinate:
             self.dataset.createDimension("grand_id", self.nreservoirs)
         if nnodes_coordinate:
-            self.dataset.createDimension("nnodes", self.nnodes)
+            self.dataset.createDimension("node_coord", self.nnodes)
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
@@ -506,10 +506,10 @@ class NetCdfWrite(Accessor):
             )
             self.grandid[:] = coordinates["grand_id"]
         if nnodes_coordinate:
-            self.nnodes = self.dataset.createVariable(
-                "nnodes", "i4", ("nnodes")
+            self.node_coord = self.dataset.createVariable(
+                "node_coord", "i4", ("node_coord")
             )
-            self.nnodes[:] = coordinates["nnodes"]
+            self.node_coord[:] = coordinates["node_coord"]
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
@@ -527,7 +527,7 @@ class NetCdfWrite(Accessor):
             elif "nreservoirs" in variable_dimensions[var_name]:
                 spatial_coordinate = "grand_id"
             elif "nnodes" in variable_dimensions[var_name]:
-                spatial_coordinate = "nnodes"
+                spatial_coordinate = "node_coord"
             else:
                 msg = (
                     "Undefined spatial coordinate name in "

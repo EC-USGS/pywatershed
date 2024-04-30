@@ -183,7 +183,7 @@ def test_prms_channel_pass_through_compare_prms(
     for istep in range(control.n_times):
         control.advance()
         flow_graph.advance()
-        flow_graph.calculate()
+        flow_graph.calculate(1.0)
         # flow_graph.output()
 
         # check exchange

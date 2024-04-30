@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import Literal
 
 import networkx as nx
 import numpy as np
@@ -108,12 +108,6 @@ class FlowGraph(ConservativeProcess):
         # node_maker_dict is not really a parameter, it's a composition
         # mechanism
         node_maker_dict: dict,
-        # node_maker_name, node_maker_index, and
-        # to_graph_index are all really parameters. require they pass through
-        # parameters? or leave them here for convenience?
-        # node_maker_name: Union[list, np.ndarray],
-        # node_maker_index: Union[list, np.ndarray],
-        # to_graph_index: Union[list, np.ndarray],  # put in parameters?
         budget_type: Literal[None, "warn", "error"] = None,
         verbose: bool = None,
     ):
@@ -254,7 +248,7 @@ class FlowGraph(ConservativeProcess):
         # no prognostic variables on the graph
         return
 
-    def calculate(self, n_substeps=24) -> None:
+    def calculate(self, time_length: float, n_substeps: int = 24) -> None:
         params = self._params.parameters
 
         for node in self._nodes:

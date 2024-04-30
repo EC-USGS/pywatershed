@@ -95,18 +95,24 @@ class Budget(Accessor):
             #     f"Balance of fluxes and storage changes ({self.basis})",
         }
 
-        for var, desc in self.output_vars_desc.items():
-            if var == "balance":
-                dummy_var = self.terms["outputs"][0]
-            else:
-                dummy_var = self.terms[var[0:-4]][0]
+        sum_keys = list(self.output_vars_desc.keys())
+        for kk in sum_keys:
+            terms = self.terms[kk[0:-4]]
+            if terms is None or not len(terms):
+                del self.output_vars_desc[kk]
 
-            if dummy_var in self.meta.keys():
-                dummy_meta = self.meta[dummy_var]
-                self.meta[var] = deepcopy(dummy_meta)
-                self.meta[var]["desc"] = desc
-                if (var == "balance") and (self.basis == "global"):
-                    self.meta[var]["dimensions"] = {0: "one"}
+        for kk, desc in self.output_vars_desc.items():
+            terms = self.terms[kk[0:-4]]
+            term = terms[0]
+            if term in self.meta.keys():
+                term_meta = self.meta[term]
+                self.meta[kk] = deepcopy(term_meta)
+                self.meta[kk]["desc"] = desc
+            elif verbose:
+                msg = f"budget term {term} not available in metadata"
+                warn(msg)
+            # if (var == "balance") and (self.basis == "global"):
+            #    self.meta[var]["dimensions"] = {0: "one"}
 
         self.set_initial_accumulations(init_accumulations, accum_start_time)
         return
@@ -246,7 +252,9 @@ class Budget(Accessor):
                     var
                 ] * self.control.time_step.astype(
                     f"timedelta64[{self.time_unit}]"
-                ).astype(int)
+                ).astype(
+                    int
+                )
 
         self._sum_component_accumulations()
 
@@ -266,13 +274,24 @@ class Budget(Accessor):
             self._accumulations_sum[component] = None
             for var in self[component].keys():
                 if self._accumulations_sum[component] is None:
-                    self._accumulations_sum[component] = self._accumulations[
-                        component
-                    ][var].copy()
+                    if self.basis == "unit":
+                        self._accumulations_sum[
+                            component
+                        ] = self._accumulations[component][var].copy()
+                    elif self.basis == "global":
+                        self._accumulations_sum[component] = (
+                            self._accumulations[component][var].copy().sum()
+                        )
                 else:
-                    self._accumulations_sum[component] += self._accumulations[
-                        component
-                    ][var]
+                    if self.basis == "unit":
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var]
+                    elif self.basis == "global":
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var].sum()
+
         return
 
     @property
@@ -281,8 +300,17 @@ class Budget(Accessor):
 
     def _sum(self, attr):
         """Sum over the individual terms in a budget component."""
-        vals = [val for val in self[attr].values()]
-        return sum(vals)
+        if self.basis == "unit":
+            vals = [val for val in self[attr].values()]
+            the_sum = sum(vals)
+        elif self.basis == "global":
+            # in global case, the variable dims dont need to match, collapse
+            # to a scalar
+            vals = [sum(val) for val in self[attr].values()]
+            the_sum = sum(vals)
+        else:
+            raise ValueError(f"self.basis '{self.basis}' is invalid")
+        return the_sum
 
     def _sum_inputs(self):
         return self._sum("inputs")
@@ -324,11 +352,13 @@ class Budget(Accessor):
         return unit_balance
 
     def _calc_global_balance(self):
-        global_balance = self._inputs_sum.sum() - self._outputs_sum.sum()
+        global_balance = self._inputs_sum - self._outputs_sum
         self._zero_sum = True
+        # compare i ?=? o + ds so that relative errors are not compared to
+        # zero when ds is zero
         if not np.allclose(
-            global_balance,
-            self._storage_changes_sum.sum(),
+            self._inputs_sum,
+            self._outputs_sum + self._storage_changes_sum,
             rtol=self.rtol,
             atol=self.atol,
         ):

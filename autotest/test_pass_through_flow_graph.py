@@ -56,51 +56,8 @@ def parameters_prms(simulation, control):
     return PrmsParameters.from_netcdf(param_file)
 
 
-def test_prms_channel_pass_through_compare_prms(
-    simulation,
-    control,
-    discretization_prms,
-    parameters_prms,
-    tmp_path,
-):
-    # combine PRMS lateral inflows to a single non-volumetric inflow
-    output_dir = simulation["output_dir"]
-    input_variables = {}
-    for key in PRMSChannel.get_inputs():
-        nc_path = output_dir / f"{key}.nc"
-        input_variables[key] = AdapterNetcdf(nc_path, key, control)
-
-    inflows_prms = HruSegmentFlowAdapter(parameters_prms, **input_variables)
-
-    class GraphInflowAdapter(Adapter):
-        def __init__(
-            self,
-            prms_inflows: Adapter,
-            variable: str = "inflows",
-        ):
-            self._variable = variable
-            self._prms_inflows = prms_inflows
-
-            self._nnodes = len(self._prms_inflows.current) + 1
-            self._current_value = np.zeros(self._nnodes) * nan
-            return
-
-        def advance(self) -> None:
-            self._prms_inflows.advance()
-            self._current_value[0:-1] = self._prms_inflows.current
-            self._current_value[-1] = zero  # no inflow at the pass through
-            return
-
-    inflows_graph = GraphInflowAdapter(inflows_prms)
-
-    # FlowGraph
-
-    node_maker_dict = {
-        "prms_channel": PRMSChannelFlowNodeMaker(
-            discretization_prms, parameters_prms
-        ),
-        "pass_throughs": PassThroughNodeMaker(),
-    }
+@pytest.fixture(scope="function")
+def parameters_flow_graph(parameters_prms, discretization_prms):
     nnodes = parameters_prms.dims["nsegment"] + 1
     node_maker_name = ["prms_channel"] * nnodes
     node_maker_name[-1] = "pass_throughs"
@@ -149,11 +106,64 @@ def test_prms_channel_pass_through_compare_prms(
         },
         validate=True,
     )
+    return params_flow_graph
+
+
+@pytest.fixture(scope="function")
+def node_maker_dict(parameters_prms, discretization_prms):
+    return {
+        "prms_channel": PRMSChannelFlowNodeMaker(
+            discretization_prms, parameters_prms
+        ),
+        "pass_throughs": PassThroughNodeMaker(),
+    }
+
+
+def test_compare_prms(
+    simulation,
+    control,
+    discretization_prms,
+    parameters_prms,
+    parameters_flow_graph,
+    node_maker_dict,
+    tmp_path,
+):
+    # combine PRMS lateral inflows to a single non-volumetric inflow
+    output_dir = simulation["output_dir"]
+    input_variables = {}
+    for key in PRMSChannel.get_inputs():
+        nc_path = output_dir / f"{key}.nc"
+        input_variables[key] = AdapterNetcdf(nc_path, key, control)
+
+    inflows_prms = HruSegmentFlowAdapter(parameters_prms, **input_variables)
+
+    class GraphInflowAdapter(Adapter):
+        def __init__(
+            self,
+            prms_inflows: Adapter,
+            variable: str = "inflows",
+        ):
+            self._variable = variable
+            self._prms_inflows = prms_inflows
+
+            self._nnodes = len(self._prms_inflows.current) + 1
+            self._current_value = np.zeros(self._nnodes) * nan
+            return
+
+        def advance(self) -> None:
+            self._prms_inflows.advance()
+            self._current_value[0:-1] = self._prms_inflows.current
+            self._current_value[-1] = zero  # no inflow at the pass through
+            return
+
+    inflows_graph = GraphInflowAdapter(inflows_prms)
+
+    # FlowGraph
 
     flow_graph = FlowGraph(
         control,
         discretization=None,
-        parameters=params_flow_graph,
+        parameters=parameters_flow_graph,
         inflows=inflows_graph,
         node_maker_dict=node_maker_dict,
         budget_type="error",

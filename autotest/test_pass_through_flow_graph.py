@@ -1,11 +1,13 @@
 import numpy as np
 import pytest
+import xarray as xr
 from utils_compare import compare_in_memory
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.base.flow_graph import FlowGraph
+from pywatershed.base.flow_graph import FlowGraph, inflow_exchange_factory
+from pywatershed.base.model import Model
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
@@ -232,3 +234,159 @@ def test_compare_prms(
             )
 
     flow_graph.finalize()
+
+
+def test_inflow_exchange_compare_prms(
+    simulation,
+    control,
+    discretization_prms,
+    parameters_prms,
+    parameters_flow_graph,
+    node_maker_dict,
+    tmp_path,
+):
+    def exchange_calculation(self) -> None:
+        _hru_segment = self.hru_segment - 1
+        s_per_time = self.control.time_step_seconds
+        self._inputs_sum = (
+            sum([vv.current for vv in self._input_variables_dict.values()])
+            / s_per_time
+        )
+
+        # This zero in the last index means zero inflows to the pass through
+        # node
+        self.inflows[:] = zero
+        # sinks is an HRU variable, its accounting in budget is fine because
+        # global collapses it to a scalar before summing over variables
+        self.sinks[:] = zero
+
+        for ihru in range(self.nhru):
+            iseg = _hru_segment[ihru]
+            if iseg < 0:
+                self.sinks[ihru] += self._inputs_sum[ihru]
+            else:
+                self.inflows[iseg] += self._inputs_sum[ihru]
+
+        self.inflows_vol[:] = self.inflows * s_per_time
+        self.sinks_vol[:] = self.sinks * s_per_time
+
+    Exchange = inflow_exchange_factory(
+        dimension_names=("nhru", "nnodes"),
+        parameter_names=("hru_segment", "node_coord"),
+        input_names=PRMSChannel.get_inputs(),
+        init_values={
+            "inflows": nan,
+            "inflows_vol": nan,
+            "sinks": nan,
+            "sinks_vol": nan,
+        },
+        mass_budget_terms={
+            "inputs": [
+                "sroff_vol",
+                "ssres_flow_vol",
+                "gwres_flow_vol",
+            ],
+            "outputs": ["inflows_vol", "sinks_vol"],
+            "storage_changes": [],
+        },
+        calculation=exchange_calculation,
+    )
+
+    # Exchange parameters
+    # TODO: this is funky, can we make this more elegant?
+    params_ds = parameters_prms.to_xr_ds().copy()
+    params_ds["node_coord"] = xr.Variable(
+        dims="nnodes",
+        data=np.arange(parameters_prms.dims["nsegment"] + 1),
+    )
+    params_ds = params_ds.set_coords("node_coord")
+    params_exchange = Parameters.from_ds(params_ds)
+
+    control.options["netcdf_output_var_names"] = ["outflow"]
+    control.options = control.options | {
+        "input_dir": simulation["output_dir"],
+        "budget_type": "error",
+        "calc_method": "numba",
+        "netcdf_output_dir": None,
+    }
+
+    model_dict = {
+        "control": control,
+        "dis_both": discretization_prms,
+        "model_order": ["inflow_exchange", "prms_channel_graph"],
+        "inflow_exchange": {
+            "class": Exchange,
+            "parameters": params_exchange,
+            "dis": "dis_both",
+        },
+        "prms_channel_graph": {
+            "class": FlowGraph,
+            "node_maker_dict": node_maker_dict,
+            "parameters": parameters_flow_graph,
+            "dis": None,
+            "budget_type": "error",
+        },
+    }
+
+    if do_compare_in_memory:
+        answers = {}
+        for var in PRMSChannel.get_variables():
+            if var not in rename_vars.keys():
+                continue
+            new_var = rename_vars[var]
+            var_pth = simulation["output_dir"] / f"{var}.nc"
+            answers[new_var] = adapter_factory(
+                var_pth, variable_name=var, control=control
+            )
+        # answers for the exchange
+        var = "seg_lateral_inflow"
+        var_pth = simulation["output_dir"] / f"{var}.nc"
+        lateral_inflow_answers = adapter_factory(
+            var_pth, variable_name=var, control=control
+        )
+
+    model = Model(model_dict)
+    for istep in range(control.n_times):
+        model.advance()
+        model.calculate()
+        model.output()
+
+        # check exchange
+        lateral_inflow_answers.advance()
+        assert (
+            model.processes["inflow_exchange"]["inflows"][0:-1]
+            == lateral_inflow_answers.current
+        ).all()
+
+        answers_from_graph = {}
+        for key, val in answers.items():
+            val.advance()
+            answers_from_graph[key] = np.zeros(len(val.current) + 1)
+            answers_from_graph[key][0:-1] = val.current
+            # just use this as correct and verify the rest of the graph is
+            # unchanged
+            answers_from_graph[key][-1] = model.processes[
+                "prms_channel_graph"
+            ][key][-1]
+
+        if do_compare_in_memory:
+            answers_conv_vol = {}
+            for key, val in answers_from_graph.items():
+                if key in convert_to_vol:
+                    answers_conv_vol[key] = val / (24 * 60 * 60)
+                else:
+                    answers_conv_vol[key] = val
+
+            # <<
+            # there are no expected sources or sinks in this test
+            answers_conv_vol["sink_source"] = val * zero
+
+            compare_in_memory(
+                model.processes["prms_channel_graph"],
+                answers_conv_vol,
+                atol=atol,
+                rtol=rtol,
+                fail_after_all_vars=False,
+            )
+
+    model.finalize()

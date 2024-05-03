@@ -11,6 +11,10 @@ from pywatershed.parameters import Parameters
 
 # MCM is million cubic meters
 
+# m^3/day -> m^3/second
+# m3pd_to_m3ps = 1 / 24 / 60 / 60
+# m3ps_to_m3pw = 60.0 * 60 * 24 * 7
+
 
 class Starfit(ConservativeProcess):
     """starfit: Storage Targets And Release Function Inference Tool
@@ -58,7 +62,15 @@ class Starfit(ConservativeProcess):
         self._set_inputs(locals())
         self._set_options(locals())
 
-        self._set_budget(budget_type)
+        self._set_budget(budget_type, ignore_nans=True)
+
+        # assuming timestep is constant over run, save these constants
+        # timestep_days = self.control.time_step.astype(
+        #     "timedelta64[D]"
+        # ) / np.timedelta64(1, "D")
+        # self.m3ps_to_MCM = (timestep_days * 24 * 60 * 60) / 1.0e6
+        # self.MCM_to_m3ps = 1 / self.m3ps_to_MCM
+
         return
 
     @staticmethod
@@ -104,14 +116,14 @@ class Starfit(ConservativeProcess):
     def get_mass_budget_terms():
         return {
             "inputs": [
-                "lake_inflow",
+                "lake_inflow",  # m3ps
             ],
             "outputs": [
-                "lake_release",
-                "lake_spill",
+                "lake_release",  # m3ps
+                "lake_spill",  # m3ps
             ],
             "storage_changes": [
-                "lake_storage_change",
+                "lake_storage_change_m3ps",  # m3ps
             ],
         }
 
@@ -119,8 +131,10 @@ class Starfit(ConservativeProcess):
     def get_init_values() -> dict:
         return {
             "lake_storage": nan,
+            # "lake_storage_mcm": nan,
             "lake_storage_old": nan,
             "lake_storage_change": nan,
+            "lake_storage_change_m3ps": nan,
             "lake_inflow": nan,
             "lake_release": nan,
             "lake_spill": nan,
@@ -131,6 +145,7 @@ class Starfit(ConservativeProcess):
         # initialize storage when the appropriate time is reached
         # currently each reservoir can start at a different time.
         self.lake_storage[:] = nan
+        # self.lake_storage_mcm[:] = nan
         self.lake_storage_old[:] = nan
 
         # HMM, this is sketchy seems like it should be a pre-process
@@ -161,7 +176,6 @@ class Starfit(ConservativeProcess):
             None
 
         """
-
         self._simulation_time = simulation_time
 
         wh_after_end = np.where(self.control.current_time > self.end_time)
@@ -205,13 +219,16 @@ class Starfit(ConservativeProcess):
             Release_p2=self.Release_p2,
         )  # output in m^3/d
 
+        # all calculations below in m^3/s except 1 in MCM that is obvious
+        # self.lake_release[:] = self.lake_release * m3pd_to_m3ps
+        # self.lake_storage_change[:] = self.lake_inflow - self.lake_release
         self.lake_release[:] = (
             self.lake_release / 24 / 60 / 60
-        )  # convert to m^3/s
-
+        )  # convert m3pd to m^3/s
         self.lake_storage_change[:] = (
             (self.lake_inflow - self.lake_release) * 24 * 60 * 60 / 1.0e6
-        )  # conv to MCM
+        )  # conv m3pd to MCM
+        # Note: no lake_storage calculation here
 
         # can't release more than storage + inflow. This assumes zero
         # storage = deadpool which may not be accurate, but this situation
@@ -221,14 +238,24 @@ class Starfit(ConservativeProcess):
             (self.lake_storage + self.lake_storage_change) < zero
         )
         if len(wh_neg_storage):
+            # potential_release = self.lake_release[wh_neg_storage] + (
+            #     self.lake_storage[wh_neg_storage]
+            #     + self.lake_storage_change[wh_neg_storage]
+            # )
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (1.0e6 / 24 / 60 / 60)
+            ) * (
+                1.0e6 / 24 / 60 / 60
+            )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
-                potential_release * zero,
-            )
+                zero,
+            )  # m3ps
+            # self.lake_storage_change[wh_neg_storage] = (
+            #     self.lake_inflow[wh_neg_storage]
+            #     - self.lake_release[wh_neg_storage]
+            # )
             self.lake_storage_change[wh_neg_storage] = (
                 (
                     self.lake_inflow[wh_neg_storage]
@@ -238,11 +265,11 @@ class Starfit(ConservativeProcess):
                 * 60
                 * 60
                 / 1.0e6
-            )
+            )  # m3ps to MCM
 
         self.lake_storage[:] = np.maximum(
             self.lake_storage + self.lake_storage_change, zero
-        )
+        )  # MCM
 
         self.lake_spill[:] = nan
         wh_active = np.where(~np.isnan(self.lake_storage))
@@ -254,8 +281,24 @@ class Starfit(ConservativeProcess):
             / 24
             / 60
             / 60
-        )
+        )  # MCM to m3ps
+        # wh_spill = np.where(
+        #     self.lake_storage > (self.GRanD_CAP_MCM * self.MCM_to_m3ps)
+        # )
+        # self.lake_spill[wh_spill] = self.lake_storage[wh_spill] - (
+        #     self.GRanD_CAP_MCM[wh_spill] * self.MCM_to_m3ps
+        # )
         self.lake_storage[wh_spill] = self.GRanD_CAP_MCM[wh_spill]
+        # self.lake_storage[wh_spill] = (
+        #     self.GRanD_CAP_MCM[wh_spill] * self.MCM_to_m3ps
+        # )
+        # # only variable in MCM
+        # self.lake_storage_mcm[:] = self.lake_storage * self.m3ps_to_MCM
+
+        self.lake_storage_change[:] = self.lake_storage - self.lake_storage_old
+        self.lake_storage_change_m3ps[:] = (
+            self.lake_storage_change * 1.0e6 / 24 / 60 / 60
+        )
 
         return
 
@@ -287,7 +330,7 @@ class Starfit(ConservativeProcess):
         Release_p1,
         Release_p2,
     ):
-        # input is in MCM, this function needs m^3
+        # MCM to m^3
         storage = lake_storage * 1.0e6
         capacity = GRanD_CAP_MCM * 1.0e6
 
@@ -297,24 +340,24 @@ class Starfit(ConservativeProcess):
         if not np.isfinite(grand_id).any():
             raise ValueError("Some non-finite grand_ids present")
 
-        max_normal = np.minimum(
+        max_normal = max_nor(
             NORhi_max,
-            np.maximum(
-                NORhi_min,
-                NORhi_mu
-                + NORhi_alpha * np.sin(2.0 * np.pi * omega * epiweek)
-                + NORhi_beta * np.cos(2.0 * np.pi * omega * epiweek),
-            ),
+            NORhi_min,
+            NORhi_alpha,
+            NORhi_beta,
+            NORhi_mu,
+            omega,
+            epiweek,
         )
 
-        min_normal = np.minimum(
+        min_normal = min_nor(
             NORlo_max,
-            np.maximum(
-                NORlo_min,
-                NORlo_mu
-                + NORlo_alpha * np.sin(2.0 * np.pi * omega * epiweek)
-                + NORlo_beta * np.cos(2.0 * np.pi * omega * epiweek),
-            ),
+            NORlo_min,
+            NORlo_alpha,
+            NORlo_beta,
+            NORlo_mu,
+            omega,
+            epiweek,
         )
 
         # TODO could make a better forecast?
@@ -322,6 +365,8 @@ class Starfit(ConservativeProcess):
         # extrapolate for the remainder of the week?
         forecasted_weekly_volume = 7.0 * lake_inflow * 24.0 * 60.0 * 60.0
         mean_weekly_volume = 7.0 * Obs_MEANFLOW_CUMECS * 24.0 * 60.0 * 60.0
+        # forecasted_weekly_volume = lake_inflow * m3ps_to_m3pw
+        # mean_weekly_volume = Obs_MEANFLOW_CUMECS * m3ps_to_m3pw
 
         standardized_inflow = (
             forecasted_weekly_volume / mean_weekly_volume
@@ -334,6 +379,7 @@ class Starfit(ConservativeProcess):
             + Release_beta2 * np.cos(4.0 * np.pi * omega * epiweek)
         )
 
+        # m3/week to m3/day
         release_min_vol = mean_weekly_volume * (1 + Release_min) / 7.0
         release_max_vol = mean_weekly_volume * (1 + Release_max) / 7.0
 
@@ -341,6 +387,7 @@ class Starfit(ConservativeProcess):
             max_normal - min_normal
         )
 
+        # m3/week to m3/day
         release = (
             mean_weekly_volume
             * (
@@ -354,12 +401,14 @@ class Starfit(ConservativeProcess):
             )
         ) / 7.0
 
+        # m3/week to m3/day
         release_above_normal = (
             storage
             - (capacity * max_normal / 100.0)
             + forecasted_weekly_volume
         ) / 7.0
 
+        # m3/week to m3/day
         release_below_normal = (
             storage
             - (capacity * min_normal / 100.0)
@@ -377,6 +426,34 @@ class Starfit(ConservativeProcess):
 
         # storage update and boundaries are enforced during the regulation step
         return release, availability_status
+
+
+def max_nor(
+    NORhi_max, NORhi_min, NORhi_alpha, NORhi_beta, NORhi_mu, omega, epiweek
+):
+    return np.minimum(
+        NORhi_max,
+        np.maximum(
+            NORhi_min,
+            NORhi_mu
+            + NORhi_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+            + NORhi_beta * np.cos(2.0 * np.pi * omega * epiweek),
+        ),
+    )
+
+
+def min_nor(
+    NORlo_max, NORlo_min, NORlo_alpha, NORlo_beta, NORlo_mu, omega, epiweek
+):
+    return np.minimum(
+        NORlo_max,
+        np.maximum(
+            NORlo_min,
+            NORlo_mu
+            + NORlo_alpha * np.sin(2.0 * np.pi * omega * epiweek)
+            + NORlo_beta * np.cos(2.0 * np.pi * omega * epiweek),
+        ),
+    )
 
 
 class StarfitFlowNode(FlowNode):
@@ -521,7 +598,9 @@ class StarfitFlowNode(FlowNode):
         if (self._lake_storage + self._lake_storage_change) < zero:
             potential_release = self._lake_release + (
                 self._lake_storage + self._lake_storage_change
-            ) * (1.0e6 / 24 / 60 / 60)  # m^3/s
+            ) * (
+                1.0e6 / 24 / 60 / 60
+            )  # m^3/s
             self._lake_release[:] = np.maximum(
                 potential_release,
                 potential_release * zero,

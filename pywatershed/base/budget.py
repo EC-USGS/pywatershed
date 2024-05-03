@@ -43,6 +43,7 @@ class Budget(Accessor):
         atol: float = 1e-5,
         basis: Literal["unit", "global"] = "unit",
         imbalance_fatal: bool = False,
+        ignore_nans: bool = False,
         verbose: bool = True,
     ):
         self.name = "Budget"
@@ -55,6 +56,7 @@ class Budget(Accessor):
         self.rtol = rtol
         self.atol = atol
         self.imbalance_fatal = imbalance_fatal
+        self._ignore_nans = ignore_nans
         self.verbose = verbose
         self.basis = basis
 
@@ -252,7 +254,9 @@ class Budget(Accessor):
                     var
                 ] * self.control.time_step.astype(
                     f"timedelta64[{self.time_unit}]"
-                ).astype(int)
+                ).astype(
+                    int
+                )
 
         self._sum_component_accumulations()
 
@@ -273,22 +277,22 @@ class Budget(Accessor):
             for var in self[component].keys():
                 if self._accumulations_sum[component] is None:
                     if self.basis == "unit":
-                        self._accumulations_sum[component] = (
-                            self._accumulations[component][var].copy()
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] = self._accumulations[component][var].copy()
                     elif self.basis == "global":
                         self._accumulations_sum[component] = (
                             self._accumulations[component][var].copy().sum()
                         )
                 else:
                     if self.basis == "unit":
-                        self._accumulations_sum[component] += (
-                            self._accumulations[component][var]
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var]
                     elif self.basis == "global":
-                        self._accumulations_sum[component] += (
-                            self._accumulations[component][var].sum()
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var].sum()
 
         return
 
@@ -320,33 +324,55 @@ class Budget(Accessor):
         return self._sum("storage_changes")
 
     def _calc_unit_balance(self):
+        unit_balance = self._inputs_sum - self._outputs_sum
         self._zero_sum = True
 
-        # roll our own np.allclose so we can diagnose the not close points
-        unit_balance = self._inputs_sum - self._outputs_sum
-        abs_diff = np.abs(unit_balance - self._storage_changes_sum)
-        mask_div_zero = self._storage_changes_sum < epsilon64
-        rel_abs_diff = abs_diff / np.where(
-            mask_div_zero, one, self._storage_changes_sum
-        )
-        abs_close = abs_diff < self.atol
-        rel_close = rel_abs_diff < self.rtol
-        either_close = abs_close | rel_close
-        cond = np.where(mask_div_zero, abs_close, either_close)
-
-        if not cond.all():
+        # compare i ?=? o + ds so that relative errors are not compared to
+        # zero when ds is zero
+        if not np.allclose(
+            self._inputs_sum,
+            self._outputs_sum + self._storage_changes_sum,
+            rtol=self.rtol,
+            atol=self.atol,
+            equal_nan=self._ignore_nans,
+        ):
             self._zero_sum = False
-            wh_not_cond = np.where(~cond)
+
+            lhs = self._inputs_sum
+            rhs = self._outputs_sum + self._storage_changes_sum
+
+            if self._ignore_nans:
+                actual_nan = np.where(np.isnan(lhs), True, False)
+                desired_nan = np.where(np.isnan(rhs), True, False)
+                msg = "The nan values are not the same for the two arrays"
+                assert (actual_nan == desired_nan).all(), msg
+
+            abs_diff = abs(lhs - rhs)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                rel_abs_diff = abs_diff / rhs
+
+            abs_close = abs_diff < self.atol
+            rel_close = rel_abs_diff < self.rtol
+            rel_close = np.where(np.isnan(rel_close), False, rel_close)
+
+            close = abs_close | rel_close
+            if self._ignore_nans:
+                close = np.where(np.isnan(abs_diff), True, close)
+
+            wh_not_close = np.where(~close)
+
             msg = (
                 "The flux unit balance not equal to the change in unit "
                 f"storage at time {self.control.current_time} and at the "
-                f"following locations for {self.description}: {wh_not_cond}"
+                f"following locations for {self.description}: {wh_not_close}"
             )
+
             if self.imbalance_fatal:
                 raise ValueError(msg)
             else:
                 warn(msg, UserWarning)
 
+        # <<
         return unit_balance
 
     def _calc_global_balance(self):

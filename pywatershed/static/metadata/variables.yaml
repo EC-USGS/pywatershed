@@ -1829,7 +1829,7 @@ lake_inflow:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: cubic meters per second
 lake_interflow:
   desc: Total interflow into each lake
   dims:
@@ -1896,7 +1896,7 @@ lake_release:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: cubic meters per second
 lake_seep_in:
   desc: Total seepage into each lake using broad-crested weir or gate opening routing
   dims:
@@ -1920,7 +1920,7 @@ lake_spill:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: cubic meters per second
 lake_sroff:
   desc: Total surface runoff into each lake
   dims:
@@ -1939,6 +1939,12 @@ lake_storage:
     0: nreservoirs
   type: float64
   units: cubic meters
+lake_storage_mcm:
+  desc: Storage in each lake
+  dims:
+    0: nreservoirs
+  type: float64
+  units: million cubic meters
 lake_storage_old:
   desc: Previous storage in each lake
   dims:
@@ -1951,6 +1957,12 @@ lake_storage_change:
     0: nreservoirs
   type: float64
   units: cubic meters
+lake_storage_change_m3ps:
+  desc: Storage in each lake
+  dims:
+    0: nreservoirs
+  type: float64
+  units: cubic meters per second
 lake_stream_in:
   desc: Total streamflow into each lake
   dims:

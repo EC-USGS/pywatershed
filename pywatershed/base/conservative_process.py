@@ -158,7 +158,10 @@ class ConservativeProcess(Process):
 
         return
 
-    def _set_budget(self, basis: str = "unit"):
+    def _set_budget(self, basis: str = None, ignore_nans: bool = False):
+        if basis is None:
+            basis = "unit"
+
         if self._budget_type is None:
             self.budget = None
         elif self._budget_type in ["error", "warn"]:
@@ -168,6 +171,7 @@ class ConservativeProcess(Process):
                 description=self.name,
                 imbalance_fatal=(self._budget_type == "error"),
                 basis=basis,
+                ignore_nans=ignore_nans,
             )
         else:
             raise ValueError(f"Illegal behavior: {self._budget_type}")

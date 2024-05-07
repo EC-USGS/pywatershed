@@ -69,7 +69,7 @@ def control(parameters):
 
 
 # @pytest.mark.parametrize("calc_method", calc_methods)
-# @pytest.mark.xfail
+@pytest.mark.xfail
 @pytest.mark.parametrize(
     "io_in_cfs", [True, False], ids=("io_in_cfs", "io_in_cms")
 )

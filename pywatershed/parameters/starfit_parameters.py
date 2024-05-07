@@ -52,7 +52,7 @@ class StarfitParameters(Parameters):
     Starfit parameter class
 
     The GRanD data
-    https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013  # noqa
+    https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
 
     The istarf data
     https://zenodo.org/record/4602277#.ZCtYj-zMJqs
@@ -80,7 +80,7 @@ class StarfitParameters(Parameters):
     Returns:
         StarfitParameters object
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -164,9 +164,9 @@ class StarfitParameters(Parameters):
         grand_file: a path to an existing dbf or shp file. If the file does not
             exist, an error will be thrown and you must download it manually
             from
-             https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013  # noqa
+             https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
 
-        """
+        """  # noqa: 501
         grand_ds = _get_grand(grand_file)
         istarf_ds = _get_istarf_conus(istarf_file, files_directory)
 

@@ -4,12 +4,11 @@ import pickle
 import numpy as np
 import pytest
 import xarray as xr
-
 from utils_compare import assert_allclose
 
 from pywatershed.base.control import Control
 from pywatershed.constants import __pywatershed_root__ as repo_root
-from pywatershed.constants import cms_to_cfs, cm_to_cf
+from pywatershed.constants import cm_to_cf, cms_to_cfs
 from pywatershed.hydrology.starfit import Starfit
 from pywatershed.parameters import StarfitParameters
 

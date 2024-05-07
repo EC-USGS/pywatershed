@@ -9,8 +9,8 @@ from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
 from pywatershed.constants import (
     cf_to_cm,
     cfs_to_cms,
-    cms_to_cfs,
     cm_to_cf,
+    cms_to_cfs,
     nan,
     one,
     zero,
@@ -256,9 +256,7 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (
-                MCM_to_m3ps
-            )  # both terms in m3ps
+            ) * (MCM_to_m3ps)  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,

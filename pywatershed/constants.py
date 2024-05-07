@@ -67,6 +67,11 @@ np_type_to_netcdf_type_dict = {
 inch2cm = 2.54
 ft2_per_acre = 43560.0
 inches_per_foot = 12.0
+cms_to_cfs = 35.314666721489
+cfs_to_cms = 1 / cms_to_cfs
+cm_to_cf = cms_to_cfs
+cf_to_cm = cfs_to_cms
+
 
 ndoy = 366
 nmonth = 12

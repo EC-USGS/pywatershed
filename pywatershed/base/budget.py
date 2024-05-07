@@ -8,7 +8,7 @@ import numpy as np
 
 from pywatershed.base.control import Control
 
-from ..constants import epsilon64, one, zero
+from ..constants import zero
 from ..utils.formatting import pretty_print
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor

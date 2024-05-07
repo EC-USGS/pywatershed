@@ -1861,9 +1861,9 @@ lake_outcms:
   type: float64
   units: cms
 lake_outflow:
-  desc: Evaporation and seepage from each lake
+  desc: Combined release and spill from a starfit lake/reservoir (Not PRMS)
   dims:
-    0: nlake
+    0: nreservoirs
   type: float64
   units: cfs
 lake_outq2:
@@ -1957,7 +1957,7 @@ lake_storage_change:
     0: nreservoirs
   type: float64
   units: cubic meters
-lake_storage_change_m3ps:
+lake_storage_change_flow_units:
   desc: Storage in each lake
   dims:
     0: nreservoirs

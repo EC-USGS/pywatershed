@@ -11,7 +11,7 @@ from pywatershed.base.control import Control
 
 # from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.constants import __pywatershed_root__ as pws_root
-from pywatershed.constants import nan, zero
+from pywatershed.constants import cm_to_cf, cms_to_cfs, nan, zero
 from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
 from pywatershed.parameters import StarfitParameters
 
@@ -64,13 +64,23 @@ def control(parameters):
         np.datetime64("2019-09-30 00:00:00"),
         np.timedelta64(24, "h"),
     )
-    control.options["budget_type"] = "warn"
+    control.options["budget_type"] = "error"
     return control
 
 
 # @pytest.mark.parametrize("calc_method", calc_methods)
-@pytest.mark.xfail
-def test_starfit_flow_node_compare_starfit(control, parameters, tmp_path):
+# @pytest.mark.xfail
+@pytest.mark.parametrize(
+    "io_in_cfs", [True, False], ids=("io_in_cfs", "io_in_cms")
+)
+def test_starfit_flow_node_compare_starfit(
+    control, parameters, io_in_cfs, tmp_path
+):
+    if io_in_cfs:
+        param_ds = parameters.to_xr_ds()
+        param_ds["initial_storage"] *= cm_to_cf
+        parameters = StarfitParameters.from_ds(param_ds)
+
     with open(data_dir / "starfit_outputs.pickle", "rb") as handle:
         ans_dict = pickle.load(handle)
     answers = {}
@@ -109,6 +119,7 @@ def test_starfit_flow_node_compare_starfit(control, parameters, tmp_path):
         discretization=None,
         parameters=parameters,
         # calc_method=calc_method
+        io_in_cfs=io_in_cfs,
     )
 
     nodes = [
@@ -119,8 +130,13 @@ def test_starfit_flow_node_compare_starfit(control, parameters, tmp_path):
     for istep in range(control.n_times):
         control.advance()
         inflows_node.advance()
+
+        if io_in_cfs:
+            inflows_node.current[:] *= cms_to_cfs
+
         for inode, node in enumerate(nodes):
             node.advance()
+
             node.prepare_timestep()
             node.calculate_subtimestep(0, inflows_node.current[inode], zero)
             # subtimesteps dont matter to starfit node.
@@ -130,12 +146,21 @@ def test_starfit_flow_node_compare_starfit(control, parameters, tmp_path):
         ymd = control.current_datetime.strftime("%Y-%m-%d")
         for ii, si in enumerate(starfit_inds_test):
             assert parameters.parameters["grand_id"][ii] == ans_grand_ids[si]
-            for var in ["lake_storage", "lake_release", "lake_spill"]:
+            for var in [
+                "lake_storage",
+                "lake_release",
+                "lake_spill",
+            ]:
                 actual = nodes[ii][f"_{var}"]
                 ans_series = answers[var][si]
+
                 if ymd in ans_series.index:
+                    ans = ans_series[ymd]
+                    if io_in_cfs:
+                        ans *= cms_to_cfs  # same for storage
+
                     np.testing.assert_allclose(
-                        actual, ans_series[ymd], rtol=rtol, atol=atol
+                        actual, ans, rtol=rtol, atol=atol
                     )
                 else:
                     assert np.isnan(actual)

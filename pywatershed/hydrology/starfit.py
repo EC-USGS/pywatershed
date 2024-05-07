@@ -484,6 +484,7 @@ class StarfitFlowNode(FlowNode):
         GRanD_CAP_MCM: np.float64,
         Obs_MEANFLOW_CUMECS: np.float64,
         calc_method: Literal["numba", "numpy"] = None,
+        io_in_cfs: bool = True,
     ):
         self.control = control
 
@@ -517,6 +518,7 @@ class StarfitFlowNode(FlowNode):
         self._lake_storage = np.zeros(1) * nan
         self._lake_storage_old = np.zeros(1) * nan
         self._lake_storage_change = np.zeros(1) * nan
+        self._lake_storage_change_flow_units = np.zeros(1) * nan
         # self._lake_inflow = np.zeros(1) * nan
         self._lake_release = np.zeros(1) * nan
         self._lake_spill = np.zeros(1) * nan
@@ -524,6 +526,8 @@ class StarfitFlowNode(FlowNode):
 
         if np.isnan(self._Obs_MEANFLOW_CUMECS):
             self._Obs_MEANFLOW_CUMECS = self._inflow_mean
+
+        self._io_in_cfs = io_in_cfs
 
         return
 
@@ -537,7 +541,7 @@ class StarfitFlowNode(FlowNode):
         # all of them, so dont re-solve
         if ihr > 0:
             return
-        self._lake_inflow = inflow_upstream + inflow_lateral
+        self._lake_inflow = np.array([inflow_upstream + inflow_lateral])
         if (self.control.current_time > self._end_time) or (
             self.control.current_time < self._start_time
         ):
@@ -550,6 +554,11 @@ class StarfitFlowNode(FlowNode):
         if self.control.current_time == self._start_time:
             self._lake_storage[:] = self._initial_storage
             self._lake_storage_old[:] = self._initial_storage
+
+        if self._io_in_cfs:
+            self._lake_inflow[:] *= cfs_to_cms
+            self._lake_storage[:] *= cf_to_cm
+            self._lake_storage_old[:] *= cf_to_cm
 
         (
             self._lake_release[:],
@@ -585,26 +594,26 @@ class StarfitFlowNode(FlowNode):
         self._lake_release[:] = self._lake_release / 24 / 60 / 60  # m^3/s
 
         self._lake_storage_change[:] = (
-            (self._lake_inflow - self._lake_release) * 24 * 60 * 60 / 1.0e6
-        )  # MCM: million cubic meters
+            self._lake_inflow - self._lake_release
+        ) * m3ps_to_MCM  # MCM: million cubic meters
 
         # can't release more than storage + inflow. This assumes zero
         # storage = deadpool which may not be accurate, but this situation
         # rarely occurs since STARFIT releases are already designed to keep
         # storage within NOR.
         if (self._lake_storage + self._lake_storage_change) < zero:
-            potential_release = self._lake_release + (
-                self._lake_storage + self._lake_storage_change
-            ) * (
-                1.0e6 / 24 / 60 / 60
-            )  # m^3/s
+            potential_release = (
+                self._lake_release
+                + (self._lake_storage + self._lake_storage_change)
+                * MCM_to_m3ps
+            )
             self._lake_release[:] = np.maximum(
                 potential_release,
                 potential_release * zero,
             )  # m^3/s
             self._lake_storage_change[:] = (
-                (self._lake_inflow - self._lake_release) * 24 * 60 * 60 / 1.0e6
-            )  # MCM: million cubic meters
+                self._lake_inflow - self._lake_release
+            ) * m3ps_to_MCM  # MCM: million cubic meters
 
         self._lake_storage[:] = np.maximum(
             self._lake_storage + self._lake_storage_change, zero
@@ -616,16 +625,28 @@ class StarfitFlowNode(FlowNode):
 
         if self._lake_storage > self._GRanD_CAP_MCM:
             self._lake_spill[:] = (
-                (self._lake_storage - self._GRanD_CAP_MCM)
-                * 1.0e6
-                / 24
-                / 60
-                / 60
-            )  # m^3/s
+                self._lake_storage - self._GRanD_CAP_MCM
+            ) * MCM_to_m3ps
             self._lake_storage[:] = self._GRanD_CAP_MCM  # MCM
+
+        self._lake_storage_change[:] = (
+            self._lake_storage - self._lake_storage_old
+        )
+        self._lake_storage_change_flow_units[:] = (
+            self._lake_storage_change * MCM_to_m3ps
+        )
 
         # m^3/s
         self._outflow = self._lake_release + self._lake_spill
+
+        if self._io_in_cfs:
+            self._lake_inflow[:] *= cms_to_cfs
+            self._lake_release[:] *= cms_to_cfs
+            self._lake_spill[:] *= cms_to_cfs
+            self._outflow[:] *= cms_to_cfs
+            self._lake_storage[:] *= cm_to_cf
+            self._lake_storage_old[:] *= cm_to_cf
+            self._lake_storage_change_flow_units[:] *= cms_to_cfs
 
         return
 
@@ -646,7 +667,7 @@ class StarfitFlowNode(FlowNode):
     @property
     def storage_change(self):
         # should this copy?
-        return self._lake_storage_change
+        return self._lake_storage_change_flow_units
 
     @property
     def storage(self):
@@ -664,10 +685,12 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
         discretization: Parameters,
         parameters: Parameters,
         calc_method: Literal["numba", "numpy"] = None,
+        io_in_cfs: bool = True,
         verbose: bool = None,
     ) -> None:
         self.name = "PRMSChannelFlowNodeMaker"
         self._calc_method = calc_method
+        self._io_in_cfs = io_in_cfs
         self._set_data(discretization, parameters)
 
         return
@@ -702,6 +725,7 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
             GRanD_CAP_MCM=self.GRanD_CAP_MCM[index],
             Obs_MEANFLOW_CUMECS=self.Obs_MEANFLOW_CUMECS[index],
             calc_method=self._calc_method,
+            io_in_cfs=self._io_in_cfs,
         )
 
     def _set_data(self, discretization, parameters):

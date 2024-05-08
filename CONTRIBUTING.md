@@ -5,7 +5,6 @@ We welcome community development! We ask  contributors to follow a few guideline
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-
 - [Found a bug?](#found-a-bug)
 - [Missing a feature?](#missing-a-feature)
 - [Submission guidelines](#submission-guidelines)

@@ -627,11 +627,6 @@ class Process(Accessor):
             else:
                 opt_val = None
 
-            # if options is a list (output_vars), take it's intersection with
-            # self.variables
-
-            # set value into args to return to return
-
             # the 4 cases:
             if opt_val is None and arg_val is None:
                 pass

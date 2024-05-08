@@ -11,7 +11,7 @@ import xarray as xr
 
 from ..base.data_model import DatasetDict
 from ..base.parameters import Parameters
-from ..constants import fileish
+from ..constants import nan
 
 # from ..hydrology.starfit import Starfit
 # from pywatershed import Starfit is circular so copy the needed info
@@ -103,12 +103,15 @@ class StarfitParameters(Parameters):
 
     @staticmethod
     def from_netcdf(
-        resops_domain: fileish,
-        istarf_conus: fileish,
-        grand_dams: fileish,
-        grand_ids: fileish = None,
+        resops_domain: Union[str, pl.Path],
+        istarf_conus: Union[str, pl.Path],
+        grand_dams: Union[str, pl.Path],
+        grand_ids: Union[str, pl.Path] = None,
         param_names: list = None,
     ) -> dict:
+        """
+        TODO: what are the netcdf parameter files? describe their format
+        """
         resops_dd = DatasetDict.from_netcdf(resops_domain)
         istarf_conus_dd = DatasetDict.from_netcdf(istarf_conus)
         istarf_rename = {"GRanD_ID": "grand_id"}
@@ -158,6 +161,19 @@ class StarfitParameters(Parameters):
     ):
         """Build parameter object from istarf-conus and the GRanD v1.3 sources.
 
+        This returns the parameters for the STARFIT method. The parameters
+        are in the original units of the method.
+
+        Note that this method returns nan for the fields of start_time,
+        end_time, and initial_storage. The user can edit the parameter set if
+        she would like to change these with the following basic steps (outlined
+        in an example notebook) export the parameters to and xarray data set
+        via params.to_xr_ds(), then edit params using xarray, finally
+        instantiate a parameter object from the xarray dataset using
+        params = StarfitParameters.from_ds(param_ds). The units of
+        initial_storage supplied should match the units of flow input to
+        Starfit.
+
         Args:
         istarf_file: a path to an existing file. If file does not exist or is
             None then the file will be dowladed to files_directory
@@ -165,6 +181,8 @@ class StarfitParameters(Parameters):
             exist, an error will be thrown and you must download it manually
             from
              https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
+
+        grand_ids: a subset of grand_ids to keep.
 
         """  # noqa: 501
         grand_ds = _get_grand(grand_file)
@@ -175,14 +193,34 @@ class StarfitParameters(Parameters):
                 set(istarf_ds.grand_id.values)
             )
         )
+        if grand_ids is not None:
+            # make sure all requested grand_ids are in common_grand_ids
+            avail_grand_ids = set(grand_ids).intersection(
+                set(common_grand_ids)
+            )
+            if avail_grand_ids != set(grand_ids):
+                unavail_grand_ids = set(grand_ids) - set(avail_grand_ids)
+                msg = (
+                    "The following requested grand_ids wer not available "
+                    f"in the data sources: {unavail_grand_ids}"
+                )
+                raise ValueError(msg)
+            else:
+                common_grand_ids = list(avail_grand_ids)
+
+        # <<
+        common_grand_ids = np.array(common_grand_ids)
         grand_ds = grand_ds.where(
             grand_ds.grand_id.isin(common_grand_ids), drop=True
         )
         istarf_ds = istarf_ds.where(
             istarf_ds.grand_id.isin(common_grand_ids), drop=True
         )
-
         ds = xr.combine_by_coords([grand_ds, istarf_ds])
+
+        nreservoirs = len(ds.nreservoirs)
+        for vv in ["start_time", "end_time", "initial_storage"]:
+            ds[vv] = xr.Variable("nreservoirs", np.array([nan] * nreservoirs))
 
         params_dd = DatasetDict.from_ds(ds)
         return StarfitParameters.from_dict(params_dd.data)

@@ -93,7 +93,7 @@ def parameters_flow_graph(parameters_prms, discretization_prms):
             "nnodes": nnodes,
         },
         coords={
-            "nnodes": np.arange(nnodes),
+            "node_coord": np.arange(nnodes),
         },
         data_vars={
             "node_maker_name": node_maker_name,
@@ -101,7 +101,7 @@ def parameters_flow_graph(parameters_prms, discretization_prms):
             "to_graph_index": to_graph_index,
         },
         metadata={
-            "nnodes": {"dims": ["nnodes"]},
+            "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
@@ -302,14 +302,13 @@ def test_inflow_exchange_compare_prms(
     params_ds = params_ds.set_coords("node_coord")
     params_exchange = Parameters.from_ds(params_ds)
 
-    control.options["netcdf_output_var_names"] = ["outflow"]
     control.options = control.options | {
         "input_dir": simulation["output_dir"],
         "budget_type": "error",
         "calc_method": "numba",
-        "netcdf_output_dir": None,
+        "netcdf_output_var_names": ["node_outflows"],
+        "netcdf_output_dir": tmp_path,
     }
-
     model_dict = {
         "control": control,
         "dis_both": discretization_prms,

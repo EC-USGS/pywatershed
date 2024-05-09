@@ -34,6 +34,10 @@ class PassThroughNode(FlowNode):
         return zero
 
     @property
+    def storage(self):
+        return zero
+
+    @property
     def sink_source(self):
         return zero
 

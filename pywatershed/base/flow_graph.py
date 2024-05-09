@@ -155,7 +155,8 @@ class FlowGraph(ConservativeProcess):
             "node_upstream_inflows": nan,
             "node_outflows": nan,
             "node_storage_changes": nan,
-            "sink_source": nan,
+            "node_storages": nan,
+            "node_sink_source": nan,
         }
 
     @classmethod
@@ -294,9 +295,10 @@ class FlowGraph(ConservativeProcess):
         for ii in range(self.nnodes):
             self.node_outflows[ii] = self._nodes[ii].outflow
             self.node_storage_changes[ii] = self._nodes[ii].storage_change
-            self.sink_source[ii] = self._nodes[ii].sink_source
+            self.node_storages[ii] = self._nodes[ii].storage
+            self.node_sink_source[ii] = self._nodes[ii].sink_source
 
-        self._neg_sink_source[:] = -1 * self.sink_source
+        self._neg_sink_source[:] = -1 * self.node_sink_source
 
         # global mass balance term
         self.outflows[:] = np.where(

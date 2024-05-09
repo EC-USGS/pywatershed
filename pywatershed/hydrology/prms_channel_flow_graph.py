@@ -112,6 +112,13 @@ class PRMSChannelFlowNode(FlowNode):
         return self.seg_stor_change
 
     @property
+    def storage(self):
+        """The volumetric storage in millions of cubic feet.
+        Not defined for PRMSChannel.
+        """
+        return nan
+
+    @property
     def sink_source(self):
         return zero
 

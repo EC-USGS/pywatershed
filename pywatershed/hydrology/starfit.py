@@ -170,13 +170,14 @@ class Starfit(ConservativeProcess):
         )
 
         wh_initial_storage_nan = np.isnan(self.initial_storage)
+
+        start_times = np.where(
+            np.isnat(self.start_time),
+            self.control.current_time,  # one day prior to start time
+            self.start_time,
+        )
         start_epiweeks = np.array(
             [datetime_epiweek(ss) for ss in self.start_time]
-        )
-        start_epiweeks = np.where(
-            np.isnat(self.start_time),
-            self.control.current_epiweek,  # one day prior to start time
-            start_epiweeks,
         )
         if len(wh_initial_storage_nan):
             min = min_nor(
@@ -578,35 +579,36 @@ class StarfitFlowNode(FlowNode):
 
         wh_initial_storage_nan = np.isnan(self._initial_storage)
 
-        start_epiweeks = np.array(
-            [datetime_epiweek(ss) for ss in self.start_time]
+        start_time = np.where(
+            np.isnat(self._start_time),
+            self.control.current_time,  # one day prior to start time
+            self._start_time,
         )
-        start_epiweeks = np.where(
-            np.isnat(self.start_time),
-            self.control.current_epiweek,  # one day prior to start time
-            start_epiweeks,
-        )
-        if len(wh_initial_storage_nan):
+
+        start_epiweeks = np.array([datetime_epiweek(start_time[()])])
+
+        if wh_initial_storage_nan:
             min = min_nor(
-                self.NORlo_max,
-                self.NORlo_min,
-                self.NORlo_alpha,
-                self.NORlo_beta,
-                self.NORlo_mu,
+                self._NORlo_max,
+                self._NORlo_min,
+                self._NORlo_alpha,
+                self._NORlo_beta,
+                self._NORlo_mu,
                 omega,
                 start_epiweeks,
             )
             max = max_nor(
-                self.NORhi_max,
-                self.NORhi_min,
-                self.NORhi_alpha,
-                self.NORhi_beta,
-                self.NORhi_mu,
+                self._NORhi_max,
+                self._NORhi_min,
+                self._NORhi_alpha,
+                self._NORhi_beta,
+                self._NORhi_mu,
                 omega,
                 start_epiweeks,
             )
             pct_res_cap = (min + max) / 2
             nor_mean_cap = self._GRanD_CAP_MCM * pct_res_cap
+            # note the leading dunder (double underscore): "private reserve"
             self.__initial_storage = np.where(
                 wh_initial_storage_nan, nor_mean_cap, self._initial_storage
             )
@@ -751,6 +753,10 @@ class StarfitFlowNode(FlowNode):
 
     @property
     def outflow(self):
+        return self._outflow
+
+    @property
+    def outflow_substep(self):
         return self._outflow
 
     @property

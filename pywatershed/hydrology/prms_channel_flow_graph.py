@@ -3,11 +3,17 @@ from typing import Literal
 import numba as nb
 import numpy as np
 
-from pywatershed.base.adapter import Adapter, adaptable
+from pywatershed.base.adapter import Adapter, adaptable, AdapterNetcdf
 from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.control import Control
-from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
+from pywatershed.base.flow_graph import (
+    inflow_exchange_factory,
+    FlowGraph,
+    FlowNode,
+    FlowNodeMaker,
+)
 from pywatershed.constants import SegmentType, nan, zero
+from pywatershed.hydrology.prms_channel import PRMSChannel
 from pywatershed.parameters import Parameters
 
 
@@ -533,3 +539,299 @@ class HruSegmentFlowExchange(ConservativeProcess):
         self.sinks_vol[:] = self.sinks * s_per_time
 
         return
+
+
+def prms_channel_flow_graph_postprocess(
+    control,
+    prms_channel_params,
+    prms_channel_dis,
+    input_dir,
+    new_nodes_maker_dict,
+    new_nodes_maker_names,
+    new_nodes_maker_indices,
+    new_nodes_flow_to_nhm_seg,
+    graph_budget_type="error",
+):
+    prms_channel_flow_makers = [
+        type(vv)
+        for vv in new_nodes_maker_dict.values()
+        if isinstance(vv, PRMSChannelFlowNodeMaker)
+    ]
+    assert len(prms_channel_flow_makers) == 0
+
+    assert len(new_nodes_maker_names) == len(new_nodes_maker_indices), "nono"
+    assert len(new_nodes_maker_names) == len(new_nodes_flow_to_nhm_seg), "NONO"
+    # I think this is the only condition to check with
+    # new_nodes_flow_to_nhm_seg
+    assert len(new_nodes_flow_to_nhm_seg) == len(
+        np.unique(new_nodes_flow_to_nhm_seg)
+    ), "OHNO"
+
+    nseg = prms_channel_params.dims["nsegment"]
+    nnodes = nseg + len(new_nodes_maker_names)
+
+    node_maker_name = ["prms_channel"] * nseg + new_nodes_maker_names
+    node_maker_index = np.array(
+        np.arange(nseg).tolist() + new_nodes_maker_indices
+    )
+
+    to_graph_index = np.zeros(nnodes, dtype=np.int64)
+    dis_params = prms_channel_dis.parameters
+    tosegment = dis_params["tosegment"] - 1  # fortan to python indexing
+    to_graph_index[0:nseg] = tosegment
+
+    for ii, nhm_seg in enumerate(new_nodes_flow_to_nhm_seg):
+        wh_intervene_above_nhm = np.where(dis_params["nhm_seg"] == nhm_seg)
+        wh_intervene_below_nhm = np.where(
+            tosegment == wh_intervene_above_nhm[0][0]
+        )
+        # have to map to the graph from an index found in prms_channel
+        wh_intervene_above_graph = np.where(
+            (np.array(node_maker_name) == "prms_channel")
+            & (node_maker_index == wh_intervene_above_nhm[0][0])
+        )
+        wh_intervene_below_graph = np.where(
+            (np.array(node_maker_name) == "prms_channel")
+            & np.isin(node_maker_index, wh_intervene_below_nhm)
+        )
+
+        to_graph_index[nseg + ii] = wh_intervene_above_graph[0][0]
+        to_graph_index[wh_intervene_below_graph] = nseg + ii
+
+    params_flow_graph = Parameters(
+        dims={
+            "nnodes": nnodes,
+        },
+        coords={
+            "node_coord": np.arange(nnodes),
+        },
+        data_vars={
+            "node_maker_name": node_maker_name,
+            "node_maker_index": node_maker_index,
+            "to_graph_index": to_graph_index,
+        },
+        metadata={
+            "node_coord": {"dims": ["nnodes"]},
+            "node_maker_name": {"dims": ["nnodes"]},
+            "node_maker_index": {"dims": ["nnodes"]},
+            "to_graph_index": {"dims": ["nnodes"]},
+        },
+        validate=True,
+    )
+
+    # make available at top level __init__
+    node_maker_dict = {
+        "prms_channel": PRMSChannelFlowNodeMaker(
+            prms_channel_dis, prms_channel_params
+        ),
+    } | new_nodes_maker_dict
+
+    # ---------XXXXXXXXXX----------
+    # combine PRMS lateral inflows to a single non-volumetric inflow
+    input_variables = {}
+    for key in PRMSChannel.get_inputs():
+        nc_path = input_dir / f"{key}.nc"
+        input_variables[key] = AdapterNetcdf(nc_path, key, control)
+
+    inflows_prms = HruSegmentFlowAdapter(
+        prms_channel_params, **input_variables
+    )
+
+    class GraphInflowAdapter(Adapter):
+        def __init__(
+            self,
+            prms_inflows: Adapter,
+            variable: str = "inflows",
+        ):
+            self._variable = variable
+            self._prms_inflows = prms_inflows
+
+            self._nnodes = nnodes
+            self._nseg = nseg
+            self._current_value = np.zeros(self._nnodes) * nan
+            return
+
+        def advance(self) -> None:
+            self._prms_inflows.advance()
+            self._current_value[0:nseg] = self._prms_inflows.current
+            self._current_value[
+                nseg:
+            ] = zero  # no inflow non-prms-channel nodes
+            return
+
+    inflows_graph = GraphInflowAdapter(inflows_prms)
+
+    flow_graph = FlowGraph(
+        control=control,
+        discretization=prms_channel_dis,
+        parameters=params_flow_graph,
+        inflows=inflows_graph,
+        node_maker_dict=node_maker_dict,
+        budget_type="warn",  # CHANGE to error
+    )
+    return flow_graph
+
+
+# this graph will have no-inflow to non-prms_channel nodes. could those be added later?
+def prms_channel_flow_graph_to_model_dict(
+    model_dict,
+    prms_channel_dis,
+    prms_channel_dis_name,
+    prms_channel_params,
+    new_nodes_maker_dict,
+    new_nodes_maker_names,
+    new_nodes_maker_indices,
+    new_nodes_flow_to_nhm_seg,
+    graph_budget_type="error",
+):
+    import xarray as xr
+
+    prms_channel_flow_makers = [
+        type(vv)
+        for vv in new_nodes_maker_dict.values()
+        if isinstance(vv, PRMSChannelFlowNodeMaker)
+    ]
+    assert len(prms_channel_flow_makers) == 0
+
+    assert len(new_nodes_maker_names) == len(new_nodes_maker_indices), "nono"
+    assert len(new_nodes_maker_names) == len(new_nodes_flow_to_nhm_seg), "NONO"
+    # JLM: I think this is the only condition to check with
+    # new_nodes_flow_to_nhm_seg
+    assert len(new_nodes_flow_to_nhm_seg) == len(
+        np.unique(new_nodes_flow_to_nhm_seg)
+    ), "OHNO"
+
+    nseg = prms_channel_params.dims["nsegment"]
+    nnodes = nseg + len(new_nodes_maker_names)
+
+    node_maker_name = ["prms_channel"] * nseg + new_nodes_maker_names
+    node_maker_index = np.array(
+        np.arange(nseg).tolist() + new_nodes_maker_indices
+    )
+
+    to_graph_index = np.zeros(nnodes, dtype=np.int64)
+    dis_params = prms_channel_dis.parameters
+    tosegment = dis_params["tosegment"] - 1  # fortan to python indexing
+    to_graph_index[0:nseg] = tosegment
+
+    for ii, nhm_seg in enumerate(new_nodes_flow_to_nhm_seg):
+        wh_intervene_above_nhm = np.where(dis_params["nhm_seg"] == nhm_seg)
+        wh_intervene_below_nhm = np.where(
+            tosegment == wh_intervene_above_nhm[0][0]
+        )
+        # have to map to the graph from an index found in prms_channel
+        wh_intervene_above_graph = np.where(
+            (np.array(node_maker_name) == "prms_channel")
+            & (node_maker_index == wh_intervene_above_nhm[0][0])
+        )
+        wh_intervene_below_graph = np.where(
+            (np.array(node_maker_name) == "prms_channel")
+            & np.isin(node_maker_index, wh_intervene_below_nhm)
+        )
+
+        to_graph_index[nseg + ii] = wh_intervene_above_graph[0][0]
+        to_graph_index[wh_intervene_below_graph] = nseg + ii
+
+    params_flow_graph = Parameters(
+        dims={
+            "nnodes": nnodes,
+        },
+        coords={
+            "node_coord": np.arange(nnodes),
+        },
+        data_vars={
+            "node_maker_name": node_maker_name,
+            "node_maker_index": node_maker_index,
+            "to_graph_index": to_graph_index,
+        },
+        metadata={
+            "node_coord": {"dims": ["nnodes"]},
+            "node_maker_name": {"dims": ["nnodes"]},
+            "node_maker_index": {"dims": ["nnodes"]},
+            "to_graph_index": {"dims": ["nnodes"]},
+        },
+        validate=True,
+    )
+
+    # make available at top level __init__
+    node_maker_dict = {
+        "prms_channel": PRMSChannelFlowNodeMaker(
+            prms_channel_dis, prms_channel_params
+        ),
+    } | new_nodes_maker_dict
+
+    def exchange_calculation(self) -> None:
+        _hru_segment = self.hru_segment - 1
+        s_per_time = self.control.time_step_seconds
+        self._inputs_sum = (
+            sum([vv.current for vv in self._input_variables_dict.values()])
+            / s_per_time
+        )
+
+        # This zero in the last index means zero inflows to the pass through
+        # node
+        self.inflows[:] = zero
+        # sinks is an HRU variable, its accounting in budget is fine because
+        # global collapses it to a scalar before summing over variables
+        self.sinks[:] = zero
+
+        for ihru in range(self.nhru):
+            iseg = _hru_segment[ihru]
+            if iseg < 0:
+                self.sinks[ihru] += self._inputs_sum[ihru]
+            else:
+                self.inflows[iseg] += self._inputs_sum[ihru]
+
+        self.inflows_vol[:] = self.inflows * s_per_time
+        self.sinks_vol[:] = self.sinks * s_per_time
+
+    Exchange = inflow_exchange_factory(
+        dimension_names=("nhru", "nnodes"),
+        parameter_names=("hru_segment", "node_coord"),
+        input_names=PRMSChannel.get_inputs(),
+        init_values={
+            "inflows": np.nan,
+            "inflows_vol": np.nan,
+            "sinks": np.nan,
+            "sinks_vol": np.nan,
+        },
+        mass_budget_terms={
+            "inputs": [
+                "sroff_vol",
+                "ssres_flow_vol",
+                "gwres_flow_vol",
+            ],
+            "outputs": ["inflows_vol", "sinks_vol"],
+            "storage_changes": [],
+        },
+        calculation=exchange_calculation,
+    )  # get the budget type into the exchange too: exchange_budget_type
+
+    # Exchange parameters
+    # TODO: this is funky, can we make this more elegant?
+    params_ds = prms_channel_params.to_xr_ds().copy()
+    params_ds["node_coord"] = xr.Variable(
+        dims="nnodes",
+        data=np.arange(nnodes),
+    )
+    params_ds = params_ds.set_coords("node_coord")
+    params_exchange = Parameters.from_ds(params_ds)
+
+    graph_dict = {
+        "inflow_exchange": {
+            "class": Exchange,
+            "parameters": params_exchange,
+            "dis": prms_channel_dis_name,
+        },
+        "prms_channel_flow_graph": {
+            "class": FlowGraph,
+            "node_maker_dict": node_maker_dict,
+            "parameters": params_flow_graph,
+            "dis": None,
+            "budget_type": graph_budget_type,
+        },
+    }
+
+    model_dict["model_order"] += list(graph_dict.keys())
+    model_dict = model_dict | graph_dict
+    return model_dict

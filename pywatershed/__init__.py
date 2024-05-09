@@ -17,6 +17,8 @@ from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
+    prms_channel_flow_graph_postprocess,
+    prms_channel_flow_graph_to_model_dict,
 )
 from .hydrology.prms_et import PRMSEt
 from .hydrology.prms_groundwater import PRMSGroundwater
@@ -32,6 +34,8 @@ from .utils.csv_utils import CsvFile
 from .version import __version__
 
 __all__ = (
+    "prms_channel_flow_graph_postprocess",
+    "prms_channel_flow_graph_to_model_dict",
     "ModelGraph",
     "ColorBrewer",
     "PRMSAtmosphere",

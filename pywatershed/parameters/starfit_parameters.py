@@ -219,12 +219,13 @@ class StarfitParameters(Parameters):
         ds = xr.combine_by_coords([grand_ds, istarf_ds])
 
         nreservoirs = len(ds.nreservoirs)
-        for kk, vv in {
-            "start_time": nat,
-            "end_time": nat,
-            "initial_storage": nan,
-        }.items():
-            ds[kk] = xr.Variable("nreservoirs", np.array([vv] * nreservoirs))
+        for vv in ["start_time", "end_time"]:
+            ds[vv] = xr.Variable(
+                "nreservoirs", np.array([nat] * nreservoirs, "<M8[s]")
+            )
+        # <
+        vv = "initial_storage"
+        ds[vv] = xr.Variable("nreservoirs", np.array([nan] * nreservoirs))
 
         params_dd = DatasetDict.from_ds(ds)
         return StarfitParameters.from_dict(params_dd.data)

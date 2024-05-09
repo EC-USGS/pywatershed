@@ -24,6 +24,7 @@ __pywatershed_root__ = pl.Path(__file__).parent
 zero = np.zeros([1])[0]
 one = np.ones([1])[0]
 nan = np.nan
+nat = np.datetime64("NaT")
 
 epsilon = np.finfo(zero).eps
 # https://en.wikipedia.org/wiki/Machine_epsilon

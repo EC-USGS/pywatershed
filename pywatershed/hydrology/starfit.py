@@ -16,6 +16,7 @@ from pywatershed.constants import (
     zero,
 )
 from pywatershed.parameters import Parameters
+from pywatershed.utils.time_utils import datetime_epiweek
 
 # Units note
 # a variety of units are used but regression tests against the original code
@@ -31,6 +32,9 @@ from pywatershed.parameters import Parameters
 # m3pd_to_MCM = 1.0 / 1.0e6
 m3ps_to_MCM = 24 * 60 * 60 / 1.0e6
 MCM_to_m3ps = 1.0 / m3ps_to_MCM
+
+# constant
+omega = 1.0 / 52.0
 
 
 class Starfit(ConservativeProcess):
@@ -165,6 +169,45 @@ class Starfit(ConservativeProcess):
             self.Obs_MEANFLOW_CUMECS,
         )
 
+        wh_initial_storage_nan = np.isnan(self.initial_storage)
+        start_epiweeks = np.array(
+            [datetime_epiweek(ss) for ss in self.start_time]
+        )
+        start_epiweeks = np.where(
+            np.isnat(self.start_time),
+            self.control.current_epiweek,  # one day prior to start time
+            start_epiweeks,
+        )
+        if len(wh_initial_storage_nan):
+            min = min_nor(
+                self.NORlo_max,
+                self.NORlo_min,
+                self.NORlo_alpha,
+                self.NORlo_beta,
+                self.NORlo_mu,
+                omega,
+                start_epiweeks,
+            )
+            max = max_nor(
+                self.NORhi_max,
+                self.NORhi_min,
+                self.NORhi_alpha,
+                self.NORhi_beta,
+                self.NORhi_mu,
+                omega,
+                start_epiweeks,
+            )
+            pct_res_cap = (min + max) / 2
+            nor_mean_cap = self.GRanD_CAP_MCM * pct_res_cap
+            self._initial_storage = np.where(
+                wh_initial_storage_nan, nor_mean_cap, self.initial_storage
+            )
+
+            # set lake_storage from initial_storage when start is not available
+            self.lake_storage[:] = np.where(
+                np.isnat(self.start_time), self.initial_storage, nan
+            )
+
         return
 
     def _advance_variables(self) -> None:
@@ -188,12 +231,18 @@ class Starfit(ConservativeProcess):
         """
         self._simulation_time = simulation_time
 
+        # For NaTs, time comparisons (other than !=) are False. If there is no
+        # end_time (it is NaT), then this will be false.
         wh_after_end = np.where(self.control.current_time > self.end_time)
         self.lake_storage[wh_after_end] = nan
         self.lake_release[wh_after_end] = nan
         self.lake_spill[wh_after_end] = nan
         self.lake_availability_status[wh_after_end] = nan
 
+        # For NaTs, time comparisons (other than !=) are False. If there is no
+        # start_time (it is NaT), then this will be false. For those locations
+        # without start_times, lake_storage was already set to initial_storage
+        # in _set_initial_conditions.
         wh_start = np.where(self.control.current_time == self.start_time)
         self.lake_storage[wh_start] = self.initial_storage[wh_start]
         self.lake_storage_old[wh_start] = self.initial_storage[wh_start]
@@ -256,7 +305,9 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (MCM_to_m3ps)  # both terms in m3ps
+            ) * (
+                MCM_to_m3ps
+            )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,
@@ -326,9 +377,6 @@ class Starfit(ConservativeProcess):
         # MCM to m^3
         storage = lake_storage * 1.0e6
         capacity = GRanD_CAP_MCM * 1.0e6
-
-        # constant
-        omega = 1.0 / 52.0
 
         if not np.isfinite(grand_id).any():
             raise ValueError("Some non-finite grand_ids present")
@@ -513,6 +561,9 @@ class StarfitFlowNode(FlowNode):
         self._GRanD_CAP_MCM = GRanD_CAP_MCM
         self._Obs_MEANFLOW_CUMECS = Obs_MEANFLOW_CUMECS
 
+        # calc_method ignored currently
+        self._io_in_cfs = io_in_cfs
+
         self._lake_storage = np.zeros(1) * nan
         self._lake_storage_old = np.zeros(1) * nan
         self._lake_storage_change = np.zeros(1) * nan
@@ -525,7 +576,45 @@ class StarfitFlowNode(FlowNode):
         if np.isnan(self._Obs_MEANFLOW_CUMECS):
             self._Obs_MEANFLOW_CUMECS = self._inflow_mean
 
-        self._io_in_cfs = io_in_cfs
+        wh_initial_storage_nan = np.isnan(self._initial_storage)
+
+        start_epiweeks = np.array(
+            [datetime_epiweek(ss) for ss in self.start_time]
+        )
+        start_epiweeks = np.where(
+            np.isnat(self.start_time),
+            self.control.current_epiweek,  # one day prior to start time
+            start_epiweeks,
+        )
+        if len(wh_initial_storage_nan):
+            min = min_nor(
+                self.NORlo_max,
+                self.NORlo_min,
+                self.NORlo_alpha,
+                self.NORlo_beta,
+                self.NORlo_mu,
+                omega,
+                start_epiweeks,
+            )
+            max = max_nor(
+                self.NORhi_max,
+                self.NORhi_min,
+                self.NORhi_alpha,
+                self.NORhi_beta,
+                self.NORhi_mu,
+                omega,
+                start_epiweeks,
+            )
+            pct_res_cap = (min + max) / 2
+            nor_mean_cap = self._GRanD_CAP_MCM * pct_res_cap
+            self.__initial_storage = np.where(
+                wh_initial_storage_nan, nor_mean_cap, self._initial_storage
+            )
+
+            # set lake_storage from initial_storage when start is not available
+            self._lake_storage[:] = np.where(
+                np.isnat(self._start_time), self.__initial_storage, nan
+            )
 
         return
 
@@ -540,6 +629,8 @@ class StarfitFlowNode(FlowNode):
         if ihr > 0:
             return
         self._lake_inflow = np.array([inflow_upstream + inflow_lateral])
+
+        # For NaTs, time comparisons (other than !=) are False.
         if (self.control.current_time > self._end_time) or (
             self.control.current_time < self._start_time
         ):
@@ -550,8 +641,8 @@ class StarfitFlowNode(FlowNode):
             return
 
         if self.control.current_time == self._start_time:
-            self._lake_storage[:] = self._initial_storage
-            self._lake_storage_old[:] = self._initial_storage
+            self._lake_storage[:] = self.__initial_storage
+            self._lake_storage_old[:] = self.__initial_storage
 
         if self._io_in_cfs:
             self._lake_inflow[:] *= cfs_to_cms

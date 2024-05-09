@@ -11,7 +11,7 @@ import xarray as xr
 
 from ..base.data_model import DatasetDict
 from ..base.parameters import Parameters
-from ..constants import nan
+from ..constants import nan, nat
 
 # from ..hydrology.starfit import Starfit
 # from pywatershed import Starfit is circular so copy the needed info
@@ -219,8 +219,12 @@ class StarfitParameters(Parameters):
         ds = xr.combine_by_coords([grand_ds, istarf_ds])
 
         nreservoirs = len(ds.nreservoirs)
-        for vv in ["start_time", "end_time", "initial_storage"]:
-            ds[vv] = xr.Variable("nreservoirs", np.array([nan] * nreservoirs))
+        for kk, vv in {
+            "start_time": nat,
+            "end_time": nat,
+            "initial_storage": nan,
+        }.items():
+            ds[kk] = xr.Variable("nreservoirs", np.array([vv] * nreservoirs))
 
         params_dd = DatasetDict.from_ds(ds)
         return StarfitParameters.from_dict(params_dd.data)

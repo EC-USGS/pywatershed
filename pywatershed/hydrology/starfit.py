@@ -171,7 +171,7 @@ class Starfit(ConservativeProcess):
 
         wh_initial_storage_nan = np.isnan(self.initial_storage)
 
-        start_times = np.where(
+        self.start_time = np.where(
             np.isnat(self.start_time),
             self.control.current_time,  # one day prior to start time
             self.start_time,

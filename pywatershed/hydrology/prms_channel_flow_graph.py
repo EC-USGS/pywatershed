@@ -452,6 +452,14 @@ class HruSegmentFlowExchange(ConservativeProcess):
     simplified here.
 
     Args:
+        control: The control object.
+        discretization: a discretizaion with both
+        parameters: Parameters,
+        sroff_vol: adaptable,
+        ssres_flow_vol: adaptable,
+        gwres_flow_vol: adaptable,
+        budget_type: Literal[None, "warn", "error"] = None,
+        verbose: bool = None,
 
     """
 
@@ -687,9 +695,9 @@ def prms_channel_flow_graph_postprocess(
         def advance(self) -> None:
             self._prms_inflows.advance()
             self._current_value[0:nseg] = self._prms_inflows.current
-            self._current_value[
-                nseg:
-            ] = zero  # no inflow non-prms-channel nodes
+            self._current_value[nseg:] = (
+                zero  # no inflow non-prms-channel nodes
+            )
             return
 
     inflows_graph = GraphInflowAdapter(inflows_prms)

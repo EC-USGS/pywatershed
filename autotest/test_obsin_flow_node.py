@@ -237,9 +237,9 @@ def test_prms_channel_obsin_compare_prms(
                     actual[wh_intervene_below_nhm] = flow_graph[key][-npoi:]
 
                 if key == "node_storage_changes":
-                    actual[wh_intervene_below_nhm] += -flow_graph.sink_source[
-                        -npoi:
-                    ]
+                    actual[
+                        wh_intervene_below_nhm
+                    ] += -flow_graph.node_sink_source[-npoi:]
 
                 np.testing.assert_allclose(
                     actual,

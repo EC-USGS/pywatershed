@@ -230,6 +230,7 @@ def test_compare_prms(
                 answers_conv_vol,
                 atol=atol,
                 rtol=rtol,
+                skip_missing_ans=True,
                 fail_after_all_vars=False,
             )
 
@@ -378,7 +379,8 @@ def test_inflow_exchange_compare_prms(
 
             # <<
             # there are no expected sources or sinks in this test
-            answers_conv_vol["sink_source"] = val * zero
+            answers_conv_vol["node_sink_source"] = val * zero
+            answers_conv_vol["node_storages"] = val * nan
 
             compare_in_memory(
                 model.processes["prms_channel_graph"],

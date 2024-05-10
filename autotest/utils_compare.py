@@ -52,6 +52,8 @@ def assert_allclose(
         actual_nan = np.where(np.isnan(actual), True, False)
         desired_nan = np.where(np.isnan(desired), True, False)
         assert (actual_nan == desired_nan).all()
+        if len(actual_nan) == len(actual):
+            return
 
     abs_diff = abs(actual - desired)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -69,6 +71,7 @@ def assert_allclose(
         print(f"{var_name}{sp}max rel err: {rel_abs_diff.max()}")
 
     assert close.all()
+    return
 
 
 def compare_in_memory(

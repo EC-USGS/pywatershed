@@ -306,9 +306,7 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (
-                MCM_to_m3ps
-            )  # both terms in m3ps
+            ) * (MCM_to_m3ps)  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,

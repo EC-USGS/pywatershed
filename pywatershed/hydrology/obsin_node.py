@@ -1,5 +1,5 @@
 from ..base.flow_graph import FlowNode, FlowNodeMaker
-from ..constants import zero
+from ..constants import nan, zero
 
 
 class ObsInNode(FlowNode):
@@ -47,6 +47,10 @@ class ObsInNode(FlowNode):
     @property
     def storage_change(self):
         return zero
+
+    @property
+    def storage(self):
+        return nan
 
     @property
     def sink_source(self):

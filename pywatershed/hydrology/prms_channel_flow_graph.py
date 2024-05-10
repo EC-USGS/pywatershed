@@ -1,16 +1,17 @@
-from typing import Literal
+import pathlib as pl
+from typing import Literal, Union
 
 import numba as nb
 import numpy as np
 
-from pywatershed.base.adapter import Adapter, adaptable, AdapterNetcdf
+from pywatershed.base.adapter import Adapter, AdapterNetcdf, adaptable
 from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import (
-    inflow_exchange_factory,
     FlowGraph,
     FlowNode,
     FlowNodeMaker,
+    inflow_exchange_factory,
 )
 from pywatershed.constants import SegmentType, nan, zero
 from pywatershed.hydrology.prms_channel import PRMSChannel
@@ -447,7 +448,8 @@ class HruSegmentFlowAdapter(Adapter):
 class HruSegmentFlowExchange(ConservativeProcess):
     """PRMS class to map HRU outflows to segment inflows.
 
-    This code is contained in the channel part of the PRMS code.
+    This code was originally and awkwardly in the PRMSChannel. It is
+    simplified here.
 
     Args:
 
@@ -549,16 +551,40 @@ class HruSegmentFlowExchange(ConservativeProcess):
 
 
 def prms_channel_flow_graph_postprocess(
-    control,
-    prms_channel_params,
-    prms_channel_dis,
-    input_dir,
-    new_nodes_maker_dict,
-    new_nodes_maker_names,
-    new_nodes_maker_indices,
-    new_nodes_flow_to_nhm_seg,
-    graph_budget_type="error",
-):
+    control: Control,
+    input_dir: Union[str, pl.Path],
+    prms_channel_dis: Parameters,
+    prms_channel_params: Parameters,
+    new_nodes_maker_dict: dict,
+    new_nodes_maker_names: list,
+    new_nodes_maker_indices: list,
+    new_nodes_flow_to_nhm_seg: list,
+    graph_budget_type: Literal[None, "warn", "error"] = "error",
+) -> FlowGraph:
+    """A PRMSChannel-based FlowGraph with additional nodes run from file inputs
+
+    Note that this FlowGraph currently has no-inflow to non-prms_channel
+    nodes (but this could be added/accomodated).
+
+    Args:
+        control: The control object for the run
+        input_dir: the directory where the input files are found
+        prms_channel_dis: the PRMSChannel discretization object
+        prms_channel_params: the PRMSChannel parameters object
+        new_nodes_maker_dict: a dictionary of key/name and and instantiated
+            NodeMakers
+        new_nodes_maker_names: collated list of what node makers to use
+        new_nodes_maker_indices: collated list of indices relative to each
+            NodeMaker
+        new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
+            which the node will flow.
+        graph_budget_type: one of None, "warn", "error"
+
+    Returns:
+        An instantiated FlowGraph object.
+
+    """
+
     prms_channel_flow_makers = [
         type(vv)
         for vv in new_nodes_maker_dict.values()
@@ -679,18 +705,41 @@ def prms_channel_flow_graph_postprocess(
     return flow_graph
 
 
-# this graph will have no-inflow to non-prms_channel nodes. could those be added later?
 def prms_channel_flow_graph_to_model_dict(
-    model_dict,
-    prms_channel_dis,
-    prms_channel_dis_name,
-    prms_channel_params,
-    new_nodes_maker_dict,
-    new_nodes_maker_names,
-    new_nodes_maker_indices,
-    new_nodes_flow_to_nhm_seg,
-    graph_budget_type="error",
-):
+    model_dict: dict,
+    prms_channel_dis: Parameters,
+    prms_channel_dis_name: str,
+    prms_channel_params: Parameters,
+    new_nodes_maker_dict: dict,
+    new_nodes_maker_names: list,
+    new_nodes_maker_indices: list,
+    new_nodes_flow_to_nhm_seg: list,
+    graph_budget_type: Literal[None, "warn", "error"] = "error",
+) -> dict:
+    """Add a PRMSChannel-based FlowGraph with additional nodes to a model_dict.
+
+    Note that this FlowGraph currently has no-inflow to non-prms_channel
+    nodes (but this could be added/accomodated).
+
+    Args:
+        model_dict: an existing model_dict to which to add the FlowGraph
+        prms_channel_dis: the PRMSChannel discretization object
+        prms_channel_dis_name: the name of the above discretization in the
+            model_dict,
+        prms_channel_params: the PRMSChannel parameters object,
+        new_nodes_maker_dict: a dictionary of key/name and and instantiated
+            NodeMakers
+        new_nodes_maker_names: collated list of what node makers to use
+        new_nodes_maker_indices: collated list of indices relative to each
+            NodeMaker
+        new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
+            which the node will flow.
+        graph_budget_type: one of None, "warn", "error"
+
+    Returns:
+        A model dictionary.
+
+    """
     import xarray as xr
 
     prms_channel_flow_makers = [

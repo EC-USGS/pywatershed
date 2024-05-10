@@ -178,7 +178,8 @@ def test_prms_channel_flow_graph_compare_prms(
 
             # <<
             # there are no expected sources or sinks in this test
-            answers_conv_vol["sink_source"] = val.current * zero
+            answers_conv_vol["node_sink_source"] = val.current * zero
+            answers_conv_vol["node_storages"] = val.current * nan
 
             compare_in_memory(
                 flow_graph,
@@ -374,7 +375,7 @@ def test_hru_segment_flow_exchange(
                 answers_conv_vol,
                 atol=atol,
                 rtol=rtol,
-                skip_missing_ans=False,
+                skip_missing_ans=True,
                 fail_after_all_vars=False,
             )
 

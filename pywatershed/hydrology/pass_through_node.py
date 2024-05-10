@@ -1,5 +1,5 @@
 from ..base.flow_graph import FlowNode, FlowNodeMaker
-from ..constants import zero
+from ..constants import nan, zero
 
 
 class PassThroughNode(FlowNode):
@@ -35,7 +35,7 @@ class PassThroughNode(FlowNode):
 
     @property
     def storage(self):
-        return zero
+        return nan
 
     @property
     def sink_source(self):

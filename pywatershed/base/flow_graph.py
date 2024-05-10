@@ -103,10 +103,8 @@ class FlowGraph(ConservativeProcess):
         self,
         control: Control,
         discretization: Parameters,  # could use this, but not necsesary
-        parameters: Parameters,  # unnecessary? use for to_graph_index
+        parameters: Parameters,
         inflows: adaptable,
-        # node_maker_dict is not really a parameter, it's a composition
-        # mechanism
         node_maker_dict: dict,
         budget_type: Literal[None, "warn", "error"] = None,
         verbose: bool = None,
@@ -320,6 +318,23 @@ def inflow_exchange_factory(
     mass_budget_terms: dict,
     calculation: callable,
 ):
+    """Create and InflowExchange class from function input.
+
+    Args:
+        dimension_names: tuple of dimension names of the InflowExchange
+        parameter_names: tuple of parameter names of the InflowExchange
+        input_names: tuple of input names for the InflowExchange
+        init_values: dict of variable names and values for the public variables
+        mass_budget_terms: dict of inputs, outputs, and storage_changes keys
+            with a list of the variables in init_values from which to
+            calculate mass balance.
+        calculation: a function on self that performs the calculations.
+
+    Returns:
+        A Class of InflowExchange, w asubclass of ConservativeProcess.
+
+    """
+
     class InflowExchange(ConservativeProcess):
         def __init__(
             self,
@@ -336,7 +351,7 @@ def inflow_exchange_factory(
                 discretization=discretization,
                 parameters=parameters,
             )
-            self.name = "HruSegmentFlowExchange"
+            self.name = "InflowExchange"
 
             self._set_inputs(locals() | kwargs)
             self._set_options(locals())

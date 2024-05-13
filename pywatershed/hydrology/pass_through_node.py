@@ -9,10 +9,13 @@ class PassThroughNode(FlowNode):
 
     def prepare_timestep(self):
         # self._simulation_time = simulation_time  # add argument?
+        self._accum_inflow = zero
         return
 
     def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
-        self._seg_outflow = inflow_upstream
+        self._inflow_subtimestep = inflow_upstream + inflow_lateral
+        self._accum_inflow += self._inflow_subtimestep
+        self._seg_outflow = self._accum_inflow / (isubstep + 1)
         return
 
     def finalize_timestep(self):
@@ -27,7 +30,7 @@ class PassThroughNode(FlowNode):
 
     @property
     def outflow_substep(self):
-        return self._seg_outflow
+        return self._inflow_subtimestep
 
     @property
     def storage_change(self):

@@ -160,8 +160,6 @@ def test_compare_prms(
 
     inflows_graph = GraphInflowAdapter(inflows_prms)
 
-    # FlowGraph
-
     flow_graph = FlowGraph(
         control,
         discretization=None,
@@ -349,7 +347,6 @@ def test_inflow_exchange_compare_prms(
     for istep in range(control.n_times):
         model.advance()
         model.calculate()
-        model.output()
 
         # check exchange
         lateral_inflow_answers.advance()

@@ -95,8 +95,10 @@ class FlowGraph(ConservativeProcess):
         inflows: An adaptable of inflows to the graph, often referred to as
             "lateral" flows.
         node_maker_dict: {name: flow_node_maker_instance, ...}
-        budget_type: If we use a budget, what action to take on budget
-            imbalance.
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
     """
 
     def __init__(
@@ -106,7 +108,7 @@ class FlowGraph(ConservativeProcess):
         parameters: Parameters,
         inflows: adaptable,
         node_maker_dict: dict,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         verbose: bool = None,
     ):
         super().__init__(

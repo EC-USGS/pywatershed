@@ -567,7 +567,7 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
     new_nodes_flow_to_nhm_seg: list,
-    graph_budget_type: Literal[None, "warn", "error"] = "error",
+    budget_type: Literal["defer", None, "warn", "error"] = "defer",
 ) -> FlowGraph:
     """A PRMSChannel-based FlowGraph with additional nodes run from file inputs
 
@@ -586,12 +586,19 @@ def prms_channel_flow_graph_postprocess(
             NodeMaker
         new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
             which the node will flow.
-        graph_budget_type: one of None, "warn", "error"
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
 
     Returns:
         An instantiated FlowGraph object.
-
     """
+    if budget_type == "defer":
+        if "budget_type" in control.options.keys():
+            budget_type = control.options["budget_type"]
+        else:
+            budget_type = "warn"
 
     params_flow_graph, node_maker_dict = _build_flow_graph_inputs(
         prms_channel_dis,
@@ -642,7 +649,7 @@ def prms_channel_flow_graph_postprocess(
         parameters=params_flow_graph,
         inflows=inflows_graph,
         node_maker_dict=node_maker_dict,
-        budget_type="warn",  # CHANGE to error
+        budget_type=budget_type,
     )
     return flow_graph
 

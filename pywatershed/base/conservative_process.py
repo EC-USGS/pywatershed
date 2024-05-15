@@ -52,8 +52,10 @@ class ConservativeProcess(Process):
         A discretization object
     parameters:
         The parameters for this object
-    budget_type:
-        Use a budget and what action to take on budget imbalance.
+    budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+        the default and defering to control.options["budget_type"] when
+        available. When control.options["budget_type"] is not avaiable,
+        budget_type is set to "warn".
     metadata_patches:
         Override static metadata for any public parameter or variable --
         experimental.
@@ -67,7 +69,7 @@ class ConservativeProcess(Process):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
     ):
@@ -80,6 +82,7 @@ class ConservativeProcess(Process):
         )
 
         self.name = "ConservativeProcess"
+
         return
 
     def output(self) -> None:
@@ -161,6 +164,12 @@ class ConservativeProcess(Process):
     def _set_budget(self, basis: str = None, ignore_nans: bool = False):
         if basis is None:
             basis = "unit"
+
+        if self._budget_type == "defer":
+            if "budget_type" in self.control.options.keys():
+                self._budget_type = self.control.options["budget_type"]
+            else:
+                self._budget_type = "warn"
 
         if self._budget_type is None:
             self.budget = None

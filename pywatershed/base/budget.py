@@ -254,7 +254,9 @@ class Budget(Accessor):
                     var
                 ] * self.control.time_step.astype(
                     f"timedelta64[{self.time_unit}]"
-                ).astype(int)
+                ).astype(
+                    int
+                )
 
         self._sum_component_accumulations()
 
@@ -275,22 +277,22 @@ class Budget(Accessor):
             for var in self[component].keys():
                 if self._accumulations_sum[component] is None:
                     if self.basis == "unit":
-                        self._accumulations_sum[component] = (
-                            self._accumulations[component][var].copy()
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] = self._accumulations[component][var].copy()
                     elif self.basis == "global":
                         self._accumulations_sum[component] = (
                             self._accumulations[component][var].copy().sum()
                         )
                 else:
                     if self.basis == "unit":
-                        self._accumulations_sum[component] += (
-                            self._accumulations[component][var]
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var]
                     elif self.basis == "global":
-                        self._accumulations_sum[component] += (
-                            self._accumulations[component][var].sum()
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var].sum()
 
         return
 
@@ -389,6 +391,13 @@ class Budget(Accessor):
                 "The global flux balance not equal to the change in global "
                 f"storage: {self.description}"
             )
+            if self.verbose:
+                aerr = self._inputs_sum - (
+                    self._outputs_sum + self._storage_changes_sum
+                )
+                rerr = aerr / self._inputs_sum
+                msg += f"\n{self.control.current_time}: {aerr=}, {rerr=}"
+
             if self.imbalance_fatal:
                 raise ValueError(msg)
             else:

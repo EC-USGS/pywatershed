@@ -31,6 +31,7 @@ from pywatershed.utils.time_utils import datetime_epiweek
 # m3pd_to_m3ps = 1 / m3ps_to_m3pd
 # m3ps_to_m3pw = 60.0 * 60 * 24 * 7
 # m3pd_to_MCM = 1.0 / 1.0e6
+# this is daily
 m3ps_to_MCM = 24 * 60 * 60 / 1.0e6
 MCM_to_m3ps = 1.0 / m3ps_to_MCM
 
@@ -701,6 +702,11 @@ class StarfitFlowNode(FlowNode):
         self, isubstep, inflow_upstream, inflow_lateral
     ) -> None:
 
+        # put these on the substep: how to get substep size?
+        subtimestep_size_hours = one
+        m3ps_to_MCM = subtimestep_size_hours * 60 * 60 / 1.0e6
+        MCM_to_m3ps = 1.0 / m3ps_to_MCM
+
         self._lake_inflow_sub[:] = np.array([inflow_upstream + inflow_lateral])
         if self._io_in_cfs:
             self._lake_inflow_sub[:] *= cfs_to_cms
@@ -753,7 +759,7 @@ class StarfitFlowNode(FlowNode):
         )  # output in m^3/d
 
         self._lake_release_sub[:] = (
-            self._lake_release_sub / 24 / 60 / 60
+            self._lake_release_sub / subtimestep_size_hours / 60 / 60
         )  # m^3/s
 
         self._lake_storage_change_sub[:] = (

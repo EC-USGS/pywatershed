@@ -94,6 +94,7 @@ def test_starfit_flow_graph_postprocess(
     # cant really test answers per above note
     control.options["input_dir"] = input_dir
     control.options["budget_type"] = "error"
+    control.options["verbosity"] = True
     # control.options["netcdf_output_dir"] = tmp_path  # TODO
     control.options["netcdf_output_var_names"] = [
         "node_outflows",
@@ -109,7 +110,10 @@ def test_starfit_flow_graph_postprocess(
         prms_channel_params=parameters,
         new_nodes_maker_dict={
             "starfit": StarfitFlowNodeMaker(
-                None, big_sandy_parameters, budget_type="error"
+                None,
+                big_sandy_parameters,
+                budget_type="error",
+                compute_daily=True,
             ),
             "pass_through": PassThroughNodeMaker(),
         },

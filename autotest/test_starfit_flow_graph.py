@@ -1,5 +1,6 @@
-import numpy as np
 import pathlib as pl
+
+import numpy as np
 import pytest
 import xarray as xr
 from utils_compare import compare_in_memory
@@ -10,10 +11,10 @@ from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
-from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
     prms_channel_flow_graph_postprocess,
 )
+from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
 from pywatershed.parameters import PrmsParameters
 
 # Purpose: TODO

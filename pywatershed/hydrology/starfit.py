@@ -313,9 +313,7 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (
-                MCM_to_m3ps_day
-            )  # both terms in m3ps
+            ) * (MCM_to_m3ps_day)  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,
@@ -886,7 +884,6 @@ class StarfitFlowNode(FlowNode):
     def _calculate_subtimestep_hourly(
         self, isubstep, inflow_upstream, inflow_lateral
     ) -> None:
-
         self._lake_inflow_sub[:] = np.array([inflow_upstream + inflow_lateral])
         if self._io_in_cfs:
             self._lake_inflow_sub[:] *= cfs_to_cms
@@ -989,9 +986,9 @@ class StarfitFlowNode(FlowNode):
         self._lake_spill_accum[:] += self._lake_spill_sub
         self._lake_spill[:] = self._lake_spill_accum / (isubstep + 1)
 
-        self._lake_availability_status_accum[
-            :
-        ] += self._lake_availability_status_sub
+        self._lake_availability_status_accum[:] += (
+            self._lake_availability_status_sub
+        )
         self._lake_availability_status[:] = (
             self._lake_availability_status_accum / (isubstep + 1)
         )

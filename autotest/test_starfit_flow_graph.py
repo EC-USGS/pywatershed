@@ -79,12 +79,17 @@ def big_sandy_parameters():
     return Parameters.from_ds(params)
 
 
+# TODO fixture for daily/hourly
+@pytest.mark.parametrize(
+    "compute_daily", [True, False], ids=("daily", "hourly")
+)
 def test_starfit_flow_graph_postprocess(
     simulation,
     control,
     discretization,
     parameters,
     big_sandy_parameters,
+    compute_daily,
     tmp_path,
 ):
     input_dir = simulation["output_dir"]
@@ -113,7 +118,7 @@ def test_starfit_flow_graph_postprocess(
                 None,
                 big_sandy_parameters,
                 budget_type="error",
-                compute_daily=True,
+                compute_daily=compute_daily,
             ),
             "pass_through": PassThroughNodeMaker(),
         },

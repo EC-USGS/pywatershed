@@ -27,13 +27,15 @@ from pywatershed.utils.time_utils import datetime_epiweek
 # m3/day = m3pd
 # m^3/second = m3ps
 # m^3/week = m2pw
-# m3ps_to_m3pd = 24 * 60 * 60
-# m3pd_to_m3ps = 1 / m3ps_to_m3pd
-# m3ps_to_m3pw = 60.0 * 60 * 24 * 7
-# m3pd_to_MCM = 1.0 / 1.0e6
-# this is daily
-m3ps_to_MCM = 24 * 60 * 60 / 1.0e6
-MCM_to_m3ps = 1.0 / m3ps_to_MCM
+
+# daily conversions mass <-> volume
+m3ps_to_MCM_day = 24 * 60 * 60 / 1.0e6
+MCM_to_m3ps_day = 1.0 / m3ps_to_MCM_day
+
+# hourly conversions mass <-> volume
+m3ps_to_MCM_hour = 1 * 60 * 60 / 1.0e6
+MCM_to_m3ps_hour = 1.0 / m3ps_to_MCM_hour
+
 
 # constant
 omega = 1.0 / 52.0
@@ -297,7 +299,7 @@ class Starfit(ConservativeProcess):
         # test data. \_(`@`)_/
         self.lake_storage_change[:] = (
             self.lake_inflow - self.lake_release
-        ) * m3ps_to_MCM
+        ) * m3ps_to_MCM_day
         # Note: no lake_storage calculation here
 
         # can't release more than storage + inflow. This assumes zero
@@ -312,7 +314,7 @@ class Starfit(ConservativeProcess):
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
             ) * (
-                MCM_to_m3ps
+                MCM_to_m3ps_day
             )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
@@ -321,7 +323,7 @@ class Starfit(ConservativeProcess):
             self.lake_storage_change[wh_neg_storage] = (
                 self.lake_inflow[wh_neg_storage]
                 - self.lake_release[wh_neg_storage]
-            ) * m3ps_to_MCM
+            ) * m3ps_to_MCM_day
 
         self.lake_storage[:] = np.maximum(
             self.lake_storage + self.lake_storage_change, zero
@@ -333,11 +335,11 @@ class Starfit(ConservativeProcess):
         wh_spill = np.where(self.lake_storage > self.GRanD_CAP_MCM)
         self.lake_spill[wh_spill] = (
             self.lake_storage[wh_spill] - self.GRanD_CAP_MCM[wh_spill]
-        ) * MCM_to_m3ps
+        ) * MCM_to_m3ps_day
         self.lake_storage[wh_spill] = self.GRanD_CAP_MCM[wh_spill]
         self.lake_storage_change[:] = self.lake_storage - self.lake_storage_old
         self.lake_storage_change_flow_units[:] = (
-            self.lake_storage_change * MCM_to_m3ps
+            self.lake_storage_change * MCM_to_m3ps_day
         )
         self.lake_outflow[:] = self.lake_release + self.lake_spill
 
@@ -537,7 +539,7 @@ class StarfitFlowNode(FlowNode):
         Obs_MEANFLOW_CUMECS: np.float64,
         calc_method: Literal["numba", "numpy"] = None,
         io_in_cfs: bool = True,
-        compute_daily: bool = True,
+        compute_daily: bool = False,
         budget_type: Literal["defer", None, "warn", "error"] = None,
     ):
         self.name = "StarfitFlowNode"
@@ -615,6 +617,12 @@ class StarfitFlowNode(FlowNode):
             self._Obs_MEANFLOW_CUMECS = self._inflow_mean
 
         wh_initial_storage_nan = np.isnan(self._initial_storage)
+        if self._io_in_cfs:
+            self._initial_storage = np.where(
+                wh_initial_storage_nan,
+                self._initial_storage,
+                self._initial_storage * cf_to_cm,
+            )
 
         start_time = np.where(
             np.isnat(self._start_time),
@@ -765,12 +773,9 @@ class StarfitFlowNode(FlowNode):
         # Ouflows on substeps are all the same flow rates, and
         # storages are only updated at the end of the timestep.
 
-        # put these on the substep: how to get substep size?
-        # todo move these to global with hrly and daily names.
-        subtimestep_size_hours = 24
-        m3ps_to_MCM = subtimestep_size_hours * 60 * 60 / 1.0e6
-        MCM_to_m3ps = 1.0 / m3ps_to_MCM
-        nsubsteps = 24  # this might not even be a fixed number
+        # how to get the number of substeps in a timestep?  from control. this
+        # might not even be a fixed number
+        nsubsteps = 24
 
         # accumulate inflows
         self._lake_inflow_sub[:] = np.array([inflow_upstream + inflow_lateral])
@@ -814,7 +819,7 @@ class StarfitFlowNode(FlowNode):
             # below, releases are never more than storage for the day, so this
             # should never be negative since inflows are never negative
             self._lake_storage_change[:] = (
-                self._lake_storage_change_flow_units * m3ps_to_MCM
+                self._lake_storage_change_flow_units * m3ps_to_MCM_day
             )
             self._lake_storage[:] += self._lake_storage_change
 
@@ -823,7 +828,7 @@ class StarfitFlowNode(FlowNode):
         if self._lake_storage > self._GRanD_CAP_MCM:
             self._lake_spill_sub[:] = (
                 self._lake_storage - self._GRanD_CAP_MCM
-            ) * MCM_to_m3ps
+            ) * MCM_to_m3ps_day
             # spill dosent affect the storage until the next timestep
 
         # now calculate the (avg) outflows for the next timestep
@@ -858,11 +863,11 @@ class StarfitFlowNode(FlowNode):
             Release_p2=self._Release_p2,
         )  # output in m^3/d
 
-        self._lake_release_sub *= m3ps_to_MCM / 24 / 60 / 60  # m3pd to MCM
+        self._lake_release_sub *= m3ps_to_MCM_day / 24 / 60 / 60  # m3pd to MCM
 
         if (self._lake_storage - self._lake_release_sub) < zero:
             self._lake_release_sub[:] = self._lake_storage
-        self._lake_release_sub[:] *= MCM_to_m3ps
+        self._lake_release_sub[:] *= MCM_to_m3ps_day
 
         self._lake_outflow_sub_next[:] = (
             self._lake_release_sub + self._lake_spill_sub
@@ -882,27 +887,9 @@ class StarfitFlowNode(FlowNode):
         self, isubstep, inflow_upstream, inflow_lateral
     ) -> None:
 
-        # put these on the substep: how to get substep size?
-        subtimestep_size_hours = one
-        m3ps_to_MCM = subtimestep_size_hours * 60 * 60 / 1.0e6
-        MCM_to_m3ps = 1.0 / m3ps_to_MCM
-
         self._lake_inflow_sub[:] = np.array([inflow_upstream + inflow_lateral])
         if self._io_in_cfs:
             self._lake_inflow_sub[:] *= cfs_to_cms
-
-        # For NaTs, time comparisons (other than !=) are False.
-        if (self.control.current_time > self._end_time) or (
-            self.control.current_time < self._start_time
-        ):
-            self._lake_storage[:] = np.zeros(1) * nan
-            self._lake_release[:] = np.zeros(1) * nan
-            self._lake_spill[:] = np.zeros(1) * nan
-            self._lake_availability_status[:] = np.zeros(1) * nan
-            return
-
-        if self.control.current_time == self._start_time:
-            self._lake_storage_sub[:] = self.__initial_storage
 
         # <
         self._lake_storage_old_sub[:] = self._lake_storage_sub
@@ -939,12 +926,12 @@ class StarfitFlowNode(FlowNode):
         )  # output in m^3/d
 
         self._lake_release_sub[:] = (
-            self._lake_release_sub / subtimestep_size_hours / 60 / 60
+            self._lake_release_sub / 24 / 60 / 60
         )  # m^3/s
 
         self._lake_storage_change_sub[:] = (
             self._lake_inflow_sub - self._lake_release_sub
-        ) * m3ps_to_MCM  # MCM: million cubic meters
+        ) * m3ps_to_MCM_hour  # MCM: million cubic meters
 
         # can't release more than storage + inflow. This assumes zero
         # storage = deadpool which may not be accurate, but this situation
@@ -954,7 +941,7 @@ class StarfitFlowNode(FlowNode):
             potential_release = (
                 self._lake_release_sub
                 + (self._lake_storage_sub + self._lake_storage_change_sub)
-                * MCM_to_m3ps
+                * MCM_to_m3ps_hour
             )
             self._lake_release_sub[:] = np.maximum(
                 potential_release,
@@ -962,7 +949,7 @@ class StarfitFlowNode(FlowNode):
             )  # m^3/s
             self._lake_storage_change_sub[:] = (
                 self._lake_inflow_sub - self._lake_release_sub
-            ) * m3ps_to_MCM  # MCM: million cubic meters
+            ) * m3ps_to_MCM_hour  # MCM: million cubic meters
 
         self._lake_storage_sub[:] = np.maximum(
             self._lake_storage_sub + self._lake_storage_change_sub,
@@ -976,7 +963,7 @@ class StarfitFlowNode(FlowNode):
         if self._lake_storage_sub > self._GRanD_CAP_MCM:
             self._lake_spill_sub[:] = (
                 self._lake_storage_sub - self._GRanD_CAP_MCM
-            ) * MCM_to_m3ps
+            ) * MCM_to_m3ps_hour
             self._lake_storage_sub[:] = self._GRanD_CAP_MCM
 
         self._lake_storage_change_sub[:] = (
@@ -1018,11 +1005,9 @@ class StarfitFlowNode(FlowNode):
             isubstep + 1
         )
         self._lake_storage_change_flow_units[:] = (
-            self._lake_storage_change * MCM_to_m3ps
+            self._lake_storage_change * MCM_to_m3ps_hour
         )
 
-        # This is the only subtimestep variable that is made public
-        self._lake_outflow_sub[:] = self._lake_outflow_sub
         if self._io_in_cfs:
             self._lake_outflow_sub[:] *= cms_to_cfs
 

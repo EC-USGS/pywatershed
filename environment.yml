@@ -47,6 +47,6 @@ dependencies:
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools
-      # - pyPRMS
+      - git+https://github.com/paknorton/pyPRMS.git@development
       - sphinx-autodoc-typehints
       - ruff

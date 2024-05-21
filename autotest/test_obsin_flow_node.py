@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from pyPRMS import Streamflow as PRMSStreamflowData
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
@@ -13,7 +14,6 @@ from pywatershed.hydrology.prms_channel_flow_graph import (
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
-from pywatershed.utils.prms_streamflow_data import PRMSStreamflowData
 
 do_compare_output_files = False
 do_compare_in_memory = True

@@ -1,12 +1,15 @@
-from ..base.flow_graph import FlowNode, FlowNodeMaker
-from ..constants import nan, zero
+import pandas as pd
+
+from pywatershed.base.control import Control
+from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
+from pywatershed.constants import nan, zero
 
 
 class ObsInNode(FlowNode):
     def __init__(
         self,
-        control,
-        node_obs_data,
+        control: Control,
+        node_obs_data: pd.Series,
     ):
         self.control = control
         self._node_obs_data = node_obs_data

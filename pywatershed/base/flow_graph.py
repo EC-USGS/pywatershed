@@ -128,7 +128,7 @@ class FlowGraph(ConservativeProcess):
 
         # If/when FlowGraph handles nodes which dont tautologically balance
         # could allow the basis to be unit.
-        self._set_budget(basis="global")
+        self._set_budget(basis="global", unit_desc="flow rates")
 
         return
 
@@ -167,11 +167,12 @@ class FlowGraph(ConservativeProcess):
     @staticmethod
     def get_mass_budget_terms():
         return {
-            "inputs": [
-                "inflows",
-            ],
+            "inputs": ["inflows"],
             "outputs": ["outflows"],
-            "storage_changes": ["node_storage_changes", "_neg_sink_source"],
+            "storage_changes": [
+                "node_storage_changes",
+                "node_negative_sink_source",
+            ],
         }
 
     def get_outflow_mask(self):
@@ -185,7 +186,7 @@ class FlowGraph(ConservativeProcess):
         self._node_upstream_inflow_sub = np.zeros(self.nnodes) * nan
         self._node_upstream_inflow_acc = np.zeros(self.nnodes) * nan
         self._node_outflow_substep = np.zeros(self.nnodes) * nan
-        self._neg_sink_source = np.zeros(self.nnodes) * nan
+        self.node_negative_sink_source = np.zeros(self.nnodes) * nan
         return
 
     def _init_graph(self) -> None:
@@ -298,7 +299,7 @@ class FlowGraph(ConservativeProcess):
             self.node_storages[ii] = self._nodes[ii].storage
             self.node_sink_source[ii] = self._nodes[ii].sink_source
 
-        self._neg_sink_source[:] = -1 * self.node_sink_source
+        self.node_negative_sink_source[:] = -1 * self.node_sink_source
 
         # global mass balance term
         self.outflows[:] = np.where(
@@ -358,7 +359,7 @@ def inflow_exchange_factory(
             self._set_inputs(locals() | kwargs)
             self._set_options(locals())
 
-            self._set_budget(basis=budget_basis)
+            self._set_budget(basis=budget_basis, unit_desc="flow rates")
 
             return
 

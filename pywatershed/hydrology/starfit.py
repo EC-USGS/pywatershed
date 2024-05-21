@@ -670,6 +670,7 @@ class StarfitFlowNode(FlowNode):
             else:
                 self._budget_type = "warn"
         if self._budget_type is not None:
+            # this budget is not configured to output files
             self.budget = Budget.from_storage_unit(
                 self,
                 time_unit="D",
@@ -677,6 +678,7 @@ class StarfitFlowNode(FlowNode):
                 imbalance_fatal=(self._budget_type == "error"),
                 basis="unit",
                 ignore_nans=False,
+                verbose=False,
             )
         else:
             self.budget = None
@@ -1019,7 +1021,7 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
         calc_method: Literal["numba", "numpy"] = None,
         io_in_cfs: bool = True,
         verbose: bool = None,
-        compute_daily: bool = True,
+        compute_daily: bool = False,
         budget_type: Literal["defer", None, "warn", "error"] = None,
     ) -> None:
         self.name = "StarfitFlowNodeMaker"

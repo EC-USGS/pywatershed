@@ -110,6 +110,7 @@ include = ["pywatershed", "pywatershed.*"]
 [tool.setuptools.package-data]
 "pywatershed.static.metadata" = ["*.yaml"]
 "pywatershed.data.drb_2yr" = ["*"]
+"pywatershed.data" = ["big_sandy_starfit_parameters.nc"]
 
 [tool.ruff]
 line-length = 79

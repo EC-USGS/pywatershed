@@ -2060,6 +2060,13 @@ newsnow:
     0: nhru
   type: int32
   units: none
+node_negative_sink_source:
+  desc: The negative of net sink or source over a timestep on a FlowNode over FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 node_outflows:
   desc: The flows leaving each FlowGraph node in (vol/time)
   dims:

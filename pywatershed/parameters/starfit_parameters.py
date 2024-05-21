@@ -176,15 +176,54 @@ class StarfitParameters(Parameters):
 
         Args:
         istarf_file: a path to an existing file. If file does not exist or is
-            None then the file will be dowladed to files_directory
+            None then the file will be dowladed to files_directory. You can
+            download the file yourself here
+            https://zenodo.org/records/4602277/files/ISTARF-CONUS.csv?download=1
         grand_file: a path to an existing dbf or shp file. If the file does not
             exist, an error will be thrown and you must download it manually
-            from
-             https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
+            at https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
 
         grand_ids: a subset of grand_ids to keep.
 
+        Examples:
+        ---------
+
+        Read the full ISTART-CONUS dataset, identify the "big sandy" reservoir
+        by name to get its grand_id, then subset the parameters to this
+        grand_id. This requires downloading the GRanD and ISTARF-CONUS datasets
+        in advance and specifying the paths to those files.
+
+        >>> import pywatershed as pws
+        >>> grand_file = (
+        ...     your_data_dir / "GRanD_Version_1_3/GRanD_reservoirs_v1_3.dbf"
+        ... )
+        >>> istarf_file = your_data_dir / "ISTARF-CONUS.csv"
+        >>> sf_params = (
+        ...     pws.parameters.StarfitParameters.from_istarf_conus_grand(
+        ...         grand_file=grand_file, istarf_file=istarf_file
+        ...     )
+        ... )
+        >>> grand_names = sf_params.parameters["GRanD_NAME"].tolist()
+        >>> # where is Big Sandy?
+        >>> big_sandy_index = [
+        ...     ii
+        ...     for ii, nn in enumerate(grand_names)
+        ...     if "big sandy" in str(nn).lower()
+        ... ][0]
+        >>> big_sandy_grand_id = sf_params.parameters["grand_id"][
+        ...     big_sandy_index
+        ... ]
+        >>> # get a parameter set with just the big sandy dike
+        >>> sf_params = (
+        ...     pws.parameters.StarfitParameters.from_istarf_conus_grand(
+        ...         grand_file=grand_file,
+        ...         istarf_file=istarf_file,
+        ...         grand_ids=[big_sandy_grand_id],
+        ...     )
+        ... )
+
         """  # noqa: 501
+
         grand_ds = _get_grand(grand_file)
         istarf_ds = _get_istarf_conus(istarf_file, files_directory)
 

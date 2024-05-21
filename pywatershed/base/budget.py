@@ -44,6 +44,7 @@ class Budget(Accessor):
         basis: Literal["unit", "global"] = "unit",
         imbalance_fatal: bool = False,
         ignore_nans: bool = False,
+        unit_desc: str = "volumes",
         verbose: bool = True,
     ):
         self.name = "Budget"
@@ -57,6 +58,7 @@ class Budget(Accessor):
         self.atol = atol
         self.imbalance_fatal = imbalance_fatal
         self._ignore_nans = ignore_nans
+        self._unit_desc = unit_desc
         self.verbose = verbose
         self.basis = basis
 
@@ -84,8 +86,13 @@ class Budget(Accessor):
                 raise ValueError(msg)
             self.units = all_units[0]
         else:
-            msg = f"Metadata unavailable for some Budget terms in {all_vars}"
-            warn(msg)
+            all_vars_0 = [vv[0] == "_" for vv in all_vars]
+            all_vars_private = all(all_vars_0)
+            if not all_vars_private or verbose:
+                msg = (
+                    f"Metadata unavailable for some Budget terms in {all_vars}"
+                )
+                warn(msg)
             self.units = None
 
         # generate metadata for derived output variables
@@ -584,14 +591,16 @@ class Budget(Accessor):
         # Accumulated volumes
         summary += [""]
         # header
-        summary += [f"Accumulated volumes (since {self._accum_start_time}):"]
+        summary += [
+            f"Accumulated {self._unit_desc} (since {self._accum_start_time}):"
+        ]
         summary += [
             indent_fill
-            + "input volumes".ljust(in_col_width)
+            + f"input {self._unit_desc}".ljust(in_col_width)
             + col_sep
-            + "output volumes".ljust(out_col_width)
+            + f"output {self._unit_desc}".ljust(out_col_width)
             + col_sep
-            + "storage change volumes".ljust(out_col_width)
+            + f"storage change {self._unit_desc}".ljust(out_col_width)
         ]
         # separator
         summary += separator

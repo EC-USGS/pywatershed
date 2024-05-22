@@ -266,9 +266,7 @@ class Budget(Accessor):
                     var
                 ] * self.control.time_step.astype(
                     f"timedelta64[{self.time_unit}]"
-                ).astype(
-                    int
-                )
+                ).astype(int)
 
         self._sum_component_accumulations()
 
@@ -298,13 +296,13 @@ class Budget(Accessor):
                         )
                 else:
                     if self.basis == "unit":
-                        self._accumulations_sum[
-                            component
-                        ] += self._accumulations[component][var]
+                        self._accumulations_sum[component] += (
+                            self._accumulations[component][var]
+                        )
                     elif self.basis == "global":
-                        self._accumulations_sum[
-                            component
-                        ] += self._accumulations[component][var].sum()
+                        self._accumulations_sum[component] += (
+                            self._accumulations[component][var].sum()
+                        )
 
         return
 

@@ -94,7 +94,7 @@ class Process(Accessor):
         discretization: Parameters,
         parameters: Parameters,
         metadata_patches: dict[dict] = None,
-        metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
+        metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
         self.name = "Process"
         self.control = control

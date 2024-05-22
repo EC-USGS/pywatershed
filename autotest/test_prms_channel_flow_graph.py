@@ -179,6 +179,7 @@ def test_prms_channel_flow_graph_compare_prms(
             # <<
             # there are no expected sources or sinks in this test
             answers_conv_vol["node_sink_source"] = val.current * zero
+            answers_conv_vol["node_negative_sink_source"] = val.current * zero
             answers_conv_vol["node_storages"] = val.current * nan
 
             compare_in_memory(

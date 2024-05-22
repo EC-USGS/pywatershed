@@ -18,7 +18,7 @@ data_dir = repo_root / "hydrology/starfit_minimal"
 # havent pared down the data yet to add it to the repo
 @pytest.mark.domainless
 @pytest.mark.xfail
-@pytest.mark.parametrize("io_in_cfs", [True, False])
+@pytest.mark.parametrize("io_in_cfs", [True, False], ids=["cfs", "cms"])
 def test_regress(io_in_cfs, tmp_path):
     # Regression against independenly run outputs in pickle file
 

@@ -40,6 +40,17 @@ MCM_to_m3ps_hour = 1.0 / m3ps_to_MCM_hour
 # constant
 omega = 1.0 / 52.0
 
+metadata_patches_cfs = {
+    "lake_inflow": {"units": "cfs"},
+    "lake_outflow": {"units": "cfs"},
+    "lake_release": {"units": "cfs"},
+    "lake_spill": {"units": "cfs"},
+    "lake_storage": {"units": "cubic feet"},
+    "lake_storage_change": {"units": "cfs"},
+    "lake_storage_change_flow_units": {"units": "cfs"},
+    "lake_storage_old": {"units": "cubic feet"},
+}
+
 
 class Starfit(ConservativeProcess):
     """starfit: Storage Targets And Release Function Inference Tool
@@ -81,11 +92,21 @@ class Starfit(ConservativeProcess):
         load_n_time_batches: int = 1,
         io_in_cfs: bool = True,
     ) -> None:
+        if io_in_cfs:
+            metadata_patches = metadata_patches_cfs
+            metadata_patch_conflicts = "left"
+        else:
+            metadata_patches = None
+            metadata_patch_conflicts = "error"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
+            metadata_patches=metadata_patches,
+            metadata_patch_conflicts=metadata_patch_conflicts,
         )
+        del metadata_patches, metadata_patch_conflicts
         self.name = "Starfit"
 
         self._set_inputs(locals())

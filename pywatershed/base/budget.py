@@ -36,7 +36,7 @@ class Budget(Accessor):
         storage_changes: Union[list, dict],
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
-        units: str = None,
+        units: dict = None,
         time_unit: str = "D",  # TODO: get this from control
         description: str = None,
         rtol: float = 1e-5,
@@ -52,6 +52,7 @@ class Budget(Accessor):
         self.inputs = self.init_component(inputs)
         self.outputs = self.init_component(outputs)
         self.storage_changes = self.init_component(storage_changes)
+        self.units = units
         self.time_unit = time_unit
         self.description = description
         self.rtol = rtol
@@ -79,7 +80,10 @@ class Budget(Accessor):
         all_vars = [x for xs in all_vars for x in xs]
         self.meta = self.control.meta.get_vars(all_vars)
         if len(self.meta) == len(all_vars):
-            all_units = [val["units"] for val in self.meta.values()]
+            if self.units is None:
+                all_units = [val["units"] for val in self.meta.values()]
+            else:
+                all_units = list(self.units.values())
             # check consistent units
             if not (np.array(all_units) == all_units[0]).all():
                 msg = "Units not consistent over all terms"
@@ -117,6 +121,7 @@ class Budget(Accessor):
                 term_meta = self.meta[term]
                 self.meta[kk] = deepcopy(term_meta)
                 self.meta[kk]["desc"] = desc
+                self.meta[kk]["units"] = self.units
             elif verbose:
                 msg = f"budget term {term} not available in metadata"
                 warn(msg)

@@ -1793,7 +1793,7 @@ lake_availability_status:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: percent
 lake_elev:
   desc: Elevation of each simulated lake surface
   dims:
@@ -1865,7 +1865,7 @@ lake_outflow:
   dims:
     0: nreservoirs
   type: float64
-  units: cfs
+  units: cubic meters per second
 lake_outq2:
   desc: Streamflow from second outlet for each lake with a second outlet
   dims:

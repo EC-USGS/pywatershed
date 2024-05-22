@@ -157,6 +157,7 @@ class FlowGraph(ConservativeProcess):
             "node_storage_changes": nan,
             "node_storages": nan,
             "node_sink_source": nan,
+            "node_negative_sink_source": nan,
         }
 
     @classmethod
@@ -186,7 +187,6 @@ class FlowGraph(ConservativeProcess):
         self._node_upstream_inflow_sub = np.zeros(self.nnodes) * nan
         self._node_upstream_inflow_acc = np.zeros(self.nnodes) * nan
         self._node_outflow_substep = np.zeros(self.nnodes) * nan
-        self.node_negative_sink_source = np.zeros(self.nnodes) * nan
         return
 
     def _init_graph(self) -> None:

@@ -384,6 +384,7 @@ def test_inflow_exchange_compare_prms(
                 answers_conv_vol,
                 atol=atol,
                 rtol=rtol,
+                skip_missing_ans=True,
                 fail_after_all_vars=False,
             )
 

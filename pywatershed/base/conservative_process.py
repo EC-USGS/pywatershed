@@ -71,7 +71,7 @@ class ConservativeProcess(Process):
         parameters: Parameters,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         metadata_patches: dict[dict] = None,
-        metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
+        metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
         super().__init__(
             control=control,
@@ -179,6 +179,11 @@ class ConservativeProcess(Process):
         if self._budget_type is None:
             self.budget = None
         elif self._budget_type in ["error", "warn"]:
+            units = {}
+            for cc, vv_list in self.get_mass_budget_terms().items():
+                for vv in vv_list:
+                    units[vv] = self.meta[vv]["units"]
+
             self.budget = Budget.from_storage_unit(
                 self,
                 time_unit="D",
@@ -186,6 +191,7 @@ class ConservativeProcess(Process):
                 imbalance_fatal=(self._budget_type == "error"),
                 basis=basis,
                 ignore_nans=ignore_nans,
+                units=units,
                 unit_desc=unit_desc,
             )
         else:

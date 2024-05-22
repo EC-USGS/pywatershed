@@ -266,7 +266,9 @@ class Budget(Accessor):
                     var
                 ] * self.control.time_step.astype(
                     f"timedelta64[{self.time_unit}]"
-                ).astype(int)
+                ).astype(
+                    int
+                )
 
         self._sum_component_accumulations()
 
@@ -296,13 +298,13 @@ class Budget(Accessor):
                         )
                 else:
                     if self.basis == "unit":
-                        self._accumulations_sum[component] += (
-                            self._accumulations[component][var]
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var]
                     elif self.basis == "global":
-                        self._accumulations_sum[component] += (
-                            self._accumulations[component][var].sum()
-                        )
+                        self._accumulations_sum[
+                            component
+                        ] += self._accumulations[component][var].sum()
 
         return
 
@@ -723,15 +725,23 @@ class Budget(Accessor):
         for key in self.terms.keys():
             global_attrs[key] = "[" + ", ".join(self.terms[key]) + "]"
 
-        coordinates = {"one": 0, **params.coords}
+        if self.basis == "unit":
+            coordinates = params.coords
+            meta = self.meta
+        else:
+            coordinates = {"one": 0}
+            meta = deepcopy(self.meta)
+            for kk, vv in meta.items():
+                meta[kk]["dims"] = ("one",)
 
         self._netcdf = NetCdfWrite(
             nc_path,
             coordinates,
             self._netcdf_output_var_dict,
-            self.meta,
+            meta,
             global_attrs=global_attrs,
         )
+
         # todo jlm: put terms in to metadata
         return
 

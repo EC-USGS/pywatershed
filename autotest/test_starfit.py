@@ -23,7 +23,6 @@ def test_regress(io_in_cfs, tmp_path):
     # Regression against independenly run outputs in pickle file
 
     tmp_path = pl.Path(tmp_path)
-    print(tmp_path)
 
     # TODO: make this work with the original source files
     param_files = {

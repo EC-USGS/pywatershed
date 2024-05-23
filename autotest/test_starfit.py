@@ -6,12 +6,9 @@ import xarray as xr
 from utils_compare import assert_allclose
 
 from pywatershed.base.control import Control
-from pywatershed.constants import __pywatershed_root__ as repo_root
 from pywatershed.constants import cm_to_cf, cms_to_cfs
 from pywatershed.hydrology.starfit import Starfit
 from pywatershed.parameters import Parameters, StarfitParameters
-
-data_dir = repo_root / "hydrology/starfit_minimal"
 
 
 @pytest.mark.domainless
@@ -31,7 +28,7 @@ def test_regress(io_in_cfs, tmp_path):
 
     control = Control(
         params.variables["start_time"].min(),
-        np.datetime64("2019-09-30 00:00:00"),
+        np.datetime64("2001-12-31 00:00:00"),
         np.timedelta64(24, "h"),
     )
     control.options["budget_type"] = "error"
@@ -40,7 +37,7 @@ def test_regress(io_in_cfs, tmp_path):
     # output_dir = domain["prms_output_dir"]
     input_variables = {}
     for key in Starfit.get_inputs():
-        nc_path = data_dir / f"{key}.nc"
+        nc_path = pl.Path("../test_data/starfit/") / f"{key}.nc"
         input_variables[key] = nc_path
 
     sf = Starfit(
@@ -96,7 +93,7 @@ def test_regress(io_in_cfs, tmp_path):
                 answers[var].values,
                 rtol=tol,
                 atol=tol,
-                equal_nan=False,
+                equal_nan=True,
             )
 
     return

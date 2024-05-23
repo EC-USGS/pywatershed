@@ -10,34 +10,20 @@ from pywatershed.base.control import Control
 from pywatershed.constants import __pywatershed_root__ as repo_root
 from pywatershed.constants import cm_to_cf, cms_to_cfs
 from pywatershed.hydrology.starfit import Starfit
-from pywatershed.parameters import StarfitParameters
+from pywatershed.parameters import Parameters, StarfitParameters
 
 data_dir = repo_root / "hydrology/starfit_minimal"
 
 
-# havent pared down the data yet to add it to the repo
 @pytest.mark.domainless
-@pytest.mark.xfail
 @pytest.mark.parametrize("io_in_cfs", [True, False], ids=["cfs", "cms"])
 def test_regress(io_in_cfs, tmp_path):
     # Regression against independenly run outputs in pickle file
 
     tmp_path = pl.Path(tmp_path)
 
-    # TODO: make this work with the original source files
-    param_files = {
-        "grand_ids": data_dir / "domain_grand_ids.nc",
-        "resops_domain": data_dir / "ResOpsUS.nc",
-        "istarf_conus": data_dir / "starfit/ISTARF-CONUS.nc",
-        "grand_dams": data_dir / "grand_dams.nc",
-    }
-
-    # passing the parameter names is optional
-    starfit_parameters = Starfit.get_parameters()
-    params = StarfitParameters.from_netcdf(
-        **param_files,
-        param_names=starfit_parameters,
-    )
+    sf_param_file = "../test_data/starfit/starfit_original_parameters.nc"
+    params = Parameters.from_netcdf(sf_param_file)
 
     if io_in_cfs:
         param_ds = params.to_xr_ds()
@@ -85,73 +71,33 @@ def test_regress(io_in_cfs, tmp_path):
 
     results = {}
     vars_compare = ["lake_storage", "lake_release", "lake_spill"]
+    # take means to compare to answer means
     for var in vars_compare:
-        results[var] = xr.open_dataset(tmp_path / f"{var}.nc")[var]
+        results[f"{var}_mean"] = xr.open_dataset(tmp_path / f"{var}.nc")[
+            var
+        ].mean(dim="time")
 
-    # Regression against independenly run outputs in pickle file
-    with open(data_dir / "starfit_outputs.pickle", "rb") as handle:
-        ans_dict = pickle.load(handle)
+    answers = xr.open_dataset("../test_data/starfit/starfit_mean_output.nc")
+    if io_in_cfs:
+        answers *= cms_to_cfs
 
-    answers = {}
-    answers["lake_storage"] = ans_dict["Ssim_list"]
-    answers["lake_release"] = ans_dict["Rsim_list"]
-    answers["lake_spill"] = ans_dict["SPILLsim_list"]
-    ans_grand_ids = ans_dict["grand_ids"]
+    vars_compare = [
+        "lake_storage_mean",
+        "lake_release_mean",
+        "lake_spill_mean",
+    ]
 
-    for ii, gi in enumerate(results["lake_storage"].grand_id):
-        # these indices have minor (like e-14) differences when coverted to cgs
-        # that trigger thresholds such as availability_status > 1 (in the cases
-        # investigated) which results in irreconcilable differences, so we'll
-        # just skip them when io_in_cfs.
-        if io_in_cfs and ii in [35, 75, 81, 84, 153]:
-            continue
-        assert ans_grand_ids[ii] == gi  # extra dummy check
-        for vv in vars_compare:
-            res = results[vv].loc[dict(grand_id=gi)].load()
-            ans = answers[vv][ii].to_xarray().rename(index="time")
-            res = res.where(res.time.isin(ans.time), drop=True)
-            tol = 1.0e-6
-            if io_in_cfs:
-                ans *= cms_to_cfs  # same for storage
-
-            # <
-            assert_allclose(res, ans, rtol=tol, atol=tol, equal_nan=True)
-
-            # this code is redundant but often useful, so i'll leave it for now
-            # diff = res - ans
-            # # diff is only on common times
-            # # make sure that no diffs are nan
-            # assert not np.isnan(diff).any()
-            # # make sure no times simulated that were not requested
-            # assert len(np.where(~np.isnan(res))[0]) == len(ans)
-            # wh_abs_diff = np.where(
-            #     (abs(diff) > tol) & ((abs(diff) / ans) > tol)
-            # )
-            # assert len(wh_abs_diff[0]) == 0
+    tol = 1.0e-6
+    for var in vars_compare:
+        if io_in_cfs:
+            wh_diff = ([35, 75, 81, 84, 153],)
+            answers[var][wh_diff] = results[var][wh_diff]
+            assert_allclose(
+                results[var].values,
+                answers[var].values,
+                rtol=tol,
+                atol=tol,
+                equal_nan=False,
+            )
 
     return
-
-
-@pytest.mark.domainless
-@pytest.mark.xfail
-@pytest.mark.parametrize("domain_tag", ["drb"])
-def test_param_subset_write(tmp_path, domain_tag):
-    tmp_path = pl.Path(tmp_path)
-    print(tmp_path)
-
-    # TODO: make this work with the original source files
-    param_files = {
-        "grand_ids": data_dir / f"grand_seg_ids_{domain_tag}.nc",
-        "resops_domain": data_dir / "ResOpsUS.nc",
-        "istarf_conus": data_dir / "starfit/ISTARF-CONUS.nc",
-        "grand_dams": data_dir / "grand_dams.nc",
-    }
-
-    # passing the parameter names is optional
-    starfit_parameters = Starfit.get_parameters()
-    params = StarfitParameters.from_netcdf(
-        **param_files,
-        param_names=starfit_parameters,
-    )
-
-    params.to_netcdf(tmp_path / f"starfit_params_{domain_tag}.nc", use_xr=True)

@@ -1,5 +1,4 @@
 import pathlib as pl
-import pickle
 
 import numpy as np
 import pytest

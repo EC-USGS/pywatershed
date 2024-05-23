@@ -59,7 +59,10 @@ class PRMSSoilzone(ConservativeProcess):
             sublimation unless snowpack
         dprst_flag: use depression storage or not? None uses value in control
             file, which otherwise defaults to True.
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
@@ -88,7 +91,7 @@ class PRMSSoilzone(ConservativeProcess):
         snow_evap: adaptable,
         snowcov_area: adaptable,
         dprst_flag: bool = None,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,

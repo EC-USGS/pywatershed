@@ -458,7 +458,10 @@ class HruSegmentFlowExchange(ConservativeProcess):
         sroff_vol: adaptable,
         ssres_flow_vol: adaptable,
         gwres_flow_vol: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         verbose: bool = None,
 
     """
@@ -471,7 +474,7 @@ class HruSegmentFlowExchange(ConservativeProcess):
         sroff_vol: adaptable,
         ssres_flow_vol: adaptable,
         gwres_flow_vol: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         verbose: bool = None,
     ) -> None:
         super().__init__(
@@ -663,7 +666,7 @@ def prms_channel_flow_graph_to_model_dict(
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
     new_nodes_flow_to_nhm_seg: list,
-    graph_budget_type: Literal[None, "warn", "error"] = "error",
+    graph_budget_type: Literal["defer", None, "warn", "error"] = "defer",
 ) -> dict:
     """Add a PRMSChannel-based FlowGraph with additional nodes to a model_dict.
 
@@ -683,7 +686,11 @@ def prms_channel_flow_graph_to_model_dict(
             NodeMaker
         new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
             which the node will flow.
-        graph_budget_type: one of None, "warn", "error"
+        graph_budget_type: one of ["defer", None, "warn", "error"] with
+            "defer" being the default and defering to
+            control.options["budget_type"] when available. When
+            control.options["budget_type"] is not avaiable, budget_type is set
+            to "warn".
 
     Returns:
         A model dictionary.

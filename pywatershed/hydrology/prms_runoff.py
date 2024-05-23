@@ -65,7 +65,10 @@ class PRMSRunoff(ConservativeProcess):
             change from winter to summer
         dprst_flag: use depression storage or not? None uses value in control
             file, which otherwise defaults to True.
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -91,7 +94,7 @@ class PRMSRunoff(ConservativeProcess):
         hru_intcpevap: adaptable,
         intcp_changeover: adaptable,
         dprst_flag: bool = None,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:

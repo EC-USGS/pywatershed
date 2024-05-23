@@ -1,3 +1,5 @@
+from typing import Literal
+
 import numpy as np
 
 from pywatershed.base.budget import Budget
@@ -30,7 +32,7 @@ class PRMSEt(Process):
         dprst_evap_hru: adaptable,
         perv_actet: adaptable,
         verbose: bool = False,
-        budget_type: str = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
     ) -> "PRMSEt":
         super().__init__(
             control=control,

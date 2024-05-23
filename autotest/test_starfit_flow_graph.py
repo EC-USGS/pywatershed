@@ -187,6 +187,13 @@ def test_starfit_flow_graph_postprocess(
             answers_conv_vol["node_sink_source"] = np.concatenate(
                 [val.current * zero, flow_graph["node_sink_source"][-2:]]
             )
+            answers_conv_vol["node_negative_sink_source"] = np.concatenate(
+                [
+                    val.current * zero,
+                    flow_graph["node_negative_sink_source"][-2:],
+                ]
+            )
+
             answers_conv_vol["node_storages"] = np.concatenate(
                 [val.current * nan, flow_graph["node_storages"][-2:]]
             )

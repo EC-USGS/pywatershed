@@ -73,7 +73,9 @@ def test_regress(io_in_cfs, tmp_path):
             var
         ].mean(dim="time")
 
-    answers = xr.open_dataset("../test_data/starfit/starfit_mean_output.nc")
+    answers = xr.open_dataset(
+        "../test_data/starfit/starfit_mean_output_1995-2001.nc"
+    )
     if io_in_cfs:
         answers *= cms_to_cfs
 

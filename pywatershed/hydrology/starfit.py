@@ -334,7 +334,9 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (MCM_to_m3ps_day)  # both terms in m3ps
+            ) * (
+                MCM_to_m3ps_day
+            )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,
@@ -559,6 +561,7 @@ class StarfitFlowNode(FlowNode):
         calc_method: Literal["numba", "numpy"] = None,
         io_in_cfs: bool = True,
         compute_daily: bool = False,
+        nhrs_substep: int = one,
         budget_type: Literal["defer", None, "warn", "error"] = None,
     ):
         self.name = "StarfitFlowNode"
@@ -593,6 +596,9 @@ class StarfitFlowNode(FlowNode):
         # calc_method ignored currently
 
         self._io_in_cfs = io_in_cfs
+
+        self._m3ps_to_MCM = nhrs_substep * 60 * 60 / 1.0e6
+        self._MCM_to_m3ps = 1.0 / self._m3ps_to_MCM
 
         def nan1d():
             return np.zeros(1) * nan
@@ -673,16 +679,16 @@ class StarfitFlowNode(FlowNode):
             pct_res_cap = (min + max) / 2 / 100
             nor_mean_cap = self._GRanD_CAP_MCM * pct_res_cap
             # note the leading dunder (double underscore): "private reserve"
-            self.__initial_storage = np.where(
+            initial_storage = np.where(
                 wh_initial_storage_nan, nor_mean_cap, self._initial_storage
             )
             # set lake_storage from initial_storage when start is not available
             self._lake_storage_sub[:] = np.where(
-                np.isnat(self._start_time), self.__initial_storage, nan
+                np.isnat(self._start_time), initial_storage, nan
             )
 
         else:
-            self.__initial_storage = self._initial_storage
+            self._lake_storage_sub[:] = self._initial_storage
 
         self._budget_type = budget_type
         if self._budget_type == "defer":
@@ -745,7 +751,7 @@ class StarfitFlowNode(FlowNode):
 
     def finalize_timestep(self):
         if self._io_in_cfs:
-            # self._lake_outflow_sub[:] converted above bc/ it is subtimestep
+            # self._lake_outflow_sub[:] converted in subtimestep
             self._lake_inflow[:] *= cms_to_cfs
             self._lake_release[:] *= cms_to_cfs
             self._lake_spill[:] *= cms_to_cfs
@@ -951,7 +957,7 @@ class StarfitFlowNode(FlowNode):
 
         self._lake_storage_change_sub[:] = (
             self._lake_inflow_sub - self._lake_release_sub
-        ) * m3ps_to_MCM_hour  # MCM: million cubic meters
+        ) * self._m3ps_to_MCM  # MCM: million cubic meters
 
         # can't release more than storage + inflow. This assumes zero
         # storage = deadpool which may not be accurate, but this situation
@@ -961,7 +967,7 @@ class StarfitFlowNode(FlowNode):
             potential_release = (
                 self._lake_release_sub
                 + (self._lake_storage_sub + self._lake_storage_change_sub)
-                * MCM_to_m3ps_hour
+                * self._MCM_to_m3ps
             )
             self._lake_release_sub[:] = np.maximum(
                 potential_release,
@@ -969,7 +975,7 @@ class StarfitFlowNode(FlowNode):
             )  # m^3/s
             self._lake_storage_change_sub[:] = (
                 self._lake_inflow_sub - self._lake_release_sub
-            ) * m3ps_to_MCM_hour  # MCM: million cubic meters
+            ) * self._m3ps_to_MCM  # MCM: million cubic meters
 
         self._lake_storage_sub[:] = np.maximum(
             self._lake_storage_sub + self._lake_storage_change_sub,
@@ -983,7 +989,7 @@ class StarfitFlowNode(FlowNode):
         if self._lake_storage_sub > self._GRanD_CAP_MCM:
             self._lake_spill_sub[:] = (
                 self._lake_storage_sub - self._GRanD_CAP_MCM
-            ) * MCM_to_m3ps_hour
+            ) * self._MCM_to_m3ps
             self._lake_storage_sub[:] = self._GRanD_CAP_MCM
 
         self._lake_storage_change_sub[:] = (
@@ -1009,9 +1015,9 @@ class StarfitFlowNode(FlowNode):
         self._lake_spill_accum[:] += self._lake_spill_sub
         self._lake_spill[:] = self._lake_spill_accum / (isubstep + 1)
 
-        self._lake_availability_status_accum[:] += (
-            self._lake_availability_status_sub
-        )
+        self._lake_availability_status_accum[
+            :
+        ] += self._lake_availability_status_sub
         self._lake_availability_status[:] = (
             self._lake_availability_status_accum / (isubstep + 1)
         )
@@ -1025,7 +1031,7 @@ class StarfitFlowNode(FlowNode):
             isubstep + 1
         )
         self._lake_storage_change_flow_units[:] = (
-            self._lake_storage_change * MCM_to_m3ps_hour
+            self._lake_storage_change * self._MCM_to_m3ps
         )
 
         if self._io_in_cfs:
@@ -1044,13 +1050,14 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
         verbose: bool = None,
         compute_daily: bool = False,
         budget_type: Literal["defer", None, "warn", "error"] = None,
+        nhrs_substep: int = one,
     ) -> None:
         self.name = "StarfitFlowNodeMaker"
         self._calc_method = calc_method
         self._io_in_cfs = io_in_cfs
         self._compute_daily = compute_daily
         self._budget_type = budget_type
-
+        self._nhrs_substep = nhrs_substep
         self._set_data(discretization, parameters)
 
         return
@@ -1088,6 +1095,7 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
             io_in_cfs=self._io_in_cfs,
             compute_daily=self._compute_daily,
             budget_type=self._budget_type,
+            nhrs_substep=self._nhrs_substep,
         )
 
     def _set_data(self, discretization, parameters):

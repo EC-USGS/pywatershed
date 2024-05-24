@@ -1,3 +1,4 @@
+import pathlib as pl
 import pickle
 import random
 
@@ -8,6 +9,7 @@ import xarray as xr
 from pywatershed import Starfit
 from pywatershed.base.adapter import Adapter, AdapterNetcdf
 from pywatershed.base.control import Control
+from pywatershed.parameters import Parameters
 
 # from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.constants import __pywatershed_root__ as pws_root
@@ -15,39 +17,47 @@ from pywatershed.constants import cm_to_cf, cms_to_cfs, nan, zero
 from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
 from pywatershed.parameters import StarfitParameters
 
-# NB: THere is no real comparison of output files because the answer files
-#     have different units. Could create a class to manage this but
-#     I've checked that the memory values match the file values.
-#     do_compare_output_files write files but does not check them
+# NB:
+#   Here we are comparing a daily starfit against an hourly StarfitNode.
+#   We only advance the hourly StarfitNode one substepper day. It's
+#   resulting flow rates are identical but the change in storage is 1/24
+#   of the daily value, so we check this. We have to track previous storage
+#   to do this and get the delta storages.
+#   TODO: There is no comparison of output files at the moment.
 do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
-
-starfit_inds_test = random.sample(range(167), 7)
-# starfit_inds_test = list(range(167))  # this ran previously, takes ~4min
-
-data_dir = pws_root / "hydrology/starfit_minimal"
+end_time = (np.datetime64("2001-12-31 00:00:00"),)
+# This is 117 reservoirs where
+#    (parameters_ds.start_time == np.datetime64("1995-01-01 00:00:00"))
+#    & (parameters_ds.end_time >= np.datetime64("2001-12-31 00:00:00"))
+# fmt: off
+starfit_inds_test = [
+      0,   1,   2,   3,   4,   5,   6,   8,   9,  10,  11,  12,  13,
+     15,  16,  18,  20,  21,  22,  23,  24,  25,  26,  28,  29,  30,
+     31,  32,  33,  36,  37,  38,  40,  43,  44,  47,  48,  49,  51,
+     52,  53,  55,  56,  59,  62,  63,  64,  65,  67,  68,  69,  70,
+     71,  72,  74,  75,  76,  77,  86,  87,  89,  90,  91,  92,  93,
+     94,  95,  96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106,
+    107, 108, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
+    122, 123, 130, 134, 137, 139, 140, 141, 145, 148, 149, 152, 154,
+    155, 156, 157, 158, 159, 160, 161, 162, 164, 165, 166
+] # noqa
+# fmt: on
 
 
 @pytest.fixture(scope="function")
 def parameters():
-    # TODO: make this work with the original source files
-    param_files = {
-        "grand_ids": data_dir / "domain_grand_ids.nc",
-        "resops_domain": data_dir / "ResOpsUS.nc",
-        "istarf_conus": data_dir / "starfit/ISTARF-CONUS.nc",
-        "grand_dams": data_dir / "grand_dams.nc",
-    }
-
-    # passing the parameter names is optional
-    starfit_parameters = Starfit.get_parameters()
-    parameters_ds = StarfitParameters.from_netcdf(
-        **param_files,
-        param_names=starfit_parameters,
-    ).to_xr_ds()
-
-    # the first parameter/reservoir
+    parameter_file = pl.Path(
+        "../test_data/starfit/starfit_original_parameters.nc"
+    )
+    parameters_ds = Parameters.from_netcdf(parameter_file).to_xr_ds()
+    # wh_model_reservoirs = np.where(
+    #     (parameters_ds.start_time == np.datetime64("1995-01-01 00:00:00"))
+    #     & (parameters_ds.end_time >= np.datetime64("2001-12-31 00:00:00"))
+    # )
+    # asdf
     merge_list = []
     for ii in starfit_inds_test:
         merge_list += [parameters_ds.isel(nreservoirs=slice(ii, ii + 1))]
@@ -61,37 +71,36 @@ def parameters():
 def control(parameters):
     control = Control(
         parameters.variables["start_time"].min(),
-        np.datetime64("2019-09-30 00:00:00"),
+        end_time,
         np.timedelta64(24, "h"),
     )
     control.options["budget_type"] = "error"
     return control
 
 
+@pytest.fixture(scope="function")
+def answers():
+    ans_file = pl.Path("../test_data/starfit/starfit_mean_output_1995-2001.nc")
+    ans = xr.open_dataset(ans_file)
+    return ans.isel(grand_id=starfit_inds_test)
+
+
 # @pytest.mark.parametrize("calc_method", calc_methods)
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.parametrize(
     "io_in_cfs", [True, False], ids=("io_in_cfs", "io_in_cms")
 )
 def test_starfit_flow_node_compare_starfit(
-    control, parameters, io_in_cfs, tmp_path
+    control, parameters, answers, io_in_cfs, tmp_path
 ):
     if io_in_cfs:
         param_ds = parameters.to_xr_ds()
         param_ds["initial_storage"] *= cm_to_cf
         parameters = StarfitParameters.from_ds(param_ds)
 
-    with open(data_dir / "starfit_outputs.pickle", "rb") as handle:
-        ans_dict = pickle.load(handle)
-    answers = {}
-    answers["lake_storage"] = ans_dict["Ssim_list"]
-    answers["lake_release"] = ans_dict["Rsim_list"]
-    answers["lake_spill"] = ans_dict["SPILLsim_list"]
-    ans_grand_ids = ans_dict["grand_ids"]
-
-    starfit_inflow_name = Starfit.get_inputs()[0]
-    nc_path = data_dir / f"{starfit_inflow_name}.nc"
-    input_variables = AdapterNetcdf(nc_path, starfit_inflow_name, control)
+    inflow_file = "../test_data/starfit/lake_inflow.nc"
+    input_variables = AdapterNetcdf(inflow_file, "lake_inflow", control)
+    nreservoirs = len(starfit_inds_test)
 
     class NodeInflowAdapter(Adapter):
         def __init__(
@@ -120,12 +129,20 @@ def test_starfit_flow_node_compare_starfit(
         parameters=parameters,
         # calc_method=calc_method
         io_in_cfs=io_in_cfs,
+        nhrs_substep=24,
     )
 
     nodes = [
         node_maker.get_node(control, ii)
         for ii, zz in enumerate(starfit_inds_test)
     ]
+
+    # we'll fill up timeseries arrays
+    results = {
+        "lake_storage": np.zeros([control.n_times, nreservoirs]) * np.nan,
+        "lake_spill": np.zeros([control.n_times, nreservoirs]) * np.nan,
+        "lake_release": np.zeros([control.n_times, nreservoirs]) * np.nan,
+    }
 
     for istep in range(control.n_times):
         control.advance()
@@ -136,31 +153,23 @@ def test_starfit_flow_node_compare_starfit(
 
         for inode, node in enumerate(nodes):
             node.advance()
-
             node.prepare_timestep()
-            node.calculate_subtimestep(0, inflows_node.current[inode], zero)
-            # subtimesteps dont matter to starfit node.
-            node.calculate_subtimestep(1, inflows_node.current[inode], zero)
+            for ss in range(1):
+                node.calculate_subtimestep(
+                    ss, inflows_node.current[inode], zero
+                )
+            node.finalize_timestep()
 
-        # check as we go
-        ymd = control.current_datetime.strftime("%Y-%m-%d")
+        # fill up timeseries arrays
         for ii, si in enumerate(starfit_inds_test):
-            assert parameters.parameters["grand_id"][ii] == ans_grand_ids[si]
-            for var in [
-                "lake_storage",
-                "lake_release",
-                "lake_spill",
-            ]:
-                actual = nodes[ii][f"_{var}"]
-                ans_series = answers[var][si]
+            for var in results.keys():
+                results[var][istep, ii] = nodes[ii][f"_{var}"]
 
-                if ymd in ans_series.index:
-                    ans = ans_series[ymd]
-                    if io_in_cfs:
-                        ans *= cms_to_cfs  # same for storage
+    for var in results.keys():
+        actual = results[var].mean(0)
+        ans = answers[f"{var}_mean"].values
+        if io_in_cfs:
+            ans *= cms_to_cfs  # same for storage
 
-                    np.testing.assert_allclose(
-                        actual, ans, rtol=rtol, atol=atol
-                    )
-                else:
-                    assert np.isnan(actual)
+        # <
+        np.testing.assert_allclose(actual, ans, rtol=rtol, atol=atol)

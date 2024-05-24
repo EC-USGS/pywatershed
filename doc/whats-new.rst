@@ -12,22 +12,35 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.0.3.0:
+.. _whats-new.1.1.0:
 
-v0.3.0 (unreleased)
+v1.1.0 (Unreleased)
 ---------------------
 
 New features
 ~~~~~~~~~~~~
-- Example notebook of how to edit Parameters with associated bug fixes to do so.
-  (:pull:`232`) By `James McCreight <https://github.com/jmccreight>`_.
-- Conda feedstock for pywatershed `<https://github.com/conda-forge/staged-recipes/pull/23428>`_.
-  By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
-
+- The depression storage option for PRMSRunoff is implemented and tested.
+  (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
+- No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,
+  and PRMSGroundwater by adding "NoDprst" to the end of the names. Depression
+  storage is switched off in sagehen_5yr and in new nhm_no_dprst
+  configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Dunnian flow is implemented (in PRMSSoilzone) and tested for sagehen_5yr
+  whereas it was effectively off in all NHM configurations and its effect
+  on the sroff variable (in PRMSRunoff) incorrect.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Preferential flow is implemented (in PRMSSoilzone) and tested for sagehen_5yr
+  whereas it was effectively off in all NHM configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Control instances have a diff method to compare with other instances.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-
+- pref_flow_infil_frac now a required parameter input for PRMSSoilzone. The NHM
+  values assumed previously are zeros on all HRUs.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Deprecations
 ~~~~~~~~~~~~
@@ -39,6 +52,93 @@ Performance
 
 Bug fixes
 ~~~~~~~~~
+- Fixed calculation of the variable transp_on was incorrectly calculated in certain
+  situations not covered by NHM configuratons but covered by sagehen_5yr.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Fixed calculation of variable dprst_area_open which was not being checked but
+  was affecting no other variables.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- The variable pptmix was incorrectly calculated in certain situations not covered
+  by the NHM configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Documentation
+~~~~~~~~~~~~~
+
+
+Internal changes
+~~~~~~~~~~~~~~~~
+- Testing system refactor to handle pairs of domains and control files
+  allowing much more flexibility in configuration/control testing.
+  (:pull:`278`) By `James McCreight <https://github.com/jmccreight>`_.
+- New testing domain "sagehen_5yr" is added to test_data directory
+  with configuration sagehen_no_cascades. This domain introduces multiple
+  PRMS capabilities (noted indvidually in this PR) not used in the NHM
+  configuration and provides a test for these.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Tests are now marked as "domain" or "domainless" to avoid redundant
+  runs of domainless tests across test domains.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- New tests test_prms_above_snow and test_prms_below_snow replace
+  test_model and are extremely close to PRMS (PRMSSolarGeometry: 1.0e-8,
+  PRMSAtmosphere: 1.0e-5, PRMSCanopy: 1.0e-6, PRMSRunoff: 1.0e-8,
+  PRMSRunoffNoDprst: 1.0e-8, PRMSSoilzone: 1.0e-8, PRMSSoilzoneNoDprst: 1.0e-8,
+  PRMSGroundwater: 1.0e-8, PRMSGroundwaterNoDprst: 1.0e-8, PRMSChannel: 5.0e-7)
+  for all test domains.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+
+
+.. _whats-new.1.0.0:
+
+v1.0.0
+---------------------
+
+New features
+~~~~~~~~~~~~
+- Control object features including (optional) warnings for unused legacy options, and
+  defined and enforced options. Also to_yaml() and __str__ implementations.
+  (:pull:`240`) By `James McCreight <https://github.com/jmccreight>`_.
+- Example notebook of how to edit Parameters with associated bug fixes to do so.
+  (:pull:`232`) By `James McCreight <https://github.com/jmccreight>`_.
+- Conda feedstock for pywatershed `<https://github.com/conda-forge/staged-recipes/pull/23428>`_.
+  By `Joseph Hughes <https://github.com/jdhughes-usgs>`_.
+
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+- The `control.options` "netcdf_output_dir", "netcdf_output_var_names", and
+  "netcdf_output_separate_files" match the keyword arguments "output_dir",
+  "output_vars", and "separate_files" for both `process.intitalize_netcdf()`
+  and `model.initialize_netcdf()`. None of these arguments can be supplied in
+  both places (control and method call). It used to be that calling
+  `initialize_netcdf()` would override what is supplied in `control.options`
+  but this will now throw an error. The suggestion is to use `control.options` and
+  not pass arguments to `intialize_netcdf()`. When using
+  `Control.load()` (deprecated) or `Control.load_prms()` from a PRMS control
+  file, note that the "control.options" of "netcdf_output_dir" and
+  "netcdf_output_var_names" are set by values in the PRMS control file. You can
+  edit these, but be aware that they are now set in that load.
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Deprecations
+~~~~~~~~~~~~
+- Deprecation of Control.load() for Control.load_prms().
+  (:pull:`240`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Performance
+~~~~~~~~~~~
+
+
+Bug fixes
+~~~~~~~~~
+- Mass balance fix in PRMS snow for rain on snow followed by evaporation
+  consuming the entire snow pack.
+  (:pull:`248`) By `James McCreight <https://github.com/jmccreight>`_.
+- Fix mass balance issue in PRMSSnow is also present in PRMS,
+  snow evap is not taken from freeh2o when there is no pk_ice.
+  (:pull:`236`) By `James McCreight <https://github.com/jmccreight>`_.
+- Resolve issues with different ways of specifying necdf output options.
+  (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
 - Resolve issues with different ways of specifiying netcdf output options.
   (:pull:`230`) By `James McCreight <https://github.com/jmccreight>`_.
 - PRMSSoilzone remove soil_moist_prev because soil_moist is not prognotic and
@@ -48,13 +148,30 @@ Bug fixes
 
 Documentation
 ~~~~~~~~~~~~~
+- Implement sphinx_autodoc_typehints.
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
+- New gh-pages branch (without history) to publish
+  `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
+  `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.
+  This branch publishes analysis supporting the version 1.0.0 release.
 - Add about section for version 1.0 to describe how pywatershed matches PRMS'
   NHM configuration and how to perform the comparison.
   (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 
-
 Internal changes
 ~~~~~~~~~~~~~~~~
+- New system for generating test_data, by calling generate_test_data.py from
+  `autotest/`. The system helps autotest know if test data were generated
+  and if they are up to date.
+  (:pull:`253`) By `James McCreight <https://github.com/jmccreight>`_.
+- Apply pylint and flake8 everywhere as much as possible.
+  (:pull:`251`) By `James McCreight <https://github.com/jmccreight>`_.
+- Remove diagnostic variables pkwater_equiv_change, pkwater_ante
+  (:pull:`248`) By `James McCreight <https://github.com/jmccreight>`_.
+- Use v1 instead of main for fortran-lang/setup-fortran.
+  (:pull:`242`, :pull:`243`) By `Wes Bonelli <https://github.com/w-bonelli>`_.
+- Refactor test data generation to solve race condition for dependent tests.
+  (:pull:`237`) By `Wes Bonelli <https://github.com/w-bonelli>`_.
 - Refactor tests against PRMS for consistency, flexibility, and thoroughness.
   (:pull:`244`) By `James McCreight <https://github.com/jmccreight>`_.
 

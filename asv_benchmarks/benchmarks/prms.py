@@ -62,7 +62,11 @@ class PRMSBasics:
     )
     def time_prms_control_read(self, domain):
         control_file = test_data_dir / f"{domain}/control.test"
-        _ = pws.Control.load(control_file)
+        if pws.__version__ == "0.2.0":
+            _ = pws.Control.load(control_file)
+        else:
+            _ = pws.Control.load_prms(control_file, warn_unused_options=False)
+
         return
 
 
@@ -71,8 +75,8 @@ class PRMSModels:
 
     def setup(self, *args):
         self.domain = args[0]
-        self.processes = args[1]
-        self.tag = model_tests_inv[self.processes]
+        self.tag = args[1]
+        self.processes = model_tests[self.tag]
 
         self.control_file = test_data_dir / f"{self.domain}/control.test"
         self.parameter_file = test_data_dir / f"{self.domain}/myparam.param"
@@ -87,12 +91,12 @@ class PRMSModels:
 
         # backwards compatability pre 0.2.0
         try:
-            self.ge_v0_2_0 = False
+            self.lt_v0_2_0 = True
             self.control = pws.Control.load(
                 self.control_file, params=self.params
             )
         except:
-            self.ge_v0_2_0 = True
+            self.lt_v0_2_0 = False
 
         if hasattr(self, "control"):
             del self.control
@@ -122,8 +126,18 @@ class PRMSModels:
         # seem to need to load control inside the model setup run bc
         # results are strange/inconsistent
 
-        if self.ge_v0_2_0:
-            self.control = pws.Control.load(self.control_file)
+        if not self.lt_v0_2_0:
+            if pws.__version__ == "0.2.0":
+                self.control = pws.Control.load(self.control_file)
+            else:
+                self.control = pws.Control.load_prms(
+                    self.control_file, warn_unused_options=False
+                )
+
+            for oo in ["netcdf_output_dir", "netcdf_output_var_names"]:
+                if oo in self.control.options.keys():
+                    del self.control.options[oo]
+
             self.control.options["input_dir"] = self.tag_input_dir
             self.control.options["budget_type"] = "warn"
             self.control.options["calc_method"] = "numba"
@@ -151,33 +165,34 @@ class PRMSModels:
 
         if write_output is not None:
             model.initialize_netcdf(
-                self.tag_dir, separate_files=(write_output == "separate")
+                output_dir=self.tag_dir,
+                separate_files=(write_output == "separate"),
             )
         model.run(finalize=True)
         del model
         del self.control
 
     @parameterized(
-        ["domain", "processes", "output"],
+        ["domain", "procs", "output"],
         (
             domains,
-            list(model_tests.values()),
+            list(model_tests.keys()),
             outputs,
         ),
     )
     def time_prms_run(
         self,
         domain: str,
-        processes: tuple,
+        procs: str,
         output: Union[None, Literal["separate", "together"]],
     ):
         print(
             "\nPRMSModels args: \n",
             f"domain: {domain}\n",
-            f"processes:{processes}\n",
+            f"procs:{procs}\n",
             f"output: {output}\n",
         )
 
         _ = self.model_setup_run(
-            domain=domain, processes=processes, write_output=output
+            domain=domain, processes=model_tests[procs], write_output=output
         )

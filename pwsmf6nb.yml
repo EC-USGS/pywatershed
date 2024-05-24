@@ -31,10 +31,7 @@ dependencies:
   - pint
   - pip
   - pip:
-      - black
-      - isort
-      - flake8
-      - pylint
+      - ruff
       - git+https://github.com/pydata/xarray.git      
       - git+https://github.com/modflowpy/flopy.git
       - git+https://github.com/modflowpy/pymake.git

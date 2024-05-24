@@ -10,7 +10,7 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, nearzero, one, zero
 from ..parameters import Parameters
-from ..utils.time_utils import datetime_doy, datetime_month
+from ..utils.time_utils import datetime_day_of_month, datetime_month
 from .solar_constants import solf
 
 
@@ -27,14 +27,14 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
 class PRMSAtmosphere(Process):
     """PRMS atmospheric boundary layer model.
 
-    Implementation based on PRMS 5.2.1 with theoretical documentation based on
-    PRMS-IV:
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
 
-    Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
     Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
     precipitation-runoff modeling system, version 4. US Geological Survey
     Techniques and Methods, 6, B7.
-    https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
 
     This representation uses precipitation and temperature inputs. Relative
     humidity could be added as well.
@@ -42,25 +42,26 @@ class PRMSAtmosphere(Process):
     The boundary layer calculates and manages the following variables (given
     by PRMSAtmosphere.get_variables()):
 
-    *tmaxf, tminf, prmx, hru_ppt, hru_rain, hru_snow, swrad, potet, transp_on*
+    * tmaxf, tminf, prmx, hru_ppt, hru_rain, hru_snow, swrad, potet, transp_on
 
     PRMS adjustments to temperature and precipitation are applied here to
     the inputs. Shortwave radiation (using degree day method) and potential
     evapotranspiration (Jensen and Haise ,1963) and a temperature based
     transpiration flag (transp_on) are also calculated.
 
-    Note that all variables are calculated for all time upon initialization and
-    that all calculated variables are written to netcdf (when netcdf output is
-    requested) prior to the first model advance. This is effectively a complete
-    preprocessing of the input CBH files to the fields the model actually uses
-    on initialization. If you just want to preprocess these variables, see
-    `this notebook <https://github.com/EC-USGS/pywatershed/tree/main/examples/preprocess_cbh_adj.ipynb>`_.
+    Note that all variables are calculated for all time upon the first advance
+    and that all calculated variables are written to NetCDF (when netcdf output
+    is requested) the first time output is requested. This is effectively a
+    complete preprocessing of the input CBH files to the fields the model
+    actually uses on initialization. For an example of preprocessing the
+    variables in PRMSAtmosphere, see
+    `this notebook <https://github.com/EC-USGS/pywatershed/tree/main/examples/04_preprocess_atm.ipynb>`_.
 
     The full time version of a variable is given by the "private" version of
     the variable which is named with a single-leading underscore (eg tmaxf for
     all time is _tmaxf).
 
-    This full-time initialization ma not be tractable for large domains and/or
+    This full-time initialization may not be tractable for large domains and/or
     long periods of time and require changes to batch the processing of the
     variables. The benefits of full-time initialization are 1) the code is
     vectorized and fast for such a large calculation, 2) the initialization of
@@ -81,12 +82,6 @@ class PRMSAtmosphere(Process):
             radiation on a horizontal plane
 
         verbose: Print extra information or not?
-        netcdf_output_dir: A directory to write netcdf outpuf files
-        netcdf_output_vars: A list of variables to output via netcdf.
-        netcdf_separate_files: Separate or a single netcdf output file
-        load_n_time_batches: How often to load from disk (not-implemented?)
-        n_time_chunk: the inverse of load_n_time_batches, the number of
-           times in a chunk/batch (implemented?)
 
     """
 
@@ -101,20 +96,14 @@ class PRMSAtmosphere(Process):
         soltab_potsw: adaptable,
         soltab_horad_potsw: adaptable,
         verbose: bool = False,
-        netcdf_output_dir: [str, pl.Path] = None,
-        netcdf_output_vars: list = None,
-        netcdf_separate_files: bool = None,
-        # from_file_dir: [str, pl.Path] = None,
-        n_time_chunk: int = -1,
-        load_n_time_batches: int = 1,
     ):
         # Defering handling batch handling of time chunks but self.n_time_chunk
         # is a dimension used in the metadata/variables dimensions.
         # TODO: make time chunking options work (esp with output)
-        if n_time_chunk <= 0:
-            self.n_time_chunk = control.n_times
-        else:
-            self.n_time_chunk = n_time_chunk
+        # if n_time_chunk <= 0:
+        #     self.n_time_chunk = control.n_times
+        # else:
+        #     self.n_time_chunk = n_time_chunk
 
         # Initialize full time with nans
         self._time = np.full(control.n_times, nan, dtype="datetime64[s]")
@@ -165,7 +154,7 @@ class PRMSAtmosphere(Process):
         self._month_ind_12 = datetime_month(self._time) - 1  # (time)
         self._month_ind_1 = np.zeros(self._time.shape, dtype=int)  # (time)
         self._month = datetime_month(self._time)  # (time)
-        self._doy = datetime_doy(self._time)  # (time)
+        self._dom = datetime_day_of_month(self._time)  # (time)
 
         self.adjust_temperature()
         self.adjust_precip()
@@ -400,10 +389,6 @@ class PRMSAtmosphere(Process):
             ivd["prcp"].data <= zero, zero, self.prmx.data
         )
 
-        self.pptmix.data[:] = np.where(
-            (self.prmx.data > zero) & (self.prmx.data < one), 1, 0
-        )
-
         # Recalculate/redefine these now based on prmx instead of the
         # temperature logic
         wh_all_snow = np.where(self.prmx.data <= zero)
@@ -430,6 +415,18 @@ class PRMSAtmosphere(Process):
         )[wh_all_rain]
         self.hru_rain.data[wh_all_rain] = self.hru_ppt.data[wh_all_rain]
         self.hru_snow.data[wh_all_rain] = zero
+
+        cond = (
+            (self.hru_ppt.data > zero)
+            & (self.tmaxf.data > self.tmax_allsnow[month_ind])
+            & (
+                (self.tminf.data <= self.tmax_allsnow[month_ind])
+                & (self.tmaxf.data < tmax_allrain[month_ind])
+            )
+            & (self.prmx.data < one)
+        )
+        self.pptmix.data[:] = np.where(cond, 1, 0)
+
         return
 
     def calculate_sw_rad_degree_day(self) -> None:
@@ -685,7 +682,7 @@ class PRMSAtmosphere(Process):
         # transp_on inited to 0 everywhere above
 
         # candidate for worst code lines
-        if self.params.parameters["temp_units"] == 0:
+        if self._params.parameters["temp_units"] == 0:
             transp_tmax_f = self.transp_tmax
         else:
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0
@@ -733,13 +730,9 @@ class PRMSAtmosphere(Process):
                         tt - 1, hh
                     ]
 
-                # if tt == 2 and hh == 980:
-                #      asdf
-
                 # check for month to turn check switch on or
                 # transpiration switch off
-
-                if self._doy[tt] == 1:
+                if self._dom[tt] == 1:
                     # check for end of period
                     if self._month[tt] == self.transp_end[hh]:
                         self.transp_on.data[tt, hh] = 0
@@ -775,15 +768,15 @@ class PRMSAtmosphere(Process):
         if not self._netcdf_initialized:
             return
 
-        if self.netcdf_separate_files:
+        if self._netcdf_separate:
             for var in self.variables:
                 if var not in self._netcdf_output_vars:
                     continue
-                nc_path = self.netcdf_output_dir / f"{var}.nc"
+                nc_path = self._netcdf_output_dir / f"{var}.nc"
 
                 nc = NetCdfWrite(
                     nc_path,
-                    self.params.coords,
+                    self._params.coords,
                     [var],
                     {var: self.meta[var]},
                 )
@@ -797,10 +790,10 @@ class PRMSAtmosphere(Process):
                 print(f"Wrote file: {nc_path}")
 
         else:
-            nc_path = self.netcdf_output_dir / f"{self.name}.nc"
+            nc_path = self._netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.coords,
+                self._params.coords,
                 self._netcdf_output_vars,
                 self.meta,
             )
@@ -822,8 +815,8 @@ class PRMSAtmosphere(Process):
 
     def initialize_netcdf(
         self,
-        output_dir: [str, pl.Path],
-        separate_files: bool = True,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
         output_vars: list = None,
         **kwargs,
     ):
@@ -839,18 +832,44 @@ class PRMSAtmosphere(Process):
             warn(msg)
             return
 
+        if (
+            "verbosity" in self.control.options.keys()
+            and self.control.options["verbosity"] > 5
+        ):
+            print(f"initializing netcdf output for: {self.name}")
+
+        (
+            output_dir,
+            output_vars,
+            separate_files,
+        ) = self._reconcile_nc_args_w_control_opts(
+            output_dir, output_vars, separate_files
+        )
+
+        # apply defaults if necessary
+        if output_dir is None:
+            msg = (
+                "An output directory is required to be specified for netcdf"
+                "initialization."
+            )
+            raise ValueError(msg)
+
+        if separate_files is None:
+            separate_files = True
+
+        self._netcdf_separate = separate_files
+
         self._netcdf_initialized = True
-        self.netcdf_separate_files = separate_files
-        self.netcdf_output_dir = output_dir
+        self._netcdf_output_dir = pl.Path(output_dir)
+
         if output_vars is None:
             self._netcdf_output_vars = self.variables
         else:
             self._netcdf_output_vars = list(
                 set(output_vars).intersection(set(self.variables))
             )
-
-        if self._netcdf_output_vars is None:
-            self._netcdf_initialized = False
+            if len(self._netcdf_output_vars) == 0:
+                self._netcdf_initialized = False
 
         return
 

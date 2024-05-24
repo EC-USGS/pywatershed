@@ -1,6 +1,6 @@
-from shutil import rmtree
 import urllib
 import zipfile
+from shutil import rmtree
 
 import pywatershed as pws
 

@@ -40,6 +40,18 @@ ACTIVE = 1
 class PRMSCanopy(ConservativeProcess):
     """PRMS canopy class.
 
+    A canopy or vegetation representation from PRMS.
+
+    Implementation based on PRMS 5.2.1 with theoretical documentation given in
+    the PRMS-IV documentation:
+
+    `Markstrom, S. L., Regan, R. S., Hay, L. E., Viger, R. J., Webb, R. M.,
+    Payn, R. A., & LaFontaine, J. H. (2015). PRMS-IV, the
+    precipitation-runoff modeling system, version 4. US Geological Survey
+    Techniques and Methods, 6, B7.
+    <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
+
+
     Args:
         control: a Control object
         discretization: a discretization of class Parameters
@@ -70,6 +82,7 @@ class PRMSCanopy(ConservativeProcess):
         hru_rain: adaptable,
         hru_snow: adaptable,
         potet: adaptable,
+        pptmix: adaptable,
         budget_type: Literal[None, "warn", "error"] = None,
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
@@ -118,6 +131,7 @@ class PRMSCanopy(ConservativeProcess):
             "hru_rain",
             "hru_snow",
             "potet",
+            "pptmix",
         )
 
     @staticmethod
@@ -304,6 +318,7 @@ class PRMSCanopy(ConservativeProcess):
                 self.intcp_stor[:],
                 self.net_rain[:],
                 self.net_snow[:],
+                self.pptmix[:],
                 self.net_ppt[:],
                 self.hru_intcpstor[:],
                 self.hru_intcpevap[:],
@@ -326,6 +341,7 @@ class PRMSCanopy(ConservativeProcess):
                 net_ppt=self.net_ppt,
                 net_rain=self.net_rain,
                 net_snow=self.net_snow,
+                pptmix=self.pptmix,
                 pk_ice_prev=self.pk_ice_prev,
                 freeh2o_prev=self.freeh2o_prev,
                 potet=self.potet,
@@ -338,14 +354,14 @@ class PRMSCanopy(ConservativeProcess):
                 hru_type=self._hru_type,
                 nearzero=nearzero,
                 dnearzero=dnearzero,
-                BARESOIL=np.int32(BARESOIL),
-                GRASSES=np.int32(GRASSES),
-                LAND=np.int32(LAND),
-                LAKE=np.int32(LAKE),
-                RAIN=np.int32(RAIN),
-                SNOW=np.int32(SNOW),
-                OFF=np.int32(OFF),
-                ACTIVE=np.int32(ACTIVE),
+                baresoil=np.int32(BARESOIL),
+                grasses=np.int32(GRASSES),
+                land=np.int32(LAND),
+                lake=np.int32(LAKE),
+                rain=np.int32(RAIN),
+                snow=np.int32(SNOW),
+                off=np.int32(OFF),
+                active=np.int32(ACTIVE),
                 intercept=self._intercept,
             )
 
@@ -356,47 +372,49 @@ class PRMSCanopy(ConservativeProcess):
                 self.intcp_stor[:],
                 self.net_rain[:],
                 self.net_snow[:],
+                self.pptmix[:],
                 self.net_ppt[:],
                 self.hru_intcpstor[:],
                 self.hru_intcpevap[:],
                 self.intcp_changeover[:],
                 self.intcp_transp_on[:],
             ) = _calculate_fortran(
-                self.cov_type,
-                self.covden_sum,
-                self.covden_win,
-                self.hru_intcpstor,
-                self.hru_intcpevap,
-                self.hru_ppt,
-                self.hru_rain,
-                self.hru_snow,
-                self.intcp_changeover,
-                self.intcp_evap,
-                self.intcp_stor,
-                self.intcp_transp_on,
-                self.net_ppt,
-                self.net_rain,
-                self.net_snow,
-                self.pk_ice_prev,
-                self.freeh2o_prev,
-                self.potet,
-                self.potet_sublim,
-                self.snow_intcp,
-                self.srain_intcp,
-                self.transp_on,
-                self.wrain_intcp,
-                time_length,
-                self._hru_type,
-                nearzero,
-                dnearzero,
-                np.int32(BARESOIL),
-                np.int32(GRASSES),
-                np.int32(LAND),
-                np.int32(LAKE),
-                np.int32(RAIN),
-                np.int32(SNOW),
-                np.int32(OFF),
-                np.int32(ACTIVE),
+                cov_type=self.cov_type,
+                covden_sum=self.covden_sum,
+                covden_win=self.covden_win,
+                hru_intcpstor=self.hru_intcpstor,
+                hru_intcpevap=self.hru_intcpevap,
+                hru_ppt=self.hru_ppt,
+                hru_rain=self.hru_rain,
+                hru_snow=self.hru_snow,
+                intcp_changeover=self.intcp_changeover,
+                intcp_evap=self.intcp_evap,
+                intcp_stor=self.intcp_stor,
+                intcp_transp_on=self.intcp_transp_on,
+                net_ppt=self.net_ppt,
+                net_rain=self.net_rain,
+                net_snow=self.net_snow,
+                pptmix=self.pptmix,
+                pk_ice_prev=self.pk_ice_prev,
+                freeh2o_prev=self.freeh2o_prev,
+                potet=self.potet,
+                potet_sublim=self.potet_sublim,
+                snow_intcp=self.snow_intcp,
+                srain_intcp=self.srain_intcp,
+                transp_on=self.transp_on,
+                wrain_intcp=self.wrain_intcp,
+                time_length=time_length,
+                hru_type=self._hru_type,
+                nearzero=nearzero,
+                dnearzero=dnearzero,
+                baresoil=np.int32(BARESOIL),
+                grasses=np.int32(GRASSES),
+                land=np.int32(LAND),
+                lake=np.int32(LAKE),
+                rain=np.int32(RAIN),
+                snow=np.int32(SNOW),
+                off=np.int32(OFF),
+                active=np.int32(ACTIVE),
             )
 
         # <
@@ -424,6 +442,7 @@ class PRMSCanopy(ConservativeProcess):
         net_ppt,
         net_rain,
         net_snow,
+        pptmix,
         pk_ice_prev,
         freeh2o_prev,
         potet,
@@ -436,14 +455,14 @@ class PRMSCanopy(ConservativeProcess):
         hru_type,
         nearzero,
         dnearzero,
-        BARESOIL,
-        GRASSES,
-        LAND,
-        LAKE,
-        RAIN,
-        SNOW,
-        OFF,
-        ACTIVE,
+        baresoil,
+        grasses,
+        land,
+        lake,
+        rain,
+        snow,
+        off,
+        active,
         intercept,
     ):
         # TODO: would be nice to alphabetize the arguments
@@ -556,7 +575,7 @@ class PRMSCanopy(ConservativeProcess):
                             netsnow = 0.0
                             # todo: deal with newsnow and pptmix?
                             # Newsnow(i) = OFF
-                            # Pptmix(i) = OFF
+                            pptmix[i] = 0
 
             # todo: canopy application of irrigation water based on irr_type
 
@@ -617,6 +636,7 @@ class PRMSCanopy(ConservativeProcess):
             intcp_stor,
             net_rain,
             net_snow,
+            pptmix,
             net_ppt,
             hru_intcpstor,
             hru_intcpevap,

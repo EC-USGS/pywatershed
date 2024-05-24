@@ -36,7 +36,7 @@ albedo:
   default: 0.1
   desc: Short-wave solar radiation reflected by streams
   dims:
-    0: scalar
+    0: nhru
   help: Short-wave solar radiation reflected by streams
   maximum: 1.0
   minimum: 0.0
@@ -48,7 +48,7 @@ albset_rna:
   default: 0.8
   desc: Albedo reset - rain, accumulation stage
   dims:
-    0: scalar
+    0: nhru
   help: Fraction of rain in a mixed precipitation event above which the snow albedo
     is not reset; applied during the snowpack accumulation stage
   maximum: 1.0
@@ -61,7 +61,7 @@ albset_rnm:
   default: 0.6
   desc: Albedo reset - rain,  melt stage
   dims:
-    0: scalar
+    0: nhru
   help: Fraction of rain in a mixed precipitation event above which the snow albedo
     is not reset; applied during the snowpack melt stage
   maximum: 1.0
@@ -74,7 +74,7 @@ albset_sna:
   default: 0.05
   desc: Albedo reset - snow, accumulation stage
   dims:
-    0: scalar
+    0: nhru
   help: Minimum snowfall, in water equivalent, needed to reset snow albedo during
     the snowpack accumulation stage
   maximum: 1.0
@@ -87,7 +87,7 @@ albset_snm:
   default: 0.2
   desc: Albedo reset - snow, melt stage
   dims:
-    0: scalar
+    0: nhru
   help: Minimum snowfall, in water equivalent, needed to reset snow albedo during
     the snowpack melt stage
   maximum: 1.0
@@ -373,7 +373,7 @@ den_init:
   default: 0.1
   desc: Initial density of new-fallen snow
   dims:
-    0: scalar
+    0: nhru
   help: Initial density of new-fallen snow
   maximum: 0.5
   minimum: 0.01
@@ -385,7 +385,7 @@ den_max:
   default: 0.6
   desc: Average maximum snowpack density
   dims:
-    0: scalar
+    0: nhru
   help: Average maximum snowpack density
   maximum: 0.8
   minimum: 0.1
@@ -1529,8 +1529,8 @@ lat_temp_adj:
   default: 0.0
   desc: Correction factor to adjust the bias of the temperature of the lateral inflow
   dims:
-    0: nsegment
-    1: nmonth
+    0: nmonth
+    1: nsegment
   help: Correction factor to adjust the bias of the temperature of the lateral inflow
   maximum: 5.0
   minimum: -5.0
@@ -1874,8 +1874,8 @@ padj_sn:
   default: 1.0
   desc: Snow adjustment factor, by month for each precipitation station
   dims:
-    0: nrain
-    1: nmonth
+    0: nmonth
+    1: nrain
   help: Monthly (January to December) factor to adjust precipitation lapse rate computed
     between station hru_psta and station hru_plaps; positive factors are mutiplied
     times the lapse rate and negative factors are made positive and substituted for
@@ -1981,8 +1981,8 @@ pmn_mo:
   default: 1.0
   desc: Mean monthly precipitation for each lapse precipitation station
   dims:
-    0: nrain
-    1: nmonth
+    0: nmonth
+    1: nrain
   help: Mean monthly (January to December) precipitation for each lapse precipitation
     measurement station
   maximum: 100.0
@@ -2109,6 +2109,18 @@ pref_flow_den:
   - soilzone
   type: F
   units: decimal fraction
+pref_flow_infil_frac:
+  default: -1
+  desc: Fraction of the soilwater infiltration partitioned to the preferential reservoir storage for each HRU
+  dims:
+    0: nhru
+  help: Fraction of the soilwater infiltration partitioned to the preferential reservoir storage for each HRU. Default -1  makes it backwards compatible by setting pref_flow_infil_frac to pref_flow_den.
+  maximum: 1.0
+  minimum: 0.0
+  modules:
+  - soilzone
+  type: F
+  units: decimal fraction
 print_freq:
   default: 3
   desc: Frequency for the output frequency
@@ -2154,8 +2166,8 @@ psta_mon:
   default: 1.0
   desc: Monthly precipitation for each of the nrain precipitation measurement stations
   dims:
-    0: nrain
-    1: nmonth
+    0: nmonth
+    1: nrain
   help: Monthly (January to December) factor to precipitation at each measured station
     to adjust precipitation distributed to each HRU to account for differences in
     elevation, and so forth
@@ -2515,8 +2527,8 @@ seg_humidity:
   default: 0.7
   desc: Mean monthly humidity for each segment
   dims:
-    0: nsegment
-    1: nmonth
+    0: nmonth
+    1: nsegment
   help: Mean monthly humidity for each segment, used when values not input in CBH
     file
   maximum: 1.0
@@ -2674,7 +2686,7 @@ settle_const:
   default: 0.1
   desc: Snowpack settlement time constant
   dims:
-    0: scalar
+    0: nhru
   help: Snowpack settlement time constant
   maximum: 0.5
   minimum: 0.01

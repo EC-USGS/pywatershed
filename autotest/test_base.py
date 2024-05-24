@@ -3,6 +3,7 @@ import pytest
 from pywatershed.base.accessor import Accessor
 
 
+@pytest.mark.domainless
 class TestAccessor:
     def test_accessor(self):
         da = Accessor()

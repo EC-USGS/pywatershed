@@ -47,11 +47,8 @@ dynamic = ["version", "readme"]
 [project.optional-dependencies]
 lint = [
     "cffconvert",
-    "black",
     "click",
-    "isort",
-    "flake8",
-    "pylint",
+    "ruff",
     "flynt",
     "pre-commit",
 ]
@@ -63,7 +60,7 @@ test = [
     "filelock",
     "modflow-devtools",
     "pre-commit",
-    "pytest",
+    "pytest!=8.1.0",
     "pytest-cov",
     "pytest-env",
     "pytest-order",
@@ -85,6 +82,7 @@ doc = [
     "jinja2<3.1",
     "sphinx",
     "sphinx-book-theme>=0.3.3",
+    "sphinx-autodoc-typehints",
     "sphinx-autosummary-accessors",
     "sphinx-copybutton"
 ]
@@ -112,15 +110,26 @@ include = ["pywatershed", "pywatershed.*"]
 "pywatershed.static.metadata" = ["*.yaml"]
 "pywatershed.data.drb_2yr" = ["*"]
 
+[tool.ruff]
+line-length = 79
+target-version = "py39"
+include = [
+    "pyproject.toml",
+    "pywatershed/**/*.py",
+    "autotest/**/*.py",
+    "examples/**/*.py",
+    "test_data/**/*.py",
+    "docs/**/*.py",
+]
+
+[tool.ruff.lint]
+select = ["F", "E", "I001"]
+ignore = [
+    # "F401", # unused import
+]
+
+# this is maintained for some editors
+# that dont yet support ruff
 [tool.black]
 line-length = 79
 target_version = ["py39"]
-
-[tool.flynt]
-line-length = 79
-verbose = true
-
-[tool.isort]
-profile = "black"
-src_paths = ["pywatershed", "autotest", "test_data"]
-line_length = 79

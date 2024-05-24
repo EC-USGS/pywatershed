@@ -1,6 +1,5 @@
 import datetime
 import pathlib as pl
-from collections import UserDict
 from copy import deepcopy
 from typing import Union
 from warnings import warn
@@ -19,6 +18,7 @@ from ..utils.time_utils import (
     datetime_month,
     datetime_year,
 )
+from ..utils.utils import diff_dicts
 from .accessor import Accessor
 
 # This is the list of control variables currently used by pywatershed
@@ -30,19 +30,22 @@ from .accessor import Accessor
 pws_control_options_avail = [
     "budget_type",
     "calc_method",
+    "dprst_flag",
     # "restart",
     "input_dir",
     # "load_n_time_batches",
     "netcdf_output_dir",
     "netcdf_output_var_names",
     "netcdf_output_separate_files",
-    "netcdf_budget_args",
+    "parameter_file",
     "start_time",
+    "streamflow_module",
     "time_step_units",
     "verbosity",
 ]
 
 prms_legacy_options_avail = [
+    "dprst_flag",
     "end_time",
     # "init_vars_from_file",
     "initial_deltat",
@@ -50,7 +53,9 @@ prms_legacy_options_avail = [
     "nhruOutVar_names",
     "nsegmentOutBaseFileName",
     "nsegmentOutVar_names",
+    "param_file",
     "start_time",
+    "strmflow_module",
     "print_debug",
 ]
 
@@ -61,7 +66,9 @@ prms_to_pws_option_map = {
     "nhruOutVar_names": "netcdf_output_var_names",
     "nsegmentOutBaseFileName": "netcdf_output_dir",
     "nsegmentOutVar_names": "netcdf_output_var_names",
+    "param_file": "parameter_file",
     "print_debug": "verbosity",
+    "strmflow_module": "streamflow_module",
 }
 
 assert (
@@ -80,16 +87,17 @@ class Control(Accessor):
         init_time: the initialization time
         options: a dictionary of global Process options.
 
-
     Available pywatershed options:
       * budget_type: one of [None, "warn", "error"]
       * calc_method: one of ["numpy", "numba", "fortran"]
+      * dprst_flag: boolean if depression storage is included (true) or not.
       * input_dir: str or pathlib.path directory to search for input data
       * netcdf_output_dir: str or pathlib.Path directory for output
       * netcdf_output_var_names: a list of variable names to output
       * netcdf_output_separate_files: bool if output is grouped by Process or
         if each variable is written to an individual file
-      * netcdf_budget_args:
+      * parameter_file: the name of a parameter file to use
+      * streamflow_module: the selected streamflow module in PRMS.
       * start_time: np.datetime64
       * end_time: np.datetime64
       * time_step_units: str containing single character code for
@@ -101,6 +109,7 @@ class Control(Accessor):
 
       * start_time
       * end_time
+      * dprst_flag: integer is converted to boolean.
       * initial_deltat: translates to "time_step"
       * init_vars_from_file: translates to "restart"
       * nhruOutBaseFileName: translates to "netcdf_output_dir"
@@ -108,7 +117,54 @@ class Control(Accessor):
       * nsegmentOutBaseFileName: translates to "netcdf_output_dir"
       * nsegmentOutVar_names: translates to a subset of
         "netcdf_output_var_names"
+      * param_file: translates to "parameter_file"
       * print_debug: translates to "verbosity"
+
+
+    Examples:
+    ---------
+
+    >>> import pathlib as pl
+    >>>
+    >>> import numpy as np
+    >>> import pywatershed as pws
+    >>>
+    >>> control = pws.Control(
+    ...     start_time=np.datetime64("2023-01-01T00:00:00"),
+    ...     end_time=np.datetime64("2023-01-02T00:00:00"),
+    ...     time_step=np.timedelta64(24, "h"),
+    ...     options={"input_dir": pl.Path("./input")},
+    ... )
+    >>>
+    >>> # A more interesting example reads from a PRMS control file
+    >>> pws_root = pws.constants.__pywatershed_root__
+    >>> drb_control_file = pws_root / "data/drb_2yr/control.test"
+    >>> control_drb = pws.Control.load_prms(
+    ...     drb_control_file,
+    ...     warn_unused_options=False,
+    ... )
+    >>> control_drb.current_time
+    numpy.datetime64('1978-12-31T00:00:00')
+    >>> control_drb.previous_time
+    >>> control_drb.init_time
+    numpy.datetime64('1978-12-31T00:00:00')
+    >>> control_drb.time_step
+    numpy.timedelta64(24,'h')
+    >>> control_drb.time_step_seconds
+    86400.0
+    >>> control_drb.start_time
+    numpy.datetime64('1979-01-01T00:00:00')
+    >>> control_drb.advance()
+    >>> control_drb.current_time
+    numpy.datetime64('1979-01-01T00:00:00')
+    >>> control_drb.current_doy
+    1
+    >>> control_drb.current_dowy
+    93
+    >>> control_drb.previous_time
+    numpy.datetime64('1978-12-31T00:00:00')
+
+
 
     """
 
@@ -119,6 +175,7 @@ class Control(Accessor):
         time_step: np.timedelta64,
         init_time: np.datetime64 = None,
         options: dict = None,
+        only_warn_invalid: bool = False,
     ):
         super().__init__()
         self.name = "Control"
@@ -140,14 +197,17 @@ class Control(Accessor):
         else:
             self._init_time = self._start_time - time_step
 
-        self._current_time = None
+        self._current_time = self._init_time
         self._previous_time = None
         self._itime_step = -1
+
+        self._only_warn_invalid = only_warn_invalid
 
         if options is None:
             options = OptsDict()
         self.options = options
         self.meta = meta
+
         # This will have the time dimension name
         # This will have the time coordimate name
 
@@ -168,8 +228,9 @@ class Control(Accessor):
         cls,
         control_file: fileish,
         warn_unused_options: bool = True,
+        keep_unused_options: bool = False,
     ) -> "Control":
-        """Initialize a control object from a PRMS control file
+        """Initialize a control object from a PRMS control file.
 
         Args:
             control_file: PRMS control file
@@ -178,17 +239,12 @@ class Control(Accessor):
                 default. See below for a list of used/available legacy options.
 
         Returns:
-            Time: Time object initialized from a PRMS control file
-
-
-
-        Available PRMS legacy options :
-            nhruOutVar_names: mapped to netcdf_output_var_names
-            nsegmentOutVar_names: mapped to netcdf_output_var_names
-
-
+            An instance of a Control object.
         """
         control = ControlVariables.load(control_file)
+
+        if keep_unused_options and not warn_unused_options:
+            warn_unused_options = True
 
         if warn_unused_options:
             for vv in control.control.keys():
@@ -204,7 +260,8 @@ class Control(Accessor):
 
         for oo in opt_names:
             if oo not in prms_legacy_options_avail:
-                del opts[oo]
+                if not keep_unused_options:
+                    del opts[oo]
             if oo in prms_to_pws_option_map.keys():
                 pws_option_key = prms_to_pws_option_map[oo]
                 val = opts[oo]
@@ -212,13 +269,27 @@ class Control(Accessor):
                 if pws_option_key in opts.keys():
                     # combine to a list with only unique entries
                     # use value instead of list if only one value in list
-                    opts[pws_option_key] = list(
-                        set(opts[pws_option_key].tolist() + val.tolist())
-                    )
+                    opt_val = opts[pws_option_key]
+                    if isinstance(opt_val, np.ndarray):
+                        opt_val = opt_val.tolist()
+                    elif isinstance(opt_val, str):
+                        opt_val = [opt_val]
+                    opts[pws_option_key] = list(set(opt_val + val.tolist()))
                     if len(opts[pws_option_key]) == 1:
                         opts[pws_option_key] = opts[pws_option_key][0]
                 else:
                     opts[pws_option_key] = val
+                # some special cases
+                if pws_option_key in [
+                    "parameter_file",
+                    "netcdf_output_dir",
+                    "streamflow_module",
+                ]:
+                    opts[pws_option_key] = val[0]
+
+            # special cases, unmapped names
+            if oo == "dprst_flag":
+                opts[oo] = bool(opts[oo][0])
 
         start_time = control.control["start_time"]
         end_time = control.control["end_time"]
@@ -232,12 +303,13 @@ class Control(Accessor):
             end_time=end_time,
             time_step=time_step,
             options=control.control,
+            only_warn_invalid=keep_unused_options,
         )
 
     def _set_options(self, options: dict):
         if not isinstance(options, (OptsDict, dict)):
             raise ValueError("control.options must be a dictionary")
-        valid_options = OptsDict()
+        valid_options = OptsDict(self._only_warn_invalid)
         for key, val in options.items():
             valid_options[key] = val
 
@@ -276,91 +348,92 @@ class Control(Accessor):
         return result
 
     @property
-    def current_time(self):
+    def current_time(self) -> np.datetime64:
         """Get the current time."""
         return self._current_time
 
     @property
-    def current_datetime(self):
+    def current_datetime(self) -> datetime.datetime:
         """Get the current time as a datetime.datetime object"""
         return self._current_time.astype(datetime.datetime)
 
     @property
-    def current_year(self):
+    def current_year(self) -> int:
         """Get the current year."""
         return datetime_year(self._current_time)
 
     @property
-    def current_month(self, zero_based: bool = False):
+    def current_month(self) -> int:
         """Get the current month in 1-12 (unless zero based)."""
-        return datetime_month(self._current_time, zero_based=zero_based)
+        return datetime_month(self._current_time)
 
     @property
-    def current_doy(self, zero_based: bool = False):
+    def current_doy(self) -> int:
         """Get the current day of year in 1-366 (unless zero based)."""
-        return datetime_doy(self._current_time, zero_based=zero_based)
+        return datetime_doy(self._current_time)
 
     @property
-    def current_dowy(self, zero_based: bool = False):
+    def current_dowy(self) -> int:
         """Get the current day of water year in 1-366 (unless zero-based)."""
-        return datetime_dowy(self._current_time, zero_based=zero_based)
+        return datetime_dowy(self._current_time)
 
     @property
-    def current_epiweek(self):
+    def current_epiweek(self) -> int:
         """Get the current epiweek [1, 53]."""
         return datetime_epiweek(self._current_time)
 
     @property
-    def previous_time(self):
+    def previous_time(self) -> np.datetime64:
         """The previous time."""
         return self._previous_time
 
     @property
-    def itime_step(self):
+    def itime_step(self) -> int:
         """The counth of the current time [0, self.n_times-1]"""
         return self._itime_step
 
     @property
-    def time_step(self):
+    def time_step(self) -> int:
         """The time step"""
         return self._time_step
 
     @property
-    def init_time(self):
+    def init_time(self) -> np.datetime64:
         """Get the simulation initialization time"""
         return self._init_time
 
     @property
-    def start_time(self):
+    def start_time(self) -> np.datetime64:
         """The simulation start time"""
         return self._start_time
 
     @property
-    def start_doy(self):
-        """The simulation start day of year"""
+    def start_doy(self) -> int:
+        """The simulation start day of year."""
         return datetime_doy(self._start_time)
 
     @property
-    def start_month(self):
-        """The simulation start month"""
+    def start_month(self) -> int:
+        """The simulation start month."""
         return datetime_month(self._start_time)
 
     @property
-    def end_time(self):
-        """The simulation end time"""
+    def end_time(self) -> np.datetime64:
+        """The simulation end time."""
         return self._end_time
 
     @property
-    def n_times(self):
-        """The number of time steps"""
+    def n_times(self) -> int:
+        """The number of time steps."""
         return self._n_times
 
     @property
-    def time_step_seconds(self):
+    def time_step_seconds(self) -> np.float64:
+        """The timestep length in units of seconds."""
         return self.time_step / np.timedelta64(1, "s")
 
-    def advance(self):
-        """Advance time"""
+    def advance(self) -> None:
+        """Advance time."""
         if self._current_time == self._end_time:
             raise ValueError("End of time reached")
 
@@ -375,23 +448,31 @@ class Control(Accessor):
 
         return None
 
-    def edit_end_time(self, new_end_time: np.datetime64):
-        "Supply a new end time for the simulation."
+    def edit_end_time(self, new_end_time: np.datetime64) -> None:
+        """Supply a new end time for the simulation.
+
+        Args:
+            new_end_time: the new time at which to end the simulation.
+        """
 
         self._end_time = new_end_time
         assert self._end_time - self._start_time > 0
         self._n_times = (
             int((self._end_time - self._start_time) / self._time_step) + 1
         )
-        return
+        return None
 
-    def edit_n_time_steps(self, new_n_time_steps: int):
-        "Supply a new number of timesteps to change the simulation end time."
+    def edit_n_time_steps(self, new_n_time_steps: int) -> None:
+        """Supply a new number of timesteps to change the simulation end time.
+
+        Args:
+            new_n_time_steps: The new number of timesteps.
+        """
         self._n_times = new_n_time_steps
         self._end_time = (
             self._start_time + (self._n_times - 1) * self._time_step
         )
-        return
+        return None
 
     def __str__(self):
         from pprint import pformat
@@ -402,11 +483,11 @@ class Control(Accessor):
         # TODO: this is not really an object representation
         return self.__str__()
 
-    def to_dict(self, deep_copy=True):
+    def to_dict(self, deep_copy=True) -> dict:
         """Export a control object to a dictionary
 
         Args:
-            None.
+            deep_copy: If the dictionary should be a deep copy or not.
         """
 
         control_dict = {}
@@ -430,8 +511,11 @@ class Control(Accessor):
 
         return control_dict
 
-    def to_yaml(self, yaml_file: Union[pl.Path, str]):
+    def to_yaml(self, yaml_file: Union[pl.Path, str]) -> None:
         """Export to a yaml file
+
+        Args:
+            yaml_file: The file to write to.
 
         Note: This flattens .options to the top level of the yaml/dict
             so that option keys are all at the same level as "start_time",
@@ -459,34 +543,33 @@ class Control(Accessor):
         return None
 
     @staticmethod
-    def from_yaml(yaml_file):
+    def from_yaml(yaml_file: Union[str, pl.Path]) -> "Control":
         """Instantate a Control object from a yaml file
 
+        Args:
+            yaml_file: a yaml file to parse.
+
+
         Required key:value pairs:
-            start_time: ISO8601 string for numpy datetime64,
-                e.g. 1979-01-01T00:00:00
-            end_time: ISO8601 string for numpy datetime64,
-                e.g. 1980-12-31T00:00:00
-            time_step: The first argument to get a numpy.timedelta64, e.g. 24
-            time_step_units: The second argument to get a numpy.timedelta64,
-                e.g. 'h'
-            verbosity: integer 0-10
-            input_dir: path relative to this file.
-            budget_type: None | "warn" | "error"
-            calc_method: None | "numpy" | "numba" | "fortran" (
-                depending on availability)
-            load_n_time_batches: integer < total number of timesteps (
-                optionalize?)
-            init_vars_from_file: False (optionalize, rename restart)
-            dprst_flag: True (optionalize) only for PRMSSoilzone (should
-                be supplied in its process dictionary)
+            * budget_type: None | "warn" | "error"
+            * calc_method: None | "numpy" | "numba" | "fortran" (depending on
+              availability)
+            * end_time: ISO8601 string for numpy datetime64, e.g.
+              1980-12-31T00:00:00.
+            * input_dir: path relative to this file.
+            * start_time: ISO8601 string for numpy datetime64, e.g.
+              1979-01-01T00:00:00.
+            * time_step: The first argument to get a numpy.timedelta64, e.g. 24
+            * time_step_units: The second argument to get a numpy.timedelta64,
+              e.g. 'h'.
+            * verbosity: integer 0-10
 
         Optional key, value pairs:
-            netcdf_output: boolean
-            netcdf_output_var_names: list of variable names to output, e.g.
-                - albedo
-                - cap_infil_tot
-                - contrib_fraction
+            * netcdf_output: boolean
+            * netcdf_output_var_names: list of variable names to output, e.g.
+              - albedo
+              - cap_infil_tot
+              - contrib_fraction
 
         Returns:
             Control object
@@ -522,11 +605,31 @@ class Control(Accessor):
         )
         return control
 
+    def diff(self, other) -> None:
+        """Diff self with another Control instance
 
-class OptsDict(UserDict):
+        Args:
+            other: An other dict against which to compare.
+        """
+        diff_dicts(self.__dict__, other.__dict__, ["options"])
+        diff_dicts(self.options, other.options)
+        return
+
+
+class OptsDict(dict):
+    def __init__(self, only_warn: bool = False):
+        super().__init__()
+        self._only_warn = only_warn
+
+        return
+
     def __setitem__(self, key, value):
         if key not in pws_control_options_avail:
             msg = f"'{key}' is not an available control option"
-            raise NameError(msg)
+            if not self._only_warn:
+                raise NameError(msg)
+            else:
+                warn(msg)
+
         super().__setitem__(key, value)
         return None

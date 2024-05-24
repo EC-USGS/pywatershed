@@ -14,16 +14,16 @@ def test_exe_available(exe):
 
 
 def test_run_prms(simulation, exe):
-    ws = simulation["ws"]
+    ws = pl.Path(simulation["ws"])
     control_file = simulation["control_file"]
+    output_dir = simulation["output_dir"]
     print(f"\n\n\n{'*' * 70}\n{'*' * 70}")
     print(
-        f"run_domains.py: Running '{control_file}' in {ws}\n\n",
+        f"run_domains.py: Running '{control_file.name}' in {ws}\n\n",
         flush=True,
     )
 
     # delete the existing output dir and re-create it
-    output_dir = pl.Path(ws) / "output"
     if output_dir.exists():
         shutil.rmtree(output_dir)
     output_dir.mkdir(parents=True)
@@ -40,6 +40,7 @@ def test_run_prms(simulation, exe):
         ],
         normal_msg="Normal completion of PRMS",
     )
+
     assert success, f"could not run prms model in '{ws}'"
 
     print(f"run_domains.py: End of domain {ws}\n", flush=True)

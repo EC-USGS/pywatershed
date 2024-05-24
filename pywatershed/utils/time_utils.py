@@ -3,7 +3,6 @@ import datetime
 import epiweeks as ew
 import numpy as np
 
-# JLM these np time manipulations need to be tested b/c i fear np might change
 # These should be built into numpy but it is stalled:
 # https://github.com/numpy/numpy/pull/14276
 
@@ -20,19 +19,39 @@ def datetime_year(dt64: np.datetime64) -> int:
 
 
 def datetime_month(dt64: np.datetime64, zero_based=False) -> int:
-    """Get the month from np.datetime64"""
+    """Get the month from np.datetime64
+    Args:
+         zero_based: count as a zero-based index.
+    """
     return dt64.astype("datetime64[M]").astype(int) % 12 + _offset(zero_based)
 
 
+def datetime_day_of_month(dt64: np.datetime64, zero_based=False) -> int:
+    """Get the month from np.datetime64
+    Args:
+         zero_based: count as a zero-based index.
+    """
+    dfmt = "datetime64[D]"
+    mfmt = "datetime64[M]"
+    diff = (dt64.astype(dfmt) - dt64.astype(mfmt).astype(dfmt)).astype(int)
+    return diff + _offset(zero_based)
+
+
 def datetime_doy(dt64: np.datetime64, zero_based=False) -> int:
-    """Get day of year from np.datetime64"""
+    """Get day of year from np.datetime64
+    Args:
+        zero_based: count as a zero-based index.
+    """
     return (dt64 - dt64.astype("datetime64[Y]")).astype(
         "timedelta64[D]"
     ).astype(int) + _offset(zero_based)
 
 
 def datetime_dowy(dt64: np.datetime64, zero_based=False) -> int:
-    """Get day of water year from np.datetime64"""
+    """Get day of water year from np.datetime64
+    Args:
+        zero_based: count as a zero-based index.
+    """
     year_start = datetime_year(dt64)
     if datetime_month(dt64) < 10:
         year_start -= 1

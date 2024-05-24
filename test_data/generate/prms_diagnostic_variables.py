@@ -1,26 +1,39 @@
 import pathlib as pl
-
-import pywatershed as pws
-from pywatershed.constants import dnearzero, nearzero, nan, zero
+from warnings import warn
 
 import numpy as np
 import xarray as xr
 
+import pywatershed as pws
+from pywatershed.constants import dnearzero, nan, nearzero, zero
+
 """This module is for generating PRMS diagnostic variables"""
 
 # For generating timeseries of previous states
-previous_vars = {
+prev_vars_both = {
     "gwres_stor": pws.PRMSGroundwater,
+    "hru_intcpstor": pws.PRMSCanopy,
+    "freeh2o": pws.PRMSSnow,
+    "pk_ice": pws.PRMSSnow,
+}
+
+previous_vars = prev_vars_both | {
     "dprst_stor_hru": pws.PRMSRunoff,
     "hru_impervstor": pws.PRMSRunoff,
-    "hru_intcpstor": pws.PRMSCanopy,
     "pref_flow_stor": pws.PRMSSoilzone,
     "slow_stor": pws.PRMSSoilzone,
     "soil_lower": pws.PRMSSoilzone,
     "soil_rechr": pws.PRMSSoilzone,
     "ssres_stor": pws.PRMSSoilzone,
-    "freeh2o": pws.PRMSSnow,
-    "pk_ice": pws.PRMSSnow,
+}
+
+previous_vars_no_dprst = prev_vars_both | {
+    "hru_impervstor": pws.PRMSRunoffNoDprst,
+    "pref_flow_stor": pws.PRMSSoilzoneNoDprst,
+    "slow_stor": pws.PRMSSoilzoneNoDprst,
+    "soil_lower": pws.PRMSSoilzoneNoDprst,
+    "soil_rechr": pws.PRMSSoilzoneNoDprst,
+    "ssres_stor": pws.PRMSSoilzoneNoDprst,
 }
 
 prev_rename = {
@@ -36,9 +49,10 @@ change_rename = {}
 def diagnose_simple_vars_to_nc(
     var_name: str,
     data_dir: pl.Path,
+    control_file: pl.Path,
     domain_dir: pl.Path = None,
     output_dir: pl.Path = None,
-):
+) -> bool:
     """Diagnose variables from PRMS output with only dependencies on var_name
 
     These variables are "simple" because they do not have any dependencies
@@ -51,9 +65,14 @@ def diagnose_simple_vars_to_nc(
         var_name: str name of the variable to create
         data_dir: where the netcdf file will be written, also where to look
             for necessary inputs to create the diagnostic variable.
+        control_file: the pathlib representation of the control file for
+            the run that produced the data.
         domain_dir: defaults to the parent dir of output_dir, this is where
-            domain files (parameter & control) for the domain can be found
+            domain files for the domain can be found
         output_dir: defaults to data_dir unless otherwise specified
+
+    Returns:
+        Boolean for success.
 
     """
 
@@ -64,6 +83,8 @@ def diagnose_simple_vars_to_nc(
         output_dir = data_dir
 
     nc_path = data_dir / f"{var_name}.nc"
+    control = pws.Control.load_prms(control_file, warn_unused_options=False)
+    param_file = control_file.parent / control.options["parameter_file"]
 
     if var_name in previous_vars.keys():
         # the _prev is the desired suffix but PRMS legacy is inconsistent
@@ -74,16 +95,19 @@ def diagnose_simple_vars_to_nc(
         # the final value (-1) was wrapped to the zeroth position
         # get the initial conditions for the first time by initializing the
         # model This works based on the control file, so could handle restart.
-        control = pws.Control.load_prms(
-            domain_dir / "control.test", warn_unused_options=False
-        )
         control.options = control.options | {
             "input_dir": domain_dir / "output",
         }
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        )
-        proc_class = previous_vars[var_name]
+        params = pws.parameters.PrmsParameters.load(param_file)
+
+        if (
+            "dprst_flag" in control.options.keys()
+            and control.options["dprst_flag"]
+        ):
+            proc_class = previous_vars[var_name]
+        else:
+            proc_class = previous_vars_no_dprst[var_name]
+
         inputs = {}
         for input_name in proc_class.get_inputs():
             # taken from process._initialize_var
@@ -136,9 +160,7 @@ def diagnose_simple_vars_to_nc(
         return nc_path
 
     if var_name in ["sroff", "ssres_flow", "gwres_flow"]:
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        )
+        params = pws.parameters.PrmsParameters.load(param_file)
         ds = xr.open_dataset(nc_path)
         ds = ds.rename({var_name: f"{var_name}_vol"})
         ds = ds * params.data_vars["hru_in_to_cf"]
@@ -146,11 +168,15 @@ def diagnose_simple_vars_to_nc(
         ds.close()
 
     if var_name == "infil":
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        ).parameters
+        params = pws.parameters.PrmsParameters.load(param_file).parameters
         imperv_frac = params["hru_percent_imperv"]
-        dprst_frac = params["dprst_frac"]
+        if (
+            "dprst_flag" in control.options.keys()
+            and control.options["dprst_flag"]
+        ):
+            dprst_frac = params["dprst_frac"]
+        else:
+            dprst_frac = zero
         perv_frac = 1.0 - imperv_frac - dprst_frac
         ds = xr.open_dataset(nc_path.with_suffix(".nc"))
         ds = ds.rename(infil="infil_hru")
@@ -158,13 +184,16 @@ def diagnose_simple_vars_to_nc(
         ds.to_netcdf(output_dir / "infil_hru.nc")
         ds.close()
 
+    return True
+
 
 def diagnose_final_vars_to_nc(
     var_name: str,
     data_dir: pl.Path,
+    control_file: pl.Path,
     domain_dir: pl.Path = None,
     output_dir: pl.Path = None,
-):
+) -> bool:
     """Diagnose variables from multiple PRMS outputs
 
     In this case "var_name" is not a PRMS output variable, the variable is a
@@ -178,12 +207,18 @@ def diagnose_final_vars_to_nc(
         domain_dir: defaults to the parent dir of output_dir, this is where
             domain files (parameter & control) for the domain can be found
 
+    Returns:
+        Boolean for success.
+
     """
     if domain_dir is None:
         domain_dir = data_dir.parent
 
     if output_dir is None:
         output_dir = data_dir
+
+    control = pws.Control.load_prms(control_file, warn_unused_options=False)
+    param_file = control_file.parent / control.options["parameter_file"]
 
     if var_name == "through_rain":
         out_file = output_dir / "through_rain.nc"
@@ -203,7 +238,11 @@ def diagnose_final_vars_to_nc(
         data = {}
         for vv in data_vars:
             data_file = data_dir / f"{vv}.nc"
-            data[vv] = xr.open_dataarray(data_file)
+            try:
+                data[vv] = xr.open_dataarray(data_file)
+            except FileNotFoundError:
+                warn(f"diagnose_final_vars_to_nc, file not found: {data_file}")
+                return False
 
         cond1 = data["net_ppt"] > zero
         cond2 = data["pptmix_nopack"] != 0
@@ -264,15 +303,17 @@ def diagnose_final_vars_to_nc(
         data = {}
         for vv in data_vars:
             data_file = data_dir / f"{vv}.nc"
-            data[vv] = xr.open_dataarray(data_file)
+            try:
+                data[vv] = xr.open_dataarray(data_file)
+            except FileNotFoundError:
+                warn(f"diagnose_final_vars_to_nc, file not found: {data_file}")
+                return False
 
         control = pws.Control.load_prms(
-            domain_dir / "control.test", warn_unused_options=False
+            control_file, warn_unused_options=False
         )
         s_per_time = control.time_step_seconds
-        params = pws.parameters.PrmsParameters.load(
-            domain_dir / "myparam.param"
-        )
+        params = pws.parameters.PrmsParameters.load(param_file)
 
         ntimes = control.n_times
         nseg = params.dims["nsegment"]
@@ -348,3 +389,5 @@ def diagnose_final_vars_to_nc(
             dum.to_netcdf(out_file)
             print(out_file)
             assert out_file.exists()
+
+    return True

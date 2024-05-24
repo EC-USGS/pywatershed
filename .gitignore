@@ -44,7 +44,7 @@ prms_src/prms5.3.0/bin
 *.wbal
 wbal.msgs
 soltab_debug
-output/
+output*/
 
 # emacs
 *~
@@ -55,6 +55,9 @@ autotest/coverage.xml
 autotest/codecov
 autotest/.coverage
 autotest/temp
+
+# test_data
+test_data/.test_data_version*
 
 # sphinx
 generated/

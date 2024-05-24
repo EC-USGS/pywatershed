@@ -2,12 +2,68 @@ import pathlib as pl
 
 import numpy as np
 import pytest
-
-from pywatershed import Parameters, PRMSCanopy
-from pywatershed.parameters import PrmsParameters
 from utils import assert_or_print
 
+from pywatershed import Control, Parameters, PRMSCanopy
+from pywatershed.parameters import PrmsParameters
 
+test_ans = {
+    "drb_2yr": {
+        "ndepl": 5,
+        "ndeplval": 55,
+        "ndoy": 366,
+        "ngw": 765,
+        "nhru": 765,
+        "nmonth": 12,
+        "nobs": 168,
+        "npoigages": 168,
+        "nsegment": 456,
+        "nssr": 765,
+        "scalar": 1,
+    },
+    "hru_1": {
+        "nhru": 1,
+        "nsegment": 1,
+        "nssr": 1,
+        "ngw": 1,
+        "nobs": 1,
+        "ndeplval": 11,
+        "ndepl": 1,
+        "nmonth": 12,
+        "scalar": 1,
+        "ndoy": 366,
+    },
+    "ucb_2yr": {
+        "nhru": 3851,
+        "nsegment": 1942,
+        "nssr": 3851,
+        "ngw": 3851,
+        "npoigages": 347,
+        "nobs": 347,
+        "ndeplval": 55,
+        "ndepl": 5,
+        "nmonth": 12,
+        "scalar": 1,
+        "ndoy": 366,
+    },
+    "sagehen_5yr": {
+        "nhru": 128,
+        "nsegment": 15,
+        "ncascade": 317,
+        "ncascdgw": 317,
+        "nssr": 128,
+        "ngw": 128,
+        "nobs": 1,
+        "ndeplval": 22,
+        "ndepl": 2,
+        "nmonth": 12,
+        "scalar": 1,
+        "ndoy": 366,
+    },
+}
+
+
+@pytest.mark.domainless
 def test_parameter_init():
     # TODO: this test should be moved to tests for the Parameters class
     parameters = {
@@ -31,23 +87,33 @@ def test_parameter_init():
     print("success initializing Parameters object")
 
 
-def test_parameter_read(domain):
-    parameter_file = domain["param_file"]
+@pytest.mark.domain
+def test_parameter_read(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    parameter_file = simulation["dir"] / ctl.options["parameter_file"]
     print(f"parsing...'{parameter_file}'")
 
     parameters = PrmsParameters.load(parameter_file)
 
     # check dimensions
-    answers = domain["test_ans"]["parameter_read"]
+    # this only depends on domain and not simulation AFAICT
+    test_domain = simulation["name"].split(":")[0]
+    answers = test_ans[test_domain]
     results = parameters.dims
-    assert_or_print(results, answers, print_ans=domain["print_ans"])
+    assert_or_print(results, answers, print_ans=simulation["print_ans"])
 
     print(f"success parsing...'{parameter_file}'")
     return
 
 
-def test_parameter_canopy_subset(domain):
-    parameter_file = domain["param_file"]
+@pytest.mark.domain
+def test_parameter_canopy_subset(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    parameter_file = simulation["dir"] / ctl.options["parameter_file"]
     print(f"parsing...'{parameter_file}'")
     parameters = PrmsParameters.load(parameter_file)
 
@@ -67,8 +133,12 @@ def test_parameter_canopy_subset(domain):
     print(f"success parsing...'{parameter_file}'")
 
 
-def test_parameter_access(domain):
-    parameter_file = domain["param_file"]
+@pytest.mark.domain
+def test_parameter_access(simulation):
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    parameter_file = simulation["dir"] / ctl.options["parameter_file"]
     print(f"parsing...'{parameter_file}'")
 
     parameters = PrmsParameters.load(parameter_file)
@@ -85,12 +155,16 @@ def test_parameter_access(domain):
     _ = parameters.parameters["srain_intcp"]
 
 
-def test_parameter_json(domain, tmp_path):
+@pytest.mark.domain
+def test_parameter_json(simulation, tmp_path):
     # read a myparams.param file to a parameter object,
     # write it to json,
     # read the json back in
     # check that the read json gives an identical parameter object.
-    parameter_file = domain["param_file"]
+    ctl = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    parameter_file = simulation["dir"] / ctl.options["parameter_file"]
     parameters = PrmsParameters.load(parameter_file)
 
     json_file = pl.Path(tmp_path) / "params.json"

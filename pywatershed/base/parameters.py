@@ -15,12 +15,11 @@ from .data_model import DatasetDict, dd_to_nc4_ds, dd_to_xr_ds
 class Parameters(DatasetDict):
     """Parameter base class
 
-    This is a subclass of data_model.DatasetDict, but all the data are
-    read-only by design.
-    Parameters has all the same methods as DatasetDict plus several new
-    ones that map to DatasetDict as follows:
+    This is a subclass of :func:`~pywatershed.base.DatasetDict` where data are
+    read-only by design. Parameters has all the same methods as DatasetDict
+    plus several new ones that map to DatasetDict as follows:
 
-    * parameters: dd.variables
+    * parameters: dd.variables (dd.coords + dd.data)
     * get_param_values: get values from dd.variables
     * get_dim_values: get values from dd.dims
 
@@ -40,10 +39,77 @@ class Parameters(DatasetDict):
             The metadata argument may also contain a special `global` key
             paired with a dictionary of global metadata of arbitrary name and
             values of string, integer, or float types.
+
         encoding: The encoding attributes to/from file when reading/writing.
         validate: A bool that defaults to True, enforcing the consistency
-            of the supplied dictionaries
-    """
+            of the supplied dictionaries.
+
+    See Also
+    --------
+    pywatershed.base.DatasetDict
+
+    Examples
+    --------
+
+    See :func:`~pywatershed.base.DatasetDict` for more examples.
+
+    ..
+    >>> from pprint import pprint
+    >>> import numpy as np
+    >>> import pywatershed as pws
+    >>> nreach = 3
+    >>> params = pws.parameters.PrmsParameters(
+    ...     dims={
+    ...         "nsegment": nreach,
+    ...     },
+    ...     coords={
+    ...         "nsegment": np.array(range(nreach)),
+    ...     },
+    ...     data_vars={
+    ...         "tosegment": np.array(
+    ...             [2, 3, 0]
+    ...         ),  # one-based index, 0 is outflow
+    ...         "seg_length": np.ones(nreach) * 1.0e3,
+    ...     },
+    ...     metadata={
+    ...         "nsegment": {"dims": ["nsegment"]},
+    ...         "tosegment": {"dims": ["nsegment"]},
+    ...         "seg_length": {"dims": ["nsegment"]},
+    ...     },
+    ...     validate=True,
+    ... )
+    >>> params
+    <pywatershed.parameters.prms_parameters.PrmsParameters object at 0x105781390>
+    >>> params.dims
+    mappingproxy({'nsegment': 3})
+    >>> params.coords
+    mappingproxy({'nsegment': array([0, 1, 2])})
+    >>> pprint(params.data)
+    {'coords': mappingproxy({'nsegment': array([0, 1, 2])}),
+     'data_vars': mappingproxy({'seg_length': array([1000., 1000., 1000.]),
+                                'tosegment': array([2, 3, 0])}),
+     'dims': mappingproxy({'nsegment': 3}),
+     'encoding': mappingproxy({}),
+     'metadata': mappingproxy({'global': mappingproxy({}),
+                               'nsegment': mappingproxy({'dims': ['nsegment']}),
+                               'seg_length': mappingproxy({'dims': ['nsegment']}),
+                               'tosegment': mappingproxy({'dims': ['nsegment']})})}
+    >>> pprint(params.metadata)
+    mappingproxy({'global': mappingproxy({}),
+                  'nsegment': mappingproxy({'dims': ['nsegment']}),
+                  'seg_length': mappingproxy({'dims': ['nsegment']}),
+                  'tosegment': mappingproxy({'dims': ['nsegment']})})
+    >>> xrds = params.to_xr_ds()
+    >>> xrds
+    <xarray.Dataset>
+    Dimensions:     (nsegment: 3)
+    Coordinates:
+      * nsegment    (nsegment) int64 0 1 2
+    Data variables:
+        tosegment   (nsegment) int64 2 3 0
+        seg_length  (nsegment) float64 1e+03 1e+03 1e+03
+
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -75,6 +141,20 @@ class Parameters(DatasetDict):
             self[f"_{kk}"] = _set_dict_read_only(self[kk])
 
         return
+
+    @property
+    def dimensions(self) -> dict:
+        """Get the dimensions from the parameters
+
+        Returns:
+            dimensions in the PRMS parameter dictionary
+
+        """
+        dimensions = {}
+        for key, value in self.dims.items():
+            if isinstance(value, int):
+                dimensions[key] = value
+        return dimensions
 
     @property
     def parameters(self) -> dict:

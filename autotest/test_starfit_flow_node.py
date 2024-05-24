@@ -1,21 +1,16 @@
 import pathlib as pl
-import pickle
-import random
 
 import numpy as np
 import pytest
 import xarray as xr
 
-from pywatershed import Starfit
 from pywatershed.base.adapter import Adapter, AdapterNetcdf
 from pywatershed.base.control import Control
-from pywatershed.parameters import Parameters
 
 # from pywatershed.base.flow_graph import FlowGraph
-from pywatershed.constants import __pywatershed_root__ as pws_root
 from pywatershed.constants import cm_to_cf, cms_to_cfs, nan, zero
 from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
-from pywatershed.parameters import StarfitParameters
+from pywatershed.parameters import Parameters, StarfitParameters
 
 # NB:
 #   Here we are comparing a daily starfit against an hourly StarfitNode.
@@ -85,8 +80,6 @@ def answers():
     return ans.isel(grand_id=starfit_inds_test)
 
 
-# @pytest.mark.parametrize("calc_method", calc_methods)
-# @pytest.mark.xfail
 @pytest.mark.parametrize(
     "io_in_cfs", [True, False], ids=("io_in_cfs", "io_in_cms")
 )

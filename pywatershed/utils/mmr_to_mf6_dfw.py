@@ -1,23 +1,35 @@
 import pathlib as pl
+from warnings import warn
 
 import flopy
+import geopandas as gpd
+from mpsplines import MeanPreservingInterpolation as mpi
 import numpy as np
+import shapely
+import pint
+import xarray as xr
 
 from pywatershed import Control, meta
 
-from ..constants import fileish
+from ..constants import fileish, zero
 from ..parameters import PrmsParameters
-from .mmr_to_mf6 import MmrToMf6
-
-# TODO
-# * zhb?
 
 
-class MmrToMf6Dfw(MmrToMf6):
+class MmrToMf6Dfw:
     """Muskingum-Mann Routing to MF6 Diffusive Wave
 
-    MMR: Muskingum-Mann Routing
-    DFW: Diffusive Wave
+    This builds a MF6 simulation with Diffusive Wave (DFW) routing from PRMS
+    NHM input files (Muskingum-Mann Routing, MMR, data) and a few simple
+    assumptions, and uses as boundary conditions the to-channel fluxes from
+    a PRMS run.
+
+    In addition to standard MF6 packages and their input files (e.g. IMS, OC,
+    etc), the surface water flow package is create with the diffusive wave
+    (DFW) package and depends on the DISV1D and FLW boundary conditions. The
+    cross sectional area (CXS) package is optional.
+
+    MMR: Muskingum-Mann Routing in PRMS
+    DFW: Diffusive Wave in MF6 (develop)
 
     PRMS MMR Parameters used and how:
     * tosegment:
@@ -68,18 +80,69 @@ class MmrToMf6Dfw(MmrToMf6):
         At each outlet in the domain, this is taken as the lowest hru elevation
         over all hrus which map to this segment.
 
+    The MF6 IO descrption can be found here
+    https://modflow6.readthedocs.io/en/latest/mf6io.html
+
+
+    Args:
+      control_file: filepath to a PRMS control file. Exactly one of this and
+        control are required.
+      control: a Control object. Exactly one of this and control are required.
+      start_time: np.datetime64 = None, to edit the start time
+      end_time: np.datetime64 = None, to edit the simulation end time
+      param_file: The filepath to the domain parameters. Exactly one of this
+        and the params argument is required.
+      params: a Parameter object. Exactly one of this and the params argument
+        is required.
+      segment_shp_file: a shapefile of segments assumptions are that this file
+        has a column "nsevment_v" which is the same as "nhm_seg" in the
+        parameter file and another column "model_idx" corresponding to the
+        1-based index of nhm_seg in the parameter file.
+      output_dir: Where to write and run the model.
+      bc_binary_files: Write binary files for the FLW boundary conditions.
+      bc_flows_combined: A single, combined boundary flow file, or 3 individual
+        files for the 3 prms flux terms?
+      sim_name: A name for the simulation.
+      inflow_dir: Where to find the PRMS to-channel flux files.
+      inflow_from_PRMS: The PRMS inflows are in depth while the inflows from
+        pywatershed are volumetric and they have different names indicating
+        this. The default is PRMS inflows.
+      save_flows: Set as a general MF6 option on all packages.
+      time_zone: the timezone to use.
+      write_on_init: Write the MF6 files on initialization?
+      chd_options: Options to pass to flopy when making each MF6 package. These
+        are not always applied and their effect should be checked on the MF6
+        input files written before running the model. Still a work in progress.
+      cxs_options: See above.
+      disv1d_options: See above.
+      dfw_options: See above.
+      dfw_griddata: See above.
+      flw_options: See above.
+      ic_options: See above.
+      ims_options: See above.
+      oc_options: See above.
+      sto_options: See above.
+
+    TODOS:
+        * Deal with time/sim being optional
+        * run mf6 in the tests
+        * are start_time and end_time supported to change these times?
+
+
     """
 
     def __init__(
         self,
         control_file: fileish = None,
-        param_file: fileish = None,
         control: Control = None,
+        start_time: np.datetime64 = None,
+        end_time: np.datetime64 = None,
+        param_file: fileish = None,
         params: PrmsParameters = None,
-        segment_shapefile: fileish = None,
+        segment_shp_file: fileish = None,
         output_dir: fileish = pl.Path("."),
         bc_binary_files: bool = False,
-        bc_flows_combine: bool = False,
+        bc_flows_combined: bool = False,
         sim_name: str = "mmr_to_dfw",
         inflow_dir: fileish = None,
         inflow_from_PRMS: bool = True,
@@ -87,156 +150,585 @@ class MmrToMf6Dfw(MmrToMf6):
         # length_units="meters",
         # time_units="seconds",
         save_flows: bool = True,
-        start_time: np.datetime64 = None,
-        end_time: np.datetime64 = None,
         time_zone="UTC",
         write_on_init: bool = True,
+        chd_options: dict = None,
+        cxs_options: dict = None,
+        disv1d_options: dict = None,
         dfw_options: dict = None,
         dfw_griddata: dict = None,
-        ims_options: dict = None,
-        sto_options: dict = None,
-        ic_options: dict = None,
-        cxs_options: dict = None,
-        oc_options: dict = None,
         flw_options: dict = None,
-        chd_options: dict = None,
-        **kwargs,
+        ic_options: dict = None,
+        ims_options: dict = None,
+        oc_options: dict = None,
+        sto_options: dict = None,
     ):
-        super().__init__(
-            control_file=control_file,
-            param_file=param_file,
-            control=control,
-            params=params,
-            segment_shapefile=segment_shapefile,
-            output_dir=output_dir,
-            bc_binary_files=bc_binary_files,
-            bc_flows_combine=bc_flows_combine,
-            sim_name=sim_name,
-            inflow_dir=inflow_dir,
-            inflow_from_PRMS=inflow_from_PRMS,
-            # length_units=length_units,
-            # time_units=time_units,
-            save_flows=save_flows,
-            start_time=start_time,
-            end_time=end_time,
-            time_zone=time_zone,
-            write_on_init=write_on_init,
-            dfw_options=dfw_options,
-            dfw_griddata=dfw_griddata,
+        self._params = params
+        self._param_file = param_file
+        self._control = control
+        self._control_file = control_file
+
+        self._start_time = start_time
+        self._end_time = end_time
+        self._time_zone = time_zone
+
+        self._written = False
+        self._sim_name = sim_name
+        self._output_dir = pl.Path(output_dir)
+        self._segment_shp_file = segment_shp_file
+        self._save_flows = save_flows
+
+        self._inflow_from_PRMS = inflow_from_PRMS
+        self._inflow_dir = inflow_dir
+        self._bc_flows_combined = bc_flows_combined
+        self._bc_binary_files = bc_binary_files
+
+        self._units = pint.UnitRegistry(system="mks")
+        # these are not really optional at the moment, but hope to make so soon
+        # making the system definition using input units.
+        self._length_units = "meters"
+        self._time_units = "seconds"
+
+        self._chd_options = chd_options
+        self._cxs_options = cxs_options
+        self._dfw_options = dfw_options
+        self._disv1d_options = disv1d_options
+        self._dfw_griddata = dfw_griddata
+        self._flw_options = flw_options
+        self._ic_options = ic_options
+        self._ims_options = ims_options
+        self._oc_options = oc_options
+        self._sto_options = sto_options
+
+        self._handle_control_parameters()
+        self._set_sim()
+        self._set_tdis()
+        self._set_swf()
+        self._set_disv1d()
+        self._set_flw()
+        self._set_ims()
+        self._set_dfw()
+        self._set_sto()
+        self._set_ic()
+        self._set_cxs()
+        self._set_oc()
+        self._set_chd()
+
+        if write_on_init:
+            self.write()
+
+        return
+
+    def write(self, *args, rewrite=False, **kwargs):
+        if self._written and not rewrite:
+            msg = (
+                "The simulation was already written, "
+                "use rewrite=True to force."
+            )
+            warn(msg)
+            return
+
+        print(f"\nWriting simulation files to: {self._output_dir}")
+        self._written = True
+        return self._sim.write_simulation(*args, **kwargs)
+
+    def run(self, *args, **kwargs):
+        print(f"\nRunning simulation files in: {self._output_dir}")
+        return self._sim.run_simulation(*args, **kwargs)
+
+    def _handle_control_parameters(self):
+        inputs_dict = {
+            "parameters": {"obj": self._params, "file": self._param_file},
+            "control": {"obj": self._control, "file": self._control_file},
+        }
+
+        for key, val_dict in inputs_dict.items():
+            obj_file = val_dict["file"]
+            obj = val_dict["obj"]
+
+            if (obj_file is not None) and (obj is not None):
+                if key == "params":
+                    msg = "Can only specify one of param_file or params"
+                else:
+                    msg = "Can only specify one of control_file or control"
+                raise ValueError(msg)
+
+            elif (obj_file is None) and (obj is None):
+                if key == "params":
+                    msg = (
+                        "Must specify (exactly) one of param_file" "or params"
+                    )
+                    raise ValueError(msg)
+                else:
+                    msg = (
+                        "When control is not passed to MMRToMF6, it does "
+                        "not create MF6 .nam, .flw, nor .obs files"
+                    )
+                    setattr(self, "control_file", None)
+                    setattr(self, "control", None)
+                    warn(msg)
+
+            elif obj_file:
+                setattr(self, f"{key}_file", obj_file)
+                if key == "params":
+                    setattr(self, "params", PrmsParameters.load(obj_file))
+                else:
+                    setattr(
+                        self,
+                        "control",
+                        Control.load_prms(obj_file, warn_unused_options=False),
+                    )
+
+            else:
+                setattr(self, f"{key}_file", None)
+                setattr(self, key, obj)
+
+        # set dimensions on self
+        self._nsegment = self.parameters.dims["nsegment"]
+        self._hru_segment = self.parameters.parameters["hru_segment"] - 1
+
+        return
+
+    def _set_sim(self):
+        self._sim = flopy.mf6.MFSimulation(
+            sim_ws=str(self._output_dir),
+            sim_name=self._sim_name,
+            # version="mf6",
+            # exe_name="mf6",
+            memory_print_option="all",
         )
 
-        parameters = self.params.parameters
-        # bottom elevations
-        if "seg_mid_elevation" in parameters.keys():
-            self._seg_mid_elevation = parameters["seg_mid_elevation"]
+    def _set_tdis(self):
+        if self._start_time is None:
+            self._start_time = self.control.start_time
+        if self._end_time is None:
+            self._end_time = self.control.end_time
+
+        self._nper = (
+            int((self._end_time - self._start_time) / self.control.time_step)
+            + 1
+        )
+
+        self._timestep_s = self.control.time_step_seconds * self._units(
+            "seconds"
+        )
+        # convert to output units in the output data structure
+        perlen = (
+            self._timestep_s.to_base_units().magnitude
+        )  # not reused, ok2convert
+
+        if hasattr(self, "control"):
+            # perlen, ntsp, stmult
+            tdis_rc = [(perlen, 2, 1.0) for ispd in range(self._nper)]
+            _ = flopy.mf6.ModflowTdis(
+                self._sim,
+                pname="tdis",
+                time_units=self._time_units,
+                start_date_time=str(self._start_time) + self._time_zone,
+                nper=self._nper,
+                perioddata=tdis_rc,
+            )
+
+    def _set_swf(self):
+        self._swf = flopy.mf6.ModflowSwf(
+            self._sim, modelname=self._sim_name, save_flows=self._save_flows
+        )
+
+    def _set_disv1d(self):
+        params = self.parameters
+        parameters = params.parameters
+        opt_dict_name = "_disv1d_options"
+        method_name = "_set_disv1d"
+        if self._disv1d_options is None:
+            self._disv1d_options = {}
+
+        if "idomain" not in self._disv1d_options.keys():
+            self._disv1d_options["idomain"] = 1
+
+        if "length" not in self._disv1d_options.keys():
+            # meters
+            # unit-ed quantities
+            segment_units = self._units(meta.parameters["seg_length"]["units"])
+            self._segment_length = parameters["seg_length"]
+            self._segment_length = self._segment_length * segment_units
+            self._disv1d_options[
+                "length"
+            ] = self._segment_length.to_base_units().magnitude
+
+        if "seg_width" not in self._disv1d_options.keys():
+            # meters, per metadata
+            self._disv1d_options["width"] = parameters["seg_width"]
+
+        if "lenth_units" not in self._disv1d_options.keys():
+            self._disv1d_options["length_units"] = self._length_units
+
+        if "bottom" not in self._disv1d_options.keys():
+            self._warn_option_overwrite("bottom", opt_dict_name, method_name)
+            # calculate the bottom elevations
+            if "seg_mid_elevation" in parameters.keys():
+                self._seg_mid_elevation = parameters["seg_mid_elevation"]
+            else:
+                self._calculate_seg_mid_elevations(check=False)
+            # <
+            self._disv1d_options["bottom"] = self._seg_mid_elevation
+
+        # < vertices and cell2d
+        if self._segment_shp_file is not None:
+            opts_set = [
+                "nodes",
+                "nvert",
+                "length",
+                "width",
+                "bottom",
+                "vertices",
+                "cell2d",
+                "length_units",
+            ]
+            for oo in opts_set:
+                self._warn_option_overwrite(oo, opt_dict_name, method_name)
+
+            segment_gdf = gpd.read_file(self._segment_shp_file)
+            nreach = params.dims["nsegment"]
+
+            reach_vert_inds = {}
+            reach_vert_geoms = {}
+            vert_count = 0
+            for rr in range(nreach):
+                reach_id = parameters["nhm_seg"][rr]
+                wh_geom = np.where(segment_gdf.nsegment_v.values == reach_id)[
+                    0
+                ][0]
+                reach_geom = shapely.get_coordinates(
+                    segment_gdf.iloc[wh_geom].geometry
+                ).tolist()
+                # if it has a "to" drop the last vertex, reassign in a second pass
+                to_reach_id = parameters["tosegment_nhm"][rr]
+                if to_reach_id != 0:
+                    reach_geom = reach_geom[0:-1]
+                reach_vert_geoms[reach_id] = reach_geom
+                reach_vert_inds[reach_id] = list(
+                    range(vert_count, vert_count + len(reach_geom))
+                )
+                vert_count = vert_count + len(reach_geom)
+
+            # check the count and collation
+            vert_counts_sum = sum([len(rr) for rr in reach_vert_inds.values()])
+            vert_geoms_sum = sum([len(rr) for rr in reach_vert_geoms.values()])
+            assert vert_geoms_sum == vert_counts_sum
+            assert (
+                vert_counts_sum == list(reach_vert_inds.values())[-1][-1] + 1
+            )
+
+            # build the vertices
+            vertices = []
+            for rr in range(nreach):
+                reach_id = parameters["nhm_seg"][rr]
+                inds = reach_vert_inds[reach_id]
+                geoms = reach_vert_geoms[reach_id]
+                assert len(inds) == len(geoms)
+                for vv in range(len(inds)):
+                    vertices += [[inds[vv], geoms[vv][0], geoms[vv][1]]]
+
+            # cell2d: for each reach, if it has a "to", get the to's first ind
+            # as the last vertex ind for the reach
+            cell2d = []
+            for rr in range(nreach):
+                reach_id = parameters["nhm_seg"][rr]
+                icvert = reach_vert_inds[reach_id]
+                to_reach_id = parameters["tosegment_nhm"][rr]
+                if to_reach_id != 0:
+                    to_reach_start_ind = reach_vert_inds[to_reach_id][0]
+                    icvert += [to_reach_start_ind]
+                # <
+                ncvert = len(icvert)
+                cell2d += [[rr, 0.5, ncvert, *icvert]]
+
+            # < Just a check
+            check_connectivity = True
+            if check_connectivity:
+                for rr in range(nreach):
+                    reach_id = parameters["nhm_seg"][rr]
+
+                    reach_ind = rr
+                    reach_cell2d_start_ind = cell2d[reach_ind][3]
+                    reach_cell2d_end_ind = cell2d[reach_ind][-1]
+
+                    wh_geom = np.where(
+                        segment_gdf.nsegment_v.values == reach_id
+                    )
+                    wh_geom = wh_geom[0][0]
+                    reach_geom = shapely.get_coordinates(
+                        segment_gdf.iloc[wh_geom].geometry
+                    ).tolist()
+
+                    # check "TO" connectivity
+                    to_reach_id = parameters["tosegment_nhm"][rr]
+                    if to_reach_id > 0:
+                        to_reach_ind = np.where(
+                            parameters["nhm_seg"] == to_reach_id
+                        )[0][0]
+                        to_reach_cell2d_start_ind = cell2d[to_reach_ind][3]
+                        assert (
+                            reach_cell2d_end_ind == to_reach_cell2d_start_ind
+                        )
+
+                        wh_down_geom = np.where(
+                            segment_gdf.nsegment_v.values == to_reach_id
+                        )[0][0]
+                        reach_down_geom = shapely.get_coordinates(
+                            segment_gdf.iloc[wh_down_geom].geometry
+                        ).tolist()
+                        assert reach_geom[-1] == reach_down_geom[0]
+
+                    # check all "FROM" connectivity
+                    wh_from_reach = np.where(
+                        parameters["tosegment_nhm"] == reach_id
+                    )
+                    from_reach_ids = parameters["nhm_seg"][
+                        wh_from_reach
+                    ].tolist()
+                    for from_reach_id in from_reach_ids:
+                        from_reach_ind = np.where(
+                            parameters["nhm_seg"] == from_reach_id
+                        )[0][0]
+                        from_reach_cell2d_end_ind = cell2d[from_reach_ind][-1]
+                        assert (
+                            from_reach_cell2d_end_ind == reach_cell2d_start_ind
+                        )
+
+                        wh_up_geom = np.where(
+                            segment_gdf.nsegment_v.values == from_reach_id
+                        )[0][0]
+                        reach_up_geom = shapely.get_coordinates(
+                            segment_gdf.iloc[wh_up_geom].geometry
+                        ).tolist()
+                        assert reach_up_geom[-1] == reach_geom[0]
+
+            nnodes = len(cell2d)
+            assert nnodes == self._nsegment
+            nvert = len(vertices)
+
+            self._nsegment = params.dims["nsegment"]
+            self._tosegment = parameters["tosegment"] - 1
+
+            self._disv1d_options["nodes"] = self._nsegment
+            self._disv1d_options["nvert"] = nvert
+            self._disv1d_options["vertices"] = vertices
+            self._disv1d_options["cell2d"] = cell2d
+
+        # <
+        self._disv1d = flopy.mf6.ModflowSwfdisv1D(
+            self._swf, **self._disv1d_options
+        )
+
+    def _set_flw(self, **kwargs):
+        if self._flw_options is None:
+            self._flw_options = {}
+
+        # Boundary conditions / FLW
+        # aggregate inflows over the contributing fluxes
+
+        # For non-binary data, this method has to be called after
+        # flopy.mf6.Swfdisl is set on self._swf, that's why its a method
+
+        parameters = self.parameters.parameters
+
+        if self._inflow_from_PRMS:
+            inflow_list = ["sroff", "ssres_flow", "gwres_flow"]
         else:
-            self.calculate_seg_mid_elevations(check=False)
+            inflow_list = ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"]
 
-        # DISL
+        # check they all have the same units before summing
+        inflow_units = list(meta.get_units(inflow_list, to_pint=True).values())
+        inflow_unit = inflow_units[0]
+        assert [inflow_unit] * len(inflow_units) == inflow_units
+        inflow_unit = self._units(inflow_unit)
 
-        # todo: vertices
-        # Bring in segment shapefile to do this sometime
-        # # only requires parameter file
-        # vertices = [
-        #     [0, 0.0, 0.0, 0.0],
-        #     [1, 0.0, 1.0, 0.0],
-        #     [2, 1.0, 0.0, 0.0],
-        #     [3, 2.0, 0.0, 0.0],
-        #     [4, 3.0, 0.0, 0.0],
-        # ]
-        # # icell1d fdc ncvert icvert
-        # cell2d = [
-        #     [0, 0.5, 2, 1, 2],
-        #     [1, 0.5, 2, 0, 2],
-        #     [2, 0.5, 2, 2, 3],
-        #     [3, 0.5, 2, 3, 4],
-        # ]
+        def read_inflow(vv, start_time, end_time):
+            ff = xr.open_dataset(pl.Path(self._inflow_dir) / f"{vv}.nc")[vv]
+            return ff.sel(time=slice(start_time, end_time))
 
-        # nvert turns off requirement of vertices and cell2d
-        nvert = None  # len(vertices)
-        vertices = None
-        cell2d = None
+        inflows = {
+            vv: read_inflow(vv, self._start_time, self._end_time)
+            for vv in inflow_list
+        }
 
-        self._nsegment = self.params.dims["nsegment"]
-        self._tosegment = parameters["tosegment"] - 1
+        if self._bc_flows_combined:
+            inflows["combined"] = sum(inflows.values())
+            for kk in list(inflows.keys()):
+                if kk != "combined":
+                    del inflows[kk]
 
-        # unit-ed quantities
-        segment_units = self.units(meta.parameters["seg_length"]["units"])
-        self._segment_length = parameters["seg_length"]
-        self._segment_length = self._segment_length * segment_units
+        # add the units
+        inflows = {kk: vv.values * inflow_unit for kk, vv in inflows.items()}
 
-        _ = flopy.mf6.ModflowSwfdisl(
-            self._swf,
-            nodes=self._nsegment,
-            nvert=nvert,
-            reach_length=self._segment_length.to_base_units().magnitude,  # m
-            reach_bottom=self._seg_mid_elevation,  # m
-            toreach=self._tosegment,
-            idomain=1,  # ??
-            vertices=vertices,
-            cell2d=cell2d,
-            length_units=self.length_units,
-        )
+        # flopy adds one to the index, but if we write binary we have to do it
+        add_one = int(self._bc_binary_files)
 
-        if flw_options is None:
-            flw_options = {}
+        for flow_name in inflows.keys():
+            # if from pywatershed, inflows are already volumes in cubicfeet
+            if "inch" in str(inflow_unit):  # PRMS style need hru areas
+                hru_area_unit = self._units(
+                    list(meta.get_units("hru_area").values())[0]
+                )
+                hru_area = parameters["hru_area"] * hru_area_unit
+                inflows[flow_name] *= hru_area
 
-        print("FLW")
-        self.set_flw(**flw_options)
+            prms_timestep_s = 24 * 60 * 60 * self._units("seconds")
+            inflows[flow_name] /= prms_timestep_s.to("seconds")
+            new_inflow_unit = inflows[flow_name].units
 
-        _ = flopy.mf6.ModflowIms(self._sim, **ims_options)
+            prms_mf6_ts_ratio = prms_timestep_s / self._timestep_s
+            prms_nper = int((self._nper - 1) / prms_mf6_ts_ratio) + 1
 
-        if "save_flows" not in dfw_options:
-            dfw_options["save_flows"] = self._save_flows
+            print(f"{self._nper=}")
+            print(f"{prms_nper=}")
 
-        print("DFW")
+            # calculate lateral flow term to the REACH/segment from HRUs
+            lat_inflow_prms = (
+                np.zeros((prms_nper, self._nsegment)) * new_inflow_unit
+            )
+
+            for ihru in range(self.parameters.dims["nhru"]):
+                iseg = self._hru_segment[ihru]
+                if iseg < 0:
+                    # This is bad, selective handling of fluxes is not cool,
+                    # mass is being discarded in a way that has to be
+                    # coordinated
+                    # with other parts of the code.
+                    # This code shuold be removed evenutally.
+                    inflows[flow_name][:, ihru] = zero * new_inflow_unit
+                    continue
+
+                lat_inflow_prms[:, iseg] += inflows[flow_name][:, ihru]
+
+            # the target
+            lat_inflow = np.zeros((self._nper, self._nsegment))
+            time_prms = np.arange(0, prms_nper)
+            time_mf6 = np.linspace(
+                0, prms_nper - 1, num=self._nper, endpoint=True
+            )
+
+            for iseg in range(lat_inflow_prms.shape[1]):
+                lat_inflow[:, iseg] = mpi(
+                    yi=lat_inflow_prms[:, iseg].magnitude,
+                    xi=time_prms,
+                    periodic=False,
+                )(time_mf6)
+
+            lat_inflow = lat_inflow * new_inflow_unit
+
+            # asdf
+
+            # convert to output units in the output data structure
+            flw_spd = {}
+            for ispd in range(self._nper):
+                flw_ispd = [
+                    (
+                        irch + add_one,
+                        lat_inflow[ispd, irch].to_base_units().magnitude,
+                    )
+                    for irch in range(self._nsegment)
+                ]
+
+                if self._bc_binary_files:
+                    # should put the time in the file names?
+                    ra = np.array(
+                        flw_ispd, dtype=[("irch", "<i4"), ("q", "<f8")]
+                    )
+                    i_time_str = str(
+                        self.control.start_time + ispd * self.control.time_step
+                    )
+                    bin_name = (
+                        f"swf_flw_bc/"
+                        f"flw_{flow_name}_{i_time_str.replace(':', '_')}.bin"
+                    )
+                    bin_name_pl = self._output_dir / bin_name
+                    if not bin_name_pl.parent.exists():
+                        bin_name_pl.parent.mkdir()
+                    _ = ra.tofile(bin_name_pl)
+
+                    flw_spd[ispd] = {
+                        "filename": str(bin_name),
+                        "binary": True,
+                        "data": None,
+                    }
+
+                else:
+                    flw_spd[ispd] = flw_ispd
+
+            for key in ["print_input", "print_flows"]:
+                if key not in self._flw_options.keys():
+                    self._flw_options[key] = True
+
+            _ = flopy.mf6.ModflowSwfflw(
+                self._swf,
+                save_flows=self._save_flows,
+                stress_period_data=flw_spd,
+                maxbound=self._nsegment + 1,
+                pname=flow_name,
+                **self._flw_options,
+            )
+
+        return
+
+    def _set_ims(self):
+        self._ims = flopy.mf6.ModflowIms(self._sim, **self._ims_options)
+
+    def _set_dfw(self):
+        parameters = self.parameters.parameters
+        if "save_flows" not in self._dfw_options:
+            self._dfw_options["save_flows"] = self._save_flows
+
         _ = flopy.mf6.ModflowSwfdfw(
             self._swf,
-            width=parameters["seg_width"],  # this is in meters per metadata
             manningsn=parameters["mann_n"],  # seconds / meter ** (1/3)
-            slope=parameters["seg_slope"],  # ratio
-            **dfw_options,
+            **self._dfw_options,
         )
 
-        if "save_flows" not in sto_options:
-            sto_options["save_flows"] = self._save_flows
-
-        print("STO")
+    def _set_sto(self):
+        if "save_flows" not in self._sto_options:
+            self._sto_options["save_flows"] = self._save_flows
         _ = flopy.mf6.ModflowSwfsto(
             self._swf,
-            **sto_options,
+            **self._sto_options,
         )
 
-        print("IC")
-        if ic_options is None:
-            ic_options = {}
+    def _set_ic(self):
+        if self._ic_options is None:
+            self._ic_options = {}
+        else:
+            # TODO JLM REVISIT
+            ic_options = {
+                "strt": self._seg_mid_elevation + self._ic_options["strt"]
+            }
 
-        _ = flopy.mf6.ModflowSwfic(self._swf, **ic_options)
+        self._ic = flopy.mf6.ModflowSwfic(self._swf, **ic_options)
 
-        print("CXS")
-        if cxs_options is None:
+    def _set_cxs(self):
+        if self._cxs_options is None:
             pass
         else:
-            _ = flopy.mf6.ModflowSwfcxs(self._swf, **cxs_options)
+            self._cxs = flopy.mf6.ModflowSwfcxs(self._swf, **self._cxs_options)
 
-        print("OC")
-        if oc_options is None:
-            oc_options = {}
+    def _set_oc(self):
+        if self._oc_options is None:
+            self._oc_options = {}
 
-        _ = flopy.mf6.ModflowSwfoc(
+        self._oc = flopy.mf6.ModflowSwfoc(
             self._swf,
             budget_filerecord=f"{self._sim_name}.bud",
             stage_filerecord=f"{self._sim_name}.stage",
             # qoutflow_filerecord=f"{self._sim_name}.qoutflow",
-            **oc_options,
+            **self._oc_options,
         )
 
-        print("CHD")
-        if chd_options is None:
-            chd_options = {}
-        if "stress_period_data" not in chd_options.keys():
+    def _set_chd(self):
+        if self._chd_options is None:
+            self._chd_options = {}
+        if "stress_period_data" not in self._chd_options.keys():
             if hasattr(self, "_outlet_chds"):
-                chd_options["stress_period_data"] = list(
+                self._chd_options["stress_period_data"] = list(
                     self._outlet_chds.items()
                 )
 
@@ -250,14 +742,15 @@ class MmrToMf6Dfw(MmrToMf6):
                 # randomly supplied data for seg_mid_elevation,
                 # likely not possible and would have to be passed in.
 
-        chd_options["maxbound"] = len(chd_options["stress_period_data"])
-        _ = flopy.mf6.ModflowSwfchd(self._swf, **chd_options)
+        # <<
+        self._chd_options["maxbound"] = len(
+            self._chd_options["stress_period_data"]
+        )
+        self._chd = flopy.mf6.ModflowSwfchd(self._swf, **self._chd_options)
 
-        return
-
-    def calculate_seg_mid_elevations(self, check=False):
+    def _calculate_seg_mid_elevations(self, check=False):
         nseg = self._nsegment
-        parameters = self.params.parameters
+        parameters = self.parameters.parameters
 
         # the rise of the reach
         seg_dy = parameters["seg_slope"] * parameters["seg_length"]
@@ -318,8 +811,13 @@ class MmrToMf6Dfw(MmrToMf6):
                     # constant head boundary to use later
                     outlet_hrus = np.where(hru_seg == ds_seg_ind)
                     outlet_elev = hru_elev[outlet_hrus].min()
-                    self._outlet_chds[ds_seg_ind] = outlet_elev
                     seg_y[ds_seg_ind] = seg_dy[ds_seg_ind] + outlet_elev
+
+                    # TODO: JLM REVISIT
+                    self._outlet_chds[ds_seg_ind] = (
+                        1.0 + seg_y[ds_seg_ind] - (seg_dy[ds_seg_ind] / 2)
+                    )
+
                 else:
                     seg_y[ds_seg_ind] = (
                         seg_dy[ds_seg_ind] + seg_y[my_downstream_ind]
@@ -356,4 +854,14 @@ class MmrToMf6Dfw(MmrToMf6):
                     ) < 1.0e-7
 
         self._seg_mid_elevation = seg_y - (seg_dy / 2)
+
         return
+
+    def _warn_option_overwrite(self, opt_name, opt_dict_name, method_name):
+        opt_dict = getattr(self, opt_dict_name)
+        if opt_name in opt_dict.keys():
+            msg = (
+                f'Option "{opt_name}" in "{opt_dict_name}" '
+                f'will be overwritten in method "{method_name}".'
+            )
+            warn(msg)

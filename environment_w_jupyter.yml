@@ -36,7 +36,7 @@ dependencies:
   - pytest-xdist
   - python<3.11,>=3.9
   - pyyaml
-  - shapely<2.0.0
+  - shapely
   - sphinx
   - sphinx-book-theme>=0.3.3
   - sphinx-autosummary-accessors
@@ -50,5 +50,6 @@ dependencies:
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools
+      - git+https://github.com/jararias/mpsplines.git
       - sphinx-autodoc-typehints
       - ruff

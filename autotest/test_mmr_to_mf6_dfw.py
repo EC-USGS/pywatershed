@@ -9,24 +9,16 @@ import pywatershed as pws
 from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 
 # The point of this is to reproduce the modflow6/autotest/test_swf_dfw.py
-# the answers of this test on 12/4/2023 are below.
+# Needs mf6 in PATH on mac/linux
 
-# THis test calls mf6 via flopy and wont be tested in CI
-# until swf merges to develop.
 
-# needs mf6 in PATH on mac/linux
-
-# Using modflow6 remote:branch langevin-usgs:feat-snf
-# mf6/autotest: python update_flopy.py
-# compile mf6 using gfortran and export LDFLAGS="$LDFLAGS -Wl,-ld_classic"
-
-# This DOES check the output of mf6_mmr and needs a binary from a specialized
-# mf6 branch. When feat-snf merges to develop we can un-xfail.
-
-# Here we supply "seg_mid_elevation" in the parameter data and
-# "stress_period_data" in chd options. This bypasses the calculation of these
-# given PRMS parameter information. In this case, it would be impossible
-# to supply PRMS-like data that would reproduce this test.
+# See below to check if these answers are still up-to-date with
+# mf6/autotest/test_swf_dfw.py
+# Note the answers are from the binary FLW files in
+# mf6/autotest/test_swf_dfw.py, if you switch to text files, the line should be
+# flw_list = [
+#     (int(binary), 100),
+# ]  # one-based cell numbers here if binary, zero-based if text
 
 answers_swf_dfw = {
     "ia": np.array([0, 2, 5, 7]),
@@ -54,13 +46,12 @@ answers_swf_dfw = {
 }
 
 
-# fail this because it relies on mf6 binary to be present for feat-snf
-@pytest.mark.fail
 @pytest.mark.parametrize("binary_flw", [True, False])
 def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
-    name = "swf-dfw01"
-    output_dir = tmp_path / "test_swf_dfw"
-    save_flows = True
+    # Here we supply "seg_mid_elevation" in the parameter data and
+    # "stress_period_data" in chd options. This bypasses the calculation of
+    # these given PRMS parameter information. In this case, it would be
+    # impossible to supply PRMS-like data that would reproduce this test.
 
     # This example shows how to formulate pywatershed inputs to match MF6
     # inputs unfortunately, these have to be translated through some of the
@@ -69,15 +60,30 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     # stream segments, the other is about the units of volume/flow being in
     # cubicfeet.
 
-    # create a dummy control with
+    name = "swf-dfw01"
+    output_dir = tmp_path / "test_swf_dfw01"
+    save_flows = True
+    print_flows = True
+
     control = pws.Control(
         start_time=np.datetime64("2023-01-01T00:00:00"),
         end_time=np.datetime64("2023-01-01T00:00:00"),
         time_step=np.timedelta64(1, "s"),
     )
 
-    # create a dummy domain with
+    # ims
+    ims_options = {
+        "print_option": "all",
+        "linear_acceleration": "BICGSTAB",
+        "outer_dvclose": 1.0e-7,
+        "inner_dvclose": 1.0e-8,
+    }
+
+    # disv1d
+    dx = 1000.0
     nreach = 3
+
+    # mannings coefficients are actually considered part of the dfw package
     params = pws.parameters.PrmsParameters(
         dims={
             "nsegment": nreach,
@@ -87,20 +93,18 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
             "seg_id": np.array(range(nreach)),  # todo: rename seg_id or such
         },
         data_vars={
-            "tosegment": np.array([2, 3, 0]),  # one-based index, 0 is outflow
-            "seg_length": np.ones(nreach) * 1.0e3,
+            # "tosegment" no longer used
+            "seg_length": np.ones(nreach) * dx,
             "mann_n": np.ones(nreach) * 0.035,
-            "seg_slope": np.ones(nreach) * 0.001,
+            # "seg_slope": np.ones(nreach) * 0.001,
             "seg_width": np.ones(nreach) * 50.0,
             "seg_mid_elevation": np.zeros(nreach),
             "hru_segment": np.array(range(nreach)) + 1,
         },
         metadata={
             "seg_id": {"dims": ["nsegment"]},
-            "tosegment": {"dims": ["nsegment"]},
             "seg_length": {"dims": ["nsegment"]},
             "mann_n": {"dims": ["nsegment"]},
-            "seg_slope": {"dims": ["nsegment"]},
             "seg_width": {"dims": ["nsegment"]},
             "seg_mid_elevation": {"dims": ["nsegment"]},
             "hru_segment": {"dims": ["nsegment"]},
@@ -108,6 +112,35 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
         validate=True,
     )
 
+    # vertices could also be supplied by shapefiles
+    vertices = []
+    vertices = [[j, j * dx, 0.0] for j in range(nreach + 1)]
+    cell2d = []
+    for j in range(nreach):
+        cell2d.append([j, 0.5, 2, j, j + 1])
+    nodes = len(cell2d)
+    nvert = len(vertices)
+    disv1d_options = {
+        "nodes": nodes,
+        "nvert": nvert,
+        "vertices": vertices,
+        "cell2d": cell2d,
+    }
+
+    # dfw
+    dfw_options = {
+        "print_flows": print_flows,
+        "save_flows": save_flows,
+        "idcxs": 0,  # zero based in flopy, None for hydraulically wide
+    }
+
+    # sto
+    sto_options = {"save_flows": save_flows}
+
+    # ic
+    ic_options = {"strt": 1.0}
+
+    # CXS
     xfraction = [0.0, 0.0, 1.0, 1.0]
     height = [100.0, 0.0, 0.0, 100.0]
     mannfraction = [1.0, 1.0, 1.0, 1.0]
@@ -119,21 +152,7 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
         "crosssectiondata": cxsdata,
     }
 
-    ims_options = {
-        "print_option": "all",
-        "linear_acceleration": "BICGSTAB",
-        "outer_dvclose": 1.0e-7,
-        "inner_dvclose": 1.0e-8,
-    }
-
-    dfw_options = {
-        "print_flows": True,
-        "save_flows": save_flows,
-        "idcxs": 0,  # zero based in flopy, None for hydraulically wide
-    }
-
-    sto_options = {"save_flows": save_flows}
-
+    # oc
     oc_options = {
         "saverecord": [
             ("STAGE", "ALL"),
@@ -146,8 +165,6 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
             # ("QOUTFLOW", "ALL"),
         ],
     }
-
-    ic_options = {"strt": 1.0}
 
     # boundary conditions / FLW
     # if we use the volumes from pws rather than the inches from
@@ -162,7 +179,7 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     inflow_dir.mkdir(parents=True)
     for inflw in inflow_list:
         if inflw == "sroff_vol":
-            flw_vol = 3531.4666721489  # 100.0 m3/s in ft^3/s
+            flw_vol = 3531.4666721489 * 86400  # 100.0 m3/s in ft^3/day
         else:
             flw_vol = 0.0
 
@@ -194,7 +211,10 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     dfw = MmrToMf6Dfw(
         control=control,
         params=params,
+        tdis_perlen=1,  # does this matter
+        tdis_nstp=1,
         output_dir=output_dir,
+        bc_binary_files=binary_flw,
         sim_name=name,
         save_flows=save_flows,
         ims_options=ims_options,
@@ -203,6 +223,7 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
         ic_options=ic_options,
         oc_options=oc_options,
         chd_options=chd_options,
+        disv1d_options=disv1d_options,
         cxs_options=cxs_options,
         inflow_from_PRMS=inflow_from_PRMS,
         bc_flows_combined=bc_flows_combined,
@@ -217,8 +238,14 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     # Checks
     assert success
 
+    # one can verify the answers match the current mf6 results for test_swf_dfw
+    # by placing the path to its output here
+    # output_dir = pl.Path(
+    #     "../../modflow6/autotest/keepers/test_mf6model[0-swf-dfw01]0"
+    # )
+
     # check binary grid file
-    grb = flopy.mf6.utils.MfGrdFile(output_dir / f"{name}.disl.grb")
+    grb = flopy.mf6.utils.MfGrdFile(output_dir / f"{name}.disv1d.grb")
     ia = grb.ia
     ja = grb.ja
     assert (answers_swf_dfw["ia"] == ia).all()
@@ -230,7 +257,7 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
         output_dir / f"{name}.stage", precision="double", text="STAGE"
     )
     stage = qobj.get_alldata()
-    assert (answers_swf_dfw["stage"] - stage < 1.0e-7).all()
+    assert ((answers_swf_dfw["stage"] - stage) < 1.0e-7).all()
 
     # read the budget file
     budobj = flopy.utils.binaryfile.CellBudgetFile(output_dir / f"{name}.bud")

@@ -28,6 +28,14 @@ class MmrToMf6Dfw:
     (DFW) package and depends on the DISV1D and FLW boundary conditions. The
     cross sectional area (CXS) package is optional.
 
+    The daily inflows from PRMS can optionally be smoothed to desired sub-daily
+    resolution of MF6 stress period length using mean preserving splines from
+    the mpsplines python package.
+    https://github.com/jararias/mpsplines
+    Ruiz-Arias, J. A. (2022). Mean-preserving interpolation with splines for
+    solar radiation modeling. Solar Energy, Vol. 248, pp. 121-127.
+    doi: 10.1016/j.solener.2022.10.038
+
     MMR: Muskingum-Mann Routing in PRMS
     DFW: Diffusive Wave in MF6 (develop)
 
@@ -90,6 +98,13 @@ class MmrToMf6Dfw:
       control: a Control object. Exactly one of this and control are required.
       start_time: np.datetime64 = None, to edit the start time
       end_time: np.datetime64 = None, to edit the simulation end time
+      tdis_perlen: The number of seconds in the MF6 stress periods. The value
+        must evenly dvide 1 day or 86400 seconds. Currently the value must be
+        the same for all stress periods. Default is 1 day = 86400s. For values
+        less than the default, mean-preserving splines are used to smooth the
+        flows to the desired resolution.
+      tdis_nstp: The number of substeps in each stress period. The value must
+        be the same for all stress periods and the default is 1.
       param_file: The filepath to the domain parameters. Exactly one of this
         and the params argument is required.
       params: a Parameter object. Exactly one of this and the params argument
@@ -137,6 +152,8 @@ class MmrToMf6Dfw:
         control: Control = None,
         start_time: np.datetime64 = None,
         end_time: np.datetime64 = None,
+        tdis_perlen: int = 86400,
+        tdis_nstp: int = 1,
         param_file: fileish = None,
         params: PrmsParameters = None,
         segment_shp_file: fileish = None,
@@ -171,6 +188,8 @@ class MmrToMf6Dfw:
         self._start_time = start_time
         self._end_time = end_time
         self._time_zone = time_zone
+        self._tdis_perlen = tdis_perlen
+        self._tdis_nstp = tdis_nstp
 
         self._written = False
         self._sim_name = sim_name
@@ -304,22 +323,21 @@ class MmrToMf6Dfw:
         if self._end_time is None:
             self._end_time = self.control.end_time
 
-        self._nper = (
-            int((self._end_time - self._start_time) / self.control.time_step)
-            + 1
-        )
+        assert self._tdis_perlen <= 86400
+        ratio = 86400 / self._tdis_perlen
+        assert ratio.is_integer()
 
-        self._timestep_s = self.control.time_step_seconds * self._units(
-            "seconds"
-        )
-        # convert to output units in the output data structure
-        perlen = (
-            self._timestep_s.to_base_units().magnitude
-        )  # not reused, ok2convert
+        run_duration_n_seconds = (
+            self._end_time - self._start_time
+        ) / np.timedelta64(1, "s")
+        self._nper = int((run_duration_n_seconds / self._tdis_perlen) + 1)
 
         if hasattr(self, "control"):
-            # perlen, ntsp, stmult
-            tdis_rc = [(perlen, 2, 1.0) for ispd in range(self._nper)]
+            # perlen, nstp, stmult
+            tdis_rc = [
+                (self._tdis_perlen, self._tdis_nstp, 1.0)
+                for ispd in range(self._nper)
+            ]
             _ = flopy.mf6.ModflowTdis(
                 self._sim,
                 pname="tdis",
@@ -355,11 +373,11 @@ class MmrToMf6Dfw:
                 "length"
             ] = self._segment_length.to_base_units().magnitude
 
-        if "seg_width" not in self._disv1d_options.keys():
+        if "width" not in self._disv1d_options.keys():
             # meters, per metadata
             self._disv1d_options["width"] = parameters["seg_width"]
 
-        if "lenth_units" not in self._disv1d_options.keys():
+        if "length_units" not in self._disv1d_options.keys():
             self._disv1d_options["length_units"] = self._length_units
 
         if "bottom" not in self._disv1d_options.keys():
@@ -377,12 +395,8 @@ class MmrToMf6Dfw:
             opts_set = [
                 "nodes",
                 "nvert",
-                "length",
-                "width",
-                "bottom",
                 "vertices",
                 "cell2d",
-                "length_units",
             ]
             for oo in opts_set:
                 self._warn_option_overwrite(oo, opt_dict_name, method_name)
@@ -529,7 +543,7 @@ class MmrToMf6Dfw:
         # aggregate inflows over the contributing fluxes
 
         # For non-binary data, this method has to be called after
-        # flopy.mf6.Swfdisl is set on self._swf, that's why its a method
+        # flopy.mf6.Swfdisl is set on self._swf
 
         parameters = self.parameters.parameters
 
@@ -546,7 +560,7 @@ class MmrToMf6Dfw:
 
         def read_inflow(vv, start_time, end_time):
             ff = xr.open_dataset(pl.Path(self._inflow_dir) / f"{vv}.nc")[vv]
-            return ff.sel(time=slice(start_time, end_time))
+            return ff.sel(time=slice(start_time, end_time)).values
 
         inflows = {
             vv: read_inflow(vv, self._start_time, self._end_time)
@@ -560,7 +574,7 @@ class MmrToMf6Dfw:
                     del inflows[kk]
 
         # add the units
-        inflows = {kk: vv.values * inflow_unit for kk, vv in inflows.items()}
+        inflows = {kk: vv * inflow_unit for kk, vv in inflows.items()}
 
         # flopy adds one to the index, but if we write binary we have to do it
         add_one = int(self._bc_binary_files)
@@ -578,7 +592,9 @@ class MmrToMf6Dfw:
             inflows[flow_name] /= prms_timestep_s.to("seconds")
             new_inflow_unit = inflows[flow_name].units
 
-            prms_mf6_ts_ratio = prms_timestep_s / self._timestep_s
+            prms_mf6_ts_ratio = (
+                prms_timestep_s / (self._tdis_perlen * self._units("seconds"))
+            ).magnitude
             prms_nper = int((self._nper - 1) / prms_mf6_ts_ratio) + 1
 
             print(f"{self._nper=}")
@@ -609,16 +625,17 @@ class MmrToMf6Dfw:
                 0, prms_nper - 1, num=self._nper, endpoint=True
             )
 
-            for iseg in range(lat_inflow_prms.shape[1]):
-                lat_inflow[:, iseg] = mpi(
-                    yi=lat_inflow_prms[:, iseg].magnitude,
-                    xi=time_prms,
-                    periodic=False,
-                )(time_mf6)
+            if len(time_prms) != len(time_mf6):
+                for iseg in range(lat_inflow_prms.shape[1]):
+                    lat_inflow[:, iseg] = mpi(
+                        yi=lat_inflow_prms[:, iseg].magnitude,
+                        xi=time_prms,
+                        periodic=False,
+                    )(time_mf6)
+            else:
+                lat_inflow = lat_inflow_prms.magnitude
 
             lat_inflow = lat_inflow * new_inflow_unit
-
-            # asdf
 
             # convert to output units in the output data structure
             flw_spd = {}
@@ -665,7 +682,7 @@ class MmrToMf6Dfw:
                 self._swf,
                 save_flows=self._save_flows,
                 stress_period_data=flw_spd,
-                maxbound=self._nsegment + 1,
+                maxbound=self._nsegment,
                 pname=flow_name,
                 **self._flw_options,
             )
@@ -677,14 +694,16 @@ class MmrToMf6Dfw:
 
     def _set_dfw(self):
         parameters = self.parameters.parameters
-        if "save_flows" not in self._dfw_options:
+        if "save_flows" not in self._dfw_options.keys():
             self._dfw_options["save_flows"] = self._save_flows
 
-        _ = flopy.mf6.ModflowSwfdfw(
-            self._swf,
-            manningsn=parameters["mann_n"],  # seconds / meter ** (1/3)
-            **self._dfw_options,
-        )
+        if "manningsn" in self._dfw_options.keys():
+            warn("Using supplied Manning's N and that from PRMS.")
+        else:
+            # seconds / meter ** (1/3)
+            self._dfw_options["manningsn"] = parameters["mann_n"]
+
+        _ = flopy.mf6.ModflowSwfdfw(self._swf, **self._dfw_options)
 
     def _set_sto(self):
         if "save_flows" not in self._sto_options:

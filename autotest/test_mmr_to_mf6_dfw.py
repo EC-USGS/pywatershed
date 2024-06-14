@@ -291,8 +291,7 @@ answers_regression_means = {
 @pytest.mark.domainless
 def test_mmr_to_mf6_dfw_regression(tmp_path):
     # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
-    repo_root_dir = pws.constants.__pywatershed_root__.parent
-    test_data_dir = repo_root_dir / "test_data"
+    test_data_dir = pl.path("../test_data")
 
     domain = "drb_2yr"
     domain_dir = test_data_dir / f"{domain}"

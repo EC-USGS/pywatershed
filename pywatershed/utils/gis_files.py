@@ -1,3 +1,6 @@
+# This utility gets GIS files needed for certain visualizations and
+# calculations. These GIS files are not part of the pws repo.
+
 import urllib
 import zipfile
 from shutil import rmtree

@@ -21,7 +21,7 @@ from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 from .hydrology.starfit import Starfit
-from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab
+from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab, gis_files
 from .utils.csv_utils import CsvFile
 from .version import __version__
 
@@ -55,6 +55,7 @@ __all__ = (
     "NetCdfRead",
     "NetCdfWrite",
     "Soltab",
+    "gis_files",
     "CsvFile",
     "__version__",
 )

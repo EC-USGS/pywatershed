@@ -1,3 +1,4 @@
+import pathlib as pl
 import shutil
 
 import flopy
@@ -10,6 +11,9 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 
 # Needs mf6 in PATH on mac/linux
 mf6_bin_unavailable = shutil.which("mf6") is None
+
+# Needs segment shape files
+pws.utils.gis_files.download()
 
 # The regression test is not really domainless, but is only tested on the DRB
 
@@ -291,7 +295,7 @@ answers_regression_means = {
 @pytest.mark.domainless
 def test_mmr_to_mf6_dfw_regression(tmp_path):
     # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
-    test_data_dir = pl.path("../test_data")
+    test_data_dir = pl.Path("../test_data")
 
     domain = "drb_2yr"
     domain_dir = test_data_dir / f"{domain}"
@@ -313,9 +317,8 @@ def test_mmr_to_mf6_dfw_regression(tmp_path):
     )
     params = pws.Parameters.merge(dis_both, seg_params)
 
-    seg_shp_file = (
-        repo_root_dir
-        / "pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
+    seg_shp_file = pl.Path(
+        "../pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
     )
 
     # IMS options

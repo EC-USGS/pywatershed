@@ -15,6 +15,10 @@ from ..constants import fileish, zero
 from ..parameters import PrmsParameters
 
 
+# Note: there are some headaches in handling time because PRMS's end day
+# is included, the beginning of that day is not the end of the run.
+
+
 class MmrToMf6Dfw:
     """Muskingum-Mann Routing to MF6 Diffusive Wave
 
@@ -94,7 +98,9 @@ class MmrToMf6Dfw:
 
     Args:
       control_file: filepath to a PRMS control file. Exactly one of this and
-        control are required.
+        control are required. If start and end times are the same, then
+        the run is considered a steady state run for MF6 and tdis_perlen and
+        tdis_nstp are
       control: a Control object. Exactly one of this and control are required.
       start_time: np.datetime64 = None, to edit the start time
       end_time: np.datetime64 = None, to edit the simulation end time
@@ -327,11 +333,15 @@ class MmrToMf6Dfw:
         ratio = 86400 / self._tdis_perlen
         assert ratio.is_integer()
 
-        # The last day is INCLUDED in PRMS, so have to add a day
-        run_duration_n_seconds = (
-            (self._end_time + np.timedelta64(1, "D")) - self._start_time
-        ) / np.timedelta64(1, "s")
-        self._nper = int((run_duration_n_seconds / self._tdis_perlen))
+        if self._start_time == self._end_time:
+            # this is steady state, not a 1 day run
+            self._nper = 1
+        else:
+            # The last day is INCLUDED in PRMS, so have to add a day
+            run_duration_n_seconds = (
+                (self._end_time + np.timedelta64(1, "D")) - self._start_time
+            ) / np.timedelta64(1, "s")
+            self._nper = int((run_duration_n_seconds / self._tdis_perlen))
 
         if hasattr(self, "control"):
             # perlen, nstp, stmult
@@ -370,9 +380,9 @@ class MmrToMf6Dfw:
             segment_units = self._units(meta.parameters["seg_length"]["units"])
             self._segment_length = parameters["seg_length"]
             self._segment_length = self._segment_length * segment_units
-            self._disv1d_options["length"] = (
-                self._segment_length.to_base_units().magnitude
-            )
+            self._disv1d_options[
+                "length"
+            ] = self._segment_length.to_base_units().magnitude
 
         if "width" not in self._disv1d_options.keys():
             # meters, per metadata
@@ -594,10 +604,14 @@ class MmrToMf6Dfw:
             inflows[flow_name] /= prms_timestep_s.to("seconds")
             new_inflow_unit = inflows[flow_name].units
 
-            prms_mf6_ts_ratio = (
-                prms_timestep_s / (self._tdis_perlen * self._units("seconds"))
-            ).magnitude
-            prms_nper = int((self._nper) / prms_mf6_ts_ratio)
+            if self._nper > 1:
+                prms_mf6_ts_ratio = (
+                    prms_timestep_s
+                    / (self._tdis_perlen * self._units("seconds"))
+                ).magnitude
+                prms_nper = int((self._nper) / prms_mf6_ts_ratio)
+            else:
+                prms_nper = 1
 
             # print(f"{self._nper=}")
             # print(f"{prms_nper=}")
@@ -627,7 +641,7 @@ class MmrToMf6Dfw:
                 0, prms_nper - 1, num=self._nper, endpoint=True
             )
 
-            if len(time_prms) != len(time_mf6):
+            if len(time_prms) > 0 and len(time_prms) != len(time_mf6):
                 for iseg in range(lat_inflow_prms.shape[1]):
                     lat_inflow[:, iseg] = mpi(
                         yi=lat_inflow_prms[:, iseg].magnitude,

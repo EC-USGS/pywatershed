@@ -11,6 +11,7 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 # Needs mf6 in PATH on mac/linux
 mf6_bin_unavailable = shutil.which("mf6") is None
 
+# The regression test is not really domainless, but is only tested on the DRB
 
 # See below to check if these answers are still up-to-date with
 # mf6/autotest/test_swf_dfw.py
@@ -47,6 +48,7 @@ answers_swf_dfw = {
 
 
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
+@pytest.mark.domainless
 @pytest.mark.parametrize("binary_flw", [True, False])
 def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
     # The point of this test is to reproduce the
@@ -278,7 +280,15 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
     assert (answers_swf_dfw["qresidual"] - qresidual < 1.0e-7).all()
 
 
+# <
+answers_regression_means = {
+    "stage_all": 1.03667372881148,
+    "flow_all": 44.685014111989425,
+}
+
+
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
+@pytest.mark.domainless
 def test_mmr_to_mf6_dfw_regression(tmp_path):
     # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
     repo_root_dir = pws.constants.__pywatershed_root__.parent
@@ -290,7 +300,7 @@ def test_mmr_to_mf6_dfw_regression(tmp_path):
     inflow_dir = domain_dir / "output"
 
     control_file = domain_dir / "nhm.control"
-    control = pws.Control.load_prms(control_file)
+    control = pws.Control.load_prms(control_file, warn_unused_options=False)
     ndays_run = 18
     # subtract one becase end day/time is included in the PRMS run
     control.edit_end_time(
@@ -448,9 +458,3 @@ def test_mmr_to_mf6_dfw_regression(tmp_path):
     for kk, vv in answers_regression_means.items():
         abs_diff = abs(locals()[kk].mean() - vv)
         assert abs_diff < 1e-6, f"results for {kk} are not close"
-
-
-answers_regression_means = {
-    "stage_all": 1.03667372881148,
-    "flow_all": 44.685014111989425,
-}

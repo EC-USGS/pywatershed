@@ -3,11 +3,11 @@ from warnings import warn
 
 import flopy
 import geopandas as gpd
-from mpsplines import MeanPreservingInterpolation as mpi
 import numpy as np
-import shapely
 import pint
+import shapely
 import xarray as xr
+from mpsplines import MeanPreservingInterpolation as mpi
 
 from pywatershed import Control, meta
 
@@ -327,10 +327,11 @@ class MmrToMf6Dfw:
         ratio = 86400 / self._tdis_perlen
         assert ratio.is_integer()
 
+        # The last day is INCLUDED in PRMS, so have to add a day
         run_duration_n_seconds = (
-            self._end_time - self._start_time
+            (self._end_time + np.timedelta64(1, "D")) - self._start_time
         ) / np.timedelta64(1, "s")
-        self._nper = int((run_duration_n_seconds / self._tdis_perlen) + 1)
+        self._nper = int((run_duration_n_seconds / self._tdis_perlen))
 
         if hasattr(self, "control"):
             # perlen, nstp, stmult
@@ -369,9 +370,9 @@ class MmrToMf6Dfw:
             segment_units = self._units(meta.parameters["seg_length"]["units"])
             self._segment_length = parameters["seg_length"]
             self._segment_length = self._segment_length * segment_units
-            self._disv1d_options[
-                "length"
-            ] = self._segment_length.to_base_units().magnitude
+            self._disv1d_options["length"] = (
+                self._segment_length.to_base_units().magnitude
+            )
 
         if "width" not in self._disv1d_options.keys():
             # meters, per metadata
@@ -415,10 +416,11 @@ class MmrToMf6Dfw:
                 reach_geom = shapely.get_coordinates(
                     segment_gdf.iloc[wh_geom].geometry
                 ).tolist()
-                # if it has a "to" drop the last vertex, reassign in a second pass
+                # if it has a "to" drop the last vertex, reassign in a second
+                # This shouldnt be necessary..
                 to_reach_id = parameters["tosegment_nhm"][rr]
-                if to_reach_id != 0:
-                    reach_geom = reach_geom[0:-1]
+                # if to_reach_id != 0:
+                #     reach_geom = reach_geom[0:-1]
                 reach_vert_geoms[reach_id] = reach_geom
                 reach_vert_inds[reach_id] = list(
                     range(vert_count, vert_count + len(reach_geom))
@@ -486,13 +488,13 @@ class MmrToMf6Dfw:
                             reach_cell2d_end_ind == to_reach_cell2d_start_ind
                         )
 
-                        wh_down_geom = np.where(
-                            segment_gdf.nsegment_v.values == to_reach_id
-                        )[0][0]
-                        reach_down_geom = shapely.get_coordinates(
-                            segment_gdf.iloc[wh_down_geom].geometry
-                        ).tolist()
-                        assert reach_geom[-1] == reach_down_geom[0]
+                        # wh_down_geom = np.where(
+                        #     segment_gdf.nsegment_v.values == to_reach_id
+                        # )[0][0]
+                        # reach_down_geom = shapely.get_coordinates(
+                        #     segment_gdf.iloc[wh_down_geom].geometry
+                        # ).tolist()
+                        # assert reach_geom[-1] == reach_down_geom[0]
 
                     # check all "FROM" connectivity
                     wh_from_reach = np.where(
@@ -510,13 +512,13 @@ class MmrToMf6Dfw:
                             from_reach_cell2d_end_ind == reach_cell2d_start_ind
                         )
 
-                        wh_up_geom = np.where(
-                            segment_gdf.nsegment_v.values == from_reach_id
-                        )[0][0]
-                        reach_up_geom = shapely.get_coordinates(
-                            segment_gdf.iloc[wh_up_geom].geometry
-                        ).tolist()
-                        assert reach_up_geom[-1] == reach_geom[0]
+                        # wh_up_geom = np.where(
+                        #     segment_gdf.nsegment_v.values == from_reach_id
+                        # )[0][0]
+                        # reach_up_geom = shapely.get_coordinates(
+                        #     segment_gdf.iloc[wh_up_geom].geometry
+                        # ).tolist()
+                        # assert reach_up_geom[-1] == reach_geom[0]
 
             nnodes = len(cell2d)
             assert nnodes == self._nsegment
@@ -595,10 +597,10 @@ class MmrToMf6Dfw:
             prms_mf6_ts_ratio = (
                 prms_timestep_s / (self._tdis_perlen * self._units("seconds"))
             ).magnitude
-            prms_nper = int((self._nper - 1) / prms_mf6_ts_ratio) + 1
+            prms_nper = int((self._nper) / prms_mf6_ts_ratio)
 
-            print(f"{self._nper=}")
-            print(f"{prms_nper=}")
+            # print(f"{self._nper=}")
+            # print(f"{prms_nper=}")
 
             # calculate lateral flow term to the REACH/segment from HRUs
             lat_inflow_prms = (

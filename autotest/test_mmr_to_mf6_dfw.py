@@ -1,4 +1,4 @@
-import pathlib as pl
+import shutil
 
 import flopy
 import numpy as np
@@ -8,8 +8,8 @@ import xarray as xr
 import pywatershed as pws
 from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 
-# The point of this is to reproduce the modflow6/autotest/test_swf_dfw.py
 # Needs mf6 in PATH on mac/linux
+mf6_bin_unavailable = shutil.which("mf6") is None
 
 
 # See below to check if these answers are still up-to-date with
@@ -46,8 +46,12 @@ answers_swf_dfw = {
 }
 
 
+@pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.parametrize("binary_flw", [True, False])
-def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
+def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
+    # The point of this test is to reproduce the
+    # modflow6/autotest/test_swf_dfw.py
+
     # Here we supply "seg_mid_elevation" in the parameter data and
     # "stress_period_data" in chd options. This bypasses the calculation of
     # these given PRMS parameter information. In this case, it would be
@@ -272,3 +276,181 @@ def test_mmr_to_mf6_dfw(tmp_path, binary_flw):
     assert (answers_swf_dfw["qflw"] - qflw < 1.0e-7).all()
     assert (answers_swf_dfw["qchd"] - qchd < 1.0e-7).all()
     assert (answers_swf_dfw["qresidual"] - qresidual < 1.0e-7).all()
+
+
+@pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
+def test_mmr_to_mf6_dfw_regression(tmp_path):
+    # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
+    repo_root_dir = pws.constants.__pywatershed_root__.parent
+    test_data_dir = repo_root_dir / "test_data"
+
+    domain = "drb_2yr"
+    domain_dir = test_data_dir / f"{domain}"
+    run_dir = tmp_path
+    inflow_dir = domain_dir / "output"
+
+    control_file = domain_dir / "nhm.control"
+    control = pws.Control.load_prms(control_file)
+    ndays_run = 18
+    # subtract one becase end day/time is included in the PRMS run
+    control.edit_end_time(
+        control.start_time + ((ndays_run - 1) * control.time_step)
+    )
+
+    dis_both_file = domain_dir / "parameters_dis_both.nc"
+    dis_both = pws.Parameters.from_netcdf(dis_both_file)
+    seg_params = pws.Parameters.from_netcdf(
+        domain_dir / "parameters_PRMSChannel.nc"
+    )
+    params = pws.Parameters.merge(dis_both, seg_params)
+
+    seg_shp_file = (
+        repo_root_dir
+        / "pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
+    )
+
+    # IMS options
+    nouter, ninner = 100, 50
+    hclose, rclose, relax = 1e-5, 1.0, 0.97
+
+    ims_options = {
+        "print_option": "SUMMARY",
+        "outer_dvclose": hclose,
+        "outer_maximum": nouter,
+        "under_relaxation": "DBD",
+        "under_relaxation_theta": 0.95,
+        "under_relaxation_kappa": 0.0001,
+        "under_relaxation_gamma": 0.0,
+        "under_relaxation_momentum": 0.0,
+        "inner_maximum": ninner,
+        "inner_dvclose": hclose,
+        "linear_acceleration": "BICGSTAB",
+        "scaling_method": "NONE",
+        "reordering_method": "NONE",
+        "relaxation_factor": relax,
+        "filename": "drb.ims",
+    }
+
+    dfw_options = {
+        "print_flows": True,
+        "save_flows": True,
+        "idcxs": None,  # zero based in flopy, None for hydraulically wide
+    }
+
+    sto_options = {"save_flows": True}
+
+    oc_options = {
+        "saverecord": [
+            ("STAGE", "ALL"),
+            ("BUDGET", "ALL"),
+        ],
+        "printrecord": [
+            ("STAGE", "LAST"),
+            ("BUDGET", "ALL"),
+        ],
+    }
+
+    # Initial water depth, units of meters
+    ic_options = {"strt": 0.5}
+
+    chd_options = {
+        "print_input": True,
+        "print_flows": False,
+    }
+
+    bc_binary_files = True
+    bc_flows_combined = True
+
+    tdis_perlen = 2 * 3600  # stress period length
+    tdis_nstp = 3  # substeps per stress period
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    dfw = MmrToMf6Dfw(
+        control=control,
+        segment_shp_file=seg_shp_file,
+        params=params,
+        tdis_perlen=tdis_perlen,
+        tdis_nstp=tdis_nstp,
+        output_dir=run_dir,
+        sim_name="drb_dfw",
+        ims_options=ims_options,
+        dfw_options=dfw_options,
+        sto_options=sto_options,
+        oc_options=oc_options,
+        ic_options=ic_options,
+        chd_options=chd_options,
+        bc_binary_files=bc_binary_files,
+        bc_flows_combined=bc_flows_combined,
+        inflow_dir=inflow_dir,
+    )
+
+    success, buff = dfw.run(silent=False, report=True)
+    assert success
+
+    sim = flopy.mf6.MFSimulation.load(
+        "drb_mf6_dfw",
+        sim_ws=str(run_dir),
+        exe_name="mf6",
+        load_only=["disv1d"],
+    )
+    sim.model_names
+    model = sim.get_model("drb_dfw")
+
+    # time
+    tdis = sim.tdis
+    sim_start_time = np.datetime64(
+        tdis.start_date_time.get_data().upper()[0:19]
+    )
+    n_substeps = int((ndays_run) * 24 * 60 * 60 / tdis_perlen * tdis_nstp)
+    substep_len = np.timedelta64(int(tdis_perlen / tdis_nstp), "s")
+    sim_end_time = sim_start_time + n_substeps * substep_len
+    sim_times = np.arange(sim_start_time, sim_end_time, substep_len)
+    perioddata = tdis.perioddata.get_data()
+    assert len(sim_times) == len(perioddata) * perioddata[0][1]
+
+    # stage
+    stage_file = run_dir / "drb_dfw.stage"
+    sobj = flopy.utils.HeadFile(stage_file, text="STAGE", verbose=False)
+    stage_all = sobj.get_alldata().squeeze()
+    disv1d = model.get_package("disv1d")
+    bottom_ele = disv1d.bottom.get_data()
+    stage_all = np.maximum(stage_all - bottom_ele, 0)
+
+    # getting flow is more complicated and could be improved/refined
+    budget_file = run_dir / "drb_dfw.bud"
+    budobj = flopy.utils.binaryfile.CellBudgetFile(budget_file)
+    flowja = budobj.get_data(text="FLOW-JA-FACE")
+    # qstorage = budobj.get_data(text="STORAGE")
+    # qflw = budobj.get_data(text="FLW")
+    # qextoutflow = budobj.get_data(text="EXT-OUTFLOW")
+
+    grb_file = run_dir / "drb_dfw.disv1d.grb"
+    grb = flopy.mf6.utils.MfGrdFile(grb_file)
+    ia = grb.ia
+    ja = grb.ja
+
+    def get_outflow(itime):
+        outflow = np.zeros(ia.shape[0] - 1)
+        flowjaflat = flowja[itime].flatten()
+        for n in range(grb.nodes):
+            for ipos in range(ia[n] + 1, ia[n + 1]):
+                q = flowjaflat[ipos]
+                if q < 0:
+                    outflow[n] += -q
+        # <<<
+        return outflow
+
+    flow_all = stage_all.copy() * np.nan
+    for tt in range(flow_all.shape[0]):
+        flow_all[tt, :] = get_outflow(tt)
+
+    for kk, vv in answers_regression_means.items():
+        abs_diff = abs(locals()[kk].mean() - vv)
+        assert abs_diff < 1e-6, f"results for {kk} are not close"
+
+
+answers_regression_means = {
+    "stage_all": 1.03667372881148,
+    "flow_all": 44.685014111989425,
+}

@@ -196,6 +196,8 @@ jobs:
           wget https://github.com/EC-USGS/pywatershed/releases/download/v2022.0.1/pynhm_gis.zip
           tar xvfz pynhm_gis.zip
           mv pynhm_gis pywatershed_gis
+          pwd
+          ls *
 
       - name: domainless - run tests no requiring domain data
         working-directory: autotest

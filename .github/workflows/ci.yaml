@@ -193,7 +193,6 @@ jobs:
       - name: Get GIS files for tests
         uses: robinraju/release-downloader@v1.10
         with:
-          repository: ''
           tag: 'v2022.0.1'
           fileName: 'pynhm_gis.zip'
           tarBall: true

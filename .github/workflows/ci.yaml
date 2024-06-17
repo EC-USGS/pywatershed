@@ -190,12 +190,19 @@ jobs:
           pip -V
           pip list
 
-      - name: Get GIS files for tests and plotting
-        working-directory: pywatershed/data
-        run: |
-          wget https://github.com/EC-USGS/pywatershed/releases/download/v2022.0.1/pynhm_gis.zip
-          tar xvfz pynhm_gis.zip
-          mv pynhm_gis pywatershed_gis
+      - name: Get GIS files for tests
+        uses: dsaltares/fetch-gh-release-asset@master
+        with:
+          repo: 'dsaltares/fetch-gh-release-asset@master'
+          version: 'tags/v2022.0.1'
+          file: 'pynhm_gis.zip'
+          target: "pywatershed/data/pynhm_giz.zip"
+
+      - name: Extract GIS files
+        uses: ihiroky/extract-action@v1
+        with:
+          file_path: "pywatershed/data/pynhm_giz.zip"
+          extract_dir: "pywatershed/data/pywatershed_gis"
 
       - name: domainless - run tests no requiring domain data
         working-directory: autotest

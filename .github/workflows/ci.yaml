@@ -198,7 +198,7 @@ jobs:
           fileName: 'pynhm_gis.zip'
           tarBall: true
           extract: true
-          out-file_path: "pywatershed/data/pywatershed_gis"
+          out-file-path: "pywatershed/data/pywatershed_gis"
 
       - name: domainless - run tests no requiring domain data
         working-directory: autotest

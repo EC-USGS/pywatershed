@@ -13,7 +13,7 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 mf6_bin_unavailable = shutil.which("mf6") is None
 
 # Get the gis files if necessary
-pws.utils.gis_files.download()
+# pws.utils.gis_files.download()
 
 
 # See below to check if these answers are still up-to-date with

@@ -296,14 +296,12 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
     if simulation["name"] != "drb_2yr:nhm":
         pytest.skip("test_mmr_to_mf6_dfw_regression only runs for drb_2yr_nhm")
 
-    print()
-    print(f"{pws.utils.gis_files.gis_dir=}")
-    fp = pws.utils.gis_files.gis_dir.resolve()
-    print(f"{fp=}")
-    print(f"{fp.exists()=}")
+    seg_shp_file = pl.Path(
+        "../pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
+    )
 
-    if not pws.utils.gis_files.gis_dir.exists():
-        pytest.skip("test_mmr_to_mf6_dfw_regression GIS files not present")
+    if not seg_shp_file.exists():
+        pytest.skip("test_mmr_to_mf6_dfw_regression seg_shp_file not present")
 
     # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
     test_data_dir = pl.Path("../test_data")
@@ -327,10 +325,6 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
         domain_dir / "parameters_PRMSChannel.nc"
     )
     params = pws.Parameters.merge(dis_both, seg_params)
-
-    seg_shp_file = pl.Path(
-        "../pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
-    )
 
     # IMS options
     nouter, ninner = 100, 50

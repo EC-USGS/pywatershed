@@ -13,8 +13,8 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 mf6_bin_unavailable = shutil.which("mf6") is None
 
 # Needs segment shape files
-if not pws.utils.gis_files.gis_dir.exists():
-    pws.utils.gis_files.download()
+# if not pws.utils.gis_files.gis_dir.exists():
+#     pws.utils.gis_files.download()
 
 # The regression test is not really domainless, but is only tested on the DRB
 

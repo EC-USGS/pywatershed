@@ -246,7 +246,7 @@ jobs:
         run: pytest
           -vv
           -rs
-          -n=auto
+          -s
           -m domain
           --domain=hru_1
           --control_pattern=nhm.control

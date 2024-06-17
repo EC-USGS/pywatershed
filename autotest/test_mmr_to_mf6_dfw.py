@@ -296,6 +296,12 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
     if simulation["name"] != "drb_2yr:nhm":
         pytest.skip("test_mmr_to_mf6_dfw_regression only runs for drb_2yr_nhm")
 
+    print()
+    print(f"{pws.utils.gis_files.gis_dir=}")
+    fp = pws.utils.gis_files.gis_dir.resolve()
+    print(f"{fp=}")
+    print(f"{fp.exists()=}")
+
     if not pws.utils.gis_files.gis_dir.exists():
         pytest.skip("test_mmr_to_mf6_dfw_regression GIS files not present")
 

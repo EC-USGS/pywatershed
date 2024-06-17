@@ -278,7 +278,6 @@ jobs:
           -vv
           -rs
           -s
-          # -n=auto
           -m domain
           --domain=drb_2yr
           --control_pattern=nhm.control

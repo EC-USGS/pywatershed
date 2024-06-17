@@ -191,18 +191,14 @@ jobs:
           pip list
 
       - name: Get GIS files for tests
-        uses: dsaltares/fetch-gh-release-asset@master
+        uses: robinraju/release-downloader@v1.10
         with:
-          repo: 'dsaltares/fetch-gh-release-asset@master'
-          version: 'tags/v2022.0.1'
-          file: 'pynhm_gis.zip'
-          target: "pywatershed/data/pynhm_giz.zip"
-
-      - name: Extract GIS files
-        uses: ihiroky/extract-action@v1
-        with:
-          file_path: "pywatershed/data/pynhm_giz.zip"
-          extract_dir: "pywatershed/data/pywatershed_gis"
+          repository: ''
+          tag: 'v2022.0.1'
+          fileName: 'pynhm_gis.zip'
+          tarBall: true
+          extract: true
+          out-file_path: "pywatershed/data/pywatershed_gis"
 
       - name: domainless - run tests no requiring domain data
         working-directory: autotest

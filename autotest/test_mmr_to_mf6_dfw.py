@@ -12,11 +12,9 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 # Needs mf6 in PATH on mac/linux
 mf6_bin_unavailable = shutil.which("mf6") is None
 
-# Needs segment shape files
-# if not pws.utils.gis_files.gis_dir.exists():
-#     pws.utils.gis_files.download()
+# Get the gis files if necessary
+pws.utils.gis_files.download()
 
-# The regression test is not really domainless, but is only tested on the DRB
 
 # See below to check if these answers are still up-to-date with
 # mf6/autotest/test_swf_dfw.py
@@ -293,13 +291,16 @@ answers_regression_means = {
 
 
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
-@pytest.mark.domainless
-def test_mmr_to_mf6_dfw_regression(tmp_path):
+@pytest.mark.domain
+def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
+    if simulation["name"] != "drb_2yr:nhm":
+        pytest.skip("test_mmr_to_mf6_dfw_regression only runs for drb_2yr_nhm")
+
     # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
     test_data_dir = pl.Path("../test_data")
 
-    domain = "drb_2yr"
-    domain_dir = test_data_dir / f"{domain}"
+    domain_name = simulation["name"].split(":")[0]
+    domain_dir = test_data_dir / f"{domain_name}"
     run_dir = tmp_path
     inflow_dir = domain_dir / "output"
 

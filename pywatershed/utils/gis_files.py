@@ -1,7 +1,7 @@
 # This utility gets GIS files needed for certain visualizations and
 # calculations. These GIS files are not part of the pws repo.
 
-import urllib
+import urllib.request as request
 import zipfile
 from shutil import rmtree
 
@@ -21,11 +21,16 @@ def download(force=False):
             "releases/download/v2022.0.1/pynhm_gis.zip"
         )
         gis_file = pkg_root_dir / "data/pynhm_gis.zip"
-        urllib.request.urlretrieve(gis_url, gis_file)
+        request.urlretrieve(gis_url, gis_file)
 
         with zipfile.ZipFile(gis_file, "r") as zz:
             zz.extractall(pkg_root_dir / "data")
 
         (pkg_root_dir / "data/pynhm_gis").rename(gis_dir)
+        assert gis_dir.exists()
 
     return
+
+
+if __name__ == "__main__":
+    download()

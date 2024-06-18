@@ -296,9 +296,12 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
     if simulation["name"] != "drb_2yr:nhm":
         pytest.skip("test_mmr_to_mf6_dfw_regression only runs for drb_2yr_nhm")
 
+    gis_dir = pws.utils.gis_files.gis_dir
+
     seg_shp_file = pl.Path(
         "../pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
     )
+    seg_shp_file = gis_dir / "drb_2yr/Segments_subset.shp"
 
     print()
     print(f"{pl.Path(__file__).resolve()=}")

@@ -12,9 +12,7 @@ from pywatershed.utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 # Needs mf6 in PATH on mac/linux
 mf6_bin_unavailable = shutil.which("mf6") is None
 
-# Get the gis files if necessary: this causes problems in parallel in CI
-# pws.utils.gis_files.download()
-
+# Getting the gis files causes problems in parallel in CI. See regression test.
 
 # See below to check if these answers are still up-to-date with
 # mf6/autotest/test_swf_dfw.py
@@ -293,29 +291,21 @@ answers_regression_means = {
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.domain
 def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
+    # this test is based on the notebook examples/mmr_to_mf6_dfw.ipynb
     if simulation["name"] != "drb_2yr:nhm":
         pytest.skip("test_mmr_to_mf6_dfw_regression only runs for drb_2yr_nhm")
 
+    domain_name = simulation["name"].split(":")[0]
+
+    # Fail if segment shp file not present
     gis_dir = pws.utils.gis_files.gis_dir
-
-    seg_shp_file = pl.Path(
-        "../pywatershed/data/pywatershed_gis/drb_2yr/Segments_subset.shp"
+    seg_shp_file = gis_dir / f"{domain_name}/Segments_subset.shp"
+    msg = (
+        f"GIS data and segment shapefile missing for {domain_name}. Run "
+        "`python pywatershed/pywatershed/utils/gis_files.py` to install these"
     )
-    seg_shp_file = gis_dir / "drb_2yr/Segments_subset.shp"
+    assert seg_shp_file.exists(), msg
 
-    print()
-    print(f"{pl.Path(__file__).resolve()=}")
-    print(f"{seg_shp_file.resolve()=}")
-    print(f"{seg_shp_file.exists()=}")
-    print(f"{pws.utils.gis_files.gis_dir=}")
-    fp = pws.utils.gis_files.gis_dir.resolve()
-    print(f"{fp=}")
-    print(f"{fp.exists()=}")
-
-    if not pws.utils.gis_files.gis_dir.exists():
-        pytest.skip("test_mmr_to_mf6_dfw_regression GIS files not present")
-
-    # this is based on the notebook examples/mmr_to_mf6_dfw.ipynb
     test_data_dir = pl.Path("../test_data")
 
     domain_name = simulation["name"].split(":")[0]

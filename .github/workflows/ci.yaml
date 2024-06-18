@@ -190,74 +190,65 @@ jobs:
           pip -V
           pip list
 
-      # - name: Get GIS files for tests
-      #   uses: robinraju/release-downloader@v1.10
-      #   with:
-      #     tag: 'v2022.0.1'
-      #     fileName: 'pynhm_gis.zip'
-      #     tarBall: true
-      #     extract: true
-      #     out-file-path: "pywatershed/data/pywatershed_gis"
-
       - name: Get GIS files for tests
         run: |
           python pywatershed/utils/gis_files.py
 
-      # - name: domainless - run tests no requiring domain data
-      #   working-directory: autotest
-      #   run: pytest -m domainless -n=auto -vv
+      - name: domainless - run tests not requiring domain data
+        working-directory: autotest
+        run: pytest -m domainless -n=auto -vv
 
-      # - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
-      #   working-directory: autotest
-      #   run: |
-      #     python generate_test_data.py \
-      #       -n=auto --domain=sagehen_5yr --control_pattern=sagehen_no_cascades.control \
-      #       --remove_prms_csvs --remove_prms_output_dirs
+      - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=sagehen_5yr --control_pattern=sagehen_no_cascades.control \
+            --remove_prms_csvs --remove_prms_output_dirs
 
-      # - name: sagehen_5yr_no_cascades - list netcdf input files
-      #   working-directory: test_data
-      #   run: |
-      #     find sagehen_5yr/output_no_cascades -name '*.nc'
+      - name: sagehen_5yr_no_cascades - list netcdf input files
+        working-directory: test_data
+        run: |
+          find sagehen_5yr/output_no_cascades -name '*.nc'
 
-      # - name: sagehen_5yr_no_cascades - pywatershed tests
-      #   working-directory: autotest
-      #   run: pytest
-      #     -vv
-      #     -rs
-      #     -n=auto
-      #     -m domain
-      #     --domain=sagehen_5yr
-      #     --control_pattern=sagehen_no_cascades.control
-      #     --durations=0
-      #     --cov=pywatershed
-      #     --cov-report=xml
-      #     --junitxml=pytest_sagehen_5yr_no_cascades.xml
+      - name: sagehen_5yr_no_cascades - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -rs
+          -n=auto
+          -m domain
+          --domain=sagehen_5yr
+          --control_pattern=sagehen_no_cascades.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_sagehen_5yr_no_cascades.xml
 
-      # - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
-      #   working-directory: autotest
-      #   run: |
-      #     python generate_test_data.py \
-      #       -n=auto --domain=hru_1 --control_pattern=nhm.control \
-      #       --remove_prms_csvs --remove_prms_output_dirs
+      - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=hru_1 --control_pattern=nhm.control \
+            --remove_prms_csvs --remove_prms_output_dirs
 
-      # - name: hru_1_nhm - list netcdf input files
-      #   working-directory: test_data
-      #   run: |
-      #     find hru_1/output -name '*.nc'
+      - name: hru_1_nhm - list netcdf input files
+        working-directory: test_data
+        run: |
+          find hru_1/output -name '*.nc'
 
-      # - name: hru_1_nhm - pywatershed tests
-      #   working-directory: autotest
-      #   run: pytest
-      #     -vv
-      #     -rs
-      #     -n=auto
-      #     -m domain
-      #     --domain=hru_1
-      #     --control_pattern=nhm.control
-      #     --durations=0
-      #     --cov=pywatershed
-      #     --cov-report=xml
-      #     --junitxml=pytest_hru_1_nhm.xml
+      - name: hru_1_nhm - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -rs
+          -n=auto
+          -m domain
+          --domain=hru_1
+          --control_pattern=nhm.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_hru_1_nhm.xml
 
       - name: drb_2yr with and without dprst - generate and manage test data
         working-directory: autotest
@@ -281,7 +272,7 @@ jobs:
         run: pytest
           -vv
           -rs
-          -s
+          -n=auto
           -m domain
           --domain=drb_2yr
           --control_pattern=nhm.control

@@ -2,7 +2,6 @@ import pathlib as pl
 from textwrap import wrap
 from typing import Callable
 
-import contextily as cx
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -14,6 +13,8 @@ from ..base import meta
 from ..base.model import Model
 from ..base.process import Process
 from ..utils.optional_import import import_optional_dependency
+
+cx = import_optional_dependency("contextily")
 
 
 class ProcessPlot:

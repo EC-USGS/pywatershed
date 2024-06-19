@@ -70,6 +70,7 @@ optional = [
     "pydot",
     "geos",
     "cartopy",
+    "contextily",
     "geopandas",
     "hvplot",
     "shapely <2.0.0",

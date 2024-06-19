@@ -6,9 +6,9 @@ import contextily as cx
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import xyzservices
 from matplotlib.collections import LineCollection, PatchCollection
 from matplotlib.patches import Polygon
+from xyzservices import TileProvider
 
 from ..base import meta
 from ..base.model import Model
@@ -71,7 +71,7 @@ class ProcessPlot:
         figsize: tuple = (7, 10),
         title: str = None,
         aesthetic_width: bool = False,
-        cx_map_source: xyzservices.TileProvider = cx.providers.CartoDB.Positron,
+        cx_map_source: TileProvider = cx.providers.CartoDB.Positron,
         vmin: float = None,
         vmax: float = None,
         aesthetic_width_color="darkblue",

@@ -3,19 +3,16 @@ from textwrap import wrap
 from typing import Callable
 
 import contextily as cx
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.colors import Normalize
 from matplotlib.patches import Polygon
 from xyzservices import TileProvider
 
 from ..base import meta
 from ..base.model import Model
 from ..base.process import Process
-from ..base import meta
 from ..utils.optional_import import import_optional_dependency
 
 
@@ -79,7 +76,6 @@ class ProcessPlot:
         vmax: float = None,
         aesthetic_width_color="darkblue",
     ):
-
         values = process[var_name]
         if value_transform is not None:
             values = value_transform(values)

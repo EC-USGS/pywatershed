@@ -29,9 +29,12 @@ from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 from .hydrology.starfit import Starfit
+
+from .plot.domain_plot import DomainPlot
 from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab
 from .utils.csv_utils import CsvFile
 from .version import __version__
+
 
 __all__ = (
     "prms_channel_flow_graph_postprocess",
@@ -70,5 +73,6 @@ __all__ = (
     "NetCdfWrite",
     "Soltab",
     "CsvFile",
+    "DomainPlot",
     "__version__",
 )

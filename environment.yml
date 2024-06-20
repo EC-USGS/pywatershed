@@ -48,5 +48,5 @@ dependencies:
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools
-      - sphinx-autodoc-typehints
+      - sphinx-autodoc-typehints<2.0.0
       - ruff

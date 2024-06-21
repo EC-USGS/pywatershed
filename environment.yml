@@ -7,6 +7,7 @@ channels:
 dependencies:
   - bash_kernel
   - cartopy
+  - contextily
   - epiweeks
   - filelock
   - geopandas
@@ -47,5 +48,5 @@ dependencies:
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools
-      - sphinx-autodoc-typehints
+      - sphinx-autodoc-typehints>=2.2.1
       - ruff

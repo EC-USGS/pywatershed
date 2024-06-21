@@ -28,6 +28,7 @@ classifiers = [
 ]
 requires-python = ">=3.9,<3.11"
 dependencies = [
+    "contextily",
     "numpy >=1.15.0",
     "matplotlib >=1.4.0",
     "epiweeks",
@@ -41,6 +42,7 @@ dependencies = [
     "tqdm",
     "xarray >= 2023.5.0",
     "xmltodict",
+    "xyzservices",
 ]
 dynamic = ["version", "readme"]
 
@@ -82,7 +84,7 @@ doc = [
     "jinja2<3.1",
     "sphinx",
     "sphinx-book-theme>=0.3.3",
-    "sphinx-autodoc-typehints",
+    "sphinx-autodoc-typehints>=2.2.1",
     "sphinx-autosummary-accessors",
     "sphinx-copybutton"
 ]

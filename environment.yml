@@ -50,5 +50,5 @@ dependencies:
       - jupyter_black
       - modflow-devtools
       - git+https://github.com/jararias/mpsplines.git
-      - sphinx-autodoc-typehints
+      - sphinx-autodoc-typehints>=2.2.1
       - ruff

@@ -4,6 +4,8 @@
 Model
 ----------
 
+The Model class.
+
 .. autosummary::
    :toctree: generated/
 

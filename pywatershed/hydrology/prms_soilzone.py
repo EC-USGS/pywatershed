@@ -293,6 +293,12 @@ class PRMSSoilzone(ConservativeProcess):
         self._pref_flow_den = self.pref_flow_den.copy()
         self._pref_flow_den[wh_not_land] = zero
 
+        if (self.pref_flow_infil_frac.min() < zero).any() or (
+            self.pref_flow_infil_frac.max() > one
+        ).any():
+            msg = "Values of pref_flow_infil_frac outside of [0,1]"
+            raise ValueError(msg)
+
         # variables
         if True:
             # For now there is no restart capability. we'll use the following

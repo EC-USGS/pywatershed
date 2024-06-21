@@ -49,5 +49,5 @@ dependencies:
       - jupyter_black
       - modflow-devtools
       - git+https://github.com/paknorton/pyPRMS.git@development
-      - sphinx-autodoc-typehints
+      - sphinx-autodoc-typehints>=2.2.1
       - ruff

@@ -17,12 +17,21 @@ from ..parameters import PrmsParameters
 # Note: there are some headaches in handling time because PRMS's end day
 # is included, the beginning of that day is not the end of the run.
 
+# TODOS:
+#     * Deal with time/sim being optional
+#     * are start_time and end_time supported to change these times?
+
 
 class MmrToMf6Dfw:
-    """Muskingum-Mann Routing to MF6 Diffusive Wave
+    """PRMS Muskingum-Mann Routing (MMR) to MF6 Diffusive Wave (DFW).
 
-    This builds a MF6 simulation with Diffusive Wave (DFW) routing from PRMS
-    NHM input files (Muskingum-Mann Routing, MMR, data) and a few simple
+    Terms:
+
+    * MMR: Muskingum-Mann Routing in PRMS
+    * DFW: Diffusive Wave in MF6 (develop branch)
+
+    This class builds a MF6 simulation with Diffusive Wave (DFW) routing from
+    PRMS NHM input files (Muskingum-Mann Routing, MMR, data) and a few simple
     assumptions, and uses as boundary conditions the to-channel fluxes from
     a PRMS run.
 
@@ -33,18 +42,17 @@ class MmrToMf6Dfw:
 
     The daily inflows from PRMS can optionally be smoothed to desired sub-daily
     resolution of MF6 stress period length using mean preserving splines from
-    the mpsplines python package.
-    https://github.com/jararias/mpsplines
-    Ruiz-Arias, J. A. (2022). Mean-preserving interpolation with splines for
-    solar radiation modeling. Solar Energy, Vol. 248, pp. 121-127.
-    doi: 10.1016/j.solener.2022.10.038
+    the mpsplines python package https://github.com/jararias/mpsplines:
 
-    MMR: Muskingum-Mann Routing in PRMS
-    DFW: Diffusive Wave in MF6 (develop)
+    `Ruiz-Arias, J. A. (2022). Mean-preserving interpolation with splines
+    for solar radiation modeling. Solar Energy, Vol. 248, pp.
+    121-127. <https://doi.org/10.1016/j.solener.2022.10.038>`__
+
 
     PRMS MMR Parameters used and how:
+
     * tosegment:
-        Used to give the reach/segment connectivity (transformed to zero based
+       Used to give the reach/segment connectivity (transformed to zero based
        for use in python and flopy). No units.
     * seg_length:
         Used for SfwDisl, the discretization of the reaches, directly. Also
@@ -69,22 +77,29 @@ class MmrToMf6Dfw:
         Mannings N coefficient for MMR. Passed directly to SWF DFW. Units in
         seconds / meter ** (1/3) according to the metadata.
 
-    Can be user-supplied parameters but are NOT part of PRMS parameters:
+    The following optional parameters can be user-supplied but are NOT part of
+    PRMS parameters:
+
     * seg_mid_elevation:
         The elevation at the mid-point of a segment. This is calculated always
         starting from one of the basin outlets. The outlet elevation is
         calculated as per chd_options["stress_period_data"], the downstream
         end of the segment is assumed to have the elevation of the lowest HRU
-        which maps to this segment:
-        - outlet_downstream_elev = lowest_hru_elev
-        The upstream end of the outlet segment is then calculated:
-        - outlet_upstream_elev =  lowest_hru_elev + seg_length * seg_slope
+        which maps to this segment
+
+            ``outlet_downstream_elev = lowest_hru_elev``
+
+        The upstream end of the outlet segment is then calculated
+
+            ``outlet_upstream_elev =  lowest_hru_elev + seg_length * seg_slope``.
+
         The midpoint of the of the outlet is the average of upstream and
         downstream segment elevations. For all other segments above outlets,
         its downstream elevation is the same as its downstream segment's
         upstream elevation and so
-        - segment_upstream_elev =
-          downstream_seg_upstream_elev + seg_length * seg_slope
+
+            ``segment_upstream_elev = downstream_seg_upstream_elev + seg_length * seg_slope``.
+
         And its midpoint is again the average elevation between upstream and
         downstream elevations of the segment.
     * chd_options["stress_period_data"]:
@@ -143,11 +158,6 @@ class MmrToMf6Dfw:
       oc_options: See above.
       sto_options: See above.
 
-    TODOS:
-        * Deal with time/sim being optional
-        * run mf6 in the tests
-        * are start_time and end_time supported to change these times?
-
 
     """
 
@@ -172,7 +182,7 @@ class MmrToMf6Dfw:
         # length_units="meters",
         # time_units="seconds",
         save_flows: bool = True,
-        time_zone="UTC",
+        time_zone: str = "UTC",
         write_on_init: bool = True,
         chd_options: dict = None,
         cxs_options: dict = None,
@@ -243,7 +253,7 @@ class MmrToMf6Dfw:
 
         return
 
-    def write(self, *args, rewrite=False, **kwargs):
+    def write(self, *args, rewrite: bool = False, **kwargs):
         if self._written and not rewrite:
             msg = (
                 "The simulation was already written, "
@@ -379,9 +389,9 @@ class MmrToMf6Dfw:
             segment_units = self._units(meta.parameters["seg_length"]["units"])
             self._segment_length = parameters["seg_length"]
             self._segment_length = self._segment_length * segment_units
-            self._disv1d_options["length"] = (
-                self._segment_length.to_base_units().magnitude
-            )
+            self._disv1d_options[
+                "length"
+            ] = self._segment_length.to_base_units().magnitude
 
         if "width" not in self._disv1d_options.keys():
             # meters, per metadata

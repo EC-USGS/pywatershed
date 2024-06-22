@@ -23,6 +23,7 @@ from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 from .hydrology.starfit import Starfit
 from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab, gis_files
 from .utils.csv_utils import CsvFile
+from .utils.mmr_to_mf6_dfw import MmrToMf6Dfw
 from .version import __version__
 
 __all__ = (
@@ -52,6 +53,7 @@ __all__ = (
     "PRMSSoilzoneNoDprst",
     "Starfit",
     "ControlVariables",
+    "MmrToMf6Dfw",
     "NetCdfRead",
     "NetCdfWrite",
     "Soltab",

@@ -60,7 +60,6 @@ class DomainPlot:
         display_plot: bool = True,
         return_plot: bool = False,
     ):
-
         self._hru_shp_file = hru_shp_file
         self._segment_shp_file = segment_shp_file
         # these are set by the add_parameter methods
@@ -171,8 +170,22 @@ class DomainPlot:
             self._hru_shp_file = gdf
             hru_gdf = gpd.read_file(gdf).fillna(0)
 
-        if "model_hru_" in hru_gdf.columns:
-            hru_gdf.drop(columns="model_hru_", inplace=True)
+        # have to handle at least 2 conventions adopted over the years
+        # the original naming convention and variables are absurd.
+        rename_cols = {"model_hru_": "model_idx"}
+        for old_col, new_col in rename_cols.items():
+            if old_col in hru_gdf.columns:
+                hru_gdf = hru_gdf.rename(columns={old_col: new_col})
+
+        drop_cols = ["model_hru_", "nhru_v1_1"]
+        for col in drop_cols:
+            if col in hru_gdf.columns:
+                hru_gdf.drop(columns=col, inplace=True)
+
+        # this seems so unnecessary
+        if "nhm_id" in hru_gdf.columns:
+            hru_gdf["nhm_id"] = hru_gdf["nhm_id"] - 1
+
         self._hru_gdf = hru_gdf.to_crs(self.crs)
         self._hru_parameters = None
         self._hru_parameter_names = None
@@ -188,8 +201,22 @@ class DomainPlot:
             self._segment_shp_file = gdf
             segment_gdf = gpd.read_file(gdf).fillna(0)
 
-        if "model_segment_" in segment_gdf.columns:
-            segment_gdf.drop(columns="model_segment_", inplace=True)
+        # have to handle at least 2 conventions adopted over the years
+        rename_cols = {"model_seg_": "model_idx"}
+        for old_col, new_col in rename_cols.items():
+            if old_col in segment_gdf.columns:
+                segment_gdf = segment_gdf.rename(columns={old_col: new_col})
+
+        drop_cols = ["model_segment_"]
+        for col in drop_cols:
+            if col in segment_gdf.columns:
+                segment_gdf.drop(columns=col, inplace=True)
+
+        rename_cols = {"nsegment_v": "nhm_seg"}
+        for old_col, new_col in rename_cols.items():
+            if old_col in segment_gdf.columns:
+                segment_gdf = segment_gdf.rename(columns={old_col: new_col})
+
         self._segment_gdf = segment_gdf.to_crs(self.crs)
         self._set_default_segment_parameter_names()
 
@@ -315,8 +342,13 @@ class DomainPlot:
         params_df.reset_index(inplace=True)
         params_df["model_idx"] = params_df.index + 1
 
+        join_cols = []
+        for col in params_df.columns:
+            if col in gdf.columns:
+                join_cols += [col]
+
         gdf = gpd.GeoDataFrame(
-            pd.merge(params_df, gdf, on="model_idx"),
+            pd.merge(params_df, gdf, on=join_cols),
             geometry="geometry",
         )
 

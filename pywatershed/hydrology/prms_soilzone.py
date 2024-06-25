@@ -214,7 +214,7 @@ class PRMSSoilzone(ConservativeProcess):
                 "perv_actet_hru",
                 "soil_to_gw",
                 "ssr_to_gw",
-                "slow_flow"
+                "slow_flow",
                 # "pref_flow",
             ],
             "storage_changes": [

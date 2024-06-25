@@ -321,6 +321,17 @@ class PRMSSnow(ConservativeProcess):
         sd = int(self.ndeplval / 11)
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
 
+        if self.hru_deplcrv.dtype != "int64":
+            hru_deplcrv_mod1 = np.mod(self.hru_deplcrv, 1)
+            msg = (
+                "The provided hru_deplcrv values can not be safely converted "
+                "to integers, please check your parameters and try again."
+            )
+            if not (hru_deplcrv_mod1 == 0).all():
+                raise ValueError(msg)
+            # <
+            self.hru_deplcrv = self.hru_deplcrv.astype("int64")
+
         if True:
             # For now there is no restart capability. we'll use the following
             # line above when there is
@@ -1868,7 +1879,7 @@ class PRMSSnow(ConservativeProcess):
 
         # JLM: why is the portion of new snow (3/4) used in the depletion curve
         #      not a parameter? Or it at least seems like it would be related
-        #      to hru_delpcrv (lower values for higher curves)
+        #      to hru_deplcrv (lower values for higher curves)
 
         snowcov_area_ante = snowcov_area
 

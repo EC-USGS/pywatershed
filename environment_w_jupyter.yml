@@ -42,7 +42,6 @@ dependencies:
   - sphinx-autosummary-accessors
   - sphinx-copybutton
   - tqdm
-  - twine<5.0.0
   - xarray>=2023.05.0
   - pip:
       - asv

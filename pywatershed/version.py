@@ -1,4 +1,4 @@
-# pywatershed version file automatically created using update_version.py on June 26, 2024 17:32:32
+# pywatershed version file automatically created using update_version.py on June 26, 2024 20:25:28
 
 __version__ = "1.1.0"
 __pakname__ = "pywatershed"

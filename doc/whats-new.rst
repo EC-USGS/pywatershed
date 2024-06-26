@@ -14,7 +14,20 @@ What's New
 
 .. _whats-new.1.0.0:
 
-v1.0.0
+v1.1.0 (25 June 2024)
+---------------------
+
+New features
+~~~~~~~~~~~~
+- Minor enhancement to ensure PRMSSnow hru_deplcrv parameter is integer or coercable.
+  (:pull:`296`) By `James McCreight <https://github.com/jmccreight>`_.
+- Release assests to include new GIS files and an additional domain to support the upcoming
+  major release. By `James McCreight <https://github.com/jmccreight>`_.
+
+
+.. _whats-new.1.0.0:
+
+v1.0.0 (18 December 2023)
 ---------------------
 
 New features
@@ -61,7 +74,7 @@ Bug fixes
 Documentation
 ~~~~~~~~~~~~~
 - Implement sphinx_autodoc_typehints.
-  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.  
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
 - New gh-pages branch (without history) to publish
   `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
   `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.

@@ -2,8 +2,8 @@ cff-version: 1.2.0
 message: If you use this software, please cite the software itself.
 type: software
 title: pywatershed
-version: 0.0.3
-date-released: '2023-04-28'
+version: 1.1.0
+date-released: '2023-06-25'
 abstract: pywatershed is a Python package for hydrologic modeling.
 repository-artifact: https://pypi.org/project/pywatershed
 repository-code: https://github.com/modflowpy/pywatershed

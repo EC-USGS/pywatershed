@@ -67,7 +67,7 @@ To submit a pull request (PR) please follow these steps:
 
     **Note**: PRs must pass all tests in GitHub Actions before they can be accepted.
 
-6. Commit your changes with a descriptive message that follows [conventional commit](https://github.com/modflowpy/flopy/blob/develop/CONTRIBUTING.md#commit) guidelines. Adherence to these conventions allows changelogs and release notes to be generated automatically from the commit history.
+6. Commit your changes with a descriptive message that follows [conventional commit](https://github.com/modflowpy/flopy/blob/develop/CONTRIBUTING.md#commit) guidelines.
 
 7. Push your branch to your fork.
 

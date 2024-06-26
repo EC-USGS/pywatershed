@@ -46,14 +46,11 @@ To release a new version:
 1. Push the branch to this repo. For instance, if this repo is an `upstream`
    remote: `git push -u upstream vx.y.z`. This starts a job to:
 
-    - Check out the release branch Update version number in `version.txt` and
-      `pywatershed/version.py` to match the version in the branch name
-    - Build and check the Python package Generate a changelog since the last
-	  release
-    - Prepend the changelog to the cumulative `HISTORY.md`. The cumulative
-	  `HISTORY.md` is version-controlled, release changelogs are not.
-	- Upload the package and changelog as artifacts Draft a PR against `main`
-	  with the updated version files and cumulative changelog.
+    - Check out the release branch and update version number in `version.txt` and
+      `pywatershed/version.py` to match the version in the branch name.
+    - Build and check the Python package.
+    - Upload the package as an artifact.
+    - Draft a PR against `main` with the updated version files.
 
 1. On all platforms, pull the release from upstream and perform ASV performance
 	benchmarks against previous release , e.g., ```asv run --verbose
@@ -63,7 +60,7 @@ To release a new version:
 	the static webpages to be included with the release as artifacts in that
 	step below.
 
-1. Inspect the package and changelog. If they look good, merge the PR to `main`.
+1. Inspect the package. If it looks good, merge the PR to `main`.
 
     **Note**: it is critical to *merge* the PR to `main`, not squash as is
     conventional for development PRs. Squashing causes `develop` and `main` to
@@ -72,8 +69,7 @@ To release a new version:
 
     Merging the PR to `main` will trigger another job to draft a [GitHub
     release](https://github.com/EC-USGS/pywatershed/releases). The release is
-    not yet publicly visible at this point. The release notes are autofilled as
-    the changelog since the last release.
+    not yet publicly visible at this point.
 
 1. Inspect the GitHub release. If needed, make any manual edits to the release
    notes. If the release looks good, publish it via GitHub UI or CLI. Manually

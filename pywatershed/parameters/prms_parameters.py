@@ -8,9 +8,18 @@ from ..base.parameters import Parameters
 from ..constants import fileish, ft2_per_acre, inches_per_foot, ndoy
 from ..utils.prms5_file_util import PrmsFile
 
+# TODO:
+# PRMS uses "ndays"for the number of days in "year" defined as 366.
+# I have changed this for pywatershed because it is ambiguous and have
+# adopted ndoy instead, which is somewhat better but not perfect.
+# I ndays is in a parameter file, it may cause errors that we should
+# probably trap.
+
 prms_dim_names = (
     "nhru",
     "nsegment",
+    "ncascade",
+    "ncascdgw",
     "nssr",
     "ngw",
     "npoigages",
@@ -90,20 +99,6 @@ class PrmsParameters(Parameters):
 
         return
 
-    @property
-    def dimensions(self) -> dict:
-        """Get the dimensions from the parameters
-
-        Returns:
-            dimensions in the PRMS parameter dictionary
-
-        """
-        dimensions = {}
-        for key, value in self.dims.items():
-            if isinstance(value, int):
-                dimensions[key] = value
-        return dimensions
-
     def parameters_to_json(self, json_filename) -> None:
         """write the parameters dictionary out to a json file"""
         json.dump(
@@ -181,6 +176,7 @@ class PrmsParameters(Parameters):
         # build dimension metadata from data
         if len(parameter_dimensions_dict) == 0:
             for key, value in parameter_dict.items():
+                # errors in the next line, see prms_dim_names at top
                 param_dim_names = meta.get_params(key)[key]["dims"]
                 parameter_dimensions_dict[key] = {"dims": param_dim_names}
 
@@ -200,6 +196,7 @@ class PrmsParameters(Parameters):
                     temp_dims = []
                     for isize in shape:
                         found_dim = False
+
                         for dim_key, dim_value in param_dims.items():
                             if dim_value == isize:
                                 found_dim = True
@@ -209,6 +206,12 @@ class PrmsParameters(Parameters):
                         if isize == 1 and not found_dim:
                             found_dim = True
                             temp_dims.append("scalar")
+
+                        if not found_dim:
+                            raise ValueError(
+                                "Unable to identify dimension name for"
+                                f"parameter {key} with length {isize}"
+                            )
 
                 parameter_dimensions_dict[key] = {"dims": tuple(temp_dims)}
 

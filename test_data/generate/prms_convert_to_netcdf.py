@@ -25,7 +25,10 @@ def convert_csv_to_nc(
 
 
 def convert_soltab_to_nc(
-    soltab_file: pl.Path, output_dir: pl.Path, domain_dir: pl.Path
+    soltab_file: pl.Path,
+    output_dir: pl.Path,
+    control_file: pl.Path,
+    domain_dir: pl.Path,
 ):
     """Convert soltab files to NetCDF, one file for each variable
 
@@ -35,6 +38,7 @@ def convert_soltab_to_nc(
     Args:
         soltab_file: the pl.Path of the  soltab_debug file.
         output_dir: pl.Path where the netcdf file output will be written
+        control_file: pl.Path the contorl file that generated the output
         domain_dir: defaults to the parent dir of soltab_file, the pl.Path
             where domain files (parameter & control) for the domain can be
             found
@@ -42,7 +46,10 @@ def convert_soltab_to_nc(
     if domain_dir is None:
         domain_dir = soltab_file.parent
 
-    params = pws.parameters.PrmsParameters.load(domain_dir / "myparam.param")
+    control = pws.Control.load_prms(control_file, warn_unused_options=False)
+    param_file = control_file.parent / control.options["parameter_file"]
+
+    params = pws.parameters.PrmsParameters.load(param_file)
     nhm_ids = params.parameters["nhm_id"]
 
     soltab = Soltab(soltab_file, nhm_ids=nhm_ids)

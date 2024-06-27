@@ -4,6 +4,7 @@ import pathlib as pl
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
+import pytest
 
 from pywatershed import CsvFile
 
@@ -35,18 +36,20 @@ def compare_netcdf(csv, nc_name):
     return
 
 
-def test_single_csv(domain):
+@pytest.mark.domain
+def test_single_csv(simulation):
     var = "gwres_stor"
-    csv = CsvFile(path=domain["prms_output_dir"] / f"{var}.csv")
+    csv = CsvFile(path=simulation["output_dir"] / f"{var}.csv")
 
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
     return
 
 
-def test_single_csv_to_netcdf(domain):
+@pytest.mark.domain
+def test_single_csv_to_netcdf(simulation):
     var = "gwres_stor"
-    path = domain["prms_output_dir"] / f"{var}.csv"
+    path = simulation["output_dir"] / f"{var}.csv"
     csv = CsvFile(path=path)
 
     basedir = pl.Path(path.parent)
@@ -61,19 +64,21 @@ def test_single_csv_to_netcdf(domain):
     return
 
 
-def test_multiple_csv(domain):
+@pytest.mark.domain
+def test_multiple_csv(simulation):
     csv = CsvFile()
     for var in csv_test_vars:
-        csv.add_path(domain["prms_output_dir"] / f"{var}.csv")
+        csv.add_path(simulation["output_dir"] / f"{var}.csv")
     df = csv.to_dataframe()
     assert isinstance(df, pd.DataFrame)
     return
 
 
-def test_multiple_csv_to_netcdf(domain, tmp_path):
+@pytest.mark.domain
+def test_multiple_csv_to_netcdf(simulation, tmp_path):
     csv = CsvFile()
     for var in csv_test_vars:
-        csv.add_path(domain["prms_output_dir"] / f"{var}.csv")
+        csv.add_path(simulation["output_dir"] / f"{var}.csv")
     nc_file = tmp_path / "multiple_variables.nc"
     csv.to_netcdf(nc_file)
     compare_netcdf(csv, nc_file)

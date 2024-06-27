@@ -23,6 +23,7 @@ module canopy
         net_ppt, &  ! in
         net_rain, &  ! in
         net_snow, &  ! in
+        pptmix, & !in
         pk_ice_prev, &  ! in
         freeh2o_prev, &  ! in
         potet, &  ! in
@@ -48,6 +49,7 @@ module canopy
         intcp_stor_out, &  ! out
         net_rain_out, &  ! out
         net_snow_out, &  ! out
+        pptmix_out, & ! out
         net_ppt_out, &  ! out
         hru_intcpstor_out, &  ! out
         hru_intcpevap_out, &  ! out
@@ -65,7 +67,7 @@ module canopy
 
         ! Input Vectors
         integer(kind=4), intent(in), dimension(nhru) :: &
-            intcp_transp_on
+            intcp_transp_on, pptmix
         integer(kind=8), intent(in), dimension(nhru) :: &
             cov_type, hru_type
 
@@ -77,7 +79,7 @@ module canopy
 
         ! Output vectors
         integer(kind=4), intent(out), dimension(nhru) :: &
-            intcp_transp_on_out, intcp_form_out
+            intcp_transp_on_out, intcp_form_out, pptmix_out
         real(kind=8), intent(out), dimension(nhru) :: &
             intcp_evap_out, intcp_stor_out, net_rain_out, net_snow_out, net_ppt_out, &
             hru_intcpstor_out, hru_intcpevap_out, intcp_changeover_out
@@ -100,6 +102,7 @@ module canopy
         ! hru_intcpstor_out = intcpstor * cov
         ! hru_intcpevap_out = intcpevap * cov
         intcp_transp_on_out = intcp_transp_on
+        pptmix_out = pptmix
         
         ! Begin the HRU LOOP !
         do ii = 1, nhru
@@ -208,7 +211,7 @@ module canopy
                             netsnow = zero
                             ! todo: deal with newsnow and pptmix?
                             ! Newsnow(i) = OFF
-                            ! Pptmix(i) = OFF
+                            pptmix_out(ii) = 0
                         end if
                     end if
                 end if

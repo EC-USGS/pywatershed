@@ -4,14 +4,15 @@ import pint
 import pytest
 import xarray as xr
 
+from pywatershed import Control
 from pywatershed.utils.prms_to_mf6 import MMRToMF6
 
 start_time = np.datetime64("1979-01-01T00:00:00")
 end_time = np.datetime64("1979-01-07T00:00:00")
 
 
-def lateral_flow_ans_ds(domain):
-    control_file = domain["control_file"]
+def lateral_flow_ans_ds(simulation):
+    control_file = simulation["control_file"]
     inflow_dir = control_file.parent / "output"
     ds = xr.open_dataset(inflow_dir / "seg_lateral_inflow.nc")
     ds = ds.sel(time=slice(start_time, end_time))["seg_lateral_inflow"]
@@ -19,24 +20,29 @@ def lateral_flow_ans_ds(domain):
 
 
 # When we can point at modflow6 develop we'll un-xfail this
+@pytest.mark.domain
 @pytest.mark.xfail
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])
-def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
+def test_mmr_to_mf6(simulation, tmp_path, bc_binary_files, bc_flows_combine):
+    pytest.skip("MF6 MMR is deprecated and MMRToMF6 testing is deprecated")
     units = pint.UnitRegistry()
-    ans = lateral_flow_ans_ds(domain)
+    ans = lateral_flow_ans_ds(simulation)
     times = ans.time.values
 
-    param_file = domain["param_file"]
-    control_file = domain["control_file"]
-    domain_name = domain["domain_name"]
+    sim_name = simulation["name"]
+    control_file = simulation["control_file"]
+    control = Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
+    param_file = simulation["dir"] / control.options["parameter_file"]
 
     _ = MMRToMF6(
         param_file=param_file,
         control_file=control_file,
         output_dir=tmp_path,
         inflow_dir=control_file.parent / "output",
-        sim_name=domain_name,
+        sim_name=sim_name,
         start_time=start_time,
         end_time=end_time,
         bc_binary_files=bc_binary_files,
@@ -75,7 +81,7 @@ def test_mmr_to_mf6(domain, tmp_path, bc_binary_files, bc_flows_combine):
         sim = flopy.mf6.MFSimulation.load(
             "sim", "mfsim.nam", sim_ws=str(tmp_path)
         )
-        model = sim.get_model(domain_name)
+        model = sim.get_model(sim_name)
         flw_spds = {}
         for flow_name in flow_names:
             flw_spds[flow_name] = model.get_package(

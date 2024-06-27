@@ -1,13 +1,14 @@
 import pathlib as pl
 from textwrap import wrap
+from typing import Callable
 
-import matplotlib as mpl
+import contextily as cx
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.collections import LineCollection, PatchCollection
-from matplotlib.colors import Normalize
 from matplotlib.patches import Polygon
+from xyzservices import TileProvider
 
 from ..base import meta
 from ..base.model import Model
@@ -43,7 +44,7 @@ class ProcessPlot:
         self.seg_gdf.crs = "EPSG:5070"
 
         self.seg_geoms_exploded = (
-            self.seg_gdf.explode()
+            self.seg_gdf.explode(index_parts=True)
             .reset_index(level=1, drop=True)
             .drop("model_idx", axis=1)
             .rename(columns={"nsegment_v": "nhm_seg"})
@@ -52,92 +53,75 @@ class ProcessPlot:
 
         return
 
-    def plot(self, var_name: str, process: Process, cmap: str = None):
+    def plot(self, var_name: str, process: Process, **kwargs):
         var_dims = list(meta.get_vars(var_name)[var_name]["dims"])
         if "nsegment" in var_dims:
-            if not cmap:
-                cmap = "cool"
-            return self.plot_seg_var(var_name, process, cmap)
+            return self.plot_seg_var(var_name, process, **kwargs)
         elif "nhru" in var_dims:
-            return self.plot_hru_var(var_name, process)
+            return self.plot_hru_var(var_name, process, **kwargs)
         else:
             raise ValueError()
 
-    def plot_seg_var(self, var_name: str, process: Process, cmap="cool"):
-        ccrs = import_optional_dependency("cartopy.crs")
+    def plot_seg_var(
+        self,
+        var_name: str,
+        process: Process,
+        cmap: str = None,
+        value_transform: Callable = None,
+        figsize: tuple = (7, 10),
+        title: str = None,
+        aesthetic_width: bool = False,
+        cx_map_source: TileProvider = cx.providers.CartoDB.Positron,
+        vmin: float = None,
+        vmax: float = None,
+        aesthetic_width_color="darkblue",
+    ):
+        values = process[var_name]
+        if value_transform is not None:
+            values = value_transform(values)
 
         data_df = pd.DataFrame(
             {
-                "nhm_seg": process.params.coords["nhm_seg"],
-                var_name: process[var_name],
+                "nhm_seg": process._params.coords["nhm_seg"],
+                var_name: values,
             }
         ).set_index("nhm_seg")
-
-        minx, miny, maxx, maxy = self.hru_gdf.geometry.total_bounds
-        hru_geoms_exploded = self.hru_gdf.explode().reset_index(
-            level=1, drop=True
-        )
-
-        aa = {}
-        for yy in self.seg_gdf.crs.coordinate_operation.params:
-            aa[yy.name] = yy.value
-        if "9822" in self.seg_gdf.crs.coordinate_operation.method_code:
-            # Albers Equal Area
-            crs_proj = ccrs.AlbersEqualArea(
-                central_longitude=aa["Longitude of false origin"],
-                central_latitude=aa["Latitude of false origin"],
-                standard_parallels=(
-                    aa["Latitude of 1st standard parallel"],
-                    aa["Latitude of 2nd standard parallel"],
-                ),
-                false_easting=aa["Easting at false origin"],
-                false_northing=aa["Northing at false origin"],
+        df_plot = self.seg_geoms_exploded.join(data_df).reset_index()
+        if aesthetic_width:
+            ax = df_plot.plot(
+                column=var_name,
+                figsize=figsize,
+                linewidth=df_plot[var_name],
+                edgecolor=aesthetic_width_color,
             )
-        elif "9802" in self.seg_gdf.crs.coordinate_operation.method_code:
-            # Lambert Conformal Conic
-            crs_proj = ccrs.LambertConformal(
-                central_latitude=aa["Latitude of false origin"],
-                central_longitude=aa["Longitude of false origin"],
-                standard_parallels=(
-                    aa["Latitude of 1st standard parallel"],
-                    aa["Latitude of 2nd standard parallel"],
-                ),
-                false_easting=aa["Easting at false origin"],
-                false_northing=aa["Northing at false origin"],
+        else:
+            if vmin is None:
+                vmin = values.min()
+            if vmax is None:
+                vmax = values.max()
+            if cmap is None:
+                cmap = "cool"
+
+            ax = df_plot.plot(
+                column=var_name,
+                figsize=figsize,
+                cmap=cmap,
+                vmin=vmin,
+                vmax=vmax,
+                legend=True,
             )
 
-        df_plot = self.seg_geoms_exploded.join(data_df)
-        norm = Normalize(
-            vmin=df_plot[var_name].min().min(),
-            vmax=df_plot[var_name].max().max(),
+        cx.add_basemap(
+            ax=ax,
+            crs=df_plot.crs,
+            source=cx_map_source,
         )
+        ax.set_axis_off()
+        if title is None:
+            title = var_name
+        _ = ax.set_title(title)
 
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(30, 20))
-        ax = plt.axes(projection=crs_proj)
-        ax.coastlines()
-        ax.gridlines()
-        ax.set_extent([minx, maxx, miny, maxy], crs=crs_proj)
-
-        mapper = mpl.cm.ScalarMappable(norm=norm, cmap=cmap)
-        mapper.set_array(df_plot[var_name])
-
-        metadata = meta.get_vars(var_name)[var_name]
-        plt.title("Variable: {}".format(var_name))
-        plt.colorbar(mapper, shrink=0.6, label=metadata["units"], ax=ax)
-
-        _ = plot_polygon_collection(
-            ax,
-            hru_geoms_exploded.geometry,
-            **dict(cmap=cmap, norm=norm, linewidth=0.5, alpha=0.05),
-        )
-
-        _ = plot_line_collection(
-            ax,
-            df_plot.geometry,
-            values=df_plot[var_name],
-            **dict(cmap=cmap, norm=norm),
-        )
-
+        plt.show()
         return
 
     def get_hru_var(self, var_name: str, model: Model):
@@ -150,7 +134,7 @@ class ProcessPlot:
 
         data_df = pd.DataFrame(
             {
-                "nhm_id": process.params.coords["nhm_id"],
+                "nhm_id": process._params.coords["nhm_id"],
                 var_name: process[var_name],
             }
         ).set_index("nhm_id")
@@ -172,7 +156,7 @@ class ProcessPlot:
             # data_df = self.get_hru_var(var_name, model)
             data_df = pd.DataFrame(
                 {
-                    "nhm_id": process.params.coords["nhm_id"],
+                    "nhm_id": process._params.coords["nhm_id"],
                     var_name: process[var_name],
                 }
             ).set_index("nhm_id")

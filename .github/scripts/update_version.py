@@ -29,7 +29,7 @@ def get_authors():
 
 
 def update_version_py(timestamp: datetime, version: Version):
-    lines = (
+    _ = (
         open(_version_py_path, "r").readlines()
         if _version_py_path.exists()
         else []
@@ -38,7 +38,8 @@ def update_version_py(timestamp: datetime, version: Version):
     with open(_version_py_path, "w") as f:
         f.write(
             f"# {_project_name} version file automatically created using "
-            f"{Path(__file__).name} on {timestamp:%B %d, %Y %H:%M:%S}\n\n"
+            f"{Path(__file__).name} on {timestamp:%B %d, %Y %H:%M:%S}"
+            "  #noqa: E501\n\n"
         )
         f.write(f'__version__ = "{version}"\n')
         f.writelines(
@@ -48,13 +49,13 @@ def update_version_py(timestamp: datetime, version: Version):
                 "author_dict = {\n",
             ]
             + [
-                f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n"
+                f"    \"{a['given-names']} {a['family-names']}\": \"{a['email']}\",\n"  # noqa: E501
                 for a in authors
             ]
             + [
                 "}\n",
                 '__author__ = ", ".join(author_dict.keys())\n',
-                '__author_email__ = ", ".join(s for _, s in author_dict.items())\n',
+                '__author_email__ = ", ".join(s for _, s in author_dict.items())\n',  # noqa: E501
             ]
         )
         f.close()
@@ -81,7 +82,7 @@ def update_version(
     finally:
         try:
             lock_path.unlink()
-        except:
+        except:  # noqa: E722
             pass
 
 
@@ -96,7 +97,7 @@ if __name__ == "__main__":
             provided, the version number will not be changed. A file lock is held
             to synchronize file access. The version tag must comply with standard
             '<major>.<minor>.<patch>' format conventions for semantic versioning.
-            """
+            """  # noqa: E501
         ),
     )
     parser.add_argument(
@@ -110,7 +111,7 @@ if __name__ == "__main__":
         "--get",
         required=False,
         action="store_true",
-        help="Just get the current version number, don't update anything (defaults to false)",
+        help="Just get the current version number, don't update anything (defaults to false)",  # noqa: E501
     )
     args = parser.parse_args()
 
@@ -121,7 +122,7 @@ if __name__ == "__main__":
     else:
         update_version(
             timestamp=datetime.now(),
-            version=Version(args.version)
-            if args.version
-            else _current_version,
+            version=(
+                Version(args.version) if args.version else _current_version
+            ),
         )

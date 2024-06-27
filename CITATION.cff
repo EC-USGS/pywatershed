@@ -6,7 +6,7 @@ version: 1.1.0
 date-released: '2023-06-25'
 abstract: pywatershed is a Python package for hydrologic modeling.
 repository-artifact: https://pypi.org/project/pywatershed
-repository-code: https://github.com/modflowpy/pywatershed
+repository-code: https://github.com/ec-usgs/pywatershed
 license: CC0-1.0
 authors:
 - family-names: McCreight

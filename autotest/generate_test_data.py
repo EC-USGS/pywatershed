@@ -29,6 +29,7 @@ import pathlib as pl
 import shutil
 import sys
 from copy import deepcopy
+from pprint import pprint
 
 import pytest
 
@@ -117,12 +118,17 @@ def main():
 
     # collect info on domains to be run_domains
     domains_to_run = []
+    control_patterns = []
     remove_prms_csvs = False
     remove_prms_output_dirs = False
     rm_vals = []
     for ii in arg_list:
         if "--domain" in ii:
             domains_to_run += [ii.split("--domain")[-1].split("=")[-1]]
+        if "--control_pattern" in ii:
+            control_patterns += [
+                ii.split("--control_pattern")[-1].split("=")[-1]
+            ]
         elif "--remove_prms_csvs" in ii:
             remove_prms_csvs = ii.split("=")[-1] == "True"
             rm_vals += [ii]
@@ -133,11 +139,33 @@ def main():
     for ii in rm_vals:
         arg_list.remove(ii)
 
-    n_domains = len(domains_to_run)
+    simulations = []
+    for domain in domains_to_run:
+        dom_dir = pl.Path(f"../{domain}")
+        candidates = sorted(dom_dir.glob("*.control"))
 
-    print(f"\nGenerating test data for domains: {domains_to_run}")
-    for dd in domains_to_run:
-        test_data_version_file = pl.Path(f"../.test_data_version_{dd}.txt")
+        if not len(control_patterns):
+            simulations += candidates
+            continue
+        else:
+            for candidate in candidates:
+                for pattern in control_patterns:
+                    if pattern in candidate.name:
+                        simulations += [str(candidate)]
+
+    n_simulations = len(simulations)
+
+    print("\nGenerating test data for the following domain/control_files:")
+    pprint(simulations)
+    print()
+
+    for ss in simulations:
+        ss_pl = pl.Path(ss)
+        domain_tag = ss_pl.parent.name
+        control_tag = ss_pl.with_suffix("").name
+        test_data_version_file = pl.Path(
+            f"../.test_data_version_{domain_tag}_{control_tag}.txt"
+        )
         test_data_version_file.unlink(missing_ok=True)
 
     if remove_prms_output_dirs:
@@ -149,7 +177,7 @@ def main():
             print("\nRemoving existing PRMS output dirs failed.")
             sys.exit(retcode_output_dirs.value)
 
-    print("\nRunning PRMS domains ...")
+    print("\nRunning PRMS simulations ...")
     # if -n is in the list and numeric and > ndomains+1
     #     then set it to ndomains + 1 just for running the domains
     n_orig = None
@@ -163,13 +191,13 @@ def main():
     if (
         (n_orig is None)
         or (not isinstance(n_orig, int))
-        or (n_orig <= (n_domains + 1))
+        or (n_orig <= (n_simulations + 1))
     ):
         run_arg_list = arg_list + ["run_prms_domains.py"]
         conv_arg_list = arg_list + ["convert_prms_output_to_nc.py"]
     else:
         run_arg_list = arg_list_no_n + [
-            f"-n={n_domains + 1}",
+            f"-n={n_simulations + 1}",
             "run_prms_domains.py",
         ]
         conv_arg_list = arg_list_no_n + [
@@ -188,8 +216,13 @@ def main():
         print("\nConverting PRMS output to NetCDF failed.")
         sys.exit(retcode_run.value)
 
-    for dd in domains_to_run:
-        test_data_version_file = pl.Path(f"../.test_data_version_{dd}.txt")
+    for ss in simulations:
+        ss_pl = pl.Path(ss)
+        domain_tag = ss_pl.parent.name
+        control_tag = ss_pl.with_suffix("").name
+        test_data_version_file = pl.Path(
+            f"../.test_data_version_{domain_tag}_{control_tag}.txt"
+        )
         shutil.copy("../../version.txt", test_data_version_file)
 
     if remove_prms_csvs:
@@ -201,10 +234,9 @@ def main():
             print("\nRemoving PRMS CSV output files failed.")
             sys.exit(retcode_rm_csvs.value)
 
-    print(
-        "\nSuccess generating pywatershed test data for domains "
-        f"{domains_to_run}\n"
-    )
+    print("\nSuccess generating pywatershed test data for the simulations ")
+    pprint(simulations)
+
     sys.exit(0)
 
 

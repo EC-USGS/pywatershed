@@ -3,6 +3,11 @@
 **Table of Contents**
 
 - [Test data](#test-data)
+  - [Domain descriptions](#domain-descriptions)
+    - [hru_1](#hru_1)
+    - [drb_2yr](#drb_2yr)
+    - [ucb_2yr](#ucb_2yr)
+    - [sagehen_5yr](#sagehen_5yr)
   - [Generating data](#generating-data)
   - [Domain directories](#domain-directories)
   - [Domain YAML file](#domain-yaml-file)
@@ -14,6 +19,30 @@
 This directory contains data to be used by the tests in `../autotest`. The
 `generate/` directory provides programs to generate test data not included
 in the repository but which are critical to the autotests.
+
+## Domain descriptions
+The following are general descriptions of the test data domain directories.
+
+### hru_1
+This is the second (index 1 in python) HRU in the NHM CONUS domain. It is meant
+to be small spatially but long in time. The record is 40 years. It tests
+the NHM configuration with and without depression storage.
+
+### drb_2yr
+A test domain of smaller spatial size and 2 years duration. It tests the NHM
+configuration with and without depression storage.
+
+### ucb_2yr
+A test domain of larger spatial size and 2 years duration. It tests the NHM
+configuration with and without depression storage.
+
+### sagehen_5yr
+A test domain of small size and a 5 year duration. It will eventually tests
+the cascades functionality in pywatershed. With cascades turned off (the
+sagehen_no_cascades.control file) the domain tests depression storage off,
+dunnian flow and sroff in the soilzone, preferential flow, and pptmix in the
+canopy (only depression storage off is tested by the other domains and
+configurations).
 
 ## Generating data
 

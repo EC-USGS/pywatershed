@@ -1,11 +1,14 @@
-from pywatershed.parameters import Parameters
+import pytest
 from utils import assert_dicts_equal
 
+from pywatershed.parameters import Parameters
 
-def test_param_dd_param(domain):
+
+@pytest.mark.domain
+def test_param_dd_param(simulation):
     # round trip from read-only to read-write to read-only
     # use a PRMS Parameter file for now
-    domain_dir = domain["param_file"].parent
+    domain_dir = simulation["dir"]
     params = Parameters.from_netcdf(
         domain_dir / "parameters_PRMSGroundwater.nc"
     )

@@ -1,4 +1,4 @@
-control: control.yml
+control: nhm_control.yaml
 
 dis_hru: parameters_dis_hru.nc
 
@@ -8,32 +8,32 @@ solargeometry:
   class: PRMSSolarGeometry
   parameters: parameters_PRMSSolarGeometry.nc
   dis: dis_hru
-
+  
 atmosphere:
   class: PRMSAtmosphere
   parameters: parameters_PRMSAtmosphere.nc
   dis: dis_hru
-
+  
 canopy:
   class: PRMSCanopy
   parameters: parameters_PRMSCanopy.nc
   dis: dis_hru
-
+  
 snow:
   class: PRMSSnow
   parameters: parameters_PRMSSnow.nc
   dis: dis_hru
-
+  
 runoff:
   class: PRMSRunoff
   parameters: parameters_PRMSRunoff.nc
   dis: dis_hru
-
+  
 soilzone:
   class: PRMSSoilzone
   parameters: parameters_PRMSSoilzone.nc
   dis: dis_hru
-
+  
 groundwater:
   class: PRMSGroundwater
   parameters: parameters_PRMSGroundwater.nc
@@ -53,3 +53,4 @@ model_order:
   - soilzone
   - groundwater
   - channel
+                 

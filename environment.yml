@@ -1,4 +1,4 @@
-name: pws_trouble
+name: pws
 channels:
   - conda-forge
   - nodefaults

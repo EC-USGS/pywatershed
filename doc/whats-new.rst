@@ -17,7 +17,7 @@ What's New
 v1.2.0 (Unreleased)
 ---------------------
 
-Breaking changes
+New Features
 ~~~~~~~~~~~~~~~~
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
@@ -35,6 +35,9 @@ Breaking changes
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 - Control instances have a diff method to compare with other instances.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
 - pref_flow_infil_frac now a required parameter input for PRMSSoilzone. The NHM
   values assumed previously are zeros on all HRUs.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.

@@ -152,11 +152,12 @@ jobs:
       - name: Install Dependencies via Micromamba
         uses: mamba-org/setup-micromamba@v1
         with:
+          micromamba-version: '1.5.6-0'
           environment-file: environment.yml
           cache-environment: true
           cache-downloads: true
-          # create-args: >-
-          #   python=${{matrix.python-version}}
+          create-args: >-
+            python=${{matrix.python-version}}
 
       # - name: Checkout MODFLOW 6
       #   uses: actions/checkout@v4

@@ -572,7 +572,7 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_flow_to_nhm_seg: list,
     budget_type: Literal["defer", None, "warn", "error"] = "defer",
 ) -> FlowGraph:
-    """A PRMSChannel-based FlowGraph with additional nodes run from file inputs
+    """A PRMSChannel-based FlowGraph with additional nodes, run from file inputs.
 
     Note that this FlowGraph currently has no-inflow to non-prms_channel
     nodes (but this could be added/accomodated).
@@ -596,7 +596,12 @@ def prms_channel_flow_graph_postprocess(
 
     Returns:
         An instantiated FlowGraph object.
-    """
+
+    For users interested in adding new nodes into the PRMSChannel MuskingumMann
+    routing solutions, see the notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    which highlights the helper functions :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
+    """  # noqa: E501
     if budget_type == "defer":
         if "budget_type" in control.options.keys():
             budget_type = control.options["budget_type"]
@@ -695,7 +700,11 @@ def prms_channel_flow_graph_to_model_dict(
     Returns:
         A model dictionary.
 
-    """
+    For users interested in adding new nodes into the PRMSChannel MuskingumMann
+    routing solutions, see the notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    which highlights the helper functions :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
+    """  # noqa: E501
     import xarray as xr
 
     params_flow_graph, node_maker_dict = _build_flow_graph_inputs(

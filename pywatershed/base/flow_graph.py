@@ -12,46 +12,68 @@ from pywatershed.parameters import Parameters
 
 
 class FlowNode(Accessor):
-    """
-    A FlowNode base class
-    Its calculate or calculate_subtimestep methods take an inflow and compute,
-    at a minimum, outflow and storage change which are public quantities.
-    Could also calculate head, storage, etc...
+    """The FlowNode base class.
+
+    A FlowNode represents a spatial element of an explicit flow solution which
+    does not (currently) include a head (water depth) term.
+
+    A FlowNode is instantiated with its own (optional) data and calculates
+    outflow, storage_change, and sink_source properties on subtimesteps.
     """
 
-    def __init__(self, control):
+    def __init__(self, control: Control):
+        """Initialize the FlowNode.
+
+        Args:
+          control: A Control object.
+        """
         raise Exception("This must be overridden")
 
     def prepare_timestep(self):
+        "Prepare the subtimestep for subtimestep calculations."
         raise Exception("This must be overridden")
 
-    def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
+    def calculate_subtimestep(
+        self, isubstep: int, inflow_upstream: float, inflow_lateral: float
+    ):
+        """Calculate the subtimestep.
+
+        Args:
+          isubstep: Zero-based integer indicating the index of the current
+            substep.
+          inflow_upstream: The in-channel flows to this FlowNode on the current
+            substep.
+          inflow_lateral: The later flows to this FlowNode on the current
+            substep.
+        """
         raise Exception("This must be overridden")
 
     def advance(self):
+        "Advance this FlowNode to the next timestep."
         raise Exception("This must be overridden")
 
     def finalize_timestep(self):
+        "Finalize the current timestep at this FlowNode."
         raise Exception("This must be overridden")
 
     @property
     def outflow(self):
+        "The outflow of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
     def storage_change(self):
+        "The storage change of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
     def sink_source(self):
+        "The sink or source amount of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
 
 class FlowNodeMaker(Accessor):
-    """
-    FlowNodeMaker creates FlowNodes of a certain type.
-    * take inputs...
-
+    """FlowNodeMaker instantiates FlowNodes with their data.
 
     Notes:
       * initialize the the data needed to return the nodes
@@ -66,40 +88,73 @@ class FlowNodeMaker(Accessor):
         discretization: Parameters = None,
         parameters: Parameters = None,
     ):
+        """Intitalize the FlowNodeMaker
+
+        Args:
+          discretization: Discretization data to parcel out to the FlowNodes.
+          parameters: Parmeter data to parcel to the FlowNodes.
+        """
         self.name = "FlowNodeMaker"
         return
 
-    def get_node(control, index):
+    def get_node(control: Control, index: int):
+        """Instantiate FlowNode at a given index.
+
+        Args:
+          control: A Control object.
+          index: The index in the discretization and parameter data to use
+            when instantiating a FlowNode.
+        """
         raise Exception("This must be overridden")
 
 
 class FlowGraph(ConservativeProcess):
-    """
-    Assembles and computes FlowNodes over a list/connectivity of FlowNodes
-    and tracks their mass balance.
-    The inputs inflows, node_maker_name, node_maker_index, and to_graph_index
-    are collated. The order of execution of the graph is not the same as the
-    supplied order, the execution order is solved from to_graph_index.
-    Note that initial conditions are set by the node makers via their
-    parameters.
+    """FlowGraph manages and computes FlowNodes given by FlowNodeMakers.
 
-    Parameters:
-        node_maker_name: list or np.array of the maker name for each node
-        node_maker_index: list or np.array of the index of the makerto
-            use for each node
-        to_graph_index: the index of the downstream index in the FlowGraph
-            with -1 indicating an outflow node. This must specify a DAG.
+    FlowGraph lets users combine FlowNodes of different kinds into a single
+    mathmetical graph of flow solution. FlowNodes provide explicit solutions
+    of flow (currently not involving a head term) on a single spatial unit. The
+    FlowGraph allows these different flow solutions to be combined in arbitrary
+    order on a mathematical graph. There are many applications, but a common
+    one is to add a reservoir representation into an existing graph of flow,
+    such as exists within PRMSChannel which computes a Muskingum-Mann solution
+    of flow. This example is shown schematically in the following figure.
 
-    Args:
-        control: a Control object
-        inflows: An adaptable of inflows to the graph, often referred to as
-            "lateral" flows.
-        node_maker_dict: {name: flow_node_maker_instance, ...}
-        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
-            the default and defering to control.options["budget_type"] when
-            available. When control.options["budget_type"] is not avaiable,
-            budget_type is set to "warn".
-    """
+    .. |fg1| image:: /_static/flow_graph_schematic_1.png
+       :align: middle
+    +---------+
+    |  |fg1|  |
+    +---------+
+
+    Above a node of class B is inserted into the original graph. Class B may
+    have a different flow solution than class A in the original graph, but
+    FlowGraph handles new nodes wherever you want to put them. FlowGraph checks
+    mass balance over the graph.
+
+    To delve a bit deeper, the relationship between FlowGraph, FlowNode, and
+    FlowNodeMaker is shown in the figure below.
+
+    .. |fg2| image:: /_static/flow_graph_schematic_2.png
+       :align: middle
+    +---------+
+    |  |fg2|  |
+    +---------+
+
+    Users generally do not create types of FlowNodes or FlowNodeMakers
+    themselves, this is typically the work of code developers. But users may
+    need to know how to instantiate FlowNodeMakers and pass them to FlowGraph
+    (FlowGraph, in turn, instantiates the FlowNodes as shown in the figure).
+    FlowNodeMakers already have a certain kind of FlowNode composed into them,
+    and users just need to provide data when instantiating FlowNodeMakers.
+    Instantiated FlowNodeMakers are then passed to FlowGraph along with other
+    parameters of the FlowGraph.
+
+    For users interested in adding new nodes into the PRMSChannel MuskingumMann
+    routing solutions, see the notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    which highlights the helper functions :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
+
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -111,6 +166,42 @@ class FlowGraph(ConservativeProcess):
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         verbose: bool = None,
     ):
+        """Initialize a FlowGraph.
+
+        Args:
+            control: A Control object
+            discretization: Currently unused by FlowGraph but required by
+              it's superclass, ConservativeProcess.
+            parameters: A Parameter object with the FlowGraph parameters as
+              described below.
+            inflows: An adaptable of inflows to the graph, often referred to as
+              "lateral" flows (not flows inside the graph).
+            node_maker_dict: A dictionary of FlowNodeMaker instances with
+              keys/names supplied in the parameters, e.g.
+              {key1: flow_node_maker_instance, ...}.
+            budget_type: one of ["defer", None, "warn", "error"] with "defer"
+              being the default and defering to
+              control.options["budget_type"] when
+              available. When control.options["budget_type"] is not avaiable,
+              budget_type is set to "warn".
+
+        The `parameters` argument is a :class:`Parameters` object which
+        contains the following data:
+
+        * node_maker_name: A list or np.array of the FlowNodeMaker name for
+          each node.
+        * node_maker_index: A list or np.array of the indices to ask for from
+          the associated/collated FlowNodeMaker (above) for each node
+        * to_graph_index: the index of the downstream index in the FlowGraph
+          with -1 indicating an outflow node. This must specify a DAG.
+
+        The inputs inflows, node_maker_name, node_maker_index, and
+        to_graph_index are collated. The order of execution of the graph is not
+        the same as the supplied order, the execution order is solved from
+        to_graph_index. Note that initial conditions are set by the node makers
+        via their parameters.
+
+        """
         super().__init__(
             control=control,
             discretization=discretization,
@@ -162,7 +253,6 @@ class FlowGraph(ConservativeProcess):
 
     @classmethod
     def get_variables(cls) -> tuple:
-        """Get a tuple of (public) variable names for this Process."""
         return list(cls.get_init_values().keys())
 
     @staticmethod
@@ -334,7 +424,7 @@ def inflow_exchange_factory(
         calculation: a function on self that performs the calculations.
 
     Returns:
-        A Class of InflowExchange, w asubclass of ConservativeProcess.
+        A Class of InflowExchange, a subclass of ConservativeProcess.
 
     """
 

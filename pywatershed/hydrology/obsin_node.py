@@ -1,11 +1,20 @@
 import pandas as pd
 
 from pywatershed.base.control import Control
+from pywatershed.base.parameters import Parameters
 from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
 from pywatershed.constants import nan, zero
 
 
 class ObsInNode(FlowNode):
+    """A FlowNode that takes inflows but returns observed/specified flows.
+
+    Args:
+      control: a Control object.
+      node_obs_data: A pandas Series object of observations at this location
+        given by pyPRMS.Streamflow.
+    """
+
     def __init__(
         self,
         control: Control,
@@ -21,7 +30,12 @@ class ObsInNode(FlowNode):
         self._sink_source_sum = zero
         return
 
-    def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
+    def calculate_subtimestep(
+        self,
+        isubstep: int,
+        inflow_upstream: float,
+        inflow_lateral: float,
+    ):
         inflow = inflow_upstream + inflow_lateral
         if self._seg_outflow >= zero:
             self._sink_source_sum += self._seg_outflow - inflow
@@ -68,15 +82,22 @@ class ObsInNode(FlowNode):
 
 
 class ObsInNodeMaker(FlowNodeMaker):
+    """A FlowNodeMaker for ObsInNode
+
+    Args:
+      parameters: A pywatershed Parameters object.
+      obs_data: A pandas DataFrame of observations given by pyPRMS.Streamflow.
+    """
+
     def __init__(
         self,
-        parameters,
-        obs_data,
+        parameters: Parameters,
+        obs_data: pd.DataFrame,
     ) -> None:
         self.name = "PassThroughNodeMaker"
         self._parameters = parameters
         self._obs_data = obs_data
 
-    def get_node(self, control, index):
+    def get_node(self, control: Control, index: int):
         node_poi_id = self._parameters.parameters["poi_gage_id"][index]
         return ObsInNode(control, self._obs_data[node_poi_id])

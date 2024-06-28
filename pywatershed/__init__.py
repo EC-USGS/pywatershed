@@ -6,16 +6,20 @@ from .base import meta
 from .base.adapter import Adapter, AdapterNetcdf, adapter_factory
 from .base.budget import Budget
 from .base.control import Control
-from .base.flow_graph import FlowGraph
+from .base.flow_graph import FlowGraph, FlowNode, FlowNodeMaker
 from .base.model import Model
 from .base.parameters import Parameters
+
 from .base.process import Process
 from .base.timeseries import TimeseriesArray
-from .hydrology.pass_through_node import PassThroughNode
+from .hydrology.obsin_node import ObsInNode, ObsInNodeMaker
+from .hydrology.pass_through_node import PassThroughNode, PassThroughNodeMaker
 from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
+    HruSegmentFlowExchange,
+    PRMSChannelFlowNode,
     PRMSChannelFlowNodeMaker,
     prms_channel_flow_graph_postprocess,
     prms_channel_flow_graph_to_model_dict,
@@ -28,10 +32,10 @@ from .hydrology.prms_runoff_no_dprst import PRMSRunoffNoDprst
 from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
-from .hydrology.starfit import Starfit
+from .hydrology.starfit import Starfit, StarfitFlowNode, StarfitFlowNodeMaker
 
 from .plot.domain_plot import DomainPlot
-from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab
+from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab, gis_files
 from .utils.csv_utils import CsvFile
 from .version import __version__
 
@@ -39,6 +43,10 @@ from .version import __version__
 __all__ = (
     "prms_channel_flow_graph_postprocess",
     "prms_channel_flow_graph_to_model_dict",
+    "PRMSChannelFlowNode",
+    "PRMSChannelFlowNodeMaker",
+    "HruSegmentFlowAdapter",
+    "HruSegmentFlowExchange",
     "ModelGraph",
     "ColorBrewer",
     "PRMSAtmosphere",
@@ -50,15 +58,21 @@ __all__ = (
     "Budget",
     "Control",
     "FlowGraph",
+    "FlowNode",
+    "FlowNodeMaker",
     "HruSegmentFlowAdapter",
     "Model",
     "Parameters",
     "Process",
     "TimeseriesArray",
+    "ObsInNode",
+    "ObsInNodeMaker",
     "PassThroughNode",
+    "PassThroughNodeMaker",
+    "StarfitFlowNode",
+    "StarfitFlowNodeMaker",
     "PRMSCanopy",
     "PRMSChannel",
-    "PRMSChannelFlowNodeMaker",
     "PRMSEt",
     "PRMSGroundwater",
     "PRMSGroundwaterNoDprst",
@@ -72,6 +86,7 @@ __all__ = (
     "NetCdfRead",
     "NetCdfWrite",
     "Soltab",
+    "gis_files",
     "CsvFile",
     "DomainPlot",
     "__version__",

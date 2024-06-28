@@ -130,6 +130,7 @@ References
     adapter <api/adapter>
     Atmosphere <api/atmosphere>
     Hydrology <api/hydrology>
+    FlowGraph <api/flow_graph>
     Model <api/generated/pywatershed.Model.rst>
     Base Classes <api/base>
     Utilities <api/utils>

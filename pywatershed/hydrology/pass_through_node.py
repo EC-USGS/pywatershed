@@ -1,9 +1,16 @@
+from ..base.control import Control
 from ..base.flow_graph import FlowNode, FlowNodeMaker
 from ..constants import nan, zero
 
 
 class PassThroughNode(FlowNode):
-    def __init__(self, control):
+    """A FlowNode instance that gives what it takes and dosent store.
+
+    Args:
+      control: A control object.
+    """
+
+    def __init__(self, control: Control):
         self.control = control
         return
 
@@ -12,7 +19,12 @@ class PassThroughNode(FlowNode):
         self._accum_inflow = zero
         return
 
-    def calculate_subtimestep(self, isubstep, inflow_upstream, inflow_lateral):
+    def calculate_subtimestep(
+        self,
+        isubstep: int,
+        inflow_upstream: float,
+        inflow_lateral: float,
+    ):
         self._inflow_subtimestep = inflow_upstream + inflow_lateral
         self._accum_inflow += self._inflow_subtimestep
         self._seg_outflow = self._accum_inflow / (isubstep + 1)
@@ -46,10 +58,12 @@ class PassThroughNode(FlowNode):
 
 
 class PassThroughNodeMaker(FlowNodeMaker):
+    """A FlowNodeMaker of PassThroughNodes"""
+
     def __init__(
         self,
     ) -> None:
         self.name = "PassThroughNodeMaker"
 
-    def get_node(self, control, index):
+    def get_node(self, control: Control, index: int):
         return PassThroughNode(control)

@@ -2,7 +2,9 @@ from .prms_canopy import PRMSCanopy
 from .prms_channel import PRMSChannel
 from .prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
+    HruSegmentFlowExchange,
     PRMSChannelFlowNodeMaker,
+    PRMSChannelFlowNode,
     prms_channel_flow_graph_postprocess,
     prms_channel_flow_graph_to_model_dict,
 )
@@ -17,10 +19,11 @@ from .prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 __all__ = (
     "prms_channel_flow_graph_postprocess",
     "prms_channel_flow_graph_to_model_dict",
+    "PRMSChannelFlowNodeMaker",
     "HruSegmentFlowAdapter",
+    "HruSegmentFlowExchange",
     "PRMSCanopy",
     "PRMSChannel",
-    "PRMSChannelFlowNodeMaker",
     "PRMSGroundwater",
     "PRMSGroundwaterNoDprst",
     "PRMSRunoff",

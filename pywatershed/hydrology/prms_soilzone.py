@@ -299,7 +299,11 @@ class PRMSSoilzone(ConservativeProcess):
         if (self.pref_flow_infil_frac.min() < zero).any() or (
             self.pref_flow_infil_frac.max() > one
         ).any():
-            msg = "Values of pref_flow_infil_frac outside of [0,1]"
+            msg = (
+                "Values of pref_flow_infil_frac outside of [0,1]. "
+                "If values are all -1, you must set pref_flow_infil_frac to "
+                "pref_flow_den in the parameter file yourself."
+            )
             raise ValueError(msg)
 
         # variables

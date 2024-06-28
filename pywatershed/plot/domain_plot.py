@@ -177,14 +177,14 @@ class DomainPlot:
             if old_col in hru_gdf.columns:
                 hru_gdf = hru_gdf.rename(columns={old_col: new_col})
 
+        # this seems so unnecessary
+        if "nhm_id" in hru_gdf.columns and "nhru_v1_1" in hru_gdf.columns:
+            hru_gdf["nhm_id"] = hru_gdf["nhm_id"] - 1
+
         drop_cols = ["model_hru_", "nhru_v1_1"]
         for col in drop_cols:
             if col in hru_gdf.columns:
                 hru_gdf.drop(columns=col, inplace=True)
-
-        # this seems so unnecessary
-        if "nhm_id" in hru_gdf.columns:
-            hru_gdf["nhm_id"] = hru_gdf["nhm_id"] - 1
 
         self._hru_gdf = hru_gdf.to_crs(self.crs)
         self._hru_parameters = None

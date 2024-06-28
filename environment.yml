@@ -21,7 +21,7 @@ dependencies:
   - nbconvert
   - netCDF4
   - networkx
-  - numpy
+  - numpy<2.0.0
   - numba
   - pandas>=1.4.0
   - pint

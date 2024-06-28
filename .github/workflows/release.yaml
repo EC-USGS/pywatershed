@@ -20,6 +20,18 @@ jobs:
         shell: bash -l {0}
     steps:
 
+      - name: Free Disk Space (Ubuntu)
+        if: runner.os == 'Linux'
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: Checkout release branch
         uses: actions/checkout@v3
         with:
@@ -155,7 +167,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           ver="${{ steps.version.outputs.version }}"
-
           # commit and push changes
           git config core.sharedRepository true
           git config user.name "github-actions[bot]"
@@ -188,17 +199,12 @@ jobs:
         with:
           ref: main
 
-      # actions/download-artifact won't look at previous workflow runs but we need to in order to get changelog
-      - name: Download artifacts
-        uses: dawidd6/action-download-artifact@v2
-
       - name: Draft release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           version=$(cat version.txt | xargs)
           title="pywatershed $version"
-
           gh release create "$version" \
             --target main \
             --title "$title" \

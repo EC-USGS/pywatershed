@@ -75,7 +75,7 @@ optional = [
     "cartopy",
     "geopandas",
     "hvplot",
-    "shapely <2.0.0",
+    "shapely",
     "ipython",
     "jupyter",
     "jupyterlab",

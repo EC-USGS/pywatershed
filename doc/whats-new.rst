@@ -12,13 +12,13 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.1.1.0:
+.. _whats-new.1.2.0:
 
-v1.1.0 (Unreleased)
+v1.2.0 (Unreleased)
 ---------------------
 
-New features
-~~~~~~~~~~~~
+New Features
+~~~~~~~~~~~~~~~~
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
 - No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,
@@ -36,19 +36,11 @@ New features
 - Control instances have a diff method to compare with other instances.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
-Breaking changes
+Breaking Changes
 ~~~~~~~~~~~~~~~~
 - pref_flow_infil_frac now a required parameter input for PRMSSoilzone. The NHM
   values assumed previously are zeros on all HRUs.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
-
-Deprecations
-~~~~~~~~~~~~
-
-
-Performance
-~~~~~~~~~~~
-
 
 Bug fixes
 ~~~~~~~~~
@@ -61,10 +53,6 @@ Bug fixes
 - The variable pptmix was incorrectly calculated in certain situations not covered
   by the NHM configurations.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
-
-Documentation
-~~~~~~~~~~~~~
-
 
 Internal changes
 ~~~~~~~~~~~~~~~~
@@ -88,9 +76,22 @@ Internal changes
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
+.. _whats-new.1.1.0:
+
+v1.1.0 (25 June 2024)
+---------------------
+
+New features
+~~~~~~~~~~~~
+- Minor enhancement to ensure PRMSSnow hru_deplcrv parameter is integer or coercable.
+  (:pull:`296`) By `James McCreight <https://github.com/jmccreight>`_.
+- Release assests to include new GIS files and an additional domain to support the upcoming
+  major release. By `James McCreight <https://github.com/jmccreight>`_.
+
+  
 .. _whats-new.1.0.0:
 
-v1.0.0
+v1.0.0 (18 December 2023)
 ---------------------
 
 New features

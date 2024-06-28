@@ -94,8 +94,5 @@ starfit_minimal/
 # asv
 .asv
 
-# release-specific changelogs
-CHANGELOG_*.md
-
 # environment files
 .env

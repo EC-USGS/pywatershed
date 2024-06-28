@@ -23,7 +23,7 @@ dependencies:
   - nbconvert
   - netCDF4
   - networkx
-  - numpy
+  - numpy<2.0.0
   - numba
   - pandas>=1.4.0
   - pint
@@ -37,7 +37,7 @@ dependencies:
   - pytest-xdist
   - python<3.11,>=3.9
   - pyyaml
-  - shapely<2.0.0
+  - shapely
   - sphinx
   - sphinx-book-theme>=0.3.3
   - sphinx-autosummary-accessors

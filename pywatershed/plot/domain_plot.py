@@ -5,12 +5,14 @@
 import pathlib as pl
 from typing import Union
 
-import folium
 import geopandas as gpd
 import pandas as pd
 from IPython.display import display
 
-import pywatershed as pws
+from ..base import Parameters
+from ..utils import import_optional_dependency
+
+folium = import_optional_dependency("folium")
 
 
 class DomainPlot:
@@ -47,8 +49,8 @@ class DomainPlot:
         self,
         hru_shp_file: Union[pl.Path, str] = None,
         segment_shp_file: Union[pl.Path, str] = None,
-        hru_parameters: Union[pl.Path, pws.Parameters] = None,
-        segment_parameters: Union[pl.Path, pws.Parameters] = None,
+        hru_parameters: Union[pl.Path, Parameters] = None,
+        segment_parameters: Union[pl.Path, Parameters] = None,
         hru_parameter_names: list[str] = None,
         segment_parameter_names: list[str] = None,
         hru_highlight_indices: list = None,
@@ -325,11 +327,11 @@ class DomainPlot:
     @staticmethod
     def _add_parameters(
         gdf: gpd.geodataframe.GeoDataFrame,
-        parameters: Union[pws.Parameters, pl.Path, str],
+        parameters: Union[Parameters, pl.Path, str],
         parameter_names: list,
     ):
         if isinstance(parameters, (pl.Path, str)):
-            parameters = pws.Parameters.from_netcdf(parameters, use_xr=True)
+            parameters = Parameters.from_netcdf(parameters, use_xr=True)
 
         if parameter_names is None or len(parameter_names) == 0:
             raise ValueError("No parameter names specified for tooltip.")

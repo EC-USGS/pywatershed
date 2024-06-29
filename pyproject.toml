@@ -73,6 +73,7 @@ optional = [
     "pydot",
     "geos",
     "cartopy",
+    "folium",
     "geopandas",
     "hvplot",
     "shapely",

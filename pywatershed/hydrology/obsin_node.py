@@ -1,8 +1,8 @@
 import pandas as pd
 
 from pywatershed.base.control import Control
-from pywatershed.base.parameters import Parameters
 from pywatershed.base.flow_graph import FlowNode, FlowNodeMaker
+from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 
 

@@ -7,12 +7,12 @@ from typing import Union
 
 import geopandas as gpd
 import pandas as pd
-from IPython.display import display
 
 from ..base import Parameters
 from ..utils import import_optional_dependency
 
 folium = import_optional_dependency("folium")
+IPython = import_optional_dependency("IPython")
 
 
 class DomainPlot:
@@ -160,7 +160,7 @@ class DomainPlot:
     def display(self):
         if self.dom_plot is None:
             self.make_domain_plot()
-        display(self.dom_plot)
+        IPython.display(self.dom_plot)
 
     def add_hru_gdf(self, gdf):
         if self.dom_plot is not None:

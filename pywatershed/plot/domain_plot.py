@@ -11,8 +11,8 @@ import pandas as pd
 from ..base import Parameters
 from ..utils import import_optional_dependency
 
-folium = import_optional_dependency("folium", errors=None)
-IPython = import_optional_dependency("IPython", errors=None)
+folium = import_optional_dependency("folium", errors="warn")
+IPython = import_optional_dependency("IPython", errors="warn")
 
 
 class DomainPlot:

@@ -58,12 +58,22 @@ class FlowNode(Accessor):
 
     @property
     def outflow(self):
-        "The outflow of the FlowNode at the current subtimestep."
+        "The average outflow of the FlowNode over the current timestep."
+        raise Exception("This must be overridden")
+
+    @property
+    def outflow_substep(self):
+        """The outflow of the FlowNode over the sub-timestep."""
         raise Exception("This must be overridden")
 
     @property
     def storage_change(self):
         "The storage change of the FlowNode at the current subtimestep."
+        raise Exception("This must be overridden")
+
+    @property
+    def storage(self):
+        "The storage of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
@@ -97,7 +107,7 @@ class FlowNodeMaker(Accessor):
         self.name = "FlowNodeMaker"
         return
 
-    def get_node(control: Control, index: int):
+    def get_node(control: Control, index: int) -> FlowNode:
         """Instantiate FlowNode at a given index.
 
         Args:
@@ -140,19 +150,166 @@ class FlowGraph(ConservativeProcess):
     |  |fg2|  |
     +---------+
 
-    Users generally do not create types of FlowNodes or FlowNodeMakers
-    themselves, this is typically the work of code developers. But users may
-    need to know how to instantiate FlowNodeMakers and pass them to FlowGraph
-    (FlowGraph, in turn, instantiates the FlowNodes as shown in the figure).
-    FlowNodeMakers already have a certain kind of FlowNode composed into them,
-    and users just need to provide data when instantiating FlowNodeMakers.
-    Instantiated FlowNodeMakers are then passed to FlowGraph along with other
-    parameters of the FlowGraph.
+    The figure above illustrates how FlowNodeMakers already have a certain
+    kind of FlowNode class composed into them. A user instantiates each
+    FlowNodeMaker by passing all the data required for all the FlowNodes.
+    FlowGraph recieves instantiated FlowNodeMakers and calls them, in turn,
+    instantiate the FlowNodes in the FlowGraph.
 
-    For users interested in adding new nodes into the PRMSChannel MuskingumMann
-    routing solutions, see the notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
-    which highlights the helper functions :func:`prms_channel_flow_graph_to_model_dict`
+    Note that users generally do not create types of FlowNodes or
+    FlowNodeMakers themselves, this is typically the work of code developers.
+    But users pass parameters, an inflow Adapter, and instantiated
+    FlowNodeMakers to FlowGraph. The example below shows the nuts and bolts of
+    setting up a FlowGraph similar to that illustrated above, where a single
+    pass-through node is inserted.
+
+    For users specifically interested in adding new nodes into the PRMSChannel
+    MuskingumMann routing solutions, there are helper functions available which
+    greatly simplify the code. See the notebook
+    `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    which highlights both  helper functions
+    :func:`prms_channel_flow_graph_to_model_dict`
     and :func:`prms_channel_flow_graph_postprocess`.
+
+    Examples:
+    ---------
+
+    This example shows how to insert a pass-through node into a PRMSChannel
+    simulation. It's a bit underwhelming because the flows on the PRMSChannel
+    nodes are unaltered, but shows the full mechanism without helper functions.
+
+    >>> import numpy as np
+    >>> from tqdm.auto import tqdm
+    >>> import xarray as xr
+    >>> import pywatershed as pws
+    >>> from pywatershed.constants import nan, zero
+    >>> from pywatershed.constants import __pywatershed_root__ as pkg_root_dir
+    >>> # this example requries the repository with test data previously generated
+    >>> domain_dir = pkg_root_dir / "../test_data/drb_2yr"
+    >>> control_file = domain_dir / "nhm.control"
+    >>> control = pws.Control.load_prms(
+    ...     control_file, warn_unused_options=False
+    ... )
+    >>> dis_hru_file = domain_dir / "parameters_dis_hru.nc"
+    >>> dis_seg_file = domain_dir / "parameters_dis_seg.nc"
+    >>> discretization_prms = pws.Parameters.merge(
+    ...     pws.Parameters.from_netcdf(dis_hru_file, encoding=False),
+    ...     pws.Parameters.from_netcdf(dis_seg_file, encoding=False),
+    ... )
+    >>> param_file = domain_dir / "parameters_PRMSChannel.nc"
+    >>> parameters_prms = pws.parameters.PrmsParameters.from_netcdf(param_file)
+    >>> # Build the parameters for the FlowGraph
+    >>> nnodes = parameters_prms.dims["nsegment"] + 1
+    >>> node_maker_name = ["prms_channel"] * nnodes
+    >>> node_maker_name[-1] = "pass_throughs"
+    >>> node_maker_index = np.arange(nnodes)
+    >>> node_maker_index[-1] = 0
+    >>> to_graph_index = np.zeros(nnodes, dtype=np.int64)
+    >>> dis_params = discretization_prms.parameters
+    >>> to_graph_index[0:-1] = dis_params["tosegment"] - 1
+    >>> nhm_seg_intervene_above = 1829
+    >>> wh_intervene_above_nhm = np.where(
+    ...     dis_params["nhm_seg"] == nhm_seg_intervene_above
+    ... )
+    >>> wh_intervene_below_nhm = np.where(
+    ...     (dis_params["tosegment"] - 1) == wh_intervene_above_nhm[0][0]
+    ... )
+    ... # have to map to the graph from an index found in prms_channel
+    >>> wh_intervene_above_graph = np.where(
+    ...     (np.array(node_maker_name) == "prms_channel")
+    ...     & (node_maker_index == wh_intervene_above_nhm[0][0])
+    ... )
+    >>> wh_intervene_below_graph = np.where(
+    ...     (np.array(node_maker_name) == "prms_channel")
+    ...     & np.isin(node_maker_index, wh_intervene_below_nhm)
+    ... )
+    >>> to_graph_index[-1] = wh_intervene_above_graph[0][0]
+    >>> to_graph_index[wh_intervene_below_graph] = nnodes - 1
+    >>> parameters_flow_graph = pws.Parameters(
+    ...     dims={
+    ...         "nnodes": nnodes,
+    ...     },
+    ...     coords={
+    ...         "node_coord": np.arange(nnodes),
+    ...     },
+    ...     data_vars={
+    ...         "node_maker_name": node_maker_name,
+    ...         "node_maker_index": node_maker_index,
+    ...         "to_graph_index": to_graph_index,
+    ...     },
+    ...     metadata={
+    ...         "node_coord": {"dims": ["nnodes"]},
+    ...         "node_maker_name": {"dims": ["nnodes"]},
+    ...         "node_maker_index": {"dims": ["nnodes"]},
+    ...         "to_graph_index": {"dims": ["nnodes"]},
+    ...     },
+    ...     validate=True,
+    ... )
+    >>> # Get the FlowNodeMakers instantiated and named
+    >>> node_maker_dict = {
+    ...     "prms_channel": pws.PRMSChannelFlowNodeMaker(
+    ...         discretization_prms, parameters_prms
+    ...     ),
+    ...     "pass_throughs": pws.PassThroughNodeMaker(),
+    ... }
+    >>> # Get the inputs to PRMSChannel combined, then add inputs to the
+    ... # additional node using a custom Adapter.
+    >>> input_variables = {}
+    >>> for key in pws.PRMSChannel.get_inputs():
+    ...     nc_path = domain_dir / f"output/{key}.nc"
+    ...     input_variables[key] = pws.AdapterNetcdf(nc_path, key, control)
+    ...
+    >>> inflows_prms = pws.HruSegmentFlowAdapter(
+    ...     parameters_prms, **input_variables
+    ... )
+    >>> class GraphInflowAdapter(pws.Adapter):
+    ...     def __init__(
+    ...         self,
+    ...         prms_inflows: pws.Adapter,
+    ...         variable: str = "inflows",
+    ...     ):
+    ...         self._variable = variable
+    ...         self._prms_inflows = prms_inflows
+    ...
+    ...         self._nnodes = len(self._prms_inflows.current) + 1
+    ...         self._current_value = np.zeros(self._nnodes) * nan
+    ...         return
+    ...
+    ...     def advance(self) -> None:
+    ...         self._prms_inflows.advance()
+    ...         self._current_value[0:-1] = self._prms_inflows.current
+    ...         self._current_value[-1] = zero  # no inflow at the pass through
+    ...         return
+    ...
+    >>> inflows_graph = GraphInflowAdapter(inflows_prms)
+    >>> # Instantiate the FlowGraph
+    >>> flow_graph = pws.FlowGraph(
+    ...     control,
+    ...     discretization=None,
+    ...     parameters=parameters_flow_graph,
+    ...     inflows=inflows_graph,
+    ...     node_maker_dict=node_maker_dict,
+    ...     budget_type="error",
+    ... )
+    >>> # Save out the full timeseries of flows for all nodes
+    >>> graph_seg_outflows = np.zeros([control.n_times, nnodes])
+    >>> # Run the flow graph
+    >>> for istep in tqdm(range(control.n_times)):
+    ...     control.advance()
+    ...     flow_graph.advance()
+    ...     flow_graph.calculate(1.0)
+    ...     graph_seg_outflows[istep, :] = flow_graph["node_outflows"]
+    ...
+    >>> flow_graph.finalize()
+    >>> # Compare to the results of PRMSChannel run with out a pass-through
+    ... # node.
+    >>> prms_seg_outflows = xr.open_dataarray(
+    ...     domain_dir / "output/seg_outflow.nc"
+    ... )
+    ... # The final node is the passthrough node, drop it from comparisons.
+    >>> assert (
+    ...     abs(graph_seg_outflows[:, 0:-1] - prms_seg_outflows.values) < 1e-10
+    ... ).all()
 
     """  # noqa: E501
 
@@ -257,6 +414,7 @@ class FlowGraph(ConservativeProcess):
 
     @staticmethod
     def get_mass_budget_terms():
+        """Get a dictionary of variable names for mass budget terms."""
         return {
             "inputs": ["inflows"],
             "outputs": ["outflows"],
@@ -267,10 +425,12 @@ class FlowGraph(ConservativeProcess):
         }
 
     def get_outflow_mask(self):
+        """Get a mask indicataing on which nodes flow exits the graph."""
         return self._outflow_mask
 
     @property
     def outflow_mask(self):
+        "A mask indicating on which nodes flow exits the graph."
         return self._outflow_mask
 
     def _set_initial_conditions(self) -> None:

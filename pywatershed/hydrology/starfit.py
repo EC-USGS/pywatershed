@@ -118,10 +118,12 @@ class Starfit(ConservativeProcess):
 
     @staticmethod
     def get_dimensions() -> dict:
+        """Get a tuple of dimension names for this Starfit."""
         return ("nreservoirs",)
 
     @staticmethod
     def get_parameters() -> tuple:
+        """Get a tuple of parameter names for Starfit"""
         return (
             "grand_id",
             "initial_storage",
@@ -157,6 +159,7 @@ class Starfit(ConservativeProcess):
 
     @staticmethod
     def get_mass_budget_terms():
+        """Get a dictionary of variable names for mass budget terms."""
         return {
             "inputs": [
                 "lake_inflow",
@@ -334,7 +337,9 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (MCM_to_m3ps_day)  # both terms in m3ps
+            ) * (
+                MCM_to_m3ps_day
+            )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,
@@ -527,6 +532,27 @@ def min_nor(
 
 
 class StarfitFlowNode(FlowNode):
+    """STARFIT FlowNode: Storage Targets And Release Function Inference Tool
+
+    This FlowNode implementation allows STARFIT solutions to be computed in
+    a :class:`FlowGraph`. The solution has the option for subtimestep or
+    daily computations.
+
+    The STARFIT reference:
+
+    Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,
+    Water storage and release policies for all large reservoirs of conterminous
+    United States, Journal of Hydrology, Volume 603, Part A, 2021, 126843,
+    ISSN 0022-1694, https://doi.org/10.1016/j.jhydrol.2021.126843.
+
+    https://github.com/IMMM-SFA/starfit
+
+    Adapted from STARFIT implementation in the MOSART-WM model:
+    https://github.com/IMMM-SFA/mosartwmpy/blob/main/mosartwmpy/reservoirs/istarf.py
+
+    Noah Knowles (USGS) and James McCreight (UCAR/USGS)
+    """
+
     def __init__(
         self,
         control: Control,
@@ -562,6 +588,45 @@ class StarfitFlowNode(FlowNode):
         nhrs_substep: int = one,
         budget_type: Literal["defer", None, "warn", "error"] = None,
     ):
+        """Initialize a StarfitFlowNode.
+
+        Args:
+            control: A Control object
+            grand_id: the GRanD id,
+            initial_storage: initial storage value, may be NaN to use the
+                middle of the normal operating range.
+            start_time: May be NaN, the optional time at which to start
+                simulating with STARFIT.
+            end_time: As for start_Time.
+            inflow_mean: STARFIT parameter.
+            NORhi_min: STARFIT parameter.
+            NORhi_max: STARFIT parameter.
+            NORhi_alpha: STARFIT parameter.
+            NORhi_beta: STARFIT parameter.
+            NORhi_mu: STARFIT parameter.
+            NORlo_min: STARFIT parameter.
+            NORlo_max: STARFIT parameter.
+            NORlo_alpha: STARFIT parameter.
+            NORlo_beta: STARFIT parameter.
+            NORlo_mu: STARFIT parameter.
+            Release_min: STARFIT parameter.
+            Release_max: STARFIT parameter.
+            Release_alpha1: STARFIT parameter.
+            Release_alpha2: STARFIT parameter.
+            Release_beta1: STARFIT parameter.
+            Release_beta2: STARFIT parameter.
+            Release_p1: STARFIT parameter.
+            Release_p2: STARFIT parameter.
+            Release_c: STARFIT parameter.
+            GRanD_CAP_MCM: STARFIT parameter.
+            Obs_MEANFLOW_CUMECS: STARFIT parameter.
+            calc_method: One of "numba" or "numpy".
+            io_in_cfs: Are the units in cubic feet per second? False gives
+                units of cubic meters per second.
+            compute_daily: Daily or subtimestep calculation?
+            nhrs_substep: Number of hours in the subtimestep.
+            budget_type: One of "defer", "warn", or "error".
+        """
         self.name = "StarfitFlowNode"
         self.control = control
 
@@ -718,6 +783,7 @@ class StarfitFlowNode(FlowNode):
 
     @staticmethod
     def get_mass_budget_terms():
+        """Get a dictionary of variable names for mass budget terms."""
         return {
             "inputs": [
                 "_lake_inflow",
@@ -1013,12 +1079,12 @@ class StarfitFlowNode(FlowNode):
         self._lake_spill_accum[:] += self._lake_spill_sub
         self._lake_spill[:] = self._lake_spill_accum / (isubstep + 1)
 
-        self._lake_availability_status_accum[:] += (
-            self._lake_availability_status_sub
-        )
-        self._lake_availability_status[:] = (
-            self._lake_availability_status_accum / (isubstep + 1)
-        )
+        self._lake_availability_status_accum[
+            :
+        ] += self._lake_availability_status_sub
+        self._lake_availability_status[
+            :
+        ] = self._lake_availability_status_accum / (isubstep + 1)
         self._lake_storage_accum[:] += self._lake_storage_sub
         self._lake_storage[:] = self._lake_storage_accum / (isubstep + 1)
 
@@ -1039,6 +1105,12 @@ class StarfitFlowNode(FlowNode):
 
 
 class StarfitFlowNodeMaker(FlowNodeMaker):
+    """STARFIT FlowNodeMaker: Storage Targets And Release Function Inference Tool.
+
+    This FlowNodeMaker instantiates :class:`StarfitFlowNode`s for
+    :class:`FlowGraph`.
+    """  # noqa: E501
+
     def __init__(
         self,
         discretization: Parameters,
@@ -1048,8 +1120,23 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
         verbose: bool = None,
         compute_daily: bool = False,
         budget_type: Literal["defer", None, "warn", "error"] = None,
-        nhrs_substep: int = one,
+        nhrs_substep: int = 1,
     ) -> None:
+        """Instantiate StarfitFlowNodeMaker.
+
+        Args:
+            discretization: A :class:`Parameters` object.
+            parameters: A :class:`Parmaeters` object with the parameters listed
+                in :class:`StarfitFlowNode` dimensioned by number of
+                reservoirs/nodes to instantiate.
+            calc_method: One of "numba" or "numpy".
+            io_in_cfs: Are the units in cubic feet per second? False gives
+                units of cubic meters per second.
+            compute_daily: Daily or subtimestep calculation?
+            nhrs_substep: Number of hours in the subtimestep.
+            budget_type: One of "defer", "warn", or "error".
+            verbose: bool = None,
+        """
         self.name = "StarfitFlowNodeMaker"
         self._calc_method = calc_method
         self._io_in_cfs = io_in_cfs
@@ -1060,7 +1147,7 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
 
         return
 
-    def get_node(self, control, index):
+    def get_node(self, control, index) -> StarfitFlowNode:
         return StarfitFlowNode(
             control=control,
             grand_id=self.grand_id[index],
@@ -1110,10 +1197,12 @@ class StarfitFlowNodeMaker(FlowNodeMaker):
 
     @staticmethod
     def get_dimensions() -> dict:
+        """Get a tuple of dimension names for this StarfitFlowNodeMaker."""
         return ("nreservoirs",)
 
     @staticmethod
     def get_parameters() -> tuple:
+        """Get a tuple of parameter names for StarfitFlowNodeMaker."""
         return (
             "grand_id",
             "initial_storage",

@@ -360,13 +360,9 @@ class Process(Accessor):
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
-        """Set input variables to adapter.current and manage the adapter.
+        """Set input variable as an Adapter on self"""
 
-        TODO: make this private?
-
-        Args:
-            input_variable_name: key of input variable
-            adapter: the Adapter for the input.
+        TODO: this method should be made private
         """
         self._input_variables_dict[input_variable_name] = adapter
         # can NOT use [:] on the LHS as we are relying on pointers between

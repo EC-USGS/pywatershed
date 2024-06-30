@@ -26,7 +26,6 @@ def download(force=False):
         with zipfile.ZipFile(gis_file, "r") as zz:
             zz.extractall(pkg_root_dir / "data")
 
-        gis_file.rename(gis_dir)
         assert gis_dir.exists()
 
     return

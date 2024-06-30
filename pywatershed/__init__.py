@@ -33,7 +33,14 @@ from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
 from .hydrology.starfit import Starfit, StarfitFlowNode, StarfitFlowNodeMaker
 from .plot.domain_plot import DomainPlot
-from .utils import ControlVariables, NetCdfRead, NetCdfWrite, Soltab, gis_files
+from .utils import (
+    ControlVariables,
+    NetCdfRead,
+    NetCdfWrite,
+    Soltab,
+    gis_files,
+    addtl_domain_files,
+)
 from .utils.csv_utils import CsvFile
 from .version import __version__
 

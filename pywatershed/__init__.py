@@ -38,8 +38,8 @@ from .utils import (
     NetCdfRead,
     NetCdfWrite,
     Soltab,
-    gis_files,
     addtl_domain_files,
+    gis_files,
 )
 from .utils.csv_utils import CsvFile
 from .version import __version__
@@ -91,6 +91,7 @@ __all__ = (
     "NetCdfWrite",
     "Soltab",
     "gis_files",
+    "addtl_domain_files",
     "CsvFile",
     "DomainPlot",
     "__version__",

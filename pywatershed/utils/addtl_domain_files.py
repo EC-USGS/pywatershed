@@ -28,7 +28,6 @@ def download(force=False):
         with zipfile.ZipFile(addtl_domains_file, "r") as zz:
             zz.extractall(pkg_root_dir / "data")
 
-        addtl_domains_file.rename(addtl_domains_dir)
         assert addtl_domains_dir.exists()
 
     return

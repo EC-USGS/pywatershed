@@ -160,7 +160,7 @@ class DomainPlot:
     def display(self):
         if self.dom_plot is None:
             self.make_domain_plot()
-        IPython.display(self.dom_plot)
+        IPython.display.display(self.dom_plot)
 
     def add_hru_gdf(self, gdf):
         if self.dom_plot is not None:

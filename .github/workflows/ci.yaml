@@ -183,10 +183,6 @@ jobs:
         run: |
           python pywatershed/utils/gis_files.py
 
-      - name: Get additional domain files for notebooks
-        run: |
-          python pywatershed/utils/addtl_domain_files.py
-
       - name: domainless - run tests no requiring domain data
         working-directory: autotest
         run: pytest -m domainless -n=auto -vv

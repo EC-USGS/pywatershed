@@ -37,10 +37,6 @@ jobs:
           compiler: gcc
           version: 11
 
-      - name: Get GIS files for tests
-        run: |
-          python pywatershed/utils/gis_files.py
-
       - name: Get additional domain files for notebooks
         run: |
           python pywatershed/utils/addtl_domain_files.py
@@ -79,6 +75,10 @@ jobs:
       - name: Import pywatershed
         run: |
           python -c "import pywatershed"
+
+      - name: Get GIS files for tests
+        run: |
+          python pywatershed/utils/gis_files.py
 
       - name: Run tests
         working-directory: autotest_exs

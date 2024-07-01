@@ -179,6 +179,14 @@ jobs:
           pip -V
           pip list
 
+      - name: Get GIS files for tests
+        run: |
+          python pywatershed/utils/gis_files.py
+
+      - name: Get additional domain files for notebooks
+        run: |
+          python pywatershed/utils/addtl_domain_files.py
+
       - name: domainless - run tests no requiring domain data
         working-directory: autotest
         run: pytest -m domainless -n=auto -vv
@@ -297,7 +305,7 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_drb_2yr_no_dprst.xml
 
-          
+
       - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest
         run: |

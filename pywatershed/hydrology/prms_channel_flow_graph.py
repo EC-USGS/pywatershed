@@ -490,7 +490,7 @@ class HruSegmentFlowAdapter(Adapter):
 
 
 class HruSegmentFlowExchange(ConservativeProcess):
-    """A Process that maps HRU outflows to lateral inflows on PRMS segments/nodes.
+    """Process to map PRMS HRU outflows to lateral inflows on segments/nodes.
 
     This class specifically maps from PRMS HRU outflows to PRMS segment inflows
     using the parameters known to `PRMSChannel`.

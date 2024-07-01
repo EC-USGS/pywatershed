@@ -37,11 +37,13 @@ jobs:
           compiler: gcc
           version: 11
 
-      - name: Download GIS files
-        working-directory: examples
+      - name: Get GIS files for tests
         run: |
-          curl -LO https://github.com/EC-USGS/pywatershed/releases/download/v2022.0.1/pynhm_gis.zip
-          unzip pynhm_gis.zip
+          python pywatershed/utils/gis_files.py
+
+      - name: Get additional domain files for notebooks
+        run: |
+          python pywatershed/utils/addtl_domain_files.py
 
       - name: Set environment variables
         run: |

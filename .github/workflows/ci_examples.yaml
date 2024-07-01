@@ -37,10 +37,6 @@ jobs:
           compiler: gcc
           version: 11
 
-      - name: Get additional domain files for notebooks
-        run: |
-          python pywatershed/utils/addtl_domain_files.py
-
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
@@ -79,6 +75,10 @@ jobs:
       - name: Get GIS files for tests
         run: |
           python pywatershed/utils/gis_files.py
+
+      - name: Get additional domain files for notebooks
+        run: |
+          python pywatershed/utils/addtl_domain_files.py
 
       - name: Run tests
         working-directory: autotest_exs

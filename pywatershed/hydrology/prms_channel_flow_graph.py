@@ -19,6 +19,20 @@ from pywatershed.parameters import Parameters
 
 
 class PRMSChannelFlowNode(FlowNode):
+    """A FlowNode for the Muskingum-Mann method of PRMSChannel
+
+    This is a :class:`FlowNode` implementation of :class:`PRMSChannel` where
+    the solution is the so-called Muskingum-Mann method.
+
+    See :class:`FlowGraph` for discussion and a worked example. The notebook
+    `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    highlights adding a StarfitFlowNode a :class:`FlowGraph` otherwised
+    comprised of :class:`PRMSChannelFlowNode`\ s using the helper functions
+    :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
+
+    """
+
     def __init__(
         self,
         control: Control,
@@ -29,6 +43,17 @@ class PRMSChannelFlowNode(FlowNode):
         c2: np.float64,
         calc_method: Literal["numba", "numpy"] = None,
     ):
+        """Initialize a PRMSChannelFlowNode.
+
+        Args:
+          control: A :class:`Control` object.
+          tsi: Parameter of :class:`PRMSChannel`.
+          ts: Parameter of :class:`PRMSChannel`.
+          c0: Parameter of :class:`PRMSChannel`.
+          c1: Parameter of :class:`PRMSChannel`.
+          c2: Parameter of :class:`PRMSChannel`.
+          calc_method: One of "numba", "numpy" (default).
+        """
         self.control = control
 
         self._tsi = tsi
@@ -125,18 +150,17 @@ class PRMSChannelFlowNode(FlowNode):
 
 
 class PRMSChannelFlowNodeMaker(FlowNodeMaker):
-    """PRMS channel flow (muskingum_mann) using a FlowGraph.
+    """A FlowNodeMaker for PRMSChannelFlowNodes.
 
-    See PRMSChannel for details on the method.
-    This class bases on FlowGraphNodeMaker which bases on
-    ConservativeProcess.
+    See :class:`PRMSChannelFlowNode` for additional details and the required
+    parameters.
 
-    Args:
-        discretization: a discretization of class Parameters
-        parameters: a parameter object of class Parameters
-        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
-            "numba".
-        verbose: Print extra information or not?
+    See :class:`FlowGraph` for discussion and a worked example. The notebook
+    `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    highlights adding a StarfitFlowNode a :class:`FlowGraph` otherwised
+    comprised of :class:`PRMSChannelFlowNode`\ s using the helper functions
+    :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
     """
 
     def __init__(
@@ -146,6 +170,15 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
+        """Instantiate a PRMSChannelFlowNodeMaker.
+
+        Args:
+          discretization: a discretization of class Parameters
+          parameters: a parameter object of class Parameters
+          calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+              "numba".
+          verbose: Print extra information or not?
+        """
         self.name = "PRMSChannelFlowNodeMaker"
         self._calc_method = calc_method
         self._set_data(discretization, parameters)
@@ -153,7 +186,7 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
 
         return
 
-    def get_node(self, control, index):
+    def get_node(self, control, index) -> PRMSChannelFlowNode:
         # could pass initial conditons here but they arent currently used in
         # PRMS
         return PRMSChannelFlowNode(
@@ -180,10 +213,12 @@ class PRMSChannelFlowNodeMaker(FlowNodeMaker):
 
     @staticmethod
     def get_dimensions() -> tuple:
-        return "nsegment"
+        """Get a tuple of dimension names for this PRMSChannelFlowNodeMaker."""
+        return ("nsegment",)
 
     @staticmethod
     def get_parameters() -> tuple:
+        """Get a tuple of parameter names for PRMSChannelFlowNodeMaker."""
         return (
             "mann_n",
             "seg_depth",
@@ -366,18 +401,19 @@ _calculate_subtimestep_numba = nb.njit(
 
 
 class HruSegmentFlowAdapter(Adapter):
-    """
-    Adapt PRMS HRU volumetric outflows to PRMS Segment lateral inflows.
-    The calculated lateral flows (in cubic feet per second) are availble from
-    the current_value property.
+    """Adapt volumetric flows from HRUs to lateral inflows on PRMS segments/nodes.
 
-    Args
-    ----
-    parameters: A PRMSChannel parameter object.
-    sroff_vol: An Adapter of surface runoff volume
-    ssres_flow_vol: An Adapter of subsurface reservoir outflow volume
-    gwres_flow_vol: An Adapter of groundwater reservoir outflow volume
-    """
+    This class specifically maps from PRMS HRU outflows to PRMS segment inflows
+    using the parameters known to `PRMSChannel`. .
+
+    This class is a subclass of :class:`Adapter` which means that it makes
+    existing or known flows available over time (but dosent calculate a
+    process). This class is meant to force a stand-alone :class:`FlowGraph` runoff
+    outside the context of a :class:`Model`. The calculated lateral flows
+    (in cubic feet per second) are availble from the current_value property.
+
+    See :class:`FlowGraph` for discussion and an example.
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -386,6 +422,14 @@ class HruSegmentFlowAdapter(Adapter):
         ssres_flow_vol: Adapter,
         gwres_flow_vol: Adapter,
     ):
+        """Instantiate an HruSegmentFlowAdapter.
+
+        Args:
+          parameters: A :class:`Parameters` object for :class:`PRMSChannel`.
+          sroff_vol: An :class:`Adapter` of surface runoff volume.
+          ssres_flow_vol: An Adapter of subsurface reservoir outflow volume
+          gwres_flow_vol: An Adapter of groundwater reservoir outflow volume
+        """
         self._variable = "inflows"
         self._parameters = parameters
 
@@ -446,24 +490,13 @@ class HruSegmentFlowAdapter(Adapter):
 
 
 class HruSegmentFlowExchange(ConservativeProcess):
-    """PRMS class to map HRU outflows to segment inflows.
+    """A Process that maps HRU outflows to lateral inflows on PRMS segments/nodes.
 
-    This code was originally and awkwardly in the PRMSChannel. It is
-    simplified here.
+    This class specifically maps from PRMS HRU outflows to PRMS segment inflows
+    using the parameters known to `PRMSChannel`.
 
-    Args:
-        control: The control object.
-        discretization: a discretizaion with both
-        parameters: Parameters,
-        sroff_vol: adaptable,
-        ssres_flow_vol: adaptable,
-        gwres_flow_vol: adaptable,
-        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
-            the default and defering to control.options["budget_type"] when
-            available. When control.options["budget_type"] is not avaiable,
-            budget_type is set to "warn".
-        verbose: bool = None,
-
+    This class is meant to take flows from "upstream" :class:`Process`\ es and
+    provide flows to a :class:`FlowGraph` in the context of a :class:`Model`.
     """
 
     def __init__(
@@ -477,6 +510,24 @@ class HruSegmentFlowExchange(ConservativeProcess):
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         verbose: bool = None,
     ) -> None:
+        """Instantiate a HruSegmentFlowExchange.
+
+        Args:
+            control: A :class:`Control` object.
+            discretization: A discretizaion (:class:`Parameters`) for
+              `PRMSChannel`.
+            parameters: A :class:`Parameters` for `PRMSChannel`.
+            sroff_vol: An :class:`Adaptable` of volumetric surface runoff.
+            ssres_flow_vol: An :class:`Adaptable` of volumetric subsurface
+              reservoir flow.
+            gwres_flow_vol: An :class:`Adaptable` of volumetric groundwater
+              reservoir flow.
+            budget_type: one of ["defer", None, "warn", "error"] with "defer"
+              being the default and defering to control.options["budget_type"]
+              when available. When control.options["budget_type"] is not
+              avaiable, budget_type is set to "warn".
+            verbose: Boolean for the amount of messages to be printed.
+        """
         super().__init__(
             control=control,
             discretization=discretization,
@@ -572,10 +623,24 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_flow_to_nhm_seg: list,
     budget_type: Literal["defer", None, "warn", "error"] = "defer",
 ) -> FlowGraph:
-    """A PRMSChannel-based FlowGraph with additional nodes, run from file inputs.
+    """Add nodes to a PRMSChannel-based FlowGraph to run from known inputs.
 
-    Note that this FlowGraph currently has no-inflow to non-prms_channel
-    nodes (but this could be added/accomodated).
+    This function helps construct a :class:`FlowGraph` starting from existing
+    data for a :class:`PRMSChannel` simulation. The resulting FlowGraph is
+    meant to run by itself, forced by known input flows.
+
+    One limitation is that this FlowGraph currently has no-inflow to
+    non-PRMSChannel nodes (but this could be added/accomodated).
+
+    Note that if you want to run a :class:`FlowGraph` along with other
+    :class:`Process`\ es in a :class:`Model`, then the helper function
+    :func:`prms_channel_flow_graph_to_model_dict` is for you.
+
+    See :class:`FlowGraph` for additional details and discussion.
+
+    Please see the example notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    which highlights both this helper function and
+    :func:`prms_channel_flow_graph_to_model_dict`.
 
     Args:
         control: The control object for the run
@@ -597,10 +662,6 @@ def prms_channel_flow_graph_postprocess(
     Returns:
         An instantiated FlowGraph object.
 
-    For users interested in adding new nodes into the PRMSChannel MuskingumMann
-    routing solutions, see the notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
-    which highlights the helper functions :func:`prms_channel_flow_graph_to_model_dict`
-    and :func:`prms_channel_flow_graph_postprocess`.
     """  # noqa: E501
     if budget_type == "defer":
         if "budget_type" in control.options.keys():
@@ -673,10 +734,23 @@ def prms_channel_flow_graph_to_model_dict(
     new_nodes_flow_to_nhm_seg: list,
     graph_budget_type: Literal["defer", None, "warn", "error"] = "defer",
 ) -> dict:
-    """Add a PRMSChannel-based FlowGraph with additional nodes to a model_dict.
+    """Add nodes to a PRMSChannel-based FlowGraph within a Model's model_dict.
 
-    Note that this FlowGraph currently has no-inflow to non-prms_channel
-    nodes (but this could be added/accomodated).
+    This function helps construct a :class:`FlowGraph` starting from existing
+    data for a :class:`PRMSChannel` simulation. The resulting FlowGraph is
+    inserted into a model_dict used to instantiate a :class:`Model`.
+
+    One limitation is that this FlowGraph currently has no-inflow to
+    non-PRMSChannel nodes (but this could be added/accomodated).
+
+    Note that if you want to run a :class:`FlowGraph` by itself, simply
+    forced by known inflows (and not in the context of other
+    :class:`Process`\ es in a :class:`Model`), then the helper function
+    :func:`prms_channel_flow_graph_postprocess` is for you.
+
+    Please see the example notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    which highlights both this helper function and
+    :func:`prms_channel_flow_graph_postprocess`.
 
     Args:
         model_dict: an existing model_dict to which to add the FlowGraph
@@ -700,10 +774,6 @@ def prms_channel_flow_graph_to_model_dict(
     Returns:
         A model dictionary.
 
-    For users interested in adding new nodes into the PRMSChannel MuskingumMann
-    routing solutions, see the notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
-    which highlights the helper functions :func:`prms_channel_flow_graph_to_model_dict`
-    and :func:`prms_channel_flow_graph_postprocess`.
     """  # noqa: E501
     import xarray as xr
 

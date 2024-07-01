@@ -6,11 +6,15 @@ from ..constants import nan, zero
 class PassThroughNode(FlowNode):
     """A FlowNode instance that gives what it takes and dosent store.
 
-    Args:
-      control: A control object.
+    See :class:`FlowGraph` for a worked example using PassThroughNode.
     """
 
     def __init__(self, control: Control):
+        """Initialize a PassThroughNode.
+
+        Args:
+            control: A control object.
+        """
         self.control = control
         return
 
@@ -58,11 +62,15 @@ class PassThroughNode(FlowNode):
 
 
 class PassThroughNodeMaker(FlowNodeMaker):
-    """A FlowNodeMaker of PassThroughNodes"""
+    """A FlowNodeMaker of PassThroughNodes.
+
+    See :class:`FlowGraph` for a worked example using PassThroughNode.
+    """
 
     def __init__(
         self,
     ) -> None:
+        """Initialize a PassThroughNodeMaker."""
         self.name = "PassThroughNodeMaker"
 
     def get_node(self, control: Control, index: int):

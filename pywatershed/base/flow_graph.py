@@ -19,6 +19,8 @@ class FlowNode(Accessor):
 
     A FlowNode is instantiated with its own (optional) data and calculates
     outflow, storage_change, and sink_source properties on subtimesteps.
+
+    See :class:`FlowGraph` for related examples and discussion.
     """
 
     def __init__(self, control: Control):
@@ -85,12 +87,7 @@ class FlowNode(Accessor):
 class FlowNodeMaker(Accessor):
     """FlowNodeMaker instantiates FlowNodes with their data.
 
-    Notes:
-      * initialize the the data needed to return the nodes
-      * method to give a node at index
-      * the node maker is only used on the init of the FlowGraph
-      * does not track mass balance
-
+    See :class:`FlowGraph` for related examples and discussion.
     """
 
     def __init__(
@@ -98,7 +95,7 @@ class FlowNodeMaker(Accessor):
         discretization: Parameters = None,
         parameters: Parameters = None,
     ):
-        """Intitalize the FlowNodeMaker
+        """Intitalize the FlowNodeMaker.
 
         Args:
           discretization: Discretization data to parcel out to the FlowNodes.
@@ -121,14 +118,15 @@ class FlowNodeMaker(Accessor):
 class FlowGraph(ConservativeProcess):
     """FlowGraph manages and computes FlowNodes given by FlowNodeMakers.
 
-    FlowGraph lets users combine FlowNodes of different kinds into a single
-    mathmetical graph of flow solution. FlowNodes provide explicit solutions
-    of flow (currently not involving a head term) on a single spatial unit. The
-    FlowGraph allows these different flow solutions to be combined in arbitrary
-    order on a mathematical graph. There are many applications, but a common
-    one is to add a reservoir representation into an existing graph of flow,
-    such as exists within PRMSChannel which computes a Muskingum-Mann solution
-    of flow. This example is shown schematically in the following figure.
+    FlowGraph lets users combine :class:`FlowNode`\ s of different kinds into a
+    single mathmetical graph of flow solution. FlowNodes provide explicit
+    solutions of flow (currently not involving a head term) on a single
+    spatial unit. The FlowGraph allows these different flow solutions to be
+    combined in arbitrary order on a mathematical graph. There are many
+    applications, but a common one is to add a reservoir representation into an
+    existing graph of flow, such as exists within :class:`PRMSChannel` which
+    computes a Muskingum-Mann solution of flow. This example is shown
+    schematically in the following figure.
 
     .. |fg1| image:: /_static/flow_graph_schematic_1.png
        :align: middle
@@ -141,8 +139,8 @@ class FlowGraph(ConservativeProcess):
     FlowGraph handles new nodes wherever you want to put them. FlowGraph checks
     mass balance over the graph.
 
-    To delve a bit deeper, the relationship between FlowGraph, FlowNode, and
-    FlowNodeMaker is shown in the figure below.
+    To delve a bit deeper, the relationship between FlowGraph,
+    :class:`FlowNode`, and :class:`FlowNodeMaker` is shown in the figure below.
 
     .. |fg2| image:: /_static/flow_graph_schematic_2.png
        :align: middle
@@ -150,24 +148,25 @@ class FlowGraph(ConservativeProcess):
     |  |fg2|  |
     +---------+
 
-    The figure above illustrates how FlowNodeMakers already have a certain
-    kind of FlowNode class composed into them. A user instantiates each
-    FlowNodeMaker by passing all the data required for all the FlowNodes.
-    FlowGraph recieves instantiated FlowNodeMakers and calls them, in turn,
-    instantiate the FlowNodes in the FlowGraph.
+    The figure above illustrates how :class:`FlowNodeMaker`\ s already have a
+    certain kind of :class:`FlowNode` class composed into them. A user
+    instantiates each :class:`FlowNodeMaker` by passing all the data required
+    for all the :class:`FlowNode`\ s.
+    FlowGraph recieves instantiated :class:`FlowNodeMaker`\ s and calls them,
+    in turn, to instantiate the :class:`FlowNode`\ s in the FlowGraph.
 
-    Note that users generally do not create types of FlowNodes or
-    FlowNodeMakers themselves, this is typically the work of code developers.
-    But users pass parameters, an inflow Adapter, and instantiated
-    FlowNodeMakers to FlowGraph. The example below shows the nuts and bolts of
-    setting up a FlowGraph similar to that illustrated above, where a single
-    pass-through node is inserted.
+    Note that users generally do not create types of :class:`FlowNode`\ s or
+    :class:`FlowNodeMaker`\ s themselves, this is typically the work of code
+    developers. But users pass parameters, an inflow Adapter, and instantiated
+    :class:`FlowNodeMaker`\ s to FlowGraph. The example below shows the nuts
+    and  bolts of setting up a :class:`FlowGraph` similar to that illustrated
+    above, where a single pass-through node is inserted.
 
-    For users specifically interested in adding new nodes into the PRMSChannel
-    MuskingumMann routing solutions, there are helper functions available which
-    greatly simplify the code. See the notebook
+    For users specifically interested in adding new nodes into the
+    :class:`PRMSChannel` MuskingumMann routing solutions, there are helper
+    functions available which greatly simplify the code. See the notebook
     `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
-    which highlights both  helper functions
+    which highlights both helper functions
     :func:`prms_channel_flow_graph_to_model_dict`
     and :func:`prms_channel_flow_graph_postprocess`.
 

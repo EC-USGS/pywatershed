@@ -9,10 +9,12 @@ from pywatershed.constants import nan, zero
 class ObsInNode(FlowNode):
     """A FlowNode that takes inflows but returns observed/specified flows.
 
-    Args:
-      control: a Control object.
-      node_obs_data: A pandas Series object of observations at this location
-        given by pyPRMS.Streamflow.
+    This FlowNode replicates the obsin and obsout seg functionality in PRMS but
+    does so by inserting a new node in a FlowGraph rather than altering the
+    flow on an existing node. This node is NOT mass conservative and tracks
+    a sink_source term to describe mass lost and created at each subtimestep.
+
+    See :class:`FlowGraph` for examples and discussion.
     """
 
     def __init__(
@@ -20,6 +22,13 @@ class ObsInNode(FlowNode):
         control: Control,
         node_obs_data: pd.Series,
     ):
+        """Initialize an ObsInNode.
+
+        Args:
+          control: a Control object.
+          node_obs_data: A pandas Series object of observations at this
+            location given by pyPRMS.Streamflow.
+        """
         self.control = control
         self._node_obs_data = node_obs_data
         return
@@ -82,11 +91,9 @@ class ObsInNode(FlowNode):
 
 
 class ObsInNodeMaker(FlowNodeMaker):
-    """A FlowNodeMaker for ObsInNode
+    """A FlowNodeMaker for ObsInNode.
 
-    Args:
-      parameters: A pywatershed Parameters object.
-      obs_data: A pandas DataFrame of observations given by pyPRMS.Streamflow.
+    See :class:`FlowGraph` for related examples and discussion.
     """
 
     def __init__(
@@ -94,6 +101,13 @@ class ObsInNodeMaker(FlowNodeMaker):
         parameters: Parameters,
         obs_data: pd.DataFrame,
     ) -> None:
+        """Initialize a ObsinNodeMaker.
+
+        Args:
+          parameters: A pywatershed Parameters object.
+          obs_data: A pandas DataFrame of observations given by
+            pyPRMS.Streamflow.
+        """
         self.name = "PassThroughNodeMaker"
         self._parameters = parameters
         self._obs_data = obs_data

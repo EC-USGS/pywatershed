@@ -337,7 +337,9 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (MCM_to_m3ps_day)  # both terms in m3ps
+            ) * (
+                MCM_to_m3ps_day
+            )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,
@@ -532,24 +534,31 @@ def min_nor(
 class StarfitFlowNode(FlowNode):
     """STARFIT FlowNode: Storage Targets And Release Function Inference Tool
 
-    This FlowNode implementation allows STARFIT solutions to be computed in
-    a :class:`FlowGraph`. The solution has the option for subtimestep or
-    daily computations.
+    This :class:`FlowNode` implementation allows STARFIT solutions to be
+    computed in a :class:`FlowGraph`. The solution has the option for
+    subtimestep or daily computations.
 
     The STARFIT reference:
 
-    Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,
-    Water storage and release policies for all large reservoirs of conterminous
-    United States, Journal of Hydrology, Volume 603, Part A, 2021, 126843,
-    ISSN 0022-1694, https://doi.org/10.1016/j.jhydrol.2021.126843.
+        Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,
+        Water storage and release policies for all large reservoirs of conterminous
+        United States, Journal of Hydrology, Volume 603, Part A, 2021, 126843,
+        ISSN 0022-1694, https://doi.org/10.1016/j.jhydrol.2021.126843.
 
     https://github.com/IMMM-SFA/starfit
 
     Adapted from STARFIT implementation in the MOSART-WM model:
     https://github.com/IMMM-SFA/mosartwmpy/blob/main/mosartwmpy/reservoirs/istarf.py
 
+    See :class:`FlowGraph` for discussion and a worked example. The notebook
+    `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    highlights adding a StarfitFlowNode a :class:`FlowGraph` otherwised
+    comprised of :class:`PRMSChannelFlowNode`\ s using the helper functions
+    :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
+
     Noah Knowles (USGS) and James McCreight (UCAR/USGS)
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -1077,9 +1086,9 @@ class StarfitFlowNode(FlowNode):
         self._lake_spill_accum[:] += self._lake_spill_sub
         self._lake_spill[:] = self._lake_spill_accum / (isubstep + 1)
 
-        self._lake_availability_status_accum[:] += (
-            self._lake_availability_status_sub
-        )
+        self._lake_availability_status_accum[
+            :
+        ] += self._lake_availability_status_sub
         self._lake_availability_status[:] = (
             self._lake_availability_status_accum / (isubstep + 1)
         )
@@ -1105,8 +1114,15 @@ class StarfitFlowNode(FlowNode):
 class StarfitFlowNodeMaker(FlowNodeMaker):
     """STARFIT FlowNodeMaker: Storage Targets And Release Function Inference Tool.
 
-    This FlowNodeMaker instantiates :class:`StarfitFlowNode`s for
+    This FlowNodeMaker instantiates :class:`StarfitFlowNode`\ s for
     :class:`FlowGraph`.
+
+    See :class:`FlowGraph` for discussion and a worked example. The notebook
+    `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+    highlights adding a StarfitFlowNode a :class:`FlowGraph` otherwised
+    comprised of :class:`PRMSChannelFlowNode`\ s using the helper functions
+    :func:`prms_channel_flow_graph_to_model_dict`
+    and :func:`prms_channel_flow_graph_postprocess`.
     """  # noqa: E501
 
     def __init__(

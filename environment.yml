@@ -10,6 +10,7 @@ dependencies:
   - contextily
   - epiweeks
   - filelock
+  - folium
   - geopandas
   - geoviews
   - git
@@ -48,5 +49,6 @@ dependencies:
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools
+      - git+https://github.com/paknorton/pyPRMS.git@development
       - sphinx-autodoc-typehints>=2.2.1
       - ruff

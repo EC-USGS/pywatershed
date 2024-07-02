@@ -94,7 +94,7 @@ class Process(Accessor):
         discretization: Parameters,
         parameters: Parameters,
         metadata_patches: dict[dict] = None,
-        metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
+        metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
         self.name = "Process"
         self.control = control
@@ -217,6 +217,8 @@ class Process(Accessor):
         return self.get_init_values()
 
     def _set_params(self, parameters, discretization):
+        if hasattr(self, "_params"):
+            return
         param_keys = set(parameters.variables.keys())
         missing_params = set(self.parameters).difference(param_keys)
         if missing_params:
@@ -324,15 +326,10 @@ class Process(Accessor):
             if len([mm for mm in check_list if mm in ii_dims[0]]):
                 ii_dims = ii_dims[1:]
 
-            ii_dim_sizes = tuple(self._params.get_dim_values(ii_dims).values())
-            ii_type = self.control.meta.get_numpy_types(ii)[ii]
-
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii],
                 variable_name=ii,
                 control=args["control"],
-                variable_dim_sizes=ii_dim_sizes,
-                variable_type=ii_type,
             )
             if self._input_variables_dict[ii]:
                 self[ii] = self._input_variables_dict[ii].current
@@ -363,7 +360,14 @@ class Process(Accessor):
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
-        # Todo: document
+        """Set input variables to adapter.current and manage the adapter.
+
+        TODO: make this private?
+
+        Args:
+            input_variable_name: key of input variable
+            adapter: the Adapter for the input.
+        """
         self._input_variables_dict[input_variable_name] = adapter
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
@@ -629,11 +633,6 @@ class Process(Accessor):
                 opt_val = opts[opt_name]
             else:
                 opt_val = None
-
-            # if options is a list (output_vars), take it's intersection with
-            # self.variables
-
-            # set value into args to return to return
 
             # the 4 cases:
             if opt_val is None and arg_val is None:

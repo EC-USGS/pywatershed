@@ -70,7 +70,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation,
@@ -125,7 +124,10 @@ def test_compare_prms(
         runoff.advance()
         runoff.calculate(1.0)
         runoff.output()
+
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
             compare_in_memory(
                 runoff,
                 answers,

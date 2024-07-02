@@ -29,7 +29,10 @@ class PRMSGroundwaterNoDprst(PRMSGroundwater):
             for each HRU
         dprst_seep_hru: Seepage from surface-depression storage to associated
             GWR for each HRU
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -43,7 +46,7 @@ class PRMSGroundwaterNoDprst(PRMSGroundwater):
         parameters: Parameters,
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:

@@ -4,7 +4,6 @@ import pathlib as pl
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
-import pytest
 
 from pywatershed import CsvFile
 
@@ -36,7 +35,6 @@ def compare_netcdf(csv, nc_name):
     return
 
 
-@pytest.mark.domain
 def test_single_csv(simulation):
     var = "gwres_stor"
     csv = CsvFile(path=simulation["output_dir"] / f"{var}.csv")
@@ -46,7 +44,6 @@ def test_single_csv(simulation):
     return
 
 
-@pytest.mark.domain
 def test_single_csv_to_netcdf(simulation):
     var = "gwres_stor"
     path = simulation["output_dir"] / f"{var}.csv"
@@ -64,7 +61,6 @@ def test_single_csv_to_netcdf(simulation):
     return
 
 
-@pytest.mark.domain
 def test_multiple_csv(simulation):
     csv = CsvFile()
     for var in csv_test_vars:
@@ -74,7 +70,6 @@ def test_multiple_csv(simulation):
     return
 
 
-@pytest.mark.domain
 def test_multiple_csv_to_netcdf(simulation, tmp_path):
     csv = CsvFile()
     for var in csv_test_vars:

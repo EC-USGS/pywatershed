@@ -196,7 +196,6 @@ def model_args(simulation, control, discretization, request):
     return args
 
 
-@pytest.mark.domain
 def test_model(simulation, model_args, tmp_path):
     """Run the full NHM model"""
     tmp_path = pl.Path(tmp_path)

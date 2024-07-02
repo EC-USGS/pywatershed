@@ -75,7 +75,6 @@ budget_sum_vars_all = ["inputs_sum", "outputs_sum", "storage_changes_sum"]
 check_budget_sum_vars_params = [False, True, "some"]
 
 
-@pytest.mark.domain
 @pytest.mark.filterwarnings("ignore:Budget for")
 @pytest.mark.parametrize(
     "budget_sum_param",
@@ -184,12 +183,12 @@ def test_process_budgets(
             for bb in check_budget_sum_vars:
                 if tt == 0:
                     # use the output data to figure out the shape
-                    check_dict[pp][bb] = np.zeros(
-                        (
-                            n_time_steps,
-                            model.processes[pp].budget[f"_{bb}"].shape[0],
-                        )
-                    )
+                    shp = model.processes[pp].budget[f"_{bb}"].shape
+                    if len(shp):
+                        shp = shp[0]
+                    else:
+                        shp = 1
+                    check_dict[pp][bb] = np.zeros((n_time_steps, shp))
 
                 check_dict[pp][bb][tt, :] = model.processes[pp].budget[
                     f"_{bb}"
@@ -245,7 +244,6 @@ def sep_vars(request):
     return (request.param[0], request.param[1])
 
 
-@pytest.mark.domain
 def test_separate_together_var_list(
     simulation, control, params, tmp_path, sep_vars, check_vars
 ):

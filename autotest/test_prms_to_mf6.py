@@ -20,7 +20,8 @@ def lateral_flow_ans_ds(simulation):
 
 
 # When we can point at modflow6 develop we'll un-xfail this
-@pytest.mark.domain
+
+
 @pytest.mark.xfail
 @pytest.mark.parametrize("bc_binary_files", [True, False])
 @pytest.mark.parametrize("bc_flows_combine", [True, False])

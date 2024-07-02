@@ -34,7 +34,6 @@ control_keys = tuple(
 )
 
 
-@pytest.mark.domain
 def test_control_read(simulation):
     domain_name = simulation["name"].split(":")[0]
     if domain_name not in test_answers.keys():

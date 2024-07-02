@@ -52,7 +52,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path
 ):
@@ -142,6 +141,7 @@ def test_compare_prms(
                 fail_after_all_vars=False,
                 verbose=False,
             )
+
             assert id(atm.tmaxf) == tmaxf_id
 
     if do_compare_output_files:

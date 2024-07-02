@@ -45,7 +45,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method
@@ -107,6 +106,8 @@ def test_compare_prms(
         canopy.calculate(1.0)
         canopy.output()
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
             compare_in_memory(
                 canopy,
                 answers,

@@ -90,7 +90,7 @@ def _cbh_file_to_df(
         header=None,  # dont use default header from first line
         index_col=False,
         skiprows=wh_hash_line + 1,
-        delim_whitespace=True,
+        sep=r"\s+",
         dtype=dtype_dict,
     )
     msg = (
@@ -105,7 +105,7 @@ def _cbh_file_to_df(
         names=col_names,
         index_col=False,
         skiprows=wh_hash_line + 1,
-        delim_whitespace=True,
+        sep=r"\s+",
         dtype=dtype_dict,
     )
 

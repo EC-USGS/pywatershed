@@ -1,6 +1,6 @@
 import pathlib as pl
 from copy import deepcopy
-from typing import Union
+from typing import Literal, Union
 from warnings import warn
 
 import netCDF4 as nc4
@@ -8,7 +8,7 @@ import numpy as np
 
 from pywatershed.base.control import Control
 
-from ..constants import epsilon64, one, zero
+from ..constants import zero
 from ..utils.formatting import pretty_print
 from ..utils.netcdf_utils import NetCdfWrite
 from .accessor import Accessor
@@ -36,13 +36,15 @@ class Budget(Accessor):
         storage_changes: Union[list, dict],
         init_accumulations: dict = None,
         accum_start_time: np.datetime64 = None,
-        units: str = None,
+        units: dict = None,
         time_unit: str = "D",  # TODO: get this from control
         description: str = None,
         rtol: float = 1e-5,
         atol: float = 1e-5,
-        basis: str = "unit",
+        basis: Literal["unit", "global"] = "unit",
         imbalance_fatal: bool = False,
+        ignore_nans: bool = False,
+        unit_desc: str = "volumes",
         verbose: bool = True,
     ):
         self.name = "Budget"
@@ -50,11 +52,14 @@ class Budget(Accessor):
         self.inputs = self.init_component(inputs)
         self.outputs = self.init_component(outputs)
         self.storage_changes = self.init_component(storage_changes)
+        self.units = units
         self.time_unit = time_unit
         self.description = description
         self.rtol = rtol
         self.atol = atol
         self.imbalance_fatal = imbalance_fatal
+        self._ignore_nans = ignore_nans
+        self._unit_desc = unit_desc
         self.verbose = verbose
         self.basis = basis
 
@@ -75,15 +80,23 @@ class Budget(Accessor):
         all_vars = [x for xs in all_vars for x in xs]
         self.meta = self.control.meta.get_vars(all_vars)
         if len(self.meta) == len(all_vars):
-            all_units = [val["units"] for val in self.meta.values()]
+            if self.units is None:
+                all_units = [val["units"] for val in self.meta.values()]
+            else:
+                all_units = list(self.units.values())
             # check consistent units
             if not (np.array(all_units) == all_units[0]).all():
                 msg = "Units not consistent over all terms"
                 raise ValueError(msg)
             self.units = all_units[0]
         else:
-            msg = f"Metadata unavailable for some Budget terms in {all_vars}"
-            warn(msg)
+            all_vars_0 = [vv[0] == "_" for vv in all_vars]
+            all_vars_private = all(all_vars_0)
+            if not all_vars_private or verbose:
+                msg = (
+                    f"Metadata unavailable for some Budget terms in {all_vars}"
+                )
+                warn(msg)
             self.units = None
 
         # generate metadata for derived output variables
@@ -95,18 +108,25 @@ class Budget(Accessor):
             #     f"Balance of fluxes and storage changes ({self.basis})",
         }
 
-        for var, desc in self.output_vars_desc.items():
-            if var == "balance":
-                dummy_var = self.terms["outputs"][0]
-            else:
-                dummy_var = self.terms[var[0:-4]][0]
+        sum_keys = list(self.output_vars_desc.keys())
+        for kk in sum_keys:
+            terms = self.terms[kk[0:-4]]
+            if terms is None or not len(terms):
+                del self.output_vars_desc[kk]
 
-            if dummy_var in self.meta.keys():
-                dummy_meta = self.meta[dummy_var]
-                self.meta[var] = deepcopy(dummy_meta)
-                self.meta[var]["desc"] = desc
-                if (var == "balance") and (self.basis == "global"):
-                    self.meta[var]["dimensions"] = {0: "one"}
+        for kk, desc in self.output_vars_desc.items():
+            terms = self.terms[kk[0:-4]]
+            term = terms[0]
+            if term in self.meta.keys():
+                term_meta = self.meta[term]
+                self.meta[kk] = deepcopy(term_meta)
+                self.meta[kk]["desc"] = desc
+                self.meta[kk]["units"] = self.units
+            elif verbose:
+                msg = f"budget term {term} not available in metadata"
+                warn(msg)
+            # if (var == "balance") and (self.basis == "global"):
+            #    self.meta[var]["dimensions"] = {0: "one"}
 
         self.set_initial_accumulations(init_accumulations, accum_start_time)
         return
@@ -266,13 +286,24 @@ class Budget(Accessor):
             self._accumulations_sum[component] = None
             for var in self[component].keys():
                 if self._accumulations_sum[component] is None:
-                    self._accumulations_sum[component] = self._accumulations[
-                        component
-                    ][var].copy()
+                    if self.basis == "unit":
+                        self._accumulations_sum[component] = (
+                            self._accumulations[component][var].copy()
+                        )
+                    elif self.basis == "global":
+                        self._accumulations_sum[component] = (
+                            self._accumulations[component][var].copy().sum()
+                        )
                 else:
-                    self._accumulations_sum[component] += self._accumulations[
-                        component
-                    ][var]
+                    if self.basis == "unit":
+                        self._accumulations_sum[component] += (
+                            self._accumulations[component][var]
+                        )
+                    elif self.basis == "global":
+                        self._accumulations_sum[component] += (
+                            self._accumulations[component][var].sum()
+                        )
+
         return
 
     @property
@@ -281,11 +312,17 @@ class Budget(Accessor):
 
     def _sum(self, attr):
         """Sum over the individual terms in a budget component."""
-        key0 = list(self[attr].keys())[0]
-        sum = self[attr][key0] * zero
-        for kk, vv in self[attr].items():
-            sum += vv
-        return sum
+        if self.basis == "unit":
+            vals = [val for val in self[attr].values()]
+            the_sum = sum(vals)
+        elif self.basis == "global":
+            # in global case, the variable dims dont need to match, collapse
+            # to a scalar
+            vals = [sum(val) for val in self[attr].values()]
+            the_sum = sum(vals)
+        else:
+            raise ValueError(f"self.basis '{self.basis}' is invalid")
+        return the_sum
 
     def _sum_inputs(self):
         return self._sum("inputs")
@@ -297,41 +334,65 @@ class Budget(Accessor):
         return self._sum("storage_changes")
 
     def _calc_unit_balance(self):
+        unit_balance = self._inputs_sum - self._outputs_sum
         self._zero_sum = True
 
-        # roll our own np.allclose so we can diagnose the not close points
-        unit_balance = self._inputs_sum - self._outputs_sum
-        abs_diff = np.abs(unit_balance - self._storage_changes_sum)
-        mask_div_zero = self._storage_changes_sum < epsilon64
-        rel_abs_diff = abs_diff / np.where(
-            mask_div_zero, one, self._storage_changes_sum
-        )
-        abs_close = abs_diff < self.atol
-        rel_close = rel_abs_diff < self.rtol
-        either_close = abs_close | rel_close
-        cond = np.where(mask_div_zero, abs_close, either_close)
-
-        if not cond.all():
+        # compare i ?=? o + ds so that relative errors are not compared to
+        # zero when ds is zero
+        if not np.allclose(
+            self._inputs_sum,
+            self._outputs_sum + self._storage_changes_sum,
+            rtol=self.rtol,
+            atol=self.atol,
+            equal_nan=self._ignore_nans,
+        ):
             self._zero_sum = False
-            wh_not_cond = np.where(~cond)
+
+            lhs = self._inputs_sum
+            rhs = self._outputs_sum + self._storage_changes_sum
+
+            if self._ignore_nans:
+                actual_nan = np.where(np.isnan(lhs), True, False)
+                desired_nan = np.where(np.isnan(rhs), True, False)
+                msg = "The nan values are not the same for the two arrays"
+                assert (actual_nan == desired_nan).all(), msg
+
+            abs_diff = abs(lhs - rhs)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                rel_abs_diff = abs_diff / rhs
+
+            abs_close = abs_diff < self.atol
+            rel_close = rel_abs_diff < self.rtol
+            rel_close = np.where(np.isnan(rel_close), False, rel_close)
+
+            close = abs_close | rel_close
+            if self._ignore_nans:
+                close = np.where(np.isnan(abs_diff), True, close)
+
+            wh_not_close = np.where(~close)
+
             msg = (
                 "The flux unit balance not equal to the change in unit "
                 f"storage at time {self.control.current_time} and at the "
-                f"following locations for {self.description}: {wh_not_cond}"
+                f"following locations for {self.description}: {wh_not_close}"
             )
+
             if self.imbalance_fatal:
                 raise ValueError(msg)
             else:
                 warn(msg, UserWarning)
 
+        # <<
         return unit_balance
 
     def _calc_global_balance(self):
-        global_balance = self._inputs_sum.sum() - self._outputs_sum.sum()
+        global_balance = self._inputs_sum - self._outputs_sum
         self._zero_sum = True
+        # compare i ?=? o + ds so that relative errors are not compared to
+        # zero when ds is zero
         if not np.allclose(
-            global_balance,
-            self._storage_changes_sum.sum(),
+            self._inputs_sum,
+            self._outputs_sum + self._storage_changes_sum,
             rtol=self.rtol,
             atol=self.atol,
         ):
@@ -340,6 +401,13 @@ class Budget(Accessor):
                 "The global flux balance not equal to the change in global "
                 f"storage: {self.description}"
             )
+            if self.verbose:
+                aerr = self._inputs_sum - (
+                    self._outputs_sum + self._storage_changes_sum
+                )
+                rerr = aerr / self._inputs_sum
+                msg += f"\n{self.control.current_time}: {aerr=}, {rerr=}"
+
             if self.imbalance_fatal:
                 raise ValueError(msg)
             else:
@@ -528,14 +596,16 @@ class Budget(Accessor):
         # Accumulated volumes
         summary += [""]
         # header
-        summary += [f"Accumulated volumes (since {self._accum_start_time}):"]
+        summary += [
+            f"Accumulated {self._unit_desc} (since {self._accum_start_time}):"
+        ]
         summary += [
             indent_fill
-            + "input volumes".ljust(in_col_width)
+            + f"input {self._unit_desc}".ljust(in_col_width)
             + col_sep
-            + "output volumes".ljust(out_col_width)
+            + f"output {self._unit_desc}".ljust(out_col_width)
             + col_sep
-            + "storage change volumes".ljust(out_col_width)
+            + f"storage change {self._unit_desc}".ljust(out_col_width)
         ]
         # separator
         summary += separator
@@ -653,15 +723,23 @@ class Budget(Accessor):
         for key in self.terms.keys():
             global_attrs[key] = "[" + ", ".join(self.terms[key]) + "]"
 
-        coordinates = {"one": 0, **params.coords}
+        if self.basis == "unit":
+            coordinates = params.coords
+            meta = self.meta
+        else:
+            coordinates = {"one": 0}
+            meta = deepcopy(self.meta)
+            for kk, vv in meta.items():
+                meta[kk]["dims"] = ("one",)
 
         self._netcdf = NetCdfWrite(
             nc_path,
             coordinates,
             self._netcdf_output_var_dict,
-            self.meta,
+            meta,
             global_attrs=global_attrs,
         )
+
         # todo jlm: put terms in to metadata
         return
 

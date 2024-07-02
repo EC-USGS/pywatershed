@@ -14,11 +14,23 @@ What's New
 
 .. _whats-new.1.2.0:
 
-v1.2.0 (Unreleased)
+v2.0.0 (Unreleased)
 ---------------------
 
 New Features
 ~~~~~~~~~~~~~~~~
+- The :class:`FlowGraph` capabilities are introduced. These allow users to
+  combine different kinds flow solutions in arbitrary order on a "flow graph".
+  The accompanying base classes :class:`FlowNode` and :class:`FlowNodeMaker`
+  are introduced along with their subclasses for modeling
+  :class:`PassThroughNode`\ s, :class:`ObsInNode`\ s (flow replacement by
+  observations with sink and source tracking in mass balance),
+  :class:`PRMSChannelFlowNode`\ s, and :class:`StarfitFlowNode`\ s. A new
+  example notebook,
+  `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__ demonstrates adding STARFIT
+  reservoir nodes into a FlowGraph otherwise simulating `PRMSChannel`.
+  and highlights helper functions for this use case.
+  (:pull:`233`) By `James McCreight <https://github.com/jmccreight>`_.
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
 - No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,
@@ -88,7 +100,7 @@ New features
 - Release assests to include new GIS files and an additional domain to support the upcoming
   major release. By `James McCreight <https://github.com/jmccreight>`_.
 
-  
+
 .. _whats-new.1.0.0:
 
 v1.0.0 (18 December 2023)

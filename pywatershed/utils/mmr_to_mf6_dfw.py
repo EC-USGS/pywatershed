@@ -31,12 +31,16 @@ class MmrToMf6Dfw:
     * DFW: Diffusive Wave in MF6 (develop branch)
 
     This class builds a MF6 simulation with Diffusive Wave (DFW) routing from
-    PRMS NHM input files (Muskingum-Mann Routing, MMR, data) and a few simple
-    assumptions, and uses as boundary conditions the to-channel fluxes from
-    a PRMS run.
+    PRMS NHM input files for Muskingum-Mann Routing (MMR) and a few simple
+    assumptions. The lateral (to-channel) fluxes from a PRMS are used as
+    time varying boundary conditions.
+
+    Please see the example notebook
+    `examples/mmr_to_mf6_dfw.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/mmr_to_mf6_dfw.ipynb>`__ which demonstrates running the Delaware River
+    Basin in MF6 DFW based on the PRMS data and its lateral inflows.
 
     In addition to standard MF6 packages and their input files (e.g. IMS, OC,
-    etc), the surface water flow package is create with the diffusive wave
+    etc), the surface water flow package is created with the diffusive wave
     (DFW) package and depends on the DISV1D and FLW boundary conditions. The
     cross sectional area (CXS) package is optional.
 
@@ -109,56 +113,6 @@ class MmrToMf6Dfw:
     The MF6 IO descrption can be found here
     https://modflow6.readthedocs.io/en/latest/mf6io.html
 
-
-    Args:
-      control_file: filepath to a PRMS control file. Exactly one of this and
-        control are required. If start and end times are the same, then
-        the run is considered a steady state run for MF6 and tdis_perlen and
-        tdis_nstp are
-      control: a Control object. Exactly one of this and control are required.
-      start_time: np.datetime64 = None, to edit the start time
-      end_time: np.datetime64 = None, to edit the simulation end time
-      tdis_perlen: The number of seconds in the MF6 stress periods. The value
-        must evenly dvide 1 day or 86400 seconds. Currently the value must be
-        the same for all stress periods. Default is 1 day = 86400s. For values
-        less than the default, mean-preserving splines are used to smooth the
-        flows to the desired resolution.
-      tdis_nstp: The number of substeps in each stress period. The value must
-        be the same for all stress periods and the default is 1.
-      param_file: The filepath to the domain parameters. Exactly one of this
-        and the params argument is required.
-      params: a Parameter object. Exactly one of this and the params argument
-        is required.
-      segment_shp_file: a shapefile of segments assumptions are that this file
-        has a column "nsevment_v" which is the same as "nhm_seg" in the
-        parameter file and another column "model_idx" corresponding to the
-        1-based index of nhm_seg in the parameter file.
-      output_dir: Where to write and run the model.
-      bc_binary_files: Write binary files for the FLW boundary conditions.
-      bc_flows_combined: A single, combined boundary flow file, or 3 individual
-        files for the 3 prms flux terms?
-      sim_name: A name for the simulation.
-      inflow_dir: Where to find the PRMS to-channel flux files.
-      inflow_from_PRMS: The PRMS inflows are in depth while the inflows from
-        pywatershed are volumetric and they have different names indicating
-        this. The default is PRMS inflows.
-      save_flows: Set as a general MF6 option on all packages.
-      time_zone: the timezone to use.
-      write_on_init: Write the MF6 files on initialization?
-      chd_options: Options to pass to flopy when making each MF6 package. These
-        are not always applied and their effect should be checked on the MF6
-        input files written before running the model. Still a work in progress.
-      cxs_options: See above.
-      disv1d_options: See above.
-      dfw_options: See above.
-      dfw_griddata: See above.
-      flw_options: See above.
-      ic_options: See above.
-      ims_options: See above.
-      oc_options: See above.
-      sto_options: See above.
-
-
     """  # noqa: E501
 
     def __init__(
@@ -195,6 +149,58 @@ class MmrToMf6Dfw:
         oc_options: dict = None,
         sto_options: dict = None,
     ):
+        """Instantiate a MmrToMf6Dfw object.
+
+        Args:
+          control_file: The path to a PRMS control file. Exactly one of this
+            and control are required. If start and end times are the same, then
+            the run is considered a steady state run.
+          control: a Control object. Exactly one of this and control are
+            required.
+          start_time: np.datetime64 = None, to edit the start time.
+          end_time: np.datetime64 = None, to edit the simulation end time.
+          tdis_perlen: The number of seconds in the MF6 stress periods. The
+            value must evenly dvide 1 day or 86400 seconds. Currently the value
+            must be the same for all stress periods. Default is 1 day = 86400s.
+            For values less than the default, mean-preserving splines are used
+            to smooth the flows to the desired resolution.
+          tdis_nstp: The number of substeps in each stress period. The value
+            must be the same for all stress periods and the default is 1.
+          param_file: The filepath to the domain parameters. Exactly one of
+            this and the params argument is required.
+          params: a Parameter object. Exactly one of this and the params
+            argument is required.
+          segment_shp_file: a shapefile of segments assumptions are that this
+            file has a column "nsevment_v" which is the same as "nhm_seg" in
+            the parameter file and another column "model_idx" corresponding to
+            the 1-based index of nhm_seg in the parameter file.
+          output_dir: Where to write and run the model.
+          bc_binary_files: Write binary files for the FLW boundary conditions.
+          bc_flows_combined: A single, combined boundary flow file, or 3
+            individual files for the 3 prms flux terms?
+          sim_name: A name for the simulation.
+          inflow_dir: Where to find the PRMS to-channel flux files.
+          inflow_from_PRMS: The PRMS inflows are in depth while the inflows
+            from pywatershed are volumetric and they have different names
+            indicating this. The default is PRMS inflows.
+          save_flows: Set as a general MF6 option on all packages.
+          time_zone: the timezone to use.
+          write_on_init: Write the MF6 files on initialization?
+          chd_options: Options to pass to flopy when making each MF6 package.
+            These are not always applied and their effect should be checked on
+            the MF6 input files written before running the model. Still a work
+            in progress.
+          cxs_options: See above.
+          disv1d_options: See above.
+          dfw_options: See above.
+          dfw_griddata: See above.
+          flw_options: See above.
+          ic_options: See above.
+          ims_options: See above.
+          oc_options: See above.
+          sto_options: See above.
+
+        """
         self._params = params
         self._param_file = param_file
         self._control = control
@@ -254,6 +260,13 @@ class MmrToMf6Dfw:
         return
 
     def write(self, *args, rewrite: bool = False, **kwargs):
+        """Write the simulation to disk.
+
+        Args:
+          *args: Arguments to pass to flopy's sim.write_simulation.
+          rewrite: Allow the simulation to be written more than once.
+          **kwargs: Keyword arguments to pass to sim.write_simulation.
+        """
         if self._written and not rewrite:
             msg = (
                 "The simulation was already written, "
@@ -267,6 +280,12 @@ class MmrToMf6Dfw:
         return self._sim.write_simulation(*args, **kwargs)
 
     def run(self, *args, **kwargs):
+        """Run the simulation.
+
+        Args:
+          *args: Arguments to pass to flopy's sim.write_simulation.
+          **kwargs: Keyword arguments to pass to sim.write_simulation.
+        """
         print(f"\nRunning simulation files in: {self._output_dir}")
         return self._sim.run_simulation(*args, **kwargs)
 

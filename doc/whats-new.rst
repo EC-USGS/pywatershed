@@ -19,6 +19,12 @@ v1.1.0 (Unreleased)
 
 New features
 ~~~~~~~~~~~~
+- The :class:`MmrToMf6Dfw` class builds a MF6 simulation with Diffusive Wave
+  (DFW) routing from PRMS NHM input files and a few simple assumptions. The
+  lateral (to-channel) fluxes from a PRMS are used as time varying boundary
+  conditions. A new notebook runs the Delaware River Basin using MF6 DFW:
+  `examples/mmr_to_mf6_dfw.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/mmr_to_mf6_dfw.ipynb>`__.
+  (:pull:`290`) By `James McCreight <https://github.com/jmccreight>`_.
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
 - No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,

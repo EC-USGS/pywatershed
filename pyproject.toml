@@ -32,6 +32,7 @@ dependencies = [
     "numpy >=1.15.0",
     "matplotlib >=1.4.0",
     "epiweeks",
+    "geopandas",
     "netCDF4",
     "networkx",
     "numpy",
@@ -72,9 +73,10 @@ optional = [
     "pydot",
     "geos",
     "cartopy",
+    "folium",
     "geopandas",
     "hvplot",
-    "shapely <2.0.0",
+    "shapely",
     "ipython",
     "jupyter",
     "jupyterlab",
@@ -111,6 +113,7 @@ include = ["pywatershed", "pywatershed.*"]
 [tool.setuptools.package-data]
 "pywatershed.static.metadata" = ["*.yaml"]
 "pywatershed.data.drb_2yr" = ["*"]
+"pywatershed.data" = ["big_sandy_starfit_parameters.nc"]
 
 [tool.ruff]
 line-length = 79

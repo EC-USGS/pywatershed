@@ -110,7 +110,10 @@ class PRMSSnow(ConservativeProcess):
         net_snow: Snow that falls through canopy for each HRU
         transp_on: Flag indicating whether transpiration is occurring
             (0=no;1=yes)
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -136,7 +139,7 @@ class PRMSSnow(ConservativeProcess):
         net_rain: adaptable,
         net_snow: adaptable,
         transp_on: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> "PRMSSnow":
@@ -320,6 +323,17 @@ class PRMSSnow(ConservativeProcess):
 
         sd = int(self.ndeplval / 11)
         self.snarea_curve_2d = np.reshape(self.snarea_curve, (sd, 11))
+
+        if self.hru_deplcrv.dtype != "int64":
+            hru_deplcrv_mod1 = np.mod(self.hru_deplcrv, 1)
+            msg = (
+                "The provided hru_deplcrv values can not be safely converted "
+                "to integers, please check your parameters and try again."
+            )
+            if not (hru_deplcrv_mod1 == 0).all():
+                raise ValueError(msg)
+            # <
+            self.hru_deplcrv = self.hru_deplcrv.astype("int64")
 
         if True:
             # For now there is no restart capability. we'll use the following
@@ -1868,7 +1882,7 @@ class PRMSSnow(ConservativeProcess):
 
         # JLM: why is the portion of new snow (3/4) used in the depletion curve
         #      not a parameter? Or it at least seems like it would be related
-        #      to hru_delpcrv (lower values for higher curves)
+        #      to hru_deplcrv (lower values for higher curves)
 
         snowcov_area_ante = snowcov_area
 

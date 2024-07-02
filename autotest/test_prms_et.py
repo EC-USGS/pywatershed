@@ -26,7 +26,6 @@ def params(simulation, control):
     return PrmsParameters.load(param_file)
 
 
-@pytest.mark.domain
 class TestPRMSEt:
     def test_init(self, simulation, control, params, tmp_path):
         tmp_path = pl.Path(tmp_path)

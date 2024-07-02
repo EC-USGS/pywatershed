@@ -52,6 +52,8 @@ def assert_allclose(
         actual_nan = np.where(np.isnan(actual), True, False)
         desired_nan = np.where(np.isnan(desired), True, False)
         assert (actual_nan == desired_nan).all()
+        if len(actual_nan) == len(actual):
+            return
 
     abs_diff = abs(actual - desired)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -69,6 +71,7 @@ def assert_allclose(
         print(f"{var_name}{sp}max rel err: {rel_abs_diff.max()}")
 
     assert close.all()
+    return
 
 
 def compare_in_memory(
@@ -96,17 +99,24 @@ def compare_in_memory(
 
         if verbose:
             print(f"checking {var}")
-        answers[var].advance()
+
+        if not isinstance(answers[var], np.ndarray):
+            answers[var].advance()
 
         if isinstance(process[var], pws.base.timeseries.TimeseriesArray):
             actual = process[var].current
         else:
             actual = process[var]
 
+        if isinstance(answers[var], pws.base.adapter.Adapter):
+            desired = answers[var].current.data
+        else:
+            desired = answers[var]
+
         if not fail_after_all_vars:
             assert_allclose(
                 actual,
-                answers[var].current.data,
+                desired,
                 atol=atol,
                 rtol=rtol,
                 equal_nan=equal_nan,
@@ -119,7 +129,7 @@ def compare_in_memory(
             try:
                 assert_allclose(
                     actual,
-                    answers[var].current.data,
+                    desired,
                     atol=atol,
                     rtol=rtol,
                     equal_nan=equal_nan,
@@ -127,6 +137,8 @@ def compare_in_memory(
                     also_check_w_np=also_check_w_np,
                     var_name=var,
                 )
+                if verbose:
+                    print(f"compare_netcdfs all close for variable: {var}")
 
             except AssertionError:
                 fail_list += [var]

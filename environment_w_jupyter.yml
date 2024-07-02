@@ -11,6 +11,7 @@ dependencies:
   - contextily
   - epiweeks
   - filelock
+  - folium
   - geopandas
   - geoviews
   - git
@@ -24,7 +25,7 @@ dependencies:
   - nbconvert
   - netCDF4
   - networkx
-  - numpy
+  - numpy<2.0.0
   - numba
   - pandas>=1.4.0
   - pint
@@ -53,5 +54,6 @@ dependencies:
       - jupyter_black
       - modflow-devtools
       - git+https://github.com/jararias/mpsplines.git
+      - git+https://github.com/paknorton/pyPRMS.git@development
       - sphinx-autodoc-typehints>=2.2.1
       - ruff

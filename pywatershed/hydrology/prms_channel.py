@@ -81,7 +81,10 @@ class PRMSChannel(ConservativeProcess):
             reservoirs to the stream network for each HRU
         gwres_flow_vol: Groundwater discharge volume from each GWR to the
             stream network
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
@@ -101,7 +104,7 @@ class PRMSChannel(ConservativeProcess):
         sroff_vol: adaptable,
         ssres_flow_vol: adaptable,
         gwres_flow_vol: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
@@ -185,7 +188,8 @@ class PRMSChannel(ConservativeProcess):
         return self._outflow_mask
 
     def _set_initial_conditions(self) -> None:
-        # initialize channel segment storage
+        # initialize channel segment "storage"
+        # this is unused currently. Seems that it would set seg_inflow0
         self.seg_outflow[:] = self.segment_flow_init
         return
 
@@ -214,9 +218,9 @@ class PRMSChannel(ConservativeProcess):
 
         # use networkx to calculate the Directed Acyclic Graph
         if self.nsegment > 1:
-            graph = nx.DiGraph()
-            graph.add_edges_from(connectivity)
-            segment_order = list(nx.topological_sort(graph))
+            self._graph = nx.DiGraph()
+            self._graph.add_edges_from(connectivity)
+            segment_order = list(nx.topological_sort(self._graph))
         else:
             segment_order = [0]
 
@@ -433,7 +437,6 @@ class PRMSChannel(ConservativeProcess):
             self.seg_lateral_inflow[iseg] += lateral_inflow
 
         # solve muskingum_mann routing
-
         (
             self.seg_upstream_inflow[:],
             self._seg_inflow0[:],
@@ -516,7 +519,6 @@ class PRMSChannel(ConservativeProcess):
 
         seg_inflow = seg_inflow0 * zero
         seg_outflow = seg_inflow0 * zero
-        seg_outflow0 = seg_inflow0 * zero
         inflow_ts = seg_inflow0 * zero
         seg_current_sum = seg_inflow0 * zero
 
@@ -577,10 +579,6 @@ class PRMSChannel(ConservativeProcess):
                 # segment outflow (the mean daily flow rate for each segment)
                 # will be the average of hourly values
                 seg_outflow[jseg] += outflow_ts[jseg]
-
-                # previous segment outflow is equal to the inflow_ts on the
-                # previous routed timestep
-                seg_outflow0[jseg] = outflow_ts[jseg]
 
                 # add current time step flow rate to the upstream flow rate
                 # for the segment this segment is connected to

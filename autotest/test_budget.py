@@ -53,6 +53,7 @@ def test_budget(control_simple):
         time_unit="D",
         description="simple_test",
         units="m*3/D",
+        verbose=False,
     )
     budget.set(terms)
 

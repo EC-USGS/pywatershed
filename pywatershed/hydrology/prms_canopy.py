@@ -63,7 +63,10 @@ class PRMSCanopy(ConservativeProcess):
         hru_ppt: Precipitation on each HRU
         hru_rain: Rain on each HRU
         hru_snow: Snow on each HRU
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -83,7 +86,7 @@ class PRMSCanopy(ConservativeProcess):
         hru_snow: adaptable,
         potet: adaptable,
         pptmix: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
     ):

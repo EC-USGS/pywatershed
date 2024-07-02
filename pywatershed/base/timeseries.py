@@ -53,6 +53,7 @@ class TimeseriesArray:
                     if not len(start_time_ind):
                         msg = "Control start_time is not in the input time"
                         raise ValueError(msg)
+
                     self._init_time_ind = start_time_ind[0]
 
                 time_ind = self._init_time_ind + self.control.itime_step

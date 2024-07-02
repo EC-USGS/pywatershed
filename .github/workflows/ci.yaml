@@ -39,7 +39,7 @@ jobs:
       - name: Upgrade pip and install build and twine
         run: |
           python -m pip install --upgrade pip
-          pip install wheel build twine
+          pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1'
 
       - name: Base installation
         run: |
@@ -106,12 +106,7 @@ jobs:
         if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
@@ -163,7 +158,6 @@ jobs:
           cache-downloads: true
           create-args: >-
             python=${{matrix.python-version}}
-            conda
 
       - name: Checkout MODFLOW 6
         uses: actions/checkout@v4
@@ -217,7 +211,7 @@ jobs:
           -vv
           -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=sagehen_5yr
           --control_pattern=sagehen_no_cascades.control
           --durations=0
@@ -243,7 +237,7 @@ jobs:
           -vv
           -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=hru_1
           --control_pattern=nhm.control
           --durations=0
@@ -251,7 +245,7 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_hru_1_nhm.xml
 
-      - name: drb_2yr with and without dprst - generate and manage test data
+      - name: drb_2yr with and without dprst and obsin - generate and manage test data
         working-directory: autotest
         run: |
           python generate_test_data.py \
@@ -274,7 +268,7 @@ jobs:
           -vv
           -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=drb_2yr
           --control_pattern=nhm.control
           --durations=0
@@ -294,13 +288,29 @@ jobs:
           -vv
           -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=drb_2yr
           --control_pattern=no_dprst
           --durations=0
           --cov=pywatershed
           --cov-report=xml
           --junitxml=pytest_drb_2yr_no_dprst.xml
+
+      # Specific tests not redundant with dprst
+      - name: drb_2yr_obsin - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          test_obsin_flow_node.py
+          -vv
+          -n=0
+          -m "not domainless"
+          --domain=drb_2yr
+          --control_pattern=nhm_obsin.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_no_dprst.xml
+
 
       - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest
@@ -318,8 +328,7 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
-          -rs
-          -m domain
+          -m "not domainless"
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0

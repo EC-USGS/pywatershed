@@ -61,7 +61,6 @@ extlinks = {
 
 
 autosummary_generate = True
-
 # autodoc_typehints = "none"
 # autosummary_imported_members = True
 

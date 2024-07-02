@@ -408,9 +408,9 @@ class MmrToMf6Dfw:
             segment_units = self._units(meta.parameters["seg_length"]["units"])
             self._segment_length = parameters["seg_length"]
             self._segment_length = self._segment_length * segment_units
-            self._disv1d_options["length"] = (
-                self._segment_length.to_base_units().magnitude
-            )
+            self._disv1d_options[
+                "length"
+            ] = self._segment_length.to_base_units().magnitude
 
         if "width" not in self._disv1d_options.keys():
             # meters, per metadata

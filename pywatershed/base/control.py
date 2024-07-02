@@ -81,10 +81,10 @@ class Control(Accessor):
     """Control manages global time and options, and provides metadata.
 
     Args:
-        start_time: this is the first time of integration NOT the restart
-            time
+        start_time: the first time of integration NOT the restart time
         end_time: the last integration time
-        time_step: the length fo the time step
+        time_step: length of the time step
+        init_time: the initialization time
         options: a dictionary of global Process options.
 
     Available pywatershed options:
@@ -180,8 +180,8 @@ class Control(Accessor):
         super().__init__()
         self.name = "Control"
 
-        if end_time <= start_time:
-            raise ValueError("end_time <= start_time")
+        if end_time < start_time:
+            raise ValueError("end_time < start_time")
 
         n_times_m1 = (end_time - start_time) / time_step
         if n_times_m1 != int(n_times_m1):

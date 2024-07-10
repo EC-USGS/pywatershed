@@ -5,6 +5,7 @@ from typing import Union
 
 import netCDF4 as nc4
 import numpy as np
+import xarray as xr
 
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
@@ -622,3 +623,71 @@ class NetCdfWrite(Accessor):
         self.variables[name][:, :] = data[:, :]
 
         return
+
+
+def subset_file(
+    file_name: Union[pl.Path, str],
+    new_file_name: Union[pl.Path, str],
+    start_time: np.datetime64 = None,
+    end_time: np.datetime64 = None,
+    coord_dim_name: str = None,
+    coord_dim_values_keep: np.array = None,
+) -> None:
+
+    ds = xr.load_dataset(file_name)
+
+    ds = subset_xr_ds(
+        ds=ds,
+        start_time=start_time,
+        end_time=end_time,
+        coord_dim_name=coord_dim_name,
+        coord_dim_values_keep=coord_dim_values_keep,
+    )
+
+    ds.to_netcdf(new_file_name)
+
+    return
+
+
+def subset_xr_ds(
+    ds: Union[xr.Dataset, xr.DataArray],
+    start_time: np.datetime64 = None,
+    end_time: np.datetime64 = None,
+    coord_dim_name: str = None,
+    coord_dim_values_keep: np.array = None,
+) -> Union[xr.Dataset, xr.DataArray]:
+
+    if coord_dim_name is not None or coord_dim_values_keep is not None:
+        msg = (
+            "Neither or both of coord_dim_name and coord_dim_values_keep "
+            "must be supplied."
+        )
+        assert (
+            coord_dim_name is not None and coord_dim_values_keep is not None
+        ), msg
+
+    # <
+    if coord_dim_name is not None:
+        ds = ds.where(
+            ds[coord_dim_name].isin(coord_dim_values_keep), drop=True
+        )
+
+        for var in ds.variables:
+            dims_orig = set(ds[var].dims)
+            dims_new = set(ds[var].dims)
+            extra_dims = dims_new - dims_orig
+            if len(extra_dims):
+                ds[var] = ds[var].squeeze(extra_dims)
+
+    # <<<
+    if start_time is not None or end_time is not None:
+        msg = "Neither or both of start_time and end_time must be supplied."
+        assert start_time is not None and end_time is not None, msg
+
+    # <
+    # does sel work correctly here?
+    if start_time is not None:
+        if "time" in ds.dims.mapping.keys():
+            ds = ds.sel(time=slice(start_time, end_time))
+
+    return ds

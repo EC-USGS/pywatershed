@@ -54,7 +54,7 @@ def test_subset_xr_ds(file_type, nhm_ids, tmp_path):
         old_ds["dum_var"] = old_ds[data_var_names[0]].isel(time=0)
         old_ds["some_var"] = old_ds[data_var_names[0]][:, 0].squeeze()
 
-    new_ds = pws.utils.netcdf_utils.subset_xr_ds(
+    new_ds = pws.utils.netcdf_utils.subset_xr(
         old_ds,
         start_time=start_time,
         end_time=end_time,
@@ -81,7 +81,7 @@ def test_subset_xr_da(file_type, nhm_ids, tmp_path):
     start_time = old_da.time[100]
     end_time = old_da.time[125]
 
-    new_da = pws.utils.netcdf_utils.subset_xr_ds(
+    new_da = pws.utils.netcdf_utils.subset_xr(
         old_da,
         start_time=start_time,
         end_time=end_time,

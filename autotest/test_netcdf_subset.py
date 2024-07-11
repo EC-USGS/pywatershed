@@ -1,39 +1,42 @@
-import pathlib as pl
 
 import pytest
 import xarray as xr
 
 import pywatershed as pws
 
-this_dir = pl.Path(__file__).parent
-
 file_types = (
-    this_dir / "../test_data/drb_2yr/parameters_dis_hru.nc",
-    this_dir / "../test_data/drb_2yr/tmax.nc",
-    this_dir / "../test_data/drb_2yr/output/sroff.nc",
+    "parameters_dis_hru.nc",
+    "tmax.nc",
+    "output/sroff.nc",
 )
 
 
 @pytest.fixture(scope="function")
-def nhm_ids():
-    param_file = pl.Path("../test_data/drb_2yr/parameters_dis_hru.nc")
+def nhm_ids(simulation):
+    domain_name = simulation["name"].split(":")[0]
+    if domain_name == "hru_1":
+        subset_inds = (0,)
+    else:
+        subset_inds = (0, 10, 100)
+
+    param_file = simulation["dir"] / "parameters_dis_hru.nc"
     param_ds = xr.open_dataset(param_file)
-    return param_ds.nhm_id.values[(0, 10, 100),]
+    return param_ds.nhm_id.values[subset_inds,]
 
 
-@pytest.mark.domainless
 @pytest.mark.parametrize("file_type", file_types)
-def test_subset_netcdf_file(file_type, nhm_ids, tmp_path):
+def test_subset_netcdf_file(simulation, file_type, nhm_ids, tmp_path):
     # do time in the test on the dataset not the file
+    old_file = simulation["dir"] / file_type
     new_file = tmp_path / "new.nc"
     pws.utils.netcdf_utils.subset_netcdf_file(
-        file_type,
+        old_file,
         new_file,
         coord_dim_name="nhm_id",
         coord_dim_values_keep=nhm_ids,
     )
 
-    old_ds = xr.open_dataset(file_type)
+    old_ds = xr.open_dataset(old_file)
     new_ds = xr.open_dataset(new_file)
 
     assert set(new_ds.nhm_id.values) == set(nhm_ids)
@@ -44,11 +47,11 @@ def test_subset_netcdf_file(file_type, nhm_ids, tmp_path):
         assert new_ds[vv].dims == old_ds[vv].dims
 
 
-@pytest.mark.domainless
 @pytest.mark.parametrize("file_type", file_types)
-def test_subset_xr_ds(file_type, nhm_ids, tmp_path):
+def test_subset_xr_ds(simulation, file_type, nhm_ids, tmp_path):
     start_time = end_time = None
-    old_ds = xr.open_dataset(file_type)
+    old_file = simulation["dir"] / file_type
+    old_ds = xr.open_dataset(old_file)
     if "time" in old_ds.variables:
         start_time = old_ds.time[100]
         end_time = old_ds.time[125]
@@ -78,9 +81,10 @@ def test_subset_xr_ds(file_type, nhm_ids, tmp_path):
 
 @pytest.mark.domainless
 @pytest.mark.parametrize("file_type", file_types[1:])
-def test_subset_xr_da(file_type, nhm_ids, tmp_path):
+def test_subset_xr_da(simulation, file_type, nhm_ids, tmp_path):
     start_time = end_time = None
-    old_da = xr.open_dataarray(file_type)
+    old_file = simulation["dir"] / file_type
+    old_da = xr.open_dataarray(old_file)
     start_time = old_da.time[100]
     end_time = old_da.time[125]
 

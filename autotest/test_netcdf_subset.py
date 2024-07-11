@@ -5,10 +5,12 @@ import xarray as xr
 
 import pywatershed as pws
 
+this_dir = pl.Path(__file__).parent
+
 file_types = (
-    pl.Path("../test_data/drb_2yr/parameters_dis_hru.nc"),
-    pl.Path("../test_data/drb_2yr/tmax.nc"),
-    pl.Path("../test_data/drb_2yr/output/sroff.nc"),
+    this_dir / "../test_data/drb_2yr/parameters_dis_hru.nc",
+    this_dir / "../test_data/drb_2yr/tmax.nc",
+    this_dir / "../test_data/drb_2yr/output/sroff.nc",
 )
 
 

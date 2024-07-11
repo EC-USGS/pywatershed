@@ -625,13 +625,13 @@ class NetCdfWrite(Accessor):
         return
 
 
-def subset_file(
+def subset_netcdf_file(
     file_name: Union[pl.Path, str],
     new_file_name: Union[pl.Path, str],
     start_time: np.datetime64 = None,
     end_time: np.datetime64 = None,
     coord_dim_name: str = None,
-    coord_dim_values_keep: np.array = None,
+    coord_dim_values_keep: np.ndarray = None,
 ) -> None:
     """Subset a netcdf file on to coordinate or dimension values.
 
@@ -645,12 +645,14 @@ def subset_file(
         retain in teh subset.
 
     This currently works for 1-D coordinates, more dimensions not tested.
-    Note: This uses the function :function:`subset_xr` under the hood, which
-    can be called if you want to subset xr.Datasets in memory. There seem to be
-    several edge cases lurking around here with zero length dimensions and
-    xarray's broadcasting rules. This function is a convenience function
-    because xarray's functionality is not ideal for our use cases and is
-    confusing with pitfalls. Seehttps://github.com/pydata/xarray/issues/8796
+    Note: This uses the function
+    :func:`pywatershed.utils.netcdf_utils.subset_xr`
+    under the hood, which can be called if you want to subset xr.Datasets in
+    memory. There seem to beseveral edge cases lurking around here with zero
+    length dimensions and xarray's broadcasting rules. This function is a
+    convenience function because xarray's functionality is not ideal for our
+    use cases and is confusing with pitfalls. See
+    https://github.com/pydata/xarray/issues/8796
     for additional discussion.
 
     """
@@ -686,6 +688,8 @@ def subset_xr(
         retain in teh subset.
 
     This currently works for 1-D coordinates, more dimensions not tested.
+    To work with files rather than memory see
+    :func:`pywatershed.utils.netcdf_utils.subset_netcdf_file`.
     Note: There seem to be several edge cases lurking around here with zero
     length dimensions and xarray's broadcasting rules. This function is a
     convenience function because xarray's functionality is not ideal for our
@@ -709,7 +713,6 @@ def subset_xr(
 
     # <
     if coord_dim_name is not None:
-
         msg = f"{coord_dim_values_keep=} not in {coord_dim_name=}"
         assert ds[coord_dim_name].isin(coord_dim_values_keep).any(), msg
 

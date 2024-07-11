@@ -1,8 +1,9 @@
 import pathlib as pl
 
 import pytest
-import pywatershed as pws
 import xarray as xr
+
+import pywatershed as pws
 
 file_types = (
     pl.Path("../test_data/drb_2yr/parameters_dis_hru.nc"),
@@ -23,7 +24,7 @@ def nhm_ids():
 def test_subset_netcdf_file(file_type, nhm_ids, tmp_path):
     # do time in the test on the dataset not the file
     new_file = tmp_path / "new.nc"
-    pws.utils.netcdf_utils.subset_file(
+    pws.utils.netcdf_utils.subset_netcdf_file(
         file_type,
         new_file,
         coord_dim_name="nhm_id",

@@ -78,7 +78,6 @@ def test_subset_xr_ds(simulation, file_type, nhm_ids, tmp_path):
         assert len(new_ds.time == 26)
 
 
-@pytest.mark.domainless
 @pytest.mark.parametrize("file_type", file_types[1:])
 def test_subset_xr_da(simulation, file_type, nhm_ids, tmp_path):
     start_time = end_time = None

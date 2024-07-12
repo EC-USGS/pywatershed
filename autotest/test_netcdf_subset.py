@@ -13,6 +13,8 @@ file_types = (
 @pytest.fixture(scope="function")
 def nhm_ids(simulation):
     domain_name = simulation["name"].split(":")[0]
+    if domain_name not in ["hru_1", "drb_2yr"]:
+        pytest.skip("Only test_netcdf_subset hru_1 and drb_2yr")
     if domain_name == "hru_1":
         subset_inds = (0,)
     else:

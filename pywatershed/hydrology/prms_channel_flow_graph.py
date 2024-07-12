@@ -745,7 +745,7 @@ def prms_channel_flow_graph_to_model_dict(
 
     Note that if you want to run a :class:`FlowGraph` by itself, simply
     forced by known inflows (and not in the context of other
-    :class:`Process`\ es in a :class:`Model`), then the helper function
+    :class:`base.Process`\ es in a :class:`Model`), then the helper function
     :func:`prms_channel_flow_graph_postprocess` is for you.
 
     Please see the example notebook `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__

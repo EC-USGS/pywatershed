@@ -5,6 +5,7 @@ from typing import Union
 
 import netCDF4 as nc4
 import numpy as np
+import xarray as xr
 
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
@@ -622,3 +623,140 @@ class NetCdfWrite(Accessor):
         self.variables[name][:, :] = data[:, :]
 
         return
+
+
+def subset_netcdf_file(
+    file_name: Union[pl.Path, str],
+    new_file_name: Union[pl.Path, str],
+    start_time: np.datetime64 = None,
+    end_time: np.datetime64 = None,
+    coord_dim_name: str = None,
+    coord_dim_values_keep: np.ndarray = None,
+) -> None:
+    """Subset a netcdf file on to coordinate or dimension values.
+
+    Args:
+      file_name: The name/path of the input file.
+      new_file_name: The name/path of the output file.
+      start_time: Optional start time if a "time" coord is present.
+      end_time: Optional end time if a "time" coord is present.
+      coord_dim_name: Optional coord or dimension name to subset on.
+      coord_dim_values_keep: Optional values on the coord or dimension to
+        retain in teh subset.
+
+    This currently works for 1-D coordinates, more dimensions not tested.
+    Note: This uses the function
+    :func:`pywatershed.utils.netcdf_utils.subset_xr`
+    under the hood, which can be called if you want to subset xr.Datasets in
+    memory. There seem to beseveral edge cases lurking around here with zero
+    length dimensions and xarray's broadcasting rules. This function is a
+    convenience function because xarray's functionality is not ideal for our
+    use cases and is confusing with pitfalls. See
+    https://github.com/pydata/xarray/issues/8796
+    for additional discussion.
+
+    """
+    ds = xr.load_dataset(file_name)
+
+    ds = subset_xr(
+        ds=ds,
+        start_time=start_time,
+        end_time=end_time,
+        coord_dim_name=coord_dim_name,
+        coord_dim_values_keep=coord_dim_values_keep,
+    )
+
+    ds.to_netcdf(new_file_name)
+
+    return
+
+
+def subset_xr(
+    ds: Union[xr.Dataset, xr.DataArray],
+    start_time: np.datetime64 = None,
+    end_time: np.datetime64 = None,
+    coord_dim_name: str = None,
+    coord_dim_values_keep: np.array = None,
+) -> Union[xr.Dataset, xr.DataArray]:
+    """Subset an xarray Dataset or DataArray on to coord or dim values.
+
+    Args:
+      start_time: Optional start time if a "time" coord is present.
+      end_time: Optional end time if a "time" coord is present.
+      coord_dim_name: Optional coord or dimension name to subset on.
+      coord_dim_values_keep: Optional values on the coord or dimension to
+        retain in teh subset.
+
+    This currently works for 1-D coordinates, more dimensions not tested.
+    To work with files rather than memory see
+    :func:`pywatershed.utils.netcdf_utils.subset_netcdf_file`.
+    Note: There seem to be several edge cases lurking around here with zero
+    length dimensions and xarray's broadcasting rules. This function is a
+    convenience function because xarray's functionality is not ideal for our
+    use cases and is confusing with pitfalls. See
+    https://github.com/pydata/xarray/issues/8796 for additional discussion.
+
+    """
+    if isinstance(ds, xr.DataArray):
+        var_dims_orig = ds.dims
+    else:
+        var_dims_orig = {key: ds[key].dims for key in ds.variables}
+
+    if coord_dim_name is not None or coord_dim_values_keep is not None:
+        msg = (
+            "Neither or both of coord_dim_name and coord_dim_values_keep "
+            "must be supplied."
+        )
+        assert (
+            coord_dim_name is not None and coord_dim_values_keep is not None
+        ), msg
+
+    # <
+    if coord_dim_name is not None:
+        msg = f"{coord_dim_values_keep=} not in {coord_dim_name=}"
+        assert ds[coord_dim_name].isin(coord_dim_values_keep).any(), msg
+
+        ds = ds.where(
+            ds[coord_dim_name].isin(coord_dim_values_keep), drop=True
+        )
+
+        if isinstance(ds, xr.DataArray):
+            dims_orig = set(var_dims_orig)
+            dims_new = set(ds.dims)
+            extra_dims = list(dims_new - dims_orig)
+            if len(extra_dims):
+                for dd in extra_dims:
+                    ds = ds.isel({dd: 0}).squeeze()
+        else:
+            for var in list(ds.variables):
+                dims_orig = set(var_dims_orig[var])
+                dims_new = set(ds[var].dims)
+                extra_dims = list(dims_new - dims_orig)
+                # if "scalar" in dims_orig:
+                #     asdf
+                if len(extra_dims):
+                    # a headache to deal with when it broadcasts to a zero
+                    # or non-zero length dimension
+                    dim_dict = dict(zip(ds[var].dims, ds[var].shape))
+                    extra_dim_lens = np.array(
+                        [dim_dict[dd] for dd in extra_dims]
+                    )
+                    if (extra_dim_lens <= 1).all():
+                        ds[var] = ds[var].squeeze(extra_dims)
+                    else:
+                        for dd in extra_dims:
+                            if dd in ds[var].dims:
+                                ds[var] = ds[var].isel({dd: 0}).squeeze()
+
+    # <<<
+    if start_time is not None or end_time is not None:
+        msg = "Neither or both of start_time and end_time must be supplied."
+        assert start_time is not None and end_time is not None, msg
+
+    # <
+    # does sel work correctly here?
+    if start_time is not None:
+        if "time" in ds.dims:
+            ds = ds.sel(time=slice(start_time, end_time))
+
+    return ds

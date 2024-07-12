@@ -53,6 +53,10 @@ New Features
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 - Control instances have a diff method to compare with other instances.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Feature to standardize subsetting input data (parameters and forcings) in
+  space and time either from file (:func:`utils.netcdf_utils.subset_netcdf_file`) or
+  in memory (:func:`utils.netcdf_utils.subset_xr`).
+  (:pull:`304`) By `James McCreight <https://github.com/jmccreight>`_.  
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -110,7 +114,7 @@ New features
 .. _whats-new.1.0.0:
 
 v1.0.0 (18 December 2023)
----------------------
+-------------------------
 
 New features
 ~~~~~~~~~~~~

@@ -574,8 +574,11 @@ class DatasetDict(Accessor):
             None
         """
         # only doing it in place for now
+        # should we reall roll our own?
 
         # TODO: should almost work for 2+D? just linearizes np.where
+        #       except that dims should be droped with >1
+
         if len(where) > 1:
             raise NotImplementedError("at least not tested")
 

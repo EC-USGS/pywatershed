@@ -77,6 +77,9 @@ cf_to_cm = cfs_to_cms
 ndoy = 366
 nmonth = 12
 
+INACTIVE = 0
+ACTIVE = 1
+
 
 class HruType(Enum):
     INACTIVE = 0

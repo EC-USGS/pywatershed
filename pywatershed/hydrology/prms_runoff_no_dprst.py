@@ -233,6 +233,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             _,
             _,
             self.sroff[:],
+            _,
         ) = self._calculate_runoff(
             infil=self.infil,
             nhru=self.nhru,
@@ -298,6 +299,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             dprst_seep_rate_clos=zero_array.copy(),
             sroff=self.sroff,
             hru_impervstor=self.hru_impervstor,
+            upstream_hortonian=None,
             check_capacity=self.check_capacity,
             perv_comp=self.perv_comp,
             compute_infil=self.compute_infil,

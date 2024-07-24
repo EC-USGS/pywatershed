@@ -452,6 +452,7 @@ class PRMSRunoff(ConservativeProcess):
             self.dprst_vol_frac[:],
             self.dprst_stor_hru[:],
             self.sroff[:],
+            _,
         ) = self._calculate_runoff(
             infil=self.infil,
             nhru=self.nhru,
@@ -517,6 +518,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_seep_rate_clos=self.dprst_seep_rate_clos,
             sroff=self.sroff,
             hru_impervstor=self.hru_impervstor,
+            upstream_hortonian=None,
             check_capacity=self.check_capacity,
             perv_comp=self.perv_comp,
             compute_infil=self.compute_infil,
@@ -605,6 +607,7 @@ class PRMSRunoff(ConservativeProcess):
         dprst_seep_rate_clos,
         sroff,
         hru_impervstor,
+        upstream_hortonian,
         # functions at end
         check_capacity,
         perv_comp,
@@ -614,17 +617,18 @@ class PRMSRunoff(ConservativeProcess):
         through_rain,
         dprst_flag,
     ):
+        if upstream_hortonian is None:
+            hru_horton_cascflow = None
+
         dprst_chk = 0
         infil[:] = 0.0
 
         soil_moist_prev = soil_lower_prev + soil_rechr_prev
 
-        for k in prange(nhru):
+        for i in prange(nhru):
             # TODO: remove duplicated vars
             # TODO: move setting constants outside the loop.
 
-            # cdl i = Hru_route_order(k)
-            i = k
             runoff = zero
             hruarea = hru_area[i]
             perv_area = hru_perv[i]
@@ -813,6 +817,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_vol_frac,
             dprst_stor_hru,
             sroff,
+            hru_horton_cascflow,
         )
 
     @staticmethod

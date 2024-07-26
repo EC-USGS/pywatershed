@@ -328,6 +328,7 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
+          -n=auto
           -m "not domainless"
           --domain=ucb_2yr
           --control_pattern=nhm.control

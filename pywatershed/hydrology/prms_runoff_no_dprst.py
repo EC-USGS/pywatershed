@@ -299,6 +299,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             dprst_seep_rate_clos=zero_array.copy(),
             sroff=self.sroff,
             hru_impervstor=self.hru_impervstor,
+            hru_route_order=self.hru_route_order,
             upstream_hortonian=None,
             check_capacity=self.check_capacity,
             perv_comp=self.perv_comp,

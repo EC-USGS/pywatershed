@@ -119,6 +119,9 @@ class PRMSRunoff(ConservativeProcess):
         if self._dprst_flag:
             self.dprst_init()
 
+        if not hasattr(self, "hru_route_order"):
+            self.hru_route_order = np.arange(self.nhru, dtype="int64")
+
         return
 
     def _set_initial_conditions(self):
@@ -518,6 +521,7 @@ class PRMSRunoff(ConservativeProcess):
             dprst_seep_rate_clos=self.dprst_seep_rate_clos,
             sroff=self.sroff,
             hru_impervstor=self.hru_impervstor,
+            hru_route_order=self.hru_route_order,
             upstream_hortonian=None,
             check_capacity=self.check_capacity,
             perv_comp=self.perv_comp,
@@ -607,6 +611,7 @@ class PRMSRunoff(ConservativeProcess):
         dprst_seep_rate_clos,
         sroff,
         hru_impervstor,
+        hru_route_order,
         upstream_hortonian,
         # functions at end
         check_capacity,
@@ -625,9 +630,11 @@ class PRMSRunoff(ConservativeProcess):
 
         soil_moist_prev = soil_lower_prev + soil_rechr_prev
 
-        for i in prange(nhru):
+        for k in prange(nhru):
             # TODO: remove duplicated vars
             # TODO: move setting constants outside the loop.
+
+            i = hru_route_order[k]
 
             runoff = zero
             hruarea = hru_area[i]

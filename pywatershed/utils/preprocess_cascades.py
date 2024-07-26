@@ -1,11 +1,9 @@
 import numpy as np
-
-from ..base.data_model import DatasetDict
-from ..constants import HruType, ACTIVE
-from ..parameters import Parameters
-
 import xarray as xr
 
+from ..base.data_model import DatasetDict
+from ..constants import ACTIVE, HruType
+from ..parameters import Parameters
 
 # NOTES:
 # * A preprocess needs to return new parametr objects or files for
@@ -40,7 +38,6 @@ def calc_hru_route_order(parameters: Parameters):
 
     jj = -1
     for ii in range(nhru):
-
         if hru_type[ii] == HruType.INACTIVE.value:
             continue
 
@@ -55,7 +52,7 @@ def calc_hru_route_order(parameters: Parameters):
                 msg = f"ERROR, hru_type = 2 for HRU: {ii} and lake_hru_id = 0"
                 raise ValueError(msg)
 
-            if Nlake == 0:
+            if nlake == 0:
                 msg = (
                     f"ERROR, hru_type = 2 for HRU: {ii} "
                     "and dimension nlake = 0"

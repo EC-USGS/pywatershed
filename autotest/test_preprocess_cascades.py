@@ -1,7 +1,4 @@
-import pathlib as pl
-
 import pytest
-
 
 from pywatershed.base.control import Control
 from pywatershed.parameters import Parameters, PrmsParameters

@@ -109,12 +109,13 @@ class PRMSChannel(ConservativeProcess):
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> None:
+        self.name = "PRMSChannel"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "PRMSChannel"
 
         self._set_inputs(locals())
         self._set_options(locals())

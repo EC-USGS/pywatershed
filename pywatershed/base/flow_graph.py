@@ -101,7 +101,8 @@ class FlowNodeMaker(Accessor):
           discretization: Discretization data to parcel out to the FlowNodes.
           parameters: Parmeter data to parcel to the FlowNodes.
         """
-        self.name = "FlowNodeMaker"
+        if not hasattr(self, "name"):
+            self.name = "FlowNodeMaker"
         return
 
     def get_node(control: Control, index: int) -> FlowNode:
@@ -358,12 +359,13 @@ class FlowGraph(ConservativeProcess):
         via their parameters.
 
         """
+        self.name = "FlowGraph"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "FlowGraph"
 
         self._set_inputs(locals())
         self._set_options(locals())

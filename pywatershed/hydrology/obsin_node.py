@@ -29,6 +29,7 @@ class ObsInNode(FlowNode):
           node_obs_data: A pandas Series object of observations at this
             location given by pyPRMS.Streamflow.
         """
+        self.name = "ObsInNode"
         self.control = control
         self._node_obs_data = node_obs_data
         return

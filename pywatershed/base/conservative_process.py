@@ -81,7 +81,8 @@ class ConservativeProcess(Process):
             metadata_patch_conflicts=metadata_patch_conflicts,
         )
 
-        self.name = "ConservativeProcess"
+        if not hasattr(self, "name"):
+            self.name = "ConservativeProcess"
 
         return
 

@@ -96,7 +96,9 @@ class Process(Accessor):
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
-        self.name = "Process"
+        if not hasattr(self, "name"):
+            self.name = "Process"
+
         self.control = control
 
         self._set_params(parameters, discretization)

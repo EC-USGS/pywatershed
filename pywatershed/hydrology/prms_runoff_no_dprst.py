@@ -92,6 +92,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
         verbose: bool = None,
     ) -> None:
         self._dprst_flag = False
+        self.name = "PRMSRunoffNoDprst"
 
         super().__init__(
             control=control,
@@ -116,8 +117,6 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             calc_method=calc_method,
             verbose=verbose,
         )
-
-        self.name = "PRMSRunoffNoDprst"
 
         self._set_inputs(locals())
         self._set_options(locals())

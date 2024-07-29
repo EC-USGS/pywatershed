@@ -90,12 +90,13 @@ class PRMSCanopy(ConservativeProcess):
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
     ):
+        self.name = "PRMSCanopy"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "PRMSCanopy"
 
         # set hrutype to LAND as this is only type supported in NHM
         self._hru_type = np.array(self.nhru * [LAND])

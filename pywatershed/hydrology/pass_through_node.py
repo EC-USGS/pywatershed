@@ -16,6 +16,7 @@ class PassThroughNode(FlowNode):
             control: A control object.
         """
         self.control = control
+        self.name = "PassThroughNode"
         return
 
     def prepare_timestep(self):

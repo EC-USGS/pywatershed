@@ -104,7 +104,8 @@ class PRMSRunoff(ConservativeProcess):
             parameters=parameters,
         )
 
-        self.name = "PRMSRunoff"
+        if not hasattr(self, "name"):
+            self.name = "PRMSRunoff"
 
         self._set_inputs(locals())
         self._set_options(locals())

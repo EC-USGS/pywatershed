@@ -27,7 +27,9 @@ class Adapter:
         self,
         variable: str,
     ) -> None:
-        self.name = "Adapter"
+        if not hasattr(self, "name"):
+            self.name = "Adapter"
+
         self._variable = variable
         return None
 

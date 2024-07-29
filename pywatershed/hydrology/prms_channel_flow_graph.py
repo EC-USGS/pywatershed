@@ -54,6 +54,7 @@ class PRMSChannelFlowNode(FlowNode):
           c2: Parameter of :class:`PRMSChannel`.
           calc_method: One of "numba", "numpy" (default).
         """
+        self.name = "PRMSChannelFlowNode"
         self.control = control
 
         self._tsi = tsi
@@ -430,6 +431,7 @@ class HruSegmentFlowAdapter(Adapter):
           ssres_flow_vol: An Adapter of subsurface reservoir outflow volume
           gwres_flow_vol: An Adapter of groundwater reservoir outflow volume
         """
+        self.name = "HruSegmentFlowAdapter"
         self._variable = "inflows"
         self._parameters = parameters
 
@@ -528,12 +530,13 @@ class HruSegmentFlowExchange(ConservativeProcess):
               avaiable, budget_type is set to "warn".
             verbose: Boolean for the amount of messages to be printed.
         """
+        self.name = "HruSegmentFlowExchange"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "HruSegmentFlowExchange"
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -694,6 +697,7 @@ def prms_channel_flow_graph_postprocess(
             prms_inflows: Adapter,
             variable: str = "inflows",
         ):
+            self.name = "GraphInflowAdapter"
             self._variable = variable
             self._prms_inflows = prms_inflows
 

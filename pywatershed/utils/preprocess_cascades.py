@@ -1,9 +1,8 @@
 import numpy as np
-from warnings import warn
 import xarray as xr
 
-from ..base.data_model import DatasetDict
 from ..base import Control
+from ..base.data_model import DatasetDict
 from ..constants import ACTIVE, HruType, one
 from ..parameters import Parameters
 
@@ -293,8 +292,6 @@ def init_cascades(
                         msg = (
                             "Addition of cascade link makes contributing area "
                             "\nadd up to > 1.0, thus fraction reduced: "
-                            # f"\n{ii+1=}, {kup=}, {jdn=}, {hru_frac[kup-1]=}, "
-                            # f"\n{istrm=} "
                             f"\nCascade: {ii+1=}; up HRU: {kup=}; "
                             f" down HRU: {jdn=};"
                             f" up fraction: {hru_frac[kup-1]=};"
@@ -435,9 +432,10 @@ def order_hrus(
 ) -> tuple:
     """From cascade.f90::order_hrus."""
 
-    # up_id_count equals number of upslope HRUs an HRU has
-    # dn_id_count equals number of downslope HRUs an HRU has
-    # ncascade_hru equals number of downslope HRUs and stream segments an HRU has
+    # up_id_count equals number of upslope HRUs an HRU has.
+    # dn_id_count equals number of downslope HRUs an HRU has.
+    # ncascade_hru equals number of downslope HRUs and stream segments
+    # an HRU has.
     max_up_id_count = 0
 
     # ALLOCATE (up_id_count(Nhru), dn_id_count(Nhru), roots(Nhru))
@@ -520,7 +518,7 @@ def order_hrus(
     # not going to write the file in the type_flag ==1 case. We are returning
     # a new parameter object here.
 
-    iret = 0
+    # iret = 0
     #  check for circles when circle_switch = 1
     if circle_switch == ACTIVE:
         circle_flg = 0
@@ -539,8 +537,6 @@ def order_hrus(
                 path,
                 max_up_id_count,
             )
-            if circle_flg == 1:
-                iret = 1
 
         if circle_flg == 1:
             msg = "ERROR, circular HRU path found"
@@ -609,7 +605,6 @@ def order_hrus(
             if is_hru_on_list[i] == 0:
                 if hru_type[i] != HruType.INACTIVE.value:
                     list_missing_hrus.append(i)
-                    # iret = 1
                 else:
                     list_inactive_hrus.append(i)
                     # apparently not an error in this case?

@@ -146,7 +146,7 @@ def init_cascades(
     cascade_tol = params.data_vars["cascade_tol"]
     active_hrus = params.data_vars["active_hrus"][0]
     hru_route_order = params.data_vars["hru_route_order"]
-    circle_switch = params.data_vars["circle_switch"]
+    circle_switch = params.data_vars["circle_switch"][0]
     ndown = 1
 
     # brilliant
@@ -225,35 +225,35 @@ def init_cascades(
         # a "continue" is not necessary except in that last case.
         if frac < 0.00001:
             msg = "Cascade ignored as hru_pct_up = 0.0, " + diag_msg
-            print(msg)  # was warn(msg)
+            print(msg)
         elif istrm > nsegment:
             msg = "Cascade ignored as isegment > nsegment-1, " + diag_msg
-            print(msg)  # was warn(msg)
+            print(msg)
         elif (kup < 1) and (jdn == 0):
             msg = "Cascade ignored as up and down HRU <0, " + diag_msg
-            print(msg)  # was warn(msg)
+            print(msg)
         elif (istrm == 0) and (jdn == 0):
             msg = "Cascade ignored as down HRU and segment < 0, " + diag_msg
-            print(msg)  # was warn(msg)
+            print(msg)
         elif hru_type[kup - 1] == HruType.INACTIVE.value:
             msg = "Cascade ignored as up HRU is inactive, " + diag_msg
-            print(msg)  # was warn(msg)
+            print(msg)
         elif hru_type[kup - 1] == HruType.SWALE.value:
             msg = "Cascade ignored as up HRU is a swale, " + diag_msg
-            print(msg)  # was warn(msg)
+            print(msg)
         elif (hru_type[kup - 1] == HruType.LAKE.value) and (istrm < 1):
             msg = (
                 "Cascade ignored as lake HRU cannot cascade to an HRU"
                 + diag_msg
             )
-            print(msg)  # was warn(msg)
+            print(msg)
         else:
             if (jdn > 0) and (istrm < 1):
                 if hru_type[jdn - 1] == HruType.INACTIVE.value:
                     msg = (
                         "Cascade ignored as down HRU is inactive, " + diag_msg
                     )
-                    print(msg)  # was warn(msg)
+                    print(msg)
                     continue
 
             # <
@@ -271,7 +271,7 @@ def init_cascades(
                     f"fraction up:  {frac*100.0=}; "
                     f"cascade areea:  {carea=}"
                 )
-                print(msg)  # was warn(msg)
+                print(msg)
 
             elif cascade_flg == 1:
                 # This forces 1 to 1 cascades
@@ -297,7 +297,7 @@ def init_cascades(
                             f" up fraction: {hru_frac[kup-1]=};"
                             f" stream segment: {istrm=}"
                         )
-                        print(msg)  # was warn(msg)
+                        print(msg)
 
                     # <
                     frac = frac + 1.0 - hru_frac[kup - 1]
@@ -365,14 +365,14 @@ def init_cascades(
                             "Combined multiple cascade paths from "
                             f"HRU: {i=} to stream segment, {abs(dnhru)=}"
                         )
-                        print(msg)  # was warn(msg)
+                        print(msg)
                     else:
                         #  two cascades to same hru, combine
                         msg = (
                             "Combined multiple cascade paths from "
                             f"HRU: {i=}, downslope hru, {dnhru=}"
                         )
-                        print(msg)  # was warn(msg)
+                        print(msg)
 
                     # <
                     ncascade_hru[i - 1] = ncascade_hru[i - 1] - 1
@@ -422,13 +422,13 @@ def init_cascades(
 
 
 def order_hrus(
-    nhru,
-    active_hrus,
-    hru_route_order,
-    ncascade_hru,
-    hru_down,
-    hru_type,
-    circle_switch,
+    nhru: int,
+    active_hrus: int,
+    hru_route_order: np.ndarray,
+    ncascade_hru: np.ndarray,
+    hru_down: np.ndarray,
+    hru_type: np.ndarray,
+    circle_switch: int,
 ) -> tuple:
     """From cascade.f90::order_hrus."""
 
@@ -484,7 +484,7 @@ def order_hrus(
                     "and was specified as hru_type = 1. "
                     "hru_type was changed to 3 (swale)"
                 )
-                print(msg)  # was warn(msg)
+                print(msg)
                 hru_type[i - 1] = HruType.SWALE.value
                 # type_flag = 1
                 continue
@@ -499,7 +499,7 @@ def order_hrus(
                 f"HRU {i=} receives flow but does not cascade and was "
                 "specified as hru_type 1. hru_type was changed to 3 (swale)"
             )
-            print(msg)  # was warn(msg)
+            print(msg)
             hru_type[i - 1] = HruType.SWALE.value
             # type_flag = 1
             continue
@@ -624,7 +624,15 @@ def order_hrus(
     return iorder, hru_type, hru_route_order
 
 
-def up_tree(num, n, down_id, up_list, npath, path, imx) -> tuple:
+def up_tree(
+    num: int,
+    n: int,
+    down_id: np.ndarray,
+    up_list: np.ndarray,
+    npath: int,
+    path: np.ndarray,
+    imx: int,
+) -> tuple:
     """Recursive walk up a tree of cascading spatial units."""
     # INTEGER, INTENT(IN) :: Num, N, Imx
     # INTEGER, INTENT(IN) :: Down_id(Num), Up_list(Imx, Num)
@@ -648,7 +656,7 @@ def up_tree(num, n, down_id, up_list, npath, path, imx) -> tuple:
     return npath, path
 
 
-def check_path(npath, path, nup) -> None:
+def check_path(npath: int, path: np.ndarray, nup: int) -> None:
     """Check for circular path.
 
     Raises an error with an informative message if needed.

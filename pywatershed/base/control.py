@@ -28,6 +28,8 @@ from .accessor import Accessor
 # The following are duplicated in the Control docstring below and that
 # docstring needs updated whenever any of these change.
 pws_control_options_avail = [
+    "cascade_flag",
+    "cascadegw_flag",
     "budget_type",
     "calc_method",
     "dprst_flag",
@@ -45,6 +47,8 @@ pws_control_options_avail = [
 ]
 
 prms_legacy_options_avail = [
+    "cascade_flag",
+    "cascadegw_flag",
     "dprst_flag",
     "end_time",
     # "init_vars_from_file",
@@ -90,6 +94,9 @@ class Control(Accessor):
     Available pywatershed options:
       * budget_type: one of [None, "warn", "error"]
       * calc_method: one of ["numpy", "numba", "fortran"]
+      * cascade_flag: boolean if runoff and soilzeon cascades are active
+      * cascadegw_flag: boolean if groundwater cascades are active. Currently
+        these can not be run without cadcade_flag being true.
       * dprst_flag: boolean if depression storage is included (true) or not.
       * input_dir: str or pathlib.path directory to search for input data
       * netcdf_output_dir: str or pathlib.Path directory for output
@@ -109,6 +116,8 @@ class Control(Accessor):
 
       * start_time
       * end_time
+      * cascade_flag: integer mapped to a boolean.
+      * cascadegw_flag: integer mapped to a boolean.
       * dprst_flag: integer is converted to boolean.
       * initial_deltat: translates to "time_step"
       * init_vars_from_file: translates to "restart"
@@ -288,7 +297,7 @@ class Control(Accessor):
                     opts[pws_option_key] = val[0]
 
             # special cases, unmapped names
-            if oo == "dprst_flag":
+            if oo in ["dprst_flag", "cascade_flag", "cascadegw_flag"]:
                 opts[oo] = bool(opts[oo][0])
 
         start_time = control.control["start_time"]

@@ -30,6 +30,8 @@ fortran_avail = getattr(
 )
 
 invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
+# invoke_style = invoke_style[0:1]  # TODO, relax?
+
 failfast = True
 verbose = False
 
@@ -51,28 +53,56 @@ test_models = {
         pywatershed.PRMSSoilzoneNoDprst,
         pywatershed.PRMSGroundwaterNoDprst,
     ],
+    "sagehen_no_gw_cascades": [
+        pywatershed.PRMSRunoffCascadesNoDprst,
+        pywatershed.PRMSSoilzoneNoDprst,
+        pywatershed.PRMSGroundwaterNoDprst,
+    ],
 }
+
+test_models = {
+    kk: vv for kk, vv in test_models.items() if kk != "sagehen_no_gw_cascades"
+}
+
+# Runoff should be PRMSRunoffCascadesNoDprst and or PRMSRunoffNoDprst
+
+# these variables not output by PRMS
+soil_vars_unavail = {
+    "soil_zone_max",
+    "soil_lower_max",
+    "perv_actet_hru",
+    "soil_lower_change_hru",
+    "soil_rechr_change_hru",
+}
+
 
 comparison_vars_dict_all = {
     "PRMSRunoff": pywatershed.PRMSRunoff.get_variables(),
-    "PRMSSoilzone": list(
-        set(pywatershed.PRMSSoilzone.get_variables())
-        - {  # these variables not output by PRMS
-            "soil_zone_max",
-            "soil_lower_max",
-            "perv_actet_hru",
-            "soil_lower_change_hru",
-            "soil_rechr_change_hru",
-        }
+    "PRMSRunoffNoDprst": pywatershed.PRMSRunoffNoDprst.get_variables(),
+    "PRMSRunoffCascadesNoDprst": list(
+        set(pywatershed.PRMSRunoffCascadesNoDprst.get_variables())
+        - set(["stream_seg_in"])
     ),
+    "PRMSSoilzone": list(
+        set(pywatershed.PRMSSoilzone.get_variables()) - soil_vars_unavail
+    ),
+    "PRMSSoilzoneNoDprst": list(
+        set(pywatershed.PRMSSoilzoneNoDprst.get_variables())
+        - soil_vars_unavail
+    ),
+    # "PRMSGroundwater": [],
     "PRMSGroundwater": pywatershed.PRMSGroundwater.get_variables(),
+    "PRMSGroundwaterNoDprst": pywatershed.PRMSGroundwaterNoDprst.get_variables(),
+    # "PRMSChannel": [],
     "PRMSChannel": pywatershed.PRMSChannel.get_variables(),
 }
 
 tol = {
     "PRMSRunoff": 1.0e-8,
+    "PRMSRunoffCascadesNoDprst": 1.0e-2,
     "PRMSRunoffNoDprst": 1.0e-8,
     "PRMSSoilzone": 1.0e-8,
+    "PRMSSoilzoneCascadesNoDprst": 1.0e-6,
     "PRMSSoilzoneNoDprst": 1.0e-8,
     "PRMSGroundwater": 1.0e-8,
     "PRMSGroundwaterNoDprst": 1.0e-8,
@@ -96,7 +126,7 @@ def control(simulation):
     if fortran_avail:
         control.options["calc_method"] = "fortran"
     else:
-        control.options["calc_method"] = "numba"
+        control.options["calc_method"] = "numpy"  # Todo: "numba"
     del control.options["netcdf_output_var_names"]
     return control
 
@@ -220,9 +250,11 @@ def test_model(simulation, model_args, tmp_path):
     model_out_dir = tmp_path / "output"
     control.options["netcdf_output_dir"] = model_out_dir
 
+    # TODO: remove this if statement?
     if control.options["calc_method"] == "fortran":
         with pytest.warns(UserWarning):
             model = Model(**model_args, write_control=model_out_dir)
+
     else:
         model = Model(**model_args, write_control=model_out_dir)
 
@@ -255,8 +287,13 @@ def test_model(simulation, model_args, tmp_path):
     # get the answer data against PRMS5.2.1
     # this is the adhoc set of things to compare, to circumvent fussy issues?
 
-    for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
-        comparison_vars_dict_all[f"{vv}NoDprst"] = comparison_vars_dict_all[vv]
+    # for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
+    #     comparison_vars_dict_all[f"{vv}NoDprst"] = comparison_vars_dict_all[vv]
+
+    # for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
+    #     comparison_vars_dict_all[f"{vv}CascadesNoDprst"] = (
+    #         comparison_vars_dict_all[vv]
+    #     )
 
     comparison_vars_dict = {}
 

@@ -30,7 +30,7 @@ fortran_avail = getattr(
 )
 
 invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
-# invoke_style = invoke_style[0:1]  # TODO, relax?
+invoke_style = invoke_style[0:1]  # TODO, relax?
 
 failfast = True
 verbose = False
@@ -55,13 +55,13 @@ test_models = {
     ],
     "sagehen_no_gw_cascades": [
         pywatershed.PRMSRunoffCascadesNoDprst,
-        pywatershed.PRMSSoilzoneNoDprst,
+        pywatershed.PRMSSoilzoneCascadesNoDprst,
         pywatershed.PRMSGroundwaterNoDprst,
     ],
 }
 
 test_models = {
-    kk: vv for kk, vv in test_models.items() if kk != "sagehen_no_gw_cascades"
+    kk: vv for kk, vv in test_models.items() if kk == "sagehen_no_gw_cascades"
 }
 
 # Runoff should be PRMSRunoffCascadesNoDprst and or PRMSRunoffNoDprst
@@ -90,6 +90,10 @@ comparison_vars_dict_all = {
         set(pywatershed.PRMSSoilzoneNoDprst.get_variables())
         - soil_vars_unavail
     ),
+    "PRMSSoilzoneCascadesNoDprst": list(
+        set(pywatershed.PRMSSoilzoneNoDprst.get_variables())
+        - soil_vars_unavail
+    ),
     # "PRMSGroundwater": [],
     "PRMSGroundwater": pywatershed.PRMSGroundwater.get_variables(),
     "PRMSGroundwaterNoDprst": pywatershed.PRMSGroundwaterNoDprst.get_variables(),
@@ -99,10 +103,10 @@ comparison_vars_dict_all = {
 
 tol = {
     "PRMSRunoff": 1.0e-8,
-    "PRMSRunoffCascadesNoDprst": 1.0e-2,
+    "PRMSRunoffCascadesNoDprst": 1.0e-8,
     "PRMSRunoffNoDprst": 1.0e-8,
     "PRMSSoilzone": 1.0e-8,
-    "PRMSSoilzoneCascadesNoDprst": 1.0e-6,
+    "PRMSSoilzoneCascadesNoDprst": 1.0e-8,
     "PRMSSoilzoneNoDprst": 1.0e-8,
     "PRMSGroundwater": 1.0e-8,
     "PRMSGroundwaterNoDprst": 1.0e-8,
@@ -122,7 +126,7 @@ def control(simulation):
         simulation["control_file"], warn_unused_options=False
     )
     control.options["verbosity"] = 10
-    control.options["budget_type"] = None
+    control.options["budget_type"] = "warn"  # "error" - revert
     if fortran_avail:
         control.options["calc_method"] = "fortran"
     else:
@@ -254,7 +258,6 @@ def test_model(simulation, model_args, tmp_path):
     if control.options["calc_method"] == "fortran":
         with pytest.warns(UserWarning):
             model = Model(**model_args, write_control=model_out_dir)
-
     else:
         model = Model(**model_args, write_control=model_out_dir)
 

@@ -2,16 +2,17 @@ from typing import Literal
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan, zero
+from ..constants import nan, zero, cubic_ft_per_acre_in
 from ..parameters import Parameters
+from ..utils.preprocess_cascades import preprocess_cascade_params
 from .prms_soilzone import PRMSSoilzone
 
 ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
 
 
-class PRMSSoilzoneNoDprst(PRMSSoilzone):
-    """PRMS soil zone without depression storage.
+class PRMSSoilzoneCascadesNoDprst(PRMSSoilzone):
+    """PRMS soil zone with cascades and no depression storage.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in
     the PRMS-IV documentation:
@@ -69,14 +70,20 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
         transp_on: adaptable,
         snow_evap: adaptable,
         snowcov_area: adaptable,
-        stream_seg_in: adaptable = None,
+        stream_seg_in: adaptable,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
-    ) -> "PRMSSoilzoneNoDprst":
-        self.name = "PRMSSoilzoneNoDprst"
+    ) -> "PRMSSoilzoneCascadeNoDprst":
+        self.name = "PRMSSoilzoneCascadesNoDprst"
         self._dprst_flag = False
+
+        # hru_route_order could be required but because
+        # it wasnt by prms, we'll make it optional and add it here if missing.
+        # TODO: with a warning and/or better criteria for the if
+        if "hru_route_order" not in parameters.parameters.keys():
+            parameters = preprocess_cascade_params(control, parameters)
 
         super().__init__(
             control=control,
@@ -93,20 +100,20 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
             transp_on=transp_on,
             snow_evap=snow_evap,
             snowcov_area=snowcov_area,
+            stream_seg_in=stream_seg_in,
             dprst_flag=False,
             budget_type=budget_type,
             calc_method=calc_method,
             adjust_parameters=adjust_parameters,
             verbose=verbose,
         )
-
         self._set_budget()
 
         return
 
     @staticmethod
     def get_dimensions() -> tuple:
-        return ("nhru",)
+        return ("nhru", "nsegment")
 
     @staticmethod
     def get_parameters() -> tuple:
@@ -132,6 +139,13 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
             "ssr2gw_exp",
             "ssr2gw_rate",
             "ssstor_init_frac",
+            "hru_route_order",
+            "nsegment_dum",  # a hack
+            "ncascade_hru",
+            "hru_down",
+            "hru_down_frac",
+            "hru_down_fracwt",
+            "cascade_area",
         )
 
     @staticmethod
@@ -147,6 +161,7 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
             "transp_on",
             "snow_evap",
             "snowcov_area",
+            "stream_seg_in",
         )
 
     @staticmethod
@@ -199,13 +214,26 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
             "ssres_stor": nan,  # sm_soilzone
             "swale_actet": zero,
             "unused_potet": zero,
+            "hru_sz_cascadeflow": zero,
+            "upslope_dunnianflow": zero,
+            "upslope_interflow": zero,
         }
 
     @staticmethod
     def get_mass_budget_terms():
+        """Give the terms in the soilzone mass budget.
+
+        In PRMS, there are two storages, soil/rechr and ssr/gvr, in the
+        "soilzone" which have their own individual balances. Here we only
+        calculate their combined balance and fluxes between the two storages
+        are ignored. Likewise, the partitioning of influxes between these
+        reservoirs is ignored.
+        """
         return {
             "inputs": [
                 "infil_hru",
+                "upslope_dunnianflow",
+                "upslope_interflow",
             ],
             "outputs": [
                 "perv_actet_hru",
@@ -214,6 +242,7 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
                 "slow_flow",
                 "dunnian_flow",
                 "pref_flow",
+                "hru_sz_cascadeflow",
             ],
             "storage_changes": [
                 "soil_rechr_change_hru",
@@ -224,6 +253,9 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
         }
 
     def _calculate(self, simulation_time):
+        """Perform the core calculations"""
+
+        cfs_conv = cubic_ft_per_acre_in / self.control.time_step_seconds
         zero_array = self.soil_to_gw * zero
 
         (
@@ -263,9 +295,9 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
             self.swale_actet[:],
             self.unused_potet[:],
             # cascade returns:
-            _,
-            _,
-            _,
+            self.hru_sz_cascadeflow[:],
+            self.upslope_dunnianflow[:],
+            self.upslope_interflow[:],
         ) = self._calculate_soilzone(
             _pref_flow_flag=self._pref_flow_flag,
             _snow_free=self._snow_free,
@@ -346,17 +378,17 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
             swale_actet=self.swale_actet,
             transp_on=self.transp_on,
             unused_potet=self.unused_potet,
-            ncascade_hru=None,
+            ncascade_hru=self.ncascade_hru,
             hru_route_order=self.hru_route_order,
-            hru_down=None,
-            hru_down_frac=None,
-            hru_down_fracwt=None,
-            cascade_area=None,
-            upslope_dunnianflow=None,
-            upslope_interflow=None,
-            hru_sz_cascadeflow=None,
-            stream_seg_in=None,
-            cfs_conv=None,
+            hru_down=self.hru_down,
+            hru_down_frac=self.hru_down_frac,
+            hru_down_fracwt=self.hru_down_fracwt,
+            cascade_area=self.cascade_area,
+            upslope_dunnianflow=self.upslope_dunnianflow,
+            upslope_interflow=self.upslope_interflow,
+            hru_sz_cascadeflow=self.hru_sz_cascadeflow,
+            stream_seg_in=self.stream_seg_in,
+            cfs_conv=cfs_conv,
             _compute_cascades=self._compute_cascades,
         )
 

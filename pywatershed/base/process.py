@@ -242,6 +242,8 @@ class Process(Accessor):
         else:
             self._params = parameters.subset(self.parameters)
 
+        dim_keys = set(parameters.dims.keys())
+
     def _initialize_self_variables(self, restart: bool = False):
         # dims
         for name in self.dimensions:

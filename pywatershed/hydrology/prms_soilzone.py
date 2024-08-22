@@ -90,6 +90,7 @@ class PRMSSoilzone(ConservativeProcess):
         transp_on: adaptable,
         snow_evap: adaptable,
         snowcov_area: adaptable,
+        stream_seg_in: adaptable = None,
         dprst_flag: bool = None,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
@@ -101,7 +102,8 @@ class PRMSSoilzone(ConservativeProcess):
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "PRMSSoilzone"
+        if not hasattr(self, "name"):
+            self.name = "PRMSSoilzone"
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -529,9 +531,14 @@ class PRMSSoilzone(ConservativeProcess):
             / self.soil_lower_max[wh_soil_lower_stor]
         )
 
+        if not hasattr(self, "hru_route_order"):
+            # hru_route_order in cascades is 1-based index, keep it the same.
+            self.hru_route_order = np.arange(self.nhru, dtype="int64") + 1
+
         return
 
     def _init_calc_method(self):
+        print(f"{self._calc_method=}")
         if self._calc_method is None:
             self._calc_method = "numba"
 
@@ -541,7 +548,7 @@ class PRMSSoilzone(ConservativeProcess):
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg, UserWarning)
-            self._calc_method = "numba"
+            self._calc_method = "numpy"  # todo: "numba"
 
         if self._calc_method.lower() == "numba":
             import numba as nb
@@ -567,6 +574,10 @@ class PRMSSoilzone(ConservativeProcess):
             )
             self._compute_szactet = nb.njit(fastmath=True)(
                 self._compute_szactet
+            )
+
+            self._compute_cascades = nb.njit(fastmath=True)(
+                self._compute_cascades
             )
 
         else:
@@ -618,6 +629,10 @@ class PRMSSoilzone(ConservativeProcess):
             self.ssres_stor[:],
             self.swale_actet[:],
             self.unused_potet[:],
+            # cascade returns:
+            _,
+            _,
+            _,
         ) = self._calculate_soilzone(
             _pref_flow_flag=self._pref_flow_flag,
             _snow_free=self._snow_free,
@@ -698,6 +713,18 @@ class PRMSSoilzone(ConservativeProcess):
             swale_actet=self.swale_actet,
             transp_on=self.transp_on,
             unused_potet=self.unused_potet,
+            ncascade_hru=None,
+            hru_route_order=self.hru_route_order,
+            hru_down=None,
+            hru_down_frac=None,
+            hru_down_fracwt=None,
+            cascade_area=None,
+            upslope_dunnianflow=None,
+            upslope_interflow=None,
+            hru_sz_cascadeflow=None,
+            stream_seg_in=None,
+            cfs_conv=None,
+            _compute_cascades=self._compupte_cascades,
         )
 
         self.sroff_vol[:] = self.sroff * self.hru_in_to_cf
@@ -731,21 +758,11 @@ class PRMSSoilzone(ConservativeProcess):
         hru_type,
         infil_hru,
         nhru,
+        perv_actet,
+        perv_actet_hru,
         potet,
         potet_lower,
         potet_rechr,
-        slow_flow,
-        slow_stor,
-        soil_moist,
-        soil_moist_max,
-        soil_rechr,
-        soil_to_gw,
-        soil_to_ssr,
-        soil_type,
-        ssr_to_gw,
-        ssres_flow,
-        perv_actet,
-        perv_actet_hru,
         pref_flow,
         pref_flow_den,
         pref_flow_in,
@@ -758,6 +775,8 @@ class PRMSSoilzone(ConservativeProcess):
         pref_flow_thrsh,
         recharge,
         sat_threshold,
+        slow_flow,
+        slow_stor,
         slow_stor_change,
         slow_stor_prev,
         slowcoef_lin,
@@ -771,33 +790,53 @@ class PRMSSoilzone(ConservativeProcess):
         soil_lower_max,
         soil_lower_prev,
         soil_lower_ratio,
+        soil_moist,
+        soil_moist_max,
         soil_moist_tot,
+        soil_rechr,
         soil_rechr_change,
         soil_rechr_change_hru,
         soil_rechr_max,
         soil_rechr_prev,
+        soil_to_gw,
+        soil_to_ssr,
+        soil_type,
         sroff,
         ssr2gw_exp,
         ssr2gw_rate,
+        ssr_to_gw,
+        ssres_flow,
         ssres_flow_vol,
         ssres_in,
         ssres_stor,
         swale_actet,
         transp_on,
         unused_potet,
+        ncascade_hru,
+        hru_route_order,
+        hru_down,
+        hru_down_frac,
+        hru_down_fracwt,
+        cascade_area,
+        upslope_dunnianflow,
+        upslope_interflow,
+        hru_sz_cascadeflow,
+        stream_seg_in,
+        cfs_conv,
+        _compute_cascades,
     ):
         """Calculate soil zone for a time step"""
 
-        # JLM: not clear we need this / for GSFlow
-        # if srunoff_updated_soil:
-        #     soil_moist = soil_moist_change
-        #     soil_rechr = soil_rechr_change
-        # # <
+        if dprst_flag:
+            hru_actet = hru_actet + dprst_evap_hru
+
+        if ncascade_hru is not None:
+            # diagnostic resets
+            upslope_interflow[:] = zero
+            upslope_dunnianflow[:] = zero
 
         # <
         gwin = zero
-        # update_potet = 0
-
         # diagnostic state resets
         soil_to_gw[:] = zero
         soil_to_ssr[:] = zero
@@ -806,6 +845,8 @@ class PRMSSoilzone(ConservativeProcess):
         ssres_flow[:] = zero
         potet_rechr[:] = zero
         potet_lower[:] = zero
+        cap_waterin[:] = zero
+        # update_potet = 0
 
         _snow_free[:] = one - snowcov_area
 
@@ -816,15 +857,13 @@ class PRMSSoilzone(ConservativeProcess):
         # JLM: ET calculations to be removed from soilzone.
         hru_actet = hru_impervevap + hru_intcpevap + snow_evap
 
-        if dprst_flag:
-            hru_actet = hru_actet + dprst_evap_hru
-
         # <
-        for hh in prange(nhru):
+        for ii in prange(nhru):
+            hh = hru_route_order[ii] - 1
             dunnianflw = zero
             dunnianflw_pfr = zero
             dunnianflw_gvr = zero
-            # interflow = zero  # loop variable, unused
+            interflow = zero
             prefflow = zero
 
             # JLM: ET calculation to be removed from soilzone.
@@ -849,7 +888,7 @@ class PRMSSoilzone(ConservativeProcess):
             capwater_maxin = infil_hru[hh] / hru_frac_perv[hh]
 
             # Compute preferential flow and storage, and any dunnian flow
-            if pref_flow_infil_frac[hh]:
+            if pref_flow_infil_frac[hh] > zero:
                 pref_flow_maxin = zero
                 pref_flow_infil[hh] = zero
 
@@ -882,7 +921,16 @@ class PRMSSoilzone(ConservativeProcess):
                     pref_flow_infil[hh] = pref_flow_maxin - dunnianflw_pfr
 
                 # <
-                # pfr_dunnian_flow[hh] = dunnianflw_pfr  # does nothing
+                # does nothing, not output
+                # pfr_dunnian_flow[hh] = dunnianflw_pfr
+
+            # <
+            # if cascade_flag > cascade_off:
+            if ncascade_hru is not None:
+                cap_upflow_max = (
+                    upslope_dunnianflow[hh] + upslope_interflow[hh]
+                ) / hru_frac_perv[hh]
+                capwater_maxin = capwater_maxin + cap_upflow_max
 
             # <
             # whole HRU
@@ -1022,6 +1070,9 @@ class PRMSSoilzone(ConservativeProcess):
                 pref_flow_in[hh] = pref_flow_infil[hh] + topfr
                 pref_flow_stor[hh] = pref_flow_stor[hh] + topfr
                 if pref_flow_stor[hh] > zero:
+                    if hh == 8:
+                        print(f"{pref_flow_in[hh]=}")
+                        print(f"{pref_flow_stor[hh]=}")
                     (
                         pref_flow_stor[hh],
                         prefflow,
@@ -1030,14 +1081,18 @@ class PRMSSoilzone(ConservativeProcess):
                         fastcoef_sq[hh],
                         pref_flow_in[hh],
                         pref_flow_stor[hh],
-                        prefflow,
+                        prefflow,  # always zero
                     )
+                    if hh == 8:
+                        print(f"{pref_flow_in[hh]=}")
+                        print(f"{pref_flow_stor[hh]=}")
+
             # <<
             elif hru_type[hh] == HruType.LAND.value:
                 dunnianflw_gvr = topfr  # ?? is this right
 
-            # gvr2pfr = topfr  # this is a gravflow/gsflow variable
             # <
+            # gvr2pfr = topfr  # this is a gravflow/gsflow variable
             perv_actet[hh] = zero
 
             # Compute actual evapotranspiration
@@ -1069,17 +1124,78 @@ class PRMSSoilzone(ConservativeProcess):
             soil_lower[hh] = soil_moist[hh] - soil_rechr[hh]
 
             if hru_type[hh] == HruType.LAND.value:
-                # interflow = slow_flow[hh] + prefflow  # pointless calculation
+                if hh == 8:
+                    print(f"{prefflow=}")
+
+                interflow = slow_flow[hh] + prefflow
 
                 dunnianflw = dunnianflw_gvr + dunnianflw_pfr
                 dunnian_flow[hh] = dunnianflw
 
+                # <
+                # if cascade_flag > cascade_off:
+                if ncascade_hru is not None:
+                    if ncascade_hru[hh] > 0:
+                        dnslowflow = zero
+                        dnprefflow = zero
+                        dndunn = zero
+                        if (interflow + dunnianflw) > zero:
+                            (
+                                dunnian_flow[hh],
+                                slow_flow[hh],
+                                prefflow,
+                                dnslowflow,
+                                dnprefflow,
+                                dndunn,
+                                upslope_dunnianflow[:],
+                                upslope_interflow[:],
+                                stream_seg_in[:],
+                            ) = _compute_cascades(
+                                hh,
+                                ncascade_hru[hh],
+                                slow_flow[hh],
+                                prefflow,
+                                dunnian_flow[hh],
+                                dnslowflow,
+                                dnprefflow,
+                                dndunn,
+                                # these are module variables now being passed
+                                upslope_dunnianflow,
+                                upslope_interflow,
+                                stream_seg_in,
+                                cascade_area,
+                                hru_down,
+                                hru_down_frac,
+                                hru_down_fracwt,
+                                cfs_conv,
+                            )
+
+                        # <
+                        hru_sz_cascadeflow[hh] = (
+                            dnslowflow + dnprefflow + dndunn
+                        )
+
+                # <<
+                # print(
+                #     f"{hh=}\n"
+                #     f"{dunnian_flow[hh]=}, {slow_flow[hh]=}, {prefflow=}, \n"
+                #     f"{dnslowflow=}, {dnprefflow=}, {dndunn=}, \n"
+                #     # f"{upslope_dunnianflow=}, {upslope_interflow=}, "
+                #     # f"{stream_seg_in=}\n"
+                # )
+
                 # Treat pref_flow as interflow
                 ssres_flow[hh] = slow_flow[hh]
+                if hh == 8:
+                    print(f"{ssres_flow[hh]=}")
+                    print(f"{prefflow=}")
 
                 if pref_flow_den[hh] > zero:
                     pref_flow[hh] = prefflow
                     ssres_flow[hh] = ssres_flow[hh] + prefflow
+
+                if hh == 8:
+                    print(f"{ssres_flow[hh]=}")
 
                 # <
                 # Treat dunnianflw as surface runoff to streams
@@ -1180,6 +1296,9 @@ class PRMSSoilzone(ConservativeProcess):
             ssres_stor,
             swale_actet,
             unused_potet,
+            hru_sz_cascadeflow,
+            upslope_dunnianflow,
+            upslope_interflow,
         )
 
     @staticmethod
@@ -1449,4 +1568,81 @@ class PRMSSoilzone(ConservativeProcess):
             potet_rechr,
             potet_lower,
             et,  # -> perv_actet
+        )
+
+    @staticmethod
+    def _compute_cascades(
+        ihru: int,
+        ncascade_hru_i: int,
+        slowflow: float,
+        prefflow: float,
+        dunnian: float,
+        dnslowflow: float,
+        dnprefflow: float,
+        dndunnflow: float,
+        upslope_dunnianflow: np.ndarray,
+        upslope_interflow: np.ndarray,
+        stream_seg_in: np.ndarray,
+        cascade_area: np.ndarray,
+        hru_down: np.ndarray,
+        hru_down_frac: np.ndarray,
+        hru_down_fracwt: np.ndarray,
+        cfs_conv: float,
+    ) -> tuple:
+        """Compute cascading interflow and excess flow."""
+        # SUBROUTINE compute_cascades(Ihru, Ncascade_hru, Slowflow, Prefflow, &
+        #   Dunnian, Dnslowflow, Dnprefflow, Dndunnflow)
+        # USE PRMS_SET_TIME, ONLY: Cfs_conv
+        # USE PRMS_SOILZONE, ONLY: Upslope_dunnianflow, Upslope_interflow
+        # USE PRMS_CASCADE, ONLY: Hru_down, Hru_down_frac, Hru_down_fracwt, Cascade_area
+        # USE PRMS_SRUNOFF, ONLY: Strm_seg_in
+        # Arguments
+        #   INTEGER, INTENT(IN) :: Ihru, Ncascade_hru
+        #   REAL, INTENT(INOUT) :: Dunnian, Slowflow, Prefflow
+        #   REAL, INTENT(INOUT) :: Dnslowflow, Dnprefflow, Dndunnflow
+        # Local Variables
+        #   INTEGER :: j, k
+        #   REAL :: frac, fracwt
+        for k in range(ncascade_hru_i):
+            j = hru_down[k, ihru]
+            frac = hru_down_frac[k, ihru]
+            # if hru_down(k, Ihru) > 0, cascade contributes to a downslope HRU
+            if j > 0:
+                fracwt = hru_down_fracwt[k, ihru]
+                upslope_interflow[j - 1] = (
+                    upslope_interflow[j - 1] + (slowflow + prefflow) * fracwt
+                )
+                upslope_dunnianflow[j - 1] = (
+                    upslope_dunnianflow[j - 1] + dunnian * fracwt
+                )
+                dnslowflow = dnslowflow + slowflow * frac
+                dnprefflow = dnprefflow + prefflow * frac
+                dndunnflow = dndunnflow + dunnian * frac
+            elif j < 0:
+                #  if hru_down(k, ihru) < 0, cascade contributes to a stream
+                j = abs(j)
+                stream_seg_in[j - 1] = (
+                    stream_seg_in[j - 1]
+                    + (slowflow + prefflow + dunnian)
+                    * cascade_area[k, ihru]
+                    * cfs_conv
+                )
+
+        # <<
+
+        #  reset Slowflow, Prefflow, and Dunnian_flow as they accumulate flow to streams
+        slowflow = slowflow - dnslowflow
+        prefflow = prefflow - dnprefflow
+        dunnian = dunnian - dndunnflow
+
+        return (
+            dunnian,
+            slowflow,
+            prefflow,
+            dnslowflow,
+            dnprefflow,
+            dndunnflow,
+            upslope_dunnianflow,
+            upslope_interflow,
+            stream_seg_in,
         )

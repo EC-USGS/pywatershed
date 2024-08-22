@@ -1527,7 +1527,7 @@ hru_gw_cascadeflow:
     0: nhru
   type: float64
   units: inches
-hru_hortn_cascflow:
+hru_horton_cascflow:
   desc: Cascading Hortonian surface runoff leaving each HRU
   dims:
     0: nhru
@@ -2976,7 +2976,7 @@ streamflow_cms:
     0: nobs
   type: float64
   units: cms
-strm_seg_in:
+stream_seg_in:
   desc: Flow in stream segments as a result of cascading flow in each stream segment
   dims:
     0: nsegment

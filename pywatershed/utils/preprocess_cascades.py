@@ -17,6 +17,20 @@ from ..parameters import Parameters
 # Is this a discretization edit?
 
 
+def preprocess_cascade_params(
+    control: Control,
+    parameters: Parameters,
+    verbosity: int = 1,
+) -> Parameters:
+    """Preprocess to obtain all cascade parameters from PRMS parameter files.
+
+    This function combines the legacy calc_hru_route_order and
+    init_cascade_params routines into one pre-processing step.
+    """
+    new_params = calc_hru_route_order(parameters)
+    return init_cascade_params(control, new_params, verbosity=verbosity)
+
+
 def calc_hru_route_order(parameters: Parameters) -> Parameters:
     """Calculate the HRU routing order.
 
@@ -104,7 +118,7 @@ def calc_hru_route_order(parameters: Parameters) -> Parameters:
     return Parameters.from_dataset_dict(DatasetDict.from_ds(new_params))
 
 
-def init_cascades(
+def init_cascade_params(
     control: Control,
     parameters: Parameters,
     verbosity: int = 1,
@@ -415,8 +429,20 @@ def init_cascades(
     new_params["hru_route_order"] = xr.Variable("nhru", hru_route_order)
     new_params["ncascade_hru"] = xr.Variable("nhru", ncascade_hru)
 
+    new_params["cascade_area"] = xr.Variable(["ndown", "nhru"], cascade_area)
     new_params["hru_down"] = xr.Variable(["ndown", "nhru"], hru_down)
     new_params["hru_down_frac"] = xr.Variable(["ndown", "nhru"], hru_down_frac)
+    new_params["hru_down_fracwt"] = xr.Variable(
+        ["ndown", "nhru"], hru_down_fracwt
+    )
+
+    # This is a hack of convenience. Once again, a process on one
+    # discretization needs to know about the discretization of another process
+    # instead of just passing on information. Runoff/soilzone should not
+    # need to know about nsegments. We'll look for a way to remove this in the
+    # future.
+    nseg_dum = np.arange(params.dims["nsegment"])
+    new_params["nsegment_dum"] = xr.Variable("nsegment", nseg_dum)
 
     return Parameters.from_dataset_dict(DatasetDict.from_ds(new_params))
 

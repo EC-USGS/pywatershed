@@ -5,7 +5,7 @@ from pywatershed.base.control import Control
 from pywatershed.parameters import Parameters, PrmsParameters
 from pywatershed.utils.preprocess_cascades import (
     calc_hru_route_order,
-    init_cascades,
+    init_cascade_params,
 )
 
 # TODO: These tests are only valid for sagehen_5yr and certain configurations
@@ -36,7 +36,7 @@ def test_preprocess(control, parameters):
     new_params = calc_hru_route_order(parameters)
     assert "hru_route_order" in new_params.variables
     assert isinstance(new_params, Parameters)
-    newer_params = init_cascades(control, new_params, verbosity=100)
+    newer_params = init_cascade_params(control, new_params, verbosity=100)
 
     # fmt: off
     answer = np.array(

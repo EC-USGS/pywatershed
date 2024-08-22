@@ -2,8 +2,9 @@ from typing import Literal
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, zero
+from ..constants import HruType, zero, cubic_ft_per_acre_in
 from ..parameters import Parameters
+from ..utils.preprocess_cascades import preprocess_cascade_params
 from .prms_runoff import PRMSRunoff
 
 RAIN = 0
@@ -21,10 +22,10 @@ LAKE = HruType.LAKE.value
 # TODO: using through_rain and not net_rain and net_ppt is a WIP
 
 
-class PRMSRunoffNoDprst(PRMSRunoff):
-    """PRMS surface runoff without depression storage.
+class PRMSRunoffCascadesNoDprst(PRMSRunoff):
+    """PRMS surface runoff with cascading flow.
 
-    A surface runoff representation from PRMS.
+    A surface runoff representation from PRMS with Cascading flow.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in
     the PRMS-IV documentation:
@@ -35,6 +36,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
     Techniques and Methods, 6, B7.
     <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
 
+    And in the GSFlow documentation TODO.
 
     Args:
         control: a Control object
@@ -91,8 +93,14 @@ class PRMSRunoffNoDprst(PRMSRunoff):
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
+        self.name = "PRMSRunoffCascadesNoDprst"
         self._dprst_flag = False
-        self.name = "PRMSRunoffNoDprst"
+
+        # hru_route_order could be required but because
+        # it wasnt by prms, we'll make it optional and add it here if missing.
+        # TODO: with a warning and/or better criteria for the if
+        if "hru_route_order" not in parameters.parameters.keys():
+            parameters = preprocess_cascade_params(control, parameters)
 
         super().__init__(
             control=control,
@@ -128,6 +136,10 @@ class PRMSRunoffNoDprst(PRMSRunoff):
         return
 
     @staticmethod
+    def get_dimensions() -> tuple:
+        return ("nhru", "nsegment")
+
+    @staticmethod
     def get_parameters() -> tuple:
         return (
             "hru_type",
@@ -140,6 +152,13 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             "smidx_exp",
             "soil_moist_max",
             "snowinfil_max",
+            "hru_route_order",
+            "nsegment_dum",  # a hack
+            "ncascade_hru",
+            "hru_down",
+            "hru_down_frac",
+            "hru_down_fracwt",
+            "cascade_area",
         )
 
     @staticmethod
@@ -158,6 +177,9 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             "hru_impervstor": zero,
             "hru_impervstor_old": zero,
             "hru_impervstor_change": zero,
+            "upslope_hortonian": zero,
+            "hru_horton_cascflow": zero,
+            "stream_seg_in": zero,
         }
 
     @staticmethod
@@ -167,6 +189,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
                 "through_rain",
                 "snowmelt",
                 "intcp_changeover",
+                "upslope_hortonian",
             ],
             "outputs": [
                 # sroff = hru_sroffi + hru_sroffp
@@ -174,6 +197,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
                 "hru_sroffp",
                 "infil_hru",
                 "hru_impervevap",
+                "hru_horton_cascflow",
             ],
             "storage_changes": [
                 "hru_impervstor_change",
@@ -186,7 +210,10 @@ class PRMSRunoffNoDprst(PRMSRunoff):
 
     def _calculate(self, time_length, vectorized=False):
         """Perform the core calculations"""
+        print(f"{self.control.itime_step=}")
+        print(f"{self.control.current_time=}")
 
+        cfs_conv = cubic_ft_per_acre_in / self.control.time_step_seconds
         zero_array = zero * self.infil
 
         (
@@ -209,7 +236,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             _,
             _,
             self.sroff[:],
-            _,
+            self.hru_horton_cascflow[:],
         ) = self._calculate_runoff(
             infil=self.infil,
             nhru=self.nhru,
@@ -277,22 +304,22 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             hru_impervstor=self.hru_impervstor,
             through_rain=self.through_rain,
             dprst_flag=self._dprst_flag,
-            ncascade_hru=None,
+            ncascade_hru=self.ncascade_hru,
             hru_route_order=self.hru_route_order,
-            hru_down=None,
-            hru_down_frac=None,
-            hru_down_fracwt=None,
-            cascade_area=None,
-            upslope_hortonian=None,
-            stream_seg_in=None,
-            cfs_conv=None,
+            hru_down=self.hru_down,
+            hru_down_frac=self.hru_down_frac,
+            hru_down_fracwt=self.hru_down_fracwt,
+            cascade_area=self.cascade_area,
+            upslope_hortonian=self.upslope_hortonian,
+            stream_seg_in=self.stream_seg_in,
+            cfs_conv=cfs_conv,
             # functions at end
             check_capacity=self.check_capacity,
             perv_comp=self.perv_comp,
             compute_infil=self.compute_infil,
             dprst_comp=self.dprst_comp,
             imperv_et=self.imperv_et,
-            run_cascade_sroff=None,
+            run_cascade_sroff=self._run_cascade_sroff,
         )
 
         self.infil_hru[:] = self.infil * self.hru_frac_perv

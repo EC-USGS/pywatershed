@@ -72,6 +72,7 @@ cms_to_cfs = 35.314666721489
 cfs_to_cms = 1 / cms_to_cfs
 cm_to_cf = cms_to_cfs
 cf_to_cm = cfs_to_cms
+cubic_ft_per_acre_in = ft2_per_acre / inches_per_foot
 
 
 ndoy = 366

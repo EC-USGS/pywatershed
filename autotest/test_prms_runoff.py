@@ -64,7 +64,8 @@ def parameters(simulation, control, request):
     if abs(sat_threshold).min() < 999.0:
         pytest.skip(
             "test_prms_runoff only valid when sat_threshold >= 999 (or some "
-            "amount) which causes zero dunnian_flow"
+            "amount) which causes zero dunnian_flow. Use "
+            "test_prms_below_snow.py."
         )
 
     return params
@@ -72,11 +73,11 @@ def parameters(simulation, control, request):
 
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
+    Runoff,
     simulation,
     control,
     discretization,
     parameters,
-    Runoff,
     tmp_path,
     calc_method,
 ):

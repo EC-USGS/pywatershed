@@ -120,9 +120,6 @@ class PRMSRunoff(ConservativeProcess):
         if self._dprst_flag:
             self.dprst_init()
 
-        if not hasattr(self, "hru_route_order"):
-            self.hru_route_order = np.arange(self.nhru, dtype="int64")
-
         return
 
     def _set_initial_conditions(self):
@@ -292,6 +289,12 @@ class PRMSRunoff(ConservativeProcess):
 
             self.hru_perv[i] = perv_area
             self.hru_frac_perv[i] = perv_area / harea
+
+        # <
+        if not hasattr(self, "hru_route_order"):
+            # hru_route_order in cascades is 1-based index, keep it the same.
+            self.hru_route_order = np.arange(self.nhru, dtype="int64") + 1
+
         return
 
     def dprst_init(self):
@@ -394,7 +397,7 @@ class PRMSRunoff(ConservativeProcess):
 
     def _init_calc_method(self):
         if self._calc_method is None:
-            self._calc_method = "numba"
+            self._calc_method = "numpy"  # revert: "numba"
 
         if self._calc_method.lower() not in ["numpy", "numba"]:
             msg = (
@@ -402,7 +405,7 @@ class PRMSRunoff(ConservativeProcess):
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg, UserWarning)
-            self._calc_method = "numba"
+            self._calc_method = "numpy"  # revert: "numba"
 
         if self._calc_method.lower() == "numba":
             import numba as nb
@@ -423,6 +426,7 @@ class PRMSRunoff(ConservativeProcess):
             self.compute_infil = nb.njit(self.compute_infil)
             self.dprst_comp = nb.njit(self.dprst_comp)
             self.imperv_et = nb.njit(self.imperv_et)
+            self._run_cascade_sroff = nb.jit(self._run_cascade_sroff)
 
         else:
             self._calculate_runoff = self._calculate_numpy
@@ -522,15 +526,24 @@ class PRMSRunoff(ConservativeProcess):
             dprst_seep_rate_clos=self.dprst_seep_rate_clos,
             sroff=self.sroff,
             hru_impervstor=self.hru_impervstor,
+            through_rain=self.through_rain,
+            dprst_flag=self._dprst_flag,
+            ncascade_hru=None,
             hru_route_order=self.hru_route_order,
-            upstream_hortonian=None,
+            hru_down=None,
+            hru_down_frac=None,
+            hru_down_fracwt=None,
+            cascade_area=None,
+            upslope_hortonian=None,
+            stream_seg_in=None,
+            cfs_conv=None,
+            # functions at end
             check_capacity=self.check_capacity,
             perv_comp=self.perv_comp,
             compute_infil=self.compute_infil,
             dprst_comp=self.dprst_comp,
             imperv_et=self.imperv_et,
-            through_rain=self.through_rain,
-            dprst_flag=self._dprst_flag,
+            run_cascade_sroff=None,
         )
 
         self.infil_hru[:] = self.infil * self.hru_frac_perv
@@ -612,18 +625,30 @@ class PRMSRunoff(ConservativeProcess):
         dprst_seep_rate_clos,
         sroff,
         hru_impervstor,
+        through_rain,
+        dprst_flag,
+        ncascade_hru,
         hru_route_order,
-        upstream_hortonian,
+        hru_down,
+        hru_down_frac,
+        hru_down_fracwt,
+        cascade_area,
+        upslope_hortonian,
+        stream_seg_in,
+        cfs_conv,
         # functions at end
         check_capacity,
         perv_comp,
         compute_infil,
         dprst_comp,
         imperv_et,
-        through_rain,
-        dprst_flag,
+        run_cascade_sroff,
     ):
-        if upstream_hortonian is None:
+        if ncascade_hru is not None:
+            hru_horton_cascflow = np.zeros(nhru, dtype="float64")
+            upslope_hortonian[:] = zero
+            stream_seg_in[:] = zero  # call_cascade==active??
+        else:
             hru_horton_cascflow = None
 
         dprst_chk = 0
@@ -634,10 +659,13 @@ class PRMSRunoff(ConservativeProcess):
         for k in prange(nhru):
             # TODO: remove duplicated vars
             # TODO: move setting constants outside the loop.
-
-            i = hru_route_order[k]
+            # hote that i is 0-based index
+            i = hru_route_order[k] - 1
 
             runoff = zero
+            if i == 8:
+                print(f"pree {runoff=}")
+
             hruarea = hru_area[i]
             perv_area = hru_perv[i]
             perv_frac = hru_frac_perv[i]
@@ -687,6 +715,9 @@ class PRMSRunoff(ConservativeProcess):
                 check_capacity=check_capacity,
                 perv_comp=perv_comp,
                 through_rain=through_rain[i],
+                ncascade_hru=ncascade_hru,
+                upslope_hortonian_i=upslope_hortonian[i],
+                ihru=i,
             )
 
             frzen = OFF  # cdl todo: hardwired
@@ -753,6 +784,8 @@ class PRMSRunoff(ConservativeProcess):
                             perv_frac=perv_frac,
                         )
                         runoff = runoff + dprst_sroff_hru[i] * hruarea
+                        if i == 8:
+                            print(f"dprst {runoff=}")
 
             # cdl -- the upper part of this block needs to be done to calculate
             #        runoff and srunoff
@@ -760,9 +793,55 @@ class PRMSRunoff(ConservativeProcess):
             # storage area
             srunoff = zero
             if hru_type[i] == LAND:
+
+                if i == 8:
+                    print(f"{runoff=}")
+                    print(f"{srp * perv_area + sri * hruarea_imperv=}")
+                    print(f"{srp * perv_area=}")
+                    print(f"{srp=}")
+                    print(f"{perv_area=}")
+                    print(f"{sri * hruarea_imperv=}")
+
                 runoff = runoff + srp * perv_area + sri * hruarea_imperv
                 srunoff = runoff / hruarea
+
+                if i == 8:
+                    print(f"{i=}")
+                    print(f"{runoff=}")
+                    print(f"{srunoff=}")
+
+                if ncascade_hru is not None:
+                    hru_sroff_down = zero
+                    if srunoff > zero:
+                        hru_horton_cascflow[i] = zero
+                        if ncascade_hru[i] > 0:
+                            (
+                                srunoff,
+                                hru_horton_cascflow[i],
+                                stream_seg_in[:],
+                                upslope_hortonian[:],
+                            ) = run_cascade_sroff(
+                                i,
+                                ncascade_hru[i],
+                                upslope_hortonian,
+                                srunoff,
+                                hru_sroff_down,
+                                hru_down,
+                                hru_down_frac,
+                                hru_down_fracwt,
+                                cascade_area,
+                                stream_seg_in,
+                                cfs_conv,
+                            )
+
+                    # <<
+                    else:
+                        hru_horton_cascflow[i] = zero
+                # <
                 hru_sroffp[i] = srp * perv_frac
+
+                if i == 8:
+                    print(f"{srunoff=}")
 
             # <
             # cdl -- the guts of this was implemented in the python code below
@@ -854,15 +933,45 @@ class PRMSRunoff(ConservativeProcess):
         check_capacity,
         perv_comp,
         through_rain,
+        ncascade_hru: np.ndarray,
+        upslope_hortonian_i: float,
+        ihru: int,
     ):
+
+        if ihru == 8:
+            print(f"-1 {srp=}")
+
         isglacier = False  # todo -- hardwired
         hru_flag = 0
         if hru_type == LAND or isglacier:
             hru_flag = 1
 
-        cascade_active = False
-        if cascade_active:
-            raise Exception("bad bad bad")
+        if ncascade_hru is not None:
+            avail_water = upslope_hortonian_i
+            if avail_water > zero:
+                infil = infil + avail_water
+                if ihru == 8:
+                    print(f"0 {avail_water=}")
+                    print(f"0 {infil=}")
+
+                if hru_flag == 1:
+                    infil, srp, contrib_fraction = perv_comp(
+                        soil_moist_prev,
+                        carea_max,
+                        smidx_coef,
+                        smidx_exp,
+                        avail_water,
+                        avail_water,
+                        infil,
+                        srp,
+                    )
+
+                    if ihru == 8:
+                        print(f"0 {infil=}")
+                        print(f"0 {srp=}")
+                        # print(f"0 {contrib_fraction=}")
+
+        # <<<
         else:
             avail_water = 0.0
 
@@ -881,6 +990,9 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
+
+                if ihru == 8:
+                    print(f"1 {srp=}")
 
         # if rain/snow event with no antecedent snowpack,
         # compute the runoff from the rain first and then proceed with the
@@ -903,6 +1015,9 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
+
+                if ihru == 8:
+                    print(f"2 {srp=}")
 
         # If precipitation on snowpack, all water available to the surface is
         # considered to be snowmelt, and the snowmelt infiltration
@@ -930,6 +1045,10 @@ class PRMSRunoff(ConservativeProcess):
                         infil,
                         srp,
                     )
+
+                    if ihru == 8:
+                        print(f"3 {srp=}")
+
                 else:
                     # Snowmelt occurred and depleted the snowpack
                     # this frequently gets counted along with pptmix_nopack
@@ -947,6 +1066,9 @@ class PRMSRunoff(ConservativeProcess):
                         infil,
                         srp,
                     )
+
+                    if ihru == 8:
+                        print(f"4 {srp=}")
 
         # elif pkwater_equiv < Dnearzero:
         elif cond4:
@@ -976,6 +1098,9 @@ class PRMSRunoff(ConservativeProcess):
                         srp,
                     )
 
+                    if ihru == 8:
+                        print(f"5 {srp=}")
+
         # Snowpack exists, check to see if infil exceeds maximum daily
         # snowmelt infiltration rate. Infil results from rain snow mix
         # on a snowfree surface.
@@ -988,6 +1113,9 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
+
+                if ihru == 8:
+                    print(f"6 {srp=}")
 
         # if double_counting > 1:
         #     assert False
@@ -1298,3 +1426,57 @@ class PRMSRunoff(ConservativeProcess):
                 imperv_evap = avail_et / imperv_frac
             imperv_stor = imperv_stor - imperv_evap
         return imperv_stor, imperv_evap
+
+    @staticmethod
+    def _run_cascade_sroff(
+        ihru: int,
+        ncascade_hru_i: int,
+        upslope_hortonian: np.ndarray,
+        runoff: float,
+        hru_sroff_down: float,
+        hru_down: np.ndarray,
+        hru_down_frac: np.ndarray,
+        hru_down_fracwt: np.ndarray,
+        cascade_area: np.ndarray,
+        stream_seg_in: np.ndarray,
+        cfs_conv: float,
+    ):
+        # ?? USE PRMS_SET_TIME, ONLY: Cfs_conv # this is acre_in_to_cfs
+        # ?? USE PRMS_CASCADE, ONLY: Hru_down, Hru_down_frac, Hru_down_fracwt, Cascade_area
+        # INTRINSIC :: IABS, ABS, DBLE
+
+        # ihru is already a 0-based index
+        for kk in range(ncascade_hru_i):
+            jj = hru_down[kk, ihru]  # a 1-based index
+            #  if hru_down(k, Ihru) > 0, cascade contributes to a downslope HRU
+            if jj > 0:
+                if (jj - 1) == 8:
+                    print(f"{upslope_hortonian[jj-1]=}")
+
+                upslope_hortonian[jj - 1] = (
+                    upslope_hortonian[jj - 1]
+                    + runoff * hru_down_fracwt[kk, ihru]
+                )
+
+                if (jj - 1) == 8:
+                    print(f"{runoff=}")
+                    print(f"{hru_down_fracwt[kk, ihru]=}")
+                    print(f"{upslope_hortonian[jj-1]=}")
+
+                hru_sroff_down = (
+                    hru_sroff_down + runoff * hru_down_frac[kk, ihru]
+                )
+                # print(ihru, jj, kk, hru_sroff_down)
+            elif jj < 0:
+                # if hru_down(k, Ihru) < 0, cascade contributes to a stream
+                jjabs = abs(jj)
+                stream_seg_in[jjabs - 1] = (
+                    stream_seg_in[jjabs - 1]
+                    + runoff * cascade_area[kk, ihru] * cfs_conv
+                )
+
+        # <<
+        # reset Sroff as it accumulates flow to streams
+        runoff = runoff - hru_sroff_down
+
+        return (runoff, hru_sroff_down, stream_seg_in, upslope_hortonian)

@@ -86,6 +86,7 @@ __all__ = (
     "PRMSGroundwater",
     "PRMSGroundwaterNoDprst",
     "PRMSRunoff",
+    "PRMSRunoffCascadesNoDprst",
     "PRMSRunoffNoDprst",
     "PRMSSnow",
     "PRMSSoilzone",

@@ -96,7 +96,7 @@ class PRMSSoilzone(ConservativeProcess):
         calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
-    ) -> "PRMSSoilzone":
+    ) -> None:
         super().__init__(
             control=control,
             discretization=discretization,
@@ -1590,19 +1590,6 @@ class PRMSSoilzone(ConservativeProcess):
         cfs_conv: float,
     ) -> tuple:
         """Compute cascading interflow and excess flow."""
-        # SUBROUTINE compute_cascades(Ihru, Ncascade_hru, Slowflow, Prefflow, &
-        #   Dunnian, Dnslowflow, Dnprefflow, Dndunnflow)
-        # USE PRMS_SET_TIME, ONLY: Cfs_conv
-        # USE PRMS_SOILZONE, ONLY: Upslope_dunnianflow, Upslope_interflow
-        # USE PRMS_CASCADE, ONLY: Hru_down, Hru_down_frac, Hru_down_fracwt, Cascade_area
-        # USE PRMS_SRUNOFF, ONLY: Strm_seg_in
-        # Arguments
-        #   INTEGER, INTENT(IN) :: Ihru, Ncascade_hru
-        #   REAL, INTENT(INOUT) :: Dunnian, Slowflow, Prefflow
-        #   REAL, INTENT(INOUT) :: Dnslowflow, Dnprefflow, Dndunnflow
-        # Local Variables
-        #   INTEGER :: j, k
-        #   REAL :: frac, fracwt
         for k in range(ncascade_hru_i):
             j = hru_down[k, ihru]
             frac = hru_down_frac[k, ihru]
@@ -1629,8 +1616,8 @@ class PRMSSoilzone(ConservativeProcess):
                 )
 
         # <<
-
-        #  reset Slowflow, Prefflow, and Dunnian_flow as they accumulate flow to streams
+        #  reset Slowflow, Prefflow, and Dunnian_flow as they accumulate flow
+        # to streams
         slowflow = slowflow - dnslowflow
         prefflow = prefflow - dnprefflow
         dunnian = dunnian - dndunnflow

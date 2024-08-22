@@ -2,7 +2,7 @@ from typing import Literal
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import HruType, zero, cubic_ft_per_acre_in
+from ..constants import HruType, cubic_ft_per_acre_in, zero
 from ..parameters import Parameters
 from ..utils.preprocess_cascades import preprocess_cascade_params
 from .prms_runoff import PRMSRunoff

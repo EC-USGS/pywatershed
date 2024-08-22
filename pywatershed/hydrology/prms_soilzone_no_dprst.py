@@ -74,7 +74,7 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
         calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
-    ) -> "PRMSSoilzoneNoDprst":
+    ) -> None:
         self.name = "PRMSSoilzoneNoDprst"
         self._dprst_flag = False
 

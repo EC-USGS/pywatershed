@@ -33,7 +33,7 @@ invoke_style = ("prms", "model_dict", "model_dict_from_yaml")
 invoke_style = invoke_style[0:1]  # TODO, relax?
 
 failfast = True
-verbose = False
+verbose = True
 
 test_models = {
     "nhm": [
@@ -96,7 +96,9 @@ comparison_vars_dict_all = {
     ),
     # "PRMSGroundwater": [],
     "PRMSGroundwater": pywatershed.PRMSGroundwater.get_variables(),
-    "PRMSGroundwaterNoDprst": pywatershed.PRMSGroundwaterNoDprst.get_variables(),
+    "PRMSGroundwaterNoDprst": (
+        pywatershed.PRMSGroundwaterNoDprst.get_variables()
+    ),
     # "PRMSChannel": [],
     "PRMSChannel": pywatershed.PRMSChannel.get_variables(),
 }
@@ -288,16 +290,6 @@ def test_model(simulation, model_args, tmp_path):
 
     # ---------------------------------
     # get the answer data against PRMS5.2.1
-    # this is the adhoc set of things to compare, to circumvent fussy issues?
-
-    # for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
-    #     comparison_vars_dict_all[f"{vv}NoDprst"] = comparison_vars_dict_all[vv]
-
-    # for vv in ["PRMSRunoff", "PRMSSoilzone", "PRMSGroundwater"]:
-    #     comparison_vars_dict_all[f"{vv}CascadesNoDprst"] = (
-    #         comparison_vars_dict_all[vv]
-    #     )
-
     comparison_vars_dict = {}
 
     plomd = model_args["process_list_or_model_dict"]

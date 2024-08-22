@@ -2,7 +2,7 @@ from typing import Literal
 
 from ..base.adapter import adaptable
 from ..base.control import Control
-from ..constants import nan, zero, cubic_ft_per_acre_in
+from ..constants import cubic_ft_per_acre_in, nan, zero
 from ..parameters import Parameters
 from ..utils.preprocess_cascades import preprocess_cascade_params
 from .prms_soilzone import PRMSSoilzone
@@ -75,7 +75,7 @@ class PRMSSoilzoneCascadesNoDprst(PRMSSoilzone):
         calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
-    ) -> "PRMSSoilzoneCascadeNoDprst":
+    ) -> None:
         self.name = "PRMSSoilzoneCascadesNoDprst"
         self._dprst_flag = False
 

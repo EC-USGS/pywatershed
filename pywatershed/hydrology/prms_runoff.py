@@ -793,7 +793,6 @@ class PRMSRunoff(ConservativeProcess):
             # storage area
             srunoff = zero
             if hru_type[i] == LAND:
-
                 if i == 8:
                     print(f"{runoff=}")
                     print(f"{srp * perv_area + sri * hruarea_imperv=}")
@@ -937,7 +936,6 @@ class PRMSRunoff(ConservativeProcess):
         upslope_hortonian_i: float,
         ihru: int,
     ):
-
         if ihru == 8:
             print(f"-1 {srp=}")
 
@@ -1441,10 +1439,6 @@ class PRMSRunoff(ConservativeProcess):
         stream_seg_in: np.ndarray,
         cfs_conv: float,
     ):
-        # ?? USE PRMS_SET_TIME, ONLY: Cfs_conv # this is acre_in_to_cfs
-        # ?? USE PRMS_CASCADE, ONLY: Hru_down, Hru_down_frac, Hru_down_fracwt, Cascade_area
-        # INTRINSIC :: IABS, ABS, DBLE
-
         # ihru is already a 0-based index
         for kk in range(ncascade_hru_i):
             jj = hru_down[kk, ihru]  # a 1-based index

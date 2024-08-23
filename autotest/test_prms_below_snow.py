@@ -122,7 +122,8 @@ def control(simulation):
     config_name = sim_name.split(":")[1]
     if config_name not in test_models.keys():
         pytest.skip(
-            f"The configuration is not tested by test_model: {config_name}"
+            "The configuration is not tested by test_prms_below_snow: "
+            f"{config_name}"
         )
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False

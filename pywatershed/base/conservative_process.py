@@ -73,6 +73,9 @@ class ConservativeProcess(Process):
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
+        if not hasattr(self, "name"):
+            self.name = "ConservativeProcess"
+
         super().__init__(
             control=control,
             discretization=discretization,
@@ -80,9 +83,6 @@ class ConservativeProcess(Process):
             metadata_patches=metadata_patches,
             metadata_patch_conflicts=metadata_patch_conflicts,
         )
-
-        if not hasattr(self, "name"):
-            self.name = "ConservativeProcess"
 
         return
 

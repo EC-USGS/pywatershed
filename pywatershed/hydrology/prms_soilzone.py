@@ -97,13 +97,14 @@ class PRMSSoilzone(ConservativeProcess):
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> None:
+        if not hasattr(self, "name"):
+            self.name = "PRMSSoilzone"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
-        if not hasattr(self, "name"):
-            self.name = "PRMSSoilzone"
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -548,7 +549,7 @@ class PRMSSoilzone(ConservativeProcess):
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg, UserWarning)
-            self._calc_method = "numpy"  # todo: "numba"
+            self._calc_method = "numba"
 
         if self._calc_method.lower() == "numba":
             import numba as nb
@@ -724,7 +725,7 @@ class PRMSSoilzone(ConservativeProcess):
             hru_sz_cascadeflow=None,
             stream_seg_in=None,
             cfs_conv=None,
-            _compute_cascades=self._compupte_cascades,
+            _compute_cascades=self._compute_cascades,
         )
 
         self.sroff_vol[:] = self.sroff * self.hru_in_to_cf
@@ -827,6 +828,7 @@ class PRMSSoilzone(ConservativeProcess):
     ):
         """Calculate soil zone for a time step"""
 
+        hru_actet = hru_impervevap + hru_intcpevap + snow_evap
         if dprst_flag:
             hru_actet = hru_actet + dprst_evap_hru
 
@@ -853,9 +855,6 @@ class PRMSSoilzone(ConservativeProcess):
         # we dont track soil_moist_prev as it's not prognostic
         # soil_moist_prev = soil_rechr and soil_lower
         # soil_moist_prev[:] = soil_moist
-
-        # JLM: ET calculations to be removed from soilzone.
-        hru_actet = hru_impervevap + hru_intcpevap + snow_evap
 
         # <
         for ii in prange(nhru):
@@ -1070,9 +1069,6 @@ class PRMSSoilzone(ConservativeProcess):
                 pref_flow_in[hh] = pref_flow_infil[hh] + topfr
                 pref_flow_stor[hh] = pref_flow_stor[hh] + topfr
                 if pref_flow_stor[hh] > zero:
-                    if hh == 8:
-                        print(f"{pref_flow_in[hh]=}")
-                        print(f"{pref_flow_stor[hh]=}")
                     (
                         pref_flow_stor[hh],
                         prefflow,
@@ -1083,9 +1079,6 @@ class PRMSSoilzone(ConservativeProcess):
                         pref_flow_stor[hh],
                         prefflow,  # always zero
                     )
-                    if hh == 8:
-                        print(f"{pref_flow_in[hh]=}")
-                        print(f"{pref_flow_stor[hh]=}")
 
             # <<
             elif hru_type[hh] == HruType.LAND.value:
@@ -1124,11 +1117,7 @@ class PRMSSoilzone(ConservativeProcess):
             soil_lower[hh] = soil_moist[hh] - soil_rechr[hh]
 
             if hru_type[hh] == HruType.LAND.value:
-                if hh == 8:
-                    print(f"{prefflow=}")
-
                 interflow = slow_flow[hh] + prefflow
-
                 dunnianflw = dunnianflw_gvr + dunnianflw_pfr
                 dunnian_flow[hh] = dunnianflw
 
@@ -1186,16 +1175,9 @@ class PRMSSoilzone(ConservativeProcess):
 
                 # Treat pref_flow as interflow
                 ssres_flow[hh] = slow_flow[hh]
-                if hh == 8:
-                    print(f"{ssres_flow[hh]=}")
-                    print(f"{prefflow=}")
-
                 if pref_flow_den[hh] > zero:
                     pref_flow[hh] = prefflow
                     ssres_flow[hh] = ssres_flow[hh] + prefflow
-
-                if hh == 8:
-                    print(f"{ssres_flow[hh]=}")
 
                 # <
                 # Treat dunnianflw as surface runoff to streams

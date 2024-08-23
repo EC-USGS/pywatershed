@@ -17,8 +17,12 @@ modflow_repo_location=../../modflow6_for_pws_ci
 
 # options
 # all "no data" options. if passed, these turn OFF sections of the tests.
-while getopts 'ilmtoshdug' opt; do
+while getopts 'hilmtosrdug' opt; do
   case "$opt" in
+    h)
+      h=h
+      echo "Printing HELP:"
+      ;;
     i)
       i=i
       echo "Not testing or re-installing pywatershed"
@@ -43,8 +47,8 @@ while getopts 'ilmtoshdug' opt; do
       s=s
       echo "Not running the sagehen_5yr tests"
       ;;
-    h)
-      h=h
+    r)
+      r=r
       echo "Not running the hru_1 tests"
       ;;
     d)
@@ -63,21 +67,29 @@ while getopts 'ilmtoshdug' opt; do
 done
 shift "$(($OPTIND -1))"
 
-# Structure of options
-# i: installation
-# l: linting
-# m: modflow update and build
-# t: tests
-#   d: domai
-#   s: sagehen_5_yr
-#     g: generate data
-#   h: hru_1
-#     g: generate data
-#   d: drb_2yr
-#     g: generate_data
-#   u: ucb_2yr
-#     g: generate data
 
+if [ ! -z "${h}" ]; then
+    echo "Using '-' infront of a letter turns that section off"
+    echo
+    echo "Structure of options"
+    echo "--------------------"
+    echo "i: installation"
+    echo "l: linting"
+    echo "m: modflow update and build"
+    echo "t: tests"
+    echo "  o: domainless tests"
+    echo "  s: sagehen_5yr"
+    echo "    g: generate sagehen data"
+    echo "  r: hru_1"
+    echo "    g: generate hru_1 data"
+    echo "  d: drb_2yr"
+    echo "    g: generate drb_2yr data"
+    echo "  u: ucb_2yr"
+    echo "    g: generate ucb_2yr data"
+
+    exit 0
+fi
+    
 echo ""
 echo ""
 
@@ -269,7 +281,7 @@ if [ -z "${t}" ]; then
 	   --durations=0  || exit 1
    fi
 
-   if [ -z "${h}" ]; then
+   if [ -z "${r}" ]; then
        echo
        echo
        echo "===================="
@@ -343,6 +355,9 @@ if [ -z "${t}" ]; then
        echo "drb_2yr_nhm - pywatershed tests"
        echo ".........."
        echo
+       echo "Running:"
+       echo "    pytest -vv -rs -n=$pytest_n -m 'not domainless' --domain=drb_2yr "
+       echo "       --control_pattern=nhm.control   --durations=0"
        pytest \
            -vv \
            -rs \

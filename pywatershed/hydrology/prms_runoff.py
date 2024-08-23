@@ -98,14 +98,14 @@ class PRMSRunoff(ConservativeProcess):
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
+        if not hasattr(self, "name"):
+            self.name = "PRMSRunoff"
+
         super().__init__(
             control=control,
             discretization=discretization,
             parameters=parameters,
         )
-
-        if not hasattr(self, "name"):
-            self.name = "PRMSRunoff"
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -397,7 +397,7 @@ class PRMSRunoff(ConservativeProcess):
 
     def _init_calc_method(self):
         if self._calc_method is None:
-            self._calc_method = "numpy"  # revert: "numba"
+            self._calc_method = "numba"
 
         if self._calc_method.lower() not in ["numpy", "numba"]:
             msg = (
@@ -405,7 +405,7 @@ class PRMSRunoff(ConservativeProcess):
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg, UserWarning)
-            self._calc_method = "numpy"  # revert: "numba"
+            self._calc_method = "numpy"  #  revert to numba
 
         if self._calc_method.lower() == "numba":
             import numba as nb
@@ -663,8 +663,6 @@ class PRMSRunoff(ConservativeProcess):
             i = hru_route_order[k] - 1
 
             runoff = zero
-            if i == 8:
-                print(f"pree {runoff=}")
 
             hruarea = hru_area[i]
             perv_area = hru_perv[i]
@@ -716,7 +714,7 @@ class PRMSRunoff(ConservativeProcess):
                 perv_comp=perv_comp,
                 through_rain=through_rain[i],
                 ncascade_hru=ncascade_hru,
-                upslope_hortonian_i=upslope_hortonian[i],
+                upslope_hortonian=upslope_hortonian,
                 ihru=i,
             )
 
@@ -784,8 +782,6 @@ class PRMSRunoff(ConservativeProcess):
                             perv_frac=perv_frac,
                         )
                         runoff = runoff + dprst_sroff_hru[i] * hruarea
-                        if i == 8:
-                            print(f"dprst {runoff=}")
 
             # cdl -- the upper part of this block needs to be done to calculate
             #        runoff and srunoff
@@ -793,21 +789,9 @@ class PRMSRunoff(ConservativeProcess):
             # storage area
             srunoff = zero
             if hru_type[i] == LAND:
-                if i == 8:
-                    print(f"{runoff=}")
-                    print(f"{srp * perv_area + sri * hruarea_imperv=}")
-                    print(f"{srp * perv_area=}")
-                    print(f"{srp=}")
-                    print(f"{perv_area=}")
-                    print(f"{sri * hruarea_imperv=}")
 
                 runoff = runoff + srp * perv_area + sri * hruarea_imperv
                 srunoff = runoff / hruarea
-
-                if i == 8:
-                    print(f"{i=}")
-                    print(f"{runoff=}")
-                    print(f"{srunoff=}")
 
                 if ncascade_hru is not None:
                     hru_sroff_down = zero
@@ -838,9 +822,6 @@ class PRMSRunoff(ConservativeProcess):
                         hru_horton_cascflow[i] = zero
                 # <
                 hru_sroffp[i] = srp * perv_frac
-
-                if i == 8:
-                    print(f"{srunoff=}")
 
             # <
             # cdl -- the guts of this was implemented in the python code below
@@ -933,24 +914,18 @@ class PRMSRunoff(ConservativeProcess):
         perv_comp,
         through_rain,
         ncascade_hru: np.ndarray,
-        upslope_hortonian_i: float,
+        upslope_hortonian: np.ndarray,
         ihru: int,
     ):
-        if ihru == 8:
-            print(f"-1 {srp=}")
-
         isglacier = False  # todo -- hardwired
         hru_flag = 0
         if hru_type == LAND or isglacier:
             hru_flag = 1
 
         if ncascade_hru is not None:
-            avail_water = upslope_hortonian_i
+            avail_water = upslope_hortonian[ihru]
             if avail_water > zero:
                 infil = infil + avail_water
-                if ihru == 8:
-                    print(f"0 {avail_water=}")
-                    print(f"0 {infil=}")
 
                 if hru_flag == 1:
                     infil, srp, contrib_fraction = perv_comp(
@@ -963,11 +938,6 @@ class PRMSRunoff(ConservativeProcess):
                         infil,
                         srp,
                     )
-
-                    if ihru == 8:
-                        print(f"0 {infil=}")
-                        print(f"0 {srp=}")
-                        # print(f"0 {contrib_fraction=}")
 
         # <<<
         else:
@@ -988,9 +958,6 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
-
-                if ihru == 8:
-                    print(f"1 {srp=}")
 
         # if rain/snow event with no antecedent snowpack,
         # compute the runoff from the rain first and then proceed with the
@@ -1013,9 +980,6 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
-
-                if ihru == 8:
-                    print(f"2 {srp=}")
 
         # If precipitation on snowpack, all water available to the surface is
         # considered to be snowmelt, and the snowmelt infiltration
@@ -1044,9 +1008,6 @@ class PRMSRunoff(ConservativeProcess):
                         srp,
                     )
 
-                    if ihru == 8:
-                        print(f"3 {srp=}")
-
                 else:
                     # Snowmelt occurred and depleted the snowpack
                     # this frequently gets counted along with pptmix_nopack
@@ -1064,9 +1025,6 @@ class PRMSRunoff(ConservativeProcess):
                         infil,
                         srp,
                     )
-
-                    if ihru == 8:
-                        print(f"4 {srp=}")
 
         # elif pkwater_equiv < Dnearzero:
         elif cond4:
@@ -1096,9 +1054,6 @@ class PRMSRunoff(ConservativeProcess):
                         srp,
                     )
 
-                    if ihru == 8:
-                        print(f"5 {srp=}")
-
         # Snowpack exists, check to see if infil exceeds maximum daily
         # snowmelt infiltration rate. Infil results from rain snow mix
         # on a snowfree surface.
@@ -1111,9 +1066,6 @@ class PRMSRunoff(ConservativeProcess):
                     infil,
                     srp,
                 )
-
-                if ihru == 8:
-                    print(f"6 {srp=}")
 
         # if double_counting > 1:
         #     assert False
@@ -1444,18 +1396,10 @@ class PRMSRunoff(ConservativeProcess):
             jj = hru_down[kk, ihru]  # a 1-based index
             #  if hru_down(k, Ihru) > 0, cascade contributes to a downslope HRU
             if jj > 0:
-                if (jj - 1) == 8:
-                    print(f"{upslope_hortonian[jj-1]=}")
-
                 upslope_hortonian[jj - 1] = (
                     upslope_hortonian[jj - 1]
                     + runoff * hru_down_fracwt[kk, ihru]
                 )
-
-                if (jj - 1) == 8:
-                    print(f"{runoff=}")
-                    print(f"{hru_down_fracwt[kk, ihru]=}")
-                    print(f"{upslope_hortonian[jj-1]=}")
 
                 hru_sroff_down = (
                     hru_sroff_down + runoff * hru_down_frac[kk, ihru]

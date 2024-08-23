@@ -91,8 +91,8 @@ class PRMSRunoffNoDprst(PRMSRunoff):
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> None:
-        self._dprst_flag = False
         self.name = "PRMSRunoffNoDprst"
+        self._dprst_flag = False
 
         super().__init__(
             control=control,

@@ -789,7 +789,6 @@ class PRMSRunoff(ConservativeProcess):
             # storage area
             srunoff = zero
             if hru_type[i] == LAND:
-
                 runoff = runoff + srp * perv_area + sri * hruarea_imperv
                 srunoff = runoff / hruarea
 

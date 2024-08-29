@@ -1,6 +1,6 @@
 import pathlib as pl
 from textwrap import wrap
-from typing import Callable
+from typing import Callable, Union, Tuple
 
 import contextily as cx
 import matplotlib.pyplot as plt
@@ -19,37 +19,63 @@ from ..utils.optional_import import import_optional_dependency
 class ProcessPlot:
     def __init__(
         self,
-        gis_dir: pl.Path,
+        gis_dir: Union[str, pl.Path],
         hru_shp_file_name: str = "HRU_subset.shp",
         seg_shp_file_name: str = "Segments_subset.shp",
     ):
         gpd = import_optional_dependency("geopandas")
 
-        self.hru_shapefile = gis_dir / hru_shp_file_name
-        self.seg_shapefile = gis_dir / seg_shp_file_name
+        self.gis_dir = pl.Path(gis_dir)
+        if hru_shp_file_name is not None:
+            self.hru_shapefile = self.gis_dir / hru_shp_file_name
+        else:
+            self.hru_shapefile = None
+
+        if seg_shp_file_name is not None:
+            self.seg_shapefile = self.gis_dir / seg_shp_file_name
+        else:
+            self.seg_shapefile = None
 
         # HRU one-time setups
-        self.hru_gdf = (
-            gpd.read_file(self.hru_shapefile)
-            .drop("nhm_id", axis=1)
-            .rename(columns={"nhru_v1_1": "nhm_id"})
-            .set_index("nhm_id")
-        )
+        if self.hru_shapefile is not None:
+            self.hru_gdf = gpd.read_file(self.hru_shapefile)
+
+            # standardization manipulations based on a variety of different
+            # conventions which have been found for the shp files
+            if ("nhm_id" in self.hru_gdf.columns) and (
+                "nhru_v1_1" in self.hru_gdf.columns
+            ):
+                # This is borderline non-sense
+                self.hru_gdf = (
+                    self.hru_gdf.drop("nhm_id", axis=1)
+                    .rename(columns={"nhru_v1_1": "nhm_id"})
+                    .set_index("nhm_id")
+                )
+            elif "GRID_CODE" in self.hru_gdf.columns:
+                self.hru_gdf = self.hru_gdf.rename(
+                    columns={"GRID_CODE": "nhm_id"}
+                ).set_index("nhm_id")
+
+            else:
+                msg = "Unidentified shp file convention, work needed"
+                raise ValueError(msg)
 
         # segment one-time setup
-        self.seg_gdf = gpd.read_file(self.seg_shapefile)
-        # if (self.__seg_poly.crs.name
-        #     == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
-        #     print("Overriding USGS aea crs with EPSG:5070")
-        self.seg_gdf.crs = "EPSG:5070"
+        if self.seg_shapefile is not None:
+            self.seg_gdf = gpd.read_file(self.seg_shapefile)
 
-        self.seg_geoms_exploded = (
-            self.seg_gdf.explode(index_parts=True)
-            .reset_index(level=1, drop=True)
-            .drop("model_idx", axis=1)
-            .rename(columns={"nsegment_v": "nhm_seg"})
-            .set_index("nhm_seg")
-        )
+            # if (self.__seg_poly.crs.name
+            #     == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
+            #     print("Overriding USGS aea crs with EPSG:5070")
+            self.seg_gdf.crs = "EPSG:5070"
+
+            self.seg_geoms_exploded = (
+                self.seg_gdf.explode(index_parts=True)
+                .reset_index(level=1, drop=True)
+                .drop("model_idx", axis=1)
+                .rename(columns={"nsegment_v": "nhm_seg"})
+                .set_index("nhm_seg")
+            )
 
         return
 
@@ -147,6 +173,7 @@ class ProcessPlot:
         data: np.ndarray = None,
         data_units: str = None,
         nhm_id: np.ndarray = None,
+        clim: Tuple[float] = None,
     ):
         _ = import_optional_dependency("hvplot.pandas")
 
@@ -195,20 +222,23 @@ class ProcessPlot:
             )
             clabel = f'{metadata["units"]}'
 
-        plot = plot_df.hvplot(
-            tiles=True,
-            crs=ccrs.epsg(5070),
-            frame_height=frame_height,
-            c=var_name,
-            line_width=0,
-            alpha=0.75,
-            # clim=stat_lims[stat],
-            hover_cols=["nhm_id"],
-            title=title,
-            clabel=clabel,
-            xlabel="Longitude (degrees East)",
-            ylabel="Latitude (degrees North)",
-        )
+        args = {
+            "tiles": True,
+            "crs": ccrs.epsg(5070),
+            "frame_height": frame_height,
+            "c": var_name,
+            "line_width": 0,
+            "alpha": 0.75,
+            "hover_cols": ["nhm_id"],
+            "title": title,
+            "clabel": clabel,
+            "xlabel": "Longitude (degrees East)",
+            "ylabel": "Latitude (degrees North)",
+        }
+        if clim is not None:
+            args["clim"] = clim
+
+        plot = plot_df.hvplot(**args)
         return plot
 
 

@@ -94,12 +94,10 @@ comparison_vars_dict_all = {
         set(pywatershed.PRMSSoilzoneNoDprst.get_variables())
         - soil_vars_unavail
     ),
-    # "PRMSGroundwater": [],
     "PRMSGroundwater": pywatershed.PRMSGroundwater.get_variables(),
     "PRMSGroundwaterNoDprst": (
         pywatershed.PRMSGroundwaterNoDprst.get_variables()
     ),
-    # "PRMSChannel": [],
     "PRMSChannel": pywatershed.PRMSChannel.get_variables(),
 }
 

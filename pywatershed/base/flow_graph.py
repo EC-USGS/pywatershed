@@ -1,4 +1,5 @@
 from typing import Literal
+from warnings import warn
 
 import networkx as nx
 import numpy as np
@@ -320,6 +321,7 @@ class FlowGraph(ConservativeProcess):
         inflows: adaptable,
         node_maker_dict: dict,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
+        allow_disconnected_nodes: bool = True,  # todo, make False
         verbose: bool = None,
     ):
         """Initialize a FlowGraph.
@@ -340,6 +342,10 @@ class FlowGraph(ConservativeProcess):
               control.options["budget_type"] when
               available. When control.options["budget_type"] is not avaiable,
               budget_type is set to "warn".
+            allow_disconnected_nodes: If False, an error is thrown when
+              disconnected nodes are found in the graph. This happens often
+              in PRMS, so allowing is a convenience but bad practive.
+            verbose: Print extra diagnostic messages?
 
         The `parameters` argument is a :class:`Parameters` object which
         contains the following data:
@@ -463,18 +469,26 @@ class FlowGraph(ConservativeProcess):
             )
 
         # use networkx to calculate the Directed Acyclic Graph
-        self._graph = nx.DiGraph()
-        self._graph.add_edges_from(connectivity)
-
-        # Make sure the user isnt suppling disconnected nodes
-        assert len(self._graph) == self.nnodes, "Disconnected nodes present."
-        # should we allow disconnected nodes? seems not
-        # these are handled in PRMSChannel if we change our minds
-
         if self.nnodes > 1:
+            self._graph = nx.DiGraph()
+            self._graph.add_edges_from(connectivity)
             node_order = list(nx.topological_sort(self._graph))
         else:
             node_order = [0]
+
+        # Check if the user is suppling disconnected nodes
+        disconnected_nodes_present = len(self._graph) == self.nnodes
+
+        if disconnected_nodes_present:
+            if not self._allow_disconnected_nodes:
+                raise ValueError("Disconnected nodes present in FlowGraph.")
+            else:
+                warn("Disconnected nodes present in FlowGraph.")
+                wh_mask_set = set(np.where(self._outflow_mask)[0])
+                node_ord_set = set(node_order)
+                mask_not_node_ord = list(wh_mask_set - node_ord_set)
+                if len(mask_not_node_ord):
+                    node_order = mask_not_node_ord + node_order
 
         self._node_order = np.array(node_order, dtype="int64")
 

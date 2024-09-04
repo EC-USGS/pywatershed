@@ -750,6 +750,7 @@ class StarfitFlowNode(FlowNode):
             initial_storage = np.where(
                 wh_initial_storage_nan, nor_mean_cap, self._initial_storage
             )
+            # print(f"{nor_mean_cap=}")  # another way to get this info out?
             # set lake_storage from initial_storage when start is not available
             self._lake_storage_sub[:] = np.where(
                 np.isnat(self._start_time), initial_storage, nan

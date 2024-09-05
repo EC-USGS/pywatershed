@@ -35,7 +35,7 @@ dependencies:
   - pytest-env
   - pytest-order
   - pytest-xdist
-  - python<3.11,>=3.9
+  - python<3.12,>=3.10
   - pyyaml
   - shapely
   - sphinx

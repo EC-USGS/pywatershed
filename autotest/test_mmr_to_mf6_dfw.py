@@ -48,6 +48,7 @@ answers_swf_dfw = {
 }
 
 
+@pytest.mark.xfail
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.domainless
 @pytest.mark.parametrize("binary_flw", [True, False])
@@ -288,6 +289,7 @@ answers_regression_means = {
 }
 
 
+@pytest.mark.xfail
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.domain
 def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):

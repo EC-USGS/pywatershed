@@ -794,8 +794,8 @@ def prms_channel_flow_graph_to_model_dict(
             / s_per_time
         )
 
-        # This zero in the last index means zero inflows to the pass through
-        # node
+        # This zeros in at the end mean that zero inflows and sinks in added
+        # nodes
         self.inflows[:] = zero
         # sinks is an HRU variable, its accounting in budget is fine because
         # global collapses it to a scalar before summing over variables
@@ -878,16 +878,18 @@ def _build_flow_graph_inputs(
     ]
     assert len(prms_channel_flow_makers) == 0
 
-    assert len(new_nodes_maker_names) == len(new_nodes_maker_indices), "nono"
-    assert len(new_nodes_maker_names) == len(new_nodes_flow_to_nhm_seg), "NONO"
+    msg = "Inconsistency in collated inputs"
+    assert len(new_nodes_maker_names) == len(new_nodes_maker_indices), msg
+    assert len(new_nodes_maker_names) == len(new_nodes_flow_to_nhm_seg), msg
     # I think this is the only condition to check with
     # new_nodes_flow_to_nhm_seg
     assert len(new_nodes_flow_to_nhm_seg) == len(
         np.unique(new_nodes_flow_to_nhm_seg)
-    ), "OHNO"
+    ), "Cant have more than one new node flowing to an existing node"
 
     nseg = prms_channel_params.dims["nsegment"]
-    nnodes = nseg + len(new_nodes_maker_names)
+    nnew = len(new_nodes_maker_names)
+    nnodes = nseg + nnew
 
     node_maker_name = ["prms_channel"] * nseg + new_nodes_maker_names
     node_maker_index = np.array(
@@ -917,6 +919,7 @@ def _build_flow_graph_inputs(
         to_graph_index[nseg + ii] = wh_intervene_above_graph[0][0]
         to_graph_index[wh_intervene_below_graph] = nseg + ii
 
+    # <
     params_flow_graph = Parameters(
         dims={
             "nnodes": nnodes,

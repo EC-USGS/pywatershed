@@ -278,6 +278,7 @@ class PRMSRunoffNoDprst(PRMSRunoff):
             through_rain=self.through_rain,
             dprst_flag=self._dprst_flag,
             ncascade_hru=None,
+            nactive_hrus=self._nactive_hrus,
             hru_route_order=self.hru_route_order,
             hru_down=None,
             hru_down_frac=None,

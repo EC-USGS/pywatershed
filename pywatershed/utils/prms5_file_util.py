@@ -24,17 +24,33 @@ def expand_scalar_to_dims(param_dict, param_dim_dict):
     # sometimes a scalar is allowed to represent a uniform values for
     # the full dimensions of a parameter. Going to handle those on a
     # case-by-case basis for now: just expand them to full size
+    # now also handling "monthly scalars", expanding these to hrus monthly
     for param_name in param_dict.keys():
         if param_name in params_expand_scalar:
             param_shape = param_dict[param_name].shape
-            if param_shape != (1,):
-                continue
             dims = meta.find_variables(param_name)[param_name]["dims"]
             full_param_shape = tuple([param_dict[dd] for dd in dims])
-            param_val = param_dict[param_name]
-            param_vals = np.zeros(full_param_shape) + param_val
+            param_vals = param_dict[param_name]
             param_dim_dict[param_name] = dims
-            param_dict[param_name] = param_vals
+            if param_shape == full_param_shape:
+                continue
+            elif param_shape == (1,):
+                param_vals_full = np.zeros(full_param_shape)
+                param_dict[param_name] = param_vals_full + param_vals
+            elif param_shape == (12,):
+                if len(full_param_shape) != 2:
+                    msg = "Unanticiapted shape"
+                rev_full_shape = full_param_shape[::-1]
+                param_vals_full = np.transpose(
+                    np.broadcast_to(param_vals, rev_full_shape)
+                )
+                param_dict[param_name] = param_vals_full
+            else:
+                msg = (
+                    f"Expansion of variable {param_name} with shape "
+                    f"{param_shape} is not yet implemented."
+                )
+                raise ValueError(msg)
 
     return param_dict, param_dim_dict
 

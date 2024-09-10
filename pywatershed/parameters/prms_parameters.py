@@ -12,22 +12,28 @@ from ..utils.prms5_file_util import PrmsFile
 # PRMS uses "ndays"for the number of days in "year" defined as 366.
 # I have changed this for pywatershed because it is ambiguous and have
 # adopted ndoy instead, which is somewhat better but not perfect.
-# I ndays is in a parameter file, it may cause errors that we should
+# If ndays is in a parameter file, it may cause errors that we should
 # probably trap.
 
 prms_dim_names = (
-    "nhru",
-    "nsegment",
     "ncascade",
     "ncascdgw",
-    "nssr",
-    "ngw",
-    "npoigages",
-    "nobs",
-    "ndeplval",
     "ndepl",
-    "nmonth",
+    "ndeplval",
     "ndoy",
+    "ngw",
+    # "ngwcell",
+    "nhru",
+    # "nhrucell",
+    "nlake",
+    "nlake_hrus",
+    "nmonth",
+    "nobs",
+    "npoigages",
+    "nrain",
+    "nsegment",
+    "nssr",
+    "ntemp",
     "scalar",
 )
 
@@ -172,11 +178,15 @@ class PrmsParameters(Parameters):
         # add implied dimensions
         dims["ndoy"] = ndoy
         dims["nmonth"] = 12
+        if "ndays" in parameter_dict.keys():
+            del parameter_dict["ndays"]
 
         # build dimension metadata from data
         if len(parameter_dimensions_dict) == 0:
             for key, value in parameter_dict.items():
                 # errors in the next line, see prms_dim_names at top
+                if key == "ndays":
+                    continue
                 param_dim_names = meta.get_params(key)[key]["dims"]
                 parameter_dimensions_dict[key] = {"dims": param_dim_names}
 

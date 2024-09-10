@@ -44,24 +44,6 @@ class ConservativeProcess(Process):
     pywatershed.base.Process
     pywatershed.base.Budget
 
-    Args
-    ----
-    control:
-        A Control object
-    discretization:
-        A discretization object
-    parameters:
-        The parameters for this object
-    budget_type: one of ["defer", None, "warn", "error"] with "defer" being
-        the default and defering to control.options["budget_type"] when
-        available. When control.options["budget_type"] is not avaiable,
-        budget_type is set to "warn".
-    metadata_patches:
-        Override static metadata for any public parameter or variable --
-        experimental.
-    metadata_patch_conflicts:
-        How to handle metadata_patches conflicts. Experimental.
-
     """
 
     def __init__(
@@ -73,6 +55,26 @@ class ConservativeProcess(Process):
         metadata_patches: dict[dict] = None,
         metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
+        """Initialize a ConservativeProcess.
+
+        Args
+        ----
+        control:
+            A Control object
+        discretization:
+            A discretization object
+        parameters:
+            The parameters for this object
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
+        metadata_patches:
+            Override static metadata for any public parameter or variable --
+            experimental.
+        metadata_patch_conflicts:
+            How to handle metadata_patches conflicts. Experimental.
+        """
         if not hasattr(self, "name"):
             self.name = "ConservativeProcess"
 

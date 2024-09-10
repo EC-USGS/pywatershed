@@ -1,6 +1,6 @@
 import pathlib as pl
 from textwrap import wrap
-from typing import Callable, Union, Tuple
+from typing import Callable, Tuple, Union
 
 import contextily as cx
 import matplotlib.pyplot as plt

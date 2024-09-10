@@ -379,6 +379,7 @@ class PRMSSoilzoneCascadesNoDprst(PRMSSoilzone):
             transp_on=self.transp_on,
             unused_potet=self.unused_potet,
             ncascade_hru=self.ncascade_hru,
+            nactive_hrus=self._nactive_hrus,
             hru_route_order=self.hru_route_order,
             hru_down=self.hru_down,
             hru_down_frac=self.hru_down_frac,

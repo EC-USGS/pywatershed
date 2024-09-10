@@ -210,9 +210,6 @@ class PRMSRunoffCascadesNoDprst(PRMSRunoff):
 
     def _calculate(self, time_length, vectorized=False):
         """Perform the core calculations"""
-        print(f"{self.control.itime_step=}")
-        print(f"{self.control.current_time=}")
-
         cfs_conv = cubic_ft_per_acre_in / self.control.time_step_seconds
         zero_array = zero * self.infil
 
@@ -305,6 +302,7 @@ class PRMSRunoffCascadesNoDprst(PRMSRunoff):
             through_rain=self.through_rain,
             dprst_flag=self._dprst_flag,
             ncascade_hru=self.ncascade_hru,
+            nactive_hrus=self._nactive_hrus,
             hru_route_order=self.hru_route_order,
             hru_down=self.hru_down,
             hru_down_frac=self.hru_down_frac,

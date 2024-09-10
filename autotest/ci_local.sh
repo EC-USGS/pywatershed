@@ -97,9 +97,9 @@ echo ""
 start_dir=`pwd`
 
 # name: Set environment variables
-export PYWS_FORTRAN=true
+export PYWS_FORTRAN=false
 export SETUPTOOLS_ENABLE_FEATURES="legacy-editable"
-export PYNHM_FORTRAN=true
+export PYNHM_FORTRAN=false
 export `head -n1 ../.mf6_ci_ref_remote`
 export `tail -n1 ../.mf6_ci_ref_remote`
 

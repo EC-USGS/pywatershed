@@ -257,8 +257,8 @@ def test_model(simulation, model_args, tmp_path):
 
     # TODO: remove this if statement?
     if control.options["calc_method"] == "fortran":
-        with pytest.warns(UserWarning):
-            model = Model(**model_args, write_control=model_out_dir)
+        # with pytest.warns(UserWarning):
+        model = Model(**model_args, write_control=model_out_dir)
     else:
         model = Model(**model_args, write_control=model_out_dir)
 

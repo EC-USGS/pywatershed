@@ -5,7 +5,7 @@ import numpy as np
 from numba import prange
 
 from ..base.adapter import adaptable
-from ..base.conservative_process import ConservativeProcess
+from ..base.conservative_process_hru import ConservativeProcessHru
 from ..base.control import Control
 from ..constants import (
     CovType,
@@ -37,7 +37,7 @@ OFF = 0
 ACTIVE = 1
 
 
-class PRMSCanopy(ConservativeProcess):
+class PRMSCanopy(ConservativeProcessHru):
     """PRMS canopy class.
 
     A canopy or vegetation representation from PRMS.
@@ -98,9 +98,6 @@ class PRMSCanopy(ConservativeProcess):
             parameters=parameters,
         )
 
-        # set hrutype to LAND as this is only type supported in NHM
-        self._hru_type = np.array(self.nhru * [LAND])
-
         self._set_inputs(locals())
         self._set_options(locals())
 
@@ -123,6 +120,7 @@ class PRMSCanopy(ConservativeProcess):
             "wrain_intcp",
             "snow_intcp",
             "potet_sublim",
+            "hru_type",
         )
 
     @staticmethod
@@ -265,7 +263,7 @@ class PRMSCanopy(ConservativeProcess):
             #         nb.float64[:],  # transp_on
             #         nb.float64[:],  # wrain_intcp
             #         nb.float64,  # np.float64(time_length),
-            #         nb.int64[:],  # self._hru_type
+            #         nb.int64[:],  # self.hru_type
             #         nb.float64,  # nearzero
             #         nb.float64,  # dnearzero,
             #         nb.int32,  # BARESOIL,
@@ -329,7 +327,8 @@ class PRMSCanopy(ConservativeProcess):
                 self.intcp_changeover[:],
                 self.intcp_transp_on[:],
             ) = self._calculate_canopy(
-                nhru=np.int32(self.nhru),
+                nactive_hrus=np.int32(self._nactive_hrus),
+                active_hrus=self._active_hrus,
                 cov_type=self.cov_type,
                 covden_sum=self.covden_sum,
                 covden_win=self.covden_win,
@@ -355,7 +354,7 @@ class PRMSCanopy(ConservativeProcess):
                 transp_on=self.transp_on,
                 wrain_intcp=self.wrain_intcp,
                 time_length=time_length,
-                hru_type=self._hru_type,
+                hru_type=self.hru_type,
                 nearzero=nearzero,
                 dnearzero=dnearzero,
                 baresoil=np.int32(BARESOIL),
@@ -408,7 +407,7 @@ class PRMSCanopy(ConservativeProcess):
                 transp_on=self.transp_on,
                 wrain_intcp=self.wrain_intcp,
                 time_length=time_length,
-                hru_type=self._hru_type,
+                hru_type=self.hru_type,
                 nearzero=nearzero,
                 dnearzero=dnearzero,
                 baresoil=np.int32(BARESOIL),
@@ -430,7 +429,8 @@ class PRMSCanopy(ConservativeProcess):
 
     @staticmethod
     def _calculate_numpy(
-        nhru,
+        nactive_hrus,
+        active_hrus,
         cov_type,
         covden_sum,
         covden_win,
@@ -477,7 +477,9 @@ class PRMSCanopy(ConservativeProcess):
         #       python/numba.
 
         intcp_form = np.full_like(hru_rain, np.nan, dtype="int32")
-        for i in prange(nhru):
+
+        for aa in prange(nactive_hrus):
+            i = active_hrus[aa]
             netrain = hru_rain[i]
             netsnow = hru_snow[i]
 

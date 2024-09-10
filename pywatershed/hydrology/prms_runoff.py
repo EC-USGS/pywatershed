@@ -5,7 +5,7 @@ import numpy as np
 from numba import prange
 
 from ..base.adapter import adaptable
-from ..base.conservative_process import ConservativeProcess
+from ..base.conservative_process_hru import ConservativeProcessHru
 from ..base.control import Control
 from ..constants import HruType, dnearzero, nearzero, numba_num_threads, zero
 from ..parameters import Parameters
@@ -25,7 +25,7 @@ LAKE = HruType.LAKE.value
 # TODO: using through_rain and not net_rain and net_ppt is a WIP
 
 
-class PRMSRunoff(ConservativeProcess):
+class PRMSRunoff(ConservativeProcessHru):
     """PRMS surface runoff.
 
     A surface runoff representation from PRMS.
@@ -293,7 +293,7 @@ class PRMSRunoff(ConservativeProcess):
         # <
         if not hasattr(self, "hru_route_order"):
             # hru_route_order in cascades is 1-based index, keep it the same.
-            self.hru_route_order = np.arange(self.nhru, dtype="int64") + 1
+            self.hru_route_order = self._active_hrus + 1
 
         return
 
@@ -405,7 +405,7 @@ class PRMSRunoff(ConservativeProcess):
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg, UserWarning)
-            self._calc_method = "numpy"  #  revert to numba
+            self._calc_method = "numba"
 
         if self._calc_method.lower() == "numba":
             import numba as nb
@@ -529,6 +529,7 @@ class PRMSRunoff(ConservativeProcess):
             through_rain=self.through_rain,
             dprst_flag=self._dprst_flag,
             ncascade_hru=None,
+            nactive_hrus=self._nactive_hrus,
             hru_route_order=self.hru_route_order,
             hru_down=None,
             hru_down_frac=None,
@@ -628,6 +629,7 @@ class PRMSRunoff(ConservativeProcess):
         through_rain,
         dprst_flag,
         ncascade_hru,
+        nactive_hrus,
         hru_route_order,
         hru_down,
         hru_down_frac,
@@ -656,10 +658,10 @@ class PRMSRunoff(ConservativeProcess):
 
         soil_moist_prev = soil_lower_prev + soil_rechr_prev
 
-        for k in prange(nhru):
+        for k in prange(nactive_hrus):
             # TODO: remove duplicated vars
             # TODO: move setting constants outside the loop.
-            # hote that i is 0-based index
+            # note that i is 0-based index
             i = hru_route_order[k] - 1
 
             runoff = zero

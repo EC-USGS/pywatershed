@@ -87,6 +87,7 @@ class HruType(Enum):
     LAND = 1
     LAKE = 2
     SWALE = 3
+    GLACIER = 4
 
 
 class CovType(Enum):

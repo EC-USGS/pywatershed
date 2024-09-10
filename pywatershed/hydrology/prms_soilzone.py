@@ -5,7 +5,7 @@ import numpy as np
 from numba import prange
 
 from ..base.adapter import adaptable, adapter_factory
-from ..base.conservative_process import ConservativeProcess
+from ..base.conservative_process_hru import ConservativeProcessHru
 from ..base.control import Control
 from ..constants import (
     ETType,
@@ -23,7 +23,7 @@ ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
 
 
-class PRMSSoilzone(ConservativeProcess):
+class PRMSSoilzone(ConservativeProcessHru):
     """PRMS soil zone.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in
@@ -252,6 +252,9 @@ class PRMSSoilzone(ConservativeProcess):
                 "pref_flow_stor_change",
             ],
         }
+
+    def _set_active_hrus(self):
+        pass
 
     def _set_initial_conditions(self):
         # this is called in the super before options are set on self
@@ -534,7 +537,7 @@ class PRMSSoilzone(ConservativeProcess):
 
         if not hasattr(self, "hru_route_order"):
             # hru_route_order in cascades is 1-based index, keep it the same.
-            self.hru_route_order = np.arange(self.nhru, dtype="int64") + 1
+            self.hru_route_order = self._active_hrus + 1
 
         return
 
@@ -715,6 +718,7 @@ class PRMSSoilzone(ConservativeProcess):
             transp_on=self.transp_on,
             unused_potet=self.unused_potet,
             ncascade_hru=None,
+            nactive_hrus=self._nactive_hrus,
             hru_route_order=self.hru_route_order,
             hru_down=None,
             hru_down_frac=None,
@@ -814,6 +818,7 @@ class PRMSSoilzone(ConservativeProcess):
         transp_on,
         unused_potet,
         ncascade_hru,
+        nactive_hrus,
         hru_route_order,
         hru_down,
         hru_down_frac,
@@ -857,7 +862,7 @@ class PRMSSoilzone(ConservativeProcess):
         # soil_moist_prev[:] = soil_moist
 
         # <
-        for ii in prange(nhru):
+        for ii in prange(nactive_hrus):
             hh = hru_route_order[ii] - 1
             dunnianflw = zero
             dunnianflw_pfr = zero

@@ -33,11 +33,26 @@ def params_simple():
             "cov_type": np.array(nhru * [1]),
         },
     }
-    prms_params["metadata"] = {}
+    prms_params["metadata"] = {"global": {}}
     for kk in prms_params["data_vars"].keys():
         prms_params["metadata"][kk] = {"dims": ("nhru",)}
 
     return PrmsParameters(**prms_params)
+
+
+@pytest.fixture(scope="function")
+def dis_simple():
+    prms_dis = {
+        "dims": {"nhru": nhru},
+        "data_vars": {
+            "hru_type": np.array(nhru * [1.0]),
+        },
+    }
+    prms_dis["metadata"] = {}
+    for kk in prms_dis["data_vars"].keys():
+        prms_dis["metadata"][kk] = {"dims": ("nhru",)}
+
+    return PrmsParameters(**prms_dis)
 
 
 @pytest.fixture(scope="function")
@@ -91,7 +106,7 @@ def test_control_simple(control_simple):
 
 
 @pytest.mark.domainless
-def test_control_advance(control_simple, params_simple):
+def test_control_advance(control_simple, params_simple, dis_simple):
     # common inputs for 2 canopies
     input_variables = {}
     for key in PRMSCanopy.get_inputs():
@@ -101,7 +116,7 @@ def test_control_advance(control_simple, params_simple):
     # ntimes = control.n_times
     cnp1 = PRMSCanopy(
         control=control_simple,
-        discretization=None,
+        discretization=dis_simple,
         parameters=params_simple,
         **input_variables,
         verbose=True,
@@ -110,7 +125,7 @@ def test_control_advance(control_simple, params_simple):
 
     cnp2 = PRMSCanopy(
         control=control_simple,
-        discretization=None,
+        discretization=dis_simple,
         parameters=params_simple,
         **input_variables,
         verbose=True,

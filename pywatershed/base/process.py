@@ -295,6 +295,7 @@ class Process(Accessor):
             self[var_name] = np.full(
                 dims, init_vals[var_name], dtype=init_type
             )
+
         else:
             self[var_name] = TimeseriesArray(
                 var_name=var_name,
@@ -302,6 +303,7 @@ class Process(Accessor):
                 array=np.full(dims, init_vals[var_name], dtype=init_type),
                 time=self._time,
             )
+
         return
 
     def _set_initial_conditions(self):

@@ -682,7 +682,9 @@ class DatasetDict(Accessor):
             dd_list = [deepcopy(dd.data) for dd in dd_list]
             if del_global_src:
                 for dd in dd_list:
-                    if "source" in dd["encoding"]["global"]:
+                    if ("global" in dd["encoding"].keys()) and (
+                        "source" in dd["encoding"]["global"]
+                    ):
                         del dd["encoding"]["global"]["source"]
             merged_dict = _merge_dicts(dd_list)
         else:

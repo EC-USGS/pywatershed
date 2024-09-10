@@ -5,7 +5,7 @@ import numpy as np
 from numba import prange
 
 from ..base.adapter import adaptable
-from ..base.conservative_process import ConservativeProcess
+from ..base.conservative_process_hru import ConservativeProcessHru
 from ..base.control import Control
 from ..constants import (
     HruType,
@@ -72,7 +72,7 @@ tcind = 0
 dbgind = 434
 
 
-class PRMSSnow(ConservativeProcess):
+class PRMSSnow(ConservativeProcessHru):
     """PRMS snow pack.
 
     A snow representation from PRMS.
@@ -572,7 +572,8 @@ class PRMSSnow(ConservativeProcess):
             net_rain=self.net_rain,
             net_snow=self.net_snow,
             newsnow=self.newsnow,
-            nhru=self.nhru,
+            nactive_hrus=self._nactive_hrus,
+            active_hrus=self._active_hrus,
             orad_hru=self.orad_hru,
             pk_def=self.pk_def,
             pk_den=self.pk_den,
@@ -671,7 +672,8 @@ class PRMSSnow(ConservativeProcess):
         net_rain,
         net_snow,
         newsnow,
-        nhru,
+        nactive_hrus,
+        active_hrus,
         orad_hru,
         pk_def,
         pk_den,
@@ -744,7 +746,8 @@ class PRMSSnow(ConservativeProcess):
         tcal[:] = zero
         ai[:] = zero
 
-        for jj in prange(nhru):
+        for aa in prange(nactive_hrus):
+            jj = active_hrus[aa]
             if hru_type[jj] == HruType.LAKE.value:
                 continue
 

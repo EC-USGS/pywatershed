@@ -42,7 +42,7 @@ def parse_args():
         and convert_prms_output_to_nc.py.
 
     Special handling of --domains here to kind of cleanup inconsistencies
-    betweenrun_prms_domains.py and convert_prms_output_to_nc.py and also to
+    between run_prms_domains.py and convert_prms_output_to_nc.py and also to
     control recording of which domains have available test_data.
     """
     desc = (
@@ -197,7 +197,7 @@ def main():
         conv_arg_list = arg_list + ["convert_prms_output_to_nc.py"]
     else:
         run_arg_list = arg_list_no_n + [
-            f"-n={n_simulations + 1}",
+            f"-n={n_simulations + 1} ",
             "run_prms_domains.py",
         ]
         conv_arg_list = arg_list_no_n + [

@@ -19,6 +19,7 @@ dependencies:
   - hvplot
   - ipython
   - ipywidgets
+  - modflowapi
   - nb_conda_kernels
   - nbconvert
   - netCDF4

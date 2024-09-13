@@ -19,6 +19,7 @@ dependencies:
   - hvplot
   - ipython
   - ipywidgets
+  - modflowapi
   - jupyter
   - jupyterlab
   - nb_conda_kernels
@@ -49,7 +50,6 @@ dependencies:
   - pip:
       - asv
       - click != 8.1.0
-      - filelock
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools

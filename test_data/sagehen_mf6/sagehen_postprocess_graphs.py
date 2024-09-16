@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import netCDF4 as nc
 import numpy as np
 import pandas as pd
+import xarray as xr
 from IPython import get_ipython
 
 import pywatershed as pws
@@ -52,10 +53,17 @@ gwf.modelgrid.set_coord_info(
 gwf.modelgrid.shape, gwf.modelgrid.nnodes
 # #### Get PRMS output from stand-alone run
 fpth = root_dir / "run_dir/output/pywatershed_output.npz"
-prms_out = np.load(fpth)
+# prms_out = np.load(fpth)
+pws_out_path = pl.Path("../pws_output")
+prms_vars = ["hru_ppt", "potet", "actet", "runoff", "interflow", "soilinfil"]
+prms_out = {
+    var: xr.open_dataarray(pws_out_path / f"{var}.nc") for var in prms_vars
+}
+prms_out = xr.merge(prms_out.values())
+
 # #### Get prms output times
 idx0 = 730  # 365  # Throw out data before this time step
-times = prms_out["time"]
+times = prms_out["time"].values
 ndays = times.shape[0]
 print("Number of PRMS days to process {}".format(ndays))
 
@@ -218,8 +226,8 @@ uzfobj.get_unique_record_names()
 
 
 # #### Map PRMS data to MODFLOW grid
-list(prms_out.keys())
-prms_out["ppt"].shape
+# list(prms_out.keys())
+prms_out["hru_ppt"].shape
 
 
 # #### Function to sum MODFLOW 6 terms
@@ -258,12 +266,18 @@ dfObj = pd.DataFrame(
 
 
 # #### Add PRMS flows to the data frame
-dfObj["ppt"] = np.sum(prms_out["ppt"][:ndays], axis=1) / active_area
-dfObj["prms_actet"] = np.sum(prms_out["actet"][:ndays], axis=1) / active_area
-dfObj["prms_infil"] = np.sum(prms_out["infil"][:ndays], axis=1) / active_area
-dfObj["runoff"] = np.sum(prms_out["runoff"][:ndays], axis=1) / active_area
+dfObj["ppt"] = np.sum(prms_out["hru_ppt"][:ndays].values, axis=1) / active_area
+dfObj["prms_actet"] = (
+    np.sum(prms_out["actet"][:ndays].values, axis=1) / active_area
+)
+dfObj["prms_infil"] = (
+    np.sum(prms_out["soilinfil"][:ndays].values, axis=1) / active_area
+)
+dfObj["runoff"] = (
+    np.sum(prms_out["runoff"][:ndays].values, axis=1) / active_area
+)
 dfObj["interflow"] = (
-    np.sum(prms_out["interflow"][:ndays], axis=1) / active_area
+    np.sum(prms_out["interflow"][:ndays].values, axis=1) / active_area
 )
 
 

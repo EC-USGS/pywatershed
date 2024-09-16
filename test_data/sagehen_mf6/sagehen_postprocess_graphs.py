@@ -16,6 +16,11 @@ import numpy as np
 import netCDF4 as nc
 import pandas as pd
 
+import pywatereshed as pws
+
+# this requires an editable install:
+pws_repo_root = pws.constants.__pywatershed_root__.parent
+
 # import hydrofunctions as hf
 
 get_ipython().run_line_magic("matplotlib", "inline")
@@ -37,7 +42,7 @@ fs = USGSFigure(figure_type="graph")
 
 # Process the geodatabase
 root_dir = pl.Path("../").resolve()
-file = root_dir / "Sagehen.gdb"
+file = pws_repo_root / "Sagehen.gdb"
 hru = gpd.read_file(file, driver="FileGDB", layer="HRU")
 river = gpd.read_file(file, driver="FileGDB", layer="stream")
 

@@ -1,34 +1,29 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import datetime
 import os
 import pathlib as pl
 import sys
-import datetime
 
 import flopy
 import geopandas as gpd
-
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
-import numpy as np
-
 import netCDF4 as nc
+import numpy as np
 import pandas as pd
+from IPython import get_ipython
 
 import pywatershed as pws
-
-# this requires an editable install:
-pws_repo_root = pws.constants.__pywatershed_root__.parent
-
-# import hydrofunctions as hf
-
-get_ipython().run_line_magic("matplotlib", "inline")
-
 
 sys.path.append(os.path.join("../common"))
 from figspecs import USGSFigure
 
+# this requires an editable install:
+pws_root = pws.constants.__pywatershed_root__
+
+get_ipython().run_line_magic("matplotlib", "inline")
 
 fig_dir = pl.Path("figures")
 fig_dir.mkdir(exist_ok=True)
@@ -39,10 +34,9 @@ figwidth = figwidth / 10 / 2.54  # inches
 
 fs = USGSFigure(figure_type="graph")
 
-
 # Process the geodatabase
 root_dir = pl.Path("../").resolve()
-file = pws_repo_root / "Sagehen.gdb"
+file = pws_root / "data/pywatershed_gis/sagehen_mf6/Sagehen.gdb"
 hru = gpd.read_file(file, driver="FileGDB", layer="HRU")
 river = gpd.read_file(file, driver="FileGDB", layer="stream")
 
@@ -100,8 +94,11 @@ site = "10343500"
 site_name = f"Site {site}"
 # sagehen = hf.NWIS(site, "dv", start, end)
 # sagehen
-# sagehenStreamFlow = (sagehen.df()["USGS:10343500:00060:00003"] / (m2ft**3)).to_frame()
-# sagehenStreamFlow.rename(columns={"USGS:10343500:00060:00003": site_name}, inplace=True)
+# sagehenStreamFlow = (
+#     sagehen.df()["USGS:10343500:00060:00003"]
+#     / (m2ft**3)).to_frame()
+# sagehenStreamFlow.rename(columns={"USGS:10343500:00060:00003": site_name},
+#     inplace=True)
 # sagehenStreamFlow.to_csv("sagehen_observed_streamflow.nc")
 
 times_dt64 = (times + 365 * 10.755).astype("datetime64[D]")
@@ -112,7 +109,9 @@ sagehenStreamFlow["datetimeUTC"] = np.array(
     [ss[0:10] for ss in sagehenStreamFlow["datetimeUTC"].tolist()],
     dtype="datetime64[D]",
 )
-# sagehenStreamFlow["datetimeUTC"] = pd.to_datetime(    sagehenStreamFlow["datetimeUTC"], utc=False)obs_times = sagehenStreamFlow["datetimeUTC"].values
+# sagehenStreamFlow["datetimeUTC"] = pd.to_datetime(
+#    sagehenStreamFlow["datetimeUTC"], utc=False)
+#    obs_times = sagehenStreamFlow["datetimeUTC"].values
 obs_times = sagehenStreamFlow["datetimeUTC"].values
 wh_obs_mod = np.isin(obs_times, times_dt64)
 sagehenStreamFlow = sagehenStreamFlow.set_index("datetimeUTC")
@@ -173,7 +172,8 @@ def streamflow_fig():
             color=color,
             label=name,
         )
-    leg = fs.graph_legend(ax)
+    # leg = fs.graph_legend(ax)
+    _ = fs.graph_legend(ax)
 
     ax.set_xlim(plt_times[0], plt_times[-1])
     # ax.set_ylim(0, 10)
@@ -301,7 +301,7 @@ def cum_calc(v, i0=idx0):
 
 
 def et_recharge_ppt_fig():
-    # #### Plot evapotranspiration terms with soil infiltration and precipitation
+    # Plot evapotranspiration terms with soil infiltration and precipitation
     vtot = np.zeros(plt_times.shape, dtype=float)
     colors = ("#c36f31", "#cab39f", "#b7bf5e")
     for name, color in zip(dfObj.columns[1:4], colors):
@@ -484,7 +484,8 @@ def composite_fig():
         )
         zorder -= 10
     # ax.set_ylim(0, ax.get_ylim()[1])
-    leg = fs.graph_legend(
+    # leg = fs.graph_legend(
+    _ = fs.graph_legend(
         ax,
         ncol=2,
         loc="upper right",
@@ -564,7 +565,8 @@ def composite_fig():
         "Groundwater ET",
     )
 
-    # ax.plot(plt_times, cum_calc(dfObj["ppt"]), lw=1.25, color="cyan", label="Rainfall")
+    # ax.plot(plt_times,
+    #     cum_calc(dfObj["ppt"]), lw=1.25, color="cyan", label="Rainfall")
     for name, color, label in zip(names_met, colors_met, labels_met):
         v = cum_calc(dfObj[name])
         ax.fill_between(plt_times, vtot + v, y2=vtot, color=color)

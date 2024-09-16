@@ -1,13 +1,17 @@
 import sys
-import numpy as np
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class USGSFigure:
     def __init__(
-            self, figure_type="map", family="Arial Narrow", font_path=None,
-            verbose=False
+        self,
+        figure_type="map",
+        family="Arial Narrow",
+        font_path=None,
+        verbose=False,
     ):
         """Create a USGSFigure object
 
@@ -58,7 +62,7 @@ class USGSFigure:
         """
         if font_path is not None:
             errmsg = "specification of font_path is not implemented"
-            raise NotImplemented(errmsg)
+            raise NotImplementedError(errmsg)
         self.family = self._set_fontfamily(family)
 
     def graph_legend(self, ax=None, handles=None, labels=None, **kwargs):
@@ -121,7 +125,9 @@ class USGSFigure:
         leg.set_title(title, prop=font)
         return leg
 
-    def heading(self, ax=None, letter=None, heading=None, x=0.00, y=1.01, idx=None):
+    def heading(
+        self, ax=None, letter=None, heading=None, x=0.00, y=1.01, idx=None
+    ):
         """Add a USGS-style heading to a matplotlib axis object
 
         Parameters
@@ -133,14 +139,15 @@ class USGSFigure:
         heading : str
             text string
         x : float
-            location of the heading in the x-direction in normalized plot dimensions
-            ranging from 0 to 1 (default is 0.00)
+            location of the heading in the x-direction in normalized plot
+            dimensions ranging from 0 to 1 (default is 0.00)
         y : float
-            location of the heading in the y-direction in normalized plot dimensions
-            ranging from 0 to 1 (default is 1.01)
+            location of the heading in the y-direction in normalized plot
+            dimensions ranging from 0 to 1 (default is 1.01)
         idx : int
             index for programatically generating the heading letter when letter
-            is None and idx is not None. idx = 0 will generate A (default is None)
+            is None and idx is not None. idx = 0 will generate A (default is
+            None)
 
         Returns
         -------
@@ -192,18 +199,18 @@ class USGSFigure:
         return text
 
     def add_text(
-            self,
-            ax=None,
-            text="",
-            x=0.0,
-            y=0.0,
-            transform=True,
-            bold=True,
-            italic=True,
-            fontsize=9,
-            ha="left",
-            va="bottom",
-            **kwargs
+        self,
+        ax=None,
+        text="",
+        x=0.0,
+        y=0.0,
+        transform=True,
+        bold=True,
+        italic=True,
+        fontsize=9,
+        ha="left",
+        va="bottom",
+        **kwargs,
     ):
         """Add USGS-style text to a axis object
 
@@ -218,9 +225,9 @@ class USGSFigure:
         y : float
             y-location of text string (default is 0.)
         transform : bool
-            boolean that determines if a transformed (True) or data (False) coordinate
-            system is used to define the (x, y) location of the text string
-            (default is True)
+            boolean that determines if a transformed (True) or data (False)
+            coordinate system is used to define the (x, y) location of the
+            text string (default is True)
         bold : bool
             boolean indicating if bold font (default is True)
         italic : bool
@@ -251,22 +258,29 @@ class USGSFigure:
         font = self._set_fontspec(bold=bold, italic=italic, fontsize=fontsize)
 
         text_obj = ax.text(
-            x, y, text, va=va, ha=ha, fontdict=font, transform=transform, **kwargs
+            x,
+            y,
+            text,
+            va=va,
+            ha=ha,
+            fontdict=font,
+            transform=transform,
+            **kwargs,
         )
         return text_obj
 
     def add_annotation(
-            self,
-            ax=None,
-            text="",
-            xy=None,
-            xytext=None,
-            bold=True,
-            italic=True,
-            fontsize=9,
-            ha="left",
-            va="bottom",
-            **kwargs
+        self,
+        ax=None,
+        text="",
+        xy=None,
+        xytext=None,
+        bold=True,
+        italic=True,
+        fontsize=9,
+        ha="left",
+        va="bottom",
+        **kwargs,
     ):
         """Add an annotation to a axis object
 
@@ -563,8 +577,8 @@ class USGSFigure:
         return fontspec
 
     def _set_fontfamily(self, family):
-        """Set font family to Liberation Sans Narrow on linux if default Arial Narrow
-        is being used
+        """Set font family to Liberation Sans Narrow on linux if default Arial
+        Narrow is being used
 
         Parameters
         ----------

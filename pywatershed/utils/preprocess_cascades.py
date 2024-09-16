@@ -200,7 +200,7 @@ def init_cascade_params(
 
     if ndown > 15:
         msg = f"possible ndown issue: {ndown=}"
-        verbosity_msg(msg)
+        verbosity_msg(msg, verbosity, thresh=1)
 
     hru_down = np.zeros([ndown, nhru], dtype="int64")
     cascade_area = np.zeros([ndown, nhru], dtype="double")
@@ -423,7 +423,7 @@ def init_cascade_params(
     )
 
     msg = f"{hru_route_order=}"
-    verbosity_msg(msg)
+    verbosity_msg(msg, verbosity, thresh=1)
 
     new_params = parameters.to_xr_ds()
     del new_params["hru_type"]

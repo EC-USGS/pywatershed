@@ -16,7 +16,7 @@ import numpy as np
 import netCDF4 as nc
 import pandas as pd
 
-import pywatereshed as pws
+import pywatershed as pws
 
 # this requires an editable install:
 pws_repo_root = pws.constants.__pywatershed_root__.parent

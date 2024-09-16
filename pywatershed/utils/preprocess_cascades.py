@@ -420,6 +420,7 @@ def init_cascade_params(
         hru_down,
         hru_type,
         circle_switch,
+        verbosity=verbosity,
     )
 
     msg = f"{hru_route_order=}"

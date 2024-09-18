@@ -55,7 +55,14 @@ gwf.modelgrid.shape, gwf.modelgrid.nnodes
 fpth = root_dir / "run_dir/output/pywatershed_output.npz"
 # prms_out = np.load(fpth)
 pws_out_path = pl.Path("../pws_output")
-prms_vars = ["hru_ppt", "potet", "actet", "runoff", "interflow", "soilinfil"]
+prms_vars = [
+    "hru_ppt",
+    "unused_potet",
+    "actet",
+    "runoff",
+    "interflow",
+    "prms_infil",
+]
 prms_out = {
     var: xr.open_dataarray(pws_out_path / f"{var}.nc") for var in prms_vars
 }
@@ -201,7 +208,7 @@ idomain = gwf.dis.idomain.array
 
 # #### Get HRU areas and convert to square meters
 ds = nc.Dataset(root_dir / "prms_grid_v3-Copy1.nc")
-hru_area = ds["hru_area"][:]  # m2
+hru_area = ds["hru_area"][:].data  # m2
 acre2m2 = 43560.0 / (m2ft * m2ft)
 hru_area *= acre2m2
 
@@ -271,7 +278,7 @@ dfObj["prms_actet"] = (
     np.sum(prms_out["actet"][:ndays].values, axis=1) / active_area
 )
 dfObj["prms_infil"] = (
-    np.sum(prms_out["soilinfil"][:ndays].values, axis=1) / active_area
+    np.sum(prms_out["prms_infil"][:ndays].values, axis=1) / active_area
 )
 dfObj["runoff"] = (
     np.sum(prms_out["runoff"][:ndays].values, axis=1) / active_area
@@ -336,19 +343,19 @@ def et_recharge_ppt_fig():
     plt.legend(loc="upper left")
 
     print(
-        "total Rainfall {:.4g}".format(cum_calc(dfObj["ppt"])[-1]),
-        "total ET {:.4g}".format(vtot[-1]),
+        "total Rainfall {:.4g}".format(cum_calc(dfObj["ppt"]).iloc[-1]),
+        "total ET {:.4g}".format(vtot.iloc[-1]),
         "prms_actet {:.4g} ({:.4%})".format(
-            cum_calc(dfObj["prms_actet"])[-1],
-            (cum_calc(dfObj["prms_actet"]) / vtot)[-1],
+            cum_calc(dfObj["prms_actet"]).iloc[-1],
+            (cum_calc(dfObj["prms_actet"]) / vtot).iloc[-1],
         ),
         "uzf_actet {:.4g} ({:.4%})".format(
-            cum_calc(dfObj["uzf_actet"])[-1],
-            (cum_calc(dfObj["uzf_actet"]) / vtot)[-1],
+            cum_calc(dfObj["uzf_actet"]).iloc[-1],
+            (cum_calc(dfObj["uzf_actet"]) / vtot).iloc[-1],
         ),
         "gwf_actet {:.4g} ({:.4%})".format(
-            cum_calc(dfObj["gwf_actet"])[-1],
-            (cum_calc(dfObj["gwf_actet"]) / vtot)[-1],
+            cum_calc(dfObj["gwf_actet"]).iloc[-1],
+            (cum_calc(dfObj["gwf_actet"]) / vtot).iloc[-1],
         ),
     )
     return
@@ -405,27 +412,30 @@ def cumulative_streamflow_fig():
     return
 
 
-vtot = cum_calc(dfObj["runoff"])[-1]
-vtot += cum_calc(dfObj["interflow"])[-1]
-vtot += cum_calc(dfObj["baseflow"])[-1]
-vtot += cum_calc(dfObj["seepage"])[-1]
+vtot = cum_calc(dfObj["runoff"]).iloc[-1]
+vtot += cum_calc(dfObj["interflow"]).iloc[-1]
+vtot += cum_calc(dfObj["baseflow"]).iloc[-1]
+vtot += cum_calc(dfObj["seepage"]).iloc[-1]
 print(
     " total observed streamflow {:.4g}\n".format(
-        cum_calc(sagehenStreamFlow[site_name])[-1] * d2sec / active_area
+        cum_calc(sagehenStreamFlow[site_name]).iloc[-1] * d2sec / active_area
     ),
     "total simulated streamflow {:.4g}\n".format(vtot),
     "runoff {:.4g} ({:.4%})".format(
-        cum_calc(dfObj["runoff"])[-1], cum_calc(dfObj["runoff"])[-1] / vtot
+        cum_calc(dfObj["runoff"]).iloc[-1],
+        cum_calc(dfObj["runoff"]).iloc[-1] / vtot,
     ),
     "interflow {:.4g} ({:.4%})".format(
-        cum_calc(dfObj["interflow"])[-1],
-        cum_calc(dfObj["interflow"])[-1] / vtot,
+        cum_calc(dfObj["interflow"]).iloc[-1],
+        cum_calc(dfObj["interflow"]).iloc[-1] / vtot,
     ),
     "baseflow {:.4g} ({:.4%})".format(
-        cum_calc(dfObj["baseflow"])[-1], cum_calc(dfObj["baseflow"])[-1] / vtot
+        cum_calc(dfObj["baseflow"]).iloc[-1],
+        cum_calc(dfObj["baseflow"]).iloc[-1] / vtot,
     ),
     "seepage {:.4g} ({:.4%})".format(
-        cum_calc(dfObj["seepage"])[-1], cum_calc(dfObj["seepage"])[-1] / vtot
+        cum_calc(dfObj["seepage"]).iloc[-1],
+        cum_calc(dfObj["seepage"]).iloc[-1] / vtot,
     ),
 )
 

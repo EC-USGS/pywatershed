@@ -18,8 +18,11 @@ from IPython import get_ipython
 
 import pywatershed as pws
 
+
+import flopy.plot.styles as styles
+
 sys.path.append(os.path.join("../common"))
-from figspecs import USGSFigure
+# from figspecs import USGSFigure
 
 # this requires an editable install:
 pws_root = pws.constants.__pywatershed_root__
@@ -33,7 +36,7 @@ fig_dir.mkdir(exist_ok=True)
 figwidth = 85  # mm
 figwidth = figwidth / 10 / 2.54  # inches
 
-fs = USGSFigure(figure_type="graph")
+# fs = USGSFigure(figure_type="graph")
 
 # Process the geodatabase
 root_dir = pl.Path("../").resolve()
@@ -157,47 +160,48 @@ plt_times.shape
 
 def streamflow_fig():
     figheight = figwidth * 0.5
-    fig, ax = plt.subplots(
-        figsize=(figwidth, figheight),
-        ncols=1,
-        nrows=1,
-        constrained_layout=True,
-    )
-    fig.set_constrained_layout_pads(
-        w_pad=4 / 72,
-        h_pad=4 / 72,
-        hspace=0,
-        wspace=0,
-    )
-
-    for name, color in zip(
-        (
-            site_name,
-            "Simulated",
-        ),
-        (
-            "black",
-            "red",
-        ),
-    ):
-        ax.plot(
-            plt_times,
-            sagehenStreamFlow[name][idx0:],
-            linewidth=0.25,
-            color=color,
-            label=name,
+    with flopy.plot.styles.USGSPlot():
+        fig, ax = plt.subplots(
+            figsize=(figwidth, figheight),
+            ncols=1,
+            nrows=1,
+            constrained_layout=True,
         )
-    # leg = fs.graph_legend(ax)
-    _ = fs.graph_legend(ax)
+        fig.set_constrained_layout_pads(
+            w_pad=4 / 72,
+            h_pad=4 / 72,
+            hspace=0,
+            wspace=0,
+        )
 
-    ax.set_xlim(plt_times[0], plt_times[-1])
-    # ax.set_ylim(0, 10)
+        for name, color in zip(
+            (
+                site_name,
+                "Simulated",
+            ),
+            (
+                "black",
+                "red",
+            ),
+        ):
+            ax.plot(
+                plt_times,
+                sagehenStreamFlow[name][idx0:],
+                linewidth=0.25,
+                color=color,
+                label=name,
+            )
+        # leg = styles.graph_legend(ax)
+        _ = styles.graph_legend(ax)
 
-    ax.set_xlabel("Date")
-    ax.set_ylabel(r"Streamflow (m$^3$/s)")
+        ax.set_xlim(plt_times[0], plt_times[-1])
+        # ax.set_ylim(0, 10)
 
-    fpth = pl.Path(root_dir / "figures/sagehen_pywatershed_streamflow.png")
-    plt.savefig(fpth, dpi=600)
+        ax.set_xlabel("Date")
+        ax.set_ylabel(r"Streamflow (m$^3$/s)")
+
+        fpth = pl.Path(root_dir / "figures/sagehen_pywatershed_streamflow.png")
+        plt.savefig(fpth, dpi=600)
 
 
 # ##### Save dataframe index
@@ -452,178 +456,180 @@ me, nse
 
 def composite_fig():
     figheight = figwidth * 1.25
-    fig, axes = plt.subplots(
-        figsize=(figwidth, figheight),
-        ncols=1,
-        nrows=3,
-        sharex=True,
-        constrained_layout=True,
-    )
-    fig.set_constrained_layout_pads(
-        w_pad=4 / 72,
-        h_pad=4 / 72,
-        hspace=0,
-        wspace=0,
-    )
-
-    handletextpad = 0.1
-    markerscale = 1
-    handlelength = 1.25
-    columnspacing = 0.5
-    labelspacing = 0.25
-
-    for idx, ax in enumerate(axes):
-        ax.set_xlim(plt_times[0], plt_times[-1])
-        if idx == 0:
-            ax.set_ylabel(r"Streamflow (m$^3$/s)")
-        else:
-            ax.set_ylabel("Cumulative flow (m)")
-        ax.get_yaxis().set_label_coords(-0.05, 0.5)
-
-    ax = axes[0]
-    ax.set_ylim(0, 35)
-    zorder = 100
-    for name, color, linestyle in zip(
-        (
-            site_name,
-            "Simulated",
-        ),
-        (
-            "blue",
-            "black",
-        ),
-        (
-            ":",
-            "-",
-        ),
-    ):
-        ax.plot(
-            plt_times,
-            sagehenStreamFlow[name][idx0:],
-            linewidth=0.75,
-            linestyle=linestyle,
-            color=color,
-            zorder=zorder,
-            label=name,
+    with flopy.plot.styles.USGSPlot():
+        fig, axes = plt.subplots(
+            figsize=(figwidth, figheight),
+            ncols=1,
+            nrows=3,
+            sharex=True,
+            constrained_layout=True,
         )
-        zorder -= 10
-    # ax.set_ylim(0, ax.get_ylim()[1])
-    # leg = fs.graph_legend(
-    _ = fs.graph_legend(
-        ax,
-        ncol=2,
-        loc="upper right",
-        handletextpad=handletextpad,
-        handlelength=handlelength,
-        columnspacing=columnspacing,
-        labelspacing=labelspacing,
-    )
-    fs.heading(ax=ax, idx=0)
-    fs.remove_edge_ticks()
-
-    ax = axes[1]
-    ax.set_ylim(0, 9)
-    vtot = np.zeros(plt_times.shape, dtype=float)
-    colors = (
-        "#FF9AA2",
-        "#FFB7B2",
-        "#FFDAC1",
-        "#E2F0CB",
-        "#B5EAD7",
-        "#C7CEEA",
-    )[::-1]
-    labels = (
-        "Runoff",
-        "Interflow",
-        "Groundwater\nSeepage",
-        "Baseflow",
-        "Basin\nUnderflow",
-    )
-    names = (
-        "runoff",
-        "interflow",
-        "seepage",
-        "baseflow",
-    )
-    for name, color, label in zip(names, colors, labels):
-        v = cum_calc(dfObj[name])
-        ax.fill_between(plt_times, vtot + v, y2=vtot, color=color)
-        ax.plot(
-            [-1],
-            [-1],
-            lw=0,
-            marker="s",
-            markerfacecolor=color,
-            markeredgecolor=color,
-            label=label,
+        fig.set_constrained_layout_pads(
+            w_pad=4 / 72,
+            h_pad=4 / 72,
+            hspace=0,
+            wspace=0,
         )
-        vtot += v
-    # ax.set_ylim(0, ax.get_ylim()[1])
-    fs.graph_legend(
-        ax=ax,
-        loc="upper left",
-        ncol=2,
-        handletextpad=handletextpad,
-        markerscale=markerscale,
-        handlelength=handlelength,
-        columnspacing=columnspacing,
-        labelspacing=labelspacing,
-    )
 
-    ax = axes[2]
-    ax.set_ylim(0, 9)
-    vtot = np.zeros(plt_times.shape, dtype=float)
-    colors_met = (
-        "#FF6962",
-        "#FFE08E",
-        "#FFB346",
-    )
-    names_met = (
-        "prms_actet",
-        "uzf_actet",
-        "gwf_actet",
-    )
-    labels_met = (
-        "PRMS ET",
-        "Unsaturated zone ET",
-        "Groundwater ET",
-    )
+        handletextpad = 0.1
+        markerscale = 1
+        handlelength = 1.25
+        columnspacing = 0.5
+        labelspacing = 0.25
 
-    # ax.plot(plt_times,
-    #     cum_calc(dfObj["ppt"]), lw=1.25, color="cyan", label="Rainfall")
-    for name, color, label in zip(names_met, colors_met, labels_met):
-        v = cum_calc(dfObj[name])
-        ax.fill_between(plt_times, vtot + v, y2=vtot, color=color)
-        ax.plot(
-            [-1],
-            [-1],
-            lw=0,
-            marker="s",
-            markerfacecolor=color,
-            markeredgecolor=color,
-            label=label,
+        for idx, ax in enumerate(axes):
+            ax.set_xlim(plt_times[0], plt_times[-1])
+            if idx == 0:
+                ax.set_ylabel(r"Streamflow (m$^3$/s)")
+            else:
+                ax.set_ylabel("Cumulative flow (m)")
+            ax.get_yaxis().set_label_coords(-0.05, 0.5)
+
+        ax = axes[0]
+        ax.set_ylim(0, 35)
+        zorder = 100
+        for name, color, linestyle in zip(
+            (
+                site_name,
+                "Simulated",
+            ),
+            (
+                "blue",
+                "black",
+            ),
+            (
+                ":",
+                "-",
+            ),
+        ):
+            ax.plot(
+                plt_times,
+                sagehenStreamFlow[name][idx0:],
+                linewidth=0.75,
+                linestyle=linestyle,
+                color=color,
+                zorder=zorder,
+                label=name,
+            )
+            zorder -= 10
+        # ax.set_ylim(0, ax.get_ylim()[1])
+        # leg = styles.graph_legend(
+        _ = styles.graph_legend(
+            ax,
+            ncol=2,
+            loc="upper right",
+            handletextpad=handletextpad,
+            handlelength=handlelength,
+            columnspacing=columnspacing,
+            labelspacing=labelspacing,
         )
-        vtot += v
-    # ax.set_ylim(0, ax.get_ylim()[1])
-    fs.graph_legend(
-        ax=ax,
-        loc="upper left",
-        ncol=1,
-        handletextpad=handletextpad,
-        markerscale=markerscale,
-        handlelength=handlelength,
-        columnspacing=columnspacing,
-        labelspacing=labelspacing,
-    )
-    fs.heading(ax=ax, idx=1)
-    fs.remove_edge_ticks()
+        styles.heading(ax=ax, idx=0)
+        styles.remove_edge_ticks()
 
-    ax.set_xlabel("Date")
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%-m/%Y"))
-    ax.xaxis.set_tick_params(rotation=45)
-    fs.heading(ax=ax, idx=2)
-    fs.remove_edge_ticks()
+        ax = axes[1]
+        ax.set_ylim(0, 9)
+        vtot = np.zeros(plt_times.shape, dtype=float)
+        colors = (
+            "#FF9AA2",
+            "#FFB7B2",
+            "#FFDAC1",
+            "#E2F0CB",
+            "#B5EAD7",
+            "#C7CEEA",
+        )[::-1]
+        labels = (
+            "Runoff",
+            "Interflow",
+            "Groundwater\nSeepage",
+            "Baseflow",
+            "Basin\nUnderflow",
+        )
+        names = (
+            "runoff",
+            "interflow",
+            "seepage",
+            "baseflow",
+        )
+        for name, color, label in zip(names, colors, labels):
+            v = cum_calc(dfObj[name])
+            ax.fill_between(plt_times, vtot + v, y2=vtot, color=color)
+            ax.plot(
+                [-1],
+                [-1],
+                lw=0,
+                marker="s",
+                markerfacecolor=color,
+                markeredgecolor=color,
+                label=label,
+            )
+            vtot += v
+        # ax.set_ylim(0, ax.get_ylim()[1])
+        styles.graph_legend(
+            ax=ax,
+            loc="upper left",
+            ncol=2,
+            handletextpad=handletextpad,
+            markerscale=markerscale,
+            handlelength=handlelength,
+            columnspacing=columnspacing,
+            labelspacing=labelspacing,
+        )
 
-    fpth = pl.Path(root_dir / "figures/sagehen_pywatershed_graphs.png")
-    plt.savefig(fpth, dpi=600)
+        ax = axes[2]
+        ax.set_ylim(0, 9)
+        vtot = np.zeros(plt_times.shape, dtype=float)
+        colors_met = (
+            "#FF6962",
+            "#FFE08E",
+            "#FFB346",
+        )
+        names_met = (
+            "prms_actet",
+            "uzf_actet",
+            "gwf_actet",
+        )
+        labels_met = (
+            "PRMS ET",
+            "Unsaturated zone ET",
+            "Groundwater ET",
+        )
+
+        # ax.plot(plt_times,
+        #     cum_calc(dfObj["ppt"]), lw=1.25, color="cyan", label="Rainfall")
+        for name, color, label in zip(names_met, colors_met, labels_met):
+            v = cum_calc(dfObj[name])
+            ax.fill_between(plt_times, vtot + v, y2=vtot, color=color)
+            ax.plot(
+                [-1],
+                [-1],
+                lw=0,
+                marker="s",
+                markerfacecolor=color,
+                markeredgecolor=color,
+                label=label,
+            )
+            vtot += v
+        # ax.set_ylim(0, ax.get_ylim()[1])
+        styles.graph_legend(
+            ax=ax,
+            loc="upper left",
+            ncol=1,
+            handletextpad=handletextpad,
+            markerscale=markerscale,
+            handlelength=handlelength,
+            columnspacing=columnspacing,
+            labelspacing=labelspacing,
+        )
+        styles.heading(ax=ax, idx=1)
+        styles.remove_edge_ticks()
+
+        ax.set_xlabel("Date")
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%-m/%Y"))
+        ax.xaxis.set_tick_params(rotation=45)
+        styles.heading(ax=ax, idx=2)
+        styles.remove_edge_ticks()
+
+        fpth = pl.Path(root_dir / "figures/sagehen_pywatershed_graphs.png")
+        plt.savefig(fpth, dpi=600)
+
     return

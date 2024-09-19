@@ -9,7 +9,7 @@ class USGSFigure:
     def __init__(
         self,
         figure_type="map",
-        family="Arial Narrow",
+        family="Arial",
         font_path=None,
         verbose=False,
     ):

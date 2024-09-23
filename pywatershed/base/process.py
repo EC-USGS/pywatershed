@@ -467,6 +467,7 @@ class Process(Accessor):
         output_dir: [str, pl.Path] = None,
         separate_files: bool = None,
         output_vars: list = None,
+        extra_coords: dict = None,
     ) -> None:
         """Initialize NetCDF output.
 
@@ -541,7 +542,8 @@ class Process(Accessor):
                     self._params.coords,
                     [variable_name],
                     {variable_name: self.meta[variable_name]},
-                    {"process class": self.name},
+                    extra_coords=extra_coords,
+                    global_attrs={"process class": self.name},
                 )
 
         else:

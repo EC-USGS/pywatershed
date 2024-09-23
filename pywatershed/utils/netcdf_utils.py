@@ -9,6 +9,7 @@ import xarray as xr
 
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
+from ..constants import np_type_to_netcdf_type_dict
 from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]
@@ -353,31 +354,33 @@ class NetCdfRead(Accessor):
 
 
 class NetCdfWrite(Accessor):
-    """Output the csv output data to a netcdf file
-
-    Args:
-        name: path for netcdf output file
-        clobber: boolean indicating if an existing netcdf file should
-            be overwritten
-        zlib: boolean indicating if the data should be compressed
-            (default is True)
-        complevel: compression level (default is 4)
-        chunk_sizes: dictionary defining chunk sizes for the data
-    """
-
     def __init__(
         self,
         name: fileish,
         coordinates: dict,
         variables: listish,
         var_meta: dict,
-        global_attrs: dict = {},
+        extra_coords: dict = None,
+        global_attrs: dict = None,
         time_units: str = "days since 1970-01-01 00:00:00",
         clobber: bool = True,
         zlib: bool = True,
         complevel: int = 4,
         chunk_sizes: dict = {"time": 1, "hruid": 0},
     ):
+        """Output the csv output data to a netcdf file
+
+        Args:
+            name: path for netcdf output file
+            extra_coords: A dictionary keyed by dimension with the values being
+                a dictionary of var_name: data pairs.
+            clobber: boolean indicating if an existing netcdf file should
+                be overwritten
+            zlib: boolean indicating if the data should be compressed
+                (default is True)
+            complevel: compression level (default is 4)
+            chunk_sizes: dictionary defining chunk sizes for the data
+        """
         if isinstance(variables, dict):
             group_variables = []
             for group, vars in variables.items():
@@ -398,6 +401,12 @@ class NetCdfWrite(Accessor):
 
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
         self.dataset.setncattr("Description", "pywatershed output data")
+
+        if extra_coords is None:
+            extra_coords = {}
+
+        if global_attrs is None:
+            global_attrs = {}
         for att_key, att_val in global_attrs.items():
             self.dataset.setncattr(att_key, att_val)
 
@@ -490,12 +499,12 @@ class NetCdfWrite(Accessor):
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
-                "nhm_id", "i4", ("nhm_id")
+                "nhm_id", "i4", ("nhm_id",)
             )
             self.hruid[:] = np.array(self.hru_ids, dtype=int)
         if nsegment_coordinate:
             self.segid = self.dataset.createVariable(
-                "nhm_seg", "i4", ("nhm_seg")
+                "nhm_seg", "i4", ("nhm_seg",)
             )
             self.segid[:] = np.array(self.segment_ids, dtype=int)
         if one_coordinate:
@@ -503,14 +512,31 @@ class NetCdfWrite(Accessor):
             self.oneid[:] = np.array(self.one_ids, dtype=int)
         if nreservoirs_coordinate:
             self.grandid = self.dataset.createVariable(
-                "grand_id", "i4", ("grand_id")
+                "grand_id", "i4", ("grand_id",)
             )
             self.grandid[:] = coordinates["grand_id"]
         if nnodes_coordinate:
             self.node_coord = self.dataset.createVariable(
-                "node_coord", "i4", ("node_coord")
+                "node_coord", "i4", ("node_coord",)
             )
             self.node_coord[:] = coordinates["node_coord"]
+
+        for x_dim, x_data_dict in extra_coords.items():
+            for x_var_name, x_data in x_data_dict.items():
+                nc_type = np_type_to_netcdf_type_dict[x_data.dtype]
+                # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
+                dim = (x_dim,)
+                if nc_type == "S#":
+                    sdimlen = len(x_data[0])
+                    nc_type = f"S{sdimlen}"
+                    dim = (x_dim, nc_type)
+
+                # <
+                _ = self.dataset.createDimension(nc_type, sdimlen)
+                self[x_var_name] = self.dataset.createVariable(
+                    x_var_name, nc_type, dim
+                )
+                self[x_var_name][:] = x_data
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):

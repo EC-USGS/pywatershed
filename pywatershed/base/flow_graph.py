@@ -1,3 +1,4 @@
+import pathlib as pl
 from typing import Literal
 from warnings import warn
 
@@ -505,6 +506,48 @@ class FlowGraph(ConservativeProcess):
                     self.control, maker_index
                 )
             ]
+
+    def initialize_netcdf(
+        self,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
+        budget_args: dict = None,
+        output_vars: list = None,
+        extra_coords: dict = None,
+    ) -> None:
+        from netCDF4 import stringtochar
+
+        if self._netcdf_initialized:
+            msg = (
+                f"{self.name} class previously initialized netcdf output "
+                f"in {self._netcdf_output_dir}"
+            )
+            warn(msg)
+            return
+
+        params = self._params.parameters
+
+        # https://unidata.github.io/netcdf4-python/#dealing-with-strings
+        mknames = params["node_maker_name"]
+        maxlen = np.array([len(nn) for nn in mknames]).max()
+        node_maker_names = stringtochar(np.array(mknames, dtype=f"S{maxlen}"))
+
+        extra_coords = {
+            "node_coord": {
+                "node_maker_name": node_maker_names,
+                "node_maker_index": np.array(params["node_maker_index"]),
+            },
+        }
+
+        # this gets the budget initialization too
+        super().initialize_netcdf(
+            output_dir=output_dir,
+            separate_files=separate_files,
+            output_vars=output_vars,
+            extra_coords=extra_coords,
+        )
+
+        return
 
     def _advance_variables(self) -> None:
         for node in self._nodes:

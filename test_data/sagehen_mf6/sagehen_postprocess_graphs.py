@@ -7,6 +7,7 @@ import pathlib as pl
 import sys
 
 import flopy
+import flopy.plot.styles as styles
 import geopandas as gpd
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
@@ -17,9 +18,6 @@ import xarray as xr
 from IPython import get_ipython
 
 import pywatershed as pws
-
-
-import flopy.plot.styles as styles
 
 sys.path.append(os.path.join("../common"))
 # from figspecs import USGSFigure

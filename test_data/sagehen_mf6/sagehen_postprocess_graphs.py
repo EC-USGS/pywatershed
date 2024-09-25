@@ -624,7 +624,7 @@ def composite_fig():
         styles.remove_edge_ticks()
 
         ax.set_xlabel("Date")
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%-m/%Y"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%m/%Y"))
         ax.xaxis.set_tick_params(rotation=45)
         styles.heading(ax=ax, idx=2)
         styles.remove_edge_ticks()

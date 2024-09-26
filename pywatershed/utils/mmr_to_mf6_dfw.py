@@ -405,16 +405,6 @@ class MmrToMf6Dfw:
         if "idomain" not in self._disv1d_options.keys():
             self._disv1d_options["idomain"] = 1
 
-        # if "length" not in self._disv1d_options.keys():
-        #     # meters
-        #     # unit-ed quantities
-        #     segment_units = self._units(meta.parameters["seg_length"]["units"])
-        #     self._segment_length = parameters["seg_length"]
-        #     self._segment_length = self._segment_length * segment_units
-        #     self._disv1d_options[
-        #         "length"
-        #     ] = self._segment_length.to_base_units().magnitude
-
         if "width" not in self._disv1d_options.keys():
             # meters, per metadata
             self._disv1d_options["width"] = parameters["seg_width"]
@@ -674,14 +664,12 @@ class MmrToMf6Dfw:
 
             if len(time_prms) > 0 and len(time_prms) != len(time_mf6):
                 for iseg in range(lat_inflow_prms.shape[1]):
-                    lat_inflow[
-                        :, iseg
-                    ] = mpsplines.MeanPreservingInterpolation(
-                        yi=lat_inflow_prms[:, iseg].magnitude,
-                        xi=time_prms,
-                        periodic=False,
-                    )(
-                        time_mf6
+                    lat_inflow[:, iseg] = (
+                        mpsplines.MeanPreservingInterpolation(
+                            yi=lat_inflow_prms[:, iseg].magnitude,
+                            xi=time_prms,
+                            periodic=False,
+                        )(time_mf6)
                     )
             else:
                 lat_inflow = lat_inflow_prms.magnitude

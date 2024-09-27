@@ -31,7 +31,7 @@ process_order_nhm = [
 class Model:
     """Build a model in pywatershed.
 
-    This is the class that helps execute sets of Processes in order.
+    This class executes sets of Processes in order.
 
     There are two distinct ways of instatniating the Model class described
     below: 1) PRMS-legacy instantation, 2) pywatershed-centric instatiation.

@@ -804,7 +804,6 @@ def xr_dd_to_dd(xr_dd: dict) -> dict:
 
 def dd_to_xr_dd(dd: dict) -> dict:
     dd = deepcopy(dd)
-    from xarray.coding.times import encode_cf_datetime
 
     # remove metadata and encoding from the dict/model
     meta = dd.pop("metadata")

@@ -804,6 +804,7 @@ def xr_dd_to_dd(xr_dd: dict) -> dict:
 
 def dd_to_xr_dd(dd: dict) -> dict:
     dd = deepcopy(dd)
+    from xarray.coding.times import encode_cf_datetime
 
     # remove metadata and encoding from the dict/model
     meta = dd.pop("metadata")
@@ -815,18 +816,27 @@ def dd_to_xr_dd(dd: dict) -> dict:
     dd["encoding"] = encoding.pop("global", {})
 
     for key, val in meta.items():
+        # coordinate or variable?
         cv = None
         if key in dd["data_vars"].keys():
             cv = "data_vars"
         elif key in dd["coords"].keys():
             cv = "coords"
 
+        data_vals = dd[cv][key]
+
+        if np.issubdtype(data_vals.dtype, np.datetime64):
+            # conversion to datetime64[ns] silences xr warnings
+            # but should be able to be removed in the future
+            data_vals = data_vals.astype("datetime64[ns]")
+
         key_enc = {}
         if key in encoding.keys():
             key_enc = encoding[key]
+
         dd[cv][key] = {
             **val,
-            "data": dd[cv][key],
+            "data": data_vals,
             "encoding": key_enc,
         }
 

@@ -373,7 +373,8 @@ class NetCdfWrite(Accessor):
         Args:
             name: path for netcdf output file
             extra_coords: A dictionary keyed by dimension with the values being
-                a dictionary of var_name: data pairs.
+                a dictionary of var_name: data pairs. Not for multi-dimensional
+                coordinates.
             clobber: boolean indicating if an existing netcdf file should
                 be overwritten
             zlib: boolean indicating if the data should be compressed
@@ -567,19 +568,31 @@ class NetCdfWrite(Accessor):
             else:
                 time_dim = "time"
 
+            var_dims = (time_dim, spatial_coordinate)
             self.variables[var_name] = self.dataset.createVariable(
                 group_var_name,
                 variabletype,
-                (time_dim, spatial_coordinate),
+                var_dims,
                 fill_value=nc4.default_fillvals[variabletype],
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
+
             for key, val in var_meta[var_name].items():
                 if isinstance(val, dict):
                     continue
                 self.variables[var_name].setncattr(key, val)
+
+            # https://docs.xarray.dev/en/stable/user-guide/io.html#coordinates
+            var_encoding = []
+            for x_dim, x_data_dict in extra_coords.items():
+                if x_dim in var_dims:
+                    var_encoding += x_data_dict.keys()
+
+            if len(var_encoding):
+                var_encoding = " ".join(var_encoding)
+                self.variables[var_name].setncattr("coordinates", var_encoding)
 
         return
 

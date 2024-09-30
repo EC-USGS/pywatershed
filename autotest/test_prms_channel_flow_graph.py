@@ -481,6 +481,7 @@ def test_prms_channel_flow_graph_to_model_dict(
     ans_dir = simulation["output_dir"]
     outflow_ans = xr.open_dataarray(ans_dir / "seg_outflow.nc")
     outflow_act = xr.open_dataarray(run_dir / "node_outflows.nc")[:, 0:(nsegs)]
+
     for tt in range(control.n_times):
         np.testing.assert_allclose(
             outflow_ans.values[tt, :],

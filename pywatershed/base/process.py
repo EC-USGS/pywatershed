@@ -538,10 +538,10 @@ class Process(Accessor):
                     continue
                 nc_path = self._netcdf_output_dir / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
-                    nc_path,
-                    self._params.coords,
-                    [variable_name],
-                    {variable_name: self.meta[variable_name]},
+                    name=nc_path,
+                    coordinates=self._params.coords,
+                    variables=[variable_name],
+                    var_meta={variable_name: self.meta[variable_name]},
                     extra_coords=extra_coords,
                     global_attrs={"process class": self.name},
                 )
@@ -555,11 +555,11 @@ class Process(Accessor):
             initial_variable = the_out_vars[0]
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                self._netcdf_output_dir / f"{self.name}.nc",
-                self._params.coords,
-                self._netcdf_output_vars,
-                self.meta,
-                {"process class": self.name},
+                name=self._netcdf_output_dir / f"{self.name}.nc",
+                coordinates=self._params.coords,
+                variables=self._netcdf_output_vars,
+                var_meta=self.meta,
+                global_attrs={"process class": self.name},
             )
             for variable in the_out_vars[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]

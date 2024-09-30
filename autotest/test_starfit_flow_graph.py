@@ -90,10 +90,13 @@ def big_sandy_parameters():
     return Parameters.from_ds(params)
 
 
-# TODO fixture for daily/hourly
-@pytest.mark.parametrize(
-    "compute_daily", [True, False], ids=("daily", "hourly")
+@pytest.fixture(
+    params=[True, False], ids=("daily", "hourly"), scope="function"
 )
+def compute_daily(request):
+    return request.param
+
+
 def test_starfit_flow_graph_postprocess(
     simulation,
     control,
@@ -173,11 +176,11 @@ def test_starfit_flow_graph_postprocess(
         flow_graph.calculate(1.0)
         flow_graph.output()
 
-        for var in answers.values():
-            var.advance()
-
         # use the results/actual as answers on wh_ingore and on the new nodes
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
+
             answers_conv_vol = {}
             for key, val in answers.items():
                 if key in convert_to_vol:
@@ -224,9 +227,6 @@ def test_starfit_flow_graph_postprocess(
     flow_graph.finalize()
 
 
-@pytest.mark.parametrize(
-    "compute_daily", [True, False], ids=("daily", "hourly")
-)
 def test_starfit_flow_graph_model_dict(
     simulation,
     control,
@@ -342,11 +342,11 @@ def test_starfit_flow_graph_model_dict(
         model.calculate()
         model.output()
 
-        for var in answers.values():
-            var.advance()
-
         # use the results as answers on wh_ingore and on the new nodes
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
+
             answers_conv_vol = {}
             for key, val in answers.items():
                 if key in convert_to_vol:

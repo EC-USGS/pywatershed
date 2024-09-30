@@ -61,27 +61,27 @@ class FlowNode(Accessor):
         raise Exception("This must be overridden")
 
     @property
-    def outflow(self):
+    def outflow(self) -> np.float64:
         "The average outflow of the FlowNode over the current timestep."
         raise Exception("This must be overridden")
 
     @property
-    def outflow_substep(self):
+    def outflow_substep(self) -> np.float64:
         """The outflow of the FlowNode over the sub-timestep."""
         raise Exception("This must be overridden")
 
     @property
-    def storage_change(self):
+    def storage_change(self) -> np.float64:
         "The storage change of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
-    def storage(self):
+    def storage(self) -> np.float64:
         "The storage of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
-    def sink_source(self):
+    def sink_source(self) -> np.float64:
         "The sink or source amount of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 

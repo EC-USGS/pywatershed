@@ -43,8 +43,9 @@ jobs:
           echo "SETUPTOOLS_ENABLE_FEATURES=legacy-editable" >> $GITHUB_ENV
 
       - name: Setup micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v1.9.0
         with:
+          micromamba-version: '1.5.10-0'
           environment-file: environment.yml
           cache-environment: true
           cache-downloads: true

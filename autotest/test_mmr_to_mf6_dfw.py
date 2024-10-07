@@ -250,10 +250,10 @@ def test_mmr_to_mf6_chf_dfw(tmp_path, binary_flw):
     # generate the mf6 results:
     #   cd modflow6_for_pws_ci/autotest  # or your mf6 repo location
     #   pytest -s -vv test_chf_dfw.py --keep=keepers
-    output_dir = pl.Path(
-        "../../modflow6_for_pws_ci/autotest/keepers/"
-        "test_mf6model[0-chf-dfw01]0"
-    )
+    # output_dir = pl.Path(
+    #     "../../modflow6_for_pws_ci/autotest/keepers/"
+    #     "test_mf6model[0-chf-dfw01]0"
+    # )
 
     # check binary grid file
     grb = flopy.mf6.utils.MfGrdFile(output_dir / f"{name}.disv1d.grb")

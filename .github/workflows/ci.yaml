@@ -150,8 +150,9 @@ jobs:
         run: .github/scripts/symlink_gfortran_mac.sh
 
       - name: Install Dependencies via Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v1.9.0
         with:
+          micromamba-version: '1.5.10-0'
           log-level: debug
           environment-file: environment.yml
           cache-environment: true

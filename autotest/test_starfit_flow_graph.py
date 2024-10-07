@@ -108,6 +108,36 @@ def test_starfit_flow_graph_postprocess(
 ):
     input_dir = simulation["output_dir"]
 
+    # in this test we'll cover the case of disconnected nodes and allowing
+    # them or not
+    def add_disconnected_node_data(ds: xr.Dataset) -> xr.Dataset:
+        # This just takes data from the first segment and repeats it
+        # at the end of the array. Editing the values is done outside this
+        # function.
+        seg_data = {}
+        for vv in list(ds.variables):
+            if "nsegment" in ds[vv].dims:
+                data = ds[vv].values
+                seg_data[vv] = (["nsegment"], np.append(data, data[0]))
+                del ds[vv]
+
+        nhm_seg = seg_data.pop("nhm_seg")
+        ds_seg = xr.Dataset(
+            data_vars=seg_data,
+            coords={"nhm_seg": nhm_seg},
+        )
+        return xr.merge([ds, ds_seg])
+
+    dis_ds = add_disconnected_node_data(discretization.to_xr_ds())
+    params_ds = add_disconnected_node_data(parameters.to_xr_ds())
+    dis_ds.tosegment[-1] = 0
+    dis_ds.tosegment_nhm[-1] = 99999
+    dis_ds.nhm_seg[-1] = 99998
+    params_ds.nhm_seg[-1] = 99998
+
+    discretization = Parameters.from_ds(dis_ds)
+    parameters = Parameters.from_ds(params_ds)
+
     # are we testing flowgraph netcdf output elsewhere?
     # i dont think so, so do it here.
     # cant really test answers per above note
@@ -122,27 +152,38 @@ def test_starfit_flow_graph_postprocess(
     ]
 
     # Currently this is the same as notebook 06
-    flow_graph = prms_channel_flow_graph_postprocess(
-        control=control,
-        input_dir=input_dir,
-        prms_channel_dis=discretization,
-        prms_channel_params=parameters,
-        new_nodes_maker_dict={
-            "starfit": StarfitFlowNodeMaker(
-                None,
-                big_sandy_parameters,
-                budget_type="error",
-                compute_daily=compute_daily,
-            ),
-            "pass_through": PassThroughNodeMaker(),
-        },
-        new_nodes_maker_names=["starfit", "pass_through"],
-        new_nodes_maker_indices=[0, 0],
-        new_nodes_flow_to_nhm_seg=[
-            44426,
-            44435,
-        ],
-    )
+
+    new_nodes_maker_names = ["starfit", "pass_through"]
+    new_nodes_maker_indices = [0, 0]
+    new_nodes_maker_ids = [-2, -1]
+
+    check_names = ["prms_channel"] + new_nodes_maker_names
+    check_indices = [dis_ds.dims["nsegment"] - 1] + new_nodes_maker_indices
+    check_ids = [dis_ds.nhm_seg[-1]] + new_nodes_maker_ids
+
+    with pytest.warns(UserWarning):
+        flow_graph = prms_channel_flow_graph_postprocess(
+            control=control,
+            input_dir=input_dir,
+            prms_channel_dis=discretization,
+            prms_channel_params=parameters,
+            new_nodes_maker_dict={
+                "starfit": StarfitFlowNodeMaker(
+                    None,
+                    big_sandy_parameters,
+                    budget_type="error",
+                    compute_daily=compute_daily,
+                ),
+                "pass_through": PassThroughNodeMaker(),
+            },
+            new_nodes_maker_names=new_nodes_maker_names,
+            new_nodes_maker_indices=new_nodes_maker_indices,
+            new_nodes_maker_ids=new_nodes_maker_ids,
+            new_nodes_flow_to_nhm_seg=[
+                44426,
+                44435,
+            ],
+        )
 
     # get the segments un affected by flow, where the PRMS solutions should
     # match
@@ -189,27 +230,33 @@ def test_starfit_flow_graph_postprocess(
                     current = val.current
 
                 # <
+                # Fill the first node, the fake disconnected node, with
+                # whatever value is in the graph
+                # current = np.append(current, flow_graph[key][-3:-2])
                 # Fill on the downstream reaches of PRMS, where we "ingnore"
+                # wh_ignore is on the extended dis/params but shouldnt make
+                # a difference with original since original data in same
+                # indices with new, disconnected node at the end.
                 current[(wh_ignore,)] = flow_graph[key][(wh_ignore,)]
                 # Fill in the last two nodes
                 answers_conv_vol[key] = np.concatenate(
-                    [current, flow_graph[key][-2:]]
+                    [current, flow_graph[key][-3:]]
                 )
 
             # <<
             # there are no expected sources or sinks in this test
             answers_conv_vol["node_sink_source"] = np.concatenate(
-                [val.current * zero, flow_graph["node_sink_source"][-2:]]
+                [val.current * zero, flow_graph["node_sink_source"][-3:]]
             )
             answers_conv_vol["node_negative_sink_source"] = np.concatenate(
                 [
                     val.current * zero,
-                    flow_graph["node_negative_sink_source"][-2:],
+                    flow_graph["node_negative_sink_source"][-3:],
                 ]
             )
 
             answers_conv_vol["node_storages"] = np.concatenate(
-                [val.current * nan, flow_graph["node_storages"][-2:]]
+                [val.current * nan, flow_graph["node_storages"][-3:]]
             )
 
             compare_in_memory(
@@ -225,6 +272,11 @@ def test_starfit_flow_graph_postprocess(
     assert flow_graph._nodes[-2].budget is not None
 
     flow_graph.finalize()
+    for vv in control.options["netcdf_output_var_names"]:
+        da = xr.load_dataarray(tmp_path / f"{vv}.nc", concat_characters=True)
+        assert da.node_maker_index[-3:].values.tolist() == check_indices
+        assert da.node_maker_name[-3:].values.tolist() == check_names
+        assert da.node_maker_id[-3:].values.tolist() == check_ids
 
 
 def test_starfit_flow_graph_model_dict(
@@ -290,6 +342,7 @@ def test_starfit_flow_graph_model_dict(
     }
     new_nodes_maker_names = ["starfit", "pass_through"]
     new_nodes_maker_indices = [0, 0]
+    new_nodes_maker_ids = [-2, -1]
     new_nodes_flow_to_nhm_seg = [
         44426,
         44435,
@@ -303,6 +356,7 @@ def test_starfit_flow_graph_model_dict(
         new_nodes_maker_dict=new_nodes_maker_dict,
         new_nodes_maker_names=new_nodes_maker_names,
         new_nodes_maker_indices=new_nodes_maker_indices,
+        new_nodes_maker_ids=new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg=new_nodes_flow_to_nhm_seg,
         graph_budget_type="error",  # move to error
     )

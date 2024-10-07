@@ -620,8 +620,10 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_maker_dict: dict,
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
+    new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
     budget_type: Literal["defer", None, "warn", "error"] = "defer",
+    type_check_nodes: bool = False,
 ) -> FlowGraph:
     """Add nodes to a PRMSChannel-based FlowGraph to run from known inputs.
 
@@ -646,12 +648,13 @@ def prms_channel_flow_graph_postprocess(
         control: The control object for the run
         input_dir: the directory where the input files are found
         prms_channel_dis: the PRMSChannel discretization object
-        prms_channel_params: the PRMSChannel parameters object
+        prms_channel_params: the PRMSChannel parameters object.
         new_nodes_maker_dict: a dictionary of key/name and and instantiated
-            NodeMakers
-        new_nodes_maker_names: collated list of what node makers to use
+            NodeMakers.
+        new_nodes_maker_names: collated list of what node makers to use.
         new_nodes_maker_indices: collated list of indices relative to each
-            NodeMaker
+            NodeMaker.
+        new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
         new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
             which the node will flow.
         budget_type: one of ["defer", None, "warn", "error"] with "defer" being
@@ -675,6 +678,7 @@ def prms_channel_flow_graph_postprocess(
         new_nodes_maker_dict,
         new_nodes_maker_names,
         new_nodes_maker_indices,
+        new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg,
     )
 
@@ -719,6 +723,7 @@ def prms_channel_flow_graph_postprocess(
         inflows=inflows_graph,
         node_maker_dict=node_maker_dict,
         budget_type=budget_type,
+        type_check_nodes=type_check_nodes,
     )
     return flow_graph
 
@@ -731,8 +736,10 @@ def prms_channel_flow_graph_to_model_dict(
     new_nodes_maker_dict: dict,
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
+    new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
     graph_budget_type: Literal["defer", None, "warn", "error"] = "defer",
+    type_check_nodes: bool = False,
 ) -> dict:
     """Add nodes to a PRMSChannel-based FlowGraph within a Model's model_dict.
 
@@ -763,6 +770,7 @@ def prms_channel_flow_graph_to_model_dict(
         new_nodes_maker_names: collated list of what node makers to use
         new_nodes_maker_indices: collated list of indices relative to each
             NodeMaker
+        new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
         new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
             which the node will flow.
         graph_budget_type: one of ["defer", None, "warn", "error"] with
@@ -783,6 +791,7 @@ def prms_channel_flow_graph_to_model_dict(
         new_nodes_maker_dict,
         new_nodes_maker_names,
         new_nodes_maker_indices,
+        new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg,
     )
 
@@ -869,6 +878,7 @@ def _build_flow_graph_inputs(
     new_nodes_maker_dict: dict,
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
+    new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
 ):
     prms_channel_flow_makers = [
@@ -895,6 +905,9 @@ def _build_flow_graph_inputs(
     node_maker_index = np.array(
         np.arange(nseg).tolist() + new_nodes_maker_indices
     )
+    node_maker_id = np.append(
+        prms_channel_dis.coords["nhm_seg"], np.array(new_nodes_maker_ids)
+    )
 
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
     dis_params = prms_channel_dis.parameters
@@ -920,7 +933,7 @@ def _build_flow_graph_inputs(
         to_graph_index[wh_intervene_below_graph] = nseg + ii
 
     # <
-    params_flow_graph = Parameters(
+    param_dict = dict(
         dims={
             "nnodes": nnodes,
         },
@@ -930,16 +943,18 @@ def _build_flow_graph_inputs(
         data_vars={
             "node_maker_name": node_maker_name,
             "node_maker_index": node_maker_index,
+            "node_maker_id": node_maker_id,
             "to_graph_index": to_graph_index,
         },
         metadata={
             "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
-        validate=True,
     )
+    params_flow_graph = Parameters(**param_dict, validate=True)
 
     # make available at top level __init__
     node_maker_dict = {

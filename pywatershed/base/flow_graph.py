@@ -117,8 +117,13 @@ class FlowNodeMaker(Accessor):
         raise Exception("This must be overridden")
 
 
+def type_check(scalar: float):
+    assert isinstance(scalar, float)
+    return None
+
+
 class FlowGraph(ConservativeProcess):
-    """FlowGraph manages and computes FlowNodes given by FlowNodeMakers.
+    r"""FlowGraph manages and computes FlowNodes given by FlowNodeMakers.
 
     FlowGraph lets users combine :class:`FlowNode`\ s of different kinds into a
     single mathmetical graph of flow solution. FlowNodes provide explicit
@@ -321,8 +326,10 @@ class FlowGraph(ConservativeProcess):
         parameters: Parameters,
         inflows: adaptable,
         node_maker_dict: dict,
+        params_not_to_netcdf: list[str] = None,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         allow_disconnected_nodes: bool = True,  # todo, make False
+        type_check_nodes: bool = False,
         verbose: bool = None,
     ):
         """Initialize a FlowGraph.
@@ -346,6 +353,9 @@ class FlowGraph(ConservativeProcess):
             allow_disconnected_nodes: If False, an error is thrown when
               disconnected nodes are found in the graph. This happens often
               in PRMS, so allowing is a convenience but bad practive.
+            type_check_nodes: Intended for debugging if FlowNodes are not
+              compliant with their required float return values, which can
+              cause a lot or warnings or errors.
             verbose: Print extra diagnostic messages?
 
         The `parameters` argument is a :class:`Parameters` object which
@@ -353,10 +363,15 @@ class FlowGraph(ConservativeProcess):
 
         * node_maker_name: A list or np.array of the FlowNodeMaker name for
           each node.
-        * node_maker_index: A list or np.array of the indices to ask for from
+        * node_maker_index: An np.array of the indices to ask for from
           the associated/collated FlowNodeMaker (above) for each node
-        * to_graph_index: the index of the downstream index in the FlowGraph
-          with -1 indicating an outflow node. This must specify a DAG.
+        * node_maker_id: An np.array of the integer ids used for each node by
+          its node maker. Not used internally but necessary or helpful to
+          users in post-processing to identify nodes. Ids may not be unique in
+          this list but should probably be unique to each node maker.
+        * to_graph_index: np.array of the index of the downstream index in the
+          FlowGraph with -1 indicating an outflow node. This must specify a
+          DAG.
 
         The inputs inflows, node_maker_name, node_maker_index, and
         to_graph_index are collated. The order of execution of the graph is not
@@ -395,6 +410,7 @@ class FlowGraph(ConservativeProcess):
         return (
             "node_maker_name",
             "node_maker_index",
+            "node_maker_id",
             "to_graph_index",
         )
 
@@ -404,6 +420,7 @@ class FlowGraph(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
+        """FlowNode initial values."""
         return {
             "outflows": nan,
             "node_upstream_inflows": nan,
@@ -478,7 +495,7 @@ class FlowGraph(ConservativeProcess):
             node_order = [0]
 
         # Check if the user is suppling disconnected nodes
-        disconnected_nodes_present = len(self._graph) == self.nnodes
+        disconnected_nodes_present = len(self._graph) != self.nnodes
 
         if disconnected_nodes_present:
             if not self._allow_disconnected_nodes:
@@ -527,17 +544,27 @@ class FlowGraph(ConservativeProcess):
 
         params = self._params.parameters
 
-        # https://unidata.github.io/netcdf4-python/#dealing-with-strings
-        mknames = params["node_maker_name"]
-        maxlen = np.array([len(nn) for nn in mknames]).max()
-        node_maker_names = stringtochar(np.array(mknames, dtype=f"S{maxlen}"))
+        skip_params = self._params_not_to_netcdf
+        if skip_params is None:
+            skip_params = []
 
-        extra_coords = {
-            "node_coord": {
-                "node_maker_name": node_maker_names,
-                "node_maker_index": np.array(params["node_maker_index"]),
-            },
-        }
+        extra_coords = {"node_coord": {}}
+        for param_name in params.keys():
+            if param_name in skip_params + ["node_coord"]:
+                continue
+
+            if param_name == "node_maker_name":
+                # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
+                mknames = params["node_maker_name"]
+                maxlen = np.array([len(nn) for nn in mknames]).max()
+                param_value = stringtochar(
+                    np.array(mknames, dtype=f"S{maxlen}")
+                )
+
+            else:
+                param_value = params[param_name]
+
+            extra_coords["node_coord"][param_name] = param_value
 
         # this gets the budget initialization too
         super().initialize_netcdf(
@@ -579,6 +606,8 @@ class FlowGraph(ConservativeProcess):
                     self.inflows[inode],
                 )
                 # Get the outflows back
+                if self._type_check_nodes:
+                    type_check(self._nodes[inode].outflow_substep)
                 self._node_outflow_substep[inode] = self._nodes[
                     inode
                 ].outflow_substep
@@ -600,6 +629,12 @@ class FlowGraph(ConservativeProcess):
         )
 
         for ii in range(self.nnodes):
+            if self._type_check_nodes:
+                type_check(self._nodes[ii].outflow)
+                type_check(self._nodes[ii].storage_change)
+                type_check(self._nodes[ii].storage)
+                type_check(self._nodes[ii].sink_source)
+
             self.node_outflows[ii] = self._nodes[ii].outflow
             self.node_storage_changes[ii] = self._nodes[ii].storage_change
             self.node_storages[ii] = self._nodes[ii].storage

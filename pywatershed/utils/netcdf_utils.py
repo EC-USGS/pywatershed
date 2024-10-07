@@ -522,6 +522,7 @@ class NetCdfWrite(Accessor):
             )
             self.node_coord[:] = coordinates["node_coord"]
 
+        dims_created = []
         for x_dim, x_data_dict in extra_coords.items():
             for x_var_name, x_data in x_data_dict.items():
                 nc_type = np_type_to_netcdf_type_dict[x_data.dtype]
@@ -529,15 +530,28 @@ class NetCdfWrite(Accessor):
                 dim = (x_dim,)
                 if nc_type == "S#":
                     sdimlen = len(x_data[0])
-                    nc_type = f"S{sdimlen}"
+                    # S1 gives "char" type in the file whereas another
+                    # number gives "string" type. The former is properly
+                    # handled by xarray
+                    nc_type = f"S1"
+                    if nc_type in dims_created:
+                        continue
+
                     dim = (x_dim, nc_type)
+                    _ = self.dataset.createDimension(nc_type, sdimlen)
+
+                    dims_created += [sdimlen]
 
                 # <
-                _ = self.dataset.createDimension(nc_type, sdimlen)
                 self[x_var_name] = self.dataset.createVariable(
                     x_var_name, nc_type, dim
                 )
-                self[x_var_name][:] = x_data
+                if "S" == nc_type[0]:
+                    self[x_var_name][:, :] = x_data
+                    self[x_var_name]._Encoding = "utf-8"
+
+                else:
+                    self[x_var_name][:] = x_data
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):

@@ -533,7 +533,7 @@ class NetCdfWrite(Accessor):
                     # S1 gives "char" type in the file whereas another
                     # number gives "string" type. The former is properly
                     # handled by xarray
-                    nc_type = f"S1"
+                    nc_type = "S1"
                     if nc_type in dims_created:
                         continue
 

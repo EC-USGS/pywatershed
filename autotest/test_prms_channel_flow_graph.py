@@ -115,12 +115,14 @@ def test_prms_channel_flow_graph_compare_prms(
         data_vars={
             "node_maker_name": ["prms_channel"] * nnodes,
             "node_maker_index": np.arange(nnodes),
+            "node_maker_id": np.arange(nnodes),
             "to_graph_index": discretization.parameters["tosegment"] - 1,
         },
         metadata={
             "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
         validate=True,
@@ -288,12 +290,14 @@ def test_hru_segment_flow_exchange(
         data_vars={
             "node_maker_name": ["prms_channel"] * nnodes,
             "node_maker_index": np.arange(nnodes),
+            "node_maker_id": np.arange(nnodes),
             "to_graph_index": discretization.parameters["tosegment"] - 1,
         },
         metadata={
             "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
         validate=True,
@@ -449,6 +453,7 @@ def test_prms_channel_flow_graph_to_model_dict(
         new_nodes_maker_dict={"pass": PassThroughNodeMaker()},
         new_nodes_maker_names=["pass"] * n_new_nodes,
         new_nodes_maker_indices=list(range(n_new_nodes)),
+        new_nodes_maker_ids=list(range(n_new_nodes)),
         new_nodes_flow_to_nhm_seg=random_seg_ids,
         graph_budget_type="warn",  # move to error
     )

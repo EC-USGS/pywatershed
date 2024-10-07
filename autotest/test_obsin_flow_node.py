@@ -132,6 +132,7 @@ def test_prms_channel_obsin_compare_prms(
     node_maker_name[-npoi:] = ["obsin"] * npoi
     node_maker_index = np.arange(nnodes)
     node_maker_index[-npoi:] = np.arange(npoi)
+    node_maker_id = np.arange(nnodes)
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
     dis_params = discretization_prms.parameters
     to_graph_index[0:-npoi] = dis_params["tosegment"] - 1
@@ -177,12 +178,14 @@ def test_prms_channel_obsin_compare_prms(
         data_vars={
             "node_maker_name": node_maker_name,
             "node_maker_index": node_maker_index,
+            "node_maker_id": node_maker_id,
             "to_graph_index": to_graph_index,
         },
         metadata={
             "nnodes": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
         validate=True,

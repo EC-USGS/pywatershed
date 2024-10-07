@@ -160,22 +160,22 @@ jobs:
           create-args: >-
             python=${{matrix.python-version}}
 
-      # - name: Checkout MODFLOW 6
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: ${{ env.MF6_REMOTE }}
-      #     ref: ${{ env.MF6_REF }}
-      #     path: modflow6
+      - name: Checkout MODFLOW 6
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.MF6_REMOTE }}
+          ref: ${{ env.MF6_REF }}
+          path: modflow6
 
-      # - name: Update flopy MODFLOW 6 classes
-      #   working-directory: modflow6/autotest
-      #   run: |
-      #     python update_flopy.py
+      - name: Update flopy MODFLOW 6 classes
+        working-directory: modflow6/autotest
+        run: |
+          python update_flopy.py
 
-      # - name: Install mf6 nightly build binaries
-      #   uses: modflowpy/install-modflow-action@v1
-      #   with:
-      #     repo: modflow6-nightly-build
+      - name: Install mf6 nightly build binaries
+        uses: modflowpy/install-modflow-action@v1
+        with:
+          repo: modflow6-nightly-build
 
       - name: Install pywatershed
         run: |

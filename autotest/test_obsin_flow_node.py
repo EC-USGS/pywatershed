@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pyPRMS import Streamflow as PRMSStreamflowData
+from pyPRMS import DataFile as PRMSStreamflowData
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
@@ -68,7 +68,13 @@ def test_prms_channel_obsin_compare_prms(
     )
     control_parameters = PrmsParameters.load(control_param_file)
     obsout_seg = control_parameters.parameters["obsout_segment"] - 1
-    sf_data = PRMSStreamflowData(simulation["dir"] / "sf_data").data
+    sf_data = PRMSStreamflowData(
+        simulation["dir"] / "sf_data"
+    ).data_by_variable("runoff")
+    old_names = sf_data.columns.tolist()
+    new_names = [cc.split("_")[1] for cc in sf_data.columns.tolist()]
+    sf_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
+
     poi_inds = obsout_seg[np.where(obsout_seg >= 0)].tolist()
     npoi = len(poi_inds)
     poi_ids = discretization_prms.parameters["poi_gage_id"][(poi_inds),]

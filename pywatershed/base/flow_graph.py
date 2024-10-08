@@ -532,8 +532,6 @@ class FlowGraph(ConservativeProcess):
         output_vars: list = None,
         extra_coords: dict = None,
     ) -> None:
-        from netCDF4 import stringtochar
-
         if self._netcdf_initialized:
             msg = (
                 f"{self.name} class previously initialized netcdf output "
@@ -553,18 +551,7 @@ class FlowGraph(ConservativeProcess):
             if param_name in skip_params + ["node_coord"]:
                 continue
 
-            if param_name == "node_maker_name":
-                # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
-                mknames = params["node_maker_name"]
-                maxlen = np.array([len(nn) for nn in mknames]).max()
-                param_value = stringtochar(
-                    np.array(mknames, dtype=f"S{maxlen}")
-                )
-
-            else:
-                param_value = params[param_name]
-
-            extra_coords["node_coord"][param_name] = param_value
+            extra_coords["node_coord"][param_name] = params[param_name]
 
         # this gets the budget initialization too
         super().initialize_netcdf(

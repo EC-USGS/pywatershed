@@ -113,7 +113,7 @@ def test_prms_channel_flow_graph_compare_prms(
             "node_coord": np.arange(nnodes),
         },
         data_vars={
-            "node_maker_name": ["prms_channel"] * nnodes,
+            "node_maker_name": np.array(["prms_channel"] * nnodes, dtype="U"),
             "node_maker_index": np.arange(nnodes),
             "node_maker_id": np.arange(nnodes),
             "to_graph_index": discretization.parameters["tosegment"] - 1,
@@ -398,6 +398,8 @@ def test_hru_segment_flow_exchange(
 def test_prms_channel_flow_graph_to_model_dict(
     simulation, control, discretization, parameters, tmp_path
 ):
+    # This also tests the netcdf output contains the correct coordinates, at
+    # the end.
     domain_dir = simulation["dir"]
     input_dir = simulation["output_dir"]
     run_dir = tmp_path
@@ -445,15 +447,19 @@ def test_prms_channel_flow_graph_to_model_dict(
     random_seg_ids = discretization.parameters["nhm_seg"][rando]
     n_new_nodes = len(random_seg_ids)
 
+    check_names = ["pass"] * n_new_nodes
+    check_indices = list(range(n_new_nodes))
+    check_ids = list(range(n_new_nodes))
+
     model_dict = prms_channel_flow_graph_to_model_dict(
         model_dict=model_dict,
         prms_channel_dis=discretization,
         prms_channel_dis_name="dis_both",
         prms_channel_params=parameters,
         new_nodes_maker_dict={"pass": PassThroughNodeMaker()},
-        new_nodes_maker_names=["pass"] * n_new_nodes,
-        new_nodes_maker_indices=list(range(n_new_nodes)),
-        new_nodes_maker_ids=list(range(n_new_nodes)),
+        new_nodes_maker_names=check_names,
+        new_nodes_maker_indices=check_indices,
+        new_nodes_maker_ids=check_ids,
         new_nodes_flow_to_nhm_seg=random_seg_ids,
         graph_budget_type="warn",  # move to error
     )
@@ -484,13 +490,20 @@ def test_prms_channel_flow_graph_to_model_dict(
     model.finalize()
 
     ans_dir = simulation["output_dir"]
-    outflow_ans = xr.open_dataarray(ans_dir / "seg_outflow.nc")
-    outflow_act = xr.open_dataarray(run_dir / "node_outflows.nc")[:, 0:(nsegs)]
-
+    outflow_ans = xr.load_dataarray(ans_dir / "seg_outflow.nc")
+    outflow_act = xr.load_dataarray(run_dir / "node_outflows.nc")
+    outflow_act_compare = outflow_act[:, 0:(nsegs)]
     for tt in range(control.n_times):
         np.testing.assert_allclose(
             outflow_ans.values[tt, :],
-            outflow_act.values[tt, :],
+            outflow_act_compare.values[tt, :],
             rtol=rtol,
             atol=atol,
         )
+
+    # check that the coordinates match what was provided
+    for vv in control.options["netcdf_output_var_names"]:
+        da = xr.load_dataarray(tmp_path / f"{vv}.nc")
+        assert da.node_maker_index[-3:].values.tolist() == check_indices
+        assert da.node_maker_name[-3:].values.tolist() == check_names
+        assert da.node_maker_id[-3:].values.tolist() == check_ids

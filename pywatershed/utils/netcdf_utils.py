@@ -368,6 +368,8 @@ class NetCdfWrite(Accessor):
         complevel: int = 4,
         chunk_sizes: dict = {"time": 1, "hruid": 0},
     ):
+        from netCDF4 import stringtochar
+
         """Output the csv output data to a netcdf file
 
         Args:
@@ -522,32 +524,49 @@ class NetCdfWrite(Accessor):
             )
             self.node_coord[:] = coordinates["node_coord"]
 
-        dims_created = []
+        char_dims_created = []
         for x_dim, x_data_dict in extra_coords.items():
             for x_var_name, x_data in x_data_dict.items():
-                nc_type = np_type_to_netcdf_type_dict[x_data.dtype]
-                # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
+                type = x_data.dtype
+                type_str = str(type)
+
                 dim = (x_dim,)
-                if nc_type == "S#":
-                    sdimlen = len(x_data[0])
+                if "U" in type_str or "S" in type_str:
+                    # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
                     # S1 gives "char" type in the file whereas another
                     # number gives "string" type. The former is properly
                     # handled by xarray
                     nc_type = "S1"
-                    if nc_type in dims_created:
+
+                    # if it is a string array, convert it to a character array
+                    # I dont understand the particulars here, may need more
+                    # work
+                    if "U" in type_str:
+                        char_array = stringtochar(x_data.astype("S"))
+                    else:
+                        char_array = stringtochar(x_data)
+
+                    char_dim_len = char_array.shape[1]
+                    dim_name = f"char{char_dim_len}"
+                    if dim_name in char_dims_created:
                         continue
 
-                    dim = (x_dim, nc_type)
-                    _ = self.dataset.createDimension(nc_type, sdimlen)
+                    dim = (x_dim, dim_name)
+                    _ = self.dataset.createDimension(
+                        dimname=dim_name, size=char_dim_len
+                    )
 
-                    dims_created += [sdimlen]
+                    char_dims_created += [dim_name]
+
+                else:
+                    nc_type = np_type_to_netcdf_type_dict[type]
 
                 # <
                 self[x_var_name] = self.dataset.createVariable(
-                    x_var_name, nc_type, dim
+                    varname=x_var_name, datatype=nc_type, dimensions=dim
                 )
-                if "S" == nc_type[0]:
-                    self[x_var_name][:, :] = x_data
+                if "S1" == nc_type:
+                    self[x_var_name][:, :] = char_array
                     self[x_var_name]._Encoding = "utf-8"
 
                 else:

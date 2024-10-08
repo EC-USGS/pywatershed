@@ -63,7 +63,6 @@ np_type_to_netcdf_type_dict = {
     np.dtype("uint16"): "u2",
     np.dtype("uint8"): "u1",
     np.dtype("bool"): None,
-    np.dtype("|S1"): "S#",
 }
 
 inch2cm = 2.54

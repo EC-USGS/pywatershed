@@ -902,6 +902,9 @@ def _build_flow_graph_inputs(
     nnodes = nseg + nnew
 
     node_maker_name = ["prms_channel"] * nseg + new_nodes_maker_names
+    maxlen = np.array([len(nn) for nn in node_maker_name]).max()
+    # need this to be unicode U# for keys and searching below
+    node_maker_name = np.array(node_maker_name, dtype=f"|U{maxlen}")
     node_maker_index = np.array(
         np.arange(nseg).tolist() + new_nodes_maker_indices
     )
@@ -921,11 +924,11 @@ def _build_flow_graph_inputs(
         )
         # have to map to the graph from an index found in prms_channel
         wh_intervene_above_graph = np.where(
-            (np.array(node_maker_name) == "prms_channel")
+            (node_maker_name == "prms_channel")
             & (node_maker_index == wh_intervene_above_nhm[0][0])
         )
         wh_intervene_below_graph = np.where(
-            (np.array(node_maker_name) == "prms_channel")
+            (node_maker_name == "prms_channel")
             & np.isin(node_maker_index, wh_intervene_below_nhm)
         )
 

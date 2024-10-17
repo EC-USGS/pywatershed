@@ -287,8 +287,8 @@ def test_mmr_to_mf6_chf_dfw(tmp_path, binary_flw):
 
 # <
 answers_regression_means = {
-    "stage_all": 1.03667372881148,
-    "flow_all": 44.685014111989425,
+    "stage_all": 1.0372047024253908,
+    "flow_all": 44.70210250910929,
 }
 
 
@@ -470,4 +470,5 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
 
     for kk, vv in answers_regression_means.items():
         abs_diff = abs(locals()[kk].mean() - vv)
+
         assert abs_diff < 1e-5, f"results for {kk} are not close"

@@ -37,7 +37,7 @@ def test_notebooks(notebook):
     ipython = bin_path / "ipython"
     assert ipython.exists(), f"ipython not found at: {ipython}"
 
-    if "06" == notebook[0:2]:
+    if "06" == str(notebook)[0:2]:
         cmd = ["ipython", "-Wignore", str(nb_py)]
     else:
         cmd = ["ipython", str(nb_py)]

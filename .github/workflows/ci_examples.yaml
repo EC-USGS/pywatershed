@@ -53,8 +53,8 @@ jobs:
       - name: Checkout MODFLOW 6
         uses: actions/checkout@v4
         with:
-          repository: ${{ env.MF6_REMOTE }}
-          ref: ${{ env.MF6_REF }}
+          repository: MODFLOW-USGS/modflow6
+          ref: develop
           path: modflow6
 
       - name: Update flopy MODFLOW 6 classes

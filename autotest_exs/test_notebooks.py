@@ -37,7 +37,10 @@ def test_notebooks(notebook):
     ipython = bin_path / "ipython"
     assert ipython.exists(), f"ipython not found at: {ipython}"
 
-    cmd = ["ipython", str(nb_py)]
+    if "06" == notebook[0:2]:
+        cmd = ["ipython", "-Wignore", str(nb_py)]
+    else:
+        cmd = ["ipython", str(nb_py)]
     proc = subprocess.run(cmd)
     assert proc.returncode == 0, f"Running the notebook failed: {notebook}"
 

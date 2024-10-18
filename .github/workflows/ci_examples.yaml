@@ -50,6 +50,23 @@ jobs:
           cache-environment: true
           cache-downloads: true
 
+      - name: Checkout MODFLOW 6
+        uses: actions/checkout@v4
+        with:
+          repository: MODFLOW-USGS/modflow6
+          ref: develop
+          path: modflow6
+
+      - name: Update flopy MODFLOW 6 classes
+        working-directory: modflow6/autotest
+        run: |
+          python update_flopy.py
+
+      - name: Install mf6 nightly build binaries
+        uses: modflowpy/install-modflow-action@v1
+        with:
+          repo: modflow6-nightly-build
+
       - name: Install error reporter
         run: |
           pip install pytest-github-actions-annotate-failures

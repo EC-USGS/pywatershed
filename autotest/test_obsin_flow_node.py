@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pyPRMS.DataFile import DataFile as PRMSStreamflowData
+from pyPRMS import DataFile as PRMSStreamflowData
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory

@@ -13,6 +13,8 @@
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/version.svg)](https://anaconda.org/conda-forge/pywatershed)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/platforms.svg)](https://anaconda.org/conda-forge/pywatershed)
 
+[![DOI:10.5066/P9AVWA7Z](https://img.shields.io/badge/DOI-10.5066/P9AVWA7Z-b4a9fe.svg)](https://doi.org/10.5066/P9AVWA7Z)
+
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
 
 
@@ -24,6 +26,7 @@
 - [Installation](#installation)
 - [Getting started / Example notebooks](#getting-started--example-notebooks)
 - [Community engagement](#community-engagement)
+- [How to Cite](#how-to-cite)
 - [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -149,6 +152,8 @@ guidelines.
 
 Thank you for your interest.
 
+## How to Cite
+McCreight, J., Langevin, C. D., & Hughes, J. D. (2023). pywatershed (Version 1.0.0) [Computer software]. [https://doi.org/10.5066/P9AVWA7Z](https://doi.org/10.5066/P9AVWA7Z)
 
 ## Disclaimer
 

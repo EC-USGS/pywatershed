@@ -67,7 +67,7 @@ class MmrToMf6Dfw:
         Units of meters from metadata (these are converted to units requested
         for modflow, which we currently hardcode to meters and seconds.)
     * seg_slope:
-        Passed directly to SWF DFW. Also used to calculate seg_mid_elevation if
+        Passed directly to CHF DFW. Also used to calculate seg_mid_elevation if
         not present in parameters. See its description below. Unitless slope.
     * hru_segment:
         Used to calculate seg_mid_elevation if not present in parameters. See
@@ -81,7 +81,7 @@ class MmrToMf6Dfw:
         This is (apparently) the NHD bank-full width present in the PRMS
         parameter files but unused in PRMS. Units are in meters.
     * mann_n:
-        Mannings N coefficient for MMR. Passed directly to SWF DFW. Units in
+        Mannings N coefficient for MMR. Passed directly to CHF DFW. Units in
         seconds / meter ** (1/3) according to the metadata.
 
     The following optional parameters can be user-supplied but are NOT part of
@@ -246,7 +246,7 @@ class MmrToMf6Dfw:
         self._handle_control_parameters()
         self._set_sim()
         self._set_tdis()
-        self._set_swf()
+        self._set_chf()
         self._set_disv1d()
         self._set_flw()
         self._set_ims()
@@ -389,8 +389,8 @@ class MmrToMf6Dfw:
                 perioddata=tdis_rc,
             )
 
-    def _set_swf(self):
-        self._swf = flopy.mf6.ModflowSwf(
+    def _set_chf(self):
+        self._chf = flopy.mf6.ModflowChf(
             self._sim, modelname=self._sim_name, save_flows=self._save_flows
         )
 
@@ -404,16 +404,6 @@ class MmrToMf6Dfw:
 
         if "idomain" not in self._disv1d_options.keys():
             self._disv1d_options["idomain"] = 1
-
-        if "length" not in self._disv1d_options.keys():
-            # meters
-            # unit-ed quantities
-            segment_units = self._units(meta.parameters["seg_length"]["units"])
-            self._segment_length = parameters["seg_length"]
-            self._segment_length = self._segment_length * segment_units
-            self._disv1d_options["length"] = (
-                self._segment_length.to_base_units().magnitude
-            )
 
         if "width" not in self._disv1d_options.keys():
             # meters, per metadata
@@ -432,13 +422,13 @@ class MmrToMf6Dfw:
             # <
             self._disv1d_options["bottom"] = self._seg_mid_elevation
 
-        # < vertices and cell2d
+        # < vertices and cell1d
         if self._segment_shp_file is not None:
             opts_set = [
                 "nodes",
                 "nvert",
                 "vertices",
-                "cell2d",
+                "cell1d",
             ]
             for oo in opts_set:
                 self._warn_option_overwrite(oo, opt_dict_name, method_name)
@@ -486,9 +476,9 @@ class MmrToMf6Dfw:
                 for vv in range(len(inds)):
                     vertices += [[inds[vv], geoms[vv][0], geoms[vv][1]]]
 
-            # cell2d: for each reach, if it has a "to", get the to's first ind
+            # cell1d: for each reach, if it has a "to", get the to's first ind
             # as the last vertex ind for the reach
-            cell2d = []
+            cell1d = []
             for rr in range(nreach):
                 reach_id = parameters["nhm_seg"][rr]
                 icvert = reach_vert_inds[reach_id]
@@ -498,7 +488,7 @@ class MmrToMf6Dfw:
                     icvert += [to_reach_start_ind]
                 # <
                 ncvert = len(icvert)
-                cell2d += [[rr, 0.5, ncvert, *icvert]]
+                cell1d += [[rr, 0.5, ncvert, *icvert]]
 
             # < Just a check
             check_connectivity = True
@@ -507,8 +497,8 @@ class MmrToMf6Dfw:
                     reach_id = parameters["nhm_seg"][rr]
 
                     reach_ind = rr
-                    reach_cell2d_start_ind = cell2d[reach_ind][3]
-                    reach_cell2d_end_ind = cell2d[reach_ind][-1]
+                    reach_cell1d_start_ind = cell1d[reach_ind][3]
+                    reach_cell1d_end_ind = cell1d[reach_ind][-1]
 
                     wh_geom = np.where(
                         segment_gdf.nsegment_v.values == reach_id
@@ -524,9 +514,9 @@ class MmrToMf6Dfw:
                         to_reach_ind = np.where(
                             parameters["nhm_seg"] == to_reach_id
                         )[0][0]
-                        to_reach_cell2d_start_ind = cell2d[to_reach_ind][3]
+                        to_reach_cell1d_start_ind = cell1d[to_reach_ind][3]
                         assert (
-                            reach_cell2d_end_ind == to_reach_cell2d_start_ind
+                            reach_cell1d_end_ind == to_reach_cell1d_start_ind
                         )
 
                         # wh_down_geom = np.where(
@@ -548,9 +538,9 @@ class MmrToMf6Dfw:
                         from_reach_ind = np.where(
                             parameters["nhm_seg"] == from_reach_id
                         )[0][0]
-                        from_reach_cell2d_end_ind = cell2d[from_reach_ind][-1]
+                        from_reach_cell1d_end_ind = cell1d[from_reach_ind][-1]
                         assert (
-                            from_reach_cell2d_end_ind == reach_cell2d_start_ind
+                            from_reach_cell1d_end_ind == reach_cell1d_start_ind
                         )
 
                         # wh_up_geom = np.where(
@@ -561,7 +551,7 @@ class MmrToMf6Dfw:
                         # ).tolist()
                         # assert reach_up_geom[-1] == reach_geom[0]
 
-            nnodes = len(cell2d)
+            nnodes = len(cell1d)
             assert nnodes == self._nsegment
             nvert = len(vertices)
 
@@ -571,11 +561,11 @@ class MmrToMf6Dfw:
             self._disv1d_options["nodes"] = self._nsegment
             self._disv1d_options["nvert"] = nvert
             self._disv1d_options["vertices"] = vertices
-            self._disv1d_options["cell2d"] = cell2d
+            self._disv1d_options["cell1d"] = cell1d
 
         # <
-        self._disv1d = flopy.mf6.ModflowSwfdisv1D(
-            self._swf, **self._disv1d_options
+        self._disv1d = flopy.mf6.ModflowChfdisv1D(
+            self._chf, **self._disv1d_options
         )
 
     def _set_flw(self, **kwargs):
@@ -586,7 +576,7 @@ class MmrToMf6Dfw:
         # aggregate inflows over the contributing fluxes
 
         # For non-binary data, this method has to be called after
-        # flopy.mf6.Swfdisl is set on self._swf
+        # flopy.mf6.Chfdisl is set on self._chf
 
         parameters = self.parameters.parameters
 
@@ -706,7 +696,7 @@ class MmrToMf6Dfw:
                         self.control.start_time + ispd * self.control.time_step
                     )
                     bin_name = (
-                        f"swf_flw_bc/"
+                        f"chf_flw_bc/"
                         f"flw_{flow_name}_{i_time_str.replace(':', '_')}.bin"
                     )
                     bin_name_pl = self._output_dir / bin_name
@@ -727,8 +717,8 @@ class MmrToMf6Dfw:
                 if key not in self._flw_options.keys():
                     self._flw_options[key] = True
 
-            _ = flopy.mf6.ModflowSwfflw(
-                self._swf,
+            _ = flopy.mf6.ModflowChfflw(
+                self._chf,
                 save_flows=self._save_flows,
                 stress_period_data=flw_spd,
                 maxbound=self._nsegment,
@@ -752,13 +742,13 @@ class MmrToMf6Dfw:
             # seconds / meter ** (1/3)
             self._dfw_options["manningsn"] = parameters["mann_n"]
 
-        _ = flopy.mf6.ModflowSwfdfw(self._swf, **self._dfw_options)
+        _ = flopy.mf6.ModflowChfdfw(self._chf, **self._dfw_options)
 
     def _set_sto(self):
         if "save_flows" not in self._sto_options:
             self._sto_options["save_flows"] = self._save_flows
-        _ = flopy.mf6.ModflowSwfsto(
-            self._swf,
+        _ = flopy.mf6.ModflowChfsto(
+            self._chf,
             **self._sto_options,
         )
 
@@ -771,20 +761,20 @@ class MmrToMf6Dfw:
                 "strt": self._seg_mid_elevation + self._ic_options["strt"]
             }
 
-        self._ic = flopy.mf6.ModflowSwfic(self._swf, **ic_options)
+        self._ic = flopy.mf6.ModflowChfic(self._chf, **ic_options)
 
     def _set_cxs(self):
         if self._cxs_options is None:
             pass
         else:
-            self._cxs = flopy.mf6.ModflowSwfcxs(self._swf, **self._cxs_options)
+            self._cxs = flopy.mf6.ModflowChfcxs(self._chf, **self._cxs_options)
 
     def _set_oc(self):
         if self._oc_options is None:
             self._oc_options = {}
 
-        self._oc = flopy.mf6.ModflowSwfoc(
-            self._swf,
+        self._oc = flopy.mf6.ModflowChfoc(
+            self._chf,
             budget_filerecord=f"{self._sim_name}.bud",
             stage_filerecord=f"{self._sim_name}.stage",
             # qoutflow_filerecord=f"{self._sim_name}.qoutflow",
@@ -814,7 +804,7 @@ class MmrToMf6Dfw:
         self._chd_options["maxbound"] = len(
             self._chd_options["stress_period_data"]
         )
-        self._chd = flopy.mf6.ModflowSwfchd(self._swf, **self._chd_options)
+        self._chd = flopy.mf6.ModflowChfchd(self._chf, **self._chd_options)
 
     def _calculate_seg_mid_elevations(self, check=False):
         nseg = self._nsegment

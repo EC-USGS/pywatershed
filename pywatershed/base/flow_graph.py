@@ -326,6 +326,7 @@ class FlowGraph(ConservativeProcess):
         parameters: Parameters,
         inflows: adaptable,
         node_maker_dict: dict,
+        addtl_output_vars: list[str] = None,
         params_not_to_netcdf: list[str] = None,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         allow_disconnected_nodes: bool = True,  # todo, make False
@@ -345,6 +346,13 @@ class FlowGraph(ConservativeProcess):
             node_maker_dict: A dictionary of FlowNodeMaker instances with
               keys/names supplied in the parameters, e.g.
               {key1: flow_node_maker_instance, ...}.
+            params_not_to_netcdf: A list of string names for parameter to NOT
+              write to NetCDF output files. By default all parameters are
+              included in each file written.
+            addtl_output_vars: A list of string names for variables to collect
+              for NetCDF output from FlowNodes. These variables do not have to
+              be available in all FlowNodes but must be present in at least
+              one.
             budget_type: one of ["defer", None, "warn", "error"] with "defer"
               being the default and defering to
               control.options["budget_type"] when
@@ -524,6 +532,40 @@ class FlowGraph(ConservativeProcess):
                 )
             ]
 
+        # <
+        # Deal with additional output variables requested
+        if self._addtl_output_vars is None:
+            self._addtl_output_vars = []
+
+        unique_makers = np.unique(params["node_maker_name"])
+
+        self._addtl_output_vars_wh_collect = {}
+        for vv in self._addtl_output_vars:
+            inds_to_collect = []
+            for uu in unique_makers:
+                wh_uu = np.where(params["node_maker_name"] == uu)
+                if hasattr(self._nodes[wh_uu[0][0]], vv):
+                    # do we need to get/set the type here? Would have to
+                    # check the type over all nodes/node makers
+                    # for now I'll just throw and error if it is not float64
+                    msg = "Only currently handling float64, new code required"
+                    assert self._nodes[wh_uu[0][0]][vv].dtype == "float64", msg
+                    inds_to_collect += wh_uu[0].tolist()
+            # <<
+            if len(inds_to_collect):
+                self._addtl_output_vars_wh_collect[vv] = inds_to_collect
+
+        msg = "Variable already set on FlowGraph."
+        for kk in self._addtl_output_vars_wh_collect.keys():
+            assert not hasattr(self, kk), msg
+            self[kk] = np.full([self.nnodes], np.nan)
+            # TODO: find some other way of getting metadata here.
+            # it could come from the node itself, i suppose, or
+            # could come from arguments or static source. Node seems most
+            # elegant. I suppose there could be conflicts if multiple
+            # nodes have the same variable and different metadata.
+            self.meta[kk] = {"dims": ("nnodes",), "type": "float64"}
+
     def initialize_netcdf(
         self,
         output_dir: [str, pl.Path] = None,
@@ -559,6 +601,7 @@ class FlowGraph(ConservativeProcess):
             separate_files=separate_files,
             output_vars=output_vars,
             extra_coords=extra_coords,
+            addtl_output_vars=list(self._addtl_output_vars_wh_collect.keys()),
         )
 
         return
@@ -626,6 +669,13 @@ class FlowGraph(ConservativeProcess):
             self.node_storage_changes[ii] = self._nodes[ii].storage_change
             self.node_storages[ii] = self._nodes[ii].storage
             self.node_sink_source[ii] = self._nodes[ii].sink_source
+
+        for (
+            add_var_name,
+            add_var_inds,
+        ) in self._addtl_output_vars_wh_collect.items():
+            for ii in add_var_inds:
+                self[add_var_name][ii] = self._nodes[ii][add_var_name]
 
         self.node_negative_sink_source[:] = -1 * self.node_sink_source
 

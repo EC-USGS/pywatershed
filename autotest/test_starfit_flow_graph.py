@@ -183,6 +183,7 @@ def test_starfit_flow_graph_postprocess(
                 44426,
                 44435,
             ],
+            addtl_output_vars=["_lake_spill", "_lake_release"],
         )
 
     # get the segments un affected by flow, where the PRMS solutions should
@@ -278,6 +279,17 @@ def test_starfit_flow_graph_postprocess(
         assert da.node_maker_name[-3:].values.tolist() == check_names
         assert da.node_maker_id[-3:].values.tolist() == check_ids
 
+    # test additional output files match and are working
+    da_no = xr.load_dataarray(tmp_path / "node_outflows.nc")
+    da_lr = xr.load_dataarray(tmp_path / "_lake_release.nc")
+    da_ls = xr.load_dataarray(tmp_path / "_lake_spill.nc")
+
+    da_no = da_no.where(da_no.node_maker_name == "starfit", drop=True)
+    da_lr = da_lr.where(da_lr.node_maker_name == "starfit", drop=True)
+    da_ls = da_ls.where(da_ls.node_maker_name == "starfit", drop=True)
+
+    assert (da_no == da_lr + da_ls).all()
+
 
 def test_starfit_flow_graph_model_dict(
     simulation,
@@ -359,6 +371,7 @@ def test_starfit_flow_graph_model_dict(
         new_nodes_maker_ids=new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg=new_nodes_flow_to_nhm_seg,
         graph_budget_type="error",  # move to error
+        addtl_output_vars=["_lake_spill", "_lake_release"],
     )
     model = Model(model_dict)
 
@@ -375,7 +388,7 @@ def test_starfit_flow_graph_model_dict(
 
     if do_compare_output_files:
         # not really feasible as noted by NB section at top
-        model.initialize_netcdf(tmp_path)
+        model.initialize_netcdf(tmp_path, separate_files=False)
 
     if do_compare_in_memory:
         answers = {}
@@ -446,3 +459,11 @@ def test_starfit_flow_graph_model_dict(
     assert flow_graph._nodes[-2].budget is not None
 
     flow_graph.finalize()
+
+    # test single file output has extra coords and additional vars
+    ds = xr.open_dataset(tmp_path / "FlowGraph.nc")
+    ds_starfit = ds.where(ds.node_maker_name == "starfit", drop=True)
+    assert (
+        ds_starfit.node_outflows
+        == ds_starfit._lake_release + ds_starfit._lake_spill
+    ).all()

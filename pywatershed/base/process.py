@@ -468,6 +468,7 @@ class Process(Accessor):
         separate_files: bool = None,
         output_vars: list = None,
         extra_coords: dict = None,
+        addtl_output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
 
@@ -526,16 +527,14 @@ class Process(Accessor):
                 self._netcdf_initialized = False
                 return
 
+        if addtl_output_vars is not None:
+            self._netcdf_output_vars += addtl_output_vars
+
         self._netcdf = {}
 
         if self._netcdf_separate:
-            # make working directory
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
-            for variable_name in self.variables:
-                if (self._netcdf_output_vars is not None) and (
-                    variable_name not in self._netcdf_output_vars
-                ):
-                    continue
+            for variable_name in self._netcdf_output_vars:
                 nc_path = self._netcdf_output_dir / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
                     name=nc_path,
@@ -559,6 +558,7 @@ class Process(Accessor):
                 coordinates=self._params.coords,
                 variables=self._netcdf_output_vars,
                 var_meta=self.meta,
+                extra_coords=extra_coords,
                 global_attrs={"process class": self.name},
             )
             for variable in the_out_vars[1:]:
@@ -575,11 +575,7 @@ class Process(Accessor):
         """
         if self._netcdf_initialized:
             time_added = False
-            for variable in self.variables:
-                if (self._netcdf_output_vars is not None) and (
-                    variable not in self._netcdf_output_vars
-                ):
-                    continue
+            for variable in self._netcdf_output_vars:
                 if not time_added or self._netcdf_separate:
                     time_added = True
                     self._netcdf[variable].add_simulation_time(
@@ -600,7 +596,7 @@ class Process(Accessor):
             None
         """
         if self._netcdf_initialized:
-            for idx, variable in enumerate(self.variables):
+            for idx, variable in enumerate(self._netcdf_output_vars):
                 if (self._netcdf_output_vars is not None) and (
                     variable not in self._netcdf_output_vars
                 ):

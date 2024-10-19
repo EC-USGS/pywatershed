@@ -622,6 +622,7 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_maker_indices: list,
     new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
+    addtl_output_vars: list[str] = None,
     budget_type: Literal["defer", None, "warn", "error"] = "defer",
     type_check_nodes: bool = False,
 ) -> FlowGraph:
@@ -722,6 +723,7 @@ def prms_channel_flow_graph_postprocess(
         parameters=params_flow_graph,
         inflows=inflows_graph,
         node_maker_dict=node_maker_dict,
+        addtl_output_vars=addtl_output_vars,
         budget_type=budget_type,
         type_check_nodes=type_check_nodes,
     )
@@ -738,6 +740,7 @@ def prms_channel_flow_graph_to_model_dict(
     new_nodes_maker_indices: list,
     new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
+    addtl_output_vars: list[str] = None,
     graph_budget_type: Literal["defer", None, "warn", "error"] = "defer",
     type_check_nodes: bool = False,
 ) -> dict:
@@ -864,6 +867,7 @@ def prms_channel_flow_graph_to_model_dict(
             "parameters": params_flow_graph,
             "dis": None,
             "budget_type": graph_budget_type,
+            "addtl_output_vars": addtl_output_vars,
         },
     }
 

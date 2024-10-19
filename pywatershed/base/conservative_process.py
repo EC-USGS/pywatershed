@@ -216,6 +216,7 @@ class ConservativeProcess(Process):
         budget_args: dict = None,
         output_vars: list = None,
         extra_coords: dict = None,
+        addtl_output_vars: list = None,
     ) -> None:
         if self._netcdf_initialized:
             msg = (
@@ -230,6 +231,7 @@ class ConservativeProcess(Process):
             separate_files=separate_files,
             output_vars=output_vars,
             extra_coords=extra_coords,
+            addtl_output_vars=addtl_output_vars,
         )
 
         if self.budget is not None:

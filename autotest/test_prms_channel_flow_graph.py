@@ -4,7 +4,7 @@ import xarray as xr
 from utils_compare import compare_in_memory
 
 from pywatershed import (
-    PassThroughNodeMaker,
+    PassThroughFlowNodeMaker,
     PRMSChannel,
     PRMSGroundwater,
     PRMSRunoff,
@@ -456,7 +456,7 @@ def test_prms_channel_flow_graph_to_model_dict(
         prms_channel_dis=discretization,
         prms_channel_dis_name="dis_both",
         prms_channel_params=parameters,
-        new_nodes_maker_dict={"pass": PassThroughNodeMaker()},
+        new_nodes_maker_dict={"pass": PassThroughFlowNodeMaker()},
         new_nodes_maker_names=check_names,
         new_nodes_maker_indices=check_indices,
         new_nodes_maker_ids=check_ids,

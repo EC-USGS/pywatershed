@@ -16,7 +16,9 @@ from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
-from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
+from pywatershed.hydrology.pass_through_flow_node import (
+    PassThroughFlowNodeMaker,
+)
 from pywatershed.hydrology.prms_channel_flow_graph import (
     prms_channel_flow_graph_postprocess,
     prms_channel_flow_graph_to_model_dict,
@@ -190,7 +192,7 @@ def test_starfit_flow_graph_postprocess(
                     budget_type="error",
                     compute_daily=compute_daily,
                 ),
-                "pass_through": PassThroughNodeMaker(),
+                "pass_through": PassThroughFlowNodeMaker(),
             },
             new_nodes_maker_names=new_nodes_maker_names,
             new_nodes_maker_indices=new_nodes_maker_indices,
@@ -375,7 +377,7 @@ def test_starfit_flow_graph_model_dict(
             budget_type="error",
             compute_daily=compute_daily,
         ),
-        "pass_through": PassThroughNodeMaker(),
+        "pass_through": PassThroughFlowNodeMaker(),
     }
     new_nodes_maker_names = ["starfit", "pass_through"]
     new_nodes_maker_indices = [0, 0]

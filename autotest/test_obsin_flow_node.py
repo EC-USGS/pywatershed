@@ -8,7 +8,7 @@ from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
-from pywatershed.hydrology.obsin_node import ObsInNodeMaker
+from pywatershed.hydrology.obsin_flow_node import ObsInFlowNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
@@ -125,7 +125,7 @@ def test_prms_channel_obsin_compare_prms(
         "prms_channel": PRMSChannelFlowNodeMaker(
             discretization_prms, parameters_prms
         ),
-        "obsin": ObsInNodeMaker(obsin_params, obsin_data),
+        "obsin": ObsInFlowNodeMaker(obsin_params, obsin_data),
     }
     nnodes = parameters_prms.dims["nsegment"] + npoi
     node_maker_name = ["prms_channel"] * nnodes

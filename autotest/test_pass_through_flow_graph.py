@@ -10,7 +10,9 @@ from pywatershed.base.flow_graph import FlowGraph, inflow_exchange_factory
 from pywatershed.base.model import Model
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
-from pywatershed.hydrology.pass_through_node import PassThroughNodeMaker
+from pywatershed.hydrology.pass_through_flow_node import (
+    PassThroughFlowNodeMaker,
+)
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
@@ -121,7 +123,7 @@ def node_maker_dict(parameters_prms, discretization_prms):
         "prms_channel": PRMSChannelFlowNodeMaker(
             discretization_prms, parameters_prms
         ),
-        "pass_throughs": PassThroughNodeMaker(),
+        "pass_throughs": PassThroughFlowNodeMaker(),
     }
 
 

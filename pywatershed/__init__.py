@@ -11,8 +11,11 @@ from .base.model import Model
 from .base.parameters import Parameters
 from .base.process import Process
 from .base.timeseries import TimeseriesArray
-from .hydrology.obsin_node import ObsInNode, ObsInNodeMaker
-from .hydrology.pass_through_node import PassThroughNode, PassThroughNodeMaker
+from .hydrology.obsin_flow_node import ObsInFlowNode, ObsInFlowNodeMaker
+from .hydrology.pass_through_flow_node import (
+    PassThroughFlowNode,
+    PassThroughFlowNodeMaker,
+)
 from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_channel_flow_graph import (
@@ -70,10 +73,10 @@ __all__ = (
     "Parameters",
     "Process",
     "TimeseriesArray",
-    "ObsInNode",
-    "ObsInNodeMaker",
-    "PassThroughNode",
-    "PassThroughNodeMaker",
+    "ObsInFlowNode",
+    "ObsInFlowNodeMaker",
+    "PassThroughFlowNode",
+    "PassThroughFlowNodeMaker",
     "StarfitFlowNode",
     "StarfitFlowNodeMaker",
     "PRMSCanopy",

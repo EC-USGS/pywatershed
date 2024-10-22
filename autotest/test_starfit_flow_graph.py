@@ -108,6 +108,13 @@ def test_starfit_flow_graph_postprocess(
 ):
     input_dir = simulation["output_dir"]
 
+    # We'll test adding multiple new nodes in-series into a FlowGraph. Above
+    # and below the starfit we'll add pass-through nodes and check these
+    # match.
+
+    # We add a random passthrough node with no upstream node, to test if that
+    # works.
+
     # in this test we'll cover the case of disconnected nodes and allowing
     # them or not
     def add_disconnected_node_data(ds: xr.Dataset) -> xr.Dataset:
@@ -151,17 +158,26 @@ def test_starfit_flow_graph_postprocess(
         "node_storages",
     ]
 
-    # Currently this is the same as notebook 06
+    new_nodes_maker_names = ["starfit"] + ["pass_through"] * 3
+    new_nodes_maker_indices = [0, 0, 1, 2]
+    new_nodes_maker_ids = [-2, -1, -100, -1000]
+    # The starfit node flows to the third passthrough node, in index 3.
+    # The first passthrough node flows to some random nhm_seg, not connected to
+    # the other new nodes.
+    # The second passthrough flows to the starfit node in index 0.
+    # The last passthrough node flows to the seg above which the reservoir
+    # is placed.
+    new_nodes_flow_to_nhm_seg = [-3, 44409, 0, 44426]
 
-    new_nodes_maker_names = ["starfit", "pass_through"]
-    new_nodes_maker_indices = [0, 0]
-    new_nodes_maker_ids = [-2, -1]
-
+    # the first in the list is for the disconnected node
     check_names = ["prms_channel"] + new_nodes_maker_names
     check_indices = [dis_ds.dims["nsegment"] - 1] + new_nodes_maker_indices
-    check_ids = [dis_ds.nhm_seg[-1]] + new_nodes_maker_ids
+    check_ids = [dis_ds.nhm_seg[-1].values.tolist()] + new_nodes_maker_ids
 
-    with pytest.warns(UserWarning):
+    # This warning should say: TODO
+    with pytest.warns(
+        UserWarning, match="Disconnected nodes present in FlowGraph."
+    ):
         flow_graph = prms_channel_flow_graph_postprocess(
             control=control,
             input_dir=input_dir,
@@ -179,13 +195,12 @@ def test_starfit_flow_graph_postprocess(
             new_nodes_maker_names=new_nodes_maker_names,
             new_nodes_maker_indices=new_nodes_maker_indices,
             new_nodes_maker_ids=new_nodes_maker_ids,
-            new_nodes_flow_to_nhm_seg=[
-                44426,
-                44435,
-            ],
-            addtl_output_vars=["_lake_spill", "_lake_release"],
+            new_nodes_flow_to_nhm_seg=new_nodes_flow_to_nhm_seg,
+            addtl_output_vars=["spill", "release"],
+            allow_disconnected_nodes=True,
         )
 
+    # <
     # get the segments un affected by flow, where the PRMS solutions should
     # match
     wh_44426 = np.where(discretization.parameters["nhm_seg"] == 44426)[0][0]
@@ -224,6 +239,9 @@ def test_starfit_flow_graph_postprocess(
                 var.advance()
 
             answers_conv_vol = {}
+            # The -5 is not -4 because of the synthetic disconnected node also
+            # present on the FlowGraph (which is added via parameters, not
+            # using prms_channel_flow_graph_postprocess)
             for key, val in answers.items():
                 if key in convert_to_vol:
                     current = val.current / (24 * 60 * 60)
@@ -241,23 +259,23 @@ def test_starfit_flow_graph_postprocess(
                 current[(wh_ignore,)] = flow_graph[key][(wh_ignore,)]
                 # Fill in the last two nodes
                 answers_conv_vol[key] = np.concatenate(
-                    [current, flow_graph[key][-3:]]
+                    [current, flow_graph[key][-5:]]
                 )
 
             # <<
             # there are no expected sources or sinks in this test
             answers_conv_vol["node_sink_source"] = np.concatenate(
-                [val.current * zero, flow_graph["node_sink_source"][-3:]]
+                [val.current * zero, flow_graph["node_sink_source"][-5:]]
             )
             answers_conv_vol["node_negative_sink_source"] = np.concatenate(
                 [
                     val.current * zero,
-                    flow_graph["node_negative_sink_source"][-3:],
+                    flow_graph["node_negative_sink_source"][-5:],
                 ]
             )
 
             answers_conv_vol["node_storages"] = np.concatenate(
-                [val.current * nan, flow_graph["node_storages"][-3:]]
+                [val.current * nan, flow_graph["node_storages"][-5:]]
             )
 
             compare_in_memory(
@@ -270,19 +288,26 @@ def test_starfit_flow_graph_postprocess(
             )
 
     # this checks that the budget was actually active for the starfit node
-    assert flow_graph._nodes[-2].budget is not None
+    assert flow_graph._nodes[-4].budget is not None
 
     flow_graph.finalize()
     for vv in control.options["netcdf_output_var_names"]:
         da = xr.load_dataarray(tmp_path / f"{vv}.nc", concat_characters=True)
-        assert da.node_maker_index[-3:].values.tolist() == check_indices
-        assert da.node_maker_name[-3:].values.tolist() == check_names
-        assert da.node_maker_id[-3:].values.tolist() == check_ids
+        assert da.node_maker_index[-5:].values.tolist() == check_indices
+        assert da.node_maker_name[-5:].values.tolist() == check_names
+        assert da.node_maker_id[-5:].values.tolist() == check_ids
 
     # test additional output files match and are working
     da_no = xr.load_dataarray(tmp_path / "node_outflows.nc")
-    da_lr = xr.load_dataarray(tmp_path / "_lake_release.nc")
-    da_ls = xr.load_dataarray(tmp_path / "_lake_spill.nc")
+    da_in = xr.load_dataarray(tmp_path / "node_upstream_inflows.nc")
+
+    # full time check of the passthrough nodes (which is probably gratuitious
+    # given all the above checks already passed.
+    assert (abs(da_no[:, -1] - da_no[:, -4]) < 1e-12).all()
+    assert (abs(da_in[:, -2] - da_in[:, -4]) < 1e-12).all()
+
+    da_lr = xr.load_dataarray(tmp_path / "release.nc")
+    da_ls = xr.load_dataarray(tmp_path / "spill.nc")
 
     da_no = da_no.where(da_no.node_maker_name == "starfit", drop=True)
     da_lr = da_lr.where(da_lr.node_maker_name == "starfit", drop=True)
@@ -371,7 +396,7 @@ def test_starfit_flow_graph_model_dict(
         new_nodes_maker_ids=new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg=new_nodes_flow_to_nhm_seg,
         graph_budget_type="error",  # move to error
-        addtl_output_vars=["_lake_spill", "_lake_release"],
+        addtl_output_vars=["spill", "release"],
     )
     model = Model(model_dict)
 
@@ -452,7 +477,7 @@ def test_starfit_flow_graph_model_dict(
                 rtol=rtol,
                 skip_missing_ans=False,
                 fail_after_all_vars=False,
-                verbose=True,
+                verbose=False,
             )
 
     # this checks that the budget was actually active for the starfit node
@@ -464,6 +489,5 @@ def test_starfit_flow_graph_model_dict(
     ds = xr.open_dataset(tmp_path / "FlowGraph.nc")
     ds_starfit = ds.where(ds.node_maker_name == "starfit", drop=True)
     assert (
-        ds_starfit.node_outflows
-        == ds_starfit._lake_release + ds_starfit._lake_spill
+        ds_starfit.node_outflows == ds_starfit.release + ds_starfit.spill
     ).all()

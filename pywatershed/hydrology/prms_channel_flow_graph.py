@@ -1,4 +1,5 @@
 import pathlib as pl
+from copy import deepcopy
 from typing import Literal, Union
 
 import numba as nb
@@ -623,6 +624,7 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
     addtl_output_vars: list[str] = None,
+    allow_disconnected_nodes: bool = False,
     budget_type: Literal["defer", None, "warn", "error"] = "defer",
     type_check_nodes: bool = False,
 ) -> FlowGraph:
@@ -657,7 +659,11 @@ def prms_channel_flow_graph_postprocess(
             NodeMaker.
         new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
         new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
-            which the node will flow.
+            which the node will flow. Use of non-positive entries specifies
+            the zero-based index for flowing to nodes specified in these
+            collated parameters, allowing these new nodes to be added in
+            groups, in series to the existing NHM FlowGraph. Note that a new
+            node may not be placed below any outflow point of the domain.
         budget_type: one of ["defer", None, "warn", "error"] with "defer" being
             the default and defering to control.options["budget_type"] when
             available. When control.options["budget_type"] is not avaiable,
@@ -726,6 +732,7 @@ def prms_channel_flow_graph_postprocess(
         addtl_output_vars=addtl_output_vars,
         budget_type=budget_type,
         type_check_nodes=type_check_nodes,
+        allow_disconnected_nodes=allow_disconnected_nodes,
     )
     return flow_graph
 
@@ -742,6 +749,7 @@ def prms_channel_flow_graph_to_model_dict(
     new_nodes_flow_to_nhm_seg: list,
     addtl_output_vars: list[str] = None,
     graph_budget_type: Literal["defer", None, "warn", "error"] = "defer",
+    allow_disconnected_nodes: bool = False,
     type_check_nodes: bool = False,
 ) -> dict:
     """Add nodes to a PRMSChannel-based FlowGraph within a Model's model_dict.
@@ -775,7 +783,11 @@ def prms_channel_flow_graph_to_model_dict(
             NodeMaker
         new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
         new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
-            which the node will flow.
+            which the node will flow. Use of non-positive entries specifies
+            the zero-based index for flowing to nodes specified in these
+            collated parameters, allowing these new nodes to be added in
+            groups, in series to the existing NHM FlowGraph. Note that a new
+            node may not be placed below any outflow point of the domain.
         graph_budget_type: one of ["defer", None, "warn", "error"] with
             "defer" being the default and defering to
             control.options["budget_type"] when available. When
@@ -868,6 +880,7 @@ def prms_channel_flow_graph_to_model_dict(
             "dis": None,
             "budget_type": graph_budget_type,
             "addtl_output_vars": addtl_output_vars,
+            "allow_disconnected_nodes": allow_disconnected_nodes,
         },
     }
 
@@ -899,7 +912,7 @@ def _build_flow_graph_inputs(
     # new_nodes_flow_to_nhm_seg
     assert len(new_nodes_flow_to_nhm_seg) == len(
         np.unique(new_nodes_flow_to_nhm_seg)
-    ), "Cant have more than one new node flowing to an existing node"
+    ), "Cant have more than one new node flowing to an existing or new node."
 
     nseg = prms_channel_params.dims["nsegment"]
     nnew = len(new_nodes_maker_names)
@@ -921,7 +934,17 @@ def _build_flow_graph_inputs(
     tosegment = dis_params["tosegment"] - 1  # fortan to python indexing
     to_graph_index[0:nseg] = tosegment
 
+    # The new nodes which flow to other new_nodes have to be added after
+    # the nodes flowing to existing nodes with nhm_seg ids.
+    to_new_nodes_inds_in_added = {}
+    added_new_nodes_inds_in_graph = {}
     for ii, nhm_seg in enumerate(new_nodes_flow_to_nhm_seg):
+        if nhm_seg < 1:
+            # negative indes are indices into the collated inputs lists
+            # for new nodes being in-series.
+            to_new_nodes_inds_in_added[ii] = -1 * nhm_seg
+            continue
+
         wh_intervene_above_nhm = np.where(dis_params["nhm_seg"] == nhm_seg)
         wh_intervene_below_nhm = np.where(
             tosegment == wh_intervene_above_nhm[0][0]
@@ -938,6 +961,29 @@ def _build_flow_graph_inputs(
 
         to_graph_index[nseg + ii] = wh_intervene_above_graph[0][0]
         to_graph_index[wh_intervene_below_graph] = nseg + ii
+        added_new_nodes_inds_in_graph[ii] = nseg + ii
+
+    # <
+    to_new_nodes_inds_remaining = deepcopy(to_new_nodes_inds_in_added)
+    # worst case scenario is that we have to iterate the length of this list
+    # if the items in the list are in the wrong order
+    for itry in range(len(to_new_nodes_inds_remaining)):
+        # for input_ind, to_ind_remain in to_new_nodes_inds_remaining.items():
+        for input_ind in list(to_new_nodes_inds_remaining.keys()):
+            to_ind_remain = to_new_nodes_inds_remaining[input_ind]
+            if to_ind_remain not in added_new_nodes_inds_in_graph.keys():
+                continue
+            flows_to_ind = added_new_nodes_inds_in_graph[to_ind_remain]
+            flows_from_inds = np.where(to_graph_index == flows_to_ind)
+
+            to_graph_index[nseg + input_ind] = flows_to_ind
+            to_graph_index[flows_from_inds] = nseg + input_ind
+            added_new_nodes_inds_in_graph[input_ind] = nseg + input_ind
+            del to_new_nodes_inds_remaining[input_ind]
+
+    if len(to_new_nodes_inds_remaining):
+        msg = "Unable to connect some new nodes in-series."
+        raise ValueError(msg)
 
     # <
     param_dict = dict(

@@ -329,7 +329,7 @@ class FlowGraph(ConservativeProcess):
         addtl_output_vars: list[str] = None,
         params_not_to_netcdf: list[str] = None,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
-        allow_disconnected_nodes: bool = True,  # todo, make False
+        allow_disconnected_nodes: bool = False,
         type_check_nodes: bool = False,
         verbose: bool = None,
     ):

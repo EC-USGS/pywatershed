@@ -861,6 +861,16 @@ class StarfitFlowNode(FlowNode):
         return self._lake_storage[0]
 
     @property
+    def release(self) -> np.float64:
+        "The release component of the STARFIT outflow."
+        return self._lake_release[0]
+
+    @property
+    def spill(self) -> np.float64:
+        "The spill component of the STARFIT outflow."
+        return self._lake_spill[0]
+
+    @property
     def sink_source(self) -> np.float64:
         return zero
 

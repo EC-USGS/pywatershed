@@ -1711,6 +1711,20 @@ infil_hru:
   type: float64
   units: inches
   var_category: mass flux
+inflows:
+  desc: Inflows to FlowGraph in vol/time
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
+inflows_vol:
+  desc: Volumes entering the FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 int_alb:
   desc: 'Flag to indicate (1: accumulation season curve; 2: use of the melt season
     curve)'
@@ -1779,7 +1793,7 @@ lake_availability_status:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: percent
 lake_elev:
   desc: Elevation of each simulated lake surface
   dims:
@@ -1815,7 +1829,7 @@ lake_inflow:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: cubic meters per second
 lake_interflow:
   desc: Total interflow into each lake
   dims:
@@ -1847,11 +1861,11 @@ lake_outcms:
   type: float64
   units: cms
 lake_outflow:
-  desc: Evaporation and seepage from each lake
+  desc: Combined release and spill from a starfit lake/reservoir (Not PRMS)
   dims:
-    0: nlake
+    0: nreservoirs
   type: float64
-  units: cfs
+  units: cubic meters per second
 lake_outq2:
   desc: Streamflow from second outlet for each lake with a second outlet
   dims:
@@ -1882,7 +1896,7 @@ lake_release:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: cubic meters per second
 lake_seep_in:
   desc: Total seepage into each lake using broad-crested weir or gate opening routing
   dims:
@@ -1906,7 +1920,7 @@ lake_spill:
   dims:
     0: nreservoirs
   type: float64
-  units: cubic meters
+  units: cubic meters per second
 lake_sroff:
   desc: Total surface runoff into each lake
   dims:
@@ -1925,6 +1939,12 @@ lake_storage:
     0: nreservoirs
   type: float64
   units: cubic meters
+lake_storage_mcm:
+  desc: Storage in each lake
+  dims:
+    0: nreservoirs
+  type: float64
+  units: million cubic meters
 lake_storage_old:
   desc: Previous storage in each lake
   dims:
@@ -1937,6 +1957,12 @@ lake_storage_change:
     0: nreservoirs
   type: float64
   units: cubic meters
+lake_storage_change_flow_units:
+  desc: Storage in each lake
+  dims:
+    0: nreservoirs
+  type: float64
+  units: cubic meters per second
 lake_stream_in:
   desc: Total streamflow into each lake
   dims:
@@ -2034,6 +2060,48 @@ newsnow:
     0: nhru
   type: int32
   units: none
+node_negative_sink_source:
+  desc: The negative of net sink or source over a timestep on a FlowNode over FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
+node_outflows:
+  desc: The flows leaving each FlowGraph node in (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
+node_sink_source:
+  desc: Net sink or source over a timestep on a FlowNode over FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
+node_storage_changes:
+  desc: The storage changes on each node of the FlowGraph (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass storage
+node_storages:
+  desc: The storage changes on each node of the FlowGraph (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: million cubic feet
+  var_category: mass storage
+node_upstream_inflows:
+  desc: Within FlowGraph flows to each node (not including lateral inflows)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
 obs_runoff_mo:
   desc: Monthly measured streamflow at basin outlet
   dims:
@@ -2089,6 +2157,20 @@ orad_hru:
     0: nhru
   type: float64
   units: Langleys
+outflows:
+  desc: Outflows exiting the FlowGraph (vol/time)
+  dims:
+    0: nnodes
+  type: float64
+  units: cfs
+  var_category: mass flux
+outflows_vol:
+  desc: Volumes exiting the FlowGraph
+  dims:
+    0: nnodes
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 pan_evap:
   desc: Pan evaporation at each measurement station
   dims:
@@ -2411,6 +2493,13 @@ seg_outflow:
   type: float64
   units: cfs
   var_category: mass flux
+seg_outflow_substep:
+  desc: Streamflow leaving a segment on a time substep
+  dims:
+    0: nsegment
+  type: float64
+  units: cfs
+  var_category: mass flux
 seg_potet:
   desc: Hru area-weighted average potential ET for each segment
   dims:
@@ -2528,6 +2617,20 @@ segment_transfer_tot:
     0: nsegment
   type: float64
   units: cfs
+sinks:
+  desc: Sinks of HRU outflows not mapped to segments
+  dims:
+    0: nhru
+  type: float64
+  units: cfs
+  var_category: mass flux
+sinks_vol:
+  desc: Sinks of HRU volumetric outflows not mapped to segments
+  dims:
+    0: nhru
+  type: float64
+  units: cubicfeet
+  var_category: mass flux
 slow_flow:
   desc: Interflow from gravity reservoir storage that flows to the stream network
     for each HRU

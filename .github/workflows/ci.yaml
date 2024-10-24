@@ -34,12 +34,12 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: "3.10"
 
       - name: Upgrade pip and install build and twine
         run: |
           python -m pip install --upgrade pip
-          pip install wheel build twine
+          pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' 'setuptools<=72.2.0' 'numpy<2.0'
 
       - name: Base installation
         run: |
@@ -69,7 +69,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -98,7 +98,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ "ubuntu-latest", "macos-latest", "windows-latest" ]
-        python-version: ["3.9", "3.10"]
+        python-version: ["3.10", "3.11"]
 
     steps:
 
@@ -106,12 +106,7 @@ jobs:
         if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
@@ -133,16 +128,16 @@ jobs:
           echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
           cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 
-      # - name: Enforce MF6 ref and remote merge to main
-      #   if: github.base_ref == 'main'
-      #   run: |
-      #     echo Merge commit: GITHUB_BASE_REF = $GITHUB_BASE_REF
-      #     req_ref=swf_q_mmr_and_mct  # if not develop, submit an issue
-      #     echo $MF6_REF
-      #     if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
-      #     req_remote=MODFLOW-USGS/modflow6
-      #     echo $MF6_REMOTE
-      #     if [[ "$MF6_REMOTE" != "$req_remote" ]]; then echo "bad mf6 remote in .mf6_ci_ref_remote"; exit 1; fi
+      - name: Enforce MF6 ref and remote merge to main
+        if: github.base_ref == 'main'
+        run: |
+          echo Merge commit: GITHUB_BASE_REF = $GITHUB_BASE_REF
+          req_ref=develop  # if not develop, submit an issue
+          echo $MF6_REF
+          if [[ "$MF6_REF" != "$req_ref" ]]; then exit 1; fi
+          req_remote=MODFLOW-USGS/modflow6
+          echo $MF6_REMOTE
+          if [[ "$MF6_REMOTE" != "$req_remote" ]]; then echo "bad mf6 remote in .mf6_ci_ref_remote"; exit 1; fi
 
       - name: Setup gfortran
         uses: fortran-lang/setup-fortran@v1
@@ -155,26 +150,32 @@ jobs:
         run: .github/scripts/symlink_gfortran_mac.sh
 
       - name: Install Dependencies via Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v1.9.0
         with:
+          micromamba-version: '1.5.10-0'
+          log-level: debug
           environment-file: environment.yml
           cache-environment: true
           cache-downloads: true
           create-args: >-
             python=${{matrix.python-version}}
-            conda
 
-      # - name: Checkout MODFLOW 6
-      #   uses: actions/checkout@v4
-      #   with:
-      #     repository: ${{ env.MF6_REMOTE }}
-      #     ref: ${{ env.MF6_REF }}
-      #     path: modflow6
+      - name: Checkout MODFLOW 6
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.MF6_REMOTE }}
+          ref: ${{ env.MF6_REF }}
+          path: modflow6
 
-      # - name: Update flopy MODFLOW 6 classes
-      #   working-directory: modflow6/autotest
-      #   run: |
-      #     python update_flopy.py
+      - name: Update flopy MODFLOW 6 classes
+        working-directory: modflow6/autotest
+        run: |
+          python update_flopy.py
+
+      - name: Install mf6 nightly build binaries
+        uses: modflowpy/install-modflow-action@v1
+        with:
+          repo: modflow6-nightly-build
 
       - name: Install pywatershed
         run: |
@@ -185,7 +186,11 @@ jobs:
           pip -V
           pip list
 
-      - name: domainless - run tests no requiring domain data
+      - name: Get GIS files for tests
+        run: |
+          python pywatershed/utils/gis_files.py
+
+      - name: domainless - run tests not requiring domain data
         working-directory: autotest
         run: pytest -m domainless -n=auto -vv
 
@@ -205,8 +210,9 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
+          -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=sagehen_5yr
           --control_pattern=sagehen_no_cascades.control
           --durations=0
@@ -230,8 +236,9 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
+          -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=hru_1
           --control_pattern=nhm.control
           --durations=0
@@ -239,7 +246,7 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_hru_1_nhm.xml
 
-      - name: drb_2yr with and without dprst - generate and manage test data
+      - name: drb_2yr with and without dprst and obsin - generate and manage test data
         working-directory: autotest
         run: |
           python generate_test_data.py \
@@ -260,8 +267,9 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
+          -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=drb_2yr
           --control_pattern=nhm.control
           --durations=0
@@ -279,14 +287,31 @@ jobs:
           test_prms_above_snow.py
           test_prms_below_snow.py
           -vv
+          -rs
           -n=auto
-          -m domain
+          -m "not domainless"
           --domain=drb_2yr
           --control_pattern=no_dprst
           --durations=0
           --cov=pywatershed
           --cov-report=xml
           --junitxml=pytest_drb_2yr_no_dprst.xml
+
+      # Specific tests not redundant with dprst
+      - name: drb_2yr_obsin - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          test_obsin_flow_node.py
+          -vv
+          -n=0
+          -m "not domainless"
+          --domain=drb_2yr
+          --control_pattern=nhm_obsin.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_no_dprst.xml
+
 
       - name: ucb_2yr_nhm - generate and manage test data
         working-directory: autotest
@@ -304,7 +329,8 @@ jobs:
         working-directory: autotest
         run: pytest
           -vv
-          -m domain
+          -n=auto
+          -m "not domainless"
           --domain=ucb_2yr
           --control_pattern=nhm.control
           --durations=0

@@ -7,9 +7,11 @@ channels:
 dependencies:
   - bash_kernel
   - cartopy
+  - dataretrieval
   - contextily
   - epiweeks
   - filelock
+  - folium
   - geopandas
   - geoviews
   - git
@@ -33,7 +35,7 @@ dependencies:
   - pytest-env
   - pytest-order
   - pytest-xdist
-  - python<3.11,>=3.9
+  - python<3.12,>=3.10
   - pyyaml
   - shapely
   - sphinx
@@ -48,5 +50,7 @@ dependencies:
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools
+      - git+https://github.com/jararias/mpsplines.git
+      - git+https://github.com/paknorton/pyPRMS.git@development
       - sphinx-autodoc-typehints>=2.2.1
       - ruff

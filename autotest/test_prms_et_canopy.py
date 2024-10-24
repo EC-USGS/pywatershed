@@ -12,7 +12,8 @@ from pywatershed.parameters import PrmsParameters
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if simulation["name"] != "nhm":
+    domain_config = simulation["name"].split(":")[1]
+    if domain_config != "nhm":
         pytest.skip("Only test for nhm configuration")
 
     return Control.load_prms(
@@ -26,7 +27,6 @@ def params(simulation, control):
     return PrmsParameters.load(param_file)
 
 
-@pytest.mark.domain
 def test_et(simulation, control, params, tmp_path):
     tmp_path = pl.Path(tmp_path)
     output_dir = simulation["output_dir"]

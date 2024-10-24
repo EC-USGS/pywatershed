@@ -52,8 +52,10 @@ class ConservativeProcess(Process):
         A discretization object
     parameters:
         The parameters for this object
-    budget_type:
-        Use a budget and what action to take on budget imbalance.
+    budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+        the default and defering to control.options["budget_type"] when
+        available. When control.options["budget_type"] is not avaiable,
+        budget_type is set to "warn".
     metadata_patches:
         Override static metadata for any public parameter or variable --
         experimental.
@@ -67,9 +69,9 @@ class ConservativeProcess(Process):
         control: Control,
         discretization: Parameters,
         parameters: Parameters,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         metadata_patches: dict[dict] = None,
-        metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
+        metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
         super().__init__(
             control=control,
@@ -80,6 +82,7 @@ class ConservativeProcess(Process):
         )
 
         self.name = "ConservativeProcess"
+
         return
 
     def output(self) -> None:
@@ -158,16 +161,38 @@ class ConservativeProcess(Process):
 
         return
 
-    def _set_budget(self, basis: str = "unit"):
+    def _set_budget(
+        self,
+        basis: str = None,
+        ignore_nans: bool = False,
+        unit_desc: str = "volumes",
+    ):
+        if basis is None:
+            basis = "unit"
+
+        if self._budget_type == "defer":
+            if "budget_type" in self.control.options.keys():
+                self._budget_type = self.control.options["budget_type"]
+            else:
+                self._budget_type = "warn"
+
         if self._budget_type is None:
             self.budget = None
         elif self._budget_type in ["error", "warn"]:
+            units = {}
+            for cc, vv_list in self.get_mass_budget_terms().items():
+                for vv in vv_list:
+                    units[vv] = self.meta[vv]["units"]
+
             self.budget = Budget.from_storage_unit(
                 self,
                 time_unit="D",
                 description=self.name,
                 imbalance_fatal=(self._budget_type == "error"),
                 basis=basis,
+                ignore_nans=ignore_nans,
+                units=units,
+                unit_desc=unit_desc,
             )
         else:
             raise ValueError(f"Illegal behavior: {self._budget_type}")
@@ -190,6 +215,8 @@ class ConservativeProcess(Process):
         separate_files: bool = None,
         budget_args: dict = None,
         output_vars: list = None,
+        extra_coords: dict = None,
+        addtl_output_vars: list = None,
     ) -> None:
         if self._netcdf_initialized:
             msg = (
@@ -203,6 +230,8 @@ class ConservativeProcess(Process):
             output_dir=output_dir,
             separate_files=separate_files,
             output_vars=output_vars,
+            extra_coords=extra_coords,
+            addtl_output_vars=addtl_output_vars,
         )
 
         if self.budget is not None:

@@ -35,7 +35,6 @@ def params(simulation, control):
     return PrmsParameters.load(param_file)
 
 
-@pytest.mark.domain
 @pytest.mark.parametrize("use_xr", [True])  # TODO: add False
 def test_param_sep(simulation, control, params, use_xr, tmp_path):
     tmp_path = pl.Path(tmp_path)

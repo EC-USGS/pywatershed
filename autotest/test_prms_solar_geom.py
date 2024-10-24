@@ -43,7 +43,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 @pytest.mark.parametrize(
     "from_prms_file", (True, False), ids=("from_prms_file", "compute")
 )
@@ -87,7 +86,11 @@ def test_compare_prms(
                 solar_geom.output()
             solar_geom.calculate(1.0)
 
-            compare_in_memory(solar_geom, answers, atol=atol, rtol=rtol)
+            if do_compare_in_memory:
+                for var in answers.values():
+                    var.advance()
+                compare_in_memory(solar_geom, answers, atol=atol, rtol=rtol)
+
             assert id(solar_geom.soltab_sunhrs) == sunhrs_id
 
     if do_compare_output_files:

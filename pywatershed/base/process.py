@@ -94,7 +94,7 @@ class Process(Accessor):
         discretization: Parameters,
         parameters: Parameters,
         metadata_patches: dict[dict] = None,
-        metadata_patch_conflicts: Literal["ignore", "warn", "error"] = "error",
+        metadata_patch_conflicts: Literal["left", "warn", "error"] = "error",
     ):
         self.name = "Process"
         self.control = control
@@ -217,6 +217,8 @@ class Process(Accessor):
         return self.get_init_values()
 
     def _set_params(self, parameters, discretization):
+        if hasattr(self, "_params"):
+            return
         param_keys = set(parameters.variables.keys())
         missing_params = set(self.parameters).difference(param_keys)
         if missing_params:
@@ -324,15 +326,10 @@ class Process(Accessor):
             if len([mm for mm in check_list if mm in ii_dims[0]]):
                 ii_dims = ii_dims[1:]
 
-            ii_dim_sizes = tuple(self._params.get_dim_values(ii_dims).values())
-            ii_type = self.control.meta.get_numpy_types(ii)[ii]
-
             self._input_variables_dict[ii] = adapter_factory(
                 args[ii],
                 variable_name=ii,
                 control=args["control"],
-                variable_dim_sizes=ii_dim_sizes,
-                variable_type=ii_type,
             )
             if self._input_variables_dict[ii]:
                 self[ii] = self._input_variables_dict[ii].current
@@ -363,7 +360,14 @@ class Process(Accessor):
         return
 
     def set_input_to_adapter(self, input_variable_name: str, adapter: Adapter):
-        # Todo: document
+        """Set input variables to adapter.current and manage the adapter.
+
+        TODO: make this private?
+
+        Args:
+            input_variable_name: key of input variable
+            adapter: the Adapter for the input.
+        """
         self._input_variables_dict[input_variable_name] = adapter
         # can NOT use [:] on the LHS as we are relying on pointers between
         # boxes. [:] on the LHS here means it's not a pointer and then
@@ -463,6 +467,8 @@ class Process(Accessor):
         output_dir: [str, pl.Path] = None,
         separate_files: bool = None,
         output_vars: list = None,
+        extra_coords: dict = None,
+        addtl_output_vars: list = None,
     ) -> None:
         """Initialize NetCDF output.
 
@@ -521,23 +527,22 @@ class Process(Accessor):
                 self._netcdf_initialized = False
                 return
 
+        if addtl_output_vars is not None:
+            self._netcdf_output_vars += addtl_output_vars
+
         self._netcdf = {}
 
         if self._netcdf_separate:
-            # make working directory
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
-            for variable_name in self.variables:
-                if (self._netcdf_output_vars is not None) and (
-                    variable_name not in self._netcdf_output_vars
-                ):
-                    continue
+            for variable_name in self._netcdf_output_vars:
                 nc_path = self._netcdf_output_dir / f"{variable_name}.nc"
                 self._netcdf[variable_name] = NetCdfWrite(
-                    nc_path,
-                    self._params.coords,
-                    [variable_name],
-                    {variable_name: self.meta[variable_name]},
-                    {"process class": self.name},
+                    name=nc_path,
+                    coordinates=self._params.coords,
+                    variables=[variable_name],
+                    var_meta={variable_name: self.meta[variable_name]},
+                    extra_coords=extra_coords,
+                    global_attrs={"process class": self.name},
                 )
 
         else:
@@ -549,11 +554,12 @@ class Process(Accessor):
             initial_variable = the_out_vars[0]
             self._netcdf_output_dir.mkdir(parents=True, exist_ok=True)
             self._netcdf[initial_variable] = NetCdfWrite(
-                self._netcdf_output_dir / f"{self.name}.nc",
-                self._params.coords,
-                self._netcdf_output_vars,
-                self.meta,
-                {"process class": self.name},
+                name=self._netcdf_output_dir / f"{self.name}.nc",
+                coordinates=self._params.coords,
+                variables=self._netcdf_output_vars,
+                var_meta=self.meta,
+                extra_coords=extra_coords,
+                global_attrs={"process class": self.name},
             )
             for variable in the_out_vars[1:]:
                 self._netcdf[variable] = self._netcdf[initial_variable]
@@ -569,11 +575,7 @@ class Process(Accessor):
         """
         if self._netcdf_initialized:
             time_added = False
-            for variable in self.variables:
-                if (self._netcdf_output_vars is not None) and (
-                    variable not in self._netcdf_output_vars
-                ):
-                    continue
+            for variable in self._netcdf_output_vars:
                 if not time_added or self._netcdf_separate:
                     time_added = True
                     self._netcdf[variable].add_simulation_time(
@@ -594,7 +596,7 @@ class Process(Accessor):
             None
         """
         if self._netcdf_initialized:
-            for idx, variable in enumerate(self.variables):
+            for idx, variable in enumerate(self._netcdf_output_vars):
                 if (self._netcdf_output_vars is not None) and (
                     variable not in self._netcdf_output_vars
                 ):
@@ -629,11 +631,6 @@ class Process(Accessor):
                 opt_val = opts[opt_name]
             else:
                 opt_val = None
-
-            # if options is a list (output_vars), take it's intersection with
-            # self.variables
-
-            # set value into args to return to return
 
             # the 4 cases:
             if opt_val is None and arg_val is None:

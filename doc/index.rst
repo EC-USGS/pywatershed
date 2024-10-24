@@ -55,9 +55,9 @@ support integrated hydrologic process modeling of surface water and groundwater 
 sustainable manner that allows individual software components to evolve independently. 
 
 
-=========================
-Current version: 1.0.0
-=========================
+==========================
+Version 1.0.0 (2023-12-18)
+==========================
 With pywatershed version 1.0.0, we have faithfully reproduced the PRMS process representations used in
 the USGS `National Hydrolgical Model <https://pubs.usgs.gov/publication/tm6B9>`__ (NHM, Regan et al.,
 2018). For more information on version 1.0.0 see the
@@ -65,12 +65,28 @@ the USGS `National Hydrolgical Model <https://pubs.usgs.gov/publication/tm6B9>`_
 and the `extended release notes <https://ec-usgs.github.io/pywatershed/2023/12/18/v1-0-0-overview>`_
 for version 1.0.0.
 
+===================================
+Current version: 2.0.0 (unreleased)
+===================================
+With pywatershed version 2.0.0, we introduce the :class:`FlowGraph` capabilities that allow
+users to combine different kinds flow solutions in arbitrary order on a "flow graph". 
+
+Version 2.0.0 also introduces several important PRMS capabilities beyond those included in
+the `National Hydrolgical Model <https://pubs.usgs.gov/publication/tm6B9>`__ (NHM, Regan et al.,
+2018).
+
+Version 2.0.0 also includes capabilties to translate :class:`PRMSChannel` simulations
+into 1-D diffusive wave simulations in MODFLOW 6's development branch.
+
+For more information on version 2.0.0 see the
+`release notes <https://github.com/EC-USGS/pywatershed/releases/tag/2.0.0>`_
+and the `extended release notes <https://ec-usgs.github.io/pywatershed/2024/12/18/v2-0-0-overview>`_.
+
 ============================================
 Upcoming development in 2024
 ============================================
 The broad goal is to reproduce GSFLOW coupling using the MODFLOW 6 API. This will include
 gridded configurations and cascading flows.
-We are also working on reservoir representations.
 
 =================
 Getting started
@@ -130,6 +146,7 @@ References
     adapter <api/adapter>
     Atmosphere <api/atmosphere>
     Hydrology <api/hydrology>
+    FlowGraph <api/flow_graph>
     Model <api/generated/pywatershed.Model.rst>
     Base Classes <api/base>
     Utilities <api/utils>

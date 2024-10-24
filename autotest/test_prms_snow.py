@@ -42,7 +42,6 @@ def parameters(simulation, control, request):
     return params
 
 
-@pytest.mark.domain
 @pytest.mark.xfail
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
@@ -126,6 +125,8 @@ def test_compare_prms(
         snow.calculate(1.0)
         snow.output()
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
             compare_in_memory(
                 snow, answers, atol=atol, rtol=rtol, skip_missing_ans=True
             )

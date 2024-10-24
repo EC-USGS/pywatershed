@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=61",
+    "setuptools>64",
     "numpy>=2.0",
 ]
 build-backend = "setuptools.build_meta"
@@ -26,12 +26,14 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Topic :: Scientific/Engineering :: Hydrology",
 ]
-requires-python = ">=3.9,<3.11"
+requires-python = ">=3.10,<3.12"
 dependencies = [
     "contextily",
     "numpy>=2.0.0",
     "matplotlib >=1.4.0",
     "epiweeks",
+    "flopy",
+    "geopandas",
     "netCDF4",
     "networkx",
     "numba",
@@ -57,7 +59,6 @@ test = [
     "pywatershed[lint]",
     "coverage",
     "flaky",
-    "flopy",
     "filelock",
     "modflow-devtools",
     "pre-commit",
@@ -71,9 +72,10 @@ optional = [
     "pydot",
     "geos",
     "cartopy",
+    "folium",
     "geopandas",
     "hvplot",
-    "shapely <2.0.0",
+    "shapely",
     "ipython",
     "jupyter",
     "jupyterlab",
@@ -110,6 +112,7 @@ include = ["pywatershed", "pywatershed.*"]
 [tool.setuptools.package-data]
 "pywatershed.static.metadata" = ["*.yaml"]
 "pywatershed.data.drb_2yr" = ["*"]
+"pywatershed.data" = ["big_sandy_starfit_parameters.nc"]
 
 [tool.ruff]
 line-length = 79

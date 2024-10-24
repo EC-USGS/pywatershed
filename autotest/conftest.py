@@ -144,10 +144,10 @@ def pytest_generate_tests(metafunc):
 
     control_pattern_list = metafunc.config.getoption("control_pattern")
 
-    if (
-        "domainless" not in metafunc.config.option.markexpr
-        and "simulation" in metafunc.fixturenames
-    ):
+    if "domainless" == metafunc.config.option.markexpr:
+        return
+
+    if "simulation" in metafunc.fixturenames:
         simulations = collect_simulations(domain_list, control_pattern_list)
 
         # Put --print_ans in the domain fixture as it applies only to the
@@ -165,3 +165,5 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(
             "simulation", simulations.values(), ids=simulations.keys()
         )
+
+    return

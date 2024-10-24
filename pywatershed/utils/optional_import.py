@@ -43,6 +43,7 @@ import importlib
 import sys
 import types
 import warnings
+from typing import Literal
 
 from .parse_version import Version
 
@@ -75,7 +76,7 @@ def get_version(module: types.ModuleType) -> str:
 def import_optional_dependency(
     name: str,
     error_message: str = "",
-    errors: str = "raise",
+    errors: Literal["warn", "raise", "ignore", "silent"] = "raise",
     min_version: str | None = None,
 ):
     """

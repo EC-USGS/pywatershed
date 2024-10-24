@@ -12,13 +12,31 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.1.1.0:
+.. _whats-new.1.2.0:
 
-v1.1.0 (Unreleased)
+v2.0.0 (Unreleased)
 ---------------------
 
-New features
-~~~~~~~~~~~~
+New Features
+~~~~~~~~~~~~~~~~
+- The :class:`FlowGraph` capabilities are introduced. These allow users to
+  combine different kinds flow solutions in arbitrary order on a "flow graph".
+  The accompanying base classes :class:`FlowNode` and :class:`FlowNodeMaker`
+  are introduced along with their subclasses for modeling
+  :class:`PassThroughNode`\ s, :class:`ObsInNode`\ s (flow replacement by
+  observations with sink and source tracking in mass balance),
+  :class:`PRMSChannelFlowNode`\ s, and :class:`StarfitFlowNode`\ s. A new
+  example notebook,
+  `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+  demonstrates adding STARFIT reservoir nodes into a FlowGraph otherwise
+  simulating `PRMSChannel` and highlights helper functions for this use case.
+  (:pull:`233`) By `James McCreight <https://github.com/jmccreight>`_.
+- The :class:`MmrToMf6Dfw` class builds a MF6 simulation with Diffusive Wave
+  (DFW) routing from PRMS NHM input files and a few simple assumptions. The
+  lateral (to-channel) fluxes from a PRMS are used as time varying boundary
+  conditions. A new notebook runs the Delaware River Basin using MF6 DFW:
+  `examples/mmr_to_mf6_dfw.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/mmr_to_mf6_dfw.ipynb>`__.
+  (:pull:`290`) By `James McCreight <https://github.com/jmccreight>`_.
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
 - No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,
@@ -35,20 +53,16 @@ New features
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 - Control instances have a diff method to compare with other instances.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Feature to standardize subsetting input data (parameters and forcings) in
+  space and time either from file (:func:`utils.netcdf_utils.subset_netcdf_file`) or
+  in memory (:func:`utils.netcdf_utils.subset_xr`).
+  (:pull:`304`) By `James McCreight <https://github.com/jmccreight>`_.  
 
-Breaking changes
+Breaking Changes
 ~~~~~~~~~~~~~~~~
 - pref_flow_infil_frac now a required parameter input for PRMSSoilzone. The NHM
   values assumed previously are zeros on all HRUs.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
-
-Deprecations
-~~~~~~~~~~~~
-
-
-Performance
-~~~~~~~~~~~
-
 
 Bug fixes
 ~~~~~~~~~
@@ -61,10 +75,6 @@ Bug fixes
 - The variable pptmix was incorrectly calculated in certain situations not covered
   by the NHM configurations.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
-
-Documentation
-~~~~~~~~~~~~~
-
 
 Internal changes
 ~~~~~~~~~~~~~~~~
@@ -88,10 +98,23 @@ Internal changes
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
+.. _whats-new.1.1.0:
+
+v1.1.0 (25 June 2024)
+---------------------
+
+New features
+~~~~~~~~~~~~
+- Minor enhancement to ensure PRMSSnow hru_deplcrv parameter is integer or coercable.
+  (:pull:`296`) By `James McCreight <https://github.com/jmccreight>`_.
+- Release assests to include new GIS files and an additional domain to support the upcoming
+  major release. By `James McCreight <https://github.com/jmccreight>`_.
+
+
 .. _whats-new.1.0.0:
 
-v1.0.0
----------------------
+v1.0.0 (18 December 2023)
+-------------------------
 
 New features
 ~~~~~~~~~~~~

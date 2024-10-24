@@ -760,6 +760,10 @@ def xr_ds_to_dd(file_or_ds, schema_only=False, encoding=True) -> dict:
 
     dd = xr_ds.to_dict(data=data_arg, encoding=encoding)
 
+    # before = xr_ds.time.values.dtype
+    # after = dd["coords"]["time"]["data"].dtype
+    # assert before == after
+
     dd = xr_dd_to_dd(dd)
 
     return dd
@@ -767,6 +771,7 @@ def xr_ds_to_dd(file_or_ds, schema_only=False, encoding=True) -> dict:
 
 def xr_dd_to_dd(xr_dd: dict) -> dict:
     dd = deepcopy(xr_dd)
+    # asdf
 
     # Move the global encoding to a global key of itself
     dd["encoding"] = {"global": dd.get("encoding", {})}

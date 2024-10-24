@@ -2,9 +2,11 @@
 # Purpose:
 # Generate a 2 year test case of DRB from the full 40yr
 
-source_dir=/home/jmccreight/pywatershed_data/20220209_gm_byHWobs_CONUS
-target_dir=/home/jmccreight/pywatershed_data/conus_2yr
-pywatershed_repo_dir=/home/jmccreight/pywatershed
+home_dir=~
+
+source_dir=$home_dir/pywatershed_data/20220209_gm_byHWobs_CONUS
+target_dir=$home_dir/pywatershed_data/conus_2yr
+pywatershed_repo_dir=$home_dir/pywatershed
 
 mkdir -p $target_dir
 

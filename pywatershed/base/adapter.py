@@ -88,7 +88,13 @@ class AdapterNetcdf(Adapter):
                 _ = nc_shape.pop(nc_dims.index(time_dim))
 
         self.time = self._nc_read.times
-        self._current_value = np.full(nc_shape, np.nan, nc_type)
+
+        if "int" in str(nc_type):
+            fill_value = -9999
+        else:
+            fill_value = np.nan
+
+        self._current_value = np.full(nc_shape, fill_value, nc_type)
 
         return
 

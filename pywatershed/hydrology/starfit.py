@@ -530,7 +530,7 @@ def min_nor(
 
 
 class StarfitFlowNode(FlowNode):
-    """STARFIT FlowNode: Storage Targets And Release Function Inference Tool
+    r"""STARFIT FlowNode: Storage Targets And Release Function Inference Tool
 
     This :class:`FlowNode` implementation allows STARFIT solutions to be
     computed in a :class:`FlowGraph`. The solution has the option for
@@ -668,6 +668,7 @@ class StarfitFlowNode(FlowNode):
         self._m3ps_to_MCM = nhrs_substep * 60 * 60 / 1.0e6
         self._MCM_to_m3ps = 1.0 / self._m3ps_to_MCM
 
+        # These need to be numpy pointers for the Budget!
         def nan1d():
             return np.zeros(1) * nan
 
@@ -750,6 +751,7 @@ class StarfitFlowNode(FlowNode):
             initial_storage = np.where(
                 wh_initial_storage_nan, nor_mean_cap, self._initial_storage
             )
+            # print(f"{nor_mean_cap=}")  # another way to get this info out?
             # set lake_storage from initial_storage when start is not available
             self._lake_storage_sub[:] = np.where(
                 np.isnat(self._start_time), initial_storage, nan
@@ -843,23 +845,33 @@ class StarfitFlowNode(FlowNode):
         return
 
     @property
-    def outflow(self):
-        return self._lake_outflow
+    def outflow(self) -> np.float64:
+        return self._lake_outflow[0]
 
     @property
-    def outflow_substep(self):
-        return self._lake_outflow_sub
+    def outflow_substep(self) -> np.float64:
+        return self._lake_outflow_sub[0]
 
     @property
-    def storage_change(self):
-        return self._lake_storage_change_flow_units
+    def storage_change(self) -> np.float64:
+        return self._lake_storage_change_flow_units[0]
 
     @property
-    def storage(self):
-        return self._lake_storage
+    def storage(self) -> np.float64:
+        return self._lake_storage[0]
 
     @property
-    def sink_source(self):
+    def release(self) -> np.float64:
+        "The release component of the STARFIT outflow."
+        return self._lake_release[0]
+
+    @property
+    def spill(self) -> np.float64:
+        "The spill component of the STARFIT outflow."
+        return self._lake_spill[0]
+
+    @property
+    def sink_source(self) -> np.float64:
         return zero
 
     def _calculate_subtimestep_daily(
@@ -1110,7 +1122,7 @@ class StarfitFlowNode(FlowNode):
 
 
 class StarfitFlowNodeMaker(FlowNodeMaker):
-    """STARFIT FlowNodeMaker: Storage Targets And Release Function Inference Tool.
+    r"""STARFIT FlowNodeMaker: Storage Targets And Release Function Inference Tool.
 
     This FlowNodeMaker instantiates :class:`StarfitFlowNode`\ s for
     :class:`FlowGraph`.

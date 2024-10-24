@@ -6,15 +6,16 @@
 #SBATCH --account=impd
 #SBATCH --time=01:00:00
 #SBATCH --mail-type=ALL
-#SBATCH --mail-user=jmccreight@usgs.gov
+## #SBATCH --mail-user=@usgs.gov
 #SBATCH -o conus_tg_job--%j.out
 
 # This is for TALLGRASS
 
-# conda envs are documented in /home/jmccreight/conda_installs.sh
+# conda envs are documented in ~/conda_installs.sh
 
 # make sure we have conda in the scheduler
-source /home/jmccreight/.bashrc
+home_dir=~
+source $home_dir/.bashrc
 
 #  of gcc/gfort that PRMS 5.2.1 requires
 conda activate gnu_tg

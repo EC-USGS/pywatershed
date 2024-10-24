@@ -11,7 +11,6 @@ from ..constants import (
     CovType,
     HruType,
     dnearzero,
-    nan,
     nearzero,
     numba_num_threads,
     zero,
@@ -145,7 +144,7 @@ class PRMSCanopy(ConservativeProcess):
             "net_snow": zero,
             "intcp_changeover": zero,
             "intcp_evap": zero,
-            "intcp_form": nan,  # = RAIN bool would have to match RAIN/SNOW
+            "intcp_form": 0,  # = RAIN bool would have to match RAIN/SNOW
             "intcp_stor": zero,
             "intcp_transp_on": 0,  # could make boolean
             "hru_intcpevap": zero,

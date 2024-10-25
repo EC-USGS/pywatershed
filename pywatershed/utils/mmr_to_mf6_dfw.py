@@ -140,7 +140,7 @@ class MmrToMf6Dfw:
         # time_units="seconds",
         save_flows: bool = True,
         time_zone: str = "UTC",
-        write_on_init: bool = True,
+        write_on_init: bool = False,
         chd_options: dict = None,
         cxs_options: dict = None,
         disv1d_options: dict = None,

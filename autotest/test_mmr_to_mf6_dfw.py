@@ -48,7 +48,6 @@ answers_chf_dfw = {
 }
 
 
-@pytest.mark.xfail
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.domainless
 @pytest.mark.parametrize("binary_flw", [True, False])
@@ -191,9 +190,14 @@ def test_mmr_to_mf6_chf_dfw(tmp_path, binary_flw):
         else:
             flw_vol = 0.0
 
+        # <
+        time_coord_data = np.array([control.start_time]).astype(
+            "datetime64[ns]"
+        )
+
         _ = xr.Dataset(
             coords=dict(
-                time=np.array([control.start_time]),
+                time=time_coord_data,
                 nsegment=params.parameters["seg_id"],
             ),
             data_vars={
@@ -293,7 +297,6 @@ answers_regression_means = {
 }
 
 
-@pytest.mark.xfail
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.domain
 def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
@@ -410,6 +413,7 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
         inflow_dir=inflow_dir,
     )
 
+    dfw.write()
     success, buff = dfw.run(silent=False, report=True)
     assert success
 

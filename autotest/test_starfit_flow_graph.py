@@ -173,7 +173,7 @@ def test_starfit_flow_graph_postprocess(
 
     # the first in the list is for the disconnected node
     check_names = ["prms_channel"] + new_nodes_maker_names
-    check_indices = [dis_ds.dims["nsegment"] - 1] + new_nodes_maker_indices
+    check_indices = [dis_ds.sizes["nsegment"] - 1] + new_nodes_maker_indices
     check_ids = [dis_ds.nhm_seg[-1].values.tolist()] + new_nodes_maker_ids
 
     # This warning should say: TODO

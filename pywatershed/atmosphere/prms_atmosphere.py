@@ -267,7 +267,7 @@ class PRMSAtmosphere(Process):
             "tmaxc": nan,
             "tavgc": nan,
             "tminc": nan,
-            "pptmix": nan,
+            "pptmix": -9999,
             "orad_hru": nan,
         }
 

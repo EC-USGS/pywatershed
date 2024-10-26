@@ -49,7 +49,9 @@ class JSONParameterEncoder(json.JSONEncoder):
 
 
 def _json_load(json_filename):
-    pars = json.load(open(json_filename))
+    with open(json_filename) as ff:
+        pars = json.load(ff)
+
     # need to convert lists to numpy arrays
     for k, v in pars.items():
         if isinstance(v, list):
@@ -101,12 +103,13 @@ class PrmsParameters(Parameters):
 
     def parameters_to_json(self, json_filename) -> None:
         """write the parameters dictionary out to a json file"""
-        json.dump(
-            {**self.dims, **self.parameters},
-            open(json_filename, "w"),
-            indent=4,
-            cls=JSONParameterEncoder,
-        )
+        with open(json_filename, "w") as ff:
+            json.dump(
+                {**self.dims, **self.parameters},
+                ff,
+                indent=4,
+                cls=JSONParameterEncoder,
+            )
         return None
 
     @staticmethod

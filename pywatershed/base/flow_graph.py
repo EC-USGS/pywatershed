@@ -22,6 +22,11 @@ class FlowNode(Accessor):
     A FlowNode is instantiated with its own (optional) data and calculates
     outflow, storage_change, and sink_source properties on subtimesteps.
 
+    A FlowNode may have additional public variables provided by properties that
+    can be requested to be collected by :class:`FlowGraph` for output to
+    NetCDF files. These variable names should just not overwrite any existing
+    class attributes.
+
     See :class:`FlowGraph` for related examples and discussion.
     """
 
@@ -176,6 +181,10 @@ class FlowGraph(ConservativeProcess):
     which highlights both helper functions
     :func:`prms_channel_flow_graph_to_model_dict`
     and :func:`prms_channel_flow_graph_postprocess`.
+
+    For developers looking to add new :class:`FlowNode`s, please read the
+    :class:`FlowNode` base class code and also the code for
+    :class:`FlowNodeMaker`.
 
     Examples:
     ---------

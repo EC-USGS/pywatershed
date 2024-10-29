@@ -337,7 +337,9 @@ class Starfit(ConservativeProcess):
             potential_release = self.lake_release[wh_neg_storage] + (
                 self.lake_storage[wh_neg_storage]
                 + self.lake_storage_change[wh_neg_storage]
-            ) * (MCM_to_m3ps_day)  # both terms in m3ps
+            ) * (
+                MCM_to_m3ps_day
+            )  # both terms in m3ps
             self.lake_release[wh_neg_storage] = np.maximum(
                 potential_release,
                 zero,
@@ -545,8 +547,10 @@ class StarfitFlowNode(FlowNode):
 
     https://github.com/IMMM-SFA/starfit
 
-    Adapted from STARFIT implementation in the MOSART-WM model:
-    https://github.com/IMMM-SFA/mosartwmpy/blob/main/mosartwmpy/reservoirs/istarf.py
+    Adapted from STARFIT implementation in the [MOSART-WM model](https://github.com/IMMM-SFA/mosartwmpy/blob/main/mosartwmpy/reservoirs/istarf.py)
+    Thurber, T., Rexer, E., Vernon, C., Sun, N., Turner, S., Yoon, J.,
+    Broman, D., & Voisin, N. (2022). mosartwmpy (Version 0.2.7)
+    [Computer software]. https://github.com/IMMM-SFA/mosartwmpy
 
     See :class:`FlowGraph` for discussion and a worked example. The notebook
     `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
@@ -1096,9 +1100,9 @@ class StarfitFlowNode(FlowNode):
         self._lake_spill_accum[:] += self._lake_spill_sub
         self._lake_spill[:] = self._lake_spill_accum / (isubstep + 1)
 
-        self._lake_availability_status_accum[:] += (
-            self._lake_availability_status_sub
-        )
+        self._lake_availability_status_accum[
+            :
+        ] += self._lake_availability_status_sub
         self._lake_availability_status[:] = (
             self._lake_availability_status_accum / (isubstep + 1)
         )

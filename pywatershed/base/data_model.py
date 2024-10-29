@@ -1135,4 +1135,10 @@ def dd_to_nc4_ds(dd, nc_file):
 
 
 def open_datasetdict(nc_file: fileish, use_xr=True):
+    """Convenience method for opening a DatasetDict.
+
+    Args:
+      nc_file: the file containing the DatasetDict.
+      use_xr: Use xarray or NetCDF4 for opening the NetCDF file?
+    """
     return DatasetDict.from_netcdf(nc_file, use_xr=use_xr)

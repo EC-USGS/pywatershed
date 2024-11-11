@@ -536,6 +536,12 @@ class StarfitFlowNode(FlowNode):
     computed in a :class:`FlowGraph`. The solution has the option for
     subtimestep or daily computations.
 
+    Daily computations have the same outflows on the substeps of a day and
+    outflows and storages are calculated on the last subtimestep. On the first
+    subtimestep, we use the inflow of the first subtimestep as representative
+    of the mean inflow of the previous day in order to calculate an average
+    outflow for the first timestep.
+
     The STARFIT reference:
 
         Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,

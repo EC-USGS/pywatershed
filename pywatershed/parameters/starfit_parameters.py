@@ -48,20 +48,39 @@ starfit_param_names = (
 
 
 class StarfitParameters(Parameters):
-    """
-    Starfit parameter class
+    """Starfit parameter class.
 
-    The GRanD data
+    This parameter class provides STARFIT parameters to for modeling. This
+    class does NOT calculate the parameters from inputs (e.g. as ISTARF-CONUS
+    did using ResOpsUS), it simply provides the format for the model to get the
+    the parameter data.
+
+    The data supplied can come from whatever means. The method
+    `from_istarf_conus_grand` uses existing ISTARF-CONUS and GRanD data to
+    create a parameter object for the user.
+
+    References:
+
+    **ISTARF-CONUS (Inferred Storage Targets and Release Functions - Continental
+    US)**: Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon,
+    Nathalie Voisin, Water storage and release policies for all large
+    reservoirs of conterminous United States, Journal of Hydrology,
+    Volume 603, Part A, 2021, 126843, ISSN 0022-1694,
+    https://doi.org/10.1016/j.jhydrol.2021.126843.
+    https://zenodo.org/records/4602277
+
+    **GRanD (Global Reservoir and Dam) database**: Lehner, Bernhard, Catherine
+    Reidy Liermann, Carmen Revenga, Charles
+    Vörösmarty, Balazs Fekete, Philippe Crouzet, Petra Döll et al. "High‐
+    resolution mapping of the world's reservoirs and dams for sustainable
+    river‐flow management." Frontiers in Ecology and the Environment 9, no. 9
+    (2011): 494-502.
     https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
 
-    The istarf data
-    https://zenodo.org/record/4602277#.ZCtYj-zMJqs
-
-    The resops data
-    https://zenodo.org/record/5893641#.ZCtakuzMJqs
-
-    # add citiatons. add this information to the starfit model too
-    # add a working example
+    **ResOpsUS**: Steyaert, Jennie C., Laura E. Condon, Sean WD Turner, and
+    Nathalie Voisin. "ResOpsUS, a dataset of historical reservoir operations
+    in the contiguous United States." Scientific Data 9, no. 1 (2022): 34.
+    https://zenodo.org/records/6612040
 
     Parameters
     ----------
@@ -156,7 +175,7 @@ class StarfitParameters(Parameters):
     def from_istarf_conus_grand(
         grand_file: Union[pl.Path, str],
         istarf_file: Union[pl.Path, str] = None,
-        files_directory: Union[pl.Path, str] = None,
+        files_directory: Union[pl.Path, str] = pl.Path("."),
         grand_ids: list = None,
     ):
         """Build parameter object from istarf-conus and the GRanD v1.3 sources.
@@ -175,14 +194,14 @@ class StarfitParameters(Parameters):
         Starfit.
 
         Args:
+        grand_file: a path to an existing dbf or shp file. If the file does not
+            exist, an error will be thrown and you must download it manually
+            at https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/de
         istarf_file: a path to an existing file. If file does not exist or is
             None then the file will be dowladed to files_directory. You can
             download the file yourself here
-            https://zenodo.org/records/4602277/files/ISTARF-CONUS.csv?download=1
-        grand_file: a path to an existing dbf or shp file. If the file does not
-            exist, an error will be thrown and you must download it manually
-            at https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
-
+            https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013
+        files_directory: A local directory where to download the file.
         grand_ids: a subset of grand_ids to keep.
 
         Examples:
@@ -222,7 +241,7 @@ class StarfitParameters(Parameters):
         ...     )
         ... )
 
-        """  # noqa: 501
+        """  # noqa: E501
 
         grand_ds = _get_grand(grand_file)
         istarf_ds = _get_istarf_conus(istarf_file, files_directory)
@@ -260,7 +279,7 @@ class StarfitParameters(Parameters):
         nreservoirs = len(ds.nreservoirs)
         for vv in ["start_time", "end_time"]:
             ds[vv] = xr.Variable(
-                "nreservoirs", np.array([nat] * nreservoirs, "<M8[s]")
+                "nreservoirs", np.array([nat] * nreservoirs, "<M8[ns]")
             )
         # <
         vv = "initial_storage"
@@ -271,13 +290,21 @@ class StarfitParameters(Parameters):
 
 
 def _get_grand(grand_file):
+    if grand_file is None:
+        msg = (
+            "You must acquire the GRanD file manually at\n"
+            "https://ln.sync.com/dl/bd47eb6b0/anhxaikr-62pmrgtq-k44xf84f-pyz4atkm/view/default/447819520013"  # noqa: E501
+        )
+        raise IOError(msg)
     if not pl.Path(grand_file).exists():
         msg = f"the GRanD file {grand_file} does not exist."
         raise ValueError(msg)
     # check that it's a dbf or a shp file?
 
     cols_keep = ["GRAND_ID", "LONG_DD", "LAT_DD"]
-    grand_ds = gpd.read_file(grand_file)[cols_keep].to_xarray().drop("index")
+    grand_ds = (
+        gpd.read_file(grand_file)[cols_keep].to_xarray().drop_vars("index")
+    )
     grand_ds = grand_ds.rename(
         {"GRAND_ID": "grand_id", "index": "nreservoirs"}
     ).set_coords("grand_id")
@@ -304,7 +331,7 @@ def _get_istarf_conus(istarf_file, files_directory):
             "ISTARF-CONUS.csv?download=1"
         )
         istarf_file = files_directory / "ISTARF-CONUS.csv"
-        if not istarf_file_in_exists:
+        if not istarf_file_in_exists and istarf_file_in is not None:
             warn(
                 "The specified istarf_file does not exist: "
                 f"{istarf_file_in}"

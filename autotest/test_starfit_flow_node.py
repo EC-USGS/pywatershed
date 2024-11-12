@@ -13,7 +13,10 @@ from pywatershed.hydrology.starfit import StarfitFlowNodeMaker
 from pywatershed.parameters import Parameters, StarfitParameters
 
 # NB:
-#   Here we are comparing a daily starfit against an hourly StarfitNode.
+#   Here we are comparing a daily offline starfit against an hourly
+#   StarfitNode. The reference output is the mean value from offline runs run
+#   from 1995-2001 in the file
+#   ../test_data/starfit/starfit_mean_output_1995-2001.nc
 #   We only advance the hourly StarfitNode one substepper day. It's
 #   resulting flow rates are identical but the change in storage is 1/24
 #   of the daily value, so we check this. We have to track previous storage
@@ -29,12 +32,12 @@ end_time = np.datetime64("2001-12-31 00:00:00")
 #    & (parameters_ds.end_time >= np.datetime64("2001-12-31 00:00:00"))
 # fmt: off
 starfit_inds_test = [
-    0,   1,   2,   3,   4,   5,   6,   8,   9,  10,  11,  12,  13,
+    0,   1,   2,   3,   4,   5,   6,   8,   9,   10,  11,  12,  13,
     15,  16,  18,  20,  21,  22,  23,  24,  25,  26,  28,  29,  30,
     31,  32,  33,  36,  37,  38,  40,  43,  44,  47,  48,  49,  51,
     52,  53,  55,  56,  59,  62,  63,  64,  65,  67,  68,  69,  70,
     71,  72,  74,  75,  76,  77,  86,  87,  89,  90,  91,  92,  93,
-    94,  95,  96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106,
+    94,  95,  96,  97,  98,  99,  100, 101, 102, 103, 104, 105, 106,
     107, 108, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120,
     122, 123, 130, 134, 137, 139, 140, 141, 145, 148, 149, 152, 154,
     155, 156, 157, 158, 159, 160, 161, 162, 164, 165, 166

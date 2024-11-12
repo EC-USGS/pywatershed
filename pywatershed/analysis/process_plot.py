@@ -41,7 +41,7 @@ class ProcessPlot:
         # if (self.__seg_poly.crs.name
         #     == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
         #     print("Overriding USGS aea crs with EPSG:5070")
-        self.seg_gdf.crs = "EPSG:5070"
+        self.seg_gdf.set_crs("EPSG:5070")
 
         self.seg_geoms_exploded = (
             self.seg_gdf.explode(index_parts=True)

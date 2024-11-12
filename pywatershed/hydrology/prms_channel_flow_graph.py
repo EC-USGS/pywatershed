@@ -658,8 +658,8 @@ def prms_channel_flow_graph_postprocess(
         new_nodes_maker_indices: collated list of indices relative to each
             NodeMaker.
         new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
-        new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
-            which the node will flow. Use of non-positive entries specifies
+        new_nodes_flow_to_nhm_seg: collated list describing the nhm_segs to
+            which the new nodes will flow. Use of non-positive entries specifies
             the zero-based index for flowing to nodes specified in these
             collated parameters, allowing these new nodes to be added in
             groups, in series to the existing NHM FlowGraph. Note that a new
@@ -782,8 +782,8 @@ def prms_channel_flow_graph_to_model_dict(
         new_nodes_maker_indices: collated list of indices relative to each
             NodeMaker
         new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
-        new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
-            which the node will flow. Use of non-positive entries specifies
+        new_nodes_flow_to_nhm_seg: collated list describing the nhm_segs to
+            which the new nodes will flow. Use of non-positive entries specifies
             the zero-based index for flowing to nodes specified in these
             collated parameters, allowing these new nodes to be added in
             groups, in series to the existing NHM FlowGraph. Note that a new

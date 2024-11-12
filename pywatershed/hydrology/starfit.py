@@ -536,6 +536,12 @@ class StarfitFlowNode(FlowNode):
     computed in a :class:`FlowGraph`. The solution has the option for
     subtimestep or daily computations.
 
+    Daily computations have the same outflows on the substeps of a day and
+    outflows and storages are calculated on the last subtimestep. On the first
+    subtimestep, we use the inflow of the first subtimestep as representative
+    of the mean inflow of the previous day in order to calculate an average
+    outflow for the first timestep.
+
     The STARFIT reference:
 
         Sean W.D. Turner, Jennie Clarice Steyaert, Laura Condon, Nathalie Voisin,
@@ -545,8 +551,10 @@ class StarfitFlowNode(FlowNode):
 
     https://github.com/IMMM-SFA/starfit
 
-    Adapted from STARFIT implementation in the MOSART-WM model:
-    https://github.com/IMMM-SFA/mosartwmpy/blob/main/mosartwmpy/reservoirs/istarf.py
+    Adapted from STARFIT implementation in the [MOSART-WM model](https://github.com/IMMM-SFA/mosartwmpy/blob/main/mosartwmpy/reservoirs/istarf.py)
+    Thurber, T., Rexer, E., Vernon, C., Sun, N., Turner, S., Yoon, J.,
+    Broman, D., & Voisin, N. (2022). mosartwmpy (Version 0.2.7)
+    [Computer software]. https://github.com/IMMM-SFA/mosartwmpy
 
     See :class:`FlowGraph` for discussion and a worked example. The notebook
     `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__

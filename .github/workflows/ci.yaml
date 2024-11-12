@@ -124,8 +124,7 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
-          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
-          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=false" >> $GITHUB_ENV
           cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 
       - name: Enforce MF6 ref and remote merge to main
@@ -192,7 +191,14 @@ jobs:
 
       - name: domainless - run tests not requiring domain data
         working-directory: autotest
-        run: pytest -m domainless -n=auto -vv
+        run: pytest
+          -m domainless
+          -n=auto
+          -vv
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_domainless.xml
 
       - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest

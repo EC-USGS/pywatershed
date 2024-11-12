@@ -15,14 +15,14 @@ mf6_bin_unavailable = shutil.which("mf6") is None
 # Getting the gis files causes problems in parallel in CI. See regression test.
 
 # See below to check if these answers are still up-to-date with
-# mf6/autotest/test_swf_dfw.py
+# mf6/autotest/test_chf_dfw.py
 # Note the answers are from the binary FLW files in
-# mf6/autotest/test_swf_dfw.py, if you switch to text files, the line should be
+# mf6/autotest/test_chf_dfw.py, if you switch to text files, the line should be
 # flw_list = [
 #     (int(binary), 100),
 # ]  # one-based cell numbers here if binary, zero-based if text
 
-answers_swf_dfw = {
+answers_chf_dfw = {
     "ia": np.array([0, 2, 5, 7]),
     "ja": np.array([0, 1, 1, 0, 2, 2, 1], dtype=np.int32),
     "stage": np.array([[[[1.00196123, 1.00003366, 1.0]]]]),
@@ -52,9 +52,9 @@ answers_swf_dfw = {
 @pytest.mark.skipif(mf6_bin_unavailable, reason="mf6 binary not available")
 @pytest.mark.domainless
 @pytest.mark.parametrize("binary_flw", [True, False])
-def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
+def test_mmr_to_mf6_chf_dfw(tmp_path, binary_flw):
     # The point of this test is to reproduce the
-    # modflow6/autotest/test_swf_dfw.py
+    # modflow6/autotest/test_chf_dfw.py
 
     # Here we supply "seg_mid_elevation" in the parameter data and
     # "stress_period_data" in chd options. This bypasses the calculation of
@@ -68,8 +68,8 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
     # stream segments, the other is about the units of volume/flow being in
     # cubicfeet.
 
-    name = "swf-dfw01"
-    output_dir = tmp_path / "test_swf_dfw01"
+    name = "chf-dfw01"
+    output_dir = tmp_path / "test_chf_dfw01"
     save_flows = True
     print_flows = True
 
@@ -123,16 +123,16 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
     # vertices could also be supplied by shapefiles
     vertices = []
     vertices = [[j, j * dx, 0.0] for j in range(nreach + 1)]
-    cell2d = []
+    cell1d = []
     for j in range(nreach):
-        cell2d.append([j, 0.5, 2, j, j + 1])
-    nodes = len(cell2d)
+        cell1d.append([j, 0.5, 2, j, j + 1])
+    nodes = len(cell1d)
     nvert = len(vertices)
     disv1d_options = {
         "nodes": nodes,
         "nvert": nvert,
         "vertices": vertices,
-        "cell2d": cell2d,
+        "cell1d": cell1d,
     }
 
     # dfw
@@ -191,9 +191,14 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
         else:
             flw_vol = 0.0
 
+        # <
+        time_coord_data = np.array([control.start_time]).astype(
+            "datetime64[ns]"
+        )
+
         _ = xr.Dataset(
             coords=dict(
-                time=np.array([control.start_time]),
+                time=time_coord_data,
                 nsegment=params.parameters["seg_id"],
             ),
             data_vars={
@@ -246,18 +251,22 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
     # Checks
     assert success
 
-    # one can verify the answers match the current mf6 results for test_swf_dfw
-    # by placing the path to its output here
+    # one can verify the answers match the current mf6 results for test_chf_dfw
+    # by placing the path to its output here. Run the following lines to
+    # generate the mf6 results:
+    #   cd modflow6_for_pws_ci/autotest  # or your mf6 repo location
+    #   pytest -s -vv test_chf_dfw.py --keep=keepers
     # output_dir = pl.Path(
-    #     "../../modflow6/autotest/keepers/test_mf6model[0-swf-dfw01]0"
+    #     "../../modflow6_for_pws_ci/autotest/keepers/"
+    #     "test_mf6model[0-chf-dfw01]0"
     # )
 
     # check binary grid file
     grb = flopy.mf6.utils.MfGrdFile(output_dir / f"{name}.disv1d.grb")
     ia = grb.ia
     ja = grb.ja
-    assert (answers_swf_dfw["ia"] == ia).all()
-    assert (answers_swf_dfw["ja"] == ja).all()
+    assert (answers_chf_dfw["ia"] == ia).all()
+    assert (answers_chf_dfw["ja"] == ja).all()
     assert ia.shape[0] == grb.nodes + 1, "ia in grb file is not correct size"
 
     # check stage file
@@ -265,7 +274,7 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
         output_dir / f"{name}.stage", precision="double", text="STAGE"
     )
     stage = qobj.get_alldata()
-    assert ((answers_swf_dfw["stage"] - stage) < 1.0e-7).all()
+    assert ((answers_chf_dfw["stage"] - stage) < 1.0e-7).all()
 
     # read the budget file
     budobj = flopy.utils.binaryfile.CellBudgetFile(output_dir / f"{name}.bud")
@@ -275,17 +284,17 @@ def test_mmr_to_mf6_swf_dfw(tmp_path, binary_flw):
     qchd = np.array(budobj.get_data(text="CHD")[0].tolist()[0])
     qresidual = np.zeros(grb.nodes)[0]
 
-    assert (answers_swf_dfw["flowja"] - flowja < 1.0e-7).all()
-    assert (answers_swf_dfw["qstorage"] - qstorage < 1.0e-7).all()
-    assert (answers_swf_dfw["qflw"] - qflw < 1.0e-7).all()
-    assert (answers_swf_dfw["qchd"] - qchd < 1.0e-7).all()
-    assert (answers_swf_dfw["qresidual"] - qresidual < 1.0e-7).all()
+    assert (answers_chf_dfw["flowja"] - flowja < 1.0e-7).all()
+    assert (answers_chf_dfw["qstorage"] - qstorage < 1.0e-7).all()
+    assert (answers_chf_dfw["qflw"] - qflw < 1.0e-7).all()
+    assert (answers_chf_dfw["qchd"] - qchd < 1.0e-7).all()
+    assert (answers_chf_dfw["qresidual"] - qresidual < 1.0e-7).all()
 
 
 # <
 answers_regression_means = {
-    "stage_all": 1.03667372881148,
-    "flow_all": 44.685014111989425,
+    "stage_all": 1.0372047024253908,
+    "flow_all": 44.70210250910929,
 }
 
 
@@ -406,6 +415,7 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
         inflow_dir=inflow_dir,
     )
 
+    dfw.write()
     success, buff = dfw.run(silent=False, report=True)
     assert success
 
@@ -468,4 +478,5 @@ def test_mmr_to_mf6_dfw_regression(simulation, tmp_path):
 
     for kk, vv in answers_regression_means.items():
         abs_diff = abs(locals()[kk].mean() - vv)
+
         assert abs_diff < 1e-5, f"results for {kk} are not close"

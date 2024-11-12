@@ -40,7 +40,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' 'setuptools<=72.2.0' 'numpy<2.0'
-          
       - name: Base installation
         run: |
           pip --verbose install .
@@ -124,8 +123,7 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
-          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
-          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=false" >> $GITHUB_ENV
           cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 
       - name: Enforce MF6 ref and remote merge to main
@@ -150,8 +148,9 @@ jobs:
         run: .github/scripts/symlink_gfortran_mac.sh
 
       - name: Install Dependencies via Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v1.9.0
         with:
+          micromamba-version: '1.5.10-0'
           log-level: debug
           environment-file: environment.yml
           cache-environment: true
@@ -191,7 +190,14 @@ jobs:
 
       - name: domainless - run tests not requiring domain data
         working-directory: autotest
-        run: pytest -m domainless -n=auto -vv
+        run: pytest
+          -m domainless
+          -n=auto
+          -vv
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_domainless.xml
 
       - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest

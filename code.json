@@ -1,0 +1,39 @@
+[
+    {
+        "status": "Preliminary",
+        "languages": [
+	    "Python",
+            "Fortran"
+        ],
+        "repositoryURL": "https://code.usgs.gov/wma-enterprisecapacity/pywatershed",
+        "disclaimerURL": "https://code.usgs.gov/wma-enterprisecapacity/pywatershed/-/blob/main/DISCLAIMER.md",
+        "tags": [
+            "pywatershed",
+            "hydrologic model"
+        ],
+        "vcs": "git",
+        "name": "pywatershed",
+        "downloadURL": "https://code.usgs.gov/wma-enterprisecapacity/pywatershed/-/archive/1.0.0/pywatershed-1.0.0.zip",
+        "contact": {
+            "name": "James L. McCreight",
+            "email": "jmccreight@usgs.gov"
+        },
+        "laborHours": -1,
+        "version": "1.0.0",
+        "date": {
+            "metadataLastUpdated": "2023-12-22"
+        },
+        "organization": "U.S. Geological Survey",
+        "permissions": {
+            "licenses": [
+                {
+                    "URL": "https://code.usgs.gov/wma-enterprisecapacity/pywatershed/-/blob/main/LICENSE",
+                    "name": "Public Domain, CC0-1.0"
+                }
+            ],
+            "usageType": "openSource"
+        },
+        "homepageURL": "https://code.usgs.gov/wma-enterprisecapacity/pywatershed",
+        "description": "A hydrologic model in Python."
+    }
+]

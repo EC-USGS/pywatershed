@@ -35,7 +35,7 @@ New Features
   (DFW) routing from PRMS NHM input files and a few simple assumptions. The
   lateral (to-channel) fluxes from a PRMS are used as time varying boundary
   conditions. A new notebook runs the Delaware River Basin using MF6 DFW:
-  `examples/mmr_to_mf6_dfw.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/mmr_to_mf6_dfw.ipynb>`__.
+  `examples/07_mmr_to_mf6_chf_dfw.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/07_mmr_to_mf6_chf_dfw.ipynb>`__.
   (:pull:`290`) By `James McCreight <https://github.com/jmccreight>`_.
 - The depression storage option for PRMSRunoff is implemented and tested.
   (:pull:`279`) By `James McCreight <https://github.com/jmccreight>`_.
@@ -96,6 +96,8 @@ Internal changes
   PRMSGroundwater: 1.0e-8, PRMSGroundwaterNoDprst: 1.0e-8, PRMSChannel: 5.0e-7)
   for all test domains.
   (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Migration to Numpy 2.0+.
+  (:pull:`310`) By `James McCreight <https://github.com/jmccreight>`_.
 
 
 .. _whats-new.1.1.0:

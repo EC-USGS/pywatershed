@@ -11,7 +11,6 @@ from ..constants import (
     CovType,
     HruType,
     dnearzero,
-    nan,
     nearzero,
     numba_num_threads,
     zero,
@@ -144,7 +143,7 @@ class PRMSCanopy(ConservativeProcessHru):
             "net_snow": zero,
             "intcp_changeover": zero,
             "intcp_evap": zero,
-            "intcp_form": nan,  # = RAIN bool would have to match RAIN/SNOW
+            "intcp_form": 0,  # = RAIN bool would have to match RAIN/SNOW
             "intcp_stor": zero,
             "intcp_transp_on": 0,  # could make boolean
             "hru_intcpevap": zero,
@@ -476,10 +475,8 @@ class PRMSCanopy(ConservativeProcessHru):
         #       Keep the f90 call signature consistent with the args in
         #       python/numba.
 
-        intcp_form = np.full_like(hru_rain, np.nan, dtype="int32")
-
-        for aa in prange(nactive_hrus):
-            i = active_hrus[aa]
+        intcp_form = np.full_like(hru_rain, -9999, dtype="int32")
+        for i in prange(nhru):
             netrain = hru_rain[i]
             netsnow = hru_snow[i]
 

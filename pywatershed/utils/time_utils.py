@@ -7,10 +7,19 @@ import numpy as np
 # https://github.com/numpy/numpy/pull/14276
 
 
-def dt64_to_dt(dt64: np.datetime64) -> datetime.datetime:
+def dt64_to_dt(dt64: np.datetime64, dt_precision="s") -> datetime.datetime:
     """np.datetime64 to datetime.datetime"""
     # This is because I always forget this exists.
-    return dt64.astype(datetime.datetime)
+    val = dt64.astype(datetime.datetime)
+    # If the precision of dt64 is such that it is an integer too large to be
+    # coerced to datetime.datetime, then it just returns an integer and
+    # not a datetime.datetime object, which breaks other stuff downstream.
+    # default to 's' precision in case where this happens.
+    if isinstance(val, int):
+        dt = dt64.astype(f"datetime64[{dt_precision}]")
+        val = dt.astype(datetime.datetime)
+    # <
+    return val
 
 
 def datetime_year(dt64: np.datetime64) -> int:

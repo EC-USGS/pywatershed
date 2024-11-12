@@ -142,6 +142,9 @@ class PrmsFile:
             raise TypeError("file_path must be a file path")
         return
 
+    def _close_file_object(self) -> None:
+        self.file_object.close()
+
     def _get_control_variables(
         self,
     ) -> dict:
@@ -172,7 +175,7 @@ class PrmsFile:
                     elif key in ("initial_deltat",):
                         value = np.timedelta64(int(value[0]), "h")
                     variable_dict[key] = value
-        self.file_object.close()
+        self._close_file_object()
         return variable_dict
 
     def _get_dimensions_parameters(self):
@@ -236,6 +239,7 @@ class PrmsFile:
             for kk, vv in parameter_dimensions_full_dict.items()
         }
 
+        self._close_file_object()
         return parameters_full_dict, parameter_dimensions_full_dict
 
     def _get_parameters(self):
@@ -323,7 +327,7 @@ class PrmsFile:
                 for idx in range(num_values):
                     arr[idx] = float(self._get_line().split()[0])
             elif data_type == PrmsDataType.CHARACTER.value:
-                arr = np.zeros(num_values, dtype=np.chararray)
+                arr = np.zeros(num_values, dtype="O")
                 for idx in range(num_values):
                     arr[idx] = self._get_line().split()[0]
             else:
@@ -393,7 +397,7 @@ class PrmsFile:
                 for idx in range(len_array):
                     arr[idx] = float(self._get_line().split()[0])
             elif data_type == PrmsDataType.CHARACTER.value:
-                arr = np.zeros(len_array, dtype=np.chararray)
+                arr = np.zeros(len_array, dtype="O")
                 for idx in range(len_array):
                     arr[idx] = self._get_line().split()[0]
             else:

@@ -6,7 +6,7 @@ from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 
 
-class ObsInNode(FlowNode):
+class ObsInFlowNode(FlowNode):
     """A FlowNode that takes inflows but returns observed/specified flows.
 
     This FlowNode replicates the obsin and obsout seg functionality in PRMS but
@@ -22,7 +22,7 @@ class ObsInNode(FlowNode):
         control: Control,
         node_obs_data: pd.Series,
     ):
-        """Initialize an ObsInNode.
+        """Initialize an ObsInFlowNode.
 
         Args:
           control: a Control object.
@@ -91,8 +91,8 @@ class ObsInNode(FlowNode):
         return self._sink_source
 
 
-class ObsInNodeMaker(FlowNodeMaker):
-    """A FlowNodeMaker for ObsInNode.
+class ObsInFlowNodeMaker(FlowNodeMaker):
+    """A FlowNodeMaker for ObsInFlowNode.
 
     See :class:`FlowGraph` for related examples and discussion.
     """
@@ -102,17 +102,17 @@ class ObsInNodeMaker(FlowNodeMaker):
         parameters: Parameters,
         obs_data: pd.DataFrame,
     ) -> None:
-        """Initialize a ObsinNodeMaker.
+        """Initialize a ObsInFlowNodeMaker.
 
         Args:
           parameters: A pywatershed Parameters object.
           obs_data: A pandas DataFrame of observations given by
             pyPRMS.Streamflow.
         """
-        self.name = "PassThroughNodeMaker"
+        self.name = "ObsInNodeMaker"
         self._parameters = parameters
         self._obs_data = obs_data
 
     def get_node(self, control: Control, index: int):
         node_poi_id = self._parameters.parameters["poi_gage_id"][index]
-        return ObsInNode(control, self._obs_data[node_poi_id])
+        return ObsInFlowNode(control, self._obs_data[node_poi_id])

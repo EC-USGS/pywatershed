@@ -61,8 +61,11 @@ class ProcessPlot:
                 raise ValueError(msg)
 
         # segment one-time setup
-        if self.seg_shapefile is not None:
-            self.seg_gdf = gpd.read_file(self.seg_shapefile)
+        self.seg_gdf = gpd.read_file(self.seg_shapefile)
+        # if (self.__seg_poly.crs.name
+        #     == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):
+        #     print("Overriding USGS aea crs with EPSG:5070")
+        self.seg_gdf.set_crs("EPSG:5070")
 
             # if (self.__seg_poly.crs.name
             #     == "USA_Contiguous_Albers_Equal_Area_Conic_USGS_version"):

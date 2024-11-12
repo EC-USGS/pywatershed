@@ -1,4 +1,5 @@
 import pathlib as pl
+from copy import deepcopy
 from typing import Literal, Union
 
 import numba as nb
@@ -623,8 +624,12 @@ def prms_channel_flow_graph_postprocess(
     new_nodes_maker_dict: dict,
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
+    new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
+    addtl_output_vars: list[str] = None,
+    allow_disconnected_nodes: bool = False,
     budget_type: Literal["defer", None, "warn", "error"] = "defer",
+    type_check_nodes: bool = False,
 ) -> FlowGraph:
     """Add nodes to a PRMSChannel-based FlowGraph to run from known inputs.
 
@@ -649,14 +654,19 @@ def prms_channel_flow_graph_postprocess(
         control: The control object for the run
         input_dir: the directory where the input files are found
         prms_channel_dis: the PRMSChannel discretization object
-        prms_channel_params: the PRMSChannel parameters object
+        prms_channel_params: the PRMSChannel parameters object.
         new_nodes_maker_dict: a dictionary of key/name and and instantiated
-            NodeMakers
-        new_nodes_maker_names: collated list of what node makers to use
+            NodeMakers.
+        new_nodes_maker_names: collated list of what node makers to use.
         new_nodes_maker_indices: collated list of indices relative to each
-            NodeMaker
-        new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
-            which the node will flow.
+            NodeMaker.
+        new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
+        new_nodes_flow_to_nhm_seg: collated list describing the nhm_segs to
+            which the new nodes will flow. Use of non-positive entries specifies
+            the zero-based index for flowing to nodes specified in these
+            collated parameters, allowing these new nodes to be added in
+            groups, in series to the existing NHM FlowGraph. Note that a new
+            node may not be placed below any outflow point of the domain.
         budget_type: one of ["defer", None, "warn", "error"] with "defer" being
             the default and defering to control.options["budget_type"] when
             available. When control.options["budget_type"] is not avaiable,
@@ -678,6 +688,7 @@ def prms_channel_flow_graph_postprocess(
         new_nodes_maker_dict,
         new_nodes_maker_names,
         new_nodes_maker_indices,
+        new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg,
     )
 
@@ -722,7 +733,10 @@ def prms_channel_flow_graph_postprocess(
         parameters=params_flow_graph,
         inflows=inflows_graph,
         node_maker_dict=node_maker_dict,
+        addtl_output_vars=addtl_output_vars,
         budget_type=budget_type,
+        type_check_nodes=type_check_nodes,
+        allow_disconnected_nodes=allow_disconnected_nodes,
     )
     return flow_graph
 
@@ -735,8 +749,12 @@ def prms_channel_flow_graph_to_model_dict(
     new_nodes_maker_dict: dict,
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
+    new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
+    addtl_output_vars: list[str] = None,
     graph_budget_type: Literal["defer", None, "warn", "error"] = "defer",
+    allow_disconnected_nodes: bool = False,
+    type_check_nodes: bool = False,
 ) -> dict:
     """Add nodes to a PRMSChannel-based FlowGraph within a Model's model_dict.
 
@@ -767,8 +785,13 @@ def prms_channel_flow_graph_to_model_dict(
         new_nodes_maker_names: collated list of what node makers to use
         new_nodes_maker_indices: collated list of indices relative to each
             NodeMaker
-        new_nodes_flow_to_nhm_seg: collated list describing the nhm_seg to
-            which the node will flow.
+        new_nodes_maker_ids: Collated list of ids relative to each NodeMaker.
+        new_nodes_flow_to_nhm_seg: collated list describing the nhm_segs to
+            which the new nodes will flow. Use of non-positive entries specifies
+            the zero-based index for flowing to nodes specified in these
+            collated parameters, allowing these new nodes to be added in
+            groups, in series to the existing NHM FlowGraph. Note that a new
+            node may not be placed below any outflow point of the domain.
         graph_budget_type: one of ["defer", None, "warn", "error"] with
             "defer" being the default and defering to
             control.options["budget_type"] when available. When
@@ -787,6 +810,7 @@ def prms_channel_flow_graph_to_model_dict(
         new_nodes_maker_dict,
         new_nodes_maker_names,
         new_nodes_maker_indices,
+        new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg,
     )
 
@@ -798,8 +822,8 @@ def prms_channel_flow_graph_to_model_dict(
             / s_per_time
         )
 
-        # This zero in the last index means zero inflows to the pass through
-        # node
+        # This zeros in at the end mean that zero inflows and sinks in added
+        # nodes
         self.inflows[:] = zero
         # sinks is an HRU variable, its accounting in budget is fine because
         # global collapses it to a scalar before summing over variables
@@ -859,6 +883,8 @@ def prms_channel_flow_graph_to_model_dict(
             "parameters": params_flow_graph,
             "dis": None,
             "budget_type": graph_budget_type,
+            "addtl_output_vars": addtl_output_vars,
+            "allow_disconnected_nodes": allow_disconnected_nodes,
         },
     }
 
@@ -873,6 +899,7 @@ def _build_flow_graph_inputs(
     new_nodes_maker_dict: dict,
     new_nodes_maker_names: list,
     new_nodes_maker_indices: list,
+    new_nodes_maker_ids: list,
     new_nodes_flow_to_nhm_seg: list,
 ):
     prms_channel_flow_makers = [
@@ -882,20 +909,28 @@ def _build_flow_graph_inputs(
     ]
     assert len(prms_channel_flow_makers) == 0
 
-    assert len(new_nodes_maker_names) == len(new_nodes_maker_indices), "nono"
-    assert len(new_nodes_maker_names) == len(new_nodes_flow_to_nhm_seg), "NONO"
+    msg = "Inconsistency in collated inputs"
+    assert len(new_nodes_maker_names) == len(new_nodes_maker_indices), msg
+    assert len(new_nodes_maker_names) == len(new_nodes_flow_to_nhm_seg), msg
     # I think this is the only condition to check with
     # new_nodes_flow_to_nhm_seg
     assert len(new_nodes_flow_to_nhm_seg) == len(
         np.unique(new_nodes_flow_to_nhm_seg)
-    ), "OHNO"
+    ), "Cant have more than one new node flowing to an existing or new node."
 
     nseg = prms_channel_params.dims["nsegment"]
-    nnodes = nseg + len(new_nodes_maker_names)
+    nnew = len(new_nodes_maker_names)
+    nnodes = nseg + nnew
 
     node_maker_name = ["prms_channel"] * nseg + new_nodes_maker_names
+    maxlen = np.array([len(nn) for nn in node_maker_name]).max()
+    # need this to be unicode U# for keys and searching below
+    node_maker_name = np.array(node_maker_name, dtype=f"|U{maxlen}")
     node_maker_index = np.array(
         np.arange(nseg).tolist() + new_nodes_maker_indices
+    )
+    node_maker_id = np.append(
+        prms_channel_dis.coords["nhm_seg"], np.array(new_nodes_maker_ids)
     )
 
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
@@ -903,25 +938,59 @@ def _build_flow_graph_inputs(
     tosegment = dis_params["tosegment"] - 1  # fortan to python indexing
     to_graph_index[0:nseg] = tosegment
 
+    # The new nodes which flow to other new_nodes have to be added after
+    # the nodes flowing to existing nodes with nhm_seg ids.
+    to_new_nodes_inds_in_added = {}
+    added_new_nodes_inds_in_graph = {}
     for ii, nhm_seg in enumerate(new_nodes_flow_to_nhm_seg):
+        if nhm_seg < 1:
+            # negative indes are indices into the collated inputs lists
+            # for new nodes being in-series.
+            to_new_nodes_inds_in_added[ii] = -1 * nhm_seg
+            continue
+
         wh_intervene_above_nhm = np.where(dis_params["nhm_seg"] == nhm_seg)
         wh_intervene_below_nhm = np.where(
             tosegment == wh_intervene_above_nhm[0][0]
         )
         # have to map to the graph from an index found in prms_channel
         wh_intervene_above_graph = np.where(
-            (np.array(node_maker_name) == "prms_channel")
+            (node_maker_name == "prms_channel")
             & (node_maker_index == wh_intervene_above_nhm[0][0])
         )
         wh_intervene_below_graph = np.where(
-            (np.array(node_maker_name) == "prms_channel")
+            (node_maker_name == "prms_channel")
             & np.isin(node_maker_index, wh_intervene_below_nhm)
         )
 
         to_graph_index[nseg + ii] = wh_intervene_above_graph[0][0]
         to_graph_index[wh_intervene_below_graph] = nseg + ii
+        added_new_nodes_inds_in_graph[ii] = nseg + ii
 
-    params_flow_graph = Parameters(
+    # <
+    to_new_nodes_inds_remaining = deepcopy(to_new_nodes_inds_in_added)
+    # worst case scenario is that we have to iterate the length of this list
+    # if the items in the list are in the wrong order
+    for itry in range(len(to_new_nodes_inds_remaining)):
+        # for input_ind, to_ind_remain in to_new_nodes_inds_remaining.items():
+        for input_ind in list(to_new_nodes_inds_remaining.keys()):
+            to_ind_remain = to_new_nodes_inds_remaining[input_ind]
+            if to_ind_remain not in added_new_nodes_inds_in_graph.keys():
+                continue
+            flows_to_ind = added_new_nodes_inds_in_graph[to_ind_remain]
+            flows_from_inds = np.where(to_graph_index == flows_to_ind)
+
+            to_graph_index[nseg + input_ind] = flows_to_ind
+            to_graph_index[flows_from_inds] = nseg + input_ind
+            added_new_nodes_inds_in_graph[input_ind] = nseg + input_ind
+            del to_new_nodes_inds_remaining[input_ind]
+
+    if len(to_new_nodes_inds_remaining):
+        msg = "Unable to connect some new nodes in-series."
+        raise ValueError(msg)
+
+    # <
+    param_dict = dict(
         dims={
             "nnodes": nnodes,
         },
@@ -931,16 +1000,18 @@ def _build_flow_graph_inputs(
         data_vars={
             "node_maker_name": node_maker_name,
             "node_maker_index": node_maker_index,
+            "node_maker_id": node_maker_id,
             "to_graph_index": to_graph_index,
         },
         metadata={
             "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
-        validate=True,
     )
+    params_flow_graph = Parameters(**param_dict, validate=True)
 
     # make available at top level __init__
     node_maker_dict = {

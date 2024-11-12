@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pyPRMS import Streamflow as PRMSStreamflowData
+from pyPRMS import DataFile as PRMSStreamflowData
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
@@ -8,7 +8,7 @@ from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
-from pywatershed.hydrology.obsin_node import ObsInNodeMaker
+from pywatershed.hydrology.obsin_flow_node import ObsInFlowNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
@@ -68,7 +68,13 @@ def test_prms_channel_obsin_compare_prms(
     )
     control_parameters = PrmsParameters.load(control_param_file)
     obsout_seg = control_parameters.parameters["obsout_segment"] - 1
-    sf_data = PRMSStreamflowData(simulation["dir"] / "sf_data").data
+    sf_data = PRMSStreamflowData(
+        simulation["dir"] / "sf_data"
+    ).data_by_variable("runoff")
+    old_names = sf_data.columns.tolist()
+    new_names = [cc.split("_")[1] for cc in sf_data.columns.tolist()]
+    sf_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
+
     poi_inds = obsout_seg[np.where(obsout_seg >= 0)].tolist()
     npoi = len(poi_inds)
     poi_ids = discretization_prms.parameters["poi_gage_id"][(poi_inds),]
@@ -119,13 +125,14 @@ def test_prms_channel_obsin_compare_prms(
         "prms_channel": PRMSChannelFlowNodeMaker(
             discretization_prms, parameters_prms
         ),
-        "obsin": ObsInNodeMaker(obsin_params, obsin_data),
+        "obsin": ObsInFlowNodeMaker(obsin_params, obsin_data),
     }
     nnodes = parameters_prms.dims["nsegment"] + npoi
     node_maker_name = ["prms_channel"] * nnodes
     node_maker_name[-npoi:] = ["obsin"] * npoi
     node_maker_index = np.arange(nnodes)
     node_maker_index[-npoi:] = np.arange(npoi)
+    node_maker_id = np.arange(nnodes)
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
     dis_params = discretization_prms.parameters
     to_graph_index[0:-npoi] = dis_params["tosegment"] - 1
@@ -171,12 +178,14 @@ def test_prms_channel_obsin_compare_prms(
         data_vars={
             "node_maker_name": node_maker_name,
             "node_maker_index": node_maker_index,
+            "node_maker_id": node_maker_id,
             "to_graph_index": to_graph_index,
         },
         metadata={
             "nnodes": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
         validate=True,

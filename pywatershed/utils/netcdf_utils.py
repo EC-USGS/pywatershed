@@ -9,6 +9,7 @@ import xarray as xr
 
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
+from ..constants import np_type_to_netcdf_type_dict
 from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]
@@ -353,31 +354,36 @@ class NetCdfRead(Accessor):
 
 
 class NetCdfWrite(Accessor):
-    """Output the csv output data to a netcdf file
-
-    Args:
-        name: path for netcdf output file
-        clobber: boolean indicating if an existing netcdf file should
-            be overwritten
-        zlib: boolean indicating if the data should be compressed
-            (default is True)
-        complevel: compression level (default is 4)
-        chunk_sizes: dictionary defining chunk sizes for the data
-    """
-
     def __init__(
         self,
         name: fileish,
         coordinates: dict,
         variables: listish,
         var_meta: dict,
-        global_attrs: dict = {},
+        extra_coords: dict = None,
+        global_attrs: dict = None,
         time_units: str = "days since 1970-01-01 00:00:00",
         clobber: bool = True,
         zlib: bool = True,
         complevel: int = 4,
         chunk_sizes: dict = {"time": 1, "hruid": 0},
     ):
+        from netCDF4 import stringtochar
+
+        """Output the csv output data to a netcdf file
+
+        Args:
+            name: path for netcdf output file
+            extra_coords: A dictionary keyed by dimension with the values being
+                a dictionary of var_name: data pairs. Not for multi-dimensional
+                coordinates.
+            clobber: boolean indicating if an existing netcdf file should
+                be overwritten
+            zlib: boolean indicating if the data should be compressed
+                (default is True)
+            complevel: compression level (default is 4)
+            chunk_sizes: dictionary defining chunk sizes for the data
+        """
         if isinstance(variables, dict):
             group_variables = []
             for group, vars in variables.items():
@@ -398,6 +404,12 @@ class NetCdfWrite(Accessor):
 
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
         self.dataset.setncattr("Description", "pywatershed output data")
+
+        if extra_coords is None:
+            extra_coords = {}
+
+        if global_attrs is None:
+            global_attrs = {}
         for att_key, att_val in global_attrs.items():
             self.dataset.setncattr(att_key, att_val)
 
@@ -490,12 +502,12 @@ class NetCdfWrite(Accessor):
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
-                "nhm_id", "i4", ("nhm_id")
+                "nhm_id", "i4", ("nhm_id",)
             )
             self.hruid[:] = np.array(self.hru_ids, dtype=int)
         if nsegment_coordinate:
             self.segid = self.dataset.createVariable(
-                "nhm_seg", "i4", ("nhm_seg")
+                "nhm_seg", "i4", ("nhm_seg",)
             )
             self.segid[:] = np.array(self.segment_ids, dtype=int)
         if one_coordinate:
@@ -503,14 +515,62 @@ class NetCdfWrite(Accessor):
             self.oneid[:] = np.array(self.one_ids, dtype=int)
         if nreservoirs_coordinate:
             self.grandid = self.dataset.createVariable(
-                "grand_id", "i4", ("grand_id")
+                "grand_id", "i4", ("grand_id",)
             )
             self.grandid[:] = coordinates["grand_id"]
         if nnodes_coordinate:
             self.node_coord = self.dataset.createVariable(
-                "node_coord", "i4", ("node_coord")
+                "node_coord", "i4", ("node_coord",)
             )
             self.node_coord[:] = coordinates["node_coord"]
+
+        char_dims_created = []
+        for x_dim, x_data_dict in extra_coords.items():
+            for x_var_name, x_data in x_data_dict.items():
+                type = x_data.dtype
+                type_str = str(type)
+
+                dim = (x_dim,)
+                if "U" in type_str or "S" in type_str:
+                    # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
+                    # S1 gives "char" type in the file whereas another
+                    # number gives "string" type. The former is properly
+                    # handled by xarray
+                    nc_type = "S1"
+
+                    # if it is a string array, convert it to a character array
+                    # I dont understand the particulars here, may need more
+                    # work
+                    if "U" in type_str:
+                        char_array = stringtochar(x_data.astype("S"))
+                    else:
+                        char_array = stringtochar(x_data)
+
+                    char_dim_len = char_array.shape[1]
+                    dim_name = f"char{char_dim_len}"
+                    if dim_name in char_dims_created:
+                        continue
+
+                    dim = (x_dim, dim_name)
+                    _ = self.dataset.createDimension(
+                        dimname=dim_name, size=char_dim_len
+                    )
+
+                    char_dims_created += [dim_name]
+
+                else:
+                    nc_type = np_type_to_netcdf_type_dict[type]
+
+                # <
+                self[x_var_name] = self.dataset.createVariable(
+                    varname=x_var_name, datatype=nc_type, dimensions=dim
+                )
+                if "S1" == nc_type:
+                    self[x_var_name][:, :] = char_array
+                    self[x_var_name]._Encoding = "utf-8"
+
+                else:
+                    self[x_var_name][:] = x_data
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
@@ -541,19 +601,31 @@ class NetCdfWrite(Accessor):
             else:
                 time_dim = "time"
 
+            var_dims = (time_dim, spatial_coordinate)
             self.variables[var_name] = self.dataset.createVariable(
                 group_var_name,
                 variabletype,
-                (time_dim, spatial_coordinate),
+                var_dims,
                 fill_value=nc4.default_fillvals[variabletype],
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
+
             for key, val in var_meta[var_name].items():
                 if isinstance(val, dict):
                     continue
                 self.variables[var_name].setncattr(key, val)
+
+            # https://docs.xarray.dev/en/stable/user-guide/io.html#coordinates
+            var_encoding = []
+            for x_dim, x_data_dict in extra_coords.items():
+                if x_dim in var_dims:
+                    var_encoding += x_data_dict.keys()
+
+            if len(var_encoding):
+                var_encoding = " ".join(var_encoding)
+                self.variables[var_name].setncattr("coordinates", var_encoding)
 
         return
 

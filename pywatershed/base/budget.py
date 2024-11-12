@@ -662,6 +662,7 @@ class Budget(Accessor):
         self,
         params: Parameters,
         output_dir: str,
+        extra_coords: dict = None,
         write_sum_vars: Union[list, bool] = True,
         write_individual_vars: bool = False,
     ) -> None:
@@ -675,6 +676,8 @@ class Budget(Accessor):
 
         """
         self._output_netcdf = True
+        if extra_coords is None:
+            extra_coords = {}
         # make working directory
         output_dir = pl.Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -737,6 +740,7 @@ class Budget(Accessor):
             coordinates,
             self._netcdf_output_var_dict,
             meta,
+            extra_coords=extra_coords,
             global_attrs=global_attrs,
         )
 

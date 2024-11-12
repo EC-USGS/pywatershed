@@ -11,7 +11,7 @@ sttime = time.time()
 
 model_output_netcdf = True
 
-work_dir = pl.Path("/Users/jmccreight/usgs/pywatershed2/test_data/drb_2yr")
+work_dir = pl.Path("../../pywatershed2/test_data/drb_2yr")
 
 out_dir = pl.Path("./custom_output")
 shutil.rmtree(out_dir)  # CAREFUL HERE

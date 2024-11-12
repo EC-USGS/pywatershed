@@ -765,6 +765,10 @@ def xr_ds_to_dd(file_or_ds, schema_only=False, encoding=True) -> dict:
 
     dd = xr_ds.to_dict(data=data_arg, encoding=encoding)
 
+    # before = xr_ds.time.values.dtype
+    # after = dd["coords"]["time"]["data"].dtype
+    # assert before == after
+
     dd = xr_dd_to_dd(dd)
 
     return dd
@@ -772,6 +776,7 @@ def xr_ds_to_dd(file_or_ds, schema_only=False, encoding=True) -> dict:
 
 def xr_dd_to_dd(xr_dd: dict) -> dict:
     dd = deepcopy(xr_dd)
+    # asdf
 
     # Move the global encoding to a global key of itself
     dd["encoding"] = {"global": dd.get("encoding", {})}
@@ -817,18 +822,27 @@ def dd_to_xr_dd(dd: dict) -> dict:
     dd["encoding"] = encoding.pop("global", {})
 
     for key, val in meta.items():
+        # coordinate or variable?
         cv = None
         if key in dd["data_vars"].keys():
             cv = "data_vars"
         elif key in dd["coords"].keys():
             cv = "coords"
 
+        data_vals = dd[cv][key]
+
+        if np.issubdtype(data_vals.dtype, np.datetime64):
+            # conversion to datetime64[ns] silences xr warnings
+            # but should be able to be removed in the future
+            data_vals = data_vals.astype("datetime64[ns]")
+
         key_enc = {}
         if key in encoding.keys():
             key_enc = encoding[key]
+
         dd[cv][key] = {
             **val,
-            "data": dd[cv][key],
+            "data": data_vals,
             "encoding": key_enc,
         }
 
@@ -1123,4 +1137,10 @@ def dd_to_nc4_ds(dd, nc_file):
 
 
 def open_datasetdict(nc_file: fileish, use_xr=True):
+    """Convenience method for opening a DatasetDict.
+
+    Args:
+      nc_file: the file containing the DatasetDict.
+      use_xr: Use xarray or NetCDF4 for opening the NetCDF file?
+    """
     return DatasetDict.from_netcdf(nc_file, use_xr=use_xr)

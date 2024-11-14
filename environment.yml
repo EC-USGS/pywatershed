@@ -5,7 +5,6 @@ channels:
   - pyviz
   - bioconda
 dependencies:
-  - bash_kernel
   - cartopy
   - dataretrieval
   - contextily
@@ -18,8 +17,6 @@ dependencies:
   - holoviews
   - hvplot
   - ipython
-  - ipywidgets
-  - nb_conda_kernels
   - nbconvert
   - netCDF4
   - networkx
@@ -49,7 +46,6 @@ dependencies:
       - click != 8.1.0
       - filelock
       - git+https://github.com/modflowpy/flopy.git
-      - jupyter_black
       - modflow-devtools
       - git+https://github.com/jararias/mpsplines.git
       - git+https://github.com/paknorton/pyPRMS.git@development

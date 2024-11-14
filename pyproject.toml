@@ -1,7 +1,7 @@
 [build-system]
 requires = [
-    "setuptools >=61, <=72.2.0",
-    "numpy >=1.15.0,<2.0.0",
+    "setuptools>64",
+    "numpy>=2.0",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -29,7 +29,7 @@ classifiers = [
 requires-python = ">=3.10,<3.12"
 dependencies = [
     "contextily",
-    "numpy >=1.15.0,<2.0.0",
+    "numpy>=2.0.0",
     "matplotlib >=1.4.0",
     "epiweeks",
     "flopy",

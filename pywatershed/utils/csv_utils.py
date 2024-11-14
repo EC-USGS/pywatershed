@@ -252,7 +252,7 @@ class CsvFile:
         """
 
         def str2date(x):
-            return dt.datetime.strptime(x.decode("utf-8"), "%Y-%m-%d")
+            return dt.datetime.strptime(x, "%Y-%m-%d")
 
         all_data = []
         ntimes = 0

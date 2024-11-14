@@ -3,14 +3,14 @@ from ..base.flow_graph import FlowNode, FlowNodeMaker
 from ..constants import nan, zero
 
 
-class PassThroughNode(FlowNode):
+class PassThroughFlowNode(FlowNode):
     """A FlowNode instance that gives what it takes and dosent store.
 
-    See :class:`FlowGraph` for a worked example using PassThroughNode.
+    See :class:`FlowGraph` for a worked example using PassThroughFlowNode.
     """
 
     def __init__(self, control: Control):
-        """Initialize a PassThroughNode.
+        """Initialize a PassThroughFlowNode.
 
         Args:
             control: A control object.
@@ -62,17 +62,17 @@ class PassThroughNode(FlowNode):
         return zero
 
 
-class PassThroughNodeMaker(FlowNodeMaker):
-    """A FlowNodeMaker of PassThroughNodes.
+class PassThroughFlowNodeMaker(FlowNodeMaker):
+    """A FlowNodeMaker of PassThroughFlowNodes.
 
-    See :class:`FlowGraph` for a worked example using PassThroughNode.
+    See :class:`FlowGraph` for a worked example using PassThroughFlowNode.
     """
 
     def __init__(
         self,
     ) -> None:
-        """Initialize a PassThroughNodeMaker."""
-        self.name = "PassThroughNodeMaker"
+        """Initialize a PassThroughFlowNodeMaker."""
+        self.name = "PassThroughFlowNodeMaker"
 
     def get_node(self, control: Control, index: int):
-        return PassThroughNode(control)
+        return PassThroughFlowNode(control)

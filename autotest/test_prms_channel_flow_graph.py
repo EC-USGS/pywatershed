@@ -3,7 +3,14 @@ import pytest
 import xarray as xr
 from utils_compare import compare_in_memory
 
-from pywatershed import PRMSChannel
+from pywatershed import (
+    PassThroughFlowNodeMaker,
+    PRMSChannel,
+    PRMSGroundwater,
+    PRMSRunoff,
+    PRMSSoilzone,
+    prms_channel_flow_graph_to_model_dict,
+)
 from pywatershed.base.adapter import AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph, inflow_exchange_factory
@@ -106,14 +113,16 @@ def test_prms_channel_flow_graph_compare_prms(
             "node_coord": np.arange(nnodes),
         },
         data_vars={
-            "node_maker_name": ["prms_channel"] * nnodes,
+            "node_maker_name": np.array(["prms_channel"] * nnodes, dtype="U"),
             "node_maker_index": np.arange(nnodes),
+            "node_maker_id": np.arange(nnodes),
             "to_graph_index": discretization.parameters["tosegment"] - 1,
         },
         metadata={
             "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
         validate=True,
@@ -209,7 +218,8 @@ def test_hru_segment_flow_exchange(
     if exchange_type == "hrusegmentflowexchange":
         Exchange = HruSegmentFlowExchange
     else:
-
+        # else we implement the exchange by-hand here.
+        # this is also implemented in channel_flow_graph_to_model_dict
         def calculation(self) -> None:
             _hru_segment = self.hru_segment - 1
             s_per_time = self.control.time_step_seconds
@@ -280,12 +290,14 @@ def test_hru_segment_flow_exchange(
         data_vars={
             "node_maker_name": ["prms_channel"] * nnodes,
             "node_maker_index": np.arange(nnodes),
+            "node_maker_id": np.arange(nnodes),
             "to_graph_index": discretization.parameters["tosegment"] - 1,
         },
         metadata={
             "node_coord": {"dims": ["nnodes"]},
             "node_maker_name": {"dims": ["nnodes"]},
             "node_maker_index": {"dims": ["nnodes"]},
+            "node_maker_id": {"dims": ["nnodes"]},
             "to_graph_index": {"dims": ["nnodes"]},
         },
         validate=True,
@@ -381,3 +393,117 @@ def test_hru_segment_flow_exchange(
             )
 
     model.finalize()
+
+
+def test_prms_channel_flow_graph_to_model_dict(
+    simulation, control, discretization, parameters, tmp_path
+):
+    # This also tests the netcdf output contains the correct coordinates, at
+    # the end.
+    domain_dir = simulation["dir"]
+    input_dir = simulation["output_dir"]
+    run_dir = tmp_path
+    control.options = control.options | {
+        "input_dir": input_dir,
+        "budget_type": "error",
+        "calc_method": "numba",
+        "netcdf_output_dir": run_dir,
+        "netcdf_output_var_names": [
+            "node_outflows",
+            "node_upstream_inflows",
+            "node_storages",
+        ],
+    }
+
+    nhm_processes = [
+        # PRMSSnow,  #  snow introduces significant error
+        PRMSRunoff,
+        PRMSSoilzone,
+        PRMSGroundwater,
+    ]
+
+    model_dict = {
+        "control": control,
+        "dis_both": discretization,
+        "dis_hru": discretization,
+        "model_order": [],
+    }
+
+    # As in notebook 01
+    for proc in nhm_processes:
+        proc_name = proc.__name__
+        proc_rename = "prms_" + proc_name[4:].lower()
+        model_dict["model_order"] += [proc_rename]
+        model_dict[proc_rename] = {}
+        proc_dict = model_dict[proc_rename]
+        proc_dict["class"] = proc
+        proc_param_file = domain_dir / f"parameters_{proc_name}.nc"
+        proc_dict["parameters"] = Parameters.from_netcdf(proc_param_file)
+        proc_dict["dis"] = "dis_hru"
+
+    # randomly sample some seg ids
+    nsegs = len(discretization.parameters["nhm_seg"])
+    rando = ((0, int(nsegs / 2), -1),)
+    random_seg_ids = discretization.parameters["nhm_seg"][rando]
+    n_new_nodes = len(random_seg_ids)
+
+    check_names = ["pass"] * n_new_nodes
+    check_indices = list(range(n_new_nodes))
+    check_ids = list(range(n_new_nodes))
+
+    model_dict = prms_channel_flow_graph_to_model_dict(
+        model_dict=model_dict,
+        prms_channel_dis=discretization,
+        prms_channel_dis_name="dis_both",
+        prms_channel_params=parameters,
+        new_nodes_maker_dict={"pass": PassThroughFlowNodeMaker()},
+        new_nodes_maker_names=check_names,
+        new_nodes_maker_indices=check_indices,
+        new_nodes_maker_ids=check_ids,
+        new_nodes_flow_to_nhm_seg=random_seg_ids,
+        graph_budget_type="warn",  # move to error
+    )
+    model = Model(model_dict)
+
+    # answers for the exchange
+    var = "seg_lateral_inflow"
+    var_pth = simulation["output_dir"] / f"{var}.nc"
+    lateral_inflow_answers = adapter_factory(
+        var_pth, variable_name=var, control=control
+    )
+
+    for tt in range(control.n_times):
+        model.advance()
+        model.calculate()
+        model.output()
+
+        # check exchange
+        lateral_inflow_answers.advance()
+        np.testing.assert_allclose(
+            model.processes["inflow_exchange"]["inflows"][0:nsegs],
+            lateral_inflow_answers.current,
+            rtol=rtol,
+            atol=atol,
+        )
+
+    # <
+    model.finalize()
+
+    ans_dir = simulation["output_dir"]
+    outflow_ans = xr.load_dataarray(ans_dir / "seg_outflow.nc")
+    outflow_act = xr.load_dataarray(run_dir / "node_outflows.nc")
+    outflow_act_compare = outflow_act[:, 0:(nsegs)]
+    for tt in range(control.n_times):
+        np.testing.assert_allclose(
+            outflow_ans.values[tt, :],
+            outflow_act_compare.values[tt, :],
+            rtol=rtol,
+            atol=atol,
+        )
+
+    # check that the coordinates match what was provided
+    for vv in control.options["netcdf_output_var_names"]:
+        da = xr.load_dataarray(tmp_path / f"{vv}.nc")
+        assert da.node_maker_index[-3:].values.tolist() == check_indices
+        assert da.node_maker_name[-3:].values.tolist() == check_names
+        assert da.node_maker_id[-3:].values.tolist() == check_ids

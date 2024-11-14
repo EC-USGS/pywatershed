@@ -1,4 +1,6 @@
+import pathlib as pl
 from typing import Literal
+from warnings import warn
 
 import networkx as nx
 import numpy as np
@@ -19,6 +21,11 @@ class FlowNode(Accessor):
 
     A FlowNode is instantiated with its own (optional) data and calculates
     outflow, storage_change, and sink_source properties on subtimesteps.
+
+    A FlowNode may have additional public variables provided by properties that
+    can be requested to be collected by :class:`FlowGraph` for output to
+    NetCDF files. These variable names should just not overwrite any existing
+    class attributes.
 
     See :class:`FlowGraph` for related examples and discussion.
     """
@@ -59,27 +66,27 @@ class FlowNode(Accessor):
         raise Exception("This must be overridden")
 
     @property
-    def outflow(self):
+    def outflow(self) -> np.float64:
         "The average outflow of the FlowNode over the current timestep."
         raise Exception("This must be overridden")
 
     @property
-    def outflow_substep(self):
+    def outflow_substep(self) -> np.float64:
         """The outflow of the FlowNode over the sub-timestep."""
         raise Exception("This must be overridden")
 
     @property
-    def storage_change(self):
+    def storage_change(self) -> np.float64:
         "The storage change of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
-    def storage(self):
+    def storage(self) -> np.float64:
         "The storage of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
     @property
-    def sink_source(self):
+    def sink_source(self) -> np.float64:
         "The sink or source amount of the FlowNode at the current subtimestep."
         raise Exception("This must be overridden")
 
@@ -116,8 +123,13 @@ class FlowNodeMaker(Accessor):
         raise Exception("This must be overridden")
 
 
+def type_check(scalar: float):
+    assert isinstance(scalar, float)
+    return None
+
+
 class FlowGraph(ConservativeProcess):
-    """FlowGraph manages and computes FlowNodes given by FlowNodeMakers.
+    r"""FlowGraph manages and computes FlowNodes given by FlowNodeMakers.
 
     FlowGraph lets users combine :class:`FlowNode`\ s of different kinds into a
     single mathmetical graph of flow solution. FlowNodes provide explicit
@@ -170,6 +182,10 @@ class FlowGraph(ConservativeProcess):
     which highlights both helper functions
     :func:`prms_channel_flow_graph_to_model_dict`
     and :func:`prms_channel_flow_graph_postprocess`.
+
+    For developers looking to add new :class:`FlowNode`s, please read the
+    :class:`FlowNode` base class code and also the code for
+    :class:`FlowNodeMaker`.
 
     Examples:
     ---------
@@ -320,7 +336,11 @@ class FlowGraph(ConservativeProcess):
         parameters: Parameters,
         inflows: adaptable,
         node_maker_dict: dict,
+        addtl_output_vars: list[str] = None,
+        params_not_to_netcdf: list[str] = None,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
+        allow_disconnected_nodes: bool = False,
+        type_check_nodes: bool = False,
         verbose: bool = None,
     ):
         """Initialize a FlowGraph.
@@ -336,21 +356,40 @@ class FlowGraph(ConservativeProcess):
             node_maker_dict: A dictionary of FlowNodeMaker instances with
               keys/names supplied in the parameters, e.g.
               {key1: flow_node_maker_instance, ...}.
+            params_not_to_netcdf: A list of string names for parameter to NOT
+              write to NetCDF output files. By default all parameters are
+              included in each file written.
+            addtl_output_vars: A list of string names for variables to collect
+              for NetCDF output from FlowNodes. These variables do not have to
+              be available in all FlowNodes but must be present in at least
+              one.
             budget_type: one of ["defer", None, "warn", "error"] with "defer"
               being the default and defering to
               control.options["budget_type"] when
               available. When control.options["budget_type"] is not avaiable,
               budget_type is set to "warn".
+            allow_disconnected_nodes: If False, an error is thrown when
+              disconnected nodes are found in the graph. This happens often
+              in PRMS, so allowing is a convenience but bad practive.
+            type_check_nodes: Intended for debugging if FlowNodes are not
+              compliant with their required float return values, which can
+              cause a lot or warnings or errors.
+            verbose: Print extra diagnostic messages?
 
         The `parameters` argument is a :class:`Parameters` object which
         contains the following data:
 
         * node_maker_name: A list or np.array of the FlowNodeMaker name for
           each node.
-        * node_maker_index: A list or np.array of the indices to ask for from
+        * node_maker_index: An np.array of the indices to ask for from
           the associated/collated FlowNodeMaker (above) for each node
-        * to_graph_index: the index of the downstream index in the FlowGraph
-          with -1 indicating an outflow node. This must specify a DAG.
+        * node_maker_id: An np.array of the integer ids used for each node by
+          its node maker. Not used internally but necessary or helpful to
+          users in post-processing to identify nodes. Ids may not be unique in
+          this list but should probably be unique to each node maker.
+        * to_graph_index: np.array of the index of the downstream index in the
+          FlowGraph with -1 indicating an outflow node. This must specify a
+          DAG.
 
         The inputs inflows, node_maker_name, node_maker_index, and
         to_graph_index are collated. The order of execution of the graph is not
@@ -390,6 +429,7 @@ class FlowGraph(ConservativeProcess):
         return (
             "node_maker_name",
             "node_maker_index",
+            "node_maker_id",
             "to_graph_index",
         )
 
@@ -399,6 +439,7 @@ class FlowGraph(ConservativeProcess):
 
     @staticmethod
     def get_init_values() -> dict:
+        """FlowNode initial values."""
         return {
             "outflows": nan,
             "node_upstream_inflows": nan,
@@ -465,18 +506,26 @@ class FlowGraph(ConservativeProcess):
             )
 
         # use networkx to calculate the Directed Acyclic Graph
-        self._graph = nx.DiGraph()
-        self._graph.add_edges_from(connectivity)
-
-        # Make sure the user isnt suppling disconnected nodes
-        assert len(self._graph) == self.nnodes, "Disconnected nodes present."
-        # should we allow disconnected nodes? seems not
-        # these are handled in PRMSChannel if we change our minds
-
         if self.nnodes > 1:
+            self._graph = nx.DiGraph()
+            self._graph.add_edges_from(connectivity)
             node_order = list(nx.topological_sort(self._graph))
         else:
             node_order = [0]
+
+        # Check if the user is suppling disconnected nodes
+        disconnected_nodes_present = len(self._graph) != self.nnodes
+
+        if disconnected_nodes_present:
+            if not self._allow_disconnected_nodes:
+                raise ValueError("Disconnected nodes present in FlowGraph.")
+            else:
+                warn("Disconnected nodes present in FlowGraph.")
+                wh_mask_set = set(np.where(self._outflow_mask)[0])
+                node_ord_set = set(node_order)
+                mask_not_node_ord = list(wh_mask_set - node_ord_set)
+                if len(mask_not_node_ord):
+                    node_order = mask_not_node_ord + node_order
 
         self._node_order = np.array(node_order, dtype="int64")
 
@@ -493,6 +542,80 @@ class FlowGraph(ConservativeProcess):
                     self.control, maker_index
                 )
             ]
+
+        # <
+        # Deal with additional output variables requested
+        if self._addtl_output_vars is None:
+            self._addtl_output_vars = []
+
+        unique_makers = np.unique(params["node_maker_name"])
+
+        self._addtl_output_vars_wh_collect = {}
+        for vv in self._addtl_output_vars:
+            inds_to_collect = []
+            for uu in unique_makers:
+                wh_uu = np.where(params["node_maker_name"] == uu)
+                if hasattr(self._nodes[wh_uu[0][0]], vv):
+                    # do we need to get/set the type here? Would have to
+                    # check the type over all nodes/node makers
+                    # for now I'll just throw and error if it is not float64
+                    msg = "Only currently handling float64, new code required"
+                    assert self._nodes[wh_uu[0][0]][vv].dtype == "float64", msg
+                    inds_to_collect += wh_uu[0].tolist()
+            # <<
+            if len(inds_to_collect):
+                self._addtl_output_vars_wh_collect[vv] = inds_to_collect
+
+        msg = "Variable already set on FlowGraph."
+        for kk in self._addtl_output_vars_wh_collect.keys():
+            assert not hasattr(self, kk), msg
+            self[kk] = np.full([self.nnodes], np.nan)
+            # TODO: find some other way of getting metadata here.
+            # it could come from the node itself, i suppose, or
+            # could come from arguments or static source. Node seems most
+            # elegant. I suppose there could be conflicts if multiple
+            # nodes have the same variable and different metadata.
+            self.meta[kk] = {"dims": ("nnodes",), "type": "float64"}
+
+    def initialize_netcdf(
+        self,
+        output_dir: [str, pl.Path] = None,
+        separate_files: bool = None,
+        budget_args: dict = None,
+        output_vars: list = None,
+        extra_coords: dict = None,
+    ) -> None:
+        if self._netcdf_initialized:
+            msg = (
+                f"{self.name} class previously initialized netcdf output "
+                f"in {self._netcdf_output_dir}"
+            )
+            warn(msg)
+            return
+
+        params = self._params.parameters
+
+        skip_params = self._params_not_to_netcdf
+        if skip_params is None:
+            skip_params = []
+
+        extra_coords = {"node_coord": {}}
+        for param_name in params.keys():
+            if param_name in skip_params + ["node_coord"]:
+                continue
+
+            extra_coords["node_coord"][param_name] = params[param_name]
+
+        # this gets the budget initialization too
+        super().initialize_netcdf(
+            output_dir=output_dir,
+            separate_files=separate_files,
+            output_vars=output_vars,
+            extra_coords=extra_coords,
+            addtl_output_vars=list(self._addtl_output_vars_wh_collect.keys()),
+        )
+
+        return
 
     def _advance_variables(self) -> None:
         for node in self._nodes:
@@ -524,6 +647,8 @@ class FlowGraph(ConservativeProcess):
                     self.inflows[inode],
                 )
                 # Get the outflows back
+                if self._type_check_nodes:
+                    type_check(self._nodes[inode].outflow_substep)
                 self._node_outflow_substep[inode] = self._nodes[
                     inode
                 ].outflow_substep
@@ -545,10 +670,23 @@ class FlowGraph(ConservativeProcess):
         )
 
         for ii in range(self.nnodes):
+            if self._type_check_nodes:
+                type_check(self._nodes[ii].outflow)
+                type_check(self._nodes[ii].storage_change)
+                type_check(self._nodes[ii].storage)
+                type_check(self._nodes[ii].sink_source)
+
             self.node_outflows[ii] = self._nodes[ii].outflow
             self.node_storage_changes[ii] = self._nodes[ii].storage_change
             self.node_storages[ii] = self._nodes[ii].storage
             self.node_sink_source[ii] = self._nodes[ii].sink_source
+
+        for (
+            add_var_name,
+            add_var_inds,
+        ) in self._addtl_output_vars_wh_collect.items():
+            for ii in add_var_inds:
+                self[add_var_name][ii] = self._nodes[ii][add_var_name]
 
         self.node_negative_sink_source[:] = -1 * self.node_sink_source
 

@@ -24,7 +24,7 @@ dependencies:
   - nbconvert
   - netCDF4
   - networkx
-  - numpy<2.0.0
+  - numpy>=2.0.0
   - numba
   - pandas>=1.4.0
   - pint
@@ -44,10 +44,11 @@ dependencies:
   - sphinx-autosummary-accessors
   - sphinx-copybutton
   - tqdm
-  - xarray>=2023.05.0
+  - xarray>=2024.06.0
   - pip:
       - asv
       - click != 8.1.0
+      - filelock
       - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
       - modflow-devtools

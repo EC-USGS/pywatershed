@@ -49,7 +49,9 @@ To release a new version:
 1. If this is a patch release, make changes/fixes locally. If this is a major or
    minor release, no changes may be needed. In either case, add the release version
    and date to the top of `doc/whats-new.rst`. If a patch, put it below the
-   pending minor release. Update the CITATION.cff file.
+   pending minor release. Also update the version in `doc/index.rst`. Update the
+   CITATION.cff file. If a major release, get the provisional new DOI from USGS
+   and add it to CITATION.cff and the main README.md.
 
 1. Push the branch to this repo. For instance, if this repo is an `upstream`
    remote: `git push -u upstream vx.y.z`. This starts a job to:

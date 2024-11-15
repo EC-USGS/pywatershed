@@ -17,7 +17,6 @@ dependencies:
   - holoviews
   - hvplot
   - ipython
-  - nbconvert
   - netCDF4
   - networkx
   - numpy>=2.0.0
@@ -46,7 +45,6 @@ dependencies:
       - click != 8.1.0
       - filelock
       - git+https://github.com/modflowpy/flopy.git
-      - jupyter_black
       - modflow-devtools
       - git+https://github.com/jararias/mpsplines.git
       - git+https://github.com/paknorton/pyPRMS.git@development

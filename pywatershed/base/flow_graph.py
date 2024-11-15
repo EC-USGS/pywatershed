@@ -182,7 +182,7 @@ class FlowGraph(ConservativeProcess):
     :func:`prms_channel_flow_graph_to_model_dict`
     and :func:`prms_channel_flow_graph_postprocess`.
 
-    For developers looking to add new :class:`FlowNode`s, please read the
+    For developers looking to add new :class:`FlowNode`\s, please read the
     :class:`FlowNode` base class code and also the code for
     :class:`FlowNodeMaker`.
 

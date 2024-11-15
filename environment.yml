@@ -5,7 +5,6 @@ channels:
   - pyviz
   - bioconda
 dependencies:
-  - bash_kernel
   - cartopy
   - dataretrieval
   - contextily
@@ -18,8 +17,6 @@ dependencies:
   - holoviews
   - hvplot
   - ipython
-  - ipywidgets
-  - nb_conda_kernels
   - nbconvert
   - netCDF4
   - networkx

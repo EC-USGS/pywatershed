@@ -35,6 +35,10 @@ class PRMSSoilzone(ConservativeProcess):
     Techniques and Methods, 6, B7.
     <https://pubs.usgs.gov/tm/6b7/pdf/tm6-b7.pdf>`__
 
+    Note that as of pywatershed version 2.0.0, pref_flow_infil_frac is a
+    required parameters which is optional in PRMS. Specifying zeros for all
+    HRUs gives the same behavior as not supplying the parameter to PRMS.
+
     Args:
         control: a Control object
         discretization: a discretization of class Parameters

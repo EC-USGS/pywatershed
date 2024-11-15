@@ -66,24 +66,26 @@ and the `extended release notes <https://ec-usgs.github.io/pywatershed/2023/12/1
 for version 1.0.0.
 
 ===================================
-Current version: 2.0.0 (unreleased)
+Version: 2.0.0 (2024-11-14)
 ===================================
 With pywatershed version 2.0.0, we introduce the :class:`FlowGraph` capabilities that allow
 users to combine different kinds flow solutions in arbitrary order on a "flow graph". 
 
-Version 2.0.0 also introduces several important PRMS capabilities beyond those included in
+Version 2.0.0 introduces several important PRMS capabilities beyond those included in
 the `National Hydrolgical Model <https://pubs.usgs.gov/publication/tm6B9>`__ (NHM, Regan et al.,
-2018).
+2018): Dunnian flow in Soilzone is 2-way coupled to PRMSRunoff, preferential flows is implemented
+in PRMSSoilzone, and depression storage can be optionally selected (across PRMSRunoff, PRMSSoilzone,
+and PRMSGroundwater).
 
 Version 2.0.0 also includes capabilties to translate :class:`PRMSChannel` simulations
-into 1-D diffusive wave simulations in MODFLOW 6's development branch.
+into 1-D diffusive wave simulations in MODFLOW 6's development branch using :class:`MmrToMf6Dfw`.
 
 For more information on version 2.0.0 see the
 `release notes <https://github.com/EC-USGS/pywatershed/releases/tag/2.0.0>`_
-and the `extended release notes <https://ec-usgs.github.io/pywatershed/2024/12/18/v2-0-0-overview>`_.
+and the `extended release notes <https://ec-usgs.github.io/pywatershed/2024/11/14/v2-0-0-overview>`_.
 
 ============================================
-Upcoming development in 2024
+Upcoming development
 ============================================
 The broad goal is to reproduce GSFLOW coupling using the MODFLOW 6 API. This will include
 gridded configurations and cascading flows.

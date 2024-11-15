@@ -46,7 +46,7 @@ jobs:
         uses: mamba-org/setup-micromamba@v1.9.0
         with:
           micromamba-version: '1.5.10-0'
-          environment-file: environment.yml
+          environment-file: environment_w_jupyter.yml
           cache-environment: true
           cache-downloads: true
 

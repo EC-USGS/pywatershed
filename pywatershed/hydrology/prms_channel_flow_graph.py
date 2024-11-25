@@ -405,7 +405,7 @@ class HruSegmentFlowAdapter(Adapter):
     """Adapt volumetric flows from HRUs to lateral inflows on PRMS segments/nodes.
 
     This class specifically maps from PRMS HRU outflows to PRMS segment inflows
-    using the parameters known to `PRMSChannel`. .
+    using the parameters known to `PRMSChannel`.
 
     This class is a subclass of :class:`Adapter` which means that it makes
     existing or known flows available over time (but dosent calculate a
@@ -490,14 +490,12 @@ class HruSegmentFlowAdapter(Adapter):
         return
 
 
-class HruSegmentFlowExchange(ConservativeProcess):
-    """Process to map PRMS HRU outflows to lateral inflows on segments/nodes.
+class HruNodeFlowExchange(ConservativeProcess):
+    """Process to map PRMS HRU outflows to lateral inflows on nodes.
 
-    This class specifically maps from PRMS HRU outflows to PRMS segment inflows
-    using the parameters known to `PRMSChannel`.
-
-    This class is meant to take flows from "upstream" :class:`Process`\ es and
-    provide flows to a :class:`FlowGraph` in the context of a :class:`Model`.
+    This class maps PRMS HRU outflows to :class:`FlowGraph` node inflows in
+    the context of a :class:`Model`. To map HRU outflows to PRMS segments, see
+    :class:`HruSegmentFlowExchange`.
     """
 
     def __init__(
@@ -511,7 +509,7 @@ class HruSegmentFlowExchange(ConservativeProcess):
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         verbose: bool = None,
     ) -> None:
-        """Instantiate a HruSegmentFlowExchange.
+        """Instantiate a HruNodeFlowExchange.
 
         Args:
             control: A :class:`Control` object.
@@ -534,7 +532,7 @@ class HruSegmentFlowExchange(ConservativeProcess):
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "HruSegmentFlowExchange"
+        self.name = "HruNodeFlowExchange"
 
         self._set_inputs(locals())
         self._set_options(locals())

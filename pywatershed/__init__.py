@@ -20,7 +20,7 @@ from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
-    HruSegmentFlowExchange,
+    HruNodeFlowExchange,
     PRMSChannelFlowNode,
     PRMSChannelFlowNodeMaker,
     prms_channel_flow_graph_postprocess,
@@ -54,7 +54,7 @@ __all__ = (
     "PRMSChannelFlowNode",
     "PRMSChannelFlowNodeMaker",
     "HruSegmentFlowAdapter",
-    "HruSegmentFlowExchange",
+    "HruNodeFlowExchange",
     "ModelGraph",
     "ColorBrewer",
     "PRMSAtmosphere",

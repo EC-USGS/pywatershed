@@ -2,7 +2,7 @@ from .prms_canopy import PRMSCanopy
 from .prms_channel import PRMSChannel
 from .prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
-    HruSegmentFlowExchange,
+    HruNodeFlowExchange,
     PRMSChannelFlowNode,
     PRMSChannelFlowNodeMaker,
     prms_channel_flow_graph_postprocess,
@@ -22,7 +22,7 @@ __all__ = (
     "PRMSChannelFlowNode",
     "PRMSChannelFlowNodeMaker",
     "HruSegmentFlowAdapter",
-    "HruSegmentFlowExchange",
+    "HruNodeFlowExchange",
     "PRMSCanopy",
     "PRMSChannel",
     "PRMSGroundwater",

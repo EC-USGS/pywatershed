@@ -19,7 +19,7 @@ from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
-    HruSegmentFlowExchange,
+    HruNodeFlowExchange,
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
@@ -203,7 +203,7 @@ def test_prms_channel_flow_graph_compare_prms(
     flow_graph.finalize()
 
 
-exchange_types = ("hrusegmentflowexchange", "inflowexchangefactory")
+exchange_types = ("hrunodeflowexchange", "inflowexchangefactory")
 
 
 @pytest.mark.parametrize("exchange_type", exchange_types)
@@ -215,8 +215,8 @@ def test_hru_segment_flow_exchange(
     tmp_path,
     exchange_type,
 ):
-    if exchange_type == "hrusegmentflowexchange":
-        Exchange = HruSegmentFlowExchange
+    if exchange_type == "hrunodeflowexchange":
+        Exchange = HruNodeFlowExchange
     else:
         # else we implement the exchange by-hand here.
         # this is also implemented in channel_flow_graph_to_model_dict
@@ -354,6 +354,7 @@ def test_hru_segment_flow_exchange(
         )
 
     model = Model(model_dict)
+
     for istep in range(control.n_times):
         model.advance()
         model.calculate()

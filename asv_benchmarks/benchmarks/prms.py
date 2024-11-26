@@ -61,7 +61,7 @@ class PRMSBasics:
         (domains),
     )
     def time_prms_control_read(self, domain):
-        control_file = test_data_dir / f"{domain}/control.test"
+        control_file = test_data_dir / f"{domain}/nhm.control"
         if pws.__version__ == "0.2.0":
             _ = pws.Control.load(control_file)
         else:
@@ -78,7 +78,7 @@ class PRMSModels:
         self.tag = args[1]
         self.processes = model_tests[self.tag]
 
-        self.control_file = test_data_dir / f"{self.domain}/control.test"
+        self.control_file = test_data_dir / f"{self.domain}/nhm.control"
         self.parameter_file = test_data_dir / f"{self.domain}/myparam.param"
 
         # backwards compatability pre pywatershed

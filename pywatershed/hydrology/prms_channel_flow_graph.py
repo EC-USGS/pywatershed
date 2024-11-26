@@ -4,8 +4,14 @@ from typing import Literal, Union
 
 import numba as nb
 import numpy as np
+import xarray as xr
 
-from pywatershed.base.adapter import Adapter, AdapterNetcdf, adaptable
+from pywatershed.base.adapter import (
+    Adapter,
+    AdapterNetcdf,
+    adaptable,
+    adapter_factory,
+)
 from pywatershed.base.conservative_process import ConservativeProcess
 from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import (
@@ -402,19 +408,21 @@ _calculate_subtimestep_numba = nb.njit(
 
 
 class HruSegmentFlowAdapter(Adapter):
-    """Adapt volumetric flows from HRUs to lateral inflows on PRMS segments/nodes.
+    """Adapt volumetric flows from HRUs to lateral inflows on PRMS segments.
 
     This class specifically maps from PRMS HRU outflows to PRMS segment inflows
-    using the parameters known to `PRMSChannel`. .
+    using the parameters known to `PRMSChannel`. This reproduces the PRMS
+    variable hru_streamflow_out.
 
     This class is a subclass of :class:`Adapter` which means that it makes
     existing or known flows available over time (but dosent calculate a
-    process). This class is meant to force a stand-alone :class:`FlowGraph` runoff
-    outside the context of a :class:`Model`. The calculated lateral flows
-    (in cubic feet per second) are availble from the current_value property.
+    process). This class is meant to force a stand-alone :class:`FlowGraph`
+    runoff outside the context of a :class:`Model`. The calculated lateral
+    flows (in cubic feet per second) are availble from the current_value
+    property.
 
     See :class:`FlowGraph` for discussion and an example.
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
@@ -490,14 +498,12 @@ class HruSegmentFlowAdapter(Adapter):
         return
 
 
-class HruSegmentFlowExchange(ConservativeProcess):
-    """Process to map PRMS HRU outflows to lateral inflows on segments/nodes.
+class HruNodeFlowExchange(ConservativeProcess):
+    """Process to map PRMS HRU outflows to lateral inflows on nodes.
 
-    This class specifically maps from PRMS HRU outflows to PRMS segment inflows
-    using the parameters known to `PRMSChannel`.
-
-    This class is meant to take flows from "upstream" :class:`Process`\ es and
-    provide flows to a :class:`FlowGraph` in the context of a :class:`Model`.
+    This class maps PRMS HRU outflows to :class:`FlowGraph` node inflows in
+    the context of a :class:`Model`. To map HRU outflows to PRMS segments, see
+    :class:`HruSegmentFlowExchange`.
     """
 
     def __init__(
@@ -511,7 +517,7 @@ class HruSegmentFlowExchange(ConservativeProcess):
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
         verbose: bool = None,
     ) -> None:
-        """Instantiate a HruSegmentFlowExchange.
+        """Instantiate a HruNodeFlowExchange.
 
         Args:
             control: A :class:`Control` object.
@@ -534,7 +540,7 @@ class HruSegmentFlowExchange(ConservativeProcess):
             discretization=discretization,
             parameters=parameters,
         )
-        self.name = "HruSegmentFlowExchange"
+        self.name = "HruNodeFlowExchange"
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -1017,3 +1023,165 @@ def _build_flow_graph_inputs(
     } | new_nodes_maker_dict
 
     return (params_flow_graph, node_maker_dict)
+
+
+def prms_segment_lateral_inflow_components_to_netcdf(
+    control: Control,
+    parameters: Parameters,
+    input_dir: pl.Path,
+    nc_out_file_path: str,
+    output_sum: bool = False,
+) -> None:
+    """Write to NetCDf the components of lateral flow on PRMS segments.
+
+    This helper function takes the PRMS lateral flows from HRUs (sroff_vol,
+    ssres_flow_vol, and gwres_flow_vol) and maps them individually to the
+    PRMS segments.
+
+    Args:
+      control: A Control object for the input files selected.
+      parameters: A Parameters object with both nhru and nsegment dimensions.
+      input_dir: The directory to look for the inputs files: sroff_vol.nc,
+        ssres_flow_vol.nc, and gwres_flow_vol.nc.
+      nc_out_file_path: The path of the output netcdf file.
+      output_sum: Also include the sum of the lateral flow components in the
+        output file (named 'lateral_inflow_vol').
+
+    Examples
+    ---------
+
+    This example will work if you have an editable install of the repository
+    (not installed from pypi) and you have generated the test data for the
+    drb_2yr domain.
+
+    >>> import pathlib as pl
+    >>>
+    >>> import pywatershed as pws
+    >>> import xarray as xr
+    >>>
+    >>> domain_dir = (
+    ...     pws.constants.__pywatershed_root__ / "../test_data/drb_2yr"
+    ... )
+    >>>
+    >>> control = pws.Control.load_prms(domain_dir / "nhm.control")
+    >>> params = pws.parameters.PrmsParameters.load(
+    ...     domain_dir / control.options["parameter_file"]
+    ... )
+    >>>
+    >>> nc_out_file_path = pl.Path(".") / "segment_lateral_inflows.nc"
+    >>> pws.prms_segment_lateral_inflow_components_to_netcdf(
+    ...     control,
+    ...     params,
+    ...     input_dir=domain_dir
+    ...     / "output",  # PRMS/pywatershed outputs are here
+    ...     nc_out_file_path=nc_out_file_path,
+    ...     output_sum=True,
+    ... )
+    >>>
+    >>> lat_inflow_vols = xr.load_dataset(nc_out_file_path)
+    >>> display(lat_inflow_vols)
+    <xarray.Dataset> Size: 11MB
+    Dimensions:             (time: 731, nhm_seg: 456)
+    Coordinates:
+      * time                (time) datetime64[ns] 6kB 1979-01-01 ... 1980-12-31
+      * nhm_seg             (nhm_seg) int64 4kB 2048 4182 4183 ... 2045 2046 2047
+    Data variables:
+        sroff_vol           (time, nhm_seg) float64 3MB 10.35 10.96 ... 0.0 0.0
+        ssres_flow_vol      (time, nhm_seg) float64 3MB 0.0 0.0 ... 0.01131 0.01401
+        gwres_flow_vol      (time, nhm_seg) float64 3MB 4.181 1.993 ... 1.762 2.33
+        lateral_inflow_vol  (time, nhm_seg) float64 3MB 14.53 12.95 ... 1.774 2.344
+    Attributes :
+        description:  Daily lateral inflow volumes to PRMS Channel
+        units:        cubic feet
+
+
+    """  # noqa: E501
+
+    time = np.arange(
+        control.start_time,
+        control.end_time + control.time_step,  # per arange construction
+        control.time_step,
+    ).astype("datetime64[ns]")
+    nhm_seg = parameters.parameters["nhm_seg"]
+    nhm_id = parameters.parameters["nhm_id"]
+
+    ntime = len(time)
+    nsegment = len(nhm_seg)
+    nhru = len(nhm_id)
+
+    zero_adapter = adapter_factory(np.zeros(nhru), "zero", control)
+
+    input_adapters = {}
+    for vv in ["sroff_vol", "ssres_flow_vol", "gwres_flow_vol"]:
+        nc_path = input_dir / f"{vv}.nc"
+        input_adapters[vv] = AdapterNetcdf(nc_path, vv, control)
+
+    exch_sroff = HruSegmentFlowAdapter(
+        parameters=parameters,
+        sroff_vol=input_adapters["sroff_vol"],
+        ssres_flow_vol=zero_adapter,
+        gwres_flow_vol=zero_adapter,
+    )
+
+    exch_ssres = HruSegmentFlowAdapter(
+        parameters=parameters,
+        sroff_vol=zero_adapter,
+        ssres_flow_vol=input_adapters["ssres_flow_vol"],
+        gwres_flow_vol=zero_adapter,
+    )
+
+    exch_gwres = HruSegmentFlowAdapter(
+        parameters=parameters,
+        sroff_vol=zero_adapter,
+        ssres_flow_vol=zero_adapter,
+        gwres_flow_vol=input_adapters["gwres_flow_vol"],
+    )
+
+    data_vars = dict(
+        sroff_vol=(
+            ["time", "nhm_seg"],
+            np.zeros((ntime, nsegment)) * np.nan,
+        ),
+        ssres_flow_vol=(
+            ["time", "nhm_seg"],
+            np.zeros((ntime, nsegment)) * np.nan,
+        ),
+        gwres_flow_vol=(
+            ["time", "nhm_seg"],
+            np.zeros((ntime, nsegment)) * np.nan,
+        ),
+    )
+    if output_sum:
+        data_vars["lateral_inflow_vol"] = (
+            ["time", "nhm_seg"],
+            np.zeros((ntime, nsegment)) * np.nan,
+        )
+
+    seg_lateral_inflow = xr.Dataset(
+        data_vars=data_vars,
+        coords=dict(
+            time=(["time"], time),
+            nhm_seg=(["nhm_seg"], nhm_seg),
+        ),
+        attrs=dict(
+            description="Daily lateral inflow volumes to PRMS Channel",
+            units="cubic feet",
+        ),
+    )
+    for tt in range(control.n_times):
+        control.advance()
+        exch_sroff.advance()
+        exch_ssres.advance()
+        exch_gwres.advance()
+        seg_lateral_inflow["sroff_vol"][tt, :] = exch_sroff.current
+        seg_lateral_inflow["ssres_flow_vol"][tt, :] = exch_ssres.current
+        seg_lateral_inflow["gwres_flow_vol"][tt, :] = exch_gwres.current
+        # sum
+        if output_sum:
+            seg_lateral_inflow["lateral_inflow_vol"][tt, :] = (
+                exch_sroff.current + exch_ssres.current + exch_gwres.current
+            )
+
+    seg_lateral_inflow.to_netcdf(nc_out_file_path)
+
+    return None

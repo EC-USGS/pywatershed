@@ -10,6 +10,7 @@ from pywatershed import (
     PRMSRunoff,
     PRMSSoilzone,
     prms_channel_flow_graph_to_model_dict,
+    prms_segment_lateral_inflow_components_to_netcdf,
 )
 from pywatershed.base.adapter import AdapterNetcdf, adapter_factory
 from pywatershed.base.control import Control
@@ -18,8 +19,8 @@ from pywatershed.base.model import Model
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
 from pywatershed.hydrology.prms_channel_flow_graph import (
-    HruSegmentFlowAdapter,
     HruNodeFlowExchange,
+    HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
 )
 from pywatershed.parameters import PrmsParameters
@@ -167,6 +168,7 @@ def test_prms_channel_flow_graph_compare_prms(
 
         # check exchange
         lateral_inflow_answers.advance()
+
         np.testing.assert_allclose(
             inflow_prms.current,
             lateral_inflow_answers.current,
@@ -508,3 +510,23 @@ def test_prms_channel_flow_graph_to_model_dict(
         assert da.node_maker_index[-3:].values.tolist() == check_indices
         assert da.node_maker_name[-3:].values.tolist() == check_names
         assert da.node_maker_id[-3:].values.tolist() == check_ids
+
+
+def test_prms_segment_lateral_inflow_components_to_netcdf(
+    simulation, control, parameters, tmp_path
+):
+    nc_out_file_path = tmp_path / "segment_lateral_inflows.nc"
+    prms_segment_lateral_inflow_components_to_netcdf(
+        control,
+        parameters,
+        input_dir=simulation["output_dir"],
+        nc_out_file_path=nc_out_file_path,
+        output_sum=True,
+    )
+
+    results = xr.load_dataset(nc_out_file_path).lateral_inflow_vol
+    answers = xr.load_dataarray(
+        simulation["output_dir"] / "seg_lateral_inflow.nc"
+    )
+
+    xr.testing.assert_allclose(answers, results)

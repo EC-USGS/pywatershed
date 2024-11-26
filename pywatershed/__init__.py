@@ -19,12 +19,13 @@ from .hydrology.pass_through_flow_node import (
 from .hydrology.prms_canopy import PRMSCanopy
 from .hydrology.prms_channel import PRMSChannel
 from .hydrology.prms_channel_flow_graph import (
-    HruSegmentFlowAdapter,
     HruNodeFlowExchange,
+    HruSegmentFlowAdapter,
     PRMSChannelFlowNode,
     PRMSChannelFlowNodeMaker,
     prms_channel_flow_graph_postprocess,
     prms_channel_flow_graph_to_model_dict,
+    prms_segment_lateral_inflow_components_to_netcdf,
 )
 from .hydrology.prms_et import PRMSEt
 from .hydrology.prms_groundwater import PRMSGroundwater
@@ -51,6 +52,7 @@ from .version import __version__
 __all__ = (
     "prms_channel_flow_graph_postprocess",
     "prms_channel_flow_graph_to_model_dict",
+    "prms_segment_lateral_inflow_components_to_netcdf",
     "PRMSChannelFlowNode",
     "PRMSChannelFlowNodeMaker",
     "HruSegmentFlowAdapter",

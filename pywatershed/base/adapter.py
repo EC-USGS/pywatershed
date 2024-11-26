@@ -127,9 +127,11 @@ class AdapterOnedarray(Adapter):
         self,
         data: np.ndarray,
         variable: str,
+        control: Control = None,
     ) -> None:
         super().__init__(variable)
         self.name = "AdapterOnedarray"
+        self.control = control
         self._current_value = data
         return
 
@@ -174,7 +176,7 @@ def adapter_factory(
 
     elif isinstance(var, np.ndarray) and len(var.shape) == 1:
         # Adapt 1-D np.ndarrays
-        return AdapterOnedarray(var, variable=variable_name)
+        return AdapterOnedarray(var, variable=variable_name, control=control)
 
     elif isinstance(var, TimeseriesArray):
         # Adapt TimeseriesArrays as is.

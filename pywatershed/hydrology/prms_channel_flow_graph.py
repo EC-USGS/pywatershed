@@ -1047,7 +1047,56 @@ def prms_segment_lateral_inflow_components_to_netcdf(
       output_sum: Also include the sum of the lateral flow components in the
         output file (named 'lateral_inflow_vol').
 
-    """
+    Examples
+    ---------
+
+    This example will work if you have an editable install of the repository
+    (not installed from pypi) and you have generated the test data for the
+    drb_2yr domain.
+
+    >>> import pathlib as pl
+    >>>
+    >>> import pywatershed as pws
+    >>> import xarray as xr
+    >>>
+    >>> domain_dir = (
+    ...     pws.constants.__pywatershed_root__ / "../test_data/drb_2yr"
+    ... )
+    >>>
+    >>> control = pws.Control.load_prms(domain_dir / "nhm.control")
+    >>> params = pws.parameters.PrmsParameters.load(
+    ...     domain_dir / control.options["parameter_file"]
+    ... )
+    >>>
+    >>> nc_out_file_path = pl.Path(".") / "segment_lateral_inflows.nc"
+    >>> pws.prms_segment_lateral_inflow_components_to_netcdf(
+    ...     control,
+    ...     params,
+    ...     input_dir=domain_dir
+    ...     / "output",  # PRMS/pywatershed outputs are here
+    ...     nc_out_file_path=nc_out_file_path,
+    ...     output_sum=True,
+    ... )
+    >>>
+    >>> lat_inflow_vols = xr.load_dataset(nc_out_file_path)
+    >>> display(lat_inflow_vols)
+    <xarray.Dataset> Size: 11MB
+    Dimensions:             (time: 731, nhm_seg: 456)
+    Coordinates:
+      * time                (time) datetime64[ns] 6kB 1979-01-01 ... 1980-12-31
+      * nhm_seg             (nhm_seg) int64 4kB 2048 4182 4183 ... 2045 2046 2047
+    Data variables:
+        sroff_vol           (time, nhm_seg) float64 3MB 10.35 10.96 ... 0.0 0.0
+        ssres_flow_vol      (time, nhm_seg) float64 3MB 0.0 0.0 ... 0.01131 0.01401
+        gwres_flow_vol      (time, nhm_seg) float64 3MB 4.181 1.993 ... 1.762 2.33
+        lateral_inflow_vol  (time, nhm_seg) float64 3MB 14.53 12.95 ... 1.774 2.344
+    Attributes :
+        description:  Daily lateral inflow volumes to PRMS Channel
+        units:        cubic feet
+
+
+    """  # noqa: E501
+
     time = np.arange(
         control.start_time,
         control.end_time + control.time_step,  # per arange construction

@@ -14,7 +14,7 @@ What's New
 
 .. _whats-new.2.0.0:
 
-v2.0.0 (14 November 2024)
+v2.0.0 (16 December 2024)
 ---------------------
 
 New Features
@@ -172,7 +172,7 @@ Documentation
   (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
 - New gh-pages branch (without history) to publish
   `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
-  `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.
+  `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/12/18/v1-0-0-overview>`_.
   This branch publishes analysis supporting the version 1.0.0 release.
 - Add about section for version 1.0 to describe how pywatershed matches PRMS'
   NHM configuration and how to perform the comparison.

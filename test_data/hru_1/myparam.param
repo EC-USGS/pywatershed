@@ -609,6 +609,13 @@ nhru
 2
 0.0
 ####
+pref_flow_infil_frac
+1
+nhru
+1
+2
+0.0
+####
 print_freq
 1
 one

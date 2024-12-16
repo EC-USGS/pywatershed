@@ -12,7 +12,90 @@ What's New
     np.random.seed(123456)
 
 
-.. _whats-new.1.0.0:
+.. _whats-new.2.0.0:
+
+v2.0.0 (16 December 2024)
+---------------------
+
+New Features
+~~~~~~~~~~~~~~~~
+- The :class:`FlowGraph` capabilities are introduced. These allow users to
+  combine different kinds flow solutions in arbitrary order on a "flow graph".
+  The accompanying base classes :class:`FlowNode` and :class:`FlowNodeMaker`
+  are introduced along with their subclasses for modeling
+  :class:`PassThroughFlowNode`\ s, :class:`ObsInFlowNode`\ s (flow replacement by
+  observations with sink and source tracking in mass balance),
+  :class:`PRMSChannelFlowNode`\ s, and :class:`StarfitFlowNode`\ s. A new
+  example notebook,
+  `examples/06_flow_graph_starfit.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/06_flow_graph_starfit.ipynb>`__
+  demonstrates adding STARFIT reservoir nodes into a FlowGraph otherwise
+  simulating `PRMSChannel` and highlights helper functions for this use case.
+  (:pull:`233`) By `James McCreight <https://github.com/jmccreight>`_.
+- The :class:`MmrToMf6Dfw` class builds a MF6 simulation with Diffusive Wave
+  (DFW) routing from PRMS NHM input files and a few simple assumptions. The
+  lateral (to-channel) fluxes from a PRMS are used as time varying boundary
+  conditions. A new notebook runs the Delaware River Basin using MF6 DFW:
+  `examples/07_mmr_to_mf6_chf_dfw.ipynb <https://github.com/EC-USGS/pywatershed/blob/develop/examples/07_mmr_to_mf6_chf_dfw.ipynb>`__.
+  (:pull:`290`) By `James McCreight <https://github.com/jmccreight>`_.
+- No depression storage subclasses are available for PRMSRunoff, PRMSSoilzone,
+  and PRMSGroundwater by adding "NoDprst" to the end of the names. Depression
+  storage is switched off in sagehen_5yr and in new nhm_no_dprst
+  configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Dunnian flow is implemented (in PRMSSoilzone) and tested for sagehen_5yr.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Preferential flow is implemented (in PRMSSoilzone) and tested for sagehen_5yr.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Control instances have a diff method to compare with other instances.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Feature to standardize subsetting input data (parameters and forcings) in
+  space and time either from file (:func:`utils.netcdf_utils.subset_netcdf_file`) or
+  in memory (:func:`utils.netcdf_utils.subset_xr`).
+  (:pull:`304`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Breaking Changes
+~~~~~~~~~~~~~~~~
+- pref_flow_infil_frac now a required parameter input for PRMSSoilzone. The NHM
+  values assumed previously are zeros on all HRUs.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Bug fixes
+~~~~~~~~~
+- Fixed calculation of the variable transp_on was incorrectly calculated in certain
+  situations not covered by NHM configuratons but covered by sagehen_5yr.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Fixed calculation of variable dprst_area_open which was not being checked but
+  was affecting no other variables.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- The variable pptmix was incorrectly calculated in certain situations not covered
+  by the NHM configurations.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+
+Internal changes
+~~~~~~~~~~~~~~~~
+- Testing system refactor to handle pairs of domains and control files
+  allowing much more flexibility in configuration/control testing.
+  (:pull:`278`) By `James McCreight <https://github.com/jmccreight>`_.
+- New testing domain "sagehen_5yr" is added to test_data directory
+  with configuration sagehen_no_cascades. This domain introduces multiple
+  PRMS capabilities (noted indvidually in this PR) not used in the NHM
+  configuration and provides a test for these.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Tests are now marked as "domain" or "domainless" to avoid redundant
+  runs of domainless tests across test domains.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- New tests test_prms_above_snow and test_prms_below_snow replace
+  test_model and are extremely close to PRMS (PRMSSolarGeometry: 1.0e-8,
+  PRMSAtmosphere: 1.0e-5, PRMSCanopy: 1.0e-6, PRMSRunoff: 1.0e-8,
+  PRMSRunoffNoDprst: 1.0e-8, PRMSSoilzone: 1.0e-8, PRMSSoilzoneNoDprst: 1.0e-8,
+  PRMSGroundwater: 1.0e-8, PRMSGroundwaterNoDprst: 1.0e-8, PRMSChannel: 5.0e-7)
+  for all test domains.
+  (:pull:`288`) By `James McCreight <https://github.com/jmccreight>`_.
+- Migration to Numpy 2.0+.
+  (:pull:`310`) By `James McCreight <https://github.com/jmccreight>`_.
+
+
+.. _whats-new.1.1.0:
 
 v1.1.0 (25 June 2024)
 ---------------------
@@ -28,7 +111,7 @@ New features
 .. _whats-new.1.0.0:
 
 v1.0.0 (18 December 2023)
----------------------
+-------------------------
 
 New features
 ~~~~~~~~~~~~
@@ -43,7 +126,19 @@ New features
 
 Breaking changes
 ~~~~~~~~~~~~~~~~
-
+- The `control.options` "netcdf_output_dir", "netcdf_output_var_names", and
+  "netcdf_output_separate_files" match the keyword arguments "output_dir",
+  "output_vars", and "separate_files" for both `process.intitalize_netcdf()`
+  and `model.initialize_netcdf()`. None of these arguments can be supplied in
+  both places (control and method call). It used to be that calling
+  `initialize_netcdf()` would override what is supplied in `control.options`
+  but this will now throw an error. The suggestion is to use `control.options` and
+  not pass arguments to `intialize_netcdf()`. When using
+  `Control.load()` (deprecated) or `Control.load_prms()` from a PRMS control
+  file, note that the "control.options" of "netcdf_output_dir" and
+  "netcdf_output_var_names" are set by values in the PRMS control file. You can
+  edit these, but be aware that they are now set in that load.
+  (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Deprecations
 ~~~~~~~~~~~~
@@ -77,7 +172,7 @@ Documentation
   (:pull:`257`) By `James McCreight <https://github.com/jmccreight>`_.
 - New gh-pages branch (without history) to publish
   `"pywatershed notes" <https://ec-usgs.github.io/pywatershed/>`_ including the
-  `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/11/14/v1-0-0-overview>`_.
+  `extended release notes for v1.0.0 <https://ec-usgs.github.io/pywatershed/2023/12/18/v1-0-0-overview>`_.
   This branch publishes analysis supporting the version 1.0.0 release.
 - Add about section for version 1.0 to describe how pywatershed matches PRMS'
   NHM configuration and how to perform the comparison.

@@ -16,7 +16,7 @@ dependencies:
   - pymt_prms_soil
   - pymt_prms_groundwater
   - pymt_prms_streamflow
-  - pytest
+  - pytest!=8.1.0
   - bmi-tester
   - netCDF4
   - notebook

@@ -5,50 +5,48 @@ channels:
   - pyviz
   - bioconda
 dependencies:
-  - bash_kernel
   - cartopy
+  - dataretrieval
+  - contextily
   - epiweeks
   - filelock
+  - folium
   - geopandas
   - geoviews
   - git
   - holoviews
   - hvplot
   - ipython
-  - ipywidgets
-  - nb_conda_kernels
-  - nbconvert
   - netCDF4
   - networkx
-  - numpy
+  - numpy>=2.0.0
   - numba
   - pandas>=1.4.0
   - pint
   - pip
   - pre-commit
   - pydot
-  - pytest
+  - pytest!=8.1.0
   - pytest-cov
   - pytest-env
   - pytest-order
   - pytest-xdist
-  - python<3.11,>=3.9
+  - python<3.12,>=3.10
   - pyyaml
-  - shapely<2.0.0
+  - shapely
   - sphinx
   - sphinx-book-theme>=0.3.3
   - sphinx-autosummary-accessors
   - sphinx-copybutton
   - tqdm
-  - xarray>=2023.05.0
+  - xarray>=2024.06.0
   - pip:
       - asv
-      - black
       - click != 8.1.0
-      - isort
-      - flake8
+      - filelock
       - git+https://github.com/modflowpy/flopy.git
-      - jupyter_black
-      - modflow-devtools==1.3.1
-      - pylint
-      - sphinx-autodoc-typehints
+      - modflow-devtools
+      - git+https://github.com/jararias/mpsplines.git
+      - git+https://github.com/paknorton/pyPRMS.git@development
+      - sphinx-autodoc-typehints>=2.2.1
+      - ruff

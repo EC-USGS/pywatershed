@@ -109,7 +109,7 @@ class Parameters(DatasetDict):
         tosegment   (nsegment) int64 2 3 0
         seg_length  (nsegment) float64 1e+03 1e+03 1e+03
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -141,6 +141,20 @@ class Parameters(DatasetDict):
             self[f"_{kk}"] = _set_dict_read_only(self[kk])
 
         return
+
+    @property
+    def dimensions(self) -> dict:
+        """Get the dimensions from the parameters
+
+        Returns:
+            dimensions in the PRMS parameter dictionary
+
+        """
+        dimensions = {}
+        for key, value in self.dims.items():
+            if isinstance(value, int):
+                dimensions[key] = value
+        return dimensions
 
     @property
     def parameters(self) -> dict:

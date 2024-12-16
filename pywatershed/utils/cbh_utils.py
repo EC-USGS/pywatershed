@@ -90,7 +90,7 @@ def _cbh_file_to_df(
         header=None,  # dont use default header from first line
         index_col=False,
         skiprows=wh_hash_line + 1,
-        delim_whitespace=True,
+        sep=r"\s+",
         dtype=dtype_dict,
     )
     msg = (
@@ -105,7 +105,7 @@ def _cbh_file_to_df(
         names=col_names,
         index_col=False,
         skiprows=wh_hash_line + 1,
-        delim_whitespace=True,
+        sep=r"\s+",
         dtype=dtype_dict,
     )
 
@@ -227,7 +227,7 @@ def cbh_file_to_netcdf(
     if global_atts is None:
         global_atts = {}
     if chunk_sizes is None:
-        chunk_sizes = {"time": 30, "hru": 0}
+        chunk_sizes = {"time": 30, "nhm_id": 0}
 
     np_dict = cbh_files_to_np_dict(input_file, parameters)
 
@@ -241,7 +241,7 @@ def cbh_file_to_netcdf(
     # Dimensions
     # None for the len argument gives an unlimited dim
     ds.createDimension("time", None)  # cbh_n_time(np_dict))
-    ds.createDimension("hru", cbh_n_hru(np_dict))
+    ds.createDimension("nhm_id", cbh_n_hru(np_dict))
 
     # Dim Variables
     time = ds.createVariable("time", "f4", ("time",))
@@ -252,7 +252,7 @@ def cbh_file_to_netcdf(
 
     hru_name = "hru_ind" if "hru_ind" in np_dict.keys() else "nhm_id"
     hruid = ds.createVariable(
-        hru_name, meta.get_types(hru_name)[hru_name], ("hru")
+        hru_name, meta.get_types(hru_name)[hru_name], ("nhm_id")
     )
     hru_meta_dict = {
         "hru_ind": {
@@ -285,7 +285,7 @@ def cbh_file_to_netcdf(
         var = ds.createVariable(
             var_name_out,
             vv_type,
-            ("time", "hru"),
+            ("time", "nhm_id"),
             fill_value=nc4.default_fillvals[np_to_nc4_types[vv_type]],
             zlib=zlib,
             complevel=complevel,

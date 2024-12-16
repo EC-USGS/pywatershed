@@ -10,7 +10,7 @@ from ..base.adapter import adaptable
 from ..base.control import Control
 from ..constants import inch2cm, nan, nearzero, one, zero
 from ..parameters import Parameters
-from ..utils.time_utils import datetime_doy, datetime_month
+from ..utils.time_utils import datetime_day_of_month, datetime_month
 from .solar_constants import solf
 
 
@@ -154,7 +154,7 @@ class PRMSAtmosphere(Process):
         self._month_ind_12 = datetime_month(self._time) - 1  # (time)
         self._month_ind_1 = np.zeros(self._time.shape, dtype=int)  # (time)
         self._month = datetime_month(self._time)  # (time)
-        self._doy = datetime_doy(self._time)  # (time)
+        self._dom = datetime_day_of_month(self._time)  # (time)
 
         self.adjust_temperature()
         self.adjust_precip()
@@ -267,7 +267,7 @@ class PRMSAtmosphere(Process):
             "tmaxc": nan,
             "tavgc": nan,
             "tminc": nan,
-            "pptmix": nan,
+            "pptmix": -9999,
             "orad_hru": nan,
         }
 
@@ -389,10 +389,6 @@ class PRMSAtmosphere(Process):
             ivd["prcp"].data <= zero, zero, self.prmx.data
         )
 
-        self.pptmix.data[:] = np.where(
-            (self.prmx.data > zero) & (self.prmx.data < one), 1, 0
-        )
-
         # Recalculate/redefine these now based on prmx instead of the
         # temperature logic
         wh_all_snow = np.where(self.prmx.data <= zero)
@@ -419,6 +415,18 @@ class PRMSAtmosphere(Process):
         )[wh_all_rain]
         self.hru_rain.data[wh_all_rain] = self.hru_ppt.data[wh_all_rain]
         self.hru_snow.data[wh_all_rain] = zero
+
+        cond = (
+            (self.hru_ppt.data > zero)
+            & (self.tmaxf.data > self.tmax_allsnow[month_ind])
+            & (
+                (self.tminf.data <= self.tmax_allsnow[month_ind])
+                & (self.tmaxf.data < tmax_allrain[month_ind])
+            )
+            & (self.prmx.data < one)
+        )
+        self.pptmix.data[:] = np.where(cond, 1, 0)
+
         return
 
     def calculate_sw_rad_degree_day(self) -> None:
@@ -674,7 +682,7 @@ class PRMSAtmosphere(Process):
         # transp_on inited to 0 everywhere above
 
         # candidate for worst code lines
-        if self.params.parameters["temp_units"] == 0:
+        if self._params.parameters["temp_units"] == 0:
             transp_tmax_f = self.transp_tmax
         else:
             transp_tmax_f = (self.transp_tmax * (9.0 / 5.0)) + 32.0
@@ -722,13 +730,9 @@ class PRMSAtmosphere(Process):
                         tt - 1, hh
                     ]
 
-                # if tt == 2 and hh == 980:
-                #      asdf
-
                 # check for month to turn check switch on or
                 # transpiration switch off
-
-                if self._doy[tt] == 1:
+                if self._dom[tt] == 1:
                     # check for end of period
                     if self._month[tt] == self.transp_end[hh]:
                         self.transp_on.data[tt, hh] = 0
@@ -772,7 +776,7 @@ class PRMSAtmosphere(Process):
 
                 nc = NetCdfWrite(
                     nc_path,
-                    self.params.coords,
+                    self._params.coords,
                     [var],
                     {var: self.meta[var]},
                 )
@@ -789,7 +793,7 @@ class PRMSAtmosphere(Process):
             nc_path = self._netcdf_output_dir / f"{self.name}.nc"
             nc = NetCdfWrite(
                 nc_path,
-                self.params.coords,
+                self._params.coords,
                 self._netcdf_output_vars,
                 self.meta,
             )

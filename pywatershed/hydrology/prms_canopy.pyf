@@ -6,7 +6,7 @@ python module prms_canopy_f ! in
         module canopy ! in :prms_canopy_f:prms_canopy.f90
             real(kind=8), parameter,optional :: zero=0.0
             real(kind=8), parameter,optional :: one=1.0
-            subroutine calc_canopy(nhru,cov_type,covden_sum,covden_win,hru_intcpstor,hru_intcpevap,hru_ppt,hru_rain,hru_snow,intcp_changeover,intcp_evap,intcp_stor,intcp_transp_on,net_ppt,net_rain,net_snow,pk_ice_prev, freeh2o_prev,potet,potet_sublim,snow_intcp,srain_intcp,transp_on,wrain_intcp,time_length,hru_type,nearzero,dnearzero,baresoil,grasses,land,lake,rain,snow,off,active,intcp_evap_out,intcp_form_out,intcp_stor_out,net_rain_out,net_snow_out,net_ppt_out,hru_intcpstor_out,hru_intcpevap_out,intcp_changeover_out,intcp_transp_on_out) ! in :prms_canopy_f:prms_canopy.f90:canopy
+            subroutine calc_canopy(nhru,cov_type,covden_sum,covden_win,hru_intcpstor,hru_intcpevap,hru_ppt,hru_rain,hru_snow,intcp_changeover,intcp_evap,intcp_stor,intcp_transp_on,net_ppt,net_rain,net_snow,pptmix,pk_ice_prev, freeh2o_prev,potet,potet_sublim,snow_intcp,srain_intcp,transp_on,wrain_intcp,time_length,hru_type,nearzero,dnearzero,baresoil,grasses,land,lake,rain,snow,off,active,intcp_evap_out,intcp_form_out,intcp_stor_out,net_rain_out,net_snow_out,pptmix_out,net_ppt_out,hru_intcpstor_out,hru_intcpevap_out,intcp_changeover_out,intcp_transp_on_out) ! in :prms_canopy_f:prms_canopy.f90:canopy
                 !integer(kind=4) intent(in) :: nhru
                 integer, optional,intent(in),check(len(cov_type)>=nhru),depend(cov_type) :: nhru=len(cov_type)                
                 integer(kind=8) dimension(nhru),intent(in) :: cov_type
@@ -24,6 +24,7 @@ python module prms_canopy_f ! in
                 real(kind=8) dimension(nhru),intent(in) :: net_ppt
                 real(kind=8) dimension(nhru),intent(in) :: net_rain
                 real(kind=8) dimension(nhru),intent(in) :: net_snow
+                integer(kind=4) dimension(nhru),intent(in) :: pptmix
                 real(kind=8) dimension(nhru),intent(in) :: pk_ice_prev
                 real(kind=8) dimension(nhru),intent(in) :: freeh2o_prev
                 real(kind=8) dimension(nhru),intent(in) :: potet
@@ -49,6 +50,7 @@ python module prms_canopy_f ! in
                 real(kind=8) dimension(nhru),intent(out) :: intcp_stor_out
                 real(kind=8) dimension(nhru),intent(out) :: net_rain_out
                 real(kind=8) dimension(nhru),intent(out) :: net_snow_out
+                integer(kind=4) dimension(nhru),intent(out) :: pptmix_out
                 real(kind=8) dimension(nhru),intent(out) :: net_ppt_out
                 real(kind=8) dimension(nhru),intent(out) :: hru_intcpstor_out
                 real(kind=8) dimension(nhru),intent(out) :: hru_intcpevap_out

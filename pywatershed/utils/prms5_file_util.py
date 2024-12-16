@@ -19,30 +19,22 @@ def rename_dims(dim_name):
 
 
 def expand_scalar_to_dims(param_dict, param_dim_dict):
-    from pywatershed.utils.separate_nhm_params import (
-        params_expand_scalar_to_dims,
-    )
+    from pywatershed.utils.separate_nhm_params import params_expand_scalar
 
     # sometimes a scalar is allowed to represent a uniform values for
     # the full dimensions of a parameter. Going to handle those on a
     # case-by-case basis for now: just expand them to full size
     for param_name in param_dict.keys():
-        if param_name in params_expand_scalar_to_dims:
-            dims = meta.find_variables(param_name)[param_name]["dims"]
-            exp_dim = params_expand_scalar_to_dims[param_name]
+        if param_name in params_expand_scalar:
             param_shape = param_dict[param_name].shape
+            if param_shape != (1,):
+                continue
+            dims = meta.find_variables(param_name)[param_name]["dims"]
+            full_param_shape = tuple([param_dict[dd] for dd in dims])
             param_val = param_dict[param_name]
-            param_dims = param_dim_dict[param_name]
-            for ii, dim_name in enumerate(dims):
-                if dim_name == exp_dim:
-                    param_shape = list(param_shape)
-                    param_dims = list(param_dims)
-                    param_shape[ii] = param_dict[exp_dim]
-                    param_dims[ii] = exp_dim
-                    param_shape = tuple(param_shape)
-                    param_vals = np.zeros(param_shape) + param_val
-                    param_dict[param_name] = param_vals
-                    param_dim_dict[param_name] = tuple(param_dims)
+            param_vals = np.zeros(full_param_shape) + param_val
+            param_dim_dict[param_name] = dims
+            param_dict[param_name] = param_vals
 
     return param_dict, param_dim_dict
 
@@ -134,6 +126,9 @@ class PrmsFile:
             raise TypeError("file_path must be a file path")
         return
 
+    def _close_file_object(self) -> None:
+        self.file_object.close()
+
     def _get_control_variables(
         self,
     ) -> dict:
@@ -164,7 +159,7 @@ class PrmsFile:
                     elif key in ("initial_deltat",):
                         value = np.timedelta64(int(value[0]), "h")
                     variable_dict[key] = value
-        self.file_object.close()
+        self._close_file_object()
         return variable_dict
 
     def _get_dimensions_parameters(self):
@@ -228,6 +223,7 @@ class PrmsFile:
             for kk, vv in parameter_dimensions_full_dict.items()
         }
 
+        self._close_file_object()
         return parameters_full_dict, parameter_dimensions_full_dict
 
     def _get_parameters(self):
@@ -315,7 +311,7 @@ class PrmsFile:
                 for idx in range(num_values):
                     arr[idx] = float(self._get_line().split()[0])
             elif data_type == PrmsDataType.CHARACTER.value:
-                arr = np.zeros(num_values, dtype=np.chararray)
+                arr = np.zeros(num_values, dtype="O")
                 for idx in range(num_values):
                     arr[idx] = self._get_line().split()[0]
             else:
@@ -345,7 +341,7 @@ class PrmsFile:
         """
         try:
             dimension = int(self._get_line().split()[0])
-        except:
+        except:  # noqa: E722
             raise ValueError(
                 f"Error on line {self.line_number} in PRMS "
                 + f"input file '{self.file_object.name}'."
@@ -385,7 +381,7 @@ class PrmsFile:
                 for idx in range(len_array):
                     arr[idx] = float(self._get_line().split()[0])
             elif data_type == PrmsDataType.CHARACTER.value:
-                arr = np.zeros(len_array, dtype=np.chararray)
+                arr = np.zeros(len_array, dtype="O")
                 for idx in range(len_array):
                     arr[idx] = self._get_line().split()[0]
             else:

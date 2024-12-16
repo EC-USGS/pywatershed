@@ -5,9 +5,11 @@ from typing import Union
 
 import netCDF4 as nc4
 import numpy as np
+import xarray as xr
 
 from ..base.accessor import Accessor
 from ..base.meta import meta_dimensions, meta_netcdf_type
+from ..constants import np_type_to_netcdf_type_dict
 from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]
@@ -352,31 +354,36 @@ class NetCdfRead(Accessor):
 
 
 class NetCdfWrite(Accessor):
-    """Output the csv output data to a netcdf file
-
-    Args:
-        name: path for netcdf output file
-        clobber: boolean indicating if an existing netcdf file should
-            be overwritten
-        zlib: boolean indicating if the data should be compressed
-            (default is True)
-        complevel: compression level (default is 4)
-        chunk_sizes: dictionary defining chunk sizes for the data
-    """
-
     def __init__(
         self,
         name: fileish,
         coordinates: dict,
         variables: listish,
         var_meta: dict,
-        global_attrs: dict = {},
+        extra_coords: dict = None,
+        global_attrs: dict = None,
         time_units: str = "days since 1970-01-01 00:00:00",
         clobber: bool = True,
         zlib: bool = True,
         complevel: int = 4,
         chunk_sizes: dict = {"time": 1, "hruid": 0},
     ):
+        from netCDF4 import stringtochar
+
+        """Output the csv output data to a netcdf file
+
+        Args:
+            name: path for netcdf output file
+            extra_coords: A dictionary keyed by dimension with the values being
+                a dictionary of var_name: data pairs. Not for multi-dimensional
+                coordinates.
+            clobber: boolean indicating if an existing netcdf file should
+                be overwritten
+            zlib: boolean indicating if the data should be compressed
+                (default is True)
+            complevel: compression level (default is 4)
+            chunk_sizes: dictionary defining chunk sizes for the data
+        """
         if isinstance(variables, dict):
             group_variables = []
             for group, vars in variables.items():
@@ -397,6 +404,12 @@ class NetCdfWrite(Accessor):
 
         self.dataset = nc4.Dataset(name, "w", clobber=clobber)
         self.dataset.setncattr("Description", "pywatershed output data")
+
+        if extra_coords is None:
+            extra_coords = {}
+
+        if global_attrs is None:
+            global_attrs = {}
         for att_key, att_val in global_attrs.items():
             self.dataset.setncattr(att_key, att_val)
 
@@ -405,6 +418,7 @@ class NetCdfWrite(Accessor):
         nsegment_coordinate = False
         one_coordinate = False
         nreservoirs_coordinate = False
+        nnodes_coordinate = False
         for var_name in variables:
             dimension_name = meta_dimensions(var_meta[var_name])
             variable_dimensions[var_name] = dimension_name
@@ -420,6 +434,8 @@ class NetCdfWrite(Accessor):
                 one_coordinate = True
             if "nreservoirs" in dimension_name:
                 nreservoirs_coordinate = True
+            if "nnodes" in dimension_name:
+                nnodes_coordinate = True
 
         if nhru_coordinate:
             hru_ids = coordinates["nhm_id"]
@@ -429,7 +445,6 @@ class NetCdfWrite(Accessor):
                 nhrus = hru_ids.shape[0]
             self.nhrus = nhrus
             self.hru_ids = hru_ids
-
         if nsegment_coordinate:
             segment_ids = coordinates["nhm_seg"]
             if isinstance(segment_ids, (list, tuple)):
@@ -438,12 +453,12 @@ class NetCdfWrite(Accessor):
                 nsegments = segment_ids.shape[0]
             self.nsegments = nsegments
             self.segment_ids = segment_ids
-
         if one_coordinate:
             self.one_ids = coordinates["one"]
-
         if nreservoirs_coordinate:
             self.nreservoirs = len(coordinates["grand_id"])
+        if nnodes_coordinate:
+            self.nnodes = len(coordinates["node_coord"])
 
         # Dimensions
 
@@ -482,15 +497,17 @@ class NetCdfWrite(Accessor):
             self.dataset.createDimension("one", 1)
         if nreservoirs_coordinate:
             self.dataset.createDimension("grand_id", self.nreservoirs)
+        if nnodes_coordinate:
+            self.dataset.createDimension("node_coord", self.nnodes)
 
         if nhru_coordinate:
             self.hruid = self.dataset.createVariable(
-                "nhm_id", "i4", ("nhm_id")
+                "nhm_id", "i4", ("nhm_id",)
             )
             self.hruid[:] = np.array(self.hru_ids, dtype=int)
         if nsegment_coordinate:
             self.segid = self.dataset.createVariable(
-                "nhm_seg", "i4", ("nhm_seg")
+                "nhm_seg", "i4", ("nhm_seg",)
             )
             self.segid[:] = np.array(self.segment_ids, dtype=int)
         if one_coordinate:
@@ -498,9 +515,62 @@ class NetCdfWrite(Accessor):
             self.oneid[:] = np.array(self.one_ids, dtype=int)
         if nreservoirs_coordinate:
             self.grandid = self.dataset.createVariable(
-                "grand_id", "i4", ("grand_id")
+                "grand_id", "i4", ("grand_id",)
             )
             self.grandid[:] = coordinates["grand_id"]
+        if nnodes_coordinate:
+            self.node_coord = self.dataset.createVariable(
+                "node_coord", "i4", ("node_coord",)
+            )
+            self.node_coord[:] = coordinates["node_coord"]
+
+        char_dims_created = []
+        for x_dim, x_data_dict in extra_coords.items():
+            for x_var_name, x_data in x_data_dict.items():
+                type = x_data.dtype
+                type_str = str(type)
+
+                dim = (x_dim,)
+                if "U" in type_str or "S" in type_str:
+                    # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
+                    # S1 gives "char" type in the file whereas another
+                    # number gives "string" type. The former is properly
+                    # handled by xarray
+                    nc_type = "S1"
+
+                    # if it is a string array, convert it to a character array
+                    # I dont understand the particulars here, may need more
+                    # work
+                    if "U" in type_str:
+                        char_array = stringtochar(x_data.astype("S"))
+                    else:
+                        char_array = stringtochar(x_data)
+
+                    char_dim_len = char_array.shape[1]
+                    dim_name = f"char{char_dim_len}"
+                    if dim_name in char_dims_created:
+                        continue
+
+                    dim = (x_dim, dim_name)
+                    _ = self.dataset.createDimension(
+                        dimname=dim_name, size=char_dim_len
+                    )
+
+                    char_dims_created += [dim_name]
+
+                else:
+                    nc_type = np_type_to_netcdf_type_dict[type]
+
+                # <
+                self[x_var_name] = self.dataset.createVariable(
+                    varname=x_var_name, datatype=nc_type, dimensions=dim
+                )
+                if "S1" == nc_type:
+                    self[x_var_name][:, :] = char_array
+                    self[x_var_name]._Encoding = "utf-8"
+
+                else:
+                    self[x_var_name][:] = x_data
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
@@ -517,6 +587,8 @@ class NetCdfWrite(Accessor):
                 spatial_coordinate = "one"
             elif "nreservoirs" in variable_dimensions[var_name]:
                 spatial_coordinate = "grand_id"
+            elif "nnodes" in variable_dimensions[var_name]:
+                spatial_coordinate = "node_coord"
             else:
                 msg = (
                     "Undefined spatial coordinate name in "
@@ -529,19 +601,31 @@ class NetCdfWrite(Accessor):
             else:
                 time_dim = "time"
 
+            var_dims = (time_dim, spatial_coordinate)
             self.variables[var_name] = self.dataset.createVariable(
                 group_var_name,
                 variabletype,
-                (time_dim, spatial_coordinate),
+                var_dims,
                 fill_value=nc4.default_fillvals[variabletype],
                 zlib=zlib,
                 complevel=complevel,
                 chunksizes=tuple(chunk_sizes.values()),
             )
+
             for key, val in var_meta[var_name].items():
                 if isinstance(val, dict):
                     continue
                 self.variables[var_name].setncattr(key, val)
+
+            # https://docs.xarray.dev/en/stable/user-guide/io.html#coordinates
+            var_encoding = []
+            for x_dim, x_data_dict in extra_coords.items():
+                if x_dim in var_dims:
+                    var_encoding += x_data_dict.keys()
+
+            if len(var_encoding):
+                var_encoding = " ".join(var_encoding)
+                self.variables[var_name].setncattr("coordinates", var_encoding)
 
         return
 
@@ -611,3 +695,140 @@ class NetCdfWrite(Accessor):
         self.variables[name][:, :] = data[:, :]
 
         return
+
+
+def subset_netcdf_file(
+    file_name: Union[pl.Path, str],
+    new_file_name: Union[pl.Path, str],
+    start_time: np.datetime64 = None,
+    end_time: np.datetime64 = None,
+    coord_dim_name: str = None,
+    coord_dim_values_keep: np.ndarray = None,
+) -> None:
+    """Subset a netcdf file on to coordinate or dimension values.
+
+    Args:
+      file_name: The name/path of the input file.
+      new_file_name: The name/path of the output file.
+      start_time: Optional start time if a "time" coord is present.
+      end_time: Optional end time if a "time" coord is present.
+      coord_dim_name: Optional coord or dimension name to subset on.
+      coord_dim_values_keep: Optional values on the coord or dimension to
+        retain in teh subset.
+
+    This currently works for 1-D coordinates, more dimensions not tested.
+    Note: This uses the function
+    :func:`pywatershed.utils.netcdf_utils.subset_xr`
+    under the hood, which can be called if you want to subset xr.Datasets in
+    memory. There seem to beseveral edge cases lurking around here with zero
+    length dimensions and xarray's broadcasting rules. This function is a
+    convenience function because xarray's functionality is not ideal for our
+    use cases and is confusing with pitfalls. See
+    https://github.com/pydata/xarray/issues/8796
+    for additional discussion.
+
+    """
+    ds = xr.load_dataset(file_name)
+
+    ds = subset_xr(
+        ds=ds,
+        start_time=start_time,
+        end_time=end_time,
+        coord_dim_name=coord_dim_name,
+        coord_dim_values_keep=coord_dim_values_keep,
+    )
+
+    ds.to_netcdf(new_file_name)
+
+    return
+
+
+def subset_xr(
+    ds: Union[xr.Dataset, xr.DataArray],
+    start_time: np.datetime64 = None,
+    end_time: np.datetime64 = None,
+    coord_dim_name: str = None,
+    coord_dim_values_keep: np.array = None,
+) -> Union[xr.Dataset, xr.DataArray]:
+    """Subset an xarray Dataset or DataArray on to coord or dim values.
+
+    Args:
+      start_time: Optional start time if a "time" coord is present.
+      end_time: Optional end time if a "time" coord is present.
+      coord_dim_name: Optional coord or dimension name to subset on.
+      coord_dim_values_keep: Optional values on the coord or dimension to
+        retain in teh subset.
+
+    This currently works for 1-D coordinates, more dimensions not tested.
+    To work with files rather than memory see
+    :func:`pywatershed.utils.netcdf_utils.subset_netcdf_file`.
+    Note: There seem to be several edge cases lurking around here with zero
+    length dimensions and xarray's broadcasting rules. This function is a
+    convenience function because xarray's functionality is not ideal for our
+    use cases and is confusing with pitfalls. See
+    https://github.com/pydata/xarray/issues/8796 for additional discussion.
+
+    """
+    if isinstance(ds, xr.DataArray):
+        var_dims_orig = ds.dims
+    else:
+        var_dims_orig = {key: ds[key].dims for key in ds.variables}
+
+    if coord_dim_name is not None or coord_dim_values_keep is not None:
+        msg = (
+            "Neither or both of coord_dim_name and coord_dim_values_keep "
+            "must be supplied."
+        )
+        assert (
+            coord_dim_name is not None and coord_dim_values_keep is not None
+        ), msg
+
+    # <
+    if coord_dim_name is not None:
+        msg = f"{coord_dim_values_keep=} not in {coord_dim_name=}"
+        assert ds[coord_dim_name].isin(coord_dim_values_keep).any(), msg
+
+        ds = ds.where(
+            ds[coord_dim_name].isin(coord_dim_values_keep), drop=True
+        )
+
+        if isinstance(ds, xr.DataArray):
+            dims_orig = set(var_dims_orig)
+            dims_new = set(ds.dims)
+            extra_dims = list(dims_new - dims_orig)
+            if len(extra_dims):
+                for dd in extra_dims:
+                    ds = ds.isel({dd: 0}).squeeze()
+        else:
+            for var in list(ds.variables):
+                dims_orig = set(var_dims_orig[var])
+                dims_new = set(ds[var].dims)
+                extra_dims = list(dims_new - dims_orig)
+                # if "scalar" in dims_orig:
+                #     asdf
+                if len(extra_dims):
+                    # a headache to deal with when it broadcasts to a zero
+                    # or non-zero length dimension
+                    dim_dict = dict(zip(ds[var].dims, ds[var].shape))
+                    extra_dim_lens = np.array(
+                        [dim_dict[dd] for dd in extra_dims]
+                    )
+                    if (extra_dim_lens <= 1).all():
+                        ds[var] = ds[var].squeeze(extra_dims)
+                    else:
+                        for dd in extra_dims:
+                            if dd in ds[var].dims:
+                                ds[var] = ds[var].isel({dd: 0}).squeeze()
+
+    # <<<
+    if start_time is not None or end_time is not None:
+        msg = "Neither or both of start_time and end_time must be supplied."
+        assert start_time is not None and end_time is not None, msg
+
+    # <
+    # does sel work correctly here?
+    if start_time is not None:
+        if "time" in ds.dims:
+            ds = ds.sel(time=slice(start_time, end_time))
+
+    return ds

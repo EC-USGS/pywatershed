@@ -1,6 +1,6 @@
 .. currentmodule:: pywatershed
 
-		   
+
 ----------
 Hydrology
 ----------
@@ -13,7 +13,10 @@ Hydrologic model components.
    PRMSCanopy
    PRMSSnow
    PRMSRunoff
+   PRMSRunoffNoDprst
    PRMSSoilzone
+   PRMSSoilzoneNoDprst
    PRMSGroundwater
+   PRMSGroundwaterNoDprst
    PRMSChannel
    Starfit

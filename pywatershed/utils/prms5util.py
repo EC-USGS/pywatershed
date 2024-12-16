@@ -48,7 +48,7 @@ def unit_conversion(data, verbose=False):
             print("numpy array conversion...")
         try:
             keys = list(data.dtype.names)
-        except:
+        except:  # noqa: E722
             keys = []
     else:
         keys = []
@@ -304,9 +304,9 @@ def load_soltab_debug(file_path: pl.Path) -> Tuple[np.ndarray, np.ndarray]:
 
     With `print_debug` set to 5 in the control file, PRMS 5.2.1 prings the
     `soltab_debug` file in the run directory. This function parses it. Both the
-    PRMS 5.2.1 in pywatershed and this routine have been extended to print and ingest
-    not only "soltab_potsw" but "soltab_horad_potsw" and "soltab_sunhrs" as
-    well.
+    PRMS 5.2.1 in pywatershed and this routine have been extended to print and
+    ingest not only "soltab_potsw" but "soltab_horad_potsw" and "soltab_sunhrs"
+    as well.
 
     Args:
         file_path: a pathlib.Path object representing the file

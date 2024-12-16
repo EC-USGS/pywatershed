@@ -1,2 +1,2 @@
-MF6_REF=feat-snf
-MF6_REMOTE=langevin-usgs/modflow6
+MF6_REF=develop
+MF6_REMOTE=MODFLOW-USGS/modflow6

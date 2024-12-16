@@ -252,7 +252,7 @@ class CsvFile:
         """
 
         def str2date(x):
-            return dt.datetime.strptime(x.decode("utf-8"), "%Y-%m-%d")
+            return dt.datetime.strptime(x, "%Y-%m-%d")
 
         all_data = []
         ntimes = 0
@@ -267,7 +267,7 @@ class CsvFile:
                         delimiter=",",
                         converters={0: str2date},
                     )
-                except:
+                except:  # noqa: E722
                     raise IOError(f"numpy could not parse...'{path}'")
 
             if self._variables is None:

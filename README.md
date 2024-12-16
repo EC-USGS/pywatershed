@@ -4,7 +4,7 @@
 [![codecov-badge](https://codecov.io/gh/ec-usgs/pywatershed/branch/main/graph/badge.svg)](https://codecov.io/gh/ec-usgs/pywatershed)
 [![Documentation Status](https://readthedocs.org/projects/pywatershed/badge/?version=latest)](https://pywatershed.readthedocs.io/en/latest/?badge=latest)
 [![asv](http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat)](https://github.com/ec-usgs/pywatershed)
-[![Formatted with black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/python/black)
+[![Formatted with Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 [![Available on pypi](https://img.shields.io/pypi/v/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
 [![PyPI Status](https://img.shields.io/pypi/status/pywatershed.svg)](https://pypi.python.org/pypi/pywatershed)
@@ -12,6 +12,8 @@
 
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/version.svg)](https://anaconda.org/conda-forge/pywatershed)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/pywatershed/badges/platforms.svg)](https://anaconda.org/conda-forge/pywatershed)
+
+[![DOI:10.5066/P13EWPEV](https://img.shields.io/badge/DOI-10.5066/P13EWPEV-b4a9fe.svg)](https://doi.org/10.5066/P13EWPEV)
 
 [![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
 
@@ -24,6 +26,7 @@
 - [Installation](#installation)
 - [Getting started / Example notebooks](#getting-started--example-notebooks)
 - [Community engagement](#community-engagement)
+- [How to Cite](#how-to-cite)
 - [Disclaimer](#disclaimer)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -51,7 +54,7 @@ For more information on the goals and status of pywatershed, please see the [pyw
 
 ## Installation
 
-`pywatershed` uses Python 3.9 or 3.10.
+`pywatershed` uses Python 3.10 or 3.11.
 
 The `pywatershed` package is [available on
 PyPI](https://pypi.org/project/pywatershed/) but installation of all
@@ -149,6 +152,8 @@ guidelines.
 
 Thank you for your interest.
 
+## How to Cite
+McCreight, J., Langevin, C. D., Hughes, J. D., & Bonelli, W. P. (2024). pywatershed (Version 2.0.0) [Computer software]. [https://doi.org/10.5066/P13EWPEV](https://doi.org/10.5066/P13EWPEV)
 
 ## Disclaimer
 

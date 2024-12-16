@@ -110,7 +110,10 @@ class PRMSSnow(ConservativeProcess):
         net_snow: Snow that falls through canopy for each HRU
         transp_on: Flag indicating whether transpiration is occurring
             (0=no;1=yes)
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -136,7 +139,7 @@ class PRMSSnow(ConservativeProcess):
         net_rain: adaptable,
         net_snow: adaptable,
         transp_on: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ) -> "PRMSSnow":

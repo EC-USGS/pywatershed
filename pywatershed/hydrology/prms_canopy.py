@@ -11,7 +11,6 @@ from ..constants import (
     CovType,
     HruType,
     dnearzero,
-    nan,
     nearzero,
     numba_num_threads,
     zero,
@@ -63,7 +62,10 @@ class PRMSCanopy(ConservativeProcess):
         hru_ppt: Precipitation on each HRU
         hru_rain: Rain on each HRU
         hru_snow: Snow on each HRU
-        budget_type: one of [None, "warn", "error"]
+        budget_type: one of ["defer", None, "warn", "error"] with "defer" being
+            the default and defering to control.options["budget_type"] when
+            available. When control.options["budget_type"] is not avaiable,
+            budget_type is set to "warn".
         calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
@@ -82,7 +84,8 @@ class PRMSCanopy(ConservativeProcess):
         hru_rain: adaptable,
         hru_snow: adaptable,
         potet: adaptable,
-        budget_type: Literal[None, "warn", "error"] = None,
+        pptmix: adaptable,
+        budget_type: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["fortran", "numba", "numpy"] = None,
         verbose: bool = None,
     ):
@@ -130,6 +133,7 @@ class PRMSCanopy(ConservativeProcess):
             "hru_rain",
             "hru_snow",
             "potet",
+            "pptmix",
         )
 
     @staticmethod
@@ -140,7 +144,7 @@ class PRMSCanopy(ConservativeProcess):
             "net_snow": zero,
             "intcp_changeover": zero,
             "intcp_evap": zero,
-            "intcp_form": nan,  # = RAIN bool would have to match RAIN/SNOW
+            "intcp_form": 0,  # = RAIN bool would have to match RAIN/SNOW
             "intcp_stor": zero,
             "intcp_transp_on": 0,  # could make boolean
             "hru_intcpevap": zero,
@@ -316,6 +320,7 @@ class PRMSCanopy(ConservativeProcess):
                 self.intcp_stor[:],
                 self.net_rain[:],
                 self.net_snow[:],
+                self.pptmix[:],
                 self.net_ppt[:],
                 self.hru_intcpstor[:],
                 self.hru_intcpevap[:],
@@ -338,6 +343,7 @@ class PRMSCanopy(ConservativeProcess):
                 net_ppt=self.net_ppt,
                 net_rain=self.net_rain,
                 net_snow=self.net_snow,
+                pptmix=self.pptmix,
                 pk_ice_prev=self.pk_ice_prev,
                 freeh2o_prev=self.freeh2o_prev,
                 potet=self.potet,
@@ -350,14 +356,14 @@ class PRMSCanopy(ConservativeProcess):
                 hru_type=self._hru_type,
                 nearzero=nearzero,
                 dnearzero=dnearzero,
-                BARESOIL=np.int32(BARESOIL),
-                GRASSES=np.int32(GRASSES),
-                LAND=np.int32(LAND),
-                LAKE=np.int32(LAKE),
-                RAIN=np.int32(RAIN),
-                SNOW=np.int32(SNOW),
-                OFF=np.int32(OFF),
-                ACTIVE=np.int32(ACTIVE),
+                baresoil=np.int32(BARESOIL),
+                grasses=np.int32(GRASSES),
+                land=np.int32(LAND),
+                lake=np.int32(LAKE),
+                rain=np.int32(RAIN),
+                snow=np.int32(SNOW),
+                off=np.int32(OFF),
+                active=np.int32(ACTIVE),
                 intercept=self._intercept,
             )
 
@@ -368,47 +374,49 @@ class PRMSCanopy(ConservativeProcess):
                 self.intcp_stor[:],
                 self.net_rain[:],
                 self.net_snow[:],
+                self.pptmix[:],
                 self.net_ppt[:],
                 self.hru_intcpstor[:],
                 self.hru_intcpevap[:],
                 self.intcp_changeover[:],
                 self.intcp_transp_on[:],
             ) = _calculate_fortran(
-                self.cov_type,
-                self.covden_sum,
-                self.covden_win,
-                self.hru_intcpstor,
-                self.hru_intcpevap,
-                self.hru_ppt,
-                self.hru_rain,
-                self.hru_snow,
-                self.intcp_changeover,
-                self.intcp_evap,
-                self.intcp_stor,
-                self.intcp_transp_on,
-                self.net_ppt,
-                self.net_rain,
-                self.net_snow,
-                self.pk_ice_prev,
-                self.freeh2o_prev,
-                self.potet,
-                self.potet_sublim,
-                self.snow_intcp,
-                self.srain_intcp,
-                self.transp_on,
-                self.wrain_intcp,
-                time_length,
-                self._hru_type,
-                nearzero,
-                dnearzero,
-                np.int32(BARESOIL),
-                np.int32(GRASSES),
-                np.int32(LAND),
-                np.int32(LAKE),
-                np.int32(RAIN),
-                np.int32(SNOW),
-                np.int32(OFF),
-                np.int32(ACTIVE),
+                cov_type=self.cov_type,
+                covden_sum=self.covden_sum,
+                covden_win=self.covden_win,
+                hru_intcpstor=self.hru_intcpstor,
+                hru_intcpevap=self.hru_intcpevap,
+                hru_ppt=self.hru_ppt,
+                hru_rain=self.hru_rain,
+                hru_snow=self.hru_snow,
+                intcp_changeover=self.intcp_changeover,
+                intcp_evap=self.intcp_evap,
+                intcp_stor=self.intcp_stor,
+                intcp_transp_on=self.intcp_transp_on,
+                net_ppt=self.net_ppt,
+                net_rain=self.net_rain,
+                net_snow=self.net_snow,
+                pptmix=self.pptmix,
+                pk_ice_prev=self.pk_ice_prev,
+                freeh2o_prev=self.freeh2o_prev,
+                potet=self.potet,
+                potet_sublim=self.potet_sublim,
+                snow_intcp=self.snow_intcp,
+                srain_intcp=self.srain_intcp,
+                transp_on=self.transp_on,
+                wrain_intcp=self.wrain_intcp,
+                time_length=time_length,
+                hru_type=self._hru_type,
+                nearzero=nearzero,
+                dnearzero=dnearzero,
+                baresoil=np.int32(BARESOIL),
+                grasses=np.int32(GRASSES),
+                land=np.int32(LAND),
+                lake=np.int32(LAKE),
+                rain=np.int32(RAIN),
+                snow=np.int32(SNOW),
+                off=np.int32(OFF),
+                active=np.int32(ACTIVE),
             )
 
         # <
@@ -436,6 +444,7 @@ class PRMSCanopy(ConservativeProcess):
         net_ppt,
         net_rain,
         net_snow,
+        pptmix,
         pk_ice_prev,
         freeh2o_prev,
         potet,
@@ -448,14 +457,14 @@ class PRMSCanopy(ConservativeProcess):
         hru_type,
         nearzero,
         dnearzero,
-        BARESOIL,
-        GRASSES,
-        LAND,
-        LAKE,
-        RAIN,
-        SNOW,
-        OFF,
-        ACTIVE,
+        baresoil,
+        grasses,
+        land,
+        lake,
+        rain,
+        snow,
+        off,
+        active,
         intercept,
     ):
         # TODO: would be nice to alphabetize the arguments
@@ -465,7 +474,7 @@ class PRMSCanopy(ConservativeProcess):
         #       Keep the f90 call signature consistent with the args in
         #       python/numba.
 
-        intcp_form = np.full_like(hru_rain, np.nan, dtype="int32")
+        intcp_form = np.full_like(hru_rain, -9999, dtype="int32")
         for i in prange(nhru):
             netrain = hru_rain[i]
             netsnow = hru_snow[i]
@@ -568,7 +577,7 @@ class PRMSCanopy(ConservativeProcess):
                             netsnow = 0.0
                             # todo: deal with newsnow and pptmix?
                             # Newsnow(i) = OFF
-                            # Pptmix(i) = OFF
+                            pptmix[i] = 0
 
             # todo: canopy application of irrigation water based on irr_type
 
@@ -629,6 +638,7 @@ class PRMSCanopy(ConservativeProcess):
             intcp_stor,
             net_rain,
             net_snow,
+            pptmix,
             net_ppt,
             hru_intcpstor,
             hru_intcpevap,

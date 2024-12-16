@@ -1,5 +1,6 @@
 import pathlib as pl
 import shutil
+from copy import deepcopy
 from itertools import product
 
 import numpy as np
@@ -10,24 +11,26 @@ import pywatershed
 from pywatershed.base.control import Control
 from pywatershed.base.model import Model
 from pywatershed.parameters import PrmsParameters
+from pywatershed.utils.time_utils import datetime_doy as doy
 
 # test for a few timesteps a model with both unit/cell and global balance
 # budgets
 
+# This probably dosent need varied over simulation
 
 n_time_steps = 10
 
 
-# This probably dosent need varied over domain
 @pytest.fixture(scope="function")
-def params(domain):
-    return PrmsParameters.load(domain["param_file"])
+def params(simulation, control):
+    param_file = simulation["dir"] / control.options["parameter_file"]
+    return PrmsParameters.load(param_file)
 
 
 @pytest.fixture(scope="function")
-def control(domain):
+def control(simulation):
     control = Control.load_prms(
-        domain["control_file"], warn_unused_options=False
+        simulation["control_file"], warn_unused_options=False
     )
     control.edit_n_time_steps(n_time_steps)
     control.options["budget_type"] = "error"
@@ -40,7 +43,7 @@ def control(domain):
 # optional variables to processes
 # optional variables to budgets
 
-check_vars = {
+check_vars_dict = {
     "PRMSSolarGeometry": [
         "soltab_horad_potsw",
         "soltab_potsw",
@@ -62,6 +65,12 @@ check_vars = {
     ],
 }
 
+
+@pytest.fixture(scope="function")
+def check_vars():
+    return deepcopy(check_vars_dict)
+
+
 budget_sum_vars_all = ["inputs_sum", "outputs_sum", "storage_changes_sum"]
 check_budget_sum_vars_params = [False, True, "some"]
 
@@ -72,7 +81,9 @@ check_budget_sum_vars_params = [False, True, "some"]
     check_budget_sum_vars_params,
     ids=[str(ii) for ii in check_budget_sum_vars_params],
 )
-def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
+def test_process_budgets(
+    simulation, control, params, tmp_path, budget_sum_param, check_vars
+):
     tmp_dir = pl.Path(tmp_path)
     # print(tmp_dir)
     model_procs = [
@@ -82,8 +93,12 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
         pywatershed.PRMSChannel,
     ]
 
+    if control.options["streamflow_module"] == "strmflow":
+        _ = model_procs.remove(pywatershed.PRMSChannel)
+        del check_vars["PRMSChannel"]
+
     # setup input_dir with symlinked prms inputs and outputs
-    domain_output_dir = domain["prms_output_dir"]
+    domain_output_dir = simulation["output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     control.options["input_dir"] = input_dir
@@ -168,12 +183,12 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
             for bb in check_budget_sum_vars:
                 if tt == 0:
                     # use the output data to figure out the shape
-                    check_dict[pp][bb] = np.zeros(
-                        (
-                            n_time_steps,
-                            model.processes[pp].budget[f"_{bb}"].shape[0],
-                        )
-                    )
+                    shp = model.processes[pp].budget[f"_{bb}"].shape
+                    if len(shp):
+                        shp = shp[0]
+                    else:
+                        shp = 1
+                    check_dict[pp][bb] = np.zeros((n_time_steps, shp))
 
                 check_dict[pp][bb][tt, :] = model.processes[pp].budget[
                     f"_{bb}"
@@ -184,10 +199,15 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
     # read the data back in
     for pp, pp_vars in check_vars.items():
         for vv in pp_vars:
-            nc_data = xr.open_dataset(tmp_dir / f"{vv}.nc")[vv]
+            nc_data = xr.open_dataarray(tmp_dir / f"{vv}.nc")
             if vv in pywatershed.PRMSSolarGeometry.get_variables():
+                # these are on doy-basis in output, not a timeseries
+                # start_ind
+                start_doy = doy(control.start_time)
+                start_ind = start_doy - 1
+                end_ind = start_ind + n_time_steps
                 assert np.allclose(
-                    check_dict[pp][vv], nc_data[0:n_time_steps, :]
+                    check_dict[pp][vv], nc_data[start_ind:end_ind, :]
                 )
             else:
                 assert np.allclose(check_dict[pp][vv], nc_data)
@@ -212,7 +232,8 @@ def test_process_budgets(domain, control, params, tmp_path, budget_sum_param):
 
 
 separate_outputs = [False, True]
-output_vars = [None, [var for kk, vv in check_vars.items() for var in vv]]
+
+output_vars = [None, [var for kk, vv in check_vars_dict.items() for var in vv]]
 
 
 @pytest.fixture(
@@ -224,7 +245,7 @@ def sep_vars(request):
 
 
 def test_separate_together_var_list(
-    domain, control, params, tmp_path, sep_vars
+    simulation, control, params, tmp_path, sep_vars, check_vars
 ):
     separate = sep_vars[0]
     output_vars = sep_vars[1]
@@ -238,8 +259,12 @@ def test_separate_together_var_list(
         pywatershed.PRMSChannel,
     ]
 
+    if control.options["streamflow_module"] == "strmflow":
+        _ = model_procs.remove(pywatershed.PRMSChannel)
+        del check_vars["PRMSChannel"]
+
     # setup input_dir with symlinked prms inputs and outputs
-    domain_output_dir = domain["prms_output_dir"]
+    domain_output_dir = simulation["output_dir"]
     input_dir = tmp_path / "input"
     input_dir.mkdir()
     control.options["input_dir"] = input_dir

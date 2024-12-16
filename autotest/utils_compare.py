@@ -14,7 +14,6 @@ def assert_allclose(
     equal_nan: bool = True,
     strict: bool = False,
     also_check_w_np: bool = True,
-    error_message: str = "Comparison unsuccessful (default message)",
     print_max_errs: bool = False,
     var_name: str = "",
 ):
@@ -53,6 +52,8 @@ def assert_allclose(
         actual_nan = np.where(np.isnan(actual), True, False)
         desired_nan = np.where(np.isnan(desired), True, False)
         assert (actual_nan == desired_nan).all()
+        if len(actual_nan) == len(actual):
+            return
 
     abs_diff = abs(actual - desired)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -70,6 +71,7 @@ def assert_allclose(
         print(f"{var_name}{sp}max rel err: {rel_abs_diff.max()}")
 
     assert close.all()
+    return
 
 
 def compare_in_memory(
@@ -80,11 +82,13 @@ def compare_in_memory(
     equal_nan: bool = True,
     strict: bool = False,
     also_check_w_np: bool = True,
-    error_message: str = None,
     skip_missing_ans: bool = False,
+    fail_after_all_vars: bool = True,
+    verbose: bool = False,
 ):
     # TODO: docstring
 
+    fail_list = []
     for var in process.get_variables():
         if var not in answers.keys():
             if skip_missing_ans:
@@ -93,23 +97,56 @@ def compare_in_memory(
                 msg = f"Variable '{var}' not found in the answers provided."
                 raise KeyError(msg)
 
-        answers[var].advance()
+        if verbose:
+            print(f"checking {var}")
+
+        if not isinstance(answers[var], np.ndarray):
+            answers[var].advance()
 
         if isinstance(process[var], pws.base.timeseries.TimeseriesArray):
             actual = process[var].current
         else:
             actual = process[var]
 
-        assert_allclose(
-            actual,
-            answers[var].current.data,
-            atol=atol,
-            rtol=rtol,
-            equal_nan=equal_nan,
-            strict=strict,
-            also_check_w_np=also_check_w_np,
-            error_message=error_message,
-        )
+        if isinstance(answers[var], pws.base.adapter.Adapter):
+            desired = answers[var].current.data
+        else:
+            desired = answers[var]
+
+        if not fail_after_all_vars:
+            assert_allclose(
+                actual,
+                desired,
+                atol=atol,
+                rtol=rtol,
+                equal_nan=equal_nan,
+                strict=strict,
+                also_check_w_np=also_check_w_np,
+                var_name=var,
+            )
+
+        else:
+            try:
+                assert_allclose(
+                    actual,
+                    desired,
+                    atol=atol,
+                    rtol=rtol,
+                    equal_nan=equal_nan,
+                    strict=strict,
+                    also_check_w_np=also_check_w_np,
+                    var_name=var,
+                )
+                if verbose:
+                    print(f"compare_netcdfs all close for variable: {var}")
+
+            except AssertionError:
+                fail_list += [var]
+                if verbose:
+                    print(f"compare_netcdfs NOT all close for variable: {var}")
+
+    if len(fail_list) > 0:
+        assert False, f"compare_netcdfs failed for variables: {fail_list}"
 
 
 def compare_netcdfs(
@@ -121,12 +158,14 @@ def compare_netcdfs(
     equal_nan: bool = True,
     strict: bool = False,
     also_check_w_np: bool = True,
-    error_message: str = None,
     print_var_max_errs: bool = False,
+    fail_after_all_vars: bool = True,
+    verbose: bool = False,
 ):
     # TODO: docstring
     # TODO: improve error message
     # TODO: collect failures in a try and report at end
+    fail_list = []
     for var in var_list:
         answer = xr.open_dataarray(
             answers_dir / f"{var}.nc", decode_timedelta=False
@@ -135,18 +174,41 @@ def compare_netcdfs(
             results_dir / f"{var}.nc", decode_timedelta=False
         )
 
-        if error_message is None:
-            error_message = f"Comparison of variable '{var}' was unsuccessful"
+        if not fail_after_all_vars:
+            assert_allclose(
+                actual=result.values,
+                desired=answer.values,
+                rtol=rtol,
+                atol=atol,
+                equal_nan=equal_nan,
+                strict=strict,
+                also_check_w_np=also_check_w_np,
+                print_max_errs=print_var_max_errs,
+                var_name=var,
+            )
+            if verbose:
+                print(f"compare_netcdfs all close for variable: {var}")
 
-        assert_allclose(
-            actual=result.values,
-            desired=answer.values,
-            rtol=rtol,
-            atol=atol,
-            equal_nan=equal_nan,
-            strict=strict,
-            also_check_w_np=also_check_w_np,
-            error_message=error_message,
-            print_max_errs=print_var_max_errs,
-            var_name=var,
-        )
+        else:
+            try:
+                assert_allclose(
+                    actual=result.values,
+                    desired=answer.values,
+                    rtol=rtol,
+                    atol=atol,
+                    equal_nan=equal_nan,
+                    strict=strict,
+                    also_check_w_np=also_check_w_np,
+                    print_max_errs=print_var_max_errs,
+                    var_name=var,
+                )
+                if verbose:
+                    print(f"compare_netcdfs all close for variable: {var}")
+
+            except AssertionError:
+                fail_list += [var]
+                if verbose:
+                    print(f"compare_netcdfs NOT all close for variable: {var}")
+
+    if len(fail_list) > 0:
+        assert False, f"compare_netcdfs failed for variables: {fail_list}"

@@ -18,9 +18,12 @@ process_order_nhm = [
     "PRMSCanopy",
     "PRMSSnow",
     "PRMSRunoff",
+    "PRMSRunoffNoDprst",
     "PRMSSoilzone",
+    "PRMSSoilzoneNoDprst",
     "PRMSEt",
     "PRMSGroundwater",
+    "PRMSGroundwaterNoDprst",
     "PRMSChannel",
 ]
 
@@ -273,7 +276,7 @@ class Model:
     >>> control_file.unlink()
     >>> model_dict_file.unlink()
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -283,7 +286,7 @@ class Model:
         find_input_files: bool = True,
         write_control: Union[bool, str, pl.Path] = False,
     ):
-        self.control = deepcopy(control)
+        self.control = control
         self.parameters = parameters
 
         # This is for backwards compatibility: make a method?
@@ -455,24 +458,29 @@ class Model:
         for proc_name in self.model_dict[self._order_name]:
             # establish the args for init
             proc_specs = self.model_dict[proc_name]
+            proc_specs["control"] = self.control
 
             dis = None
             if "dis" in proc_specs:
-                dis = self.model_dict[proc_specs["dis"]]
+                if proc_specs["dis"] is None:
+                    dis = None
+                else:
+                    dis = self.model_dict[proc_specs["dis"]]
+
+            proc_specs["discretization"] = dis
 
             process_inputs = {
                 input: None
                 for input in self._proc_dict[proc_name].get_inputs()
             }
+            proc_specs = proc_specs | process_inputs
 
-            args = {
-                "control": self.control,
-                "discretization": dis,
-                "parameters": proc_specs["parameters"],
-                **process_inputs,
+            not_args = ["class", "dis"]
+            proc_args = {
+                kk: vv for kk, vv in proc_specs.items() if kk not in not_args
             }
 
-            self.processes[proc_name] = self._proc_dict[proc_name](**args)
+            self.processes[proc_name] = self._proc_dict[proc_name](**proc_args)
 
         # <
         return

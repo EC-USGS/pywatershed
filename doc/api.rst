@@ -16,6 +16,8 @@ API Summary
 
 .. include:: api/hydrology.rst
 
+.. include:: api/flow_graph.rst
+
 .. include:: api/model.rst
 
 .. include:: api/base.rst

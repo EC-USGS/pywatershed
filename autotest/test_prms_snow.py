@@ -1,12 +1,12 @@
 import pathlib as pl
 
 import pytest
+from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.hydrology.prms_snow import PRMSSnow
 from pywatershed.parameters import Parameters, PrmsParameters
-from utils_compare import compare_in_memory, compare_netcdfs
 
 # compare in memory (faster) or full output files? or both!
 do_compare_output_files = False
@@ -18,22 +18,25 @@ params = ("params_sep", "params_one")
 
 
 @pytest.fixture(scope="function")
-def control(domain):
-    return Control.load_prms(domain["control_file"], warn_unused_options=False)
+def control(simulation):
+    return Control.load_prms(
+        simulation["control_file"], warn_unused_options=False
+    )
 
 
 @pytest.fixture(scope="function")
-def discretization(domain):
-    dis_hru_file = domain["dir"] / "parameters_dis_hru.nc"
+def discretization(simulation):
+    dis_hru_file = simulation["dir"] / "parameters_dis_hru.nc"
     return Parameters.from_netcdf(dis_hru_file, encoding=False)
 
 
 @pytest.fixture(scope="function", params=params)
-def parameters(domain, request):
+def parameters(simulation, control, request):
     if request.param == "params_one":
-        params = PrmsParameters.load(domain["param_file"])
+        param_file = simulation["dir"] / control.options["parameter_file"]
+        params = PrmsParameters.load(param_file)
     else:
-        param_file = domain["dir"] / "parameters_PRMSSnow.nc"
+        param_file = simulation["dir"] / "parameters_PRMSSnow.nc"
         params = PrmsParameters.from_netcdf(param_file)
 
     return params
@@ -42,7 +45,7 @@ def parameters(domain, request):
 @pytest.mark.xfail
 @pytest.mark.parametrize("calc_method", calc_methods)
 def test_compare_prms(
-    domain, control, discretization, parameters, tmp_path, calc_method
+    simulation, control, discretization, parameters, tmp_path, calc_method
 ):
     tmp_path = pl.Path(tmp_path)
 
@@ -88,7 +91,7 @@ def test_compare_prms(
         "through_rain",
     ]
 
-    output_dir = domain["prms_output_dir"]
+    output_dir = simulation["output_dir"]
 
     input_variables = {}
     for key in PRMSSnow.get_inputs():
@@ -105,7 +108,7 @@ def test_compare_prms(
     )
 
     if do_compare_output_files:
-        nc_parent = tmp_path / domain["domain_name"]
+        nc_parent = tmp_path / simulation["name"]
         snow.initialize_netcdf(nc_parent)
 
     if do_compare_in_memory:
@@ -122,6 +125,8 @@ def test_compare_prms(
         snow.calculate(1.0)
         snow.output()
         if do_compare_in_memory:
+            for var in answers.values():
+                var.advance()
             compare_in_memory(
                 snow, answers, atol=atol, rtol=rtol, skip_missing_ans=True
             )
@@ -131,7 +136,7 @@ def test_compare_prms(
     if do_compare_output_files:
         compare_netcdfs(
             comparison_var_names,
-            tmp_path / domain["domain_name"],
+            tmp_path / simulation["name"],
             output_dir,
             atol=atol,
             rtol=rtol,

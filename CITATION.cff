@@ -3,7 +3,7 @@ message: If you use this software, please cite the software itself.
 type: software
 title: pywatershed
 version: 2.0.0
-date-released: '2024-11-14'
+date-released: '2024-12-16'
 abstract: pywatershed is a Python package for hydrologic modeling.
 repository-artifact: https://pypi.org/project/pywatershed
 repository-code: https://github.com/ec-usgs/pywatershed

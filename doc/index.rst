@@ -66,7 +66,7 @@ and the `extended release notes <https://ec-usgs.github.io/pywatershed/2023/12/1
 for version 1.0.0.
 
 ===================================
-Version: 2.0.0 (2024-11-14)
+Version: 2.0.0 (2024-12-16)
 ===================================
 With pywatershed version 2.0.0, we introduce the :class:`FlowGraph` capabilities that allow
 users to combine different kinds flow solutions in arbitrary order on a "flow graph". 
@@ -82,7 +82,7 @@ into 1-D diffusive wave simulations in MODFLOW 6's development branch using :cla
 
 For more information on version 2.0.0 see the
 `release notes <https://github.com/EC-USGS/pywatershed/releases/tag/2.0.0>`_
-and the `extended release notes <https://ec-usgs.github.io/pywatershed/2024/11/14/v2-0-0-overview>`_.
+and the `extended release notes <https://ec-usgs.github.io/pywatershed/2024/12/16/v2-0-0-overview>`_.
 
 ============================================
 Upcoming development

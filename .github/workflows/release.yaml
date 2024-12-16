@@ -41,7 +41,7 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
-          echo "PYWS_FORTRAN=false >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=false" >> $GITHUB_ENV
           cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 
       - name: Setup gfortran

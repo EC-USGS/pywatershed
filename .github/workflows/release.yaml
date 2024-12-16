@@ -18,6 +18,7 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+
     steps:
 
       - name: Free Disk Space (Ubuntu)
@@ -33,9 +34,15 @@ jobs:
           swap-storage: true
 
       - name: Checkout release branch
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+          echo "PYWS_FORTRAN=false >> $GITHUB_ENV
+          cat .mf6_ci_ref_remote  >> $GITHUB_ENV
 
       - name: Setup gfortran
         uses: fortran-lang/setup-fortran@v1
@@ -44,8 +51,9 @@ jobs:
           version: 11
 
       - name: Install Dependencies via Micromamba
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v1.9.0
         with:
+          micromamba-version: '1.5.10-0'
           environment-file: environment.yml
           cache-environment: true
           cache-downloads: true
@@ -65,12 +73,10 @@ jobs:
         run: |
           python update_flopy.py
 
-      - name: Set environment variables
-        run: |
-          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
-          echo "PYWS_FORTRAN=true" >> $GITHUB_ENV
-          echo 'SETUPTOOLS_ENABLE_FEATURES="legacy-editable"' >> $GITHUB_ENV
-          cat .mf6_ci_ref_remote  >> $GITHUB_ENV
+      - name: Install mf6 nightly build binaries
+        uses: modflowpy/install-modflow-action@v1
+        with:
+          repo: modflow6-nightly-build
 
       - name: Install pywatershed
         run: |
@@ -81,72 +87,164 @@ jobs:
           pip -V
           pip list
 
-      - name: hru_1 - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+      - name: Get GIS files for tests
+        run: |
+          python pywatershed/utils/gis_files.py
+
+      - name: domainless - run tests not requiring domain data
+        working-directory: autotest
+        run: pytest
+          -m domainless
+          -n=auto
+          -vv
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_domainless.xml
+
+      - name: sagehen_5yr_no_cascades - generate and manage test data domain, run PRMS and convert csv output to NetCDF
         working-directory: autotest
         run: |
           python generate_test_data.py \
-            -n=auto --domain=hru_1 --remove_prms_csvs --remove_prms_output_dirs
+            -n=auto --domain=sagehen_5yr --control_pattern=sagehen_no_cascades.control \
+            --remove_prms_csvs --remove_prms_output_dirs
 
-      - name: hru_1 - list netcdf input files
+      - name: sagehen_5yr_no_cascades - list netcdf input files
         working-directory: test_data
         run: |
-          find hru_1/output/ -name '*.nc'
+          find sagehen_5yr/output_no_cascades -name '*.nc'
 
-      - name: hru_1 - pywatershed tests
+      - name: sagehen_5yr_no_cascades - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -rs
+          -n=auto
+          -m "not domainless"
+          --domain=sagehen_5yr
+          --control_pattern=sagehen_no_cascades.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_sagehen_5yr_no_cascades.xml
+
+      - name: hru_1_nhm - generate and manage test data domain, run PRMS and convert csv output to NetCDF
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=hru_1 --control_pattern=nhm.control \
+            --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: hru_1_nhm - list netcdf input files
+        working-directory: test_data
+        run: |
+          find hru_1/output -name '*.nc'
+
+      - name: hru_1_nhm - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -rs
+          -n=auto
+          -m "not domainless"
+          --domain=hru_1
+          --control_pattern=nhm.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_hru_1_nhm.xml
+
+      - name: drb_2yr with and without dprst and obsin - generate and manage test data
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=drb_2yr \
+            --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: drb_2yr_nhm - list netcdf input files
+        working-directory: test_data
+        run: |
+          find drb_2yr/output -name '*.nc'
+
+      - name: drb_2yr_no_dprst - list netcdf input files
+        working-directory: test_data
+        run: |
+          find drb_2yr/output_no_dprst -name '*.nc'
+
+      - name: drb_2yr_nhm - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          -vv
+          -rs
+          -n=auto
+          -m "not domainless"
+          --domain=drb_2yr
+          --control_pattern=nhm.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_nhm.xml
+
+      # Specific tests not redundant with dprst
+      - name: drb_2yr_no_dprst - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          test_prms_runoff.py
+          test_prms_soilzone.py
+          test_prms_groundwater.py
+          test_prms_above_snow.py
+          test_prms_below_snow.py
+          -vv
+          -rs
+          -n=auto
+          -m "not domainless"
+          --domain=drb_2yr
+          --control_pattern=no_dprst
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_no_dprst.xml
+
+      # Specific tests not redundant with dprst
+      - name: drb_2yr_obsin - pywatershed tests
+        working-directory: autotest
+        run: pytest
+          test_obsin_flow_node.py
+          -vv
+          -n=0
+          -m "not domainless"
+          --domain=drb_2yr
+          --control_pattern=nhm_obsin.control
+          --durations=0
+          --cov=pywatershed
+          --cov-report=xml
+          --junitxml=pytest_drb_2yr_no_dprst.xml
+
+
+      - name: ucb_2yr_nhm - generate and manage test data
+        working-directory: autotest
+        run: |
+          python generate_test_data.py \
+            -n=auto --domain=ucb_2yr --control_pattern=nhm.control \
+            --remove_prms_csvs --remove_prms_output_dirs
+
+      - name: ucb_2yr_nhm - list netcdf input files
+        working-directory: test_data
+        run: |
+          find ucb_2yr/output -name '*.nc'
+
+      - name: ucb_2yr_nhm - pywatershed tests
         working-directory: autotest
         run: pytest
           -vv
           -n=auto
-          --domain_yaml=../test_data/hru_1/hru_1.yaml
+          -m "not domainless"
+          --domain=ucb_2yr
+          --control_pattern=nhm.control
           --durations=0
           --cov=pywatershed
           --cov-report=xml
-          --junitxml=pytest_hru_1.xml
-
-
-      - name: drb_2yr - generate and manage test data
-        working-directory: autotest
-        run: |
-          python generate_test_data.py \
-            -n=auto --domain=drb_2yr --remove_prms_csvs --remove_prms_output_dirs
-
-      - name: drb_2yr - list netcdf input files
-        working-directory: test_data
-        run: |
-          find drb_2yr/output/ -name '*.nc'
-
-      - name: drb_2yr - pywatershed tests
-        working-directory: autotest
-        run: pytest
-          -vv
-          -n=auto
-          --domain_yaml=../test_data/drb_2yr/drb_2yr.yaml
-          --durations=0
-          --cov=pywatershed
-          --cov-report=xml
-          --junitxml=pytest_drb_2yr.xml
-
-      - name: ucb_2yr - generate and manage test data
-        working-directory: autotest
-        run: |
-          python generate_test_data.py \
-            -n=auto --domain=ucb_2yr --remove_prms_csvs --remove_prms_output_dirs
-
-      - name: ucb_2yr - list netcdf input files
-        working-directory: test_data
-        run: |
-          find ucb_2yr/output/ -name '*.nc'
-
-      - name: ucb_2yr - pywatershed tests
-        working-directory: autotest
-        run: pytest
-          -vv
-          -n=auto
-          --domain_yaml=../test_data/ucb_2yr/ucb_2yr.yaml
-          --durations=0
-          --cov=pywatershed
-          --cov-report=xml
-          --junitxml=pytest_ucb_2yr.xml
+          --junitxml=pytest_ucb_2yr_nhm.xml
 
       - name: Update version
         id: version
@@ -233,7 +331,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.10
           cache: 'pip'
           cache-dependency-path: pyproject.toml
 

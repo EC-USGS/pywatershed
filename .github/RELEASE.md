@@ -44,14 +44,16 @@ To release a new version:
    `v{major}.{minor}.{patch}` ([semantic version](https://semver.org/) number
    with a leading 'v'). For instance, for a minor release, if this repo is an
    `upstream` remote and one's local `develop` is up to date with upstream
-   `develop`, then from `develop` run `git switch -c vx.y.z`. 
+   `develop`, then from `develop` run `git switch -c vx.y.z`.
 
 1. If this is a patch release, make changes/fixes locally. If this is a major or
    minor release, no changes may be needed. In either case, add the release version
    and date to the top of `doc/whats-new.rst`. If a patch, put it below the
    pending minor release. Also update the version in `doc/index.rst`. Update the
    CITATION.cff file. If a major release, get the provisional new DOI from USGS
-   and add it to CITATION.cff and the main README.md.
+   and add it to CITATION.cff and the top-level README.md. If the release is
+   approved, put the disclaimer for approved releases onthe top-level README.md.
+   Otherwise keep the provisional disclaimer.
 
 1. Push the branch to this repo. For instance, if this repo is an `upstream`
    remote: `git push -u upstream vx.y.z`. This starts a job to:
@@ -103,13 +105,15 @@ To release a new version:
 
 1. In the case of a minor or major release,  (a patch would be applied to both
    main and develop?) a couple of manual steps:
-   - Check out `main` as a new branch to get it back into develop,
+   - Check out `main` as a new branch in order to get it back into develop,
      eg feat_main_to_dev.
    - Run `.github/scripts/update_version.py -v x.y+1.0.dev0` to update
      `version.txt` and `pywatershed/version.py` with the minor version number
      incremented. The `.dev0` suffix indicates preliminary development status.
    - Add a new minor release to the top of `doc/whats-new.rst`
    - Incorporate the ASV details from the previous section above.
+   - If main was an approved release, revert the disclaimer on the top-level
+     README.md to the provisional disclaimer.
    - Open a PR against `develop` with the updated version files and the
      updates previously merged to `main`.
 

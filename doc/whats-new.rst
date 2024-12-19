@@ -12,6 +12,16 @@ What's New
     np.random.seed(123456)
 
 
+.. _whats-new.2.0.1:
+
+v2.0.1 (19 December 2024)
+---------------------
+
+New Features
+~~~~~~~~~~~~~~~~
+Corrected disclaimer on top-level README.md. Other minor fixes not to code base (CI, envs, etc).
+
+
 .. _whats-new.2.0.0:
 
 v2.0.0 (16 December 2024)

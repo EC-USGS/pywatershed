@@ -2,14 +2,15 @@ name: pws
 channels:
   - conda-forge
   - nodefaults
-  - pyviz
-  - bioconda
 dependencies:
+  - asv
   - cartopy
+  - click != 8.1.0
   - dataretrieval
   - contextily
-  - epiweeks
+  - epiweeks4cf
   - filelock
+  - flopy
   - folium
   - geopandas
   - geoviews
@@ -25,6 +26,7 @@ dependencies:
   - networkx
   - numpy>=2.0.0
   - numba
+  - modflow-devtools
   - pandas>=1.4.0
   - pint
   - pip
@@ -37,21 +39,17 @@ dependencies:
   - pytest-xdist
   - python<3.12,>=3.10
   - pyyaml
+  - ruff
   - shapely
   - sphinx
   - sphinx-book-theme>=0.3.3
+  - sphinx-autodoc-typehints>=2.2.1
   - sphinx-autosummary-accessors
   - sphinx-copybutton
   - tqdm
   - xarray>=2024.06.0
+  - xmltodict
   - pip:
-      - asv
-      - click != 8.1.0
-      - filelock
-      - git+https://github.com/modflowpy/flopy.git
       - jupyter_black
-      - modflow-devtools
       - git+https://github.com/jararias/mpsplines.git
       - git+https://github.com/paknorton/pyPRMS.git@development
-      - sphinx-autodoc-typehints>=2.2.1
-      - ruff

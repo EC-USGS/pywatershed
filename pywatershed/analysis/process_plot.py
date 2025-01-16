@@ -173,6 +173,7 @@ class ProcessPlot:
         data_units: str = None,
         nhm_id: np.ndarray = None,
         clim: Tuple[float] = None,
+        **kwargs,
     ):
         _ = import_optional_dependency("hvplot.pandas")
 
@@ -233,7 +234,8 @@ class ProcessPlot:
             "clabel": clabel,
             "xlabel": "Longitude (degrees East)",
             "ylabel": "Latitude (degrees North)",
-        }
+        } | kwargs
+
         if clim is not None:
             args["clim"] = clim
 

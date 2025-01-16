@@ -26,9 +26,9 @@ def compare_netcdf(csv, nc_name):
         for idx, hru in enumerate(hrus):
             key = f"{variable}_{hru}"
             csv_data[:, idx] = np_data[key][:]
-        assert np.allclose(
-            nc_data, csv_data
-        ), f"comparision for {variable} is not close"
+        assert np.allclose(nc_data, csv_data), (
+            f"comparision for {variable} is not close"
+        )
 
     # close the netcdf file and return
     ds.close()

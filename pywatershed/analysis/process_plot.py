@@ -220,7 +220,7 @@ class ProcessPlot:
                     width=frame_height / 10,
                 )
             )
-            clabel = f'{metadata["units"]}'
+            clabel = f"{metadata['units']}"
 
         args = {
             "tiles": True,

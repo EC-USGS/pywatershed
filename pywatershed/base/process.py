@@ -144,17 +144,17 @@ class Process(Accessor):
     @staticmethod
     def get_dimensions() -> tuple:
         """Get a tuple of dimension names for this Process."""
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     @staticmethod
     def get_parameters() -> tuple:
         """Get a tuple of parameter names for this Process."""
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     @staticmethod
     def get_inputs() -> tuple:
         """Get a tuple of input variable names for this Process."""
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     @classmethod
     def get_variables(cls) -> tuple:
@@ -178,13 +178,13 @@ class Process(Accessor):
     @staticmethod
     def get_restart_variables() -> list:
         """Get a list of restart varible names."""
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     @staticmethod
     def get_init_values() -> dict:
         """Get a dictionary of initialization values for each public
         variable."""
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     @property
     def dimensions(self) -> tuple:
@@ -303,10 +303,10 @@ class Process(Accessor):
         return
 
     def _set_initial_conditions(self):
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     def _advance_variables(self):
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     def _advance_inputs(self):
         for key, value in self._input_variables_dict.items():
@@ -390,9 +390,7 @@ class Process(Accessor):
                     f"{self.name} did not advance because "
                     f"it is not behind control time"
                 )
-                # warn(msg)
                 print(msg)  # can/howto make warn flush in real time?
-                # is a warning sufficient? an error
             return
 
         if self._verbose:
@@ -404,7 +402,7 @@ class Process(Accessor):
         return
 
     def _calculate(self):
-        raise Exception("This must be overridden")
+        raise NotImplementedError("This must be implemented")
 
     def calculate(self, time_length: float, **kwargs) -> None:
         """Calculate Process terms for a time step
@@ -517,18 +515,22 @@ class Process(Accessor):
 
         self._netcdf_initialized = True
         self._netcdf_output_dir = pl.Path(output_dir)
+
         if output_vars is None:
             self._netcdf_output_vars = self.variables
         else:
             self._netcdf_output_vars = list(
                 set(output_vars).intersection(set(self.variables))
             )
-            if len(self._netcdf_output_vars) == 0:
-                self._netcdf_initialized = False
-                return
 
         if addtl_output_vars is not None:
             self._netcdf_output_vars += addtl_output_vars
+
+        if len(self._netcdf_output_vars) == 0:
+            msg = f"No output variables found for process: {self.name}."
+            warn(msg)
+            self._netcdf_initialized = False
+            return
 
         self._netcdf = {}
 

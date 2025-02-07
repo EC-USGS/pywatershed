@@ -183,7 +183,6 @@ if [ -z "${m}" ]; then
     cd autotest || exit 1
     python update_flopy.py
 
-
     # Build mf6 locally instead of installing mf6 nightly build
     # install conda env for mf6
     cd "${modflow_repo_location}" || exit 1
@@ -195,7 +194,7 @@ if [ -z "${m}" ]; then
     # mamba env update --name $env_name --file $env_file --prune  || exit 1
 
     # conda activate $env_name
-    source /Users/jmccreight/mambaforge/bin/activate $env_name
+    source /Users/jmccreight/miniforge3/bin/activate $env_name
     # only necessary the first time
     # meson setup --prefix=$(pwd) --libdir=bin builddir
     meson install -C builddir

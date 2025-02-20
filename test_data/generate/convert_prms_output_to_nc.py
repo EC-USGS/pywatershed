@@ -23,6 +23,7 @@ def netcdf_file(control_csv_file, tmp_path_factory):
 
     root_tmpdir = tmp_path_factory.getbasetemp().parent
     with FileLock(root_tmpdir / f"{var_name}.lock"):
+        yield csv_file  # do this in session cleanup
         success = diagnose_simple_vars_to_nc(var_name, data_dir, control_file)
 
     if not success:

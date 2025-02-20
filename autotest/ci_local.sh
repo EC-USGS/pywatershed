@@ -89,7 +89,7 @@ if [ ! -z "${h}" ]; then
 
     exit 0
 fi
-    
+
 echo ""
 echo ""
 
@@ -258,12 +258,10 @@ if [ -z "${t}" ]; then
 		  -n=$pytest_n --domain=sagehen_5yr \
 		  --control_pattern=sagehen_no_cascades.control \
 		  --remove_prms_csvs --remove_prms_output_dirs || exit 1
-       fi
 
-       # - name: sagehen_5yr_no_cascades - list netcdf input files
-       #   working-directory: test_data
-       #   run: |
-       #     find sagehen_5yr/output_no_cascades -name '*.nc'
+	   echo "sagehen_5yr_no_cascades - list netcdf input files"
+	   find ../test_data/sagehen_5yr/output_no_cascades -name '*.nc' | sort -n
+       fi
 
        echo
        echo ".........."
@@ -436,7 +434,7 @@ if [ -z "${t}" ]; then
            --control_pattern=nhm.control \
            --durations=0 || exit 1
    fi
-       
+
 fi
 
 if [ -z "${i}" ]; then

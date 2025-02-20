@@ -26,7 +26,8 @@ class SourceSinkFlowNode(FlowNode):
           control: a Control object.
           flow_min: A floating point value for the minium flow.
           source_sink_data: A pandas Series object of sources/sinks at this
-            location.
+            location. See SourceSinkFlowNodeMaker for a description of the
+            pd.DataFrame passed to supply this data.
         """
         self.control = control
         self._flow_min = flow_min
@@ -142,13 +143,13 @@ class SourceSinkFlowNodeMaker(FlowNodeMaker):
 
         Args:
           parameters: A pywatershed Parameters object.
-          obs_data: A pandas DataFrame of observations with a time index which
-          can be selected by '%Y-%m-%d' strftime of a datetime64. The column
-          names are not used and may be anything, for example the nhm_seg of
-          the upstream segment. However, the columns order MUST be collated
-          with the input data vectors. The sign convention is: sources are
-          positive and sinks are negative. That is, the sign is from the
-          perspective of the node.
+          source_sink_df: A pandas DataFrame of observations with a time
+            index which can be selected by '%Y-%m-%d' strftime of a datetime64.
+            The column names are not used and may be anything, for example the
+            nhm_seg of the upstream segment. However, the columns order MUST
+            be collated with the input data vectors. The sign convention is:
+            sources are positive and sinks are negative. That is, the sign is
+            from the perspective of the node.
 
         """
         self.name = "SourceSinkNodeMaker"

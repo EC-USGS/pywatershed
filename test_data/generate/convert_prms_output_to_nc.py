@@ -12,7 +12,7 @@ import pywatershed as pws
 
 
 @pytest.fixture
-def netcdf_file(control_csv_file):
+def netcdf_file(control_csv_file, tmp_path_factory):
     """Convert CSV files from model output to NetCDF"""
     control_file = control_csv_file[0]
     csv_file = control_csv_file[1]
@@ -21,7 +21,9 @@ def netcdf_file(control_csv_file):
     data_dir = csv_file.parent
     convert_csv_to_nc(var_name, data_dir)
 
-    success = diagnose_simple_vars_to_nc(var_name, data_dir, control_file)
+    root_tmpdir = tmp_path_factory.getbasetemp().parent
+    with FileLock(root_tmpdir / f"{var_name}.lock"):
+        success = diagnose_simple_vars_to_nc(var_name, data_dir, control_file)
 
     if not success:
         # should this fail or not?

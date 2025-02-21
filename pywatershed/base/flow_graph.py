@@ -20,7 +20,8 @@ class FlowNode(Accessor):
     does not (currently) include a head (water depth) term.
 
     A FlowNode is instantiated with its own (optional) data and calculates
-    outflow, storage_change, and sink_source properties on subtimesteps.
+    outflow, storage, storage_change, and sink_source properties on
+    subtimesteps.
 
     A FlowNode may have additional public variables provided by properties that
     can be requested to be collected by :class:`FlowGraph` for output to
@@ -552,7 +553,7 @@ class FlowGraph(ConservativeProcess):
         for vv in self._addtl_output_vars:
             inds_to_collect = []
             for uu in unique_makers:
-                wh_uu = np.where(params["node_maker_name"] == uu)
+                wh_uu = np.where(np.array(params["node_maker_name"]) == uu)
                 if hasattr(self._nodes[wh_uu[0][0]], vv):
                     # do we need to get/set the type here? Would have to
                     # check the type over all nodes/node makers

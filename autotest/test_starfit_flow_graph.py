@@ -41,6 +41,7 @@ do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
+addtl_output_vars = ["spill", "release"]
 
 rename_vars = {
     "channel_outflow_vol": "outflows",
@@ -198,7 +199,7 @@ def test_starfit_flow_graph_postprocess(
             new_nodes_maker_indices=new_nodes_maker_indices,
             new_nodes_maker_ids=new_nodes_maker_ids,
             new_nodes_flow_to_nhm_seg=new_nodes_flow_to_nhm_seg,
-            addtl_output_vars=["spill", "release"],
+            addtl_output_vars=addtl_output_vars,
             allow_disconnected_nodes=True,
         )
 
@@ -317,6 +318,11 @@ def test_starfit_flow_graph_postprocess(
 
     assert (da_no == da_lr + da_ls).all()
 
+    # Just check that the addtl_output_vars files exists.
+    # should probably also check the contents
+    for aov in addtl_output_vars:
+        assert (tmp_path / f"{aov}.nc").exists()
+
 
 def test_starfit_flow_graph_model_dict(
     simulation,
@@ -398,7 +404,7 @@ def test_starfit_flow_graph_model_dict(
         new_nodes_maker_ids=new_nodes_maker_ids,
         new_nodes_flow_to_nhm_seg=new_nodes_flow_to_nhm_seg,
         graph_budget_type="error",  # move to error
-        addtl_output_vars=["spill", "release"],
+        addtl_output_vars=addtl_output_vars,
     )
     model = Model(model_dict)
 
@@ -488,8 +494,14 @@ def test_starfit_flow_graph_model_dict(
     flow_graph.finalize()
 
     # test single file output has extra coords and additional vars
-    ds = xr.open_dataset(tmp_path / "FlowGraph.nc")
+    output_file_single = tmp_path / "FlowGraph.nc"
+    ds = xr.open_dataset(output_file_single)
     ds_starfit = ds.where(ds.node_maker_name == "starfit", drop=True)
     assert (
         ds_starfit.node_outflows == ds_starfit.release + ds_starfit.spill
     ).all()
+
+    # Check that the addtl_output_vars are in the single output file.
+    # should probably also check the contents
+    for aov in addtl_output_vars:
+        assert aov in ds.variables

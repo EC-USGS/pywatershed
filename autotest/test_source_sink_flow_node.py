@@ -1,6 +1,7 @@
 import numpy as np
+import pandas as pd
 import pytest
-from pyPRMS import DataFile as PRMSStreamflowData
+import xarray as xr
 
 from pywatershed import PRMSChannel
 from pywatershed.base.adapter import Adapter, AdapterNetcdf, adapter_factory
@@ -8,18 +9,17 @@ from pywatershed.base.control import Control
 from pywatershed.base.flow_graph import FlowGraph
 from pywatershed.base.parameters import Parameters
 from pywatershed.constants import nan, zero
-from pywatershed.hydrology.obsin_flow_node import ObsInFlowNodeMaker
 from pywatershed.hydrology.prms_channel_flow_graph import (
     HruSegmentFlowAdapter,
     PRMSChannelFlowNodeMaker,
 )
+from pywatershed.hydrology.source_sink_flow_node import SourceSinkFlowNodeMaker
 from pywatershed.parameters import PrmsParameters
 
 do_compare_output_files = False
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
-# test the exchange too?
 rename_vars = {
     "channel_outflow_vol": "outflows",
     "seg_upstream_inflow": "node_upstream_inflows",
@@ -33,13 +33,14 @@ convert_to_vol = ["outflows", "node_storage_changes"]
 
 @pytest.fixture(scope="function")
 def control(simulation):
-    if "drb_2yr:nhm_obsin" not in simulation["name"]:
-        pytest.skip("Only testing obsin flow graph for drb_2yr:nhm_obsin")
+    # JLM TODO: _obsin restriction on control_pattern?
+    if "ucb_2yr:nhm" not in simulation["name"]:
+        pytest.skip("Only testing obsin flow graph for ucb_2yr:nhm")
     control = Control.load_prms(
         simulation["control_file"], warn_unused_options=False
     )
-    control.options["netcdf_output_dir"] = None
-    control.options["netcdf_output_var_names"] = None
+    del control.options["netcdf_output_dir"]
+    control.edit_n_time_steps(180)
     return control
 
 
@@ -59,38 +60,58 @@ def parameters_prms(simulation, control):
     return PrmsParameters.from_netcdf(param_file)
 
 
+@pytest.fixture(scope="function")
+def source_sink_data(simulation, parameters_prms):
+    # bring in the source_sink data from csv file
+    sink_file = simulation["dir"] / "UCB_sinks_notreal.csv"
+    source_sink_data = pd.read_csv(sink_file)
+    source_sink_data = source_sink_data.set_index("time")
+    old_cols = source_sink_data.columns
+    new_cols = source_sink_data.columns.astype(np.int64)
+    source_sink_data.rename(
+        columns=dict(zip(old_cols, new_cols)), inplace=True
+    )
+
+    return source_sink_data
+
+
+@pytest.mark.parametrize(
+    "zero_data", [True, False], ids=["zero_data", "diversion_data"]
+)
 def test_prms_channel_obsin_compare_prms(
     simulation,
     control,
     discretization_prms,
     parameters_prms,
+    source_sink_data,
     tmp_path,
+    zero_data,
 ):
-    control_param_file = (
-        simulation["control_file"].parent / control.options["parameter_file"]
-    )
-    control_parameters = PrmsParameters.load(control_param_file)
-    # Constructed using obsout_segment to get the indices and poi ids,
-    # we will insert the new nodes below this segment.
-    obsout_seg = control_parameters.parameters["obsout_segment"] - 1
-    sf_data = PRMSStreamflowData(
-        simulation["dir"] / "sf_data"
-    ).data_by_variable("runoff")
-    old_names = sf_data.columns.tolist()
-    new_names = [cc.split("_")[1] for cc in sf_data.columns.tolist()]
-    sf_data.rename(columns=dict(zip(old_names, new_names)), inplace=True)
+    # Set the parameter(s)
+    sink_nhm_seg = source_sink_data.columns
+    # this loop keeps sink_nhm_seg and sink_inds collated.
+    sink_inds = []
+    for ss in sink_nhm_seg:
+        sink_inds += np.where(parameters_prms.parameters["nhm_seg"] == ss)[
+            0
+        ].tolist()
 
-    poi_inds = obsout_seg[np.where(obsout_seg >= 0)].tolist()
-    npoi = len(poi_inds)
-    poi_ids = discretization_prms.parameters["poi_gage_id"][(poi_inds),]
-    obsin_data = sf_data[sf_data.columns.intersection(poi_ids)]
-    # see test starfit flow node to see how slice off individual points
-    # and re-merge using xarray
-    obsin_params = Parameters.from_ds(
-        discretization_prms.subset(["poi_gage_id"])
+    source_sink_data = source_sink_data[
+        source_sink_data.columns.intersection(sink_nhm_seg)
+    ]
+    nsink = len(sink_inds)
+
+    sink_params_ds = (
+        discretization_prms.subset(["nhm_seg"])
         .to_xr_ds()
-        .isel(npoigages=poi_inds)
+        .isel(nsegment=sink_inds)
     )
+    sink_params_ds["flow_min"] = xr.Variable(
+        "nsegment", np.array([0.00, 0.01])
+    )
+    # nhm_seg is not a parameter of the method, but the names can be kept
+    # and will be ignored because the position of the columns is used.
+    sink_params = Parameters.from_ds(sink_params_ds.drop_vars("nhm_seg"))
 
     # combine PRMS lateral inflows to a single non-volumetric inflow
     output_dir = simulation["output_dir"]
@@ -105,72 +126,71 @@ def test_prms_channel_obsin_compare_prms(
         def __init__(
             self,
             prms_inflows: Adapter,
-            npoi: int,
+            nsink: int,
             variable: str = "inflows",
         ):
             self._variable = variable
             self._prms_inflows = prms_inflows
 
-            self._npoi = npoi
-            self._nnodes = len(self._prms_inflows.current) + npoi
+            self._nsink = nsink
+            self._nnodes = len(self._prms_inflows.current) + nsink
             self._current_value = np.zeros(self._nnodes) * nan
             return
 
         def advance(self) -> None:
             self._prms_inflows.advance()
-            self._current_value[0:-npoi] = self._prms_inflows.current
-            self._current_value[-npoi:] = zero  # no inflow at the obsin
+            self._current_value[0:-nsink] = self._prms_inflows.current
+            self._current_value[-nsink:] = zero  # no inflow at the obsin
             return
 
-    inflows_graph = GraphInflowAdapter(inflows_prms, npoi)
+    inflows_graph = GraphInflowAdapter(inflows_prms, nsink)
 
     # FlowGraph
+    if zero_data:
+        source_sink_data *= 0.0
 
     node_maker_dict = {
         "prms_channel": PRMSChannelFlowNodeMaker(
             discretization_prms, parameters_prms
         ),
-        "obsin": ObsInFlowNodeMaker(obsin_params, obsin_data),
+        "sink": SourceSinkFlowNodeMaker(sink_params, source_sink_data),
     }
-    nnodes = parameters_prms.dims["nsegment"] + npoi
+    nnodes = parameters_prms.dims["nsegment"] + nsink
     node_maker_name = ["prms_channel"] * nnodes
-    node_maker_name[-npoi:] = ["obsin"] * npoi
+    node_maker_name[-nsink:] = ["sink"] * nsink
     node_maker_index = np.arange(nnodes)
-    node_maker_index[-npoi:] = np.arange(npoi)
+    node_maker_index[-nsink:] = np.arange(nsink)
     node_maker_id = np.arange(nnodes)
     to_graph_index = np.zeros(nnodes, dtype=np.int64)
     dis_params = discretization_prms.parameters
-    to_graph_index[0:-npoi] = dis_params["tosegment"] - 1
+    to_graph_index[0:-nsink] = dis_params["tosegment"] - 1
 
-    # this is  baroque, but we want to solve the nhm_seg identifier
-    obsin_intervene_inds = (
-        discretization_prms.parameters["poi_gage_segment"][(poi_inds),] - 1
-    )
-    # we want to intervene below this poi
-    nhm_seg_intervene_below = discretization_prms.parameters["nhm_seg"][
-        (obsin_intervene_inds),
-    ]
-    wh_intervene_below_nhm = np.where(
-        np.isin(dis_params["nhm_seg"], nhm_seg_intervene_below)
-    )
-
+    wh_intervene_below_nhm = sink_inds
     wh_intervene_above_nhm = (dis_params["tosegment"] - 1)[
         wh_intervene_below_nhm
     ]
 
     # have to map to the graph from an index found in prms_channel
-    wh_intervene_above_graph = np.where(
-        (np.array(node_maker_name) == "prms_channel")
-        & np.isin(node_maker_index, wh_intervene_above_nhm)
-    )
-    wh_intervene_below_graph = np.where(
-        (np.array(node_maker_name) == "prms_channel")
-        & np.isin(node_maker_index, wh_intervene_below_nhm)
-    )
+    # in a way that preserves the order in sink_ind
+    wiag = []
+    wibg = []
+    for ii in range(nsink):
+        wiag += np.where(
+            (np.array(node_maker_name) == "prms_channel")
+            & (node_maker_index == wh_intervene_above_nhm[ii])
+        )[0].tolist()
 
-    to_graph_index[-npoi:] = wh_intervene_above_graph[0]
-    to_graph_index[wh_intervene_below_graph] = np.arange(npoi) + (
-        nnodes - npoi
+        wibg += np.where(
+            (np.array(node_maker_name) == "prms_channel")
+            & (node_maker_index == wh_intervene_below_nhm[ii])
+        )[0].tolist()
+
+    wh_intervene_above_graph = wiag
+    wh_intervene_below_graph = wibg
+
+    to_graph_index[-nsink:] = wh_intervene_above_graph
+    to_graph_index[wh_intervene_below_graph] = np.arange(nsink) + (
+        nnodes - nsink
     )
 
     params_flow_graph = Parameters(
@@ -196,6 +216,7 @@ def test_prms_channel_obsin_compare_prms(
         validate=True,
     )
 
+    control.options["netcdf_output_var_names"] = ["sink_source"]
     flow_graph = FlowGraph(
         control,
         discretization=None,
@@ -205,6 +226,8 @@ def test_prms_channel_obsin_compare_prms(
         budget_type="error",
         addtl_output_vars=["sink_source"],
     )
+
+    # if do_compare_output_files:
 
     nc_parent = tmp_path / simulation["name"].replace(":", "_")
     flow_graph.initialize_netcdf(nc_parent)
@@ -219,24 +242,28 @@ def test_prms_channel_obsin_compare_prms(
             answers[new_var] = adapter_factory(
                 var_pth, variable_name=var, control=control
             )
-        # answers for the exchange
-        var = "seg_lateral_inflow"
-        var_pth = output_dir / f"{var}.nc"
-        lateral_inflow_answers = adapter_factory(
-            var_pth, variable_name=var, control=control
-        )
+
+    if not zero_data:
+        # the sink inds are the indices of the nhm_segments just above
+        # the diversions. we want to ignore all the indices below that.
+        wh_ignore = []
+        for si in sink_inds:
+            upind = si
+            toseg = discretization_prms.parameters["tosegment"] - 1
+            while upind >= 0:
+                downind = toseg[upind]
+                wh_ignore += [upind]
+                upind = downind
+        wh_ignore = np.unique(wh_ignore)
+        # also get the downstream inds for check that inflows are altered
+        # by diversions at those locations
+        downstream_reach_inds = [toseg[si] for si in sink_inds]
 
     for istep in range(control.n_times):
         control.advance()
         flow_graph.advance()
         flow_graph.calculate(1.0)
         flow_graph.output()
-
-        # check exchange
-        lateral_inflow_answers.advance()
-        assert (
-            inflows_graph.current[0:-npoi] == lateral_inflow_answers.current
-        ).all()
 
         if do_compare_in_memory:
             for key, val in answers.items():
@@ -246,14 +273,30 @@ def test_prms_channel_obsin_compare_prms(
                 else:
                     desired = val.current
 
-                actual = flow_graph[key][0:-npoi]
-                if key in ["outflows", "node_outflows"]:
-                    actual[wh_intervene_below_nhm] = flow_graph[key][-npoi:]
+                actual = flow_graph[key][0:-nsink]
+                if not zero_data:
+                    # check that the inflows are altered by the data
+                    if key == "node_upstream_inflows":
+                        # this is an ad hoc version of the algorithm
+                        for ii, ds in enumerate(downstream_reach_inds):
+                            col_key = parameters_prms.parameters["nhm_seg"][
+                                sink_inds[ii]
+                            ]
+                            dd = desired[ds]
+                            req_ss = source_sink_data[col_key].iloc[istep]
+                            if req_ss < 0:
+                                flo_min = sink_params_ds["flow_min"][ii].values
+                                aa = dd + req_ss
+                                if aa < flo_min:
+                                    aa = flo_min
+                            else:
+                                aa = dd + req_ss
 
-                if key == "node_storage_changes":
-                    actual[
-                        wh_intervene_below_nhm
-                    ] += -flow_graph.node_sink_source[-npoi:]
+                            assert abs(aa - actual[ds]) < 1.0e-7
+
+                    # and otherwise ignore all the reaches downstream of
+                    # the diversions
+                    desired[wh_ignore] = actual[wh_ignore]
 
                 np.testing.assert_allclose(
                     actual,

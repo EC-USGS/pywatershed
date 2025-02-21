@@ -17,6 +17,8 @@ FlowGraph base classes and subclasses. See :class:`FlowGraph` for an overview of
    PassThroughNodeMaker
    ObsInFlowNode
    ObsInNodeMaker
+   SourceSinkFlowNode
+   SourceSinkFlowNodeMaker
    StarfitFlowNode
    StarfitFlowNodeMaker
    PRMSChannelFlowNode

@@ -205,6 +205,13 @@ def main():
             "convert_prms_output_to_nc.py",
         ]
 
+    # do NOT run in parallel
+    conv_final_arg_list = arg_list + [
+        "-vv",
+        "-n=0",
+        "convert_final_prms_output_to_nc.py",
+    ]
+
     retcode_run = pytest.main(run_arg_list)
     if retcode_run != pytest.ExitCode.OK:
         print("Running PRMS domains failed.")
@@ -214,6 +221,12 @@ def main():
     retcode_conv = pytest.main(conv_arg_list)
     if retcode_conv != pytest.ExitCode.OK:
         print("\nConverting PRMS output to NetCDF failed.")
+        sys.exit(retcode_run.value)
+
+    print("\nConverting final PRMS output to NetCDF ...")
+    retcode_conv = pytest.main(conv_final_arg_list)
+    if retcode_conv != pytest.ExitCode.OK:
+        print("\nConverting final PRMS output to NetCDF failed.")
         sys.exit(retcode_run.value)
 
     for ss in simulations:

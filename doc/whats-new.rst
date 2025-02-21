@@ -19,6 +19,8 @@ v2.1.0 (Unreleased)
 
 New Features
 ~~~~~~~~~~~~~~~~
+`SourceSinkFlowNode` adds or removes flow above some minimum flow parameter as
+a data file.
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -28,7 +30,9 @@ Bug fixes
 
 Internal changes
 ~~~~~~~~~~~~~~~~
-
+Refactor of test_data/generate/convert_prms_output_to_nc.py to put final variables into
+a separate file to run by pytests both after all other variables are generated and
+so the final variables are run serially.
 
 .. _whats-new.2.0.1:
 

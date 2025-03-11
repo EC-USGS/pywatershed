@@ -38,7 +38,7 @@ jobs:
       - name: Upgrade pip and install build and twine
         run: |
           python -m pip install --upgrade pip
-          pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' 'setuptools<=72.2.0' 'numpy<2.0'
+          pip install wheel build twine importlib_metadata setuptools numpy
 
       - name: Standard installation
         run: |
@@ -73,7 +73,7 @@ jobs:
       - name: Upgrade pip and install build and twine
         run: |
           python -m pip install --upgrade pip
-          pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' 'setuptools<=72.2.0' 'numpy<2.0'
+          pip install wheel build twine importlib_metadata setuptools numpy
 
       - name: Editable installation
         run: |

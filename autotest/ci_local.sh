@@ -89,7 +89,7 @@ if [ ! -z "${h}" ]; then
 
     exit 0
 fi
-    
+
 echo ""
 echo ""
 
@@ -119,8 +119,7 @@ if [ -z "${i}" ]; then
 
     ## name: Upgrade pip and install build and twine
     python -m pip install --upgrade pip || exit 1
-    pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' || exit 1
-
+    pip install wheel build twine importlib_metadata || exit 1
     ## name: Base installation
     pip --verbose install . || exit 1
 
@@ -194,8 +193,8 @@ if [ -z "${m}" ]; then
     # mamba create -y --name $env_name || exit 1
     # mamba env update --name $env_name --file $env_file --prune  || exit 1
 
-    # conda activate $env_name
-    source /Users/jmccreight/mambaforge/bin/activate $env_name
+    conda_dir=`dirname $CONDA_EXE`
+    source $conda_dir/activate $env_name  || exit 1
     # only necessary the first time
     # meson setup --prefix=$(pwd) --libdir=bin builddir
     meson install -C builddir
@@ -437,17 +436,18 @@ if [ -z "${t}" ]; then
            --control_pattern=nhm.control \
            --durations=0 || exit 1
    fi
-       
+
 fi
 
 if [ -z "${i}" ]; then
+    cd $start_dir || exit 3
     # If install was done, put the install back to its original, editable state.
     # Do it here so the tests use the test install if it is done.
     pip uninstall -y pywatershed || exit 1
     cd .. || exit 1
-    pip install -e . || exit 1
+    pip install -e . || exit 2
 
-    cd $start_dir || exit 1
+    cd $start_dir || exit 3
 fi
 
 exit 0

@@ -40,7 +40,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' 'setuptools<=72.2.0' 'numpy<2.0'
 
-      - name: Base installation
+      - name: Standard installation
         run: |
           pip --verbose install .
 
@@ -55,7 +55,7 @@ jobs:
 
   pws_editable_install:
     name: editable installation
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       fail-fast: false
     defaults:
@@ -75,7 +75,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install wheel build 'twine<5.0.0' 'importlib_metadata<=7.0.1' 'setuptools<=72.2.0' 'numpy<2.0'
 
-      - name: Base installation
+      - name: Editable installation
         run: |
           pip --verbose install -e .
 

@@ -77,7 +77,7 @@ jobs:
 
       - name: Base installation
         run: |
-          pip --verbose -e install .
+          pip --verbose install -e .
 
       - name: Print pws version
         run: |

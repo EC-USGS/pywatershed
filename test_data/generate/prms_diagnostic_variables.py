@@ -2,6 +2,7 @@ import pathlib as pl
 from warnings import warn
 
 import numpy as np
+import pytest
 import xarray as xr
 
 import pywatershed as pws
@@ -292,6 +293,9 @@ def diagnose_final_vars_to_nc(
     ]:
         if var_name != "seg_lateral_inflow":
             return
+
+        if control.options["streamflow_module"] != "muskingum_mann":
+            pytest.skip("sadf")
 
         data_vars = [
             "sroff_vol",

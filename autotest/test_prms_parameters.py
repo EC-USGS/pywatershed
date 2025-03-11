@@ -124,9 +124,9 @@ def test_parameter_canopy_subset(simulation):
 
     for key in canopy_params:
         if key != "unknown":
-            assert (
-                canopy_subset.parameters[key] is not None
-            ), f"'{key}' parameter should not be None"
+            assert canopy_subset.parameters[key] is not None, (
+                f"'{key}' parameter should not be None"
+            )
 
     print(f"success parsing...'{parameter_file}'")
 
@@ -140,9 +140,9 @@ def test_parameter_access(simulation):
 
     parameters = PrmsParameters.load(parameter_file)
 
-    assert (
-        parameters.parameters["srain_intcp"] is not None
-    ), "'srain_intcp' should not return None"
+    assert parameters.parameters["srain_intcp"] is not None, (
+        "'srain_intcp' should not return None"
+    )
 
     with pytest.raises(KeyError):
         _ = parameters.parameters["unknown"]

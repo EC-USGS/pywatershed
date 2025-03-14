@@ -52,4 +52,4 @@ dependencies:
   - pip:
       - jupyter_black
       - git+https://github.com/jararias/mpsplines.git
-      - git+https://github.com/paknorton/pyPRMS.git@development
+      - pyPRMS

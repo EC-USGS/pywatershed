@@ -1,6 +1,6 @@
-# pywatershed version file automatically created using update_version.py on December 19, 2024 21:53:33  #noqa: E501
+# pywatershed version file automatically created using update_version.py on March 14, 2025 22:07:27  #noqa: E501
 
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 __pakname__ = "pywatershed"
 
 author_dict = {

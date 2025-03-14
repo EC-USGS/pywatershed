@@ -47,4 +47,4 @@ dependencies:
   - xmltodict
   - pip:
       - git+https://github.com/jararias/mpsplines.git
-      - git+https://github.com/paknorton/pyPRMS.git@development
+      - pyPRMS

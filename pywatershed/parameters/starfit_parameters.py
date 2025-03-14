@@ -332,10 +332,7 @@ def _get_istarf_conus(istarf_file, files_directory):
         )
         istarf_file = files_directory / "ISTARF-CONUS.csv"
         if not istarf_file_in_exists and istarf_file_in is not None:
-            warn(
-                "The specified istarf_file does not exist: "
-                f"{istarf_file_in}"
-            )
+            warn(f"The specified istarf_file does not exist: {istarf_file_in}")
         if files_directory_in is not None and not files_directory_in_exists:
             warn(
                 "The specified files_directory does not exist: "

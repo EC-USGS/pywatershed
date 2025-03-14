@@ -12,6 +12,17 @@ What's New
     np.random.seed(123456)
 
 
+.. _whats-new.2.0.2:
+
+v2.0.2 (14 March 2025)
+---------------------
+
+New Features
+~~~~~~~~~~~~~~~~
+Fixed setup.py to allow editable installs, keeping up with changes in the pythonverse. Deprecated all fortran code
+built and interfaced using f2py as it was not popular and had only maybe very slight speed advantages compared to numba.
+
+
 .. _whats-new.2.0.1:
 
 v2.0.1 (19 December 2024)

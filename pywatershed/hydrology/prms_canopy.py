@@ -17,14 +17,6 @@ from ..constants import (
 )
 from ..parameters import Parameters
 
-try:
-    from ..prms_canopy_f import canopy
-
-    _calculate_fortran = canopy.calc_canopy
-    has_prmscanopy_f = True
-except ImportError:
-    has_prmscanopy_f = False
-
 # set constants (may need .value for enum to be used in > comparisons)
 BARESOIL = CovType.BARESOIL.value
 GRASSES = CovType.GRASSES.value
@@ -66,7 +58,7 @@ class PRMSCanopy(ConservativeProcess):
             the default and defering to control.options["budget_type"] when
             available. When control.options["budget_type"] is not avaiable,
             budget_type is set to "warn".
-        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+        calc_method: one of ["numba", "numpy"]. None defaults to
             "numba".
         verbose: Print extra information or not?
         load_n_time_batches: not-implemented
@@ -86,7 +78,7 @@ class PRMSCanopy(ConservativeProcess):
         potet: adaptable,
         pptmix: adaptable,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
-        calc_method: Literal["fortran", "numba", "numpy"] = None,
+        calc_method: Literal["numba", "numpy"] = None,
         verbose: bool = None,
     ):
         super().__init__(
@@ -173,16 +165,10 @@ class PRMSCanopy(ConservativeProcess):
         if self._calc_method is None:
             self._calc_method = "numba"
 
-        avail_methods = ["numpy", "numba", "fortran"]
-        fortran_msg = ""
-        if self._calc_method == "fortran" and not has_prmscanopy_f:
-            _ = avail_methods.remove("fortran")
-            fortran_msg = "\n(Fortran not available as installed)\n"
-
+        avail_methods = ["numpy", "numba"]
         if self._calc_method.lower() not in avail_methods:
             msg = (
                 f"Invalid calc_method={self._calc_method} for {self.name}. "
-                f"{fortran_msg}"
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg)
@@ -282,13 +268,6 @@ class PRMSCanopy(ConservativeProcess):
                 fastmath=True, parallel=nb_parallel
             )(self._calculate_numpy)
 
-        elif self._calc_method.lower() == "fortran":
-            pass
-            # fortran has a different call signature in the last agument
-            # because the intercept function is not passed.
-            # so it is handled with an if statement at call time.
-            # self._calculate_gw = _calculate_fortran
-
         else:
             self._calculate_canopy = self._calculate_numpy
 
@@ -313,113 +292,59 @@ class PRMSCanopy(ConservativeProcess):
             None
 
         """
-        if self._calc_method.lower() != "fortran":
-            (
-                self.intcp_evap[:],
-                self.intcp_form[:],
-                self.intcp_stor[:],
-                self.net_rain[:],
-                self.net_snow[:],
-                self.pptmix[:],
-                self.net_ppt[:],
-                self.hru_intcpstor[:],
-                self.hru_intcpevap[:],
-                self.intcp_changeover[:],
-                self.intcp_transp_on[:],
-            ) = self._calculate_canopy(
-                nhru=np.int32(self.nhru),
-                cov_type=self.cov_type,
-                covden_sum=self.covden_sum,
-                covden_win=self.covden_win,
-                hru_intcpstor=self.hru_intcpstor,
-                hru_intcpevap=self.hru_intcpevap,
-                hru_ppt=self.hru_ppt,
-                hru_rain=self.hru_rain,
-                hru_snow=self.hru_snow,
-                intcp_changeover=self.intcp_changeover,
-                intcp_evap=self.intcp_evap,
-                intcp_stor=self.intcp_stor,
-                intcp_transp_on=self.intcp_transp_on,
-                net_ppt=self.net_ppt,
-                net_rain=self.net_rain,
-                net_snow=self.net_snow,
-                pptmix=self.pptmix,
-                pk_ice_prev=self.pk_ice_prev,
-                freeh2o_prev=self.freeh2o_prev,
-                potet=self.potet,
-                potet_sublim=self.potet_sublim,
-                snow_intcp=self.snow_intcp,
-                srain_intcp=self.srain_intcp,
-                transp_on=self.transp_on,
-                wrain_intcp=self.wrain_intcp,
-                time_length=time_length,
-                hru_type=self._hru_type,
-                nearzero=nearzero,
-                dnearzero=dnearzero,
-                baresoil=np.int32(BARESOIL),
-                grasses=np.int32(GRASSES),
-                land=np.int32(LAND),
-                lake=np.int32(LAKE),
-                rain=np.int32(RAIN),
-                snow=np.int32(SNOW),
-                off=np.int32(OFF),
-                active=np.int32(ACTIVE),
-                intercept=self._intercept,
-            )
+        (
+            self.intcp_evap[:],
+            self.intcp_form[:],
+            self.intcp_stor[:],
+            self.net_rain[:],
+            self.net_snow[:],
+            self.pptmix[:],
+            self.net_ppt[:],
+            self.hru_intcpstor[:],
+            self.hru_intcpevap[:],
+            self.intcp_changeover[:],
+            self.intcp_transp_on[:],
+        ) = self._calculate_canopy(
+            nhru=np.int32(self.nhru),
+            cov_type=self.cov_type,
+            covden_sum=self.covden_sum,
+            covden_win=self.covden_win,
+            hru_intcpstor=self.hru_intcpstor,
+            hru_intcpevap=self.hru_intcpevap,
+            hru_ppt=self.hru_ppt,
+            hru_rain=self.hru_rain,
+            hru_snow=self.hru_snow,
+            intcp_changeover=self.intcp_changeover,
+            intcp_evap=self.intcp_evap,
+            intcp_stor=self.intcp_stor,
+            intcp_transp_on=self.intcp_transp_on,
+            net_ppt=self.net_ppt,
+            net_rain=self.net_rain,
+            net_snow=self.net_snow,
+            pptmix=self.pptmix,
+            pk_ice_prev=self.pk_ice_prev,
+            freeh2o_prev=self.freeh2o_prev,
+            potet=self.potet,
+            potet_sublim=self.potet_sublim,
+            snow_intcp=self.snow_intcp,
+            srain_intcp=self.srain_intcp,
+            transp_on=self.transp_on,
+            wrain_intcp=self.wrain_intcp,
+            time_length=time_length,
+            hru_type=self._hru_type,
+            nearzero=nearzero,
+            dnearzero=dnearzero,
+            baresoil=np.int32(BARESOIL),
+            grasses=np.int32(GRASSES),
+            land=np.int32(LAND),
+            lake=np.int32(LAKE),
+            rain=np.int32(RAIN),
+            snow=np.int32(SNOW),
+            off=np.int32(OFF),
+            active=np.int32(ACTIVE),
+            intercept=self._intercept,
+        )
 
-        else:
-            (
-                self.intcp_evap[:],
-                self.intcp_form[:],
-                self.intcp_stor[:],
-                self.net_rain[:],
-                self.net_snow[:],
-                self.pptmix[:],
-                self.net_ppt[:],
-                self.hru_intcpstor[:],
-                self.hru_intcpevap[:],
-                self.intcp_changeover[:],
-                self.intcp_transp_on[:],
-            ) = _calculate_fortran(
-                cov_type=self.cov_type,
-                covden_sum=self.covden_sum,
-                covden_win=self.covden_win,
-                hru_intcpstor=self.hru_intcpstor,
-                hru_intcpevap=self.hru_intcpevap,
-                hru_ppt=self.hru_ppt,
-                hru_rain=self.hru_rain,
-                hru_snow=self.hru_snow,
-                intcp_changeover=self.intcp_changeover,
-                intcp_evap=self.intcp_evap,
-                intcp_stor=self.intcp_stor,
-                intcp_transp_on=self.intcp_transp_on,
-                net_ppt=self.net_ppt,
-                net_rain=self.net_rain,
-                net_snow=self.net_snow,
-                pptmix=self.pptmix,
-                pk_ice_prev=self.pk_ice_prev,
-                freeh2o_prev=self.freeh2o_prev,
-                potet=self.potet,
-                potet_sublim=self.potet_sublim,
-                snow_intcp=self.snow_intcp,
-                srain_intcp=self.srain_intcp,
-                transp_on=self.transp_on,
-                wrain_intcp=self.wrain_intcp,
-                time_length=time_length,
-                hru_type=self._hru_type,
-                nearzero=nearzero,
-                dnearzero=dnearzero,
-                baresoil=np.int32(BARESOIL),
-                grasses=np.int32(GRASSES),
-                land=np.int32(LAND),
-                lake=np.int32(LAKE),
-                rain=np.int32(RAIN),
-                snow=np.int32(SNOW),
-                off=np.int32(OFF),
-                active=np.int32(ACTIVE),
-            )
-
-        # <
         self.hru_intcpstor_change[:] = (
             self.hru_intcpstor - self.hru_intcpstor_old
         )

@@ -311,9 +311,7 @@ class MmrToMf6Dfw:
 
             elif (obj_file is None) and (obj is None):
                 if key == "params":
-                    msg = (
-                        "Must specify (exactly) one of param_file" "or params"
-                    )
+                    msg = "Must specify (exactly) one of param_file or params"
                     raise ValueError(msg)
                 else:
                     msg = (

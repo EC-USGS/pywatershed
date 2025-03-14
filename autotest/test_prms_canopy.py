@@ -5,7 +5,7 @@ from utils_compare import compare_in_memory, compare_netcdfs
 
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
-from pywatershed.hydrology.prms_canopy import PRMSCanopy, has_prmscanopy_f
+from pywatershed.hydrology.prms_canopy import PRMSCanopy
 from pywatershed.parameters import Parameters, PrmsParameters
 
 # compare in memory (faster) or full output files? or both!
@@ -13,7 +13,7 @@ do_compare_output_files = True
 do_compare_in_memory = False
 rtol = atol = 1e-12
 
-calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
 params = ("params_sep", "params_one")
 
 
@@ -49,11 +49,6 @@ def parameters(simulation, control, request):
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method
 ):
-    if not has_prmscanopy_f and calc_method == "fortran":
-        pytest.skip(
-            "PRMSCanopy fortran code not available, skipping its test."
-        )
-
     tmp_path = pl.Path(tmp_path)
 
     # get the answer data

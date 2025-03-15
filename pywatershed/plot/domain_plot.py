@@ -61,7 +61,7 @@ class DomainPlot:
         segment_parameter_names: list[str] = None,
         hru_highlight_indices: list = None,
         segment_highlight_indices: list = None,
-        more_layers: Union[list, folium.GeoJson] = None,
+        more_layers: Union[list, "folium.GeoJson"] = None,
         add_layercontrol: bool = True,
         crs: int = 4326,
         start_lat: float = None,

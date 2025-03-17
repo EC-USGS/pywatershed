@@ -77,6 +77,8 @@ class DomainPlot:
         self._hru_gdf = None
         self._segment_gdf = None
 
+        if more_layers is None:
+            more_layers = []
         if isinstance(more_layers, list):
             self._more_layers = more_layers
         else:

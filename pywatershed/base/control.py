@@ -293,10 +293,14 @@ class Control(Accessor):
 
         start_time = control.control["start_time"]
         end_time = control.control["end_time"]
-        time_step = control.control["time_step"]
         del control.control["start_time"]
         del control.control["end_time"]
-        del control.control["time_step"]
+        # sometimes initial_deltat is missing... ?
+        if "time_step" in control.control.keys():
+            time_step = control.control["time_step"]
+            del control.control["time_step"]
+        else:
+            time_step = np.timedelta64(24, "h")
 
         return cls(
             start_time=start_time,

@@ -19,9 +19,10 @@ class DomainPlot:
     """Plot PRMS domain information using the folium package
 
     Args:
-        hru_shp_file: Optional shapefile for the HRUs of the domain.
+        hru_shp_file: Optional shapefile for the HRUs of the domain or a
+            GeoDataFrame already loaded.
         segment_shp_file: Optional shapefile for the stream segments of the
-            domain.
+            domain or a GeoDataFrame already loaded.
         hru_parameters: Optional parameter file or Parameters object for HRU
             parameters to display on tooltip/hover. Must also supply
             hru_parameter_names to select the variables names to show.
@@ -35,26 +36,33 @@ class DomainPlot:
         hru_highlight_indices: Indices (zero-based) of HRUs to highlight.
         segment_highlight_indices: Indices (zero-based) of segments to
             highlight.
+        more_layers: Optional folium.GeoJson or list of these layers to add to
+            the plot.
+        add_layercontrol: Turn off LayerControl if you want to return the plot
+            objecto to work with. LayerControl should be added last.
         crs: int = 4326,
         start_lat: float = None,
         start_lon: float = None,
         start_zoom: int = 7,
         dislpay_plot: bool = True,
-        return_plot: bool = False,
-
-
     """
 
     def __init__(
         self,
-        hru_shp_file: Union[pl.Path, str] = None,
-        segment_shp_file: Union[pl.Path, str] = None,
+        hru_shp_file: Union[
+            pl.Path, str, gpd.geodataframe.GeoDataFrame
+        ] = None,
+        segment_shp_file: Union[
+            pl.Path, str, gpd.geodataframe.GeoDataFrame
+        ] = None,
         hru_parameters: Union[pl.Path, Parameters] = None,
         segment_parameters: Union[pl.Path, Parameters] = None,
         hru_parameter_names: list[str] = None,
         segment_parameter_names: list[str] = None,
         hru_highlight_indices: list = None,
         segment_highlight_indices: list = None,
+        more_layers: Union[list, "folium.GeoJson"] = None,
+        add_layercontrol: bool = True,
         crs: int = 4326,
         start_lat: float = None,
         start_lon: float = None,
@@ -64,15 +72,19 @@ class DomainPlot:
     ):
         self._hru_shp_file = hru_shp_file
         self._segment_shp_file = segment_shp_file
-        # these are set by the add_parameter methods
-        # self._hru_parameters = hru_parameters
-        # self._segment_parameters = segment_parameters
-        # self._hru_parameter_names = hru_parameter_names
-        # self._segment_parameter_names = segment_parameter_names
         self._hru_highlight_indices = hru_highlight_indices
         self._segment_highlight_indices = segment_highlight_indices
         self._hru_gdf = None
         self._segment_gdf = None
+
+        if more_layers is None:
+            more_layers = []
+        if isinstance(more_layers, list):
+            self._more_layers = more_layers
+        else:
+            self._more_layers = [more_layers]
+
+        self._add_layercontrol = add_layercontrol
 
         self.crs = crs
         self.start_lat = start_lat
@@ -150,12 +162,13 @@ class DomainPlot:
         if self.display_plot:
             self.display()
 
-        if self.return_plot:
-            if self.dom_plot is None:
-                self.make_domain_plot()
-            return self.dom_plot
-        else:
-            return
+        return
+
+    def get_plot_object(self):
+        if self.dom_plot is None:
+            self.make_domain_plot()
+
+        return self.dom_plot
 
     def display(self):
         if self.dom_plot is None:
@@ -268,6 +281,13 @@ class DomainPlot:
         )
         return basemap
 
+    def _add_more_layers(self):
+        if self._more_layers is None:
+            return
+        for ll in self._more_layers:
+            ll.add_to(self.dom_plot)
+        return
+
     def make_domain_plot(self):
         # add parameters first because that delets the self.dom_plot
 
@@ -320,8 +340,12 @@ class DomainPlot:
                 )
                 segment_highlight_map.add_child(tooltip_segment_highlights)
 
+        self._add_more_layers()
+
         # <<
-        folium.LayerControl().add_to(self.dom_plot)
+        if self._add_layercontrol:
+            self._layer_control = folium.LayerControl().add_to(self.dom_plot)
+
         return
 
     @staticmethod

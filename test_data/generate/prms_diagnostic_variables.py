@@ -284,15 +284,11 @@ def diagnose_final_vars_to_nc(
 
         assert out_file.exists()
 
-    if var_name in [
-        "channel_sroff_vol",
-        "channel_ssres_flow_vol",
-        "channel_gwres_flow_vol",
-        "seg_lateral_inflow",
-    ]:
-        if var_name != "seg_lateral_inflow":
-            return
+    # The rest of the conversion is on ly for muskingum_mann variables
+    if control.options["streamflow_module"] != "muskingum_mann":
+        return True
 
+    if var_name == "seg_lateral_inflow":
         data_vars = [
             "sroff_vol",
             "ssres_flow_vol",

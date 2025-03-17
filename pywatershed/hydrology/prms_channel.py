@@ -10,13 +10,6 @@ from ..base.control import Control
 from ..constants import SegmentType, nan, zero
 from ..parameters import Parameters
 
-try:
-    from ..prms_channel_f import calc_muskingum_mann as _calculate_fortran
-
-    has_prmschannel_f = True
-except ImportError:
-    has_prmschannel_f = False
-
 
 class PRMSChannel(ConservativeProcess):
     """PRMS channel flow (muskingum_mann).
@@ -85,7 +78,7 @@ class PRMSChannel(ConservativeProcess):
             the default and defering to control.options["budget_type"] when
             available. When control.options["budget_type"] is not avaiable,
             budget_type is set to "warn".
-        calc_method: one of ["fortran", "numba", "numpy"]. None defaults to
+        calc_method: one of ["numba", "numpy"]. None defaults to
             "numba".
         adjust_parameters: one of ["warn", "error", "no"]. Default is "warn",
             the code edits the parameters and issues a warning. If "error" is
@@ -105,7 +98,7 @@ class PRMSChannel(ConservativeProcess):
         ssres_flow_vol: adaptable,
         gwres_flow_vol: adaptable,
         budget_type: Literal["defer", None, "warn", "error"] = "defer",
-        calc_method: Literal["fortran", "numba", "numpy"] = None,
+        calc_method: Literal["numba", "numpy"] = None,
         adjust_parameters: Literal["warn", "error", "no"] = "warn",
         verbose: bool = None,
     ) -> None:
@@ -352,16 +345,10 @@ class PRMSChannel(ConservativeProcess):
         if self._calc_method is None:
             self._calc_method = "numba"
 
-        avail_methods = ["numpy", "numba", "fortran"]
-        fortran_msg = ""
-        if self._calc_method == "fortran" and not has_prmschannel_f:
-            _ = avail_methods.remove("fortran")
-            fortran_msg = "\n(Fortran not available as installed)\n"
-
+        avail_methods = ["numpy", "numba"]
         if self._calc_method.lower() not in avail_methods:
             msg = (
                 f"Invalid calc_method={self._calc_method} for {self.name}. "
-                f"{fortran_msg}"
                 f"Setting calc_method to 'numba' for {self.name}"
             )
             warn(msg)
@@ -390,9 +377,6 @@ class PRMSChannel(ConservativeProcess):
                 fastmath=True,
                 parallel=False,
             )(self._muskingum_mann_numpy)
-
-        elif self._calc_method.lower() == "fortran":
-            self._muskingum_mann = _calculate_fortran
 
         else:
             self._muskingum_mann = self._muskingum_mann_numpy

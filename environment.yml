@@ -15,7 +15,7 @@ dependencies:
   - geopandas
   - geoviews
   - git
-  - holoviews
+  - holoviews<=1.20.0
   - hvplot
   - ipython
   - modflow-devtools

@@ -182,7 +182,6 @@ if [ -z "${m}" ]; then
     cd autotest || exit 1
     python update_flopy.py
 
-
     # Build mf6 locally instead of installing mf6 nightly build
     # install conda env for mf6
     cd "${modflow_repo_location}" || exit 1
@@ -258,12 +257,10 @@ if [ -z "${t}" ]; then
 		  -n=$pytest_n --domain=sagehen_5yr \
 		  --control_pattern=sagehen_no_cascades.control \
 		  --remove_prms_csvs --remove_prms_output_dirs || exit 1
-       fi
 
-       # - name: sagehen_5yr_no_cascades - list netcdf input files
-       #   working-directory: test_data
-       #   run: |
-       #     find sagehen_5yr/output_no_cascades -name '*.nc'
+	   echo "sagehen_5yr_no_cascades - list netcdf input files"
+	   find ../test_data/sagehen_5yr/output_no_cascades -name '*.nc' | sort -n
+       fi
 
        echo
        echo ".........."

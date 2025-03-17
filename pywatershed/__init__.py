@@ -35,6 +35,10 @@ from .hydrology.prms_runoff_no_dprst import PRMSRunoffNoDprst
 from .hydrology.prms_snow import PRMSSnow
 from .hydrology.prms_soilzone import PRMSSoilzone
 from .hydrology.prms_soilzone_no_dprst import PRMSSoilzoneNoDprst
+from .hydrology.source_sink_flow_node import (
+    SourceSinkFlowNode,
+    SourceSinkFlowNodeMaker,
+)
 from .hydrology.starfit import Starfit, StarfitFlowNode, StarfitFlowNodeMaker
 from .plot.domain_plot import DomainPlot
 from .utils import (
@@ -79,6 +83,8 @@ __all__ = (
     "ObsInFlowNodeMaker",
     "PassThroughFlowNode",
     "PassThroughFlowNodeMaker",
+    "SourceSinkFlowNode",
+    "SourceSinkFlowNodeMaker",
     "StarfitFlowNode",
     "StarfitFlowNodeMaker",
     "PRMSCanopy",

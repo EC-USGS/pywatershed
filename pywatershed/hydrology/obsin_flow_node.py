@@ -27,7 +27,8 @@ class ObsInFlowNode(FlowNode):
         Args:
           control: a Control object.
           node_obs_data: A pandas Series object of observations at this
-            location given by pyPRMS.Streamflow.
+            location given by pyPRMS.Streamflow. Negative flow observations
+            result in pass through of inflows.
         """
         self.control = control
         self._node_obs_data = node_obs_data

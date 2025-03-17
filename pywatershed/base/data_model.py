@@ -217,6 +217,13 @@ class DatasetDict(Accessor):
         self._metadata = metadata
         self._encoding = encoding
 
+        for cat_data in ["_data_vars", "_coords"]:
+            for kk, vv in self[cat_data].items():
+                if not isinstance(vv, np.ndarray):
+                    msg = f"Coercing {cat_data[1:]}: {kk} to an np.ndarray."
+                    warnings.warn(msg)
+                    self[cat_data][kk] = np.array(vv)
+
         if "global" not in self._metadata.keys():
             self._metadata["global"] = {}
 

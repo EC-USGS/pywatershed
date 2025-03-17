@@ -34,6 +34,18 @@ Refactor of test_data/generate/convert_prms_output_to_nc.py to put final variabl
 a separate file to run by pytests both after all other variables are generated and
 so the final variables are run serially.
 
+.. _whats-new.2.0.2:
+
+v2.0.2 (14 March 2025)
+---------------------
+
+Bug fixes
+~~~~~~~~~
+Fixed setup.py to allow editable installs, keeping up with changes in the pythonverse. Deprecated all fortran code
+built and interfaced using f2py as it was not popular and had only maybe very slight speed advantages compared to numba. This
+was not considered a breaking change because there are redundant alternatives to the fortran.
+
+
 .. _whats-new.2.0.1:
 
 v2.0.1 (19 December 2024)

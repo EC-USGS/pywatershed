@@ -15,12 +15,8 @@
 
 [![DOI:10.5066/P13EWPEV](https://img.shields.io/badge/DOI-10.5066/P13EWPEV-b4a9fe.svg)](https://doi.org/10.5066/P13EWPEV)
 
-[![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
-
-
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**
 
 - [About](#about)
 - [Installation](#installation)
@@ -51,7 +47,6 @@ of well-established hydrologic process modeling.
 
 For more information on the goals and status of pywatershed, please see the [pywatershed docs](https://pywatershed.readthedocs.io/).
 
-
 ## Installation
 
 `pywatershed` uses Python 3.10 or 3.11.
@@ -59,26 +54,27 @@ For more information on the goals and status of pywatershed, please see the [pyw
 The `pywatershed` package is [available on
 PyPI](https://pypi.org/project/pywatershed/) but installation of all
 dependencies sets (lint, test, optional, doc, and all) may not be reliable on
-all platforms. 
+all platforms.
 
 The `pywatershed` package is [available on
 conda-forge](https://anaconda.org/conda-forge/pywatershed). The installation
 is the quickest way to get up and running by provides only the minimal set of
 dependencies (not including Jupyter nor all packages needed for running the
-example notebooks, also not suitable for development purposes). 
+example notebooks, also not suitable for development purposes).
 
 We recommend the following installation procedures to get fully-functional
 environments for running `pywatershed` and its example notebooks. We strongly
 recommend using [Mamba](https://mamba.readthedocs.io/en/latest/)to first
 instal dependencies from the `environment_y_jupyter.yml` file in the
 repository before installing `pywatershed` itself. Mamba will be much faster
-than Ananconda (but the conda command could also be used). 
+than Ananconda (but the conda command could also be used).
 
-If you wish to use the stable release, you will use `main` in place of 
+If you wish to use the stable release, you will use `main` in place of
 `<branch>` in the following commands. If you want to follow development, you'll
 use `develop` instead.
 
 Without using `git` (directly), you may:
+
 ```
 curl -L -O https://raw.githubusercontent.com/EC-USGS/pywatershed/<branch>/environment_w_jupyter.yml
 mamba env create -f environment_w_jupyter.yml
@@ -97,53 +93,35 @@ pip install -e .
 ```
 
 (If you want to name the environment other than the default `pws`, use the
-command 
+command
 `mamba env update --name your_env_name --file environment_w_jupyter.yml --prune`
 you will also need to activate this environment by name.)
 
-
-We install the `environment_w_jupyter.yml` to provide all known dependencies 
-including those for running the example notebooks. (The `environment.yml` 
-does not contain Jupyter or JupyterLab because this interferes with installation
-on WholeTale, see Getting Started section below.)
-
+We install the `environment_w_jupyter.yml` to provide all known dependencies
+including those for running the example notebooks.
 
 ## Getting started / Example notebooks
 
 Please note that you can browse the API reference, developer info, and index
-in the [pywatershed docs]((https://pywatershed.readthedocs.io/)). But
-*the best way to get started with pywatershed is to dive into the example
-notebooks*.
+in the [pywatershed docs](<(https://pywatershed.readthedocs.io/)>). But
+_the best way to get started with pywatershed is to dive into the example
+notebooks_.
 
 For introductory example notebooks, look in the
 [`examples/`](https://github.com/EC-USGS/pywatershed/tree/main/examples>)
 directory in the repository. Numbered starting at 00, these are meant to be
 completed in order. Numbered starting at 00, these are meant to be completed
-in order. Notebook outputs are not saved in Github. But you can run these
-notebooks locally or using WholeTale (an NSF funded project supporting logins
-from many institutions, free but sign-up or log-in required)
-where the pywatershed environment is all ready to go:
-
-[![WholeTale](https://raw.githubusercontent.com/whole-tale/wt-design-docs/master/badges/wholetale-explore.svg)](https://dashboard.wholetale.org)
-
-  * [Run latest release in WholeTale](https://dashboard.wholetale.org/run/64ae29e8a887f48b9f173678?tab=metadata)
-  * [Run the develop branch in WholeTale](https://dashboard.wholetale.org/run/64ae25c3a887f48b9f1735c8?tab=metadata)
-
-WholeTale will give you a JupyterLab running in the root of this
-repository. You can navigate to `examples/` and then open and run the notebooks
-of your choice.  The develop container may require the user to update the
-repository (`git pull origin`) to stay current with development.
+in order. Notebook outputs are not saved in Github.
 
 Non-numbered notebooks in `examples/` cover additional topics. These
 notebooks are not yet covered by testing and you may encounter some
 issues. In `examples/developer/` there are notebooks of interest to
 developers who may want to learn about running the software tests.
 
-
 ## Community engagement
 
 We value your feedback! Please use [discussions](https://github.com/EC-USGS/pywatershed/discussions)
-or [issues](https://github.com/EC-USGS/pywatershed/issues) on Github. 
+or [issues](https://github.com/EC-USGS/pywatershed/issues) on Github.
 For more in-depth contributions, please start by reading over
 the pywatershed
 [DEVELOPER.md](https://github.com/EC-USGS/pywatershed/blob/develop/DEVELOPER.md) and

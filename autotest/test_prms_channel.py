@@ -6,7 +6,7 @@ from utils_compare import compare_in_memory, compare_netcdfs
 from pywatershed.base.adapter import adapter_factory
 from pywatershed.base.control import Control
 from pywatershed.base.parameters import Parameters
-from pywatershed.hydrology.prms_channel import PRMSChannel, has_prmschannel_f
+from pywatershed.hydrology.prms_channel import PRMSChannel
 from pywatershed.parameters import PrmsParameters
 
 # compare in memory (faster) or full output files? or both!
@@ -14,7 +14,7 @@ do_compare_output_files = True
 do_compare_in_memory = True
 rtol = atol = 1.0e-7
 
-calc_methods = ("numpy", "numba", "fortran")
+calc_methods = ("numpy", "numba")
 params = ("params_sep", "params_one")
 
 
@@ -63,11 +63,6 @@ def parameters(simulation, control, request):
 def test_compare_prms(
     simulation, control, discretization, parameters, tmp_path, calc_method
 ):
-    if not has_prmschannel_f and calc_method == "fortran":
-        pytest.skip(
-            "PRMSChannel fortran code not available, skipping its test."
-        )
-
     tmp_path = pl.Path(tmp_path)
     output_dir = simulation["output_dir"]
 

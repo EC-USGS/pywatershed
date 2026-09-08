@@ -148,7 +148,6 @@ class PRMSSoilzoneCascadesNoDprst(PRMSSoilzone):
             "ssr2gw_rate",
             "ssstor_init_frac",
             "hru_route_order",
-            "nsegment_dum",  # a hack
             "ncascade_hru",
             "hru_down",
             "hru_down_frac",

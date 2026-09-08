@@ -159,7 +159,6 @@ class PRMSRunoffCascadesNoDprst(PRMSRunoff):
             "soil_moist_max",
             "snowinfil_max",
             "hru_route_order",
-            "nsegment_dum",  # a hack
             "ncascade_hru",
             "hru_down",
             "hru_down_frac",

@@ -429,14 +429,6 @@ def init_cascade_params(
         ["ndown", "nhru"], hru_down_fracwt
     )
 
-    # This is a hack of convenience. Once again, a process on one
-    # discretization needs to know about the discretization of another process
-    # instead of just passing on information. Runoff/soilzone should not
-    # need to know about nsegments. We'll look for a way to remove this in the
-    # future.
-    nseg_dum = np.arange(params.dims["nsegment"])
-    new_params["nsegment_dum"] = xr.Variable("nsegment", nseg_dum)
-
     return Parameters.from_dataset_dict(DatasetDict.from_ds(new_params))
 
 

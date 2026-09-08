@@ -498,7 +498,8 @@ class DatasetDict(Accessor):
             keep_global_metadata: bool retain the global metadata in the subset
             keep_global_encoding: bool retain the global encoding in the subset
             keep_dims: list of dimension names to retain in the subset even
-                if not required by the subset variables
+                if not required by the subset variables; the coordinates on
+                these dimensions are retained as well
 
         Returns:
           A subset Parameter object on the passed keys.
@@ -564,6 +565,13 @@ class DatasetDict(Accessor):
             for dd in keep_dims:
                 if dd not in subset["dims"].keys() and dd in self.dims.keys():
                     subset["dims"][dd] = self.dims[dd]
+                    # keep the coordinates on this dimension as well
+                    dim_coord_data = self._get_dim_coords(
+                        [dd], data=True, copy=copy
+                    )
+                    for ck, cv in dim_coord_data.items():
+                        if ck not in subset["coords"].keys():
+                            subset["coords"][ck] = cv
 
         # build metadata and encoding from coords and data_vars
         for cv in ["coords", "data_vars"]:

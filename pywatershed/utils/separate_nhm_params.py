@@ -2,8 +2,10 @@ import numpy as np
 
 import pywatershed
 
+from ..base import Control
 from ..constants import fileish
 from ..parameters import PrmsParameters
+from .preprocess_cascades import preprocess_cascade_params
 
 """This utility defines how PRMS parameter files are separated
 
@@ -139,6 +141,8 @@ def separate_domain_params_dis_to_ncdf(
     out_dir: fileish,
     process_list: list = None,
     use_xr=True,
+    control: Control = None,
+    write_dis: bool = True,
 ) -> dict:
     """Separate PRMS parameters into discretizations and individual processes
 
@@ -154,6 +158,15 @@ def separate_domain_params_dis_to_ncdf(
         process_list: optional, the list of process classes desired for
             individual output files. If not specified, all process classes
             will be assumed.
+        use_xr: write the netcdf files via xarray (True) or netCDF4 (False).
+        control: optional Control. When its ``cascade_flag`` option is set,
+            the cascade parameters are derived from the PRMS parameters by
+            :func:`~utils.preprocess_cascades.preprocess_cascade_params`
+            before separation, so that the cascade process classes
+            (e.g. :class:`PRMSRunoffCascadesNoDprst`) get complete files.
+        write_dis: also write the discretization files (dis_hru, dis_seg,
+            dis_both). False writes only the process files, e.g. to add or
+            refresh a few processes without touching the discretizations.
 
     Returns:
         A dictionary of `process_class: file` and `dis_name: file` pairs
@@ -187,6 +200,10 @@ def separate_domain_params_dis_to_ncdf(
         process_list = nhm_processes
 
     prms_parameters = PrmsParameters.load(prms_param_file)
+    if control is not None and control.options.get("cascade_flag", 0):
+        prms_parameters = preprocess_cascade_params(
+            control, prms_parameters, verbosity=0
+        )
 
     written_files = {}
 
@@ -199,11 +216,18 @@ def separate_domain_params_dis_to_ncdf(
         dis_param_names = set(dis_hru_vars + dis_seg_vars)
         proc_param_names = set(proc.get_parameters())
         proc_params_no_dis_names = proc_param_names.difference(dis_param_names)
-        proc_params = prms_parameters.subset(proc_params_no_dis_names)
+        # keep the process's declared dims (and their coordinates) even
+        # when no parameter uses them, as Process.__init__ does
+        proc_params = prms_parameters.subset(
+            proc_params_no_dis_names, keep_dims=proc.get_dimensions()
+        )
         print(proc, proc_params_no_dis_names)
         nc_out_file = out_dir / f"parameters_{domain_name}{proc.__name__}.nc"
         proc_params.to_netcdf(nc_out_file, use_xr=use_xr)
         written_files[proc] = nc_out_file
+
+    if not write_dis:
+        return written_files
 
     dis_dict = {"dis_hru": dis_hru_vars, "dis_seg": dis_seg_vars}
     for dis_name, dis_var_names in dis_dict.items():

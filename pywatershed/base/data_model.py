@@ -993,6 +993,10 @@ def nc4_ds_to_xr_dd(file_or_ds, xr_enc: dict = None) -> dict:
         for vv in xr_dd["data_vars"].values()
         if "coordinates" in vv["attrs"].keys()
     ]
+    # a coordinate used by no data variable is recorded in the global
+    # "coordinates" attribute (CF convention, as written by xarray)
+    if "coordinates" in xr_dd["attrs"].keys():
+        all_coords += [xr_dd["attrs"].pop("coordinates")]
     all_coords = sorted(set(" ".join(all_coords).split(" ")))
     for cc in all_coords:
         if cc == "":

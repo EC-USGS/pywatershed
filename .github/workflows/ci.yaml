@@ -345,6 +345,7 @@ jobs:
           --ignore=test_output.py
           --ignore=test_pass_through_flow_graph.py
           --ignore=test_preprocess_cascades.py
+          --ignore=test_prms_param_separate_cascades.py
           --ignore=test_prms_atmosphere_transp_frost.py
           --ignore=test_prms_atmosphere_transp_frost_dynamic.py
           --ignore=test_prms_channel.py
@@ -391,6 +392,7 @@ jobs:
           --cov-report=xml
           --junitxml=pytest_sagehen_5yr_no_gw_cascades.xml
           test_preprocess_cascades.py
+          test_prms_param_separate_cascades.py
           test_prms_above_snow.py
           test_prms_atmosphere.py
           test_prms_below_snow.py
@@ -521,6 +523,7 @@ jobs:
           --cov=pywatershed
           --cov-report=xml
           --junitxml=pytest_sagehen_gridded_5yr_cascades.xml
+          test_prms_param_separate_cascades.py
           test_prms_above_snow.py
           test_prms_below_snow.py
           test_prms_groundwater.py
@@ -643,6 +646,7 @@ jobs:
           --ignore=test_output.py
           --ignore=test_pass_through_flow_graph.py
           --ignore=test_preprocess_cascades.py
+          --ignore=test_prms_param_separate_cascades.py
           --ignore=test_prms_atmosphere_transp_frost.py
           --ignore=test_prms_atmosphere_transp_frost_dynamic.py
           --ignore=test_prms_channel_flow_graph.py
@@ -820,6 +824,7 @@ jobs:
           --junitxml=pytest_drb_2yr_nhm.xml
           --ignore=test_obsin_flow_node.py
           --ignore=test_preprocess_cascades.py
+          --ignore=test_prms_param_separate_cascades.py
           --ignore=test_prms_dyn_params.py
           --ignore=test_prms_atmosphere_transp_frost.py
           --ignore=test_prms_atmosphere_transp_frost_dynamic.py
@@ -1038,6 +1043,7 @@ jobs:
           --ignore=test_output.py
           --ignore=test_pass_through_flow_graph.py
           --ignore=test_preprocess_cascades.py
+          --ignore=test_prms_param_separate_cascades.py
           --ignore=test_prms_atmosphere_transp_frost.py
           --ignore=test_prms_atmosphere_transp_frost_dynamic.py
           --ignore=test_mmr_to_mf6_dfw.py

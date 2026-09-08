@@ -46,6 +46,14 @@ New Features
   (:func:`~utils.prms_exe_utils.compile_prms`); the gridded sagehen
   domain generates its own CBH forcing files with PRMS, making it fully
   reproducible from a clean clone. (:pull:`407`) By `James McCreight <https://github.com/jmccreight>`_.
+- :func:`~utils.separate_domain_params_dis_to_ncdf` takes an optional
+  ``control``; when its ``cascade_flag`` is set the cascade parameters are
+  derived before separation so the cascade process classes get complete
+  parameter files. A ``write_dis`` switch skips the discretization files
+  when only process files are wanted. The script ``test_data/generate/separate_params_to_nc.py``
+  replaces the ``prms_parameter_discretization_separation`` notebook as the
+  single way the test domains' ``parameters_*.nc`` files are written.
+  (:pull:`407`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~
@@ -80,6 +88,12 @@ Breaking Changes
 
 Bug fixes
 ~~~~~~~~~
+- Loading a parameter netCDF file with netCDF4 (the default for
+  :meth:`Parameters.from_netcdf`) dropped a coordinate that no data variable
+  uses (recorded in the file's global ``coordinates`` attribute), so a process
+  declaring a dimension none of its parameters use, e.g. ``nsegment`` for
+  :class:`PRMSRunoffCascadesNoDprst`, could not write netCDF output on that
+  dimension. (:pull:`407`) By `James McCreight <https://github.com/jmccreight>`_.
 - :class:`PRMSCanopy` gates rain interception by grasses on the antecedent
   snowpack, ``pkwater_ante``, as PRMS does (``intcp.f90:416``, which tests
   ``Pkwater_equiv`` before ``snowcomp`` updates it for the timestep;

@@ -337,6 +337,7 @@ if [ -z "${t}" ]; then
             --ignore=test_output.py \
             --ignore=test_pass_through_flow_graph.py \
             --ignore=test_preprocess_cascades.py \
+            --ignore=test_prms_param_separate_cascades.py \
             --ignore=test_prms_atmosphere_transp_frost.py \
             --ignore=test_prms_atmosphere_transp_frost_dynamic.py \
             --ignore=test_prms_channel.py \
@@ -381,6 +382,7 @@ if [ -z "${t}" ]; then
             --durations=0 \
             --error-for-skips \
             test_preprocess_cascades.py \
+            test_prms_param_separate_cascades.py \
             test_prms_above_snow.py \
             test_prms_atmosphere.py \
             test_prms_below_snow.py \
@@ -430,6 +432,7 @@ if [ -z "${t}" ]; then
             --domain=sagehen_gridded_5yr \
             --durations=0 \
             --error-for-skips \
+            test_prms_param_separate_cascades.py \
             test_prms_above_snow.py \
             test_prms_below_snow.py \
             test_prms_groundwater.py \
@@ -482,6 +485,7 @@ if [ -z "${t}" ]; then
             --ignore=test_output.py \
             --ignore=test_pass_through_flow_graph.py \
             --ignore=test_preprocess_cascades.py \
+            --ignore=test_prms_param_separate_cascades.py \
             --ignore=test_prms_atmosphere_transp_frost.py \
             --ignore=test_prms_atmosphere_transp_frost_dynamic.py \
             --ignore=test_prms_channel_flow_graph.py \
@@ -552,6 +556,7 @@ if [ -z "${t}" ]; then
             --error-for-skips \
             --ignore=test_obsin_flow_node.py \
             --ignore=test_preprocess_cascades.py \
+            --ignore=test_prms_param_separate_cascades.py \
             --ignore=test_prms_dyn_params.py \
             --ignore=test_prms_atmosphere_transp_frost.py \
             --ignore=test_prms_atmosphere_transp_frost_dynamic.py \
@@ -676,6 +681,7 @@ if [ -z "${t}" ]; then
             --ignore=test_output.py \
             --ignore=test_pass_through_flow_graph.py \
             --ignore=test_preprocess_cascades.py \
+            --ignore=test_prms_param_separate_cascades.py \
             --ignore=test_prms_atmosphere_transp_frost.py \
             --ignore=test_prms_atmosphere_transp_frost_dynamic.py \
             --ignore=test_mmr_to_mf6_dfw.py \

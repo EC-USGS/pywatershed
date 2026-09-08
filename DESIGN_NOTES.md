@@ -67,3 +67,27 @@ The cost also compounds: three binary options already give
   variables the class does not carry. Restart is not expected for
   the cascade processes at all; their signatures have no
   `restart_read` or `restart_write`. Root cause: declarations spread.
+- **Copy-paste `_calculate`** (PR 407 review, Quality). The cascade
+  children repeat their NoDprst siblings' ~90-keyword kernel call
+  almost verbatim (`prms_runoff_cascades_no_dprst.py` vs
+  `prms_runoff_no_dprst.py`; same for soilzone). Every change to a
+  kernel signature is hand-mirrored in three places; PR 407 made one.
+  Not worked around. Root cause: parent decides (the parent owns the
+  kernel call, so a child can only replace it, not extend it).
+- **Doubled startup work** (PR 407 review, Quality). The cascade
+  children rerun `_set_inputs`, `_set_options`, `_set_budget` and
+  `basin_init` after `super().__init__()` already ran them
+  (`prms_runoff_cascades_no_dprst.py`, search `basin_init`; soilzone
+  reruns `_set_budget`), because the child must preprocess parameters
+  before the parent wires them and the parent's `__init__` cannot be
+  entered halfway. `preprocess_cascade_params` also runs once per
+  class, so twice per model. Not worked around. Root cause: parent
+  decides.
+- **Two off-switch conventions for one option** (PR 407 review,
+  Quality). `PRMSRunoff` turns cascades off with per-step NaN sentinel
+  arrays (`prms_runoff.py`, search `nan_array`) plus a compiled dummy
+  kernel, and re-derives the flag each step from
+  `np.isnan(ncascade_hru).all()`; `PRMSSoilzone` passes `None`. The
+  parent's kernel carries arguments only the child fills. Not worked
+  around. Root cause: declarations spread (the option lives in the
+  kernel signature of a class that does not have the option).

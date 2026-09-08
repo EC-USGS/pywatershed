@@ -10,6 +10,9 @@
 
 # local configuration
 pytest_n=8
+# sagehen_gridded: xdist workers x that domain's memory footprint OOMs
+# small machines (CI runs -n=1 on Linux, -n=2 elsewhere); keep it low here
+pytest_n_gridded=2
 # should probably clone mf6 locally and checkout latest develop
 # modflow_repo_location=../../modflow6_for_pws_ci
 
@@ -427,7 +430,7 @@ if [ -z "${t}" ]; then
         pytest \
             -vv \
             -rs \
-            -n=$pytest_n \
+            -n=$pytest_n_gridded \
             -m "not domainless" \
             --domain=sagehen_gridded_5yr \
             --durations=0 \

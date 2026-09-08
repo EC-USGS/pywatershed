@@ -33,6 +33,8 @@ def preprocess_cascade_params(
       parameters: a parameter object of class Parameters.
       verbosity: Currently an integer in [0, 1], boolean.
 
+    Returns:
+      Parameters: the input parameters with all cascade parameters added
     """
     new_params = calc_hru_route_order(parameters)
     return init_cascade_params(control, new_params, verbosity=verbosity)
@@ -47,6 +49,8 @@ def calc_hru_route_order(parameters: Parameters) -> Parameters:
     Args:
       parameters: A Parameters object for the domain which includes hru_type
 
+    Returns:
+      Parameters: the input parameters with hru_route_order added
     """
     nhru = parameters.dims["nhru"]
     hru_type = parameters.parameters["hru_type"]
@@ -136,9 +140,12 @@ def init_cascade_params(
       parameters: a parameter object of class Parameters.
       verbosity: Currently an integer in [0, 1], boolean.
 
+    Returns:
+      Parameters: the input parameters with the cascade parameters from
+        init_cascade added
     """
 
-    def verbosity_msg(msg, verbosity_thresh: int = 1, warn: bool = False):
+    def verbosity_msg(msg: str, verbosity_thresh: int = 1) -> None:
         if verbosity >= verbosity_thresh:
             print(msg, flush=True)
 

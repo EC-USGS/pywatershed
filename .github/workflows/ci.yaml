@@ -471,21 +471,11 @@ jobs:
           pip list
 
       - name: Compile PRMS 5.2.1
-        working-directory: prms_src/prms5.2.1
         run: |
           which gfortran
           gfortran --version
           which make
-          MAKE_PATH=$(which make)
-          $MAKE_PATH clean MAKE="$MAKE_PATH"
-          $MAKE_PATH DBL_PREC=true FC=gfortran CC=gcc MAKE="$MAKE_PATH"
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            cp bin/prms ../../bin/prms_5.2.1_gfort_win_dbl_prec.exe
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            cp bin/prms ../../bin/prms_5.2.1_gfortran_apple_silicon_dbl_prec
-          elif [ "$RUNNER_OS" == "Linux" ]; then
-            cp bin/prms ../../bin/prms_5.2.1_gfort_linux_dbl_prec
-          fi
+          python -c "import pywatershed as pws; pws.utils.compile_prms('5.2.1')"
 
       - name: sagehen_gridded_5yr - generate CBH forcing files with PRMS
         working-directory: autotest

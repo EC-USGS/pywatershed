@@ -62,8 +62,6 @@ def calc_hru_route_order(parameters: Parameters) -> Parameters:
     if nlake > 0:
         lake_hru_id = parameters.parameters["lake_hru_id"]
 
-    frozen_flag = HruType.INACTIVE.value  # until further notice
-
     active_hrus = 0
     for ii in range(nhru):
         if hru_type[ii] == HruType.INACTIVE.value:
@@ -94,13 +92,8 @@ def calc_hru_route_order(parameters: Parameters) -> Parameters:
                 )
                 raise ValueError(msg)
 
-            if frozen_flag == ACTIVE:
-                if hru_type[ii] == HruType.SWALE.value:
-                    msg = (
-                        "ERROR, a swale HRU cannot be frozen for CFGI, "
-                        f"HRU: {ii}"
-                    )
-                    raise ValueError(msg)
+            # PRMS frozen_flag (CFGI) is not supported; its check that a
+            # swale HRU cannot be frozen is omitted.
 
         # <<<
         active_hrus += 1
@@ -343,10 +336,6 @@ def init_cascade_params(
             )
 
         # <
-        # import pdb
-
-        # if i == 90:
-        #     pdb.set_trace()
         k = 0
         for kk in range(num):
             dnhru = hru_down[kk, i - 1]

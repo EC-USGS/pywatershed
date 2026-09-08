@@ -357,7 +357,7 @@ class Budget(Accessor):
             # to a scalar
             if self.active_mask is not False:
                 vals = [
-                    np.sum(val[self.active_mask])
+                    np.sum(val, where=self.active_mask)
                     for val in self[attr].values()
                 ]
             else:

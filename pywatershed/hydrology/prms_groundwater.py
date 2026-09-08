@@ -300,6 +300,8 @@ class PRMSGroundwater(ConservativeProcess, HruMixin):
         gwres_stor_change = gwres_stor - gwres_stor_old
         gwres_flow_vol = gwres_flow * hru_in_to_cf
 
+        # HruMixin._mask_inactive_hrus masks once at init; this kernel is
+        # vectorized over all HRUs, so inactive HRUs are re-masked each step.
         if len(wh_inactive_hrus) > 0:
             gwres_flow[wh_inactive_hrus] = np.nan
             gwres_flow_vol[wh_inactive_hrus] = np.nan

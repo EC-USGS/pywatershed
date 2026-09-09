@@ -785,7 +785,6 @@ meta-var: hru_ag_actet type=float64 units=inches
 meta-var: hru_et_yr type=float64 units=inches
 meta-var: hru_frac_perv type=float64 units=decimal fraction
 meta-var: hru_gw_cascadeflow type=float64 units=inches
-meta-var: hru_hortn_cascflow type=float64 units=inches
 meta-var: hru_horton_cascflow type=float64 units=inches
 meta-var: hru_imperv type=float64 units=acres
 meta-var: hru_impervevap type=float64 units=inches
@@ -1265,7 +1264,7 @@ set: PRMSRunoffCascadesNoDprst.get_mass_budget_terms inputs: intcp_changeover sn
 set: PRMSRunoffCascadesNoDprst.get_mass_budget_terms outputs: hortonian_flow hru_horton_cascflow hru_impervevap infil_hru
 set: PRMSRunoffCascadesNoDprst.get_mass_budget_terms storage_changes: hru_impervstor_change
 set: PRMSRunoffCascadesNoDprst.get_parameters tuple: carea_max cascade_area hru_area hru_down hru_down_frac hru_down_fracwt hru_in_to_cf hru_percent_imperv hru_route_order hru_type imperv_stor_max ncascade_hru smidx_coef smidx_exp snowinfil_max soil_moist_max
-set: PRMSRunoffCascadesNoDprst.get_restart_variables list: dprst_area_clos dprst_area_open dprst_stor_hru dprst_vol_clos dprst_vol_open dprst_vol_thres_open hru_impervstor imperv_stor
+set: PRMSRunoffCascadesNoDprst.get_restart_variables raises NotImplementedError
 set: PRMSRunoffCascadesNoDprst.get_variables list: contrib_fraction hortonian_flow hru_horton_cascflow hru_impervevap hru_impervstor hru_impervstor_change hru_impervstor_old hru_sroffi hru_sroffp imperv_evap imperv_stor infil infil_hru sroff sroff_vol stream_seg_in upslope_hortonian
 set: PRMSRunoffNoDprst.get_dimensions tuple: nhru
 set: PRMSRunoffNoDprst.get_energy_budget_terms inputs: 
@@ -1337,7 +1336,7 @@ set: PRMSSoilzoneCascadesNoDprst.get_mass_budget_terms inputs: infil_hru upslope
 set: PRMSSoilzoneCascadesNoDprst.get_mass_budget_terms outputs: dunnian_flow hru_sz_cascadeflow perv_actet_hru pref_flow slow_flow soil_to_gw ssr_to_gw
 set: PRMSSoilzoneCascadesNoDprst.get_mass_budget_terms storage_changes: pref_flow_stor_change slow_stor_change soil_lower_change_hru soil_rechr_change_hru
 set: PRMSSoilzoneCascadesNoDprst.get_parameters tuple: cascade_area cov_type fastcoef_lin fastcoef_sq hru_area hru_down hru_down_frac hru_down_fracwt hru_in_to_cf hru_percent_imperv hru_route_order hru_type ncascade_hru pref_flow_den pref_flow_infil_frac sat_threshold slowcoef_lin slowcoef_sq soil2gw_max soil_moist_init_frac soil_moist_max soil_rechr_init_frac soil_rechr_max_frac soil_type ssr2gw_exp ssr2gw_rate ssstor_init_frac
-set: PRMSSoilzoneCascadesNoDprst.get_restart_variables tuple: 
+set: PRMSSoilzoneCascadesNoDprst.get_restart_variables raises NotImplementedError
 set: PRMSSoilzoneCascadesNoDprst.get_variables list: cap_infil_tot cap_waterin dunnian_flow hru_actet hru_sz_cascadeflow perv_actet perv_actet_hru potet_lower potet_rechr pref_flow pref_flow_in pref_flow_infil pref_flow_max pref_flow_stor pref_flow_stor_change pref_flow_stor_prev pref_flow_thrsh recharge slow_flow slow_stor slow_stor_change slow_stor_prev soil_lower soil_lower_change soil_lower_change_hru soil_lower_max soil_lower_prev soil_lower_ratio soil_moist soil_moist_tot soil_rechr soil_rechr_change soil_rechr_change_hru soil_rechr_prev soil_to_gw soil_to_ssr soil_zone_max ssr_to_gw ssres_flow ssres_flow_vol ssres_in ssres_stor swale_actet unused_potet upslope_dunnianflow upslope_interflow
 set: PRMSSoilzoneNoDprst.get_dimensions tuple: nhru
 set: PRMSSoilzoneNoDprst.get_energy_budget_terms inputs: 

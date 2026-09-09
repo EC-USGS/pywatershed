@@ -172,8 +172,11 @@ class PRMSSoilzoneCascadesNoDprst(PRMSSoilzone):
         )
 
     @staticmethod
-    def get_restart_variables() -> tuple:
-        return ()
+    def get_restart_variables() -> list:
+        raise NotImplementedError(
+            "Restart capability not implemented for "
+            "PRMSSoilzoneCascadesNoDprst"
+        )
 
     @staticmethod
     def get_init_values() -> dict:

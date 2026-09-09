@@ -1,18 +1,7 @@
 import difflib
-import importlib.util
-import pathlib as pl
 
+import api_surface
 import pytest
-
-repo_root = pl.Path(__file__).parent.parent
-
-
-def _load_api_surface_module():
-    path = repo_root / ".github" / "scripts" / "api_surface.py"
-    spec = importlib.util.spec_from_file_location("api_surface", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 @pytest.mark.domainless
@@ -25,13 +14,12 @@ def test_api_surface_unchanged():
     Any diff means the public API changed: if intentional, regenerate
     the baseline with
 
-        python .github/scripts/api_surface.py --write
+        python autotest/api_surface.py --write
 
     and, for a removal, rename, or other breaking line change, add an
     entry under Breaking Changes in doc/whats-new.rst. Added lines are
     additive changes and need only the regeneration.
     """
-    api_surface = _load_api_surface_module()
     current = api_surface.generate()
     baseline = api_surface.BASELINE.read_text()
     if current == baseline:

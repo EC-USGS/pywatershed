@@ -167,6 +167,12 @@ class PRMSRunoffCascadesNoDprst(PRMSRunoff):
         )
 
     @staticmethod
+    def get_restart_variables() -> list:
+        raise NotImplementedError(
+            "Restart capability not implemented for PRMSRunoffCascadesNoDprst"
+        )
+
+    @staticmethod
     def get_init_values() -> dict:
         return {
             "contrib_fraction": zero,

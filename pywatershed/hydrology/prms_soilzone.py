@@ -152,7 +152,6 @@ class PRMSSoilzone(ConservativeProcess, HruMixin):
             restart_write_freq=restart_write_freq,
         )
         self._set_active_hrus()
-        self._mask_inactive_hrus()
         self._set_inputs(locals())
         self._set_options(locals())
 
@@ -172,6 +171,10 @@ class PRMSSoilzone(ConservativeProcess, HruMixin):
 
         # This uses options
         self._initialize_soilzone_data()
+        # Mask after the initial storages are set: the cold start above
+        # writes all HRUs in place, so masking before it leaves finite
+        # values at inactive HRUs that a restart (masked nan) would not.
+        self._mask_inactive_hrus()
 
         self._set_budget(active_mask=self._active_hru_mask)
         self._init_calc_method()
@@ -290,9 +293,9 @@ class PRMSSoilzone(ConservativeProcess, HruMixin):
             "soil_moist",
             "soil_rechr",
             "slow_stor",
-            # these might be necessary with different options...
-            # "pref_flow_stor",  # apparently not necessary
-            # "ssres_stor",  # apparently not necessary
+            # state wherever pref_flow_den > 0 (zero on drb, 0.1 on sagehen)
+            "pref_flow_stor",
+            # ssres_stor = slow_stor + pref_flow_stor is recomputed each step
         ]
 
     @staticmethod

@@ -39,19 +39,19 @@ The ag calculations use:
 All storage states (imperv_stor, dprst_vol_open, dprst_vol_clos, etc.) are
 inherited from the parent class and properly saved/restored during restart.
 
-Why Not Extend test_nhm_restart.py?
-------------------------------------
-This test is separate from test_nhm_restart.py because PRMSRunoffAg requires
-process-specific handling that would complicate the generic NHM test:
+Why Not Extend test_restart_processes.py?
+------------------------------------------
+This test is separate from test_restart_processes.py because PRMSRunoffAg
+requires process-specific handling that would complicate the generic test
+(folding it in is noted there as future work):
 
-1. Domain differences: test_nhm_restart.py assumes "nhm" configuration with
-   1979-1980 time ranges, while PRMSRunoffAg uses ag-specific domain
-   (fgr_ag_2yr) with different time ranges (2000-2001).
-
-2. Input handling: PRMSRunoffAg requires special handling for ag_frac
+1. Input handling: PRMSRunoffAg requires special handling for ag_frac
    (dynamic vs static parameter) and intcp_changeover_in_net_rain flag
    (based on GSFLOW/PRMS), which doesn't fit the simple input gathering
-   pattern used in test_nhm_restart.py.
+   pattern used in test_restart_processes.py.
+
+2. Domain: the GSFLOW/ag domain (fgr_ag_2yr, 2000-2001) has its own
+   sat_threshold skip logic.
 
 3. Separation of concerns: Keeping ag-specific restart tests separate
    maintains clarity and follows the pattern established by

@@ -293,21 +293,36 @@ class PRMSSnow(ConservativeProcess, HruMixin):
 
     @staticmethod
     def get_restart_variables() -> list:
+        # PRMS 5.2.1 snowcomp_restart's list (minus glacier variables) plus
+        # pkwater_equiv (climateflow's restart) and ai. PRMS does not save
+        # ai, which snowcov() recovers as pkwater_equiv only when the pack
+        # is not depleting; without it a restart of a depleting pack is not
+        # exact.
         return [
-            "freeh2o",
-            "iasw",
-            "pk_def",
-            "pk_depth",
-            "pk_den",
-            "pk_ice",
+            "int_alb",
+            "scrv",
             "pksv",
-            "pkwater_equiv",
+            "snowcov_areasv",
+            "salb",
+            "slst",
+            "lst",
+            "iasw",
+            "iso",
+            "mso",
+            "lso",
+            "albedo",
+            "pk_temp",
+            "pk_den",
+            "pk_def",
+            "pk_ice",
+            "freeh2o",
+            "snowcov_area",
             "pss",
             "pst",
-            "scrv",
-            "slst",
-            "snowcov_area",
-            "snowcov_areasv",
+            "snsv",
+            "pk_depth",
+            "pkwater_equiv",
+            "ai",
         ]
 
     @staticmethod
@@ -321,34 +336,6 @@ class PRMSSnow(ConservativeProcess, HruMixin):
             ],
             "storage_changes": ["freeh2o_change", "pk_ice_change"],
         }
-
-    # TODO: remove this. Im a bit concerned theres important knowledge in here
-    # @staticmethod
-    # def get_restart_variables() -> tuple:
-    #     return (
-    #         "albedo",
-    #         "freeh2o",
-    #         "iasw",
-    #         "int_alb",
-    #         "iso",
-    #         "lso",
-    #         "lst",
-    #         "mso",
-    #         "pk_def",
-    #         "pk_depth",
-    #         "pk_den",
-    #         "pk_ice",
-    #         "pk_temp",
-    #         "pksv",
-    #         "pss",
-    #         "pst",
-    #         "salb",
-    #         "scrv",
-    #         "slst",
-    #         "snowcov_area",
-    #         "snowcov_areasv",
-    #         "snsv",
-    #     )
 
     def _set_initial_conditions(self):
         # Derived parameters

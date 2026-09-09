@@ -54,6 +54,23 @@ New Features
   replaces the ``prms_parameter_discretization_separation`` notebook as the
   single way the test domains' ``parameters_*.nc`` files are written.
   (:pull:`407`) By `James McCreight <https://github.com/jmccreight>`_.
+- Restart capability (``restart_read``, ``restart_write``,
+  ``restart_write_freq``) for :class:`PRMSSoilzoneNoDprst`, which previously
+  raised ``NotImplementedError``, and for the new cascade classes
+  :class:`PRMSRunoffCascadesNoDprst` and :class:`PRMSSoilzoneCascadesNoDprst`
+  (which also gain ``input_aliases``). The soilzone restart state, also
+  for :class:`PRMSSoilzone`, now includes ``pref_flow_stor``, which is live
+  wherever ``pref_flow_den > 0`` (previously omitted, so such restarts were
+  not exact; the NHM test domains have ``pref_flow_den = 0``). The
+  process-level perfect-restart test, now ``autotest/test_restart_processes.py``
+  (was ``test_nhm_restart.py``), picks the process classes from the control
+  file and its dates from the simulation period, so it runs on the sagehen
+  domains and the ``no_dprst`` controls too. That exposed a second
+  omission: :class:`PRMSSnow` now saves PRMS 5.2.1's full snowcomp restart
+  state (adds ``int_alb``, ``salb``, ``lst``, ``iso``, ``mso``, ``lso``,
+  ``albedo``, ``pk_temp``, ``snsv``) plus ``ai``, which PRMS does not save
+  and which made restarts of a depleting snowpack inexact.
+  (:pull:`407`) By `James McCreight <https://github.com/jmccreight>`_.
 
 Breaking Changes
 ~~~~~~~~~~~~~~~~

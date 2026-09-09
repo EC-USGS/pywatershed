@@ -335,7 +335,6 @@ if [ -z "${t}" ]; then
             --ignore=test_mmr_to_mf6_dfw.py \
             --ignore=test_model.py \
             --ignore=test_netcdf_subset.py \
-            --ignore=test_nhm_restart.py \
             --ignore=test_obsin_flow_node.py \
             --ignore=test_output.py \
             --ignore=test_pass_through_flow_graph.py \
@@ -391,6 +390,7 @@ if [ -z "${t}" ]; then
             test_prms_below_snow.py \
             test_prms_canopy.py \
             test_prms_groundwater.py \
+            test_restart_processes.py \
             test_prms_snow.py \
             test_prms_solar_geom.py \
             test_self_drive.py || exit 1
@@ -439,6 +439,7 @@ if [ -z "${t}" ]; then
             test_prms_above_snow.py \
             test_prms_below_snow.py \
             test_prms_groundwater.py \
+            test_restart_processes.py \
             test_prms_snow.py \
             test_prms_solar_geom.py || exit 1
     fi
@@ -592,7 +593,8 @@ if [ -z "${t}" ]; then
             test_prms_soilzone.py \
             test_prms_groundwater.py \
             test_prms_above_snow.py \
-            test_prms_below_snow.py || exit 1
+            test_prms_below_snow.py \
+            test_restart_processes.py || exit 1
 
         # # Specific tests not redundant with dprst
         echo ".........."

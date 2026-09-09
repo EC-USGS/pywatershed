@@ -237,9 +237,13 @@ class PRMSSoilzoneNoDprst(PRMSSoilzone):
 
     @staticmethod
     def get_restart_variables() -> list:
-        raise NotImplementedError(
-            "Restart capability not implemented for PRMSSoilzoneNoDprst"
-        )
+        # Same as PRMSSoilzone; explicit so this class documents its state.
+        return [
+            "soil_moist",
+            "soil_rechr",
+            "slow_stor",
+            "pref_flow_stor",
+        ]
 
     @staticmethod
     def get_mass_budget_terms():

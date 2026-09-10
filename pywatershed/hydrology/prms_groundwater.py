@@ -7,11 +7,12 @@ import numpy as np
 from ..base.adapter import adaptable, adapter_factory
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
+from ..base.hru_mixin import HruMixin
 from ..constants import nan, numba_num_threads
 from ..parameters import Parameters
 
 
-class PRMSGroundwater(ConservativeProcess):
+class PRMSGroundwater(ConservativeProcess, HruMixin):
     """PRMS groundwater reservoir.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in
@@ -33,6 +34,8 @@ class PRMSGroundwater(ConservativeProcess):
             for each HRU
         dprst_seep_hru: Seepage from surface-depression storage to associated
             GWR for each HRU
+        stream_seg_in: Flow into each stream segment from cascading flow
+            (cfs); only used by PRMSGroundwaterCascadesNoDprst
         imbalance_behavior: one of ["defer", None, "warn", "error"]
             with "defer" being the default and defering to
             control.options["imbalance_behavior"] when available. When
@@ -76,6 +79,7 @@ class PRMSGroundwater(ConservativeProcess):
         soil_to_gw: adaptable,
         ssr_to_gw: adaptable,
         dprst_seep_hru: adaptable,
+        stream_seg_in: adaptable = None,
         dprst_flag: bool = None,
         imbalance_behavior: Literal["defer", None, "warn", "error"] = "defer",
         calc_method: Literal["numba", "numpy"] = None,
@@ -95,6 +99,9 @@ class PRMSGroundwater(ConservativeProcess):
             restart_write_freq=restart_write_freq,
         )
         self.name = "PRMSGroundwater"
+        self._set_active_hrus()
+        self._mask_inactive_hrus()
+        self._wh_inactive_hrus = np.where(~self._active_hru_mask)[0]
 
         self._set_inputs(locals())
         self._set_options(locals())
@@ -114,7 +121,7 @@ class PRMSGroundwater(ConservativeProcess):
                     control=self.control,
                 )
 
-        self._set_budget()
+        self._set_budget(active_mask=self._active_hru_mask)
         self._init_calc_method()
 
         return
@@ -127,6 +134,7 @@ class PRMSGroundwater(ConservativeProcess):
     def get_parameters() -> tuple:
         return (
             "hru_area",
+            "hru_type",
             "hru_in_to_cf",
             "gwflow_coef",
             "gwsink_coef",
@@ -209,6 +217,7 @@ class PRMSGroundwater(ConservativeProcess):
 
             self._calculate_gw = nb.njit(
                 nb.types.UniTuple(nb.float64[:], 5)(
+                    nb.types.Array(nb.types.int64, 1, "C", readonly=True),
                     nb.types.Array(nb.types.float64, 1, "C", readonly=True),
                     nb.float64[:],
                     nb.float64[:],
@@ -241,6 +250,7 @@ class PRMSGroundwater(ConservativeProcess):
             self.gwres_stor_change[:],
             self.gwres_flow_vol[:],
         ) = self._calculate_gw(
+            self._wh_inactive_hrus,
             self.hru_area,
             self.soil_to_gw,
             self.ssr_to_gw,
@@ -255,6 +265,7 @@ class PRMSGroundwater(ConservativeProcess):
 
     @staticmethod
     def _calculate_numpy(
+        wh_inactive_hrus,
         gwarea,
         soil_to_gw,
         ssr_to_gw,
@@ -291,6 +302,15 @@ class PRMSGroundwater(ConservativeProcess):
 
         gwres_stor_change = gwres_stor - gwres_stor_old
         gwres_flow_vol = gwres_flow * hru_in_to_cf
+
+        # HruMixin._mask_inactive_hrus masks once at init; this kernel is
+        # vectorized over all HRUs, so inactive HRUs are re-masked each step.
+        if len(wh_inactive_hrus) > 0:
+            gwres_flow[wh_inactive_hrus] = np.nan
+            gwres_flow_vol[wh_inactive_hrus] = np.nan
+            gwres_sink[wh_inactive_hrus] = np.nan
+            gwres_stor[wh_inactive_hrus] = np.nan
+            gwres_stor_change[wh_inactive_hrus] = np.nan
 
         return (
             gwres_stor,

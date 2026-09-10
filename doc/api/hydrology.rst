@@ -14,12 +14,15 @@ Hydrologic model components.
    PRMSSnow
    PRMSRunoff
    PRMSRunoffAg
+   PRMSRunoffCascadesNoDprst
    PRMSRunoffNoDprst
    PRMSSoilzone
    PRMSSoilzoneAg
    PRMSSoilzoneAgObsET
+   PRMSSoilzoneCascadesNoDprst
    PRMSSoilzoneNoDprst
    PRMSGroundwater
+   PRMSGroundwaterCascadesNoDprst
    PRMSGroundwaterNoDprst
    PRMSChannel
    PRMSHydraulicGeometryFull

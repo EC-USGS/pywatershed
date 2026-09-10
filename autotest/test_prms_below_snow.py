@@ -48,6 +48,11 @@ test_models = {
         pywatershed.PRMSSoilzoneCascadesNoDprst,
         pywatershed.PRMSGroundwaterNoDprst,
     ],
+    "sagehen": [
+        pywatershed.PRMSRunoffCascadesNoDprst,
+        pywatershed.PRMSSoilzoneCascadesNoDprst,
+        pywatershed.PRMSGroundwaterCascadesNoDprst,
+    ],
     "sagehen_gridded_cascades": [
         pywatershed.PRMSRunoffCascadesNoDprst,
         pywatershed.PRMSSoilzoneCascadesNoDprst,
@@ -82,6 +87,7 @@ tol = {
     "PRMSSoilzoneCascadesNoDprst": 1.0e-8,
     "PRMSSoilzoneNoDprst": 1.0e-8,
     "PRMSGroundwater": 1.0e-8,
+    "PRMSGroundwaterCascadesNoDprst": 1.0e-8,
     "PRMSGroundwaterNoDprst": 1.0e-8,
     "PRMSChannel": 5.0e-7,
 }
@@ -251,6 +257,13 @@ def test_model(simulation, model_args, tmp_path):
         "hru_sz_cascadeflow",
         "upslope_dunnianflow",
         "upslope_interflow",
+    ]
+    # gw_upslope_hru is a pywatershed budget diagnostic, not a PRMS output
+    comparison_vars_dict_all["PRMSGroundwaterCascadesNoDprst"] = list(
+        comparison_vars_dict_all["PRMSGroundwater"]
+    ) + [
+        "gw_upslope",
+        "hru_gw_cascadeflow",
     ]
 
     comparison_vars_dict = {}

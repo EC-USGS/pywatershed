@@ -5,10 +5,10 @@ from warnings import warn
 import numpy as np
 from numba import prange
 
+from ..base.active_hru_mixin import ActiveHruMixin
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..base.hru_mixin import HruMixin
 from ..constants import (
     HruType,
     dnearzero,
@@ -34,7 +34,7 @@ LAKE = HruType.LAKE.value
 # TODO: using through_rain and not net_rain and net_ppt is a WIP
 
 
-class PRMSRunoff(ConservativeProcess, HruMixin):
+class PRMSRunoff(ConservativeProcess, ActiveHruMixin):
     """PRMS surface runoff.
 
     A surface runoff representation from PRMS.

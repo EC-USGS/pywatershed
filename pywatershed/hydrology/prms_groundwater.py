@@ -4,15 +4,15 @@ from warnings import warn
 
 import numpy as np
 
+from ..base.active_hru_mixin import ActiveHruMixin
 from ..base.adapter import adaptable, adapter_factory
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..base.hru_mixin import HruMixin
 from ..constants import nan, numba_num_threads
 from ..parameters import Parameters
 
 
-class PRMSGroundwater(ConservativeProcess, HruMixin):
+class PRMSGroundwater(ConservativeProcess, ActiveHruMixin):
     """PRMS groundwater reservoir.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in
@@ -300,7 +300,7 @@ class PRMSGroundwater(ConservativeProcess, HruMixin):
         gwres_stor_change = gwres_stor - gwres_stor_old
         gwres_flow_vol = gwres_flow * hru_in_to_cf
 
-        # HruMixin._mask_inactive_hrus masks once at init; this kernel is
+        # ActiveHruMixin._mask_inactive_hrus masks once at init; this kernel is
         # vectorized over all HRUs, so inactive HRUs are re-masked each step.
         if len(wh_inactive_hrus) > 0:
             gwres_flow[wh_inactive_hrus] = np.nan

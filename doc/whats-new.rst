@@ -32,7 +32,7 @@ New Features
   :class:`PRMSSoilzoneCascadesNoDprst`, cascade parameter preprocessing
   from PRMS parameter files
   (:func:`~utils.preprocess_cascades.preprocess_cascade_params`), and
-  support for inactive HRUs via :class:`base.HruMixin` (which HRUs are
+  support for inactive HRUs via :class:`base.ActiveHruMixin` (which HRUs are
   active is always derived from the ``hru_type`` parameter; results at
   inactive HRUs are masked to ``nan`` and excluded from mass-balance
   checks by the new ``active_mask`` capability of :class:`base.Budget`).
@@ -85,7 +85,7 @@ Breaking Changes
   :class:`PRMSAtmosphereTranspFrostDynamic`, :class:`PRMSSolarGeometry`,
   :class:`PRMSCanopy`, :class:`PRMSGroundwater` and
   :class:`PRMSGroundwaterNoDprst`, which use it (through
-  :class:`base.HruMixin`) to identify inactive HRUs. A :class:`Parameters`
+  :class:`base.ActiveHruMixin`) to identify inactive HRUs. A :class:`Parameters`
   object built by hand for one of these processes must now include
   ``hru_type``; PRMS parameter files and the ``parameters_dis_hru.nc``
   discretization file written by

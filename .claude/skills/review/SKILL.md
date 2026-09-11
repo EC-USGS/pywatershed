@@ -179,6 +179,19 @@ identical from review to review — and (B) the harness's built-in
      an existence check, not an accuracy check (the repo has no
      mypy/static enforcement, so hint correctness is not chased);
      a missing annotation is a finding.
+   - Tests added or changed: for each test, state in one line what
+     regression it guards against, then confirm that regression would
+     actually make it fail. A gap between the two is the finding. Flag
+     it if: the exercised code is not what the name/docstring claims
+     (mistargeted); the test defines the thing it asserts, e.g. its
+     own `get_parameters()`, so the feared defect cannot fail it
+     (tautological); the assertion holds for any input by a general
+     property of a base class (vacuous); another test in the diff or
+     suite already pins the behavior (redundant); or its intent is not
+     obvious from the assertions and no comment names the regression
+     it guards (unexplained). Recommend deletion for the first four,
+     a comment for the last. Tests should be as short as the point
+     allows; length beyond that needs the comment too.
 
 5. **Correctness review (B).** Invoke the built-in `code-review`
    skill on the same target at the effort level confirmed in step 1

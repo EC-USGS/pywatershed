@@ -5,10 +5,10 @@ from warnings import warn
 import numpy as np
 from numba import prange
 
+from ..base.active_hru_mixin import ActiveHruMixin
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..base.hru_mixin import HruMixin
 from ..constants import (
     HruType,
     closezero,
@@ -74,7 +74,7 @@ tcind = 0
 dbgind = 434
 
 
-class PRMSSnow(ConservativeProcess, HruMixin):
+class PRMSSnow(ConservativeProcess, ActiveHruMixin):
     """PRMS snow pack.
 
     A snow representation from PRMS.

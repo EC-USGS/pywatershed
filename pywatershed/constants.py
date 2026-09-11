@@ -62,8 +62,8 @@ fill_values_dict = {
     np.dtype("bool"): None,
 }
 
-# In-memory fill values for masking inactive HRUs (HruMixin). Not a netcdf
-# encoding default.
+# In-memory fill values for masking inactive HRUs (ActiveHruMixin). Not a
+# netcdf encoding default.
 mask_fill_values_dict = {
     **fill_values_dict,
     np.dtype("int64"): -9999,

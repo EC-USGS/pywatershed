@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pywatershed.base.hru_mixin import HruMixin
+from pywatershed.base.active_hru_mixin import ActiveHruMixin
 from pywatershed.base.process import Process
 from pywatershed.base.timeseries import TimeseriesArray
 from pywatershed.constants import HruType
@@ -10,16 +10,16 @@ from pywatershed.parameters import Parameters
 # These tests are domainless. Constructing a real Process requires generated
 # domain data, forcings and a Control, so a minimal Process subclass is used
 # which never calls Process.__init__ but does exercise the real
-# Process._set_params, HruMixin._set_active_hrus and
-# HruMixin._mask_inactive_hrus code.
+# Process._set_params, ActiveHruMixin._set_active_hrus and
+# ActiveHruMixin._mask_inactive_hrus code.
 
 INACTIVE = HruType.INACTIVE.value
 
 ACTIVE_HRU_KEYS = ("active_hru_mask", "wh_active_hrus", "nactive_hrus")
 
 
-class _HruProcess(Process, HruMixin):
-    """A Process using HruMixin, base order as in the real consumers."""
+class _HruProcess(Process, ActiveHruMixin):
+    """A Process using ActiveHruMixin, base order as in the real consumers."""
 
     def __init__(self):
         pass
@@ -37,11 +37,11 @@ class _HruProcess(Process, HruMixin):
         return ("soil_moist", "hru_ppt", "seg_outflow")
 
 
-def make_parameters(hru_type: np.ndarray, supplied: dict = None) -> Parameters:
-    """Minimal Parameters, optionally supplying the active-HRU quantities.
+def make_discretization(hru_type: np.ndarray, supplied: dict = None):
+    """hru_type plus, optionally, the active-HRU quantities.
 
-    The active-HRU quantities are never parameters of any Process. They can be
-    supplied here to show that they are ignored.
+    A discretization file written after preprocess_gridded_params carries
+    the active-HRU quantities; supplying them here shows they are ignored.
     """
     nhru = len(hru_type)
     dims = {"nhru": nhru}
@@ -73,17 +73,28 @@ def make_parameters(hru_type: np.ndarray, supplied: dict = None) -> Parameters:
     )
 
 
-def make_process(hru_type, supplied=None, keep_supplied=False):
-    """Build the stub process on the given parameters.
+def make_parameters(nhru: int) -> Parameters:
+    """Parameters with no variables: hru_type comes from discretization."""
+    return Parameters(
+        dims={"nhru": nhru},
+        coords={"nhru": np.arange(nhru)},
+        data_vars={},
+        metadata={"nhru": {"dims": ["nhru"]}},
+        validate=True,
+    )
 
-    If keep_supplied, the un-subset Parameters object is put on the process,
-    so _set_active_hrus is exercised with the supplied values visible to it.
+
+def make_process(hru_type: np.ndarray, supplied: dict = None):
+    """Build the stub process the way a Model does.
+
+    hru_type is absent from parameters and found in discretization, so
+    Process._set_params takes its merge path, which keeps every key of both
+    objects (the subset path would drop the undeclared ones).
     """
-    params = make_parameters(hru_type, supplied)
     proc = _HruProcess()
-    proc._set_params(params, None)
-    if keep_supplied:
-        proc._params = params
+    proc._set_params(
+        make_parameters(len(hru_type)), make_discretization(hru_type, supplied)
+    )
     return proc
 
 
@@ -119,26 +130,6 @@ def test_set_active_hrus_computes_from_hru_type():
 
 
 @pytest.mark.domainless
-def test_active_hru_quantities_are_not_parameters():
-    """The active-HRU quantities never enter the Parameters on the process.
-
-    Supplying them does not make them parameters; hru_type does not become
-    optional either.
-    """
-    hru_type = np.array([1, 1, INACTIVE, 1], dtype="int32")
-    supplied = {
-        "active_hru_mask": hru_type != INACTIVE,
-        "wh_active_hrus": np.array([0, 1, 3]),
-        "nactive_hrus": 3,
-    }
-    for supply in (None, supplied):
-        proc = make_process(hru_type, supply)
-        assert set(proc._params.parameters.keys()) == {"nhru", "hru_type"}
-        for kk in ACTIVE_HRU_KEYS:
-            assert kk not in proc._params.parameters.keys()
-
-
-@pytest.mark.domainless
 def test_set_active_hrus_ignores_supplied_values():
     """Supplied values disagreeing with hru_type are ignored, by design.
 
@@ -153,9 +144,9 @@ def test_set_active_hrus_ignores_supplied_values():
         "wh_active_hrus": np.array([0, 2, 4]),
         "nactive_hrus": 3,
     }
-    # keep_supplied puts all three keys in front of _set_active_hrus, which
-    # the Process parameter subsetting would otherwise drop
-    proc = make_process(hru_type, supplied, keep_supplied=True)
+    # precondition: the merge path kept the supplied keys, so "ignored"
+    # below is not vacuous
+    proc = make_process(hru_type, supplied)
     for kk in ACTIVE_HRU_KEYS:
         assert kk in proc._params.parameters.keys()
 
@@ -182,7 +173,7 @@ def test_mask_inactive_hrus_ignores_supplied_mask():
         "wh_active_hrus": np.array([0, 2, 4]),
         "nactive_hrus": 3,
     }
-    proc = make_process(hru_type, supplied, keep_supplied=True)
+    proc = make_process(hru_type, supplied)
     proc._set_active_hrus()
     set_variables(proc, nhru)
 

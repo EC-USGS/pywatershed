@@ -12,6 +12,6 @@ Base classes for the modeling system.
    base.Accessor
    base.DatasetDict
    base.Budget
-   base.HruMixin
+   base.ActiveHruMixin
    base.Process
    base.ConservativeProcess

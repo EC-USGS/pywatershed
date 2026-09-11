@@ -4,7 +4,7 @@ from warnings import warn
 
 import numpy as np
 
-from pywatershed.base.hru_mixin import HruMixin
+from pywatershed.base.active_hru_mixin import ActiveHruMixin
 from pywatershed.base.process import Process
 from pywatershed.utils.netcdf_utils import NetCdfWrite
 
@@ -31,7 +31,7 @@ def tile_time_to_space(arr: np.ndarray, n_space) -> np.ndarray:
     return np.transpose(np.tile(arr, (n_space, 1)))
 
 
-class PRMSAtmosphere(Process, HruMixin):
+class PRMSAtmosphere(Process, ActiveHruMixin):
     """PRMS atmospheric boundary layer model.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in

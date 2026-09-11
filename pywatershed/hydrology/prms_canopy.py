@@ -5,10 +5,10 @@ from warnings import warn
 import numpy as np
 from numba import prange
 
+from ..base.active_hru_mixin import ActiveHruMixin
 from ..base.adapter import adaptable
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..base.hru_mixin import HruMixin
 from ..constants import (
     CovType,
     HruType,
@@ -30,7 +30,7 @@ OFF = 0
 ACTIVE = 1
 
 
-class PRMSCanopy(ConservativeProcess, HruMixin):
+class PRMSCanopy(ConservativeProcess, ActiveHruMixin):
     """PRMS canopy class.
 
     A canopy or vegetation representation from PRMS.

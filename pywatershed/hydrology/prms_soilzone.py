@@ -5,10 +5,10 @@ from warnings import warn
 import numpy as np
 from numba import prange
 
+from ..base.active_hru_mixin import ActiveHruMixin
 from ..base.adapter import adaptable, adapter_factory
 from ..base.conservative_process import ConservativeProcess
 from ..base.control import Control
-from ..base.hru_mixin import HruMixin
 from ..constants import (
     ETType,
     HruType,
@@ -25,7 +25,7 @@ ONETHIRD = 1 / 3
 TWOTHIRDS = 2 / 3
 
 
-class PRMSSoilzone(ConservativeProcess, HruMixin):
+class PRMSSoilzone(ConservativeProcess, ActiveHruMixin):
     """PRMS soil zone.
 
     Implementation based on PRMS 5.2.1 with theoretical documentation given in

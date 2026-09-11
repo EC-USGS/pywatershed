@@ -5,8 +5,8 @@ from ..constants import mask_fill_values_dict
 from ..utils.preprocess_gridded import get_active_hru_params
 
 
-class HruMixin:
-    """Mixin for HRU functionalities."""
+class ActiveHruMixin:
+    """Derive the active-HRU mask from hru_type; mask inactive HRUs."""
 
     def _set_active_hrus(self) -> None:
         """Set _active_hru_mask, _wh_active_hrus, and _nactive_hrus.

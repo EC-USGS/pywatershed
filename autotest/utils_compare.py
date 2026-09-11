@@ -138,6 +138,13 @@ def compare_in_memory(
         if mask_dict is not None:
             actual = actual[mask_dict[var]]
             desired = np.array(desired)[mask_dict[var]]
+        elif hasattr(process, "_active_hru_mask") and (
+            np.shape(actual) == np.shape(process._active_hru_mask)
+        ):
+            # compare only at active HRUs; inactive HRUs are masked to
+            # nan by pywatershed but generally not by PRMS output.
+            actual = actual[process._active_hru_mask]
+            desired = np.array(desired)[process._active_hru_mask]
 
         # Get variable-specific tolerances if provided
         var_rtol = rtol

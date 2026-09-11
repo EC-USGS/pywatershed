@@ -2,9 +2,9 @@
 
 Writes (or prints) one fact per line, sorted, so that any change to the
 public surface appears as a line-local diff. The committed baseline is
-autotest/api_surface.txt (a repo path, not a package path, so it works
-for non-editable installs); autotest/test_api_surface.py fails when the
-installed package no longer matches it.
+autotest/api_surface.txt (beside this script; a repo path, not a package
+path, so it works for non-editable installs); autotest/test_api_surface.py
+fails when the installed package no longer matches it.
 
 The snapshot records *resolved* values, not source text: the declared
 name-set methods (get_inputs, get_variables, ...) are called, so a
@@ -12,8 +12,8 @@ removed override that falls through to a base class implementation
 changes the snapshot even though the subclass source shows no method.
 
 Usage (from the repo root):
-    python .github/scripts/api_surface.py           # print to stdout
-    python .github/scripts/api_surface.py --write   # update the baseline
+    python autotest/api_surface.py           # print to stdout
+    python autotest/api_surface.py --write   # update the baseline
 """
 
 import inspect
@@ -24,7 +24,7 @@ import yaml
 
 import pywatershed as pws
 
-BASELINE = pl.Path(__file__).parents[2] / "autotest" / "api_surface.txt"
+BASELINE = pl.Path(__file__).parent / "api_surface.txt"
 
 # Class methods declaring the API's name sets. Called (not parsed), so
 # inherited implementations are recorded as the user sees them.

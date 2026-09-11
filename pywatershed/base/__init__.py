@@ -1,4 +1,5 @@
 from .accessor import Accessor
+from .active_hru_mixin import ActiveHruMixin
 from .adapter import Adapter
 from .budget import Budget
 from .conservative_process import ConservativeProcess
@@ -18,6 +19,7 @@ __all__ = (
     "Control",
     "Output",
     "DatasetDict",
+    "ActiveHruMixin",
     "Model",
     "Parameters",
     "Process",

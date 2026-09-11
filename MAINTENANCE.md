@@ -11,6 +11,8 @@
     - [Drop the netCDF4 ndarray.shape warning filter](#drop-the-netcdf4-ndarrayshape-warning-filter)
     - [Drop the gfortran <16 ceiling (conda-forge win-64 link failure)](#drop-the-gfortran-16-ceiling-conda-forge-win-64-link-failure)
     - [PR #412 follow-ups: pre-commit notebook coverage, holoviews floor](#pr-412-follow-ups-pre-commit-notebook-coverage-holoviews-floor)
+    - [Decide the fate of preprocess_gridded_params before 4.0](#decide-the-fate-of-preprocess_gridded_params-before-40)
+    - [PRMSChannel ignores stream_seg_in: cascaded flow never reaches the channel](#prmschannel-ignores-stream_seg_in-cascaded-flow-never-reaches-the-channel)
   - [Done](#done)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -109,10 +111,12 @@ check it), **Action** (what to do once unblocked), and optional
   for a tag above `v1.7.4rel`, then confirm the fix is in it, e.g. the
   released sdist no longer has `data.shape = tuple(datashape)` in
   `src/netCDF4/_netCDF4.pyx`.
-- **Action:** remove the
-  `ignore:Setting the shape on a NumPy array has been deprecated`
-  line (and the comment above the key) from `autotest/pytest.ini`, and
-  raise the netCDF4 floor in `environment.yml` to that release.
+- **Action:** remove `suppress_netcdf4_shape_warning` from
+  `pywatershed/utils/netcdf_utils.py` and its three uses (two there,
+  one in `pywatershed/base/budget.py`), and raise the netCDF4 floor in
+  `environment.yml` to that release. (Until 2026-09-04 this was a
+  `filterwarnings` line in `autotest/pytest.ini`, which did not reach
+  the notebook subprocesses or users' own scripts.)
 - **Notes:** netCDF4 assigns to `ndarray.shape` on every variable write
   (`_netCDF4.pyx:5616`), which NumPy >= 2.5 deprecates. Nothing on the
   pywatershed side avoids it: every assignment form was tried
@@ -208,6 +212,74 @@ check it), **Action** (what to do once unblocked), and optional
 - **Notes:** the pre-commit hook only ever sees *staged* files while CI
   runs `ruff check .` over the whole tree. That gap is what let #412's
   notebook errors reach CI in the first place.
+
+### Decide the fate of preprocess_gridded_params before 4.0
+
+- **Blocked on:** having reviewed several gridded/inactive-HRU example
+  models after the cascades port (PR #407) lands; must be settled before
+  the first 4.0 release (check: no `4.0.0` tag at
+  `https://api.github.com/repos/DOI-USGS/pywatershed/releases`).
+- **Action:** keep or delete
+  `pywatershed/utils/preprocess_gridded.py::preprocess_gridded_params`.
+  - If kept: state in its docstring that processes never read the
+    variables it writes (`active_hru_mask`, `wh_active_hrus`,
+    `nactive_hrus` are always derived from `hru_type` by
+    `base.ActiveHruMixin._set_active_hrus`), and add the `nactive_hru`
+    dimension it introduces to `pywatershed/static/metadata/dimensions.yaml`.
+  - If deleted: remove it from `doc/api/utils.rst`, delete
+    `autotest/test_preprocess_gridded.py`'s tests of it (keep those of
+    `get_active_hru_params`, which the mixin uses), and note the removal
+    in whats-new.
+- **Notes:** the PR #407 review (B3/B7, 2026-09-02) fixed the function's
+  crash and removed the mixin's dead "use supplied mask" path, making
+  `hru_type` the single source of truth. That left the function public
+  with zero callers, writing three variables nothing consumes. Deleting
+  was recommended; James kept it pending experience with real gridded
+  setups.
+
+### PRMSChannel ignores stream_seg_in: cascaded flow never reaches the channel
+
+- **Blocked on:** nothing; fix on `feat_gw_cascades` after PR #407
+  merges and before PR #417 merges (check:
+  `https://api.github.com/repos/DOI-USGS/pywatershed/pulls/417`, `merged`
+  false). Written on `feat_cascades_port` ahead of that merge;
+  `feat_gw_cascades` carries an earlier version of this item, keep one.
+- **Action:** make `PRMSChannel` take `stream_seg_in` as the lateral
+  inflow when cascades are on, as `routing.f90` does:
+
+      IF ( Cascade_flag==CASCADE_OFF ) THEN
+        Seg_lateral_inflow = 0.0D0
+      ELSE
+        Seg_lateral_inflow = Strm_seg_in
+      ENDIF
+      ...
+      IF ( Cascade_flag==CASCADE_OFF ) Seg_lateral_inflow(i) = Seg_lateral_inflow(i) + Hru_outflow(j)
+
+  Today `prms_channel.py::_calculate` (search "calculate lateral flow
+  term") always rebuilds `seg_lateral_inflow` from `hru_segment` and the
+  per-HRU `sroff_vol`, `ssres_flow_vol`, `gwres_flow_vol`, so under
+  cascades the water that `PRMSRunoffCascadesNoDprst`,
+  `PRMSSoilzoneCascadesNoDprst` and `PRMSGroundwaterCascadesNoDprst`
+  route to `stream_seg_in` is dropped, and HRU outflow that PRMS sends
+  downslope is instead sent straight to `hru_segment`. Steps:
+  - Add `stream_seg_in=None` to `PRMSChannel.__init__` and
+    `get_inputs()` (a `Process._set_inputs` guard raises if it is in
+    the signature but not in inputs; see DESIGN_NOTES.md).
+  - When supplied, `seg_lateral_inflow[:] = stream_seg_in` (units:
+    PRMS `Strm_seg_in` is cfs) and skip the `hru_segment` accumulation;
+    keep the `channel_*_vol` diagnostics or zero them deliberately.
+  - Test on sagehen_5yr against PRMS `seg_outflow`/`seg_lateral_inflow`
+    with sagehen.control (runoff + soilzone + groundwater all cascade,
+    so `stream_seg_in` equals PRMS's `Strm_seg_in`); add the variables
+    to the control's `nsegmentOutVar_names` (three counts to edit) if
+    absent.
+- **Notes:** found 2026-09-09 while porting groundwater cascades.
+  Process inputs are held by reference (`self[ii] = adapter.current`),
+  so in a `Model` runoff's `stream_seg_in` array is zeroed by runoff and
+  added into in place by soilzone and then groundwater; after
+  groundwater runs it equals PRMS's `Strm_seg_in`, which is why the
+  channel can take runoff's copy directly. Without this, every cascade
+  model's streamflow is wrong even though HRU-level outputs match PRMS.
 
 ## Done
 

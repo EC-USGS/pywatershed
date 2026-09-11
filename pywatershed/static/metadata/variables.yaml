@@ -1824,12 +1824,6 @@ hru_gw_cascadeflow:
     0: nhru
   type: float64
   units: inches
-hru_hortn_cascflow:
-  desc: Cascading Hortonian surface runoff leaving each HRU
-  dims:
-    0: nhru
-  type: float64
-  units: inches
 hru_imperv:
   desc: Area of HRU that is impervious
   dims:
@@ -1838,6 +1832,13 @@ hru_imperv:
   units: acres
 hru_impervevap:
   desc: HRU area-weighted average evaporation from impervious area for each HRU
+  dims:
+    0: nhru
+  type: float64
+  units: inches
+  var_category: mass flux
+hru_horton_cascflow:
+  desc: Cascading Hortonian surface runoff leaving each HRU
   dims:
     0: nhru
   type: float64
@@ -3567,6 +3568,12 @@ ssres_stor:
     0: nhru
   type: float64
   units: inches
+stream_seg_in:
+  desc: Flow in stream segments as a result of cascading flow in each stream segment
+  dims:
+    0: nsegment
+  type: float64
+  units: cfs
 streamflow_cfs:
   desc: Streamflow at each measurement station
   dims:

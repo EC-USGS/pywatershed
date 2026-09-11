@@ -486,6 +486,7 @@ class DatasetDict(Accessor):
         keep_global_metadata: bool = None,
         keep_global_encoding: bool = None,
         strict: bool = False,
+        keep_dims: list = None,
     ) -> "DatasetDict":
         """Subset a DatasetDict to keys in data_vars or coordinates
 
@@ -496,6 +497,9 @@ class DatasetDict(Accessor):
                 keep_global_encoding
             keep_global_metadata: bool retain the global metadata in the subset
             keep_global_encoding: bool retain the global encoding in the subset
+            keep_dims: list of dimension names to retain in the subset even
+                if not required by the subset variables; the coordinates on
+                these dimensions are retained as well
 
         Returns:
           A subset Parameter object on the passed keys.
@@ -556,6 +560,18 @@ class DatasetDict(Accessor):
                 for ck, cv in var_coord_data.items():
                     if ck not in subset["coords"].keys():
                         subset["coords"][ck] = cv
+
+        if keep_dims is not None:
+            for dd in keep_dims:
+                if dd not in subset["dims"].keys() and dd in self.dims.keys():
+                    subset["dims"][dd] = self.dims[dd]
+                    # keep the coordinates on this dimension as well
+                    dim_coord_data = self._get_dim_coords(
+                        [dd], data=True, copy=copy
+                    )
+                    for ck, cv in dim_coord_data.items():
+                        if ck not in subset["coords"].keys():
+                            subset["coords"][ck] = cv
 
         # build metadata and encoding from coords and data_vars
         for cv in ["coords", "data_vars"]:
@@ -700,7 +716,6 @@ class DatasetDict(Accessor):
                         continue
                     if "source" in dd["encoding"]["global"]:
                         del dd["encoding"]["global"]["source"]
-            # <<<
             merged_dict = _merge_dicts(dd_list)
         else:
             merged_dict = _merge_dicts([deepcopy(dd.data) for dd in dd_list])
@@ -975,6 +990,10 @@ def nc4_ds_to_xr_dd(file_or_ds, xr_enc: dict = None) -> dict:
         for vv in xr_dd["data_vars"].values()
         if "coordinates" in vv["attrs"].keys()
     ]
+    # a coordinate used by no data variable is recorded in the global
+    # "coordinates" attribute (CF convention, as written by xarray)
+    if "coordinates" in xr_dd["attrs"].keys():
+        all_coords += [xr_dd["attrs"].pop("coordinates")]
     all_coords = sorted(set(" ".join(all_coords).split(" ")))
     for cc in all_coords:
         if cc == "":

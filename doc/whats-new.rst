@@ -49,6 +49,15 @@ Bug fixes
   intercepted. :class:`PRMSSnow` now declares ``pkwater_ante``, as
   ``snowcomp`` does (``snowcomp.f90:346-349``), so coupled models supply it.
   (:pull:`414`) By `James McCreight <https://github.com/jmccreight>`_.
+- NetCDF output no longer floods the console with NumPy's ``Setting the
+  shape on a NumPy array has been deprecated`` warning (one per variable
+  per timestep with netCDF4 <= 1.7.4 and NumPy >= 2.5). The suppression
+  is applied around each write in code, not only as a pytest filter,
+  because flopy sets ``warnings.simplefilter("always",
+  DeprecationWarning)`` at import and overrides any earlier filter; see
+  ``MAINTENANCE.md`` for when it can be removed. (:pull:`419`) By `James
+  McCreight
+  <https://github.com/jmccreight>`_.
 
 Internal changes
 ~~~~~~~~~~~~~~~~

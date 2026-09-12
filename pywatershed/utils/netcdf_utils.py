@@ -8,11 +8,14 @@ import numpy as np
 import xarray as xr
 
 from ..base.accessor import Accessor
+from ..base.data_model import nc4_shape_warning_filter
 from ..base.meta import meta_dimensions, meta_netcdf_type
 from ..constants import np_type_to_netcdf_type_dict
 from ..utils.time_utils import datetime_doy
 
 fileish = Union[str, pl.Path]
+
+
 listish = Union[list, tuple]
 arrayish = Union[list, tuple, np.ndarray]
 ATOL = np.finfo(np.float32).eps
@@ -500,77 +503,79 @@ class NetCdfWrite(Accessor):
         if nnodes_coordinate:
             self.dataset.createDimension("node_coord", self.nnodes)
 
-        if nhru_coordinate:
-            self.hruid = self.dataset.createVariable(
-                "nhm_id", "i4", ("nhm_id",)
-            )
-            self.hruid[:] = np.array(self.hru_ids, dtype=int)
-        if nsegment_coordinate:
-            self.segid = self.dataset.createVariable(
-                "nhm_seg", "i4", ("nhm_seg",)
-            )
-            self.segid[:] = np.array(self.segment_ids, dtype=int)
-        if one_coordinate:
-            self.oneid = self.dataset.createVariable("one", "i4", ("one"))
-            self.oneid[:] = np.array(self.one_ids, dtype=int)
-        if nreservoirs_coordinate:
-            self.grandid = self.dataset.createVariable(
-                "grand_id", "i4", ("grand_id",)
-            )
-            self.grandid[:] = coordinates["grand_id"]
-        if nnodes_coordinate:
-            self.node_coord = self.dataset.createVariable(
-                "node_coord", "i4", ("node_coord",)
-            )
-            self.node_coord[:] = coordinates["node_coord"]
-
-        char_dims_created = []
-        for x_dim, x_data_dict in extra_coords.items():
-            for x_var_name, x_data in x_data_dict.items():
-                type = x_data.dtype
-                type_str = str(type)
-
-                dim = (x_dim,)
-                if "U" in type_str or "S" in type_str:
-                    # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
-                    # S1 gives "char" type in the file whereas another
-                    # number gives "string" type. The former is properly
-                    # handled by xarray
-                    nc_type = "S1"
-
-                    # if it is a string array, convert it to a character array
-                    # I dont understand the particulars here, may need more
-                    # work
-                    # Convert Unicode strings to UTF-8 byte strings first
-                    if "U" in type_str:
-                        x_data = np.char.encode(x_data, "utf-8")
-                    char_array = stringtochar(x_data)
-
-                    char_dim_len = char_array.shape[1]
-                    dim_name = f"char{char_dim_len}"
-                    if dim_name in char_dims_created:
-                        continue
-
-                    dim = (x_dim, dim_name)
-                    _ = self.dataset.createDimension(
-                        dimname=dim_name, size=char_dim_len
-                    )
-
-                    char_dims_created += [dim_name]
-
-                else:
-                    nc_type = np_type_to_netcdf_type_dict[type]
-
-                # <
-                self[x_var_name] = self.dataset.createVariable(
-                    varname=x_var_name, datatype=nc_type, dimensions=dim
+        with nc4_shape_warning_filter():
+            if nhru_coordinate:
+                self.hruid = self.dataset.createVariable(
+                    "nhm_id", "i4", ("nhm_id",)
                 )
-                if "S1" == nc_type:
-                    self[x_var_name][:, :] = char_array
-                    self[x_var_name]._Encoding = "utf-8"
+                self.hruid[:] = np.array(self.hru_ids, dtype=int)
+            if nsegment_coordinate:
+                self.segid = self.dataset.createVariable(
+                    "nhm_seg", "i4", ("nhm_seg",)
+                )
+                self.segid[:] = np.array(self.segment_ids, dtype=int)
+            if one_coordinate:
+                self.oneid = self.dataset.createVariable("one", "i4", ("one"))
+                self.oneid[:] = np.array(self.one_ids, dtype=int)
+            if nreservoirs_coordinate:
+                self.grandid = self.dataset.createVariable(
+                    "grand_id", "i4", ("grand_id",)
+                )
+                self.grandid[:] = coordinates["grand_id"]
+            if nnodes_coordinate:
+                self.node_coord = self.dataset.createVariable(
+                    "node_coord", "i4", ("node_coord",)
+                )
+                self.node_coord[:] = coordinates["node_coord"]
 
-                else:
-                    self[x_var_name][:] = x_data
+            char_dims_created = []
+            for x_dim, x_data_dict in extra_coords.items():
+                for x_var_name, x_data in x_data_dict.items():
+                    type = x_data.dtype
+                    type_str = str(type)
+
+                    dim = (x_dim,)
+                    if "U" in type_str or "S" in type_str:
+                        # https://unidata.github.io/netcdf4-python/#dealing-with-strings  # noqa: E501
+                        # S1 gives "char" type in the file whereas another
+                        # number gives "string" type. The former is properly
+                        # handled by xarray
+                        nc_type = "S1"
+
+                        # if it is a string array, convert it to a character
+                        # array
+                        # I dont understand the particulars here, may need more
+                        # work
+                        # Convert Unicode strings to UTF-8 byte strings first
+                        if "U" in type_str:
+                            x_data = np.char.encode(x_data, "utf-8")
+                        char_array = stringtochar(x_data)
+
+                        char_dim_len = char_array.shape[1]
+                        dim_name = f"char{char_dim_len}"
+                        if dim_name in char_dims_created:
+                            continue
+
+                        dim = (x_dim, dim_name)
+                        _ = self.dataset.createDimension(
+                            dimname=dim_name, size=char_dim_len
+                        )
+
+                        char_dims_created += [dim_name]
+
+                    else:
+                        nc_type = np_type_to_netcdf_type_dict[type]
+
+                    # <
+                    self[x_var_name] = self.dataset.createVariable(
+                        varname=x_var_name, datatype=nc_type, dimensions=dim
+                    )
+                    if "S1" == nc_type:
+                        self[x_var_name][:, :] = char_array
+                        self[x_var_name]._Encoding = "utf-8"
+
+                    else:
+                        self[x_var_name][:] = x_data
 
         self.variables = {}
         for var_name, group_var_name in zip(variables, group_variables):
@@ -639,7 +644,10 @@ class NetCdfWrite(Accessor):
             return
 
     def add_simulation_time(self, itime_step: int, simulation_time: float):
-        self.time[itime_step] = nc4.date2num(simulation_time, self.time.units)
+        with nc4_shape_warning_filter():
+            self.time[itime_step] = nc4.date2num(
+                simulation_time, self.time.units
+            )
         return
 
     def add_data(
@@ -657,7 +665,8 @@ class NetCdfWrite(Accessor):
         if name not in self.variables.keys():
             raise KeyError(f"{name} not a valid variable name")
         var = self.variables[name]
-        var[itime_step, :] = current[:]
+        with nc4_shape_warning_filter():
+            var[itime_step, :] = current[:]
         return
 
     def add_all_data(
@@ -678,21 +687,24 @@ class NetCdfWrite(Accessor):
         if name not in self.variables.keys():
             raise KeyError(f"{name} not a valid variable name")
 
-        if time_coord == "time":
-            start_date = (
-                time_data[0].astype(dt.datetime).strftime("%Y-%m-%d %H:%M:%S")
-            )
-            self[time_coord].units = f"days since {start_date}"
-            self[time_coord][:] = nc4.date2num(
-                time_data.astype(dt.datetime),
-                units=self[time_coord].units,
-                calendar="standard",
-            )
-        else:
-            # currently just doy
-            self[time_coord][:] = time_data
+        with nc4_shape_warning_filter():
+            if time_coord == "time":
+                start_date = (
+                    time_data[0]
+                    .astype(dt.datetime)
+                    .strftime("%Y-%m-%d %H:%M:%S")
+                )
+                self[time_coord].units = f"days since {start_date}"
+                self[time_coord][:] = nc4.date2num(
+                    time_data.astype(dt.datetime),
+                    units=self[time_coord].units,
+                    calendar="standard",
+                )
+            else:
+                # currently just doy
+                self[time_coord][:] = time_data
 
-        self.variables[name][:, :] = data[:, :]
+            self.variables[name][:, :] = data[:, :]
 
         return
 

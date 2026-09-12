@@ -1,4 +1,5 @@
 import warnings
+from contextlib import contextmanager
 from copy import deepcopy
 from typing import Iterable, Literal
 
@@ -9,6 +10,27 @@ import xarray as xr
 
 from ..constants import fileish, fill_values_dict, np_type_to_netcdf_type_dict
 from .accessor import Accessor
+
+
+@contextmanager
+def nc4_shape_warning_filter():
+    """Silence netCDF4's ndarray.shape DeprecationWarning during a write.
+
+    netCDF4 <= 1.7.4 assigns to ndarray.shape on every variable write,
+    which NumPy >= 2.5 deprecates; fixed upstream in netcdf4-python PR
+    #1469, unreleased. A global filter is not enough: flopy calls
+    warnings.simplefilter("always", DeprecationWarning) at import, which
+    overrides any filter set before it. Remove with the netCDF4 floor
+    raise; see MAINTENANCE.md.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Setting the shape on a NumPy array has been deprecated",
+            category=DeprecationWarning,
+        )
+        yield
+
 
 # This file defines the data model for pywatershed. It is called a
 # "dataset_dict" and has a invertible mapping with non-hierarchical netcdf
@@ -1051,7 +1073,7 @@ def dd_to_nc4_ds(dd, nc_file):
     del dd
 
     # create a new netCDF4 file
-    with nc4.Dataset(nc_file, "w") as ds:
+    with nc4_shape_warning_filter(), nc4.Dataset(nc_file, "w") as ds:
         ds.set_fill_on()
 
         for key, value in xr_dd["attrs"].items():

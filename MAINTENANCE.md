@@ -109,21 +109,44 @@ check it), **Action** (what to do once unblocked), and optional
   for a tag above `v1.7.4rel`, then confirm the fix is in it, e.g. the
   released sdist no longer has `data.shape = tuple(datashape)` in
   `src/netCDF4/_netCDF4.pyx`.
-- **Action:** remove the
-  `ignore:Setting the shape on a NumPy array has been deprecated`
-  line (and the comment above the key) from `autotest/pytest.ini`, and
-  raise the netCDF4 floor in `environment.yml` to that release.
+- **Action:** delete `nc4_shape_warning_filter` (defined in
+  `pywatershed/base/data_model.py`) and unwrap every `with` that uses
+  it, re-dedenting the bodies; then raise the netCDF4 floor in
+  `environment.yml` to that release. Find them all with
+  `grep -rn nc4_shape_warning_filter pywatershed`. At the time of
+  writing, the uses are:
+  - `pywatershed/base/data_model.py`, `dd_to_nc4_ds`: combined into the
+    `with nc4.Dataset(nc_file, "w") as ds:` line.
+  - `pywatershed/utils/netcdf_utils.py`, class `NetCdfWrite`: the
+    coordinate writes in `__init__` (from `if nhru_coordinate:` through
+    the `extra_coords` loop), and the bodies of `add_simulation_time`,
+    `add_data`, and `add_all_data`.
+  - `pywatershed/base/budget.py`, `_output_netcdf` (the time write and
+    the variable loop).
+  - Imports of the name in `netcdf_utils.py` and `budget.py`.
+  - The `ignore:Setting the shape on a NumPy array has been deprecated`
+    line and its comment in `autotest/pytest.ini`, kept for xarray's
+    own `to_netcdf` path (`xarray/backends/netCDF4_.py`, `__setitem__`),
+    which pywatershed calls from about a dozen places and does not wrap.
 - **Notes:** netCDF4 assigns to `ndarray.shape` on every variable write
   (`_netCDF4.pyx:5616`), which NumPy >= 2.5 deprecates. Nothing on the
   pywatershed side avoids it: every assignment form was tried
   (`v[0,:] = a`, `v[0:1,:] = a[np.newaxis, ...]`, `v[0] = a`) and all
   warn, so the two sites the warning is attributed to,
-  `pywatershed/utils/netcdf_utils.py:660` and
-  `pywatershed/base/budget.py:944`, are correct as written -- the
+  `pywatershed/utils/netcdf_utils.py:669` and
+  `pywatershed/base/budget.py:950`, are correct as written -- the
   warning is raised in Cython and attributed to the nearest Python
   frame, which is ours. Observed with netCDF4 1.7.3 and NumPy 2.5.2:
   ~44,000 warnings in a single `test_prms_canopy.py` run. xarray took
   the same temporary measure (its PR #11146).
+  The suppression is per-write (`warnings.catch_warnings`) rather than
+  a pytest.ini filter because a global filter did not reach notebooks
+  (`autotest_exs/test_notebooks.py` runs them via ipython in a
+  subprocess) or users, and flopy 3.11 sets
+  `warnings.simplefilter("always", DeprecationWarning)` at import
+  (`flopy/utils/rasters.py:10` and two others), which overrides any
+  filter set earlier, including `PYTHONWARNINGS`. Reported informally
+  to the flopy developers, 2026-09-11.
 
 ### Drop the gfortran <16 ceiling (conda-forge win-64 link failure)
 

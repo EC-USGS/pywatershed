@@ -55,7 +55,7 @@ Bug fixes
   is applied around each write in code, not only as a pytest filter,
   because flopy sets ``warnings.simplefilter("always",
   DeprecationWarning)`` at import and overrides any earlier filter; see
-  ``MAINTENANCE.md`` for when it can be removed. (:pull:`XXX`) By `James
+  ``MAINTENANCE.md`` for when it can be removed. (:pull:`419`) By `James
   McCreight
   <https://github.com/jmccreight>`_.
 
